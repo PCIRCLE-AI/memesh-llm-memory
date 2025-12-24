@@ -139,7 +139,7 @@ export class VectorStore {
   /**
    * 語義搜尋
    */
-  async search(options: SearchOptions): Promise<SearchResult[]> {
+  async search(_options: SearchOptions): Promise<SearchResult[]> {
     this.ensureInitialized();
 
     // 注意：這裡需要外部提供 query embedding
@@ -163,7 +163,7 @@ export class VectorStore {
       queryEmbeddings: [queryEmbedding],
       nResults: topK,
       where: filter,
-      include: ['documents', 'metadatas', 'distances'],
+      include: ['documents', 'metadatas', 'distances'] as any,
     });
 
     // 轉換結果格式
@@ -182,7 +182,7 @@ export class VectorStore {
         searchResults.push({
           id: results.ids[0][i],
           content: results.documents?.[0]?.[i] as string || '',
-          metadata: (results.metadatas?.[0]?.[i] as DocumentMetadata) || { source: 'unknown' },
+          metadata: (results.metadatas?.[0]?.[i] || { source: 'unknown', language: 'zh-TW' }) as unknown as DocumentMetadata,
           score,
           distance,
         });
@@ -278,7 +278,16 @@ export class VectorStore {
 
     for (const [key, value] of Object.entries(metadata)) {
       if (value !== undefined && value !== null) {
-        sanitized[key] = value;
+        // ChromaDB v2 API only accepts primitive types (string, number, boolean)
+        // Convert arrays to comma-separated strings
+        if (Array.isArray(value)) {
+          sanitized[key] = value.join(', ');
+        } else if (typeof value === 'object') {
+          // Convert objects to JSON strings
+          sanitized[key] = JSON.stringify(value);
+        } else {
+          sanitized[key] = value;
+        }
       }
     }
 

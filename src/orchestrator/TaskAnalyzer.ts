@@ -10,13 +10,10 @@
 
 import { Task, TaskAnalysis, TaskComplexity, ExecutionMode, AgentType } from './types.js';
 import { MODEL_COSTS, CLAUDE_MODELS } from '../config/models.js';
-import { appConfig } from '../config/index.js';
 
 export class TaskAnalyzer {
-  private simpleTaskThreshold: number;
-
   constructor() {
-    this.simpleTaskThreshold = appConfig.orchestrator.simpleTaskThreshold;
+    // Constructor intentionally empty - configuration loaded when needed
   }
 
   /**
@@ -50,22 +47,39 @@ export class TaskAnalyzer {
 
     // 複雜任務指標
     const complexIndicators = [
-      'analyze system architecture',
-      'design database schema',
+      'analyze system',
+      'architecture',
+      'design database',
+      'database schema',
       'refactor codebase',
       'implement algorithm',
       'optimize performance',
       'security audit',
       'multi-step',
       'comprehensive',
+      'security considerations',
+    ];
+
+    // 中等任務指標
+    const mediumIndicators = [
+      'validation',
+      'create function',
+      'email',
+      'user',
+      'api',
+      'endpoint',
+      'component',
+      'service',
+      'authentication',
+      'authorization',
     ];
 
     // 簡單任務指標
     const simpleIndicators = [
       'format',
       'rename',
-      'simple query',
-      'basic validation',
+      'simple',
+      'basic',
       'quick fix',
       'typo',
       'comment',
@@ -76,16 +90,37 @@ export class TaskAnalyzer {
       description.includes(indicator)
     );
 
+    // 檢查中等指標
+    const hasMediumIndicator = mediumIndicators.some(indicator =>
+      description.includes(indicator)
+    );
+
     // 檢查簡單指標
     const hasSimpleIndicator = simpleIndicators.some(indicator =>
       description.includes(indicator)
     );
 
-    if (hasComplexIndicator || wordCount > 100) {
+    // 複雜任務優先
+    if (hasComplexIndicator) {
       return 'complex';
     }
 
-    if (hasSimpleIndicator || wordCount < this.simpleTaskThreshold) {
+    // 中等任務
+    if (hasMediumIndicator) {
+      return 'medium';
+    }
+
+    // 簡單任務
+    if (hasSimpleIndicator && wordCount < 15) {
+      return 'simple';
+    }
+
+    // 根據字數判斷
+    if (wordCount > 20) {
+      return 'complex';
+    }
+
+    if (wordCount < 5) {
       return 'simple';
     }
 

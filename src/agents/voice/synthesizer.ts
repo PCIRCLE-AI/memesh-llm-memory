@@ -6,8 +6,10 @@ import OpenAI from 'openai';
 import { writeFile } from 'fs/promises';
 import { appConfig } from '../../config';
 import { MODEL_COSTS, OPENAI_MODELS, TTS_VOICES } from '../../config/models';
-import type { TTSOptions, TTSResult, AudioFormat, VoiceProcessingError } from './types';
+import type { TTSOptions, TTSResult } from './types';
+import { VoiceProcessingError } from './types';
 import type { TTSVoice } from '../../config/models';
+import { retryWithBackoff } from '../../utils/retry.js';
 
 /**
  * Synthesizer class for text-to-speech
@@ -51,15 +53,23 @@ export class Synthesizer {
         ? OPENAI_MODELS.TTS_HD
         : OPENAI_MODELS.TTS;
 
-      // Call TTS API
+      // Call TTS API with retry logic
       const startTime = Date.now();
-      const response = await this.client.audio.speech.create({
-        model,
-        voice: options.voice || this.defaultVoice,
-        input: text,
-        speed: options.speed,
-        response_format: 'mp3',
-      });
+      const response = await retryWithBackoff(
+        () => this.client.audio.speech.create({
+          model,
+          voice: options.voice || this.defaultVoice,
+          input: text,
+          speed: options.speed,
+          response_format: 'mp3',
+        }),
+        {
+          maxRetries: 3,
+          baseDelay: 1000,
+          enableJitter: true,
+          operationName: 'TTS Synthesis',
+        }
+      );
 
       const processingTime = Date.now() - startTime;
 
@@ -134,13 +144,21 @@ export class Synthesizer {
         ? OPENAI_MODELS.TTS_HD
         : OPENAI_MODELS.TTS;
 
-      const response = await this.client.audio.speech.create({
-        model,
-        voice: options.voice || this.defaultVoice,
-        input: text,
-        speed: options.speed,
-        response_format: 'mp3',
-      });
+      const response = await retryWithBackoff(
+        () => this.client.audio.speech.create({
+          model,
+          voice: options.voice || this.defaultVoice,
+          input: text,
+          speed: options.speed,
+          response_format: 'mp3',
+        }),
+        {
+          maxRetries: 3,
+          baseDelay: 1000,
+          enableJitter: true,
+          operationName: 'TTS Synthesis (Stream)',
+        }
+      );
 
       // Track metrics
       this.updateMetrics(text.length);
@@ -224,11 +242,7 @@ export class Synthesizer {
    * Create typed error
    */
   private createError(code: string, message: string, details?: unknown): VoiceProcessingError {
-    const error = new Error(message) as VoiceProcessingError;
-    error.name = 'VoiceProcessingError';
-    error.code = code;
-    error.details = details;
-    return error;
+    return new VoiceProcessingError(message, code, details);
   }
 
   /**

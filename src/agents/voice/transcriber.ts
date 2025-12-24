@@ -10,8 +10,9 @@ import { MODEL_COSTS, OPENAI_MODELS } from '../../config/models';
 import type {
   TranscriptionOptions,
   TranscriptionResult,
-  VoiceProcessingError,
 } from './types';
+import { VoiceProcessingError } from './types';
+import { retryWithBackoff } from '../../utils/retry.js';
 
 /**
  * Transcriber class for speech-to-text
@@ -55,16 +56,24 @@ export class Transcriber {
       // Create file stream
       const fileStream = createReadStream(audioPath);
 
-      // Call Whisper API
+      // Call Whisper API with retry logic
       const startTime = Date.now();
-      const response = await this.client.audio.transcriptions.create({
-        file: fileStream,
-        model: this.model,
-        language: options.language,
-        prompt: options.prompt,
-        temperature: options.temperature,
-        response_format: options.responseFormat || 'verbose_json',
-      });
+      const response = await retryWithBackoff(
+        () => this.client.audio.transcriptions.create({
+          file: fileStream,
+          model: this.model,
+          language: options.language,
+          prompt: options.prompt,
+          temperature: options.temperature,
+          response_format: options.responseFormat || 'verbose_json',
+        }),
+        {
+          maxRetries: 3,
+          baseDelay: 1000,
+          enableJitter: true,
+          operationName: 'Whisper Transcription',
+        }
+      );
 
       const processingTime = Date.now() - startTime;
 
@@ -119,14 +128,22 @@ export class Transcriber {
       });
 
       const startTime = Date.now();
-      const response = await this.client.audio.transcriptions.create({
-        file,
-        model: this.model,
-        language: options.language,
-        prompt: options.prompt,
-        temperature: options.temperature,
-        response_format: options.responseFormat || 'verbose_json',
-      });
+      const response = await retryWithBackoff(
+        () => this.client.audio.transcriptions.create({
+          file,
+          model: this.model,
+          language: options.language,
+          prompt: options.prompt,
+          temperature: options.temperature,
+          response_format: options.responseFormat || 'verbose_json',
+        }),
+        {
+          maxRetries: 3,
+          baseDelay: 1000,
+          enableJitter: true,
+          operationName: 'Whisper Transcription (Buffer)',
+        }
+      );
 
       const processingTime = Date.now() - startTime;
       const result = this.parseResponse(response);
@@ -207,11 +224,7 @@ export class Transcriber {
    * Create typed error
    */
   private createError(code: string, message: string, details?: unknown): VoiceProcessingError {
-    const error = new Error(message) as VoiceProcessingError;
-    error.name = 'VoiceProcessingError';
-    error.code = code;
-    error.details = details;
-    return error;
+    return new VoiceProcessingError(message, code, details);
   }
 
   /**

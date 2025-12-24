@@ -264,6 +264,51 @@ describe('CollaborationManager', () => {
       expect(session.task.status).toBe('failed');
     });
 
+    it('should distribute work evenly among capable agents (load balancing)', async () => {
+      // Create 3 agents with identical capabilities
+      const architect1 = new MockAgent('Senior System Architect', ['analyze', 'design', 'review']);
+      const architect2 = new MockAgent('Security Architect', ['analyze', 'design', 'review']);
+      const architect3 = new MockAgent('Performance Architect', ['analyze', 'design', 'review']);
+
+      manager.registerAgent(architect1);
+      manager.registerAgent(architect2);
+      manager.registerAgent(architect3);
+
+      const team = manager.createTeam({
+        name: 'Architecture Team',
+        description: 'Team with 3 architects',
+        members: [architect1.id, architect2.id, architect3.id],
+        leader: architect1.id,
+        capabilities: ['analyze', 'design', 'review'],
+      });
+
+      // Execute task requiring all 3 capabilities
+      const task: CollaborativeTask = {
+        id: uuidv4(),
+        description: 'System architecture analysis',
+        requiredCapabilities: ['analyze', 'design', 'review'],
+        status: 'pending',
+      };
+
+      const session = await manager.executeTask(task);
+
+      // Verify task completed successfully
+      expect(session.results.success).toBe(true);
+      expect(session.task.status).toBe('completed');
+
+      // Verify each agent got exactly 1 subtask (33.3% utilization)
+      const metrics = manager.getTeamMetrics(team.id);
+      expect(metrics).toBeTruthy();
+      expect(metrics!.agentUtilization[architect1.id]).toBeCloseTo(33.3, 1);
+      expect(metrics!.agentUtilization[architect2.id]).toBeCloseTo(33.3, 1);
+      expect(metrics!.agentUtilization[architect3.id]).toBeCloseTo(33.3, 1);
+
+      // Verify all 3 subtasks were created and assigned to different agents
+      expect(session.task.subtasks).toHaveLength(3);
+      const assignedAgents = new Set(session.task.subtasks!.map(st => st.assignedAgent));
+      expect(assignedAgents.size).toBe(3); // All 3 agents should be assigned tasks
+    });
+
     it('should throw if no suitable team found', async () => {
       const task: CollaborativeTask = {
         id: uuidv4(),

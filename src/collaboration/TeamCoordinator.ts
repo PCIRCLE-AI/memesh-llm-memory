@@ -20,12 +20,21 @@ import {
 import { MessageBus } from './MessageBus.js';
 import { logger } from '../utils/logger.js';
 import { v4 as uuidv4 } from 'uuid';
+import { costTracker } from '../utils/cost-tracker.js';
+import type { ClaudeModel } from '../config/models.js';
+
+interface MetricsCache {
+  metrics: TeamMetrics;
+  timestamp: number;
+}
 
 export class TeamCoordinator {
   private teams: Map<string, AgentTeam> = new Map();
   private agents: Map<string, CollaborativeAgent> = new Map();
   private sessions: Map<string, CollaborationSession> = new Map();
   private messageBus: MessageBus;
+  private metricsCache: Map<string, MetricsCache> = new Map();
+  private metricsCacheTTL: number = 5000; // 5 seconds TTL
 
   constructor(messageBus: MessageBus) {
     this.messageBus = messageBus;
@@ -95,14 +104,52 @@ export class TeamCoordinator {
   }
 
   /**
+   * 分析 capability 之間的依賴關係
+   * 基於常見的工作流程順序
+   */
+  private analyzeDependencies(capabilities: string[]): Map<string, string[]> {
+    const dependencyRules: Record<string, string[]> = {
+      // 設計依賴分析
+      design: ['analyze'],
+      // 實作依賴設計
+      implement: ['design'],
+      // 測試依賴實作
+      test: ['implement'],
+      // 審查可以依賴任何產出
+      review: ['analyze', 'design', 'implement'],
+      // 部署依賴測試
+      deploy: ['test'],
+      // 優化依賴分析
+      optimize: ['analyze'],
+      // 文檔依賴實作
+      document: ['implement', 'design'],
+    };
+
+    const dependencies = new Map<string, string[]>();
+
+    capabilities.forEach(capability => {
+      const deps = dependencyRules[capability] || [];
+      // 只保留實際存在於任務中的依賴
+      const actualDeps = deps.filter(dep => capabilities.includes(dep));
+      dependencies.set(capability, actualDeps);
+    });
+
+    return dependencies;
+  }
+
+  /**
    * 將任務分解為子任務
    */
   async decomposeTask(task: CollaborativeTask, team: AgentTeam): Promise<CollaborativeSubTask[]> {
     const subtasks: CollaborativeSubTask[] = [];
+    const capabilityToSubtaskId = new Map<string, string>(); // Track subtask IDs by capability
 
     // 負載均衡：追蹤每個 agent 被分配的子任務數量
     const agentWorkload = new Map<string, number>();
     team.members.forEach(memberId => agentWorkload.set(memberId, 0));
+
+    // 分析 capability 之間的依賴關係
+    const capabilityDependencies = this.analyzeDependencies(task.requiredCapabilities);
 
     // 為每個 required capability 分配一個 subtask
     for (const capability of task.requiredCapabilities) {
@@ -129,14 +176,26 @@ export class TeamCoordinator {
       // 更新工作量計數
       agentWorkload.set(assignedAgent, minWorkload + 1);
 
+      // 創建 subtask ID
+      const subtaskId = uuidv4();
+
+      // 獲取此 capability 的依賴，並轉換為 subtask IDs
+      const capDeps = capabilityDependencies.get(capability) || [];
+      const subtaskDeps = capDeps
+        .map(dep => capabilityToSubtaskId.get(dep))
+        .filter((id): id is string => id !== undefined);
+
       subtasks.push({
-        id: uuidv4(),
+        id: subtaskId,
         parentTaskId: task.id,
         description: `Execute ${capability} for: ${task.description}`,
         assignedAgent,
         status: 'pending',
-        dependencies: [], // TODO: Implement dependency analysis
+        dependencies: subtaskDeps,
       });
+
+      // 記錄 capability 到 subtask ID 的映射
+      capabilityToSubtaskId.set(capability, subtaskId);
 
       const agent = this.agents.get(assignedAgent);
       logger.info(
@@ -187,10 +246,13 @@ export class TeamCoordinator {
 
       logger.info(`TeamCoordinator: Executing task ${task.id} with team ${team.name}`);
 
-      // 執行子任務（按順序）
+      // 執行子任務（支援並行執行）
       const results: any[] = [];
-      for (const subtask of subtasks) {
-        if (!subtask.assignedAgent) continue;
+      const completedSubtasks = new Set<string>();
+
+      // 執行單個 subtask 的輔助函數
+      const executeSubtask = async (subtask: CollaborativeSubTask): Promise<void> => {
+        if (!subtask.assignedAgent) return;
 
         subtask.status = 'in_progress';
         const agent = this.agents.get(subtask.assignedAgent);
@@ -201,7 +263,6 @@ export class TeamCoordinator {
 
         logger.info(`TeamCoordinator: Executing subtask ${subtask.id} with agent ${agent.name}`);
 
-        // 發送任務訊息給 agent
         const taskMessage: AgentMessage = {
           id: uuidv4(),
           from: 'coordinator',
@@ -221,12 +282,27 @@ export class TeamCoordinator {
         session.messages.push(taskMessage);
         this.messageBus.sendMessage(taskMessage);
 
-        // 執行任務（這裡簡化為直接呼叫）
         try {
           const result = await agent.handleMessage(taskMessage);
+
+          // Track cost if usage information is provided
+          if (result.metadata?.usage) {
+            const { model, inputTokens, outputTokens } = result.metadata.usage;
+            if (model && inputTokens && outputTokens) {
+              const cost = costTracker.trackClaude(
+                model as ClaudeModel,
+                inputTokens,
+                outputTokens
+              );
+              session.results.cost += cost;
+              logger.debug(`TeamCoordinator: Agent ${agent.name} cost: $${cost.toFixed(6)}`);
+            }
+          }
+
           subtask.output = result.content.result;
           subtask.status = 'completed';
           results.push(subtask.output);
+          completedSubtasks.add(subtask.id);
 
           session.messages.push(result);
         } catch (error: any) {
@@ -234,6 +310,30 @@ export class TeamCoordinator {
           subtask.error = error.message;
           throw error;
         }
+      };
+
+      // 使用拓撲排序進行並行執行
+      while (completedSubtasks.size < subtasks.length) {
+        // 找出所有依賴已滿足的 subtasks
+        const readySubtasks = subtasks.filter(st =>
+          st.status === 'pending' &&
+          (st.dependencies || []).every(dep => completedSubtasks.has(dep))
+        );
+
+        if (readySubtasks.length === 0) {
+          // 所有剩餘任務都在等待依賴，檢查是否有循環依賴
+          const pendingSubtasks = subtasks.filter(st => st.status === 'pending');
+          if (pendingSubtasks.length > 0) {
+            throw new Error('Circular dependency detected or missing dependencies');
+          }
+          break;
+        }
+
+        // 並行執行所有準備好的 subtasks
+        logger.info(
+          `TeamCoordinator: Executing ${readySubtasks.length} subtasks in parallel`
+        );
+        await Promise.all(readySubtasks.map(executeSubtask));
       }
 
       // 匯總結果
@@ -260,11 +360,18 @@ export class TeamCoordinator {
   }
 
   /**
-   * 獲取 team 效能指標
+   * 獲取 team 效能指標（帶快取）
    */
   getTeamMetrics(teamId: string): TeamMetrics | null {
     const team = this.teams.get(teamId);
     if (!team) return null;
+
+    // 檢查快取
+    const cached = this.metricsCache.get(teamId);
+    const now = Date.now();
+    if (cached && (now - cached.timestamp) < this.metricsCacheTTL) {
+      return cached.metrics;
+    }
 
     // 收集此 team 的所有 sessions
     const teamSessions = Array.from(this.sessions.values()).filter(
@@ -287,7 +394,7 @@ export class TeamCoordinator {
         : 0;
     }
 
-    return {
+    const metrics: TeamMetrics = {
       teamId,
       tasksCompleted: completed.length,
       successRate: teamSessions.length > 0 ? completed.length / teamSessions.length : 0,
@@ -295,6 +402,11 @@ export class TeamCoordinator {
       totalCost,
       agentUtilization,
     };
+
+    // 更新快取
+    this.metricsCache.set(teamId, { metrics, timestamp: now });
+
+    return metrics;
   }
 
   /**

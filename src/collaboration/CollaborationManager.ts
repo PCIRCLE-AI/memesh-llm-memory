@@ -14,15 +14,18 @@ import {
   TeamMetrics,
 } from './types.js';
 import { logger } from '../utils/logger.js';
+import { CollaborationDatabase } from './persistence/database.js';
 
 export class CollaborationManager {
   private messageBus: MessageBus;
   private teamCoordinator: TeamCoordinator;
+  private db: CollaborationDatabase;
   private initialized: boolean = false;
 
-  constructor() {
+  constructor(dbPath?: string) {
     this.messageBus = new MessageBus();
     this.teamCoordinator = new TeamCoordinator(this.messageBus);
+    this.db = new CollaborationDatabase(dbPath);
   }
 
   /**
@@ -36,9 +39,12 @@ export class CollaborationManager {
 
     logger.info('CollaborationManager: Initializing...');
 
-    // Future improvements tracked in TECH_DEBT.md:
-    // - Load persisted teams and agents from SQLite
-    // - Setup periodic cleanup mechanism for old messages/sessions
+    // Initialize database
+    await this.db.initialize();
+
+    // Load persisted teams from database
+    const teams = await this.db.listTeams();
+    logger.info(`CollaborationManager: Loaded ${teams.length} persisted teams`);
 
     this.initialized = true;
     logger.info('CollaborationManager: Initialized successfully');
@@ -69,12 +75,34 @@ export class CollaborationManager {
   /**
    * 創建 team
    */
-  createTeam(team: Omit<AgentTeam, 'id'>): AgentTeam {
+  async createTeam(team: Omit<AgentTeam, 'id'>): Promise<AgentTeam> {
     if (!this.initialized) {
       throw new Error('CollaborationManager not initialized');
     }
 
-    return this.teamCoordinator.createTeam(team);
+    const createdTeam = this.teamCoordinator.createTeam(team);
+
+    // Persist team to database
+    await this.db.createTeam({
+      id: createdTeam.id,
+      name: createdTeam.name,
+      description: createdTeam.description,
+    });
+
+    // Persist team members
+    for (const memberId of createdTeam.members) {
+      const agent = this.teamCoordinator.getAgents().find(a => a.id === memberId);
+      if (agent) {
+        await this.db.addTeamMember({
+          team_id: createdTeam.id,
+          agent_type: agent.type,
+          agent_name: agent.name,
+          capabilities: agent.capabilities.map(c => c.name),
+        });
+      }
+    }
+
+    return createdTeam;
   }
 
   /**
@@ -86,7 +114,45 @@ export class CollaborationManager {
     }
 
     logger.info(`CollaborationManager: Executing collaborative task: ${task.description}`);
-    return this.teamCoordinator.executeCollaborativeTask(task);
+
+    // Execute the task
+    const session = await this.teamCoordinator.executeCollaborativeTask(task);
+
+    // Persist session to database
+    await this.db.createSession({
+      id: session.id,
+      team_id: session.team.id,
+      task: session.task.description,
+      status: session.results.success ? 'completed' : 'failed',
+    });
+
+    // Update session status
+    await this.db.updateSessionStatus(
+      session.id,
+      session.results.success ? 'completed' : 'failed'
+    );
+
+    // Persist session results if available
+    if (session.results.output && Array.isArray(session.results.output)) {
+      for (const [index, output] of session.results.output.entries()) {
+        const agentName = session.team.members[index]
+          ? this.teamCoordinator.getAgents().find(a => a.id === session.team.members[index])?.name || 'unknown'
+          : 'unknown';
+
+        await this.db.addSessionResult({
+          session_id: session.id,
+          agent_name: agentName,
+          result_type: 'analysis',
+          content: typeof output === 'string' ? output : JSON.stringify(output),
+          metadata: {
+            cost: session.results.cost,
+            durationMs: session.results.durationMs,
+          },
+        });
+      }
+    }
+
+    return session;
   }
 
   /**
@@ -153,9 +219,32 @@ export class CollaborationManager {
       }
     }
 
+    // Close database connection
+    await this.db.close();
+
     this.messageBus.removeAllListeners();
     this.initialized = false;
 
     logger.info('CollaborationManager: Shutdown complete');
+  }
+
+  /**
+   * Query Operations (new methods for accessing persisted data)
+   */
+
+  async getRecentSessions(limit: number = 10) {
+    return this.db.listRecentSessions(limit);
+  }
+
+  async searchSessions(query: string) {
+    return this.db.searchSessions(query);
+  }
+
+  async getTeamSessions(teamId: string) {
+    return this.db.getTeamSessions(teamId);
+  }
+
+  async getPersistedTeams() {
+    return this.db.listTeams();
   }
 }

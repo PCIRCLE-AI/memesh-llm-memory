@@ -1,0 +1,54 @@
+{
+  "name": "smart-agents",
+  "version": "0.1.0",
+  "description": "Intelligent AI Agent Ecosystem optimized for MacBook Pro M2",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write 'src/**/*.ts'",
+    "typecheck": "tsc --noEmit",
+    "orchestrator": "tsx src/orchestrator/index.ts",
+    "voice": "tsx src/agents/voice/index.ts",
+    "rag": "tsx src/agents/rag/index.ts"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "claude",
+    "openai",
+    "orchestrator",
+    "rag",
+    "voice-ai",
+    "mcp"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.1",
+    "openai": "^4.70.4",
+    "chromadb": "^1.9.2",
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@typescript-eslint/eslint-plugin": "^8.18.2",
+    "@typescript-eslint/parser": "^8.18.2",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "@vitest/coverage-v8": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

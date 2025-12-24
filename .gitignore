@@ -1,0 +1,78 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+
+# ChromaDB data
+chroma_db/
+*.db
+*.sqlite
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# TypeScript
+*.tsbuildinfo
+
+# Local development
+.cache/
+.parcel-cache/
+
+# API keys and secrets (double check)
+secrets/
+*.pem
+*.key
+
+# Cost tracking (可能包含敏感資訊)
+cost-tracking.json

@@ -23,6 +23,11 @@ export interface AgentMessage {
     priority?: 'low' | 'medium' | 'high';
     requiresResponse?: boolean;
     correlationId?: string;
+    usage?: {
+      model?: string;
+      inputTokens?: number;
+      outputTokens?: number;
+    };
   };
 }
 

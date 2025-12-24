@@ -5,8 +5,8 @@
 import { config } from 'dotenv';
 import { z } from 'zod';
 
-// 載入環境變數
-config();
+// 載入環境變數（覆蓋現有的環境變數）
+config({ override: true });
 
 /**
  * 環境變數 Schema 驗證

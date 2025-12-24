@@ -8,14 +8,20 @@ import { EventEmitter } from 'events';
 import { AgentMessage } from './types.js';
 import { logger } from '../utils/logger.js';
 
+export interface MessageBusOptions {
+  maxHistorySize?: number;
+  maxListeners?: number;
+}
+
 export class MessageBus extends EventEmitter {
   private messageHistory: AgentMessage[] = [];
   private subscribers: Map<string, Set<string>> = new Map(); // topic -> agent IDs
-  private maxHistorySize: number = 1000;
+  private maxHistorySize: number;
 
-  constructor() {
+  constructor(options?: MessageBusOptions) {
     super();
-    this.setMaxListeners(50); // Support many agents
+    this.maxHistorySize = options?.maxHistorySize ?? 1000;
+    this.setMaxListeners(options?.maxListeners ?? 50); // Support many agents
   }
 
   /**

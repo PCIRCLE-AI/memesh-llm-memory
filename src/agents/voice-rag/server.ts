@@ -17,6 +17,7 @@ import fs from 'fs';
 import path from 'path';
 import VoiceRAGAgent from './index.js';
 import { logger } from '../../utils/logger.js';
+import { rateLimitPresets } from '../../middleware/rateLimiter.js';
 
 const app = express();
 
@@ -52,6 +53,9 @@ app.use(cors());
 app.use(express.static('.'));
 app.use(express.json());
 
+// 🔒 Security: Rate limiting for general API endpoints
+app.use('/api', rateLimitPresets.api());
+
 // Initialize Voice RAG Agent
 let voiceRAGAgent: VoiceRAGAgent;
 let isInitialized = false;
@@ -83,7 +87,10 @@ async function initializeAgent() {
  *   metrics: { ... }
  * }
  */
-app.post('/api/voice-rag/chat', upload.single('audio'), async (req, res) => {
+app.post('/api/voice-rag/chat',
+  rateLimitPresets.voice(),  // 🔒 Strict rate limit: 10 requests per minute
+  upload.single('audio'),
+  async (req, res) => {
   try {
     if (!isInitialized) {
       await initializeAgent();

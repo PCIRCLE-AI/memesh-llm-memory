@@ -63,7 +63,7 @@ export class VectorStore {
       this.isInitialized = true;
       console.log(`Collection '${this.config.collectionName}' ready`);
     } catch (error) {
-      console.error('Failed to initialize VectorStore:', error);
+      logger.error('Failed to initialize VectorStore', { error });
       throw new Error(`VectorStore initialization failed: ${error}`);
     }
   }
@@ -258,7 +258,7 @@ export class VectorStore {
       await this.client.heartbeat();
       return true;
     } catch (error) {
-      console.error('ChromaDB health check failed:', error);
+      logger.error('ChromaDB health check failed', { error });
       return false;
     }
   }

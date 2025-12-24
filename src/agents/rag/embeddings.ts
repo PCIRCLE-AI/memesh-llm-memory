@@ -50,7 +50,7 @@ export class EmbeddingService {
 
       return response.data[0].embedding;
     } catch (error) {
-      console.error('Failed to create embedding:', error);
+      logger.error('Failed to create embedding', { error });
       throw new Error(`Embedding creation failed: ${error}`);
     }
   }
@@ -88,7 +88,7 @@ export class EmbeddingService {
 
         allEmbeddings.push(...embeddings);
       } catch (error) {
-        console.error(`Failed to create embeddings batch:`, error);
+        logger.error('Failed to create embeddings batch', { error });
         throw new Error(`Batch embedding creation failed: ${error}`);
       }
     }

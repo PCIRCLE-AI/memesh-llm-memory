@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice RAG Chat</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 30px;
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        .status {
+            text-align: center;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        .status.idle { background: #f0f0f0; color: #666; }
+        .status.recording { background: #fee; color: #c00; }
+        .status.processing { background: #fef3cd; color: #856404; }
+        .status.speaking { background: #e7f3ff; color: #0066cc; }
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        button {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        #recordBtn {
+            background: #667eea;
+            color: white;
+            flex: 1;
+            max-width: 200px;
+        }
+        #recordBtn:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        #recordBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #recordBtn.recording {
+            background: #dc3545;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .conversation {
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .message {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .message.user {
+            background: #e3f2fd;
+            margin-left: 50px;
+        }
+        .message.assistant {
+            background: #f3e5f5;
+            margin-right: 50px;
+        }
+        .message .label {
+            font-weight: 600;
+            font-size: 12px;
+            margin-bottom: 5px;
+            opacity: 0.7;
+        }
+        .message .text {
+            line-height: 1.5;
+        }
+        .message .docs {
+            margin-top: 10px;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        .message .doc-item {
+            margin-top: 5px;
+            padding: 5px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 5px;
+        }
+        .metrics {
+            margin-top: 15px;
+            font-size: 11px;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎙️ Voice RAG Chat</h1>
+        <div id="status" class="status idle">Ready - Click to speak</div>
+        <div class="controls">
+            <button id="recordBtn">🎤 Speak (5s)</button>
+        </div>
+        <div id="conversation" class="conversation">
+            <div style="text-align: center; opacity: 0.5; padding: 40px 0;">
+                No messages yet. Click the button and start speaking!
+            </div>
+        </div>
+        <div id="metrics" class="metrics"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3003/api/voice-rag';
+        const statusEl = document.getElementById('status');
+        const recordBtn = document.getElementById('recordBtn');
+        const conversationEl = document.getElementById('conversation');
+        const metricsEl = document.getElementById('metrics');
+        let isRecording = false;
+        let mediaRecorder, audioChunks = [];
+
+        // 🔧 FIX: 檢測支援的音頻格式（macOS 兼容）
+        function getSupportedMimeType() {
+            const types = [
+                'audio/webm;codecs=opus',  // Chrome
+                'audio/mp4',                // Safari (macOS 偏好)
+                'audio/webm',               // Fallback
+                'audio/ogg;codecs=opus'     // Firefox
+            ];
+
+            for (const type of types) {
+                if (MediaRecorder.isTypeSupported(type)) {
+                    console.log('✅ Using MIME type:', type);
+                    return type;
+                }
+            }
+
+            console.warn('⚠️ No optimal format found, using default');
+            return '';
+        }
+
+        recordBtn.onclick = async () => {
+            // 🔒 Security: Strict state checking
+            if (isRecording) {
+                console.warn('Already recording, ignoring click');
+                return;
+            }
+
+            // Check if MediaRecorder exists and is in a valid state
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                console.warn(`MediaRecorder in invalid state: ${mediaRecorder.state}`);
+                return;
+            }
+
+            try {
+                // 🔧 FIX: 添加音頻配置優化
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        sampleRate: 44100,
+                        channelCount: 1
+                    }
+                });
+
+                // 🔧 FIX: 使用檢測到的 MIME type
+                const mimeType = getSupportedMimeType();
+                const options = mimeType ? { mimeType } : {};
+
+                mediaRecorder = new MediaRecorder(stream, options);
+                audioChunks = [];
+
+                console.log('🎤 MediaRecorder initialized', {
+                    mimeType: mediaRecorder.mimeType,
+                    platform: navigator.platform
+                });
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    stream.getTracks().forEach(t => t.stop());
+
+                    // 🔧 FIX: 使用實際的 MIME type 而非硬編碼
+                    const audioBlob = new Blob(audioChunks, {
+                        type: mediaRecorder.mimeType || 'audio/webm'
+                    });
+
+                    console.log('📦 Audio blob created', {
+                        size: (audioBlob.size / 1024).toFixed(1) + 'KB',
+                        type: audioBlob.type
+                    });
+
+                    // 🔒 Security: Validate file size (10MB limit)
+                    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+                    if (audioBlob.size > MAX_FILE_SIZE) {
+                        statusEl.textContent = 'Error: Audio file too large (max 10MB)';
+                        statusEl.className = 'status idle';
+                        recordBtn.disabled = false;
+                        isRecording = false;
+                        return;
+                    }
+
+                    // Send to server
+                    statusEl.textContent = 'Processing your question...';
+                    statusEl.className = 'status processing';
+                    recordBtn.disabled = true;
+
+                    const formData = new FormData();
+                    // 🔧 FIX: 使用正確的文件副檔名
+                    const extension = audioBlob.type.includes('mp4') ? 'mp4' :
+                                    audioBlob.type.includes('ogg') ? 'ogg' : 'webm';
+                    formData.append('audio', audioBlob, `voice.${extension}`);
+
+                    try {
+                        const res = await fetch(`${API_BASE}/chat`, {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        const data = await res.json();
+
+                        // Display conversation
+                        conversationEl.innerHTML = '';
+
+                        // User message
+                        const userMsg = document.createElement('div');
+                        userMsg.className = 'message user';
+                        userMsg.innerHTML = `
+                            <div class="label">You asked:</div>
+                            <div class="text">${escapeHtml(data.userQuestion)}</div>
+                        `;
+                        conversationEl.appendChild(userMsg);
+
+                        // Assistant message
+                        const assistantMsg = document.createElement('div');
+                        assistantMsg.className = 'message assistant';
+                        let docsHtml = '';
+                        if (data.retrievedDocs && data.retrievedDocs.length > 0) {
+                            docsHtml = '<div class="docs">📚 Retrieved context:<br>';
+                            data.retrievedDocs.forEach((doc, i) => {
+                                docsHtml += `<div class="doc-item">${i+1}. [${escapeHtml(doc.source)}] (score: ${doc.score.toFixed(3)})</div>`;
+                            });
+                            docsHtml += '</div>';
+                        }
+                        assistantMsg.innerHTML = `
+                            <div class="label">Claude responds:</div>
+                            <div class="text">${escapeHtml(data.claudeResponse)}</div>
+                            ${docsHtml}
+                        `;
+                        conversationEl.appendChild(assistantMsg);
+
+                        // Metrics
+                        metricsEl.innerHTML = `
+                            ⏱️ ${(data.metrics.totalTime / 1000).toFixed(1)}s total |
+                            💰 $${(data.metrics.transcriptionCost + data.metrics.ttsCost).toFixed(4)} cost
+                        `;
+
+                        // Play audio response
+                        statusEl.textContent = 'Playing response...';
+                        statusEl.className = 'status speaking';
+
+                        // Use audio/mpeg (correct MIME type for MP3)
+                        const audio = new Audio('data:audio/mpeg;base64,' + data.audioBase64);
+                        audio.onended = () => {
+                            statusEl.textContent = 'Ready - Click to speak';
+                            statusEl.className = 'status idle';
+                            recordBtn.disabled = false;
+                            isRecording = false;
+                        };
+                        audio.onerror = (e) => {
+                            console.error('Audio playback error:', e);
+                            console.log('Audio base64 length:', data.audioBase64?.length);
+                            statusEl.textContent = 'Audio playback error - check console';
+                            statusEl.className = 'status idle';
+                            recordBtn.disabled = false;
+                            isRecording = false;
+                        };
+                        audio.play().catch(err => {
+                            console.error('Play error:', err);
+                            statusEl.textContent = 'Error: ' + err.message;
+                            statusEl.className = 'status idle';
+                            recordBtn.disabled = false;
+                            isRecording = false;
+                        });
+
+                    } catch (error) {
+                        console.error('Error:', error);
+                        statusEl.textContent = 'Error: ' + error.message;
+                        statusEl.className = 'status idle';
+                        recordBtn.disabled = false;
+                        isRecording = false;
+                    }
+                };
+
+                // Start recording
+                isRecording = true;
+                statusEl.textContent = 'Recording... Speak now!';
+                statusEl.className = 'status recording';
+                recordBtn.classList.add('recording');
+                recordBtn.textContent = '🔴 Recording...';
+
+                mediaRecorder.start();
+
+                // Stop after 5 seconds
+                setTimeout(() => {
+                    if (mediaRecorder && mediaRecorder.state === 'recording') {
+                        mediaRecorder.stop();
+                        recordBtn.classList.remove('recording');
+                        recordBtn.textContent = '🎤 Speak (5s)';
+                    }
+                }, 5000);
+
+            } catch (error) {
+                console.error('Microphone error:', error);
+                statusEl.textContent = 'Microphone access denied';
+                statusEl.className = 'status idle';
+                isRecording = false;
+            }
+        };
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Check server health on load
+        fetch(`${API_BASE}/health`)
+            .then(res => res.json())
+            .then(data => {
+                console.log('Server status:', data);
+            })
+            .catch(err => {
+                statusEl.textContent = 'Server not running - Start with: npm run voice-rag (server)';
+                statusEl.className = 'status idle';
+                recordBtn.disabled = true;
+            });
+    </script>
+</body>
+</html>

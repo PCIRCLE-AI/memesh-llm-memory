@@ -36,8 +36,9 @@ export class CollaborationManager {
 
     logger.info('CollaborationManager: Initializing...');
 
-    // TODO: 載入已保存的 teams 和 agents
-    // TODO: 設置定期清理機制
+    // Future improvements tracked in TECH_DEBT.md:
+    // - Load persisted teams and agents from SQLite
+    // - Setup periodic cleanup mechanism for old messages/sessions
 
     this.initialized = true;
     logger.info('CollaborationManager: Initialized successfully');

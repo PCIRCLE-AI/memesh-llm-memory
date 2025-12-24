@@ -217,6 +217,40 @@ app.post('/api/voice-rag/index', async (req, res) => {
   }
 });
 
+// 🔒 Security: Multer error handling middleware
+app.use((error: any, req: any, res: any, next: any) => {
+  if (error instanceof multer.MulterError) {
+    // Multer-specific errors
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({
+        error: 'File too large. Maximum size is 10MB.',
+      });
+    }
+    if (error.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({
+        error: 'Too many files. Only 1 file allowed.',
+      });
+    }
+    return res.status(400).json({
+      error: `Upload error: ${error.message}`,
+    });
+  }
+
+  // Custom file filter errors
+  if (error.message && error.message.includes('Invalid file type')) {
+    return res.status(400).json({
+      error: error.message,
+    });
+  }
+
+  // Other errors
+  logger.error('Unexpected error', { error: error.message, stack: error.stack });
+  const isDev = process.env.NODE_ENV === 'development';
+  res.status(500).json({
+    error: isDev ? error.message : 'Internal server error',
+  });
+});
+
 const PORT = process.env.VOICE_RAG_PORT || 3003;
 
 app.listen(PORT, () => {

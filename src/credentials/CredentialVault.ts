@@ -18,6 +18,7 @@ import {
 import { createSecureStorage } from './storage/index.js';
 import { logger } from '../utils/logger.js';
 import { RateLimiter } from './RateLimiter.js';
+import { AuditLogger, AuditEventType } from './AuditLogger.js';
 
 /**
  * Validate service name
@@ -97,6 +98,7 @@ export class CredentialVault {
   private db: Database.Database;
   private storage: SecureStorage;
   private rateLimiter: RateLimiter;
+  private auditLogger: AuditLogger;
   private static cleanupRegistered = false;
   private static instances: Set<CredentialVault> = new Set();
 
@@ -115,6 +117,9 @@ export class CredentialVault {
 
     // Initialize rate limiter
     this.rateLimiter = new RateLimiter(this.db);
+
+    // Initialize audit logger
+    this.auditLogger = new AuditLogger(this.db);
 
     // Register this instance for cleanup
     CredentialVault.instances.add(this);
@@ -156,15 +161,32 @@ export class CredentialVault {
   async initialize(): Promise<void> {
     this.storage = await createSecureStorage();
     logger.info(`Credential vault initialized with ${this.storage.getType()}`);
+
+    // Log vault initialization
+    this.auditLogger.log(AuditEventType.VAULT_INITIALIZED, {
+      success: true,
+      details: `Storage type: ${this.storage.getType()}`,
+    });
   }
 
   /**
    * Add a new credential
    */
   async add(input: CredentialInput): Promise<Credential> {
-    // Validate input
-    validateServiceName(input.service);
-    validateAccountName(input.account);
+    try {
+      // Validate input
+      validateServiceName(input.service);
+      validateAccountName(input.account);
+    } catch (error) {
+      // Log validation failure
+      this.auditLogger.log(AuditEventType.ACCESS_DENIED_VALIDATION, {
+        service: input.service,
+        account: input.account,
+        success: false,
+        details: (error as Error).message,
+      });
+      throw error;
+    }
 
     if (!this.storage) {
       await this.initialize();
@@ -179,6 +201,14 @@ export class CredentialVault {
       .get(input.service, input.account) as CredentialMetadata | undefined;
 
     if (existing) {
+      // Log duplicate attempt
+      this.auditLogger.log(AuditEventType.CREDENTIAL_ADDED, {
+        service: input.service,
+        account: input.account,
+        success: false,
+        details: 'Credential already exists',
+      });
+
       throw new Error(
         `Credential already exists: ${input.service}/${input.account}. Use update() instead.`
       );
@@ -220,6 +250,14 @@ export class CredentialVault {
 
     logger.info(`Added credential: ${input.service}/${input.account}`);
 
+    // Log successful add
+    this.auditLogger.log(AuditEventType.CREDENTIAL_ADDED, {
+      service: input.service,
+      account: input.account,
+      success: true,
+      details: input.tags ? `Tags: ${input.tags.join(', ')}` : undefined,
+    });
+
     return credential;
   }
 
@@ -227,14 +265,34 @@ export class CredentialVault {
    * Get a credential by service and account
    */
   async get(service: string, account: string): Promise<Credential | null> {
-    // Validate input
-    validateServiceName(service);
-    validateAccountName(account);
+    try {
+      // Validate input
+      validateServiceName(service);
+      validateAccountName(account);
+    } catch (error) {
+      // Log validation failure
+      this.auditLogger.log(AuditEventType.ACCESS_DENIED_VALIDATION, {
+        service,
+        account,
+        success: false,
+        details: (error as Error).message,
+      });
+      throw error;
+    }
 
     // Check rate limit
     const rateLimitResult = this.rateLimiter.checkLimit(service, account);
     if (!rateLimitResult.allowed) {
       const retrySeconds = Math.ceil((rateLimitResult.retryAfterMs || 0) / 1000);
+
+      // Log rate limit exceeded
+      this.auditLogger.log(AuditEventType.ACCESS_DENIED_RATE_LIMITED, {
+        service,
+        account,
+        success: false,
+        details: `Locked until ${rateLimitResult.lockedUntil?.toISOString()}, retry after ${retrySeconds}s`,
+      });
+
       throw new Error(
         `Rate limit exceeded for ${service}/${account}. ` +
         `Account locked until ${rateLimitResult.lockedUntil?.toISOString()}. ` +
@@ -254,6 +312,15 @@ export class CredentialVault {
     if (!metadata) {
       // Record failed attempt (credential not found)
       this.rateLimiter.recordFailedAttempt(service, account);
+
+      // Log access denied (not found)
+      this.auditLogger.log(AuditEventType.ACCESS_DENIED_NOT_FOUND, {
+        service,
+        account,
+        success: false,
+        details: 'Credential not found',
+      });
+
       return null;
     }
 
@@ -264,6 +331,15 @@ export class CredentialVault {
       logger.warn(`Credential metadata exists but value not found: ${service}/${account}`);
       // Record failed attempt (storage mismatch)
       this.rateLimiter.recordFailedAttempt(service, account);
+
+      // Log access denied (storage mismatch)
+      this.auditLogger.log(AuditEventType.ACCESS_DENIED_NOT_FOUND, {
+        service,
+        account,
+        success: false,
+        details: 'Storage mismatch - metadata exists but value not found',
+      });
+
       return null;
     }
 
@@ -278,6 +354,13 @@ export class CredentialVault {
 
     // Record successful attempt (reset counter)
     this.rateLimiter.recordSuccessfulAttempt(service, account);
+
+    // Log successful retrieval
+    this.auditLogger.log(AuditEventType.CREDENTIAL_RETRIEVED, {
+      service,
+      account,
+      success: true,
+    });
 
     return credential;
   }
@@ -334,6 +417,14 @@ export class CredentialVault {
 
     logger.info(`Updated credential: ${service}/${account}`);
 
+    // Log successful update
+    this.auditLogger.log(AuditEventType.CREDENTIAL_UPDATED, {
+      service,
+      account,
+      success: true,
+      details: updates.value ? 'Value updated' : 'Metadata updated',
+    });
+
     // Return updated credential
     return (await this.get(service, account))!;
   }
@@ -358,10 +449,25 @@ export class CredentialVault {
     const result = stmt.run(service, account);
 
     if (result.changes === 0) {
+      // Log deletion failure (not found)
+      this.auditLogger.log(AuditEventType.CREDENTIAL_DELETED, {
+        service,
+        account,
+        success: false,
+        details: 'Credential not found',
+      });
+
       throw new Error(`Credential not found: ${service}/${account}`);
     }
 
     logger.info(`Deleted credential: ${service}/${account}`);
+
+    // Log successful deletion
+    this.auditLogger.log(AuditEventType.CREDENTIAL_DELETED, {
+      service,
+      account,
+      success: true,
+    });
   }
 
   /**
@@ -624,8 +730,16 @@ export class CredentialVault {
    */
   close(): void {
     try {
+      // Log vault closure
+      this.auditLogger.log(AuditEventType.VAULT_CLOSED, {
+        success: true,
+      });
+
       // Stop rate limiter cleanup
       this.rateLimiter.stopCleanup();
+
+      // Stop audit logger cleanup
+      this.auditLogger.stopCleanup();
 
       if (this.db) {
         this.db.close();
@@ -650,6 +764,14 @@ export class CredentialVault {
    */
   unlockAccount(service: string, account: string): void {
     this.rateLimiter.unlockAccount(service, account);
+
+    // Log admin unlock operation
+    this.auditLogger.log(AuditEventType.ADMIN_UNLOCK_ACCOUNT, {
+      service,
+      account,
+      success: true,
+      details: 'Account manually unlocked by admin',
+    });
   }
 
   /**
@@ -664,5 +786,40 @@ export class CredentialVault {
    */
   getRateLimitStats() {
     return this.rateLimiter.getStats();
+  }
+
+  /**
+   * Get audit logs with optional filters
+   */
+  getAuditLogs(filter?: import('./AuditLogger.js').AuditLogFilter) {
+    return this.auditLogger.getLogs(filter);
+  }
+
+  /**
+   * Get audit statistics
+   */
+  getAuditStats(filter?: import('./AuditLogger.js').AuditLogFilter) {
+    return this.auditLogger.getStats(filter);
+  }
+
+  /**
+   * Export audit logs to JSON
+   */
+  exportAuditLogs(filter?: import('./AuditLogger.js').AuditLogFilter): string {
+    return this.auditLogger.exportLogs(filter);
+  }
+
+  /**
+   * Set audit log retention period (in days)
+   */
+  setAuditRetention(days: number): void {
+    this.auditLogger.setRetentionDays(days);
+  }
+
+  /**
+   * Get audit log retention period (in days)
+   */
+  getAuditRetention(): number {
+    return this.auditLogger.getRetentionDays();
   }
 }

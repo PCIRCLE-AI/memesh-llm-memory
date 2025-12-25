@@ -4,6 +4,7 @@
 
 import OpenAI from 'openai';
 import { appConfig } from '../../config/index.js';
+import { logger } from '../../utils/logger.js';
 import type { CostTracker } from './types.js';
 
 /**

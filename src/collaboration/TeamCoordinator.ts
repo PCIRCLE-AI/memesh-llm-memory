@@ -49,6 +49,14 @@ export class TeamCoordinator {
   }
 
   /**
+   * 還原 team（從數據庫載入，不驗證 agents）
+   */
+  restoreTeam(team: AgentTeam): void {
+    this.teams.set(team.id, team);
+    logger.info(`TeamCoordinator: Restored team ${team.name} (${team.id}) from database`);
+  }
+
+  /**
    * 建立 team
    */
   createTeam(team: Omit<AgentTeam, 'id'>): AgentTeam {
@@ -65,6 +73,21 @@ export class TeamCoordinator {
     // 驗證 leader 是 members 之一
     if (!team.members.includes(team.leader)) {
       throw new Error(`Leader ${team.leader} must be a team member`);
+    }
+
+    // 驗證 team capabilities 都被 members 提供
+    const memberCapabilities = new Set<string>();
+    for (const memberId of team.members) {
+      const agent = this.agents.get(memberId)!;
+      for (const cap of agent.capabilities) {
+        memberCapabilities.add(cap.name);
+      }
+    }
+
+    for (const requiredCap of team.capabilities) {
+      if (!memberCapabilities.has(requiredCap)) {
+        throw new Error(`Team capability '${requiredCap}' is not provided by any team member`);
+      }
     }
 
     this.teams.set(id, newTeam);
@@ -421,6 +444,14 @@ export class TeamCoordinator {
    */
   getAgents(): CollaborativeAgent[] {
     return Array.from(this.agents.values());
+  }
+
+  /**
+   * 還原 session（從數據庫載入）
+   */
+  restoreSession(session: CollaborationSession): void {
+    this.sessions.set(session.id, session);
+    logger.info(`TeamCoordinator: Restored session ${session.id} from database`);
   }
 
   /**

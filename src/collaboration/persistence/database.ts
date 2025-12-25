@@ -27,6 +27,7 @@ export interface Team {
 export interface TeamMember {
   id?: number;
   team_id: string;
+  agent_id: string; // Agent UUID for restoration
   agent_type: string;
   agent_name: string;
   capabilities: string[];
@@ -160,6 +161,7 @@ export class CollaborationDatabase {
       members: members.map((m: any) => ({
         id: m.id,
         team_id: m.team_id,
+        agent_id: m.agent_id,
         agent_type: m.agent_type,
         agent_name: m.agent_name,
         capabilities: JSON.parse(m.capabilities),
@@ -190,9 +192,10 @@ export class CollaborationDatabase {
     if (!this.db) throw new Error('Database not initialized');
 
     await this.db.run(
-      `INSERT INTO team_members (team_id, agent_type, agent_name, capabilities, config)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO team_members (team_id, agent_id, agent_type, agent_name, capabilities, config)
+       VALUES (?, ?, ?, ?, ?, ?)`,
       member.team_id,
+      member.agent_id,
       member.agent_type,
       member.agent_name,
       JSON.stringify(member.capabilities),

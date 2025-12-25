@@ -57,7 +57,7 @@ Provide data-driven optimization recommendations.`,
   logger.info(`✅ Registered ${manager.getAgents().length} agents`);
 
   // 4. 創建 System Architecture Team
-  const archTeam = manager.createTeam({
+  const archTeam = await manager.createTeam({
     name: 'System Architecture Team',
     description: 'Expert team for system design and architecture analysis',
     members: [seniorArchitect.id, securityArchitect.id, performanceArchitect.id],

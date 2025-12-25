@@ -21,13 +21,14 @@ CREATE TABLE IF NOT EXISTS teams (
 CREATE TABLE IF NOT EXISTS team_members (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     team_id TEXT NOT NULL,
+    agent_id TEXT NOT NULL, -- Agent UUID for restoration
     agent_type TEXT NOT NULL, -- 'researcher', 'writer', 'coder', etc.
     agent_name TEXT NOT NULL,
     capabilities TEXT NOT NULL, -- JSON array
     config TEXT, -- JSON configuration
     added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
-    UNIQUE(team_id, agent_name)
+    UNIQUE(team_id, agent_id)
 );
 
 -- Collaboration sessions

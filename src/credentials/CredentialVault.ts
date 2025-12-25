@@ -17,6 +17,7 @@ import {
 } from './types.js';
 import { createSecureStorage } from './storage/index.js';
 import { logger } from '../utils/logger.js';
+import { RateLimiter } from './RateLimiter.js';
 
 /**
  * Validate service name
@@ -95,6 +96,7 @@ interface CredentialMetadata {
 export class CredentialVault {
   private db: Database.Database;
   private storage: SecureStorage;
+  private rateLimiter: RateLimiter;
   private static cleanupRegistered = false;
   private static instances: Set<CredentialVault> = new Set();
 
@@ -110,6 +112,9 @@ export class CredentialVault {
 
     // Create tables
     this.initializeSchema();
+
+    // Initialize rate limiter
+    this.rateLimiter = new RateLimiter(this.db);
 
     // Register this instance for cleanup
     CredentialVault.instances.add(this);
@@ -226,6 +231,17 @@ export class CredentialVault {
     validateServiceName(service);
     validateAccountName(account);
 
+    // Check rate limit
+    const rateLimitResult = this.rateLimiter.checkLimit(service, account);
+    if (!rateLimitResult.allowed) {
+      const retrySeconds = Math.ceil((rateLimitResult.retryAfterMs || 0) / 1000);
+      throw new Error(
+        `Rate limit exceeded for ${service}/${account}. ` +
+        `Account locked until ${rateLimitResult.lockedUntil?.toISOString()}. ` +
+        `Retry after ${retrySeconds} seconds.`
+      );
+    }
+
     if (!this.storage) {
       await this.initialize();
     }
@@ -236,6 +252,8 @@ export class CredentialVault {
       .get(service, account) as CredentialMetadata | undefined;
 
     if (!metadata) {
+      // Record failed attempt (credential not found)
+      this.rateLimiter.recordFailedAttempt(service, account);
       return null;
     }
 
@@ -244,6 +262,8 @@ export class CredentialVault {
 
     if (!credential) {
       logger.warn(`Credential metadata exists but value not found: ${service}/${account}`);
+      // Record failed attempt (storage mismatch)
+      this.rateLimiter.recordFailedAttempt(service, account);
       return null;
     }
 
@@ -255,6 +275,9 @@ export class CredentialVault {
       notes: metadata.notes || undefined,
       tags: metadata.tags ? JSON.parse(metadata.tags) : undefined,
     };
+
+    // Record successful attempt (reset counter)
+    this.rateLimiter.recordSuccessfulAttempt(service, account);
 
     return credential;
   }
@@ -601,6 +624,9 @@ export class CredentialVault {
    */
   close(): void {
     try {
+      // Stop rate limiter cleanup
+      this.rateLimiter.stopCleanup();
+
       if (this.db) {
         this.db.close();
       }
@@ -610,5 +636,33 @@ export class CredentialVault {
       logger.warn('Database close warning', { error });
       // Don't throw, just log
     }
+  }
+
+  /**
+   * Get rate limit status for an account
+   */
+  getRateLimitStatus(service: string, account: string) {
+    return this.rateLimiter.getStatus(service, account);
+  }
+
+  /**
+   * Unlock a rate-limited account (admin operation)
+   */
+  unlockAccount(service: string, account: string): void {
+    this.rateLimiter.unlockAccount(service, account);
+  }
+
+  /**
+   * Get all locked accounts
+   */
+  getLockedAccounts() {
+    return this.rateLimiter.getLockedAccounts();
+  }
+
+  /**
+   * Get rate limiting statistics
+   */
+  getRateLimitStats() {
+    return this.rateLimiter.getStats();
   }
 }

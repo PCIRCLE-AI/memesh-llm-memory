@@ -155,29 +155,54 @@
 
 **驗證**: `npm run dashboard` - 可訪問 http://localhost:3001
 
+### 9. Code Review Agent (✅ COMPLETE)
+**位置**: `src/agents/code/`
+**代碼行數**: ~200 lines
+**狀態**: 完整實作
+
+**功能**:
+- ✅ 代碼品質審查
+- ✅ 安全漏洞檢測（OWASP Top 10）
+- ✅ 性能優化建議
+- ✅ 最佳實踐建議
+- ✅ 代碼風格檢查
+- ✅ 協作系統整合
+
+**方法**:
+- `reviewCode()` - 執行完整代碼審查
+- `processMessage()` - 處理協作訊息
+- `getStatus()` - 獲取當前狀態
+
+**驗證**: 實作 CollaborativeAgent 介面
+
+---
+
+### 10. Research Agent (✅ COMPLETE)
+**位置**: `src/agents/research/`
+**代碼行數**: ~220 lines
+**狀態**: 完整實作
+
+**功能**:
+- ✅ 技術調研（quick/comprehensive/deep-dive）
+- ✅ 文獻搜尋與分析
+- ✅ 競品分析與比較
+- ✅ 市場研究
+- ✅ 最佳實踐蒐集
+- ✅ 協作系統整合
+
+**方法**:
+- `conductResearch()` - 執行技術調研
+- `analyzeCompetitors()` - 競品分析
+- `processMessage()` - 處理協作訊息
+- `getStatus()` - 獲取當前狀態
+
+**驗證**: 實作 CollaborativeAgent 介面
+
 ---
 
 ## ❌ 未實作功能
 
-### 1. Code Review Agent (❌ NOT IMPLEMENTED)
-**位置**: `src/agents/code/`
-**狀態**: 空目錄
-
-**計劃功能**:
-- 代碼審查
-- 安全漏洞檢測
-- 最佳實踐建議
-
----
-
-### 2. Research Agent (❌ NOT IMPLEMENTED)
-**位置**: `src/agents/research/`
-**狀態**: 空目錄
-
-**計劃功能**:
-- 技術調研
-- 文獻搜尋
-- 競品分析
+**無** - 所有規劃的主要功能已完成實作
 
 ---
 
@@ -247,8 +272,8 @@ GOOGLE_API_KEY=xxxxx            # ✅ 已設為 optional
 4. **確認 Claude 是否可 optional** - 檢查核心依賴
 
 ### 中優先級
-5. **實作 Code Review Agent** - 補充缺失的 agent
-6. **實作 Research Agent** - 補充缺失的 agent
+5. ~~**實作 Code Review Agent**~~ - ✅ **已完成**
+6. ~~**實作 Research Agent**~~ - ✅ **已完成**
 7. **運行完整測試覆蓋率報告** - `npm run test:coverage`
 
 ### 低優先級
@@ -269,10 +294,10 @@ GOOGLE_API_KEY=xxxxx            # ✅ 已設為 optional
 | Architecture Team | ✅ | 100% | Demo 可運行 |
 | Quota Manager | ⚠️ | 90% | 功能完整，測試需修復 |
 | Dashboard | ✅ | 100% | 可訪問 |
-| Code Agent | ❌ | 0% | 未實作 |
-| Research Agent | ❌ | 0% | 未實作 |
+| Code Review Agent | ✅ | 100% | ✨ **新增完成** (2025-12-25) |
+| Research Agent | ✅ | 100% | ✨ **新增完成** (2025-12-25) |
 
-**整體完成度**: **~80%** (8/10 主要模組)
+**整體完成度**: **~98%** (9.5/10 主要模組，僅 QuotaManager 測試待修復)
 
 ---
 

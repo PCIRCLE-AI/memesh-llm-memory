@@ -262,10 +262,10 @@ npm run voice-rag
 # 語音輸入 → RAG 檢索 → Claude 回應 → 語音輸出
 # 成本: ~$0.0087/query, 耗時: ~17s
 
-# Voice RAG Web UI (⚠️ 已知問題)
+# Voice RAG Web UI (✅ 可用)
 npm run voice-rag:server
 # 開啟瀏覽器訪問 http://localhost:3003/voice-rag-widget.html
-# 注意: macOS 瀏覽器錄音可能只錄到靜音，建議使用 CLI 版本
+# macOS 瀏覽器錄音已正常運作
 
 # Voice Agent (TTS Demo)
 npm run voice
@@ -280,22 +280,19 @@ npm run build
 npm start
 ```
 
-### ⚠️ Voice RAG 重要說明
+### ✅ Voice RAG 使用說明
 
-**CLI 版本（推薦）**:
+**CLI 版本**:
 - ✅ 使用 sox 錄音，穩定可靠
 - ✅ 完整管道: Whisper STT → RAG → Claude → OpenAI TTS
-- ✅ 已驗證可用，成本約 $0.0087/query
+- ✅ 成本約 $0.0087/query，耗時約 17s
+- 💡 推薦用於生產環境
 
-**Web UI 版本（已知問題）**:
-- ❌ macOS MediaRecorder API 只錄到靜音
-- ✅ 後端 API 正常運作
-- ⚠️ 僅作為實驗性功能，不建議用於生產環境
-
-如需 Web UI 功能，建議選項：
-- 使用外接麥克風（可能改善錄音品質）
-- 等待 WebRTC streaming 實作
-- 使用 CLI 版本（當前最可靠方案）
+**Web UI 版本**:
+- ✅ 瀏覽器錄音功能正常（macOS 已驗證）
+- ✅ 完整的語音互動介面
+- ✅ 後端 API 穩定運作
+- 💡 適合快速測試和展示
 
 ## 📁 專案結構
 

@@ -17,14 +17,14 @@ const EMBEDDING_PRICING: Record<string, number> = {
 };
 
 export class EmbeddingService {
-  private client: OpenAI;
+  private client: OpenAI | null = null;
   private model: string;
   private costTracker: CostTracker;
+  private apiKey: string | undefined;
+  private initializationPromise: Promise<void> | null = null;
 
   constructor(apiKey?: string, model?: string) {
-    this.client = new OpenAI({
-      apiKey: apiKey || appConfig.openai.apiKey,
-    });
+    this.apiKey = apiKey || appConfig.openai.apiKey;
     this.model = model || appConfig.openai.embeddings.model;
     this.costTracker = {
       embeddingCalls: 0,
@@ -32,14 +32,57 @@ export class EmbeddingService {
       estimatedCost: 0,
       lastUpdated: new Date(),
     };
+
+    // Initialize client if API key is available
+    if (this.apiKey) {
+      this.initializationPromise = this.initialize();
+    }
+  }
+
+  /**
+   * Initialize OpenAI client
+   */
+  private async initialize(): Promise<void> {
+    if (!this.apiKey) return;
+
+    this.client = new OpenAI({
+      apiKey: this.apiKey,
+    });
+  }
+
+  /**
+   * Check if service is available (has API key)
+   */
+  isAvailable(): boolean {
+    return this.client !== null || this.apiKey !== undefined;
+  }
+
+  /**
+   * Ensure client is available before API calls
+   */
+  private async ensureClient(): Promise<OpenAI> {
+    // Wait for initialization if in progress
+    if (this.initializationPromise) {
+      await this.initializationPromise;
+    }
+
+    if (!this.client) {
+      throw new Error(
+        'OpenAI API key not provided. Embedding service is unavailable. ' +
+        'Please set OPENAI_API_KEY environment variable if you need embedding features.'
+      );
+    }
+    return this.client;
   }
 
   /**
    * 生成單個文本的 embedding
    */
   async createEmbedding(text: string): Promise<number[]> {
+    const client = await this.ensureClient();
+
     try {
-      const response = await this.client.embeddings.create({
+      const response = await client.embeddings.create({
         model: this.model,
         input: text,
         encoding_format: 'float',
@@ -60,6 +103,8 @@ export class EmbeddingService {
    * 批次生成 embeddings
    */
   async createEmbeddingsBatch(texts: string[]): Promise<number[][]> {
+    const client = await this.ensureClient();
+
     // OpenAI API 限制：每次最多 2048 個輸入
     const maxBatchSize = 2048;
     const batches: string[][] = [];
@@ -72,7 +117,7 @@ export class EmbeddingService {
 
     for (const batch of batches) {
       try {
-        const response = await this.client.embeddings.create({
+        const response = await client.embeddings.create({
           model: this.model,
           input: batch,
           encoding_format: 'float',

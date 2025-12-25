@@ -17,6 +17,8 @@
  */
 
 import type { LanguageProfile } from '../types/toonify.js';
+import { LRUCache } from './lru-cache.js';
+import { join } from 'path';
 
 export interface ToonifyConfig {
   enabled: boolean;
@@ -61,7 +63,7 @@ export class ToonifyAdapter {
   private static instance: ToonifyAdapter | null = null;
 
   private config: ToonifyConfig;
-  private cache: Map<string, OptimizationResult> = new Map();
+  private cache: LRUCache<OptimizationResult>;
   private stats: OptimizationStats;
 
   private constructor(config?: Partial<ToonifyConfig>) {
@@ -74,6 +76,16 @@ export class ToonifyAdapter {
       showStats: config?.showStats ?? (process.env.TOONIFY_SHOW_STATS === 'true'),
       multilingualEnabled: config?.multilingualEnabled ?? true,
     };
+
+    // Initialize LRU cache with persistence
+    const homeDir = process.env.HOME || process.env.USERPROFILE || '/tmp';
+    const cachePath = join(homeDir, '.smart-agents', 'cache', 'toonify-cache.json');
+
+    this.cache = new LRUCache<OptimizationResult>({
+      maxSize: 1000,
+      ttl: 24 * 60 * 60 * 1000,  // 24 hours
+      persistPath: this.config.cacheEnabled ? cachePath : undefined,
+    });
 
     this.stats = {
       totalOptimizations: 0,
@@ -136,15 +148,15 @@ export class ToonifyAdapter {
       language?: string;         // Override language detection
     }
   ): Promise<OptimizationResult> {
-    // Check if optimization is enabled
-    if (!this.config.enabled && !options?.force) {
-      return this.createSkippedResult(content, 'Optimization disabled');
-    }
-
     // Convert to string if object
     const contentStr = typeof content === 'string'
       ? content
       : JSON.stringify(content, null, 2);
+
+    // Check if optimization is enabled
+    if (!this.config.enabled && !options?.force) {
+      return this.createSkippedResult(contentStr, 'Optimization disabled');
+    }
 
     // Check cache
     if (this.config.cacheEnabled && !options?.skipCache) {
@@ -152,9 +164,12 @@ export class ToonifyAdapter {
       if (cached) {
         this.stats.cacheHits++;
         return cached;
+      } else {
+        this.stats.cacheMisses++;
       }
+    } else {
+      this.stats.cacheMisses++;
     }
-    this.stats.cacheMisses++;
 
     // Check if tool should be skipped
     if (this.shouldSkipTool(toolName)) {
@@ -171,8 +186,8 @@ export class ToonifyAdapter {
       // Update statistics
       this.updateStats(mcpResult);
 
-      // Cache result
-      if (this.config.cacheEnabled && this.cache.size < 1000) {
+      // Cache result (LRU will handle eviction automatically)
+      if (this.config.cacheEnabled) {
         this.cache.set(contentStr, mcpResult);
       }
 
@@ -221,6 +236,7 @@ export class ToonifyAdapter {
    */
   generateReport(): string {
     const stats = this.stats;
+    const cacheStats = this.cache.getStats();
     const avgSavings = stats.totalOptimizations > 0
       ? ((stats.totalSavings / stats.totalOriginalTokens) * 100).toFixed(1)
       : '0.0';
@@ -234,6 +250,7 @@ export class ToonifyAdapter {
     report += `║ Tokens Saved:           ${stats.totalSavings.toLocaleString().padEnd(28)}║\n`;
     report += `║ Average Savings:        ${avgSavings}%${' '.repeat(28 - avgSavings.length - 1)}║\n`;
     report += `║ Cache Hit Rate:         ${this.getCacheHitRate()}%${' '.repeat(23)}║\n`;
+    report += `║ Cache Size:             ${cacheStats.size}/${cacheStats.maxSize}${' '.repeat(28 - (cacheStats.size.toString() + cacheStats.maxSize.toString()).length - 1)}║\n`;
     report += '╠════════════════════════════════════════════════════════╣\n';
     report += '║ Language Breakdown:                                  ║\n';
 

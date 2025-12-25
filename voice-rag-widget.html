@@ -123,11 +123,44 @@
             color: #666;
             text-align: center;
         }
+        .warning-banner {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .warning-banner h3 {
+            margin: 0 0 10px 0;
+            color: #856404;
+            font-size: 16px;
+        }
+        .warning-banner p {
+            margin: 5px 0;
+            color: #856404;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .warning-banner code {
+            background: rgba(0,0,0,0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🎙️ Voice RAG Chat</h1>
+
+        <div class="warning-banner">
+            <h3>⚠️ 已知問題 (Known Issues)</h3>
+            <p><strong>macOS 瀏覽器錄音問題：</strong>MediaRecorder API 在 macOS 上可能只錄到靜音。</p>
+            <p><strong>✅ 推薦使用 CLI 版本：</strong></p>
+            <p><code>npm run voice-rag</code> - 穩定可靠，完整功能</p>
+            <p style="margin-top: 8px; font-size: 13px;">Web UI 僅作為實驗性功能。如遇錄音問題，請使用 CLI 版本或外接麥克風。</p>
+        </div>
+
         <div id="status" class="status idle">Ready - Click to speak</div>
         <div class="controls">
             <button id="recordBtn">🎤 Speak (5s)</button>

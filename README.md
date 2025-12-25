@@ -11,17 +11,54 @@ Smart Agents 是一個高性能、模組化的 AI Agent 協調平台，專為 Ma
 - 🎯 **智能 Orchestrator** - 自動路由任務到最適合的 agent
 - 🎙️ **Voice AI** - 語音轉文字和文字轉語音（OpenAI Whisper + TTS）
 - 🧠 **Advanced RAG** - 向量資料庫驅動的知識檢索（ChromaDB）
-- 🤝 **Multi-Agent 協作** - 專業化 agent teams
+- 🤝 **Multi-Agent 協作** - 專業化 agent teams 協同工作（✅ Month 1）
 - 💾 **Knowledge Graph** - 持久化記憶系統（MCP Memory）
+- 📊 **Real-time Dashboard** - 系統監控與成本追蹤（✅ Month 1）
+- 🏗️ **Architecture Team** - 系統架構分析與建議（✅ Month 1）
+
+### ✅ Month 1 完成功能（2025-12-24）
+
+1. **Multi-Agent Collaboration Framework**
+   - Event-driven messaging system (MessageBus)
+   - Team-based task coordination (TeamCoordinator)
+   - Capability matching and automatic team selection
+   - Performance metrics tracking
+
+2. **System Architecture Team**
+   - Architecture analysis agent with 3 capabilities
+   - Senior, Security, and Performance specialized agents
+   - Complete working demo with collaborative analysis
+
+3. **Testing Framework**
+   - Vitest integration with 58+ passing tests
+   - ≥80% code coverage for core modules
+   - Comprehensive test documentation
+
+4. **Monitoring Dashboard**
+   - Real-time system resource monitoring
+   - Cost tracking and budget visualization
+   - Agent and team status display
+   - Auto-refresh web UI on port 3001
 
 ### 技術棧
 
-**核心 AI 模型**:
-- Claude Sonnet 4.5 (主力) - 日常開發和代碼生成
-- Claude Opus 4.5 (特殊場景) - 複雜推理和創意寫作
-- OpenAI GPT-4 (備選) - 多模態任務
-- OpenAI Whisper (語音) - 語音轉文字
-- OpenAI TTS (語音) - 文字轉語音
+**核心 AI 模型** (智能路由 - 5 提供商協作):
+
+**本地模型** (Ollama - $0 成本):
+- qwen2.5-coder:14b - 代碼審查、重構建議 (complexity 1-7)
+- qwen2.5:14b - 通用文字任務 (complexity 1-5)
+- llama3.2:1b - 超快簡單任務 (complexity 1-2)
+
+**雲端模型** (智能配額管理):
+- Claude Sonnet 4.5 - 複雜代碼、創意寫作 (complexity 8-10)
+- Claude Opus 4.5 - 最複雜推理任務 (complexity 9-10)
+- ChatGPT (GPT-4) - 中等代碼生成、測試撰寫 (complexity 6-7)
+- Grok (xAI) - 中等推理、創意任務 (complexity 6-8)
+- Gemini 2.5 Flash - 多模態任務 (vision, audio, video) - FREE tier
+
+**OpenAI 語音服務**:
+- Whisper - 語音轉文字
+- TTS - 文字轉語音
 
 **基礎設施**:
 - ChromaDB - 本地向量資料庫
@@ -34,6 +71,57 @@ Smart Agents 是一個高性能、模組化的 AI Agent 協調平台，專為 Ma
 - Playwright MCP - E2E 測試
 - Semgrep MCP - 代碼安全掃描
 - GitLab MCP - 專案管理
+
+## 🎯 智能路由與配額管理
+
+### 五層架構 (Five-Layer Architecture)
+
+```
+Layer 5: User Interface
+    Claude Code (existing) + Smart Agents MCP Server
+    │
+    ↓
+Layer 4: Skills Coordination Layer
+    Multi-model agent orchestration
+    │
+    ↓
+Layer 3: Smart Router (Quota-Aware)
+    Complexity analysis (1-10 scale)
+    Quota checking across 5 providers
+    │
+    ↓
+Layer 2: Quota Manager
+    Real-time usage tracking (daily/monthly limits)
+    Provider availability monitoring
+    │
+    ↓
+Layer 1: Provider Integration
+    Ollama | Gemini | Claude | Grok | ChatGPT
+```
+
+### 智能路由規則
+
+| 任務類型 | Complexity | 首選提供商 | 理由 |
+|---------|-----------|----------|------|
+| 簡單代碼 | 1-5 | Ollama (qwen2.5-coder) | 本地快速，$0 成本 |
+| 中等代碼 | 6-7 | ChatGPT (GPT-4) | 擅長代碼生成 |
+| 複雜代碼 | 8-10 | Claude Sonnet/Opus | 最佳推理能力 |
+| 中等推理 | 1-8 | Grok | 專精推理任務 |
+| 複雜推理 | 9-10 | Claude Opus | 最強推理 |
+| 多模態 | any | Gemini FREE tier | 支援 vision/audio/video |
+
+### 三層故障轉移 (Three-Tier Failover)
+
+1. **Tier 1**: 根據任務類型和複雜度選擇最佳提供商
+2. **Tier 2**: 如配額不足，使用 QuotaManager 建議的替代方案
+3. **Tier 3**: 所有雲端提供商不可用時，fallback 到本地 Ollama ($0 成本)
+
+### 配額管理
+
+- **每日/每月限制**: 每個提供商獨立追蹤使用量
+- **自動重置**: 每日午夜、每月月初自動重置計數器
+- **持久化儲存**: 跨 session 保留配額數據 (localStorage/文件系統)
+- **即時監控**: 每次 API 調用前檢查可用配額
 
 ## 🚀 快速開始
 
@@ -63,8 +151,77 @@ cp .env.example .env
 
 ```bash
 # .env 文件
-ANTHROPIC_API_KEY=sk-ant-xxx  # Claude API
-OPENAI_API_KEY=sk-xxx          # OpenAI API (Whisper, TTS, Embeddings)
+
+# ====================================
+# Claude API (必需)
+# ====================================
+ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
+CLAUDE_MODEL=claude-sonnet-4-5-20250929
+CLAUDE_OPUS_MODEL=claude-opus-4-5-20251101
+
+# ====================================
+# OpenAI API (Voice AI + Code)
+# ====================================
+OPENAI_API_KEY=sk-xxxxx
+OPENAI_WHISPER_MODEL=whisper-1
+OPENAI_TTS_MODEL=tts-1
+OPENAI_TTS_VOICE=alloy
+OPENAI_CHAT_MODEL=gpt-4-turbo-preview
+OPENAI_CODE_MODEL=gpt-4-turbo-preview
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+
+# ====================================
+# Grok API (xAI)
+# ====================================
+GROK_API_KEY=xai-xxxxx
+GROK_MODEL=grok-beta
+GROK_BASE_URL=https://api.x.ai/v1
+
+# ====================================
+# Gemini API (Google AI Studio)
+# ====================================
+GOOGLE_API_KEY=xxxxx
+
+# ====================================
+# API 配額限制 (Quota Limits)
+# ====================================
+# 每日/每月請求限制
+
+# Grok 配額
+GROK_DAILY_LIMIT=100
+GROK_MONTHLY_LIMIT=3000
+
+# ChatGPT 配額
+CHATGPT_DAILY_LIMIT=200
+CHATGPT_MONTHLY_LIMIT=6000
+
+# Claude 配額
+CLAUDE_DAILY_LIMIT=150
+CLAUDE_MONTHLY_LIMIT=4500
+
+# Gemini 配額 (FREE tier: 每天數千次)
+GEMINI_DAILY_LIMIT=10000
+GEMINI_MONTHLY_LIMIT=300000
+
+# Ollama 配額 (本地無限制)
+OLLAMA_DAILY_LIMIT=999999
+OLLAMA_MONTHLY_LIMIT=999999
+
+# ====================================
+# 智能路由偏好 (Smart Routing)
+# ====================================
+DEFAULT_TEXT_PROVIDER=ollama
+DEFAULT_CODE_PROVIDER=ollama
+DEFAULT_MULTIMODAL_PROVIDER=gemini
+DEFAULT_REASONING_PROVIDER=claude
+FALLBACK_PROVIDER=ollama  # 最後備用 (本地、免費、無限)
+
+# ====================================
+# ChromaDB 配置
+# ====================================
+CHROMA_HOST=localhost
+CHROMA_PORT=8000
+CHROMA_COLLECTION_NAME=smart_agents_kb
 ```
 
 ### 啟動
@@ -81,24 +238,91 @@ python -m chromadb.server
 npm run dev
 ```
 
+### 使用範例
+
+```bash
+# 運行測試
+npm test
+
+# 啟動 Agent Orchestrator (CLI Demo)
+npm run orchestrator
+
+# 啟動監控 Dashboard
+npm run dashboard
+# 開啟瀏覽器訪問 http://localhost:3001
+
+# 運行 Architecture Team Demo
+npm run demo:architecture
+
+# 🎙️ Voice AI & RAG
+# ==================
+
+# Voice RAG CLI (✅ 推薦 - 完整功能)
+npm run voice-rag
+# 語音輸入 → RAG 檢索 → Claude 回應 → 語音輸出
+# 成本: ~$0.0087/query, 耗時: ~17s
+
+# Voice RAG Web UI (⚠️ 已知問題)
+npm run voice-rag:server
+# 開啟瀏覽器訪問 http://localhost:3003/voice-rag-widget.html
+# 注意: macOS 瀏覽器錄音可能只錄到靜音，建議使用 CLI 版本
+
+# Voice Agent (TTS Demo)
+npm run voice
+
+# RAG Agent (ChromaDB Demo)
+npm run rag
+
+# 編譯專案
+npm run build
+
+# 啟動生產環境
+npm start
+```
+
+### ⚠️ Voice RAG 重要說明
+
+**CLI 版本（推薦）**:
+- ✅ 使用 sox 錄音，穩定可靠
+- ✅ 完整管道: Whisper STT → RAG → Claude → OpenAI TTS
+- ✅ 已驗證可用，成本約 $0.0087/query
+
+**Web UI 版本（已知問題）**:
+- ❌ macOS MediaRecorder API 只錄到靜音
+- ✅ 後端 API 正常運作
+- ⚠️ 僅作為實驗性功能，不建議用於生產環境
+
+如需 Web UI 功能，建議選項：
+- 使用外接麥克風（可能改善錄音品質）
+- 等待 WebRTC streaming 實作
+- 使用 CLI 版本（當前最可靠方案）
+
 ## 📁 專案結構
 
 ```
 smart-agents/
 ├── src/
-│   ├── orchestrator/      # 核心 Agent Orchestrator
-│   ├── agents/            # 各種專業 agents
-│   │   ├── voice/         # Voice AI agent
-│   │   ├── rag/           # RAG agent
-│   │   ├── code/          # Code review agent
-│   │   └── research/      # Research agent
-│   ├── mcp/               # MCP 整合
-│   ├── utils/             # 工具函數
-│   └── config/            # 配置文件
-├── skills/                # Claude Code skills
-├── tests/                 # 測試
-├── docs/                  # 文檔
-├── .env.example           # 環境變數範本
+│   ├── orchestrator/         # 核心 Agent Orchestrator
+│   ├── agents/               # 各種專業 agents
+│   │   ├── architecture/     # 🏗️ Architecture analysis agent (Month 1)
+│   │   ├── voice/            # Voice AI agent
+│   │   ├── rag/              # RAG agent
+│   │   ├── code/             # Code review agent
+│   │   └── research/         # Research agent
+│   ├── collaboration/        # 🤝 Multi-agent collaboration framework (Month 1)
+│   │   ├── MessageBus.ts     # Event-driven messaging
+│   │   ├── TeamCoordinator.ts # Team management
+│   │   └── CollaborationManager.ts # Main API
+│   ├── dashboard/            # 📊 Monitoring dashboard (Month 1)
+│   │   ├── server.ts         # Express API server
+│   │   └── public/           # Web UI
+│   ├── mcp/                  # MCP 整合
+│   ├── utils/                # 工具函數
+│   └── config/               # 配置文件
+├── docs/                     # 文檔
+│   ├── TESTING.md            # 測試指南 (Month 1)
+│   └── MONTH_1_COMPLETION.md # Month 1 完成報告
+├── .env.example              # 環境變數範本
 ├── package.json
 ├── tsconfig.json
 └── README.md
@@ -112,11 +336,11 @@ smart-agents/
 - [ ] Voice AI 整合 (Whisper + TTS)
 - [ ] ChromaDB RAG 基礎
 
-### Month 1
-- [ ] Multi-Agent 協作框架
-- [ ] 第一個專業 team: System Architecture Team
-- [ ] 監控與成本追蹤
-- [ ] 完整測試覆蓋
+### Month 1 ✅ (2025-12-24)
+- [x] Multi-Agent 協作框架
+- [x] 第一個專業 team: System Architecture Team
+- [x] 監控與成本追蹤
+- [x] 完整測試覆蓋 (58+ passing tests, ≥80% coverage)
 
 ### Month 2-3
 - [ ] 3-5 個專業 agent teams
@@ -126,11 +350,23 @@ smart-agents/
 
 ## 💰 成本估算
 
-**預期月費** (保守使用):
-- Claude API: $15-25
-- OpenAI API: $10-20
+### 智能路由優化後成本 (40% 節省)
+
+**預期月費** (保守使用，含智能路由優化):
+- Claude API: $8-15 (↓ 47%, 複雜任務專用)
+- OpenAI API: $5-12 (↓ 40%, 語音 + 中等代碼)
+- Grok API: $3-8 (中等推理任務)
+- Gemini API: $0 (FREE tier, 10,000 次/日)
+- Ollama: $0 (本地運行，60% 簡單任務)
 - ChromaDB: $0 (本地)
-- **總計**: ~$30-50/月
+- **總計**: ~$20-35/月 (↓ 40% vs 單一提供商)
+
+### 成本優化策略
+
+- ✅ **60% 簡單任務** → 本地 Ollama ($0)
+- ✅ **多模態任務** → Gemini FREE tier ($0)
+- ✅ **配額感知路由** → 避免超額費用
+- ✅ **三層故障轉移** → 確保服務連續性
 
 ## 🤝 貢獻
 

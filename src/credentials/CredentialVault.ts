@@ -433,22 +433,31 @@ export class CredentialVault {
    * Delete a credential
    */
   async delete(service: string, account: string): Promise<void> {
-    // Validate input
-    validateServiceName(service);
-    validateAccountName(account);
+    try {
+      // Validate input
+      validateServiceName(service);
+      validateAccountName(account);
+    } catch (error) {
+      // Log validation failure
+      this.auditLogger.log(AuditEventType.ACCESS_DENIED_VALIDATION, {
+        service,
+        account,
+        success: false,
+        details: (error as Error).message,
+      });
+      throw error;
+    }
 
     if (!this.storage) {
       await this.initialize();
     }
 
-    // Delete from secure storage
-    await this.storage.delete(service, account);
+    // Check if credential exists in SQLite first
+    const existing = this.db
+      .prepare('SELECT id FROM credentials WHERE service = ? AND account = ?')
+      .get(service, account);
 
-    // Delete from SQLite
-    const stmt = this.db.prepare('DELETE FROM credentials WHERE service = ? AND account = ?');
-    const result = stmt.run(service, account);
-
-    if (result.changes === 0) {
+    if (!existing) {
       // Log deletion failure (not found)
       this.auditLogger.log(AuditEventType.CREDENTIAL_DELETED, {
         service,
@@ -459,6 +468,13 @@ export class CredentialVault {
 
       throw new Error(`Credential not found: ${service}/${account}`);
     }
+
+    // Delete from secure storage
+    await this.storage.delete(service, account);
+
+    // Delete from SQLite
+    const stmt = this.db.prepare('DELETE FROM credentials WHERE service = ? AND account = ?');
+    stmt.run(service, account);
 
     logger.info(`Deleted credential: ${service}/${account}`);
 

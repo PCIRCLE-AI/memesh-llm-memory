@@ -29,14 +29,17 @@ import { Router } from './router.js';
 import { appConfig } from '../config/index.js';
 import { GlobalResourcePool } from './GlobalResourcePool.js';
 import { randomBytes } from 'crypto';
+import { KnowledgeAgent } from '../agents/knowledge/index.js';
+import { join } from 'path';
 
 export class Orchestrator {
   private router: Router;
   private anthropic: Anthropic;
   private orchestratorId: string;
   private resourcePool: GlobalResourcePool;
+  private knowledge: KnowledgeAgent;
 
-  constructor() {
+  constructor(options?: { knowledgeDbPath?: string }) {
     this.router = new Router();
     this.anthropic = new Anthropic({
       apiKey: appConfig.claude.apiKey,
@@ -45,6 +48,9 @@ export class Orchestrator {
     this.orchestratorId = `orch-${randomBytes(4).toString('hex')}`;
     // 獲取全局資源池
     this.resourcePool = GlobalResourcePool.getInstance();
+    // 初始化 Knowledge Graph
+    const dbPath = options?.knowledgeDbPath || join(process.cwd(), 'data', 'knowledge-graph.db');
+    this.knowledge = new KnowledgeAgent(dbPath);
 
     console.log(`[Orchestrator] Initialized with ID: ${this.orchestratorId}`);
   }
@@ -62,42 +68,86 @@ export class Orchestrator {
   }> {
     const startTime = Date.now();
 
-    // 步驟 1: 路由任務
-    const { analysis, routing, approved, message } = await this.router.routeTask(task);
+    try {
+      // 步驟 0: 查詢知識圖譜，尋找相似任務的經驗
+      const similarTasks = await this.knowledge.findSimilar(task.description, 'feature');
+      if (similarTasks.length > 0) {
+        console.log(`💡 Found ${similarTasks.length} similar past experiences`);
+        similarTasks.slice(0, 2).forEach((t, i) => {
+          console.log(`   ${i + 1}. ${t.name}`);
+        });
+      }
 
-    if (!approved) {
-      throw new Error(`Task execution blocked: ${message}`);
+      // 步驟 1: 路由任務
+      const { analysis, routing, approved, message } = await this.router.routeTask(task);
+
+      if (!approved) {
+        throw new Error(`Task execution blocked: ${message}`);
+      }
+
+      console.log(`\n🎯 Executing task: ${task.id}`);
+      console.log(`📊 Complexity: ${analysis.complexity}`);
+      console.log(`🤖 Agent: ${routing.selectedAgent}`);
+      console.log(`💰 Estimated cost: $${routing.estimatedCost.toFixed(6)}\n`);
+
+      // 記錄路由決策到知識圖譜
+      await this.knowledge.recordDecision({
+        name: `Task ${task.id} Routing Decision`,
+        reason: routing.reasoning,
+        alternatives: analysis.requiredAgents.filter(a => a !== routing.selectedAgent),
+        tradeoffs: [`Estimated cost: $${routing.estimatedCost.toFixed(6)}`, `Complexity: ${analysis.complexity}`],
+        outcome: `Selected ${routing.selectedAgent}`,
+        tags: ['routing', 'orchestrator', task.id]
+      });
+
+      // 步驟 2: 執行任務
+      const response = await this.callClaude(routing.modelName, task.description);
+
+      // 步驟 3: 記錄成本
+      const actualCost = this.router.recordTaskCost(
+        task.id,
+        routing.modelName,
+        response.usage.input_tokens,
+        response.usage.output_tokens
+      );
+
+      const executionTimeMs = Date.now() - startTime;
+
+      console.log(`✅ Task completed in ${executionTimeMs}ms`);
+      console.log(`💰 Actual cost: $${actualCost.toFixed(6)}\n`);
+
+      // 記錄成功執行的特徵到知識圖譜
+      await this.knowledge.recordFeature({
+        name: `Task ${task.id} Execution`,
+        description: task.description.substring(0, 100),
+        implementation: `Model: ${routing.modelName}, Tokens: ${response.usage.input_tokens + response.usage.output_tokens}`,
+        challenges: actualCost > routing.estimatedCost ? ['Cost exceeded estimate'] : undefined,
+        tags: ['task-execution', routing.selectedAgent, task.id]
+      });
+
+      return {
+        task,
+        analysis,
+        routing,
+        response: response.content[0].type === 'text' ? response.content[0].text : '',
+        cost: actualCost,
+        executionTimeMs,
+      };
+    } catch (error) {
+      const executionTimeMs = Date.now() - startTime;
+
+      // 記錄錯誤到知識圖譜
+      await this.knowledge.recordBugFix({
+        name: `Task ${task.id} Error`,
+        rootCause: error instanceof Error ? error.message : String(error),
+        solution: 'Task execution failed, needs investigation',
+        prevention: 'Review task requirements and system constraints',
+        tags: ['error', 'task-failure', task.id]
+      });
+
+      console.error(`❌ Task failed after ${executionTimeMs}ms:`, error);
+      throw error;
     }
-
-    console.log(`\n🎯 Executing task: ${task.id}`);
-    console.log(`📊 Complexity: ${analysis.complexity}`);
-    console.log(`🤖 Agent: ${routing.selectedAgent}`);
-    console.log(`💰 Estimated cost: $${routing.estimatedCost.toFixed(6)}\n`);
-
-    // 步驟 2: 執行任務
-    const response = await this.callClaude(routing.modelName, task.description);
-
-    // 步驟 3: 記錄成本
-    const actualCost = this.router.recordTaskCost(
-      task.id,
-      routing.modelName,
-      response.usage.input_tokens,
-      response.usage.output_tokens
-    );
-
-    const executionTimeMs = Date.now() - startTime;
-
-    console.log(`✅ Task completed in ${executionTimeMs}ms`);
-    console.log(`💰 Actual cost: $${actualCost.toFixed(6)}\n`);
-
-    return {
-      task,
-      analysis,
-      routing,
-      response: response.content[0].type === 'text' ? response.content[0].text : '',
-      cost: actualCost,
-      executionTimeMs,
-    };
   }
 
   /**
@@ -292,6 +342,54 @@ export class Orchestrator {
    */
   getRouter(): Router {
     return this.router;
+  }
+
+  /**
+   * 獲取 Knowledge Agent 實例
+   */
+  getKnowledgeAgent(): KnowledgeAgent {
+    return this.knowledge;
+  }
+
+  /**
+   * 查詢知識圖譜中的決策記錄
+   */
+  async getDecisionHistory(): Promise<Awaited<ReturnType<KnowledgeAgent['getDecisions']>>> {
+    return this.knowledge.getDecisions();
+  }
+
+  /**
+   * 查詢知識圖譜中的教訓記錄
+   */
+  async getLessonsLearned(): Promise<Awaited<ReturnType<KnowledgeAgent['getLessonsLearned']>>> {
+    return this.knowledge.getLessonsLearned();
+  }
+
+  /**
+   * 手動記錄最佳實踐到知識圖譜
+   */
+  async recordBestPractice(practice: {
+    name: string;
+    description: string;
+    why: string;
+    example?: string;
+    tags?: string[];
+  }): Promise<void> {
+    await this.knowledge.recordBestPractice(practice);
+  }
+
+  /**
+   * 獲取知識圖譜統計資訊
+   */
+  async getKnowledgeStats(): Promise<Awaited<ReturnType<KnowledgeAgent['getStats']>>> {
+    return this.knowledge.getStats();
+  }
+
+  /**
+   * 關閉 Orchestrator（清理資源）
+   */
+  close(): void {
+    this.knowledge.close();
   }
 }
 

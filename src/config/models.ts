@@ -5,13 +5,13 @@
 
 export const CLAUDE_MODELS = {
   // 主力模型 - 日常開發和代碼生成
-  SONNET: 'claude-sonnet-4-5-20250929',
+  SONNET: 'claude-3-sonnet-20240229',
 
   // 複雜任務專用 - 深度推理和創意寫作
-  OPUS: 'claude-opus-4-5-20251101',
+  OPUS: 'claude-3-opus-20240229',
 
   // 快速響應 - 簡單任務
-  HAIKU: 'claude-haiku-4-20250514',
+  HAIKU: 'claude-3-haiku-20240307',
 } as const;
 
 export const OPENAI_MODELS = {
@@ -45,16 +45,16 @@ export const TTS_VOICES = {
  */
 export const MODEL_COSTS = {
   [CLAUDE_MODELS.SONNET]: {
-    input: 3.0,
+    input: 3.0,   // Claude 3 Sonnet pricing
     output: 15.0,
   },
   [CLAUDE_MODELS.OPUS]: {
-    input: 15.0,
+    input: 15.0,  // Claude 3 Opus pricing
     output: 75.0,
   },
   [CLAUDE_MODELS.HAIKU]: {
-    input: 0.8,
-    output: 4.0,
+    input: 0.25,  // Claude 3 Haiku pricing
+    output: 1.25,
   },
   [OPENAI_MODELS.WHISPER]: {
     perMinute: 0.006,

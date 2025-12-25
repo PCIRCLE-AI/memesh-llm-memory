@@ -17,8 +17,8 @@ const envSchema = z.object({
   CLAUDE_MODEL: z.string().default('claude-sonnet-4-5-20250929'),
   CLAUDE_OPUS_MODEL: z.string().default('claude-opus-4-5-20251101'),
 
-  // OpenAI API
-  OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY is required'),
+  // OpenAI API - Optional (voice feature removed)
+  OPENAI_API_KEY: z.string().optional(),
   OPENAI_WHISPER_MODEL: z.string().default('whisper-1'),
   OPENAI_TTS_MODEL: z.string().default('tts-1'),
   OPENAI_TTS_VOICE: z.string().default('alloy'),

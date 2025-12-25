@@ -39,9 +39,11 @@
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.1",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/form-data": "^2.2.1",
     "@types/multer": "^2.0.0",
     "axios": "^1.13.2",
+    "better-sqlite3": "^12.5.0",
     "chromadb": "^1.9.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

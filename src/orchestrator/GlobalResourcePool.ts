@@ -14,6 +14,7 @@
 import { SystemResourceManager, SystemResourcesConfig } from '../utils/SystemResources.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import os from 'os';
 
 const execAsync = promisify(exec);
 
@@ -66,7 +67,7 @@ export class GlobalResourcePool {
       memoryThreshold: config.memoryThreshold ?? 85,
       threadStrategy: config.threadStrategy ?? 'balanced',
       minThreads: config.minThreads ?? 1,
-      maxThreads: config.maxThreads ?? require('os').cpus().length,
+      maxThreads: config.maxThreads ?? os.cpus().length,
       e2eMaxConcurrent: config.e2eMaxConcurrent ?? 0,
 
       // GlobalResourcePoolConfig

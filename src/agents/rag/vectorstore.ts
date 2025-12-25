@@ -4,6 +4,7 @@
 
 import { ChromaClient, Collection } from 'chromadb';
 import { appConfig } from '../../config/index.js';
+import { logger } from '../../utils/logger.js';
 import type {
   DocumentInput,
   SearchResult,

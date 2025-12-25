@@ -15,7 +15,7 @@ export const DocumentMetadataSchema = z.object({
   updatedAt: z.string().optional(),
   category: z.string().optional(),
   tags: z.array(z.string()).optional(),
-  language: z.string().default('zh-TW'),
+  language: z.string().optional().default('zh-TW'),
 });
 
 export type DocumentMetadata = z.infer<typeof DocumentMetadataSchema>;

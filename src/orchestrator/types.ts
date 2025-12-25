@@ -2,8 +2,6 @@
  * Agent Orchestrator 類型定義
  */
 
-import { CLAUDE_MODELS } from '../config/models.js';
-
 /**
  * 任務複雜度等級
  */

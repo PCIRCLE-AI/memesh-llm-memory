@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Chat with Claude</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        .status.idle { background: #f0f0f0; color: #666; }
+        .status.recording { background: #fee; color: #c00; }
+        .status.processing { background: #fef3cd; color: #856404; }
+        .status.playing { background: #d4edda; color: #155724; }
+
+        button {
+            width: 100%;
+            padding: 18px;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #recordBtn {
+            background: #667eea;
+            color: white;
+        }
+        #recordBtn:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        #recordBtn.recording {
+            background: #dc3545;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .conversation {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .user {
+            background: #e3f2fd;
+            margin-left: 20px;
+        }
+        .assistant {
+            background: #f3e5f5;
+            margin-right: 20px;
+        }
+        .message-label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .user .message-label { color: #1976d2; }
+        .assistant .message-label { color: #7b1fa2; }
+        .timer {
+            text-align: center;
+            font-size: 48px;
+            font-weight: 700;
+            color: #dc3545;
+            margin: 20px 0;
+            display: none;
+        }
+        .timer.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎙️ Voice Chat with Claude</h1>
+        <p class="subtitle">Smart Agents 語音對話系統</p>
+
+        <div id="status" class="status idle">
+            準備就緒 - 點擊按鈕開始錄音
+        </div>
+
+        <div id="timer" class="timer">5</div>
+
+        <button id="recordBtn">
+            🎤 按住說話 (5 秒)
+        </button>
+
+        <div class="conversation" id="conversation">
+            <div class="message assistant">
+                <div class="message-label">🤖 Claude</div>
+                <div>你好！我是 Smart Agents 語音助手。點擊按鈕開始對話！</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+        let timerInterval;
+        let countdown = 5;
+
+        const recordBtn = document.getElementById('recordBtn');
+        const status = document.getElementById('status');
+        const conversation = document.getElementById('conversation');
+        const timerDisplay = document.getElementById('timer');
+
+        function updateStatus(text, className) {
+            status.textContent = text;
+            status.className = `status ${className}`;
+        }
+
+        function addMessage(role, text) {
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            div.innerHTML = `
+                <div class="message-label">${role === 'user' ? '👤 你' : '🤖 Claude'}</div>
+                <div>${text}</div>
+            `;
+            conversation.appendChild(div);
+            conversation.scrollTop = conversation.scrollHeight;
+        }
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (e) => {
+                    audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    await processAudio(audioBlob);
+                    stream.getTracks().forEach(track => track.stop());
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                recordBtn.classList.add('recording');
+                recordBtn.textContent = '🔴 錄音中...';
+                updateStatus('正在錄音... 請說話', 'recording');
+
+                // 倒數計時
+                countdown = 5;
+                timerDisplay.textContent = countdown;
+                timerDisplay.classList.add('active');
+
+                timerInterval = setInterval(() => {
+                    countdown--;
+                    timerDisplay.textContent = countdown;
+                    if (countdown <= 0) {
+                        stopRecording();
+                    }
+                }, 1000);
+
+            } catch (err) {
+                updateStatus('無法訪問麥克風：' + err.message, 'idle');
+                alert('請允許瀏覽器訪問麥克風');
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                clearInterval(timerInterval);
+                timerDisplay.classList.remove('active');
+                mediaRecorder.stop();
+                isRecording = false;
+                recordBtn.classList.remove('recording');
+                recordBtn.textContent = '🎤 按住說話 (5 秒)';
+                recordBtn.disabled = true;
+            }
+        }
+
+        async function processAudio(audioBlob) {
+            updateStatus('處理中... 轉錄語音', 'processing');
+
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'recording.wav');
+
+            try {
+                const response = await fetch('http://localhost:3002/chat', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                addMessage('user', data.userText);
+                addMessage('assistant', data.claudeResponse);
+
+                updateStatus('播放 Claude 的回應...', 'playing');
+
+                // 播放音頻
+                const audio = new Audio('data:audio/mp3;base64,' + data.audioBase64);
+                audio.onended = () => {
+                    updateStatus('準備就緒 - 點擊按鈕繼續對話', 'idle');
+                    recordBtn.disabled = false;
+                };
+                audio.play();
+
+            } catch (err) {
+                updateStatus('錯誤：' + err.message, 'idle');
+                recordBtn.disabled = false;
+            }
+        }
+
+        recordBtn.addEventListener('click', () => {
+            if (!isRecording) {
+                startRecording();
+            }
+        });
+    </script>
+</body>
+</html>

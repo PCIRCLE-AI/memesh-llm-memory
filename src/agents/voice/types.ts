@@ -78,12 +78,17 @@ export interface VoiceMetrics {
  * Voice processing error
  */
 export class VoiceProcessingError extends Error {
+  public readonly code: string;
+  public readonly details?: unknown;
+
   constructor(
     message: string,
-    public readonly code: string,
-    public readonly details?: unknown
+    code: string,
+    details?: unknown
   ) {
     super(message);
     this.name = 'VoiceProcessingError';
+    this.code = code;
+    this.details = details;
   }
 }

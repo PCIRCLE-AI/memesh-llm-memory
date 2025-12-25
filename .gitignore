@@ -87,3 +87,23 @@ test-*.ts
 data/*.db-shm
 data/*.db-wal
 data/vectorstore/
+
+# Documentation - DO NOT PUSH PLANNING/ARCHIVE DOCS
+docs/archive/**
+!docs/archive/README.md
+
+# Manual Test Scripts - DO NOT PUSH
+tests/manual/**
+!tests/manual/README.md
+tests/scripts/**
+
+# Temporary test files
+test-*.ts
+test-*.js
+test-*.sh
+debug-*.ts
+debug-*.js
+temp-*.ts
+temp-*.js
+tmp-*.ts
+tmp-*.js

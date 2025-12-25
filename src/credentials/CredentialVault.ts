@@ -18,7 +18,8 @@ import {
 import { createSecureStorage } from './storage/index.js';
 import { logger } from '../utils/logger.js';
 import { RateLimiter } from './RateLimiter.js';
-import { AuditLogger, AuditEventType } from './AuditLogger.js';
+import { AuditLogger, AuditEventType, AuditSeverity } from './AuditLogger.js';
+import { RotationPolicy } from './RotationPolicy.js';
 
 /**
  * Validate service name
@@ -98,6 +99,7 @@ export class CredentialVault {
   private db: Database.Database;
   private storage: SecureStorage;
   private rateLimiter: RateLimiter;
+  private rotationPolicy: RotationPolicy;
   private auditLogger: AuditLogger;
   private static cleanupRegistered = false;
   private static instances: Set<CredentialVault> = new Set();
@@ -120,6 +122,9 @@ export class CredentialVault {
 
     // Initialize audit logger
     this.auditLogger = new AuditLogger(this.db);
+
+    // Initialize rotation policy
+    this.rotationPolicy = new RotationPolicy(this.db);
 
     // Register this instance for cleanup
     CredentialVault.instances.add(this);
@@ -322,6 +327,41 @@ export class CredentialVault {
       });
 
       return null;
+    }
+
+    // Check rotation status
+    const rotationStatus = this.rotationPolicy.checkRotationStatus(service, account);
+
+    // If credential is expired and rotation is enforced, deny access
+    if (rotationStatus.isExpired && rotationStatus.policy?.enforceRotation) {
+      this.rateLimiter.recordFailedAttempt(service, account);
+
+      this.auditLogger.log(AuditEventType.ACCESS_DENIED_NOT_FOUND, {
+        service,
+        account,
+        success: false,
+        severity: AuditSeverity.CRITICAL,
+        details: `Credential expired ${Math.abs(rotationStatus.daysUntilExpiration)} days ago (policy: ${rotationStatus.policy.name})`,
+      });
+
+      throw new Error(
+        `Credential expired and rotation is enforced. ` +
+        `Expired ${Math.abs(rotationStatus.daysUntilExpiration)} days ago. ` +
+        `Policy: ${rotationStatus.policy.name}`
+      );
+    }
+
+    // If credential needs rotation (warning period), log warning
+    if (rotationStatus.needsRotation && rotationStatus.warningMessage) {
+      logger.warn(rotationStatus.warningMessage, { service, account });
+
+      this.auditLogger.log(AuditEventType.CREDENTIAL_RETRIEVED, {
+        service,
+        account,
+        success: true,
+        severity: AuditSeverity.WARNING,
+        details: rotationStatus.warningMessage,
+      });
     }
 
     // Get value from secure storage
@@ -757,6 +797,9 @@ export class CredentialVault {
       // Stop audit logger cleanup
       this.auditLogger.stopCleanup();
 
+      // Stop rotation policy cleanup
+      this.rotationPolicy.stopCleanup();
+
       if (this.db) {
         this.db.close();
       }
@@ -837,5 +880,106 @@ export class CredentialVault {
    */
   getAuditRetention(): number {
     return this.auditLogger.getRetentionDays();
+  }
+
+  // ==================== Rotation Policy Management ====================
+
+  /**
+   * Create a rotation policy
+   */
+  createRotationPolicy(
+    config: Omit<import('./RotationPolicy.js').RotationPolicyConfig, 'id'>
+  ): import('./RotationPolicy.js').RotationPolicyConfig {
+    return this.rotationPolicy.createPolicy(config);
+  }
+
+  /**
+   * Get a rotation policy by ID
+   */
+  getRotationPolicy(id: number): import('./RotationPolicy.js').RotationPolicyConfig | null {
+    return this.rotationPolicy.getPolicy(id);
+  }
+
+  /**
+   * Get a rotation policy by name
+   */
+  getRotationPolicyByName(
+    name: string
+  ): import('./RotationPolicy.js').RotationPolicyConfig | null {
+    return this.rotationPolicy.getPolicyByName(name);
+  }
+
+  /**
+   * List all rotation policies
+   */
+  listRotationPolicies(): import('./RotationPolicy.js').RotationPolicyConfig[] {
+    return this.rotationPolicy.listPolicies();
+  }
+
+  /**
+   * Update a rotation policy
+   */
+  updateRotationPolicy(
+    id: number,
+    updates: Partial<Omit<import('./RotationPolicy.js').RotationPolicyConfig, 'id'>>
+  ): void {
+    this.rotationPolicy.updatePolicy(id, updates);
+  }
+
+  /**
+   * Delete a rotation policy
+   */
+  deleteRotationPolicy(id: number): void {
+    this.rotationPolicy.deletePolicy(id);
+  }
+
+  /**
+   * Assign a rotation policy to a credential
+   */
+  assignRotationPolicy(service: string, account: string, policyId: number): void {
+    this.rotationPolicy.assignPolicy(service, account, policyId);
+  }
+
+  /**
+   * Check rotation status for a credential
+   */
+  checkRotationStatus(
+    service: string,
+    account: string
+  ): import('./RotationPolicy.js').RotationStatus {
+    return this.rotationPolicy.checkRotationStatus(service, account);
+  }
+
+  /**
+   * Mark a credential as rotated
+   */
+  markCredentialAsRotated(service: string, account: string): void {
+    this.rotationPolicy.markAsRotated(service, account);
+
+    // Log rotation event
+    this.auditLogger.log(AuditEventType.CREDENTIAL_UPDATED, {
+      service,
+      account,
+      success: true,
+      details: 'Credential marked as rotated',
+    });
+  }
+
+  /**
+   * List all credentials needing rotation
+   */
+  listCredentialsNeedingRotation(): Array<{
+    service: string;
+    account: string;
+    status: import('./RotationPolicy.js').RotationStatus;
+  }> {
+    return this.rotationPolicy.listCredentialsNeedingRotation();
+  }
+
+  /**
+   * Get rotation statistics
+   */
+  getRotationStats(): import('./RotationPolicy.js').RotationStats {
+    return this.rotationPolicy.getRotationStats();
   }
 }

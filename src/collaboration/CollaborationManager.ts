@@ -42,9 +42,80 @@ export class CollaborationManager {
     // Initialize database
     await this.db.initialize();
 
-    // Load persisted teams from database
-    const teams = await this.db.listTeams();
-    logger.info(`CollaborationManager: Loaded ${teams.length} persisted teams`);
+    // Load persisted teams from database and restore to teamCoordinator
+    const dbTeams = await this.db.listTeams();
+    logger.info(`CollaborationManager: Loaded ${dbTeams.length} persisted teams from database`);
+
+    // Restore teams to teamCoordinator
+    for (const dbTeam of dbTeams) {
+      // Convert DB Team to AgentTeam format
+      const agentTeam = {
+        id: dbTeam.id,
+        name: dbTeam.name,
+        description: dbTeam.description || '',
+        members: dbTeam.members.map(m => m.agent_id),
+        leader: dbTeam.members[0]?.agent_id || '', // First member as leader
+        capabilities: [...new Set(dbTeam.members.flatMap(m => m.capabilities))], // Unique capabilities
+      };
+
+      this.teamCoordinator.restoreTeam(agentTeam);
+    }
+
+    logger.info(`CollaborationManager: Restored ${dbTeams.length} teams to memory`);
+
+    // Load persisted sessions from database and restore to teamCoordinator
+    const dbSessions = await this.db.listRecentSessions(1000); // Load up to 1000 sessions
+    logger.info(`CollaborationManager: Loaded ${dbSessions.length} persisted sessions from database`);
+
+    // Restore sessions to teamCoordinator
+    for (const dbSession of dbSessions) {
+      // Find the team using team_id
+      const team = this.teamCoordinator.getTeams().find(t => t.id === dbSession.team_id);
+      if (!team) {
+        logger.warn(`CollaborationManager: Team ${dbSession.team_id} not found for session ${dbSession.id}, skipping`);
+        continue;
+      }
+
+      // Reconstruct CollaborativeTask from stored data
+      const task: CollaborativeTask = {
+        id: dbSession.id, // Use session ID as task ID
+        description: dbSession.task,
+        requiredCapabilities: team.capabilities,
+        status: dbSession.status === 'completed' ? 'completed' : dbSession.status === 'failed' ? 'failed' : 'in_progress',
+      };
+
+      // Reconstruct results object from session results
+      const results = {
+        success: dbSession.status === 'completed',
+        error: dbSession.status === 'failed' ? 'Task failed' : undefined,
+        cost: 0, // Default value, will be updated if stored in metadata
+        durationMs: 0, // Default value
+      };
+
+      // Extract cost and duration from session results metadata if available
+      if (dbSession.results && dbSession.results.length > 0) {
+        const firstResult = dbSession.results[0];
+        if (firstResult.metadata) {
+          results.cost = firstResult.metadata.cost || 0;
+          results.durationMs = firstResult.metadata.durationMs || 0;
+        }
+      }
+
+      // Create CollaborationSession
+      const collaborationSession: CollaborationSession = {
+        id: dbSession.id,
+        task,
+        team,
+        startTime: dbSession.created_at,
+        endTime: dbSession.completed_at,
+        messages: [], // Messages are not persisted, so empty array
+        results,
+      };
+
+      this.teamCoordinator.restoreSession(collaborationSession);
+    }
+
+    logger.info(`CollaborationManager: Restored ${dbSessions.length} sessions to memory`);
 
     this.initialized = true;
     logger.info('CollaborationManager: Initialized successfully');
@@ -95,6 +166,7 @@ export class CollaborationManager {
       if (agent) {
         await this.db.addTeamMember({
           team_id: createdTeam.id,
+          agent_id: agent.id, // Store agent UUID for restoration
           agent_type: agent.type,
           agent_name: agent.name,
           capabilities: agent.capabilities.map(c => c.name),

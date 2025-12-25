@@ -1,8 +1,9 @@
 /**
- * ChromaDB Vector Store 封裝
+ * Vectra Local Vector Store 封裝（輕量級、零依賴、開箱即用）
  */
 
-import { ChromaClient, Collection } from 'chromadb';
+import { LocalIndex } from 'vectra';
+import path from 'path';
 import { appConfig } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 import type {
@@ -14,10 +15,10 @@ import type {
 } from './types.js';
 
 export class VectorStore {
-  private client: ChromaClient;
-  private collection: Collection | null = null;
+  private index: LocalIndex | null = null;
   private config: RAGConfig;
   private isInitialized = false;
+  private dataPath: string;
 
   constructor(config?: Partial<RAGConfig>) {
     this.config = {
@@ -31,9 +32,8 @@ export class VectorStore {
       cacheEnabled: config?.cacheEnabled ?? true,
     };
 
-    this.client = new ChromaClient({
-      path: this.config.chromaUrl,
-    });
+    // 本地存儲路徑（在專案根目錄的 data/vectorstore）
+    this.dataPath = path.join(process.cwd(), 'data', 'vectorstore');
   }
 
   /**
@@ -46,23 +46,20 @@ export class VectorStore {
     }
 
     try {
-      // 測試連接
-      await this.client.heartbeat();
-      console.log(`Connected to ChromaDB at ${this.config.chromaUrl}`);
+      // 創建或載入 Vectra index
+      this.index = new LocalIndex(this.dataPath);
 
-      // 獲取或創建 collection
-      this.collection = await this.client.getOrCreateCollection({
-        name: this.config.collectionName,
-        metadata: {
-          'hnsw:space': 'cosine',
-          description: 'Smart Agents Knowledge Base',
-          embeddingModel: this.config.embeddingModel,
-          createdAt: new Date().toISOString(),
-        },
-      });
+      // 檢查 index 是否已存在
+      if (!(await this.index.isIndexCreated())) {
+        // 創建新 index
+        await this.index.createIndex({ version: 1 });
+        console.log(`Created new Vectra index at ${this.dataPath}`);
+      } else {
+        console.log(`Loaded existing Vectra index from ${this.dataPath}`);
+      }
 
       this.isInitialized = true;
-      console.log(`Collection '${this.config.collectionName}' ready`);
+      console.log('VectorStore initialized successfully (local file storage)');
     } catch (error) {
       logger.error('Failed to initialize VectorStore', { error });
       throw new Error(`VectorStore initialization failed: ${error}`);
@@ -73,7 +70,7 @@ export class VectorStore {
    * 確保已初始化
    */
   private ensureInitialized(): void {
-    if (!this.isInitialized || !this.collection) {
+    if (!this.isInitialized || !this.index) {
       throw new Error('VectorStore not initialized. Call initialize() first.');
     }
   }
@@ -90,11 +87,13 @@ export class VectorStore {
 
     const id = doc.id || this.generateId();
 
-    await this.collection!.add({
-      ids: [id],
-      embeddings: [doc.embedding],
-      documents: [doc.content],
-      metadatas: [this.sanitizeMetadata(doc.metadata)],
+    await this.index!.insertItem({
+      id,
+      vector: doc.embedding,
+      metadata: {
+        content: doc.content,
+        ...this.sanitizeMetadata(doc.metadata),
+      },
     });
   }
 
@@ -121,30 +120,27 @@ export class VectorStore {
       const batch = batches[i];
       console.log(`Processing batch ${i + 1}/${batches.length} (${batch.length} docs)`);
 
-      const ids = batch.map((doc) => doc.id || this.generateId());
-      const embeddings = batch.map((doc) => doc.embedding!);
-      const documents = batch.map((doc) => doc.content);
-      const metadatas = batch.map((doc) => this.sanitizeMetadata(doc.metadata));
-
-      await this.collection!.add({
-        ids,
-        embeddings,
-        documents,
-        metadatas,
-      });
+      for (const doc of batch) {
+        const id = doc.id || this.generateId();
+        await this.index!.insertItem({
+          id,
+          vector: doc.embedding!,
+          metadata: {
+            content: doc.content,
+            ...this.sanitizeMetadata(doc.metadata),
+          },
+        });
+      }
     }
 
     console.log(`Successfully added ${docs.length} documents`);
   }
 
   /**
-   * 語義搜尋
+   * 語義搜尋（已棄用，使用 searchWithEmbedding）
    */
   async search(_options: SearchOptions): Promise<SearchResult[]> {
     this.ensureInitialized();
-
-    // 注意：這裡需要外部提供 query embedding
-    // 實際使用時應該先通過 EmbeddingService 生成 query embedding
     throw new Error('Use searchWithEmbedding() instead. Generate query embedding first.');
   }
 
@@ -158,37 +154,30 @@ export class VectorStore {
     this.ensureInitialized();
 
     const topK = options.topK || 5;
-    const filter = options.filter || undefined;
+    const scoreThreshold = options.scoreThreshold || 0;
 
-    const results = await this.collection!.query({
-      queryEmbeddings: [queryEmbedding],
-      nResults: topK,
-      where: filter,
-      include: ['documents', 'metadatas', 'distances'] as any,
-    });
+    // Vectra 搜尋 (API: queryItems(vector, query, topK, filter?, isBm25?))
+    // 純向量搜尋使用空字串 query
+    const results = await this.index!.queryItems(queryEmbedding, "", topK);
 
-    // 轉換結果格式
-    const searchResults: SearchResult[] = [];
+    // 轉換結果格式並應用 score threshold
+    const searchResults: SearchResult[] = results
+      .filter((result) => result.score >= scoreThreshold)
+      .map((result) => {
+        const metadata = result.item.metadata || {};
+        const content = metadata.content as string || '';
 
-    if (results.ids && results.ids[0]) {
-      for (let i = 0; i < results.ids[0].length; i++) {
-        const distance = results.distances?.[0]?.[i] ?? 1;
-        const score = 1 - distance; // Convert distance to similarity score
+        // 移除 content 欄位（已提取）
+        const { content: _, ...restMetadata } = metadata;
 
-        // 應用 score threshold 過濾
-        if (options.scoreThreshold && score < options.scoreThreshold) {
-          continue;
-        }
-
-        searchResults.push({
-          id: results.ids[0][i],
-          content: results.documents?.[0]?.[i] as string || '',
-          metadata: (results.metadatas?.[0]?.[i] || { source: 'unknown', language: 'zh-TW' }) as unknown as DocumentMetadata,
-          score,
-          distance,
-        });
-      }
-    }
+        return {
+          id: result.item.id,
+          content,
+          metadata: restMetadata as unknown as DocumentMetadata,
+          score: result.score,
+          distance: 1 - result.score, // Convert similarity to distance
+        };
+      });
 
     return searchResults;
   }
@@ -198,7 +187,7 @@ export class VectorStore {
    */
   async count(): Promise<number> {
     this.ensureInitialized();
-    return await this.collection!.count();
+    return await this.index!.listItemsByMetadata({}).then((items) => items.length);
   }
 
   /**
@@ -206,7 +195,10 @@ export class VectorStore {
    */
   async delete(ids: string[]): Promise<void> {
     this.ensureInitialized();
-    await this.collection!.delete({ ids });
+
+    for (const id of ids) {
+      await this.index!.deleteItem(id);
+    }
   }
 
   /**
@@ -215,20 +207,14 @@ export class VectorStore {
   async clear(): Promise<void> {
     this.ensureInitialized();
 
-    // 刪除並重新創建 collection
-    await this.client.deleteCollection({ name: this.config.collectionName });
+    // Vectra 沒有直接清空的方法，需要刪除所有項目
+    const allItems = await this.index!.listItems();
 
-    this.collection = await this.client.createCollection({
-      name: this.config.collectionName,
-      metadata: {
-        'hnsw:space': 'cosine',
-        description: 'Smart Agents Knowledge Base',
-        embeddingModel: this.config.embeddingModel,
-        createdAt: new Date().toISOString(),
-      },
-    });
+    for (const item of allItems) {
+      await this.index!.deleteItem(item.id);
+    }
 
-    console.log(`Collection '${this.config.collectionName}' cleared`);
+    console.log(`VectorStore cleared`);
   }
 
   /**
@@ -241,25 +227,27 @@ export class VectorStore {
   }> {
     this.ensureInitialized();
 
-    const count = await this.collection!.count();
-    const metadata = this.collection!.metadata;
+    const count = await this.count();
 
     return {
-      name: this.config.collectionName,
+      name: 'local_vectorstore',
       count,
-      metadata: metadata || {},
+      metadata: {
+        path: this.dataPath,
+        embeddingModel: this.config.embeddingModel,
+        embeddingDimension: this.config.embeddingDimension,
+      },
     };
   }
 
   /**
-   * 檢查連接狀態
+   * 檢查連接狀態（本地模式始終可用）
    */
   async healthCheck(): Promise<boolean> {
     try {
-      await this.client.heartbeat();
-      return true;
+      return this.isInitialized && this.index !== null;
     } catch (error) {
-      logger.error('ChromaDB health check failed', { error });
+      logger.error('VectorStore health check failed', { error });
       return false;
     }
   }
@@ -272,23 +260,14 @@ export class VectorStore {
   }
 
   /**
-   * 工具方法：清理 metadata（移除 undefined 值）
+   * 工具方法：清理 metadata（Vectra 支持任意 JSON）
    */
   private sanitizeMetadata(metadata: DocumentMetadata): Record<string, any> {
     const sanitized: Record<string, any> = {};
 
     for (const [key, value] of Object.entries(metadata)) {
       if (value !== undefined && value !== null) {
-        // ChromaDB v2 API only accepts primitive types (string, number, boolean)
-        // Convert arrays to comma-separated strings
-        if (Array.isArray(value)) {
-          sanitized[key] = value.join(', ');
-        } else if (typeof value === 'object') {
-          // Convert objects to JSON strings
-          sanitized[key] = JSON.stringify(value);
-        } else {
-          sanitized[key] = value;
-        }
+        sanitized[key] = value;
       }
     }
 
@@ -310,9 +289,8 @@ export class VectorStore {
    * 關閉連接
    */
   async close(): Promise<void> {
-    // ChromaDB client 不需要明確關閉
     this.isInitialized = false;
-    this.collection = null;
+    this.index = null;
     console.log('VectorStore closed');
   }
 }

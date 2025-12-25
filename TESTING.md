@@ -179,8 +179,116 @@ npm test -- --reporter=verbose
 npm test -- --grep="specific test name"
 ```
 
+## ⚠️ E2E 測試資源安全
+
+### 🔴 重要：防止系統資源耗盡
+
+E2E 測試會啟動真實服務（Express server, ChromaDB, WebSocket），消耗大量資源。**不當配置可能導致系統凍結**。
+
+### 安全配置原則
+
+**1. 合理的並行度**
+```typescript
+// vitest.e2e.config.ts
+poolOptions: {
+  threads: {
+    singleThread: false,  // ✅ 允許並行
+    maxThreads: 2,        // ✅ 限制 2 個並行（不超過 CPU 核心數的 50%）
+  }
+}
+```
+
+**2. 謹慎使用重試**
+```typescript
+retry: 1,  // ✅ 最多重試 1 次（處理網路波動）
+```
+
+**3. 使用資源監控**
+```bash
+# ✅ 推薦：使用監控腳本執行
+./scripts/test-monitor.sh npm run test:e2e
+
+# ⚠️ 注意：直接執行需手動監控資源
+npm run test:e2e
+```
+
+### 資源限制
+
+**test-monitor.sh 自動保護**：
+- CPU 限制：70%
+- Memory 限制：2GB
+- 超過限制自動終止測試
+
+**手動監控**（如不使用腳本）：
+```bash
+# Terminal 1: 執行測試
+npm run test:e2e
+
+# Terminal 2: 監控資源
+watch -n 2 'ps aux | grep -E "(node|vitest)" | grep -v grep'
+```
+
+### 緊急處理
+
+**系統卡住時**：
+```bash
+# 1. 強制終止所有測試進程
+pkill -9 node
+
+# 2. 檢查殘留進程
+ps aux | grep node
+
+# 3. 查看資源使用日誌
+cat test-resource-monitor.log
+tail -100 chroma.log
+```
+
+### 測試執行最佳實踐
+
+✅ **推薦做法**：
+```bash
+# 單一測試文件（最安全）
+./scripts/test-monitor.sh npm run test:e2e:voice-rag
+
+# 完整測試套件（使用監控）
+./scripts/test-monitor.sh npm run test:e2e
+
+# 開發時：watch 模式（限制檔案數）
+npm run test:e2e -- --watch tests/e2e/voice-rag.spec.ts
+```
+
+❌ **避免做法**：
+```bash
+# 不要：多個測試套件並行執行
+npm run test:e2e & npm run test:e2e:collaboration &  # ❌ 資源爆炸
+
+# 不要：過高並行度
+# vitest.config.ts: maxThreads: 5+  # ❌ 超過系統負荷
+
+# 不要：過多重試
+# vitest.config.ts: retry: 3+  # ❌ 請求量爆炸
+```
+
+### 配置文件
+
+- `vitest.e2e.config.ts` - E2E 測試配置
+- `scripts/test-monitor.sh` - 資源監控腳本
+- `.test-resource-limits.json` - 資源限制配置
+- `INCIDENT_REPORT_2025-12-26.md` - 凍結事件分析
+
+### 關鍵學習
+
+1. **並行不是越多越好** - 本地資源有限，2-3 個並行已足夠
+2. **重試可能適得其反** - 認證失敗 + 重試 = 請求爆炸
+3. **本地服務有成本** - ChromaDB、Express、WebSocket 都消耗資源
+4. **監控是必要的** - 預防勝於事後處理
+5. **了解你的系統限制** - MacBook Pro M2: 強大但非無限
+
+---
+
 ## 📚 更多資源
 
 - [Vitest 官方文檔](https://vitest.dev/)
 - [測試驅動開發 (TDD) 最佳實踐](https://martinfowler.com/bliki/TestDrivenDevelopment.html)
 - [Mock 策略指南](https://vitest.dev/guide/mocking.html)
+- [E2E 測試資源管理](./INCIDENT_REPORT_2025-12-26.md)

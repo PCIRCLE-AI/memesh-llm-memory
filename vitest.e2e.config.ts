@@ -36,22 +36,28 @@ export default defineConfig({
     reporters: ['verbose'],
 
     // Parallel execution
-    // E2E tests may have shared state, so run sequentially by default
+    // CRITICAL: SINGLE THREAD ONLY to prevent system freeze
+    // 2025-12-26: After system freeze incident, reduced from 2 to 1
+    // - Each E2E test spawns multiple services (Express, ChromaDB, WebSocket, RAG)
+    // - Parallel execution causes 48+ concurrent processes → system freeze
+    // - Must use sequential execution for stability
     pool: 'threads',
     poolOptions: {
       threads: {
-        singleThread: false, // Allow parallel execution
-        maxThreads: 3, // Limit concurrency to avoid overwhelming services
+        singleThread: true, // MUST be true - prevents resource explosion
+        maxThreads: 1, // CRITICAL: Only 1 thread to prevent freeze
+        // Rationale: Each test spawns ~4 services, 2 threads × retry = 12+ instances = freeze
       },
     },
 
-    // Retry configuration for flaky tests
-    retry: 2, // Retry failed tests up to 2 times
+    // Retry configuration
+    // CRITICAL: NO RETRIES - auth failures indicate config problems, not transient issues
+    retry: 0, // No retries - prevents request explosion
+    // Note: If tests fail, fix the root cause, don't retry
 
     // Environment variables for E2E tests
     env: {
       NODE_ENV: 'test',
-      VOICE_RAG_API: 'http://localhost:3003',
     },
   },
 });

@@ -52,10 +52,22 @@ export class SmartRouter {
       const altCheck = this.quotaManager.checkQuota(alternative);
 
       if (altCheck.canUse) {
+        // Check if this is last resort (Ollama) and all cloud providers are exhausted
+        const isOllama = alternative === 'ollama';
+        const cloudProviders = ['claude', 'chatgpt', 'grok', 'gemini'];
+        const allCloudExhausted = cloudProviders.every(
+          provider => !this.quotaManager.checkQuota(provider).canUse
+        );
+        const isLastResort = isOllama && allCloudExhausted;
+
+        const reason = isLastResort 
+          ? 'All cloud providers unavailable'
+          : `Fallback (${preferredProvider} ${quotaCheck.reason})`;
+
         const fallbackSelection: ModelSelection = {
           provider: alternative,
           model: this.getModelForProvider(alternative, task),
-          reason: `Fallback (${preferredProvider} ${quotaCheck.reason})`
+          reason
         };
 
         return {

@@ -24,8 +24,8 @@ import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
 
-// Test database path
-const TEST_DB_PATH = './data/test-collaboration-e2e.db';
+// Test database path - use in-memory for E2E tests to avoid I/O conflicts
+const TEST_DB_PATH = ':memory:';
 
 // Test Agent Implementation
 class TestAgent implements CollaborativeAgent {

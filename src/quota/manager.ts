@@ -132,15 +132,27 @@ export class QuotaManager {
 
   /**
    * Get all available providers
+   * Note: This method directly checks quota without calling checkQuota()
+   * to avoid circular dependency (checkQuota → getSuggestedAlternatives → getAvailableProviders)
    */
   getAvailableProviders(): string[] {
     const available: string[] = [];
 
     for (const [provider, quota] of this.quotas.entries()) {
-      const check = this.checkQuota(provider);
-      if (check.canUse) {
-        available.push(provider);
-      }
+      // Check if provider is available
+      if (!quota.available) continue;
+
+      // Reset counters if needed
+      this.resetIfNeeded(quota);
+
+      // Check daily limit
+      if (quota.limits.daily && quota.usage.daily >= quota.limits.daily) continue;
+
+      // Check monthly limit
+      if (quota.limits.monthly && quota.usage.monthly >= quota.limits.monthly) continue;
+
+      // Provider is available
+      available.push(provider);
     }
 
     return available;
@@ -161,13 +173,22 @@ export class QuotaManager {
     const now = new Date();
     const lastReset = quota.usage.lastReset;
 
-    // Reset daily counter (if last reset was yesterday or earlier)
-    if (now.getDate() !== lastReset.getDate()) {
+    // Check if it's the same day (year + month + date)
+    const isSameDay = now.getFullYear() === lastReset.getFullYear() &&
+                      now.getMonth() === lastReset.getMonth() &&
+                      now.getDate() === lastReset.getDate();
+
+    // Reset daily counter if not the same day
+    if (!isSameDay) {
       quota.usage.daily = 0;
     }
 
-    // Reset monthly counter (if last reset was last month or earlier)
-    if (now.getMonth() !== lastReset.getMonth()) {
+    // Check if it's the same month (year + month)
+    const isSameMonth = now.getFullYear() === lastReset.getFullYear() &&
+                        now.getMonth() === lastReset.getMonth();
+
+    // Reset monthly counter if not the same month
+    if (!isSameMonth) {
       quota.usage.monthly = 0;
     }
 

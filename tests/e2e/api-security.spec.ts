@@ -16,7 +16,7 @@
  * - Security headers
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import axios, { AxiosError } from 'axios';
 import { rateLimitPresets, rateLimiter, clearRateLimits } from '../../src/middleware/rateLimiter.js';
 import express, { Request, Response } from 'express';

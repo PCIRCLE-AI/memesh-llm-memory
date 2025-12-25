@@ -76,3 +76,14 @@ secrets/
 
 # Cost tracking (可能包含敏感資訊)
 cost-tracking.json
+
+# Test scripts (development only)
+test-*.sh
+test-*.ts
+!tests/**/*.ts
+*.patch
+
+# Test database files
+data/*.db-shm
+data/*.db-wal
+data/vectorstore/

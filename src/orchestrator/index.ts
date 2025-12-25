@@ -27,16 +27,26 @@ import Anthropic from '@anthropic-ai/sdk';
 import { Task, TaskAnalysis, RoutingDecision } from './types.js';
 import { Router } from './router.js';
 import { appConfig } from '../config/index.js';
+import { GlobalResourcePool } from './GlobalResourcePool.js';
+import { randomBytes } from 'crypto';
 
 export class Orchestrator {
   private router: Router;
   private anthropic: Anthropic;
+  private orchestratorId: string;
+  private resourcePool: GlobalResourcePool;
 
   constructor() {
     this.router = new Router();
     this.anthropic = new Anthropic({
       apiKey: appConfig.claude.apiKey,
     });
+    // 生成唯一 ID
+    this.orchestratorId = `orch-${randomBytes(4).toString('hex')}`;
+    // 獲取全局資源池
+    this.resourcePool = GlobalResourcePool.getInstance();
+
+    console.log(`[Orchestrator] Initialized with ID: ${this.orchestratorId}`);
   }
 
   /**
@@ -92,10 +102,19 @@ export class Orchestrator {
 
   /**
    * 批次執行多個任務
+   *
+   * 新增資源管理：
+   * - 動態調整並行度（基於系統資源）
+   * - E2E 測試強制序列化
+   * - 使用 GlobalResourcePool 協調
    */
   async executeBatch(
     tasks: Task[],
-    mode: 'sequential' | 'parallel' = 'sequential'
+    mode: 'sequential' | 'parallel' = 'sequential',
+    options?: {
+      maxConcurrent?: number;  // 最大並行數（會根據系統資源調整）
+      forceSequential?: boolean;  // 強制序列化（用於 E2E 測試）
+    }
   ): Promise<{
     results: Awaited<ReturnType<Orchestrator['executeTask']>>[];
     totalCost: number;
@@ -103,13 +122,33 @@ export class Orchestrator {
   }> {
     const startTime = Date.now();
 
+    // 檢查是否有 E2E 測試
+    const hasE2E = tasks.some(task =>
+      task.description?.toLowerCase().includes('e2e') ||
+      task.description?.toLowerCase().includes('end-to-end')
+    );
+
+    // E2E 測試必須序列化
+    if (hasE2E) {
+      console.log('⚠️  Detected E2E tests - forcing sequential execution');
+      mode = 'sequential';
+    }
+
+    // 強制序列化選項
+    if (options?.forceSequential) {
+      mode = 'sequential';
+    }
+
     console.log(`\n🚀 Executing ${tasks.length} tasks in ${mode} mode...\n`);
 
     let results: Awaited<ReturnType<Orchestrator['executeTask']>>[];
 
     if (mode === 'parallel') {
-      results = await Promise.all(tasks.map(task => this.executeTask(task)));
+      // 並行模式：使用資源感知的並行執行
+      const maxConcurrent = options?.maxConcurrent ?? 2;  // 預設最多 2 個並行
+      results = await this.executeTasksInParallel(tasks, maxConcurrent);
     } else {
+      // 序列模式
       results = [];
       for (const task of tasks) {
         const result = await this.executeTask(task);
@@ -187,6 +226,65 @@ export class Orchestrator {
   }> {
     const { analysis, routing } = await this.router.routeTask(task);
     return { analysis, routing };
+  }
+
+  /**
+   * 資源感知的並行執行
+   *
+   * 使用 Promise pool 限制並行度
+   * 根據系統資源動態調整
+   */
+  private async executeTasksInParallel(
+    tasks: Task[],
+    maxConcurrent: number
+  ): Promise<Awaited<ReturnType<Orchestrator['executeTask']>>[]> {
+    const results: Awaited<ReturnType<Orchestrator['executeTask']>>[] = [];
+    const executing: Promise<void>[] = [];
+
+    for (const task of tasks) {
+      const promise = this.executeTask(task).then(result => {
+        results.push(result);
+      });
+
+      executing.push(promise);
+
+      if (executing.length >= maxConcurrent) {
+        // 等待其中一個完成
+        await Promise.race(executing);
+        // 移除已完成的
+        const stillExecuting = executing.filter(p =>
+          Promise.race([p, Promise.resolve('done')]).then(v => v !== 'done')
+        );
+        executing.length = 0;
+        executing.push(...stillExecuting);
+      }
+    }
+
+    // 等待所有剩餘任務完成
+    await Promise.all(executing);
+
+    return results;
+  }
+
+  /**
+   * 獲取資源池狀態
+   */
+  async getResourcePoolStatus(): Promise<ReturnType<GlobalResourcePool['getStatus']>> {
+    return this.resourcePool.getStatus();
+  }
+
+  /**
+   * 生成資源池報告
+   */
+  async getResourcePoolReport(): Promise<string> {
+    return this.resourcePool.generateReport();
+  }
+
+  /**
+   * 獲取 Orchestrator ID
+   */
+  getOrchestratorId(): string {
+    return this.orchestratorId;
   }
 
   /**

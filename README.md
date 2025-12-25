@@ -9,8 +9,7 @@ Smart Agents 是一個高性能、模組化的 AI Agent 協調平台，專為 Ma
 ### 核心能力
 
 - 🎯 **智能 Orchestrator** - 自動路由任務到最適合的 agent
-- 🎙️ **Voice AI** - 語音轉文字和文字轉語音（OpenAI Whisper + TTS）
-- 🧠 **Advanced RAG** - 向量資料庫驅動的知識檢索（ChromaDB）
+- 🧠 **Advanced RAG** - 向量資料庫驅動的知識檢索（Vectra 本地存儲）
 - 🤝 **Multi-Agent 協作** - 專業化 agent teams 協同工作（✅ Month 1）
 - 💾 **Knowledge Graph** - 持久化記憶系統（MCP Memory）
 - 📊 **Real-time Dashboard** - 系統監控與成本追蹤（✅ Month 1）
@@ -56,12 +55,8 @@ Smart Agents 是一個高性能、模組化的 AI Agent 協調平台，專為 Ma
 - Grok (xAI) - 中等推理、創意任務 (complexity 6-8)
 - Gemini 2.5 Flash - 多模態任務 (vision, audio, video) - FREE tier
 
-**OpenAI 語音服務**:
-- Whisper - 語音轉文字
-- TTS - 文字轉語音
-
 **基礎設施**:
-- ChromaDB - 本地向量資料庫
+- Vectra - 本地向量資料庫
 - MCP (Model Context Protocol) - Agent 整合框架
 - Node.js / TypeScript - 開發語言
 
@@ -130,7 +125,6 @@ Layer 1: Provider Integration
 - macOS (M2 Pro 或更高)
 - Node.js 18+
 - Python 3.9+
-- Docker (可選，用於 ChromaDB)
 
 ### 安裝
 
@@ -160,12 +154,9 @@ CLAUDE_MODEL=claude-sonnet-4-5-20250929
 CLAUDE_OPUS_MODEL=claude-opus-4-5-20251101
 
 # ====================================
-# OpenAI API (Voice AI + Code)
+# OpenAI API (Code)
 # ====================================
 OPENAI_API_KEY=sk-xxxxx
-OPENAI_WHISPER_MODEL=whisper-1
-OPENAI_TTS_MODEL=tts-1
-OPENAI_TTS_VOICE=alloy
 OPENAI_CHAT_MODEL=gpt-4-turbo-preview
 OPENAI_CODE_MODEL=gpt-4-turbo-preview
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
@@ -215,25 +206,11 @@ DEFAULT_CODE_PROVIDER=ollama
 DEFAULT_MULTIMODAL_PROVIDER=gemini
 DEFAULT_REASONING_PROVIDER=claude
 FALLBACK_PROVIDER=ollama  # 最後備用 (本地、免費、無限)
-
-# ====================================
-# ChromaDB 配置
-# ====================================
-CHROMA_HOST=localhost
-CHROMA_PORT=8000
-CHROMA_COLLECTION_NAME=smart_agents_kb
 ```
 
 ### 啟動
 
 ```bash
-# 啟動 ChromaDB (Docker)
-docker run -d -p 8000:8000 --name chroma chromadb/chroma
-
-# 或使用本地安裝
-pip install chromadb
-python -m chromadb.server
-
 # 啟動 Smart Agents
 npm run dev
 ```
@@ -254,23 +231,7 @@ npm run dashboard
 # 運行 Architecture Team Demo
 npm run demo:architecture
 
-# 🎙️ Voice AI & RAG
-# ==================
-
-# Voice RAG CLI (✅ 推薦 - 完整功能)
-npm run voice-rag
-# 語音輸入 → RAG 檢索 → Claude 回應 → 語音輸出
-# 成本: ~$0.0087/query, 耗時: ~17s
-
-# Voice RAG Web UI (✅ 可用)
-npm run voice-rag:server
-# 開啟瀏覽器訪問 http://localhost:3003/voice-rag-widget.html
-# macOS 瀏覽器錄音已正常運作
-
-# Voice Agent (TTS Demo)
-npm run voice
-
-# RAG Agent (ChromaDB Demo)
+# RAG Agent (Vectra Demo)
 npm run rag
 
 # 編譯專案
@@ -280,20 +241,6 @@ npm run build
 npm start
 ```
 
-### ✅ Voice RAG 使用說明
-
-**CLI 版本**:
-- ✅ 使用 sox 錄音，穩定可靠
-- ✅ 完整管道: Whisper STT → RAG → Claude → OpenAI TTS
-- ✅ 成本約 $0.0087/query，耗時約 17s
-- 💡 推薦用於生產環境
-
-**Web UI 版本**:
-- ✅ 瀏覽器錄音功能正常（macOS 已驗證）
-- ✅ 完整的語音互動介面
-- ✅ 後端 API 穩定運作
-- 💡 適合快速測試和展示
-
 ## 📁 專案結構
 
 ```
@@ -302,7 +249,6 @@ smart-agents/
 │   ├── orchestrator/         # 核心 Agent Orchestrator
 │   ├── agents/               # 各種專業 agents
 │   │   ├── architecture/     # 🏗️ Architecture analysis agent (Month 1)
-│   │   ├── voice/            # Voice AI agent
 │   │   ├── rag/              # RAG agent
 │   │   ├── code/             # Code review agent
 │   │   └── research/         # Research agent
@@ -329,9 +275,8 @@ smart-agents/
 
 ### Week 1 ✅
 - [x] 專案初始化
-- [ ] Agent Orchestrator 核心
-- [ ] Voice AI 整合 (Whisper + TTS)
-- [ ] ChromaDB RAG 基礎
+- [x] Agent Orchestrator 核心
+- [x] Vectra RAG 基礎
 
 ### Month 1 ✅ (2025-12-24)
 - [x] Multi-Agent 協作框架
@@ -355,7 +300,7 @@ smart-agents/
 - Grok API: $3-8 (中等推理任務)
 - Gemini API: $0 (FREE tier, 10,000 次/日)
 - Ollama: $0 (本地運行，60% 簡單任務)
-- ChromaDB: $0 (本地)
+- Vectra: $0 (本地)
 - **總計**: ~$20-35/月 (↓ 40% vs 單一提供商)
 
 ### 成本優化策略

@@ -78,7 +78,8 @@ describe('CollaborationManager', () => {
   let agent3: MockAgent;
 
   beforeEach(async () => {
-    manager = new CollaborationManager();
+    // Use in-memory database for tests to avoid contaminating production data
+    manager = new CollaborationManager(':memory:');
     await manager.initialize();
 
     agent1 = new MockAgent('Agent 1', ['capability_a', 'capability_b']);
@@ -92,7 +93,7 @@ describe('CollaborationManager', () => {
 
   describe('Initialization', () => {
     it('should initialize successfully', async () => {
-      const newManager = new CollaborationManager();
+      const newManager = new CollaborationManager(':memory:');
       await expect(newManager.initialize()).resolves.not.toThrow();
       await newManager.shutdown();
     });
@@ -124,7 +125,7 @@ describe('CollaborationManager', () => {
     });
 
     it('should throw if not initialized', async () => {
-      const uninitializedManager = new CollaborationManager();
+      const uninitializedManager = new CollaborationManager(':memory:');
 
       expect(() => uninitializedManager.registerAgent(agent1)).toThrow();
 
@@ -139,8 +140,8 @@ describe('CollaborationManager', () => {
       manager.registerAgent(agent3);
     });
 
-    it('should create team successfully', () => {
-      const team = manager.createTeam({
+    it('should create team successfully', async () => {
+      const team = await manager.createTeam({
         name: 'Test Team',
         description: 'A test team',
         members: [agent1.id, agent2.id],
@@ -154,10 +155,10 @@ describe('CollaborationManager', () => {
       expect(team.leader).toBe(agent1.id);
     });
 
-    it('should validate all members are registered', () => {
+    it('should validate all members are registered', async () => {
       const fakeId = 'fake-agent-id';
 
-      expect(() =>
+      await expect(
         manager.createTeam({
           name: 'Invalid Team',
           description: 'Team with unregistered agent',
@@ -165,11 +166,11 @@ describe('CollaborationManager', () => {
           leader: agent1.id,
           capabilities: ['capability_a'],
         })
-      ).toThrow('not registered');
+      ).rejects.toThrow('not registered');
     });
 
-    it('should validate leader is a member', () => {
-      expect(() =>
+    it('should validate leader is a member', async () => {
+      await expect(
         manager.createTeam({
           name: 'Invalid Team',
           description: 'Leader not in members',
@@ -177,11 +178,11 @@ describe('CollaborationManager', () => {
           leader: agent2.id, // Not in members
           capabilities: ['capability_a'],
         })
-      ).toThrow('must be a team member');
+      ).rejects.toThrow('must be a team member');
     });
 
-    it('should list all teams', () => {
-      manager.createTeam({
+    it('should list all teams', async () => {
+      await manager.createTeam({
         name: 'Team 1',
         description: 'First team',
         members: [agent1.id, agent2.id],
@@ -189,7 +190,7 @@ describe('CollaborationManager', () => {
         capabilities: ['capability_a'],
       });
 
-      manager.createTeam({
+      await manager.createTeam({
         name: 'Team 2',
         description: 'Second team',
         members: [agent2.id, agent3.id],
@@ -210,7 +211,7 @@ describe('CollaborationManager', () => {
     });
 
     it('should execute task successfully', async () => {
-      const team = manager.createTeam({
+      const team = await manager.createTeam({
         name: 'Execution Team',
         description: 'Team for task execution',
         members: [agent1.id, agent2.id],
@@ -242,7 +243,7 @@ describe('CollaborationManager', () => {
 
       manager.registerAgent(failingAgent);
 
-      const team = manager.createTeam({
+      const team = await manager.createTeam({
         name: 'Failing Team',
         description: 'Team that will fail',
         members: [failingAgent.id],
@@ -274,7 +275,7 @@ describe('CollaborationManager', () => {
       manager.registerAgent(architect2);
       manager.registerAgent(architect3);
 
-      const team = manager.createTeam({
+      const team = await manager.createTeam({
         name: 'Architecture Team',
         description: 'Team with 3 architects',
         members: [architect1.id, architect2.id, architect3.id],
@@ -321,7 +322,7 @@ describe('CollaborationManager', () => {
     });
 
     it('should retrieve session by ID', async () => {
-      const team = manager.createTeam({
+      const team = await manager.createTeam({
         name: 'Session Team',
         description: 'Team for session test',
         members: [agent1.id],
@@ -351,7 +352,7 @@ describe('CollaborationManager', () => {
     });
 
     it('should calculate team metrics correctly', async () => {
-      const team = manager.createTeam({
+      const team = await manager.createTeam({
         name: 'Metrics Team',
         description: 'Team for metrics test',
         members: [agent1.id, agent2.id],
@@ -393,7 +394,7 @@ describe('CollaborationManager', () => {
     });
 
     it('should track message statistics', async () => {
-      const team = manager.createTeam({
+      const team = await manager.createTeam({
         name: 'Message Team',
         description: 'Team for message test',
         members: [agent1.id, agent2.id],
@@ -417,7 +418,7 @@ describe('CollaborationManager', () => {
     });
 
     it('should retrieve message history', async () => {
-      const team = manager.createTeam({
+      const team = await manager.createTeam({
         name: 'History Team',
         description: 'Team for history test',
         members: [agent1.id],

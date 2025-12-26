@@ -15,6 +15,12 @@ System architecture, design patterns, and data flow documentation.
 - **[Async Execution](./architecture/ASYNC_EXECUTION.md)** - Non-blocking task execution design
 - **[Data Flow](./architecture/DATA_FLOW.md)** - Request/response patterns and failover logic
 
+### 🤖 Core Features (V2 Month 2-3)
+Advanced multi-agent systems and self-learning capabilities.
+
+- **[Specialized Teams](./TEAMS.md)** - 4 專業團隊協作框架 (代碼開發、研究分析、品質保證、編排優化)
+- **[Self-Evolving Agent](./EVOLUTION.md)** - 自主學習與行為優化系統 (PerformanceTracker, LearningManager, AdaptationEngine)
+
 ### 🎨 [Design](./design/)
 UI/UX design system, branding guidelines, and component specifications.
 
@@ -69,8 +75,10 @@ Historical documentation and deprecated content.
 **Developer**:
 1. [Getting Started](./guides/GETTING_STARTED.md)
 2. [System Architecture](./architecture/SYSTEM_ARCHITECTURE.md)
-3. [API Reference](./api/API_REFERENCE.md)
-4. [Testing Guide](./guides/TESTING.md)
+3. [Specialized Teams](./TEAMS.md) ✨ NEW
+4. [Self-Evolving Agent](./EVOLUTION.md) ✨ NEW
+5. [API Reference](./api/API_REFERENCE.md)
+6. [Testing Guide](./guides/TESTING.md)
 
 **Designer**:
 1. [Design System](./design/DESIGN_SYSTEM.md)
@@ -80,7 +88,9 @@ Historical documentation and deprecated content.
 **Product Manager**:
 1. [Roadmap](./implementation/ROADMAP.md)
 2. [Month 1 Completion](./project/MONTH_1_COMPLETION.md)
-3. [Tech Debt](./implementation/TECH_DEBT.md)
+3. [Specialized Teams](./TEAMS.md) ✨ V2 Month 2-3
+4. [Self-Evolving Agent](./EVOLUTION.md) ✨ V2 Month 2-3
+5. [Tech Debt](./implementation/TECH_DEBT.md)
 
 ### By Task
 

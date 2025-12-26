@@ -252,10 +252,24 @@ smart-agents/
 │   │   ├── rag/              # RAG agent
 │   │   ├── code/             # Code review agent
 │   │   └── research/         # Research agent
+│   ├── teams/                # 🤝 Specialized Agent Teams (Month 2-3)
+│   │   ├── CodeDevelopmentTeam.ts     # 代碼開發團隊
+│   │   ├── ResearchAnalysisTeam.ts    # 研究分析團隊
+│   │   ├── QualityAssuranceTeam.ts    # 品質保證團隊
+│   │   ├── OrchestrationTeam.ts       # 編排優化團隊
+│   │   ├── index.ts                    # Team exports & utilities
+│   │   └── teams.test.ts               # Team tests (16/16 ✅)
 │   ├── collaboration/        # 🤝 Multi-agent collaboration framework (Month 1)
 │   │   ├── MessageBus.ts     # Event-driven messaging
 │   │   ├── TeamCoordinator.ts # Team management
 │   │   └── CollaborationManager.ts # Main API
+│   ├── evolution/            # 🧠 Self-Evolving Agent System (Month 2-3)
+│   │   ├── PerformanceTracker.ts  # 性能監控與異常檢測
+│   │   ├── LearningManager.ts     # 模式識別與知識萃取
+│   │   ├── AdaptationEngine.ts    # 動態行為調整
+│   │   ├── types.ts                # Evolution system types
+│   │   ├── index.ts                # Evolution exports
+│   │   └── evolution.test.ts       # Evolution tests (22/22 ✅)
 │   ├── dashboard/            # 📊 Monitoring dashboard (Month 1)
 │   │   ├── server.ts         # Express API server
 │   │   └── public/           # Web UI
@@ -264,7 +278,9 @@ smart-agents/
 │   └── config/               # 配置文件
 ├── docs/                     # 文檔
 │   ├── TESTING.md            # 測試指南 (Month 1)
-│   └── MONTH_1_COMPLETION.md # Month 1 完成報告
+│   ├── MONTH_1_COMPLETION.md # Month 1 完成報告
+│   ├── TEAMS.md              # 專業團隊使用指南 (Month 2-3)
+│   └── EVOLUTION.md          # Self-Evolving Agent 系統文檔 (Month 2-3)
 ├── .env.example              # 環境變數範本
 ├── package.json
 ├── tsconfig.json

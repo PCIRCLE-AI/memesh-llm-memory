@@ -10,10 +10,10 @@ export { WindowsCredentialManager } from './WindowsCredentialManager.js';
 export { LinuxSecretService } from './LinuxSecretService.js';
 export { EncryptedFileStorage } from './EncryptedFileStorage.js';
 
-// Cloud provider backends
-export { AWSSecretsManager, type AWSSecretsManagerConfig } from './AWSSecretsManager.js';
+// Cloud provider backends (optional - see docs/examples/enterprise/)
+// AWS Secrets Manager and Azure Key Vault moved to optional enterprise examples
+// HashiCorp Vault is open-source and self-hosted (recommended for advanced users)
 export { HashiCorpVault, type HashiCorpVaultConfig } from './HashiCorpVault.js';
-export { AzureKeyVault, type AzureKeyVaultConfig } from './AzureKeyVault.js';
 
 // Advanced features
 export { StoragePool, LoadBalancingStrategy, type StorageBackendConfig, type StoragePoolStats } from './StoragePool.js';

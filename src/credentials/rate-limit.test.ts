@@ -6,6 +6,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { CredentialVault } from './CredentialVault.js';
+import { Role, type Identity } from './AccessControl.js';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { rmSync, existsSync } from 'fs';
@@ -14,11 +15,20 @@ describe('Rate Limiting Tests', () => {
   let vault: CredentialVault;
   let testDbPath: string;
 
+  const testIdentity: Identity = {
+    id: 'test-user',
+    type: 'user',
+  };
+
   beforeEach(async () => {
     // Create temporary database for testing
     testDbPath = join(tmpdir(), `test-vault-ratelimit-${Date.now()}.db`);
     vault = new CredentialVault(testDbPath);
     await vault.initialize();
+
+    // Set up test identity with admin role for testing
+    vault.assignRole(testIdentity, Role.ADMIN);
+    vault.setIdentity(testIdentity);
 
     // Add a test credential
     await vault.add({

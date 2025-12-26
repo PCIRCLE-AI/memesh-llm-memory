@@ -73,3 +73,28 @@ export type {
   AdaptationConfig,
   EvolutionStats,
 } from './types.js';
+
+// Phase 3: Cross-Agent Knowledge Transfer
+export { TransferabilityChecker } from './TransferabilityChecker.js';
+export { KnowledgeTransferManager, type FindTransferableOptions } from './KnowledgeTransferManager.js';
+
+// Phase 3: A/B Testing Framework
+export { StatisticalAnalyzer, type WelchTTestResult } from './StatisticalAnalyzer.js';
+export { ABTestManager, type CreateExperimentOptions } from './ABTestManager.js';
+
+// Phase 3 Types
+export type {
+  PatternTransferability,
+  TransferablePattern,
+  ABTestExperiment,
+  ABTestVariant,
+  ABTestAssignment,
+  ABTestResults,
+  VariantStatistics,
+  FederatedLearningConfig,
+  LocalModelUpdate,
+  GlobalModel,
+  ContextualPattern,
+  PatternContext,
+  PatternExplanation,
+} from './types.js';

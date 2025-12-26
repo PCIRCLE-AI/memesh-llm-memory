@@ -85,6 +85,23 @@ export class SQLiteStore implements EvolutionStore {
   }
 
   // ========================================================================
+  // Security Helpers
+  // ========================================================================
+
+  /**
+   * Escape special characters for LIKE patterns to prevent SQL injection
+   * Escapes: % _ \ ' "
+   */
+  private escapeLikePattern(pattern: string): string {
+    return pattern
+      .replace(/\\/g, '\\\\')  // Backslash must be first
+      .replace(/%/g, '\\%')
+      .replace(/_/g, '\\_')
+      .replace(/'/g, "''")      // SQL escape for single quote
+      .replace(/"/g, '""');     // SQL escape for double quote
+  }
+
+  // ========================================================================
   // Lifecycle
   // ========================================================================
 
@@ -614,11 +631,25 @@ export class SQLiteStore implements EvolutionStore {
       params.push(query.end_time_lte);
     }
 
-    // Sorting
+    // Sorting - SQL injection protection
+    const ALLOWED_SORT_COLUMNS = [
+      'start_time', 'duration_ms', 'status_code', 'name', 'kind',
+      'end_time', 'span_id', 'trace_id', 'task_id', 'execution_id'
+    ];
+    const ALLOWED_SORT_ORDERS = ['ASC', 'DESC'];
+
     if (query.sort_by) {
+      if (!ALLOWED_SORT_COLUMNS.includes(query.sort_by)) {
+        throw new Error(`Invalid sort column: ${query.sort_by}. Allowed: ${ALLOWED_SORT_COLUMNS.join(', ')}`);
+      }
       sql += ` ORDER BY ${query.sort_by}`;
+
       if (query.sort_order) {
-        sql += ` ${query.sort_order.toUpperCase()}`;
+        const upperOrder = query.sort_order.toUpperCase();
+        if (!ALLOWED_SORT_ORDERS.includes(upperOrder)) {
+          throw new Error(`Invalid sort order: ${query.sort_order}. Allowed: ASC, DESC`);
+        }
+        sql += ` ${upperOrder}`;
       }
     } else {
       sql += ' ORDER BY start_time DESC';
@@ -671,19 +702,22 @@ export class SQLiteStore implements EvolutionStore {
 
   async queryLinkedSpans(spanId: string): Promise<Span[]> {
     // Find all spans that link to this span
+    // Escape special characters to prevent LIKE injection
+    const escapedSpanId = this.escapeLikePattern(spanId);
+
     const stmt = this.db.prepare(`
-      SELECT * FROM spans WHERE links IS NOT NULL AND links LIKE ?
+      SELECT * FROM spans WHERE links IS NOT NULL AND links LIKE ? ESCAPE '\\'
     `);
 
-    const rows = stmt.all(`%"span_id":"${spanId}"%`) as any[];
+    const rows = stmt.all(`%"span_id":"${escapedSpanId}"%`) as any[];
     return rows.map((row) => this.rowToSpan(row));
   }
 
   async queryByTags(tags: string[], mode: 'any' | 'all' = 'any'): Promise<Span[]> {
     if (mode === 'any') {
-      // Match any tag
-      const conditions = tags.map(() => 'tags LIKE ?').join(' OR ');
-      const params = tags.map((tag) => `%"${tag}"%`);
+      // Match any tag - escape to prevent LIKE injection
+      const conditions = tags.map(() => 'tags LIKE ? ESCAPE \'\\\'').join(' OR ');
+      const params = tags.map((tag) => `%"${this.escapeLikePattern(tag)}"%`);
 
       const stmt = this.db.prepare(`
         SELECT * FROM spans WHERE tags IS NOT NULL AND (${conditions})
@@ -692,9 +726,9 @@ export class SQLiteStore implements EvolutionStore {
       const rows = stmt.all(...params) as any[];
       return rows.map((row) => this.rowToSpan(row));
     } else {
-      // Match all tags
-      const conditions = tags.map(() => 'tags LIKE ?').join(' AND ');
-      const params = tags.map((tag) => `%"${tag}"%`);
+      // Match all tags - escape to prevent LIKE injection
+      const conditions = tags.map(() => 'tags LIKE ? ESCAPE \'\\\'').join(' AND ');
+      const params = tags.map((tag) => `%"${this.escapeLikePattern(tag)}"%`);
 
       const stmt = this.db.prepare(`
         SELECT * FROM spans WHERE tags IS NOT NULL AND ${conditions}
@@ -1188,6 +1222,7 @@ export class SQLiteStore implements EvolutionStore {
     timeRange: TimeRange
   ): Promise<SkillPerformance> {
     // Query spans with skill.name attribute
+    // Wrap json_extract in try-catch via CASE to handle malformed JSON
     const stmt = this.db.prepare(`
       SELECT
         COUNT(*) as total_uses,
@@ -1195,7 +1230,10 @@ export class SQLiteStore implements EvolutionStore {
         SUM(CASE WHEN status_code = 'ERROR' THEN 1 ELSE 0 END) as failed_uses,
         AVG(duration_ms) as avg_duration_ms
       FROM spans
-      WHERE json_extract(attributes, '$.skill.name') = ?
+      WHERE CASE
+          WHEN json_valid(attributes) THEN json_extract(attributes, '$.skill.name') = ?
+          ELSE 0
+        END
         AND start_time >= ? AND start_time <= ?
     `);
 
@@ -1226,11 +1264,12 @@ export class SQLiteStore implements EvolutionStore {
   async getAllSkillsPerformance(
     timeRange: TimeRange
   ): Promise<SkillPerformance[]> {
-    // Get distinct skill names
+    // Get distinct skill names - validate JSON first
     const skillsStmt = this.db.prepare(`
       SELECT DISTINCT json_extract(attributes, '$.skill.name') as skill_name
       FROM spans
-      WHERE json_extract(attributes, '$.skill.name') IS NOT NULL
+      WHERE json_valid(attributes)
+        AND json_extract(attributes, '$.skill.name') IS NOT NULL
         AND start_time >= ? AND start_time <= ?
     `);
 

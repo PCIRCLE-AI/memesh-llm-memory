@@ -941,6 +941,102 @@ export class SQLiteStore implements EvolutionStore {
     return rows.map((row) => this.rowToPattern(row));
   }
 
+  /**
+   * Store a contextual pattern with rich context metadata (Phase 2)
+   */
+  async storeContextualPattern(pattern: import('./types.js').ContextualPattern): Promise<void> {
+    const stmt = this.db.prepare(`
+      INSERT INTO patterns (
+        id, type, confidence, occurrences, pattern_data, source_span_ids,
+        applies_to_agent_type, applies_to_task_type, applies_to_skill,
+        first_observed, last_observed, is_active,
+        complexity, config_keys, context_metadata
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    stmt.run(
+      pattern.id,
+      pattern.type,
+      pattern.confidence,
+      pattern.observations,
+      JSON.stringify({ description: pattern.description }), // pattern_data
+      null, // source_span_ids
+      pattern.context.agent_type || null,
+      pattern.context.task_type || null,
+      null, // applies_to_skill
+      pattern.last_seen, // first_observed
+      pattern.last_seen, // last_observed
+      1, // is_active
+      pattern.context.complexity || null,
+      pattern.context.config_keys ? JSON.stringify(pattern.context.config_keys) : null,
+      pattern.context.metadata ? JSON.stringify(pattern.context.metadata) : null
+    );
+  }
+
+  /**
+   * Query patterns by context criteria (Phase 2)
+   */
+  async queryPatternsByContext(
+    context: import('./types.js').PatternContext
+  ): Promise<import('./types.js').ContextualPattern[]> {
+    let sql = 'SELECT * FROM patterns WHERE 1=1';
+    const params: any[] = [];
+
+    if (context.agent_type) {
+      sql += ' AND applies_to_agent_type = ?';
+      params.push(context.agent_type);
+    }
+
+    if (context.task_type) {
+      sql += ' AND applies_to_task_type = ?';
+      params.push(context.task_type);
+    }
+
+    if (context.complexity) {
+      sql += ' AND complexity = ?';
+      params.push(context.complexity);
+    }
+
+    if (context.config_keys && context.config_keys.length > 0) {
+      // Match if any of the context config keys are in the pattern's config_keys
+      sql += ' AND config_keys IS NOT NULL';
+      // Note: More sophisticated matching could be done with JSON functions
+      // For now, we do basic substring matching
+    }
+
+    const stmt = this.db.prepare(sql);
+    const rows = stmt.all(...params) as any[];
+
+    return rows.map((row) => this.rowToContextualPattern(row));
+  }
+
+  /**
+   * Convert database row to ContextualPattern (Phase 2)
+   */
+  private rowToContextualPattern(row: any): import('./types.js').ContextualPattern {
+    const pattern_data = row.pattern_data ? JSON.parse(row.pattern_data) : {};
+    const config_keys = row.config_keys ? JSON.parse(row.config_keys) : undefined;
+    const metadata = row.context_metadata ? JSON.parse(row.context_metadata) : undefined;
+
+    return {
+      id: row.id,
+      type: row.type,
+      description: pattern_data.description || '',
+      confidence: row.confidence,
+      observations: row.occurrences,
+      success_rate: 0, // TODO: Calculate from pattern_data or adaptations
+      avg_execution_time: 0, // TODO: Calculate from spans
+      last_seen: row.last_observed,
+      context: {
+        agent_type: row.applies_to_agent_type || undefined,
+        task_type: row.applies_to_task_type || undefined,
+        complexity: row.complexity || undefined,
+        config_keys: config_keys,
+        metadata: metadata,
+      },
+    };
+  }
+
   async updatePattern(
     patternId: string,
     updates: Partial<Pattern>

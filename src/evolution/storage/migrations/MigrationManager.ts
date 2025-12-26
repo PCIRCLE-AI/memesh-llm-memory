@@ -143,6 +143,69 @@ export const migrations: Migration[] = [
       db.exec('DROP TABLE IF EXISTS skills_performance_cache');
     },
   },
+  {
+    version: 4,
+    name: 'add_contextual_patterns',
+    up: (db) => {
+      // Add context columns to patterns table
+      db.exec(`
+        ALTER TABLE patterns ADD COLUMN complexity TEXT CHECK(complexity IN ('low', 'medium', 'high'));
+      `);
+
+      db.exec(`
+        ALTER TABLE patterns ADD COLUMN config_keys TEXT;
+      `);
+
+      db.exec(`
+        ALTER TABLE patterns ADD COLUMN context_metadata TEXT;
+      `);
+
+      // Create index for context-based queries
+      db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_patterns_agent_task ON patterns(applies_to_agent_type, applies_to_task_type);
+      `);
+
+      db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_patterns_complexity ON patterns(complexity) WHERE complexity IS NOT NULL;
+      `);
+    },
+    down: (db) => {
+      // SQLite doesn't support DROP COLUMN, so we need to recreate the table
+      db.exec(`
+        CREATE TABLE patterns_backup AS SELECT
+          id, type, confidence, occurrences, pattern_data, source_span_ids,
+          applies_to_agent_type, applies_to_task_type, applies_to_skill,
+          first_observed, last_observed, is_active, created_at, updated_at
+        FROM patterns;
+      `);
+
+      db.exec('DROP TABLE patterns');
+
+      db.exec(`
+        CREATE TABLE patterns (
+          id TEXT PRIMARY KEY,
+          type TEXT NOT NULL CHECK(type IN ('success', 'anti_pattern', 'optimization')),
+          confidence REAL NOT NULL CHECK(confidence >= 0 AND confidence <= 1),
+          occurrences INTEGER NOT NULL DEFAULT 1,
+          pattern_data TEXT NOT NULL,
+          source_span_ids TEXT,
+          applies_to_agent_type TEXT,
+          applies_to_task_type TEXT,
+          applies_to_skill TEXT,
+          first_observed DATETIME NOT NULL,
+          last_observed DATETIME NOT NULL,
+          is_active INTEGER NOT NULL DEFAULT 1,
+          created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      db.exec('INSERT INTO patterns SELECT * FROM patterns_backup');
+      db.exec('DROP TABLE patterns_backup');
+      db.exec('DROP INDEX IF EXISTS idx_patterns_agent_task');
+      db.exec('DROP INDEX IF EXISTS idx_patterns_complexity');
+    },
+  },
 ];
 
 export class MigrationManager {

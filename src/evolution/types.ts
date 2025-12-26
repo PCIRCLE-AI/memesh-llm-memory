@@ -407,3 +407,33 @@ export interface OptimizationCandidate {
    */
   metadata?: Record<string, any>;
 }
+
+/**
+ * Human-readable explanation for a learned pattern (Phase 2)
+ */
+export interface PatternExplanation {
+  /**
+   * One-line summary of the pattern
+   */
+  summary: string;
+
+  /**
+   * Detailed reasoning (why this pattern was learned)
+   */
+  reasoning: string[];
+
+  /**
+   * Actionable recommendation
+   */
+  recommendation: string;
+
+  /**
+   * Confidence explanation
+   */
+  confidence_explanation: string;
+
+  /**
+   * Context where pattern applies
+   */
+  context_description: string;
+}

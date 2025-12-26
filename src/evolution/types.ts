@@ -443,3 +443,382 @@ export interface PatternExplanation {
    */
   context_description: string;
 }
+
+/**
+ * Phase 3: Cross-Agent Knowledge Transfer Types
+ */
+
+/**
+ * Pattern transferability assessment between two agents
+ */
+export interface PatternTransferability {
+  /**
+   * Source agent ID (where pattern was learned)
+   */
+  sourceAgentId: string;
+
+  /**
+   * Target agent ID (where pattern will be applied)
+   */
+  targetAgentId: string;
+
+  /**
+   * Pattern ID being assessed
+   */
+  patternId: string;
+
+  /**
+   * How applicable this pattern is to target agent (0-1)
+   */
+  applicabilityScore: number;
+
+  /**
+   * Context similarity score (0-1)
+   */
+  contextSimilarity: number;
+
+  /**
+   * Confidence in transfer success (0-1)
+   */
+  confidence: number;
+
+  /**
+   * Human-readable reasoning for transferability
+   */
+  reasoning: string[];
+}
+
+/**
+ * A pattern that has been transferred from another agent
+ */
+export interface TransferablePattern {
+  /**
+   * The actual pattern
+   */
+  pattern: ContextualPattern;
+
+  /**
+   * Source agent ID
+   */
+  sourceAgentId: string;
+
+  /**
+   * When this pattern was transferred
+   */
+  transferredAt: Date;
+
+  /**
+   * Original confidence before transfer
+   */
+  originalConfidence: number;
+
+  /**
+   * Context adapted for target agent
+   */
+  adaptedForContext?: PatternContext;
+}
+
+/**
+ * Phase 3: A/B Testing Framework Types
+ */
+
+/**
+ * A/B test experiment configuration
+ */
+export interface ABTestExperiment {
+  /**
+   * Experiment ID
+   */
+  id: string;
+
+  /**
+   * Human-readable name
+   */
+  name: string;
+
+  /**
+   * Description of what is being tested
+   */
+  description: string;
+
+  /**
+   * Test variants (control + treatments)
+   */
+  variants: ABTestVariant[];
+
+  /**
+   * Traffic split (must sum to 1.0)
+   */
+  trafficSplit: number[];
+
+  /**
+   * Primary success metric
+   */
+  successMetric: 'quality_score' | 'cost' | 'duration' | 'user_satisfaction';
+
+  /**
+   * Secondary metrics to track
+   */
+  secondaryMetrics?: string[];
+
+  /**
+   * Experiment duration in days
+   */
+  durationDays: number;
+
+  /**
+   * Minimum sample size per variant
+   */
+  minSampleSize: number;
+
+  /**
+   * Statistical significance threshold (p-value)
+   */
+  significanceLevel: number;
+
+  /**
+   * Status
+   */
+  status: 'draft' | 'running' | 'completed' | 'stopped';
+
+  /**
+   * Start and end timestamps
+   */
+  startedAt?: Date;
+  completedAt?: Date;
+
+  /**
+   * Results (populated when analysis is done)
+   */
+  results?: ABTestResults;
+}
+
+/**
+ * A single variant in an A/B test
+ */
+export interface ABTestVariant {
+  /**
+   * Variant name (e.g., 'control', 'treatment_a')
+   */
+  name: string;
+
+  /**
+   * Configuration for this variant
+   */
+  config: Record<string, any>;
+
+  /**
+   * Description
+   */
+  description?: string;
+}
+
+/**
+ * A/B test assignment for an agent
+ */
+export interface ABTestAssignment {
+  /**
+   * Assignment ID
+   */
+  id: string;
+
+  /**
+   * Experiment ID
+   */
+  experimentId: string;
+
+  /**
+   * Agent ID
+   */
+  agentId: string;
+
+  /**
+   * Assigned variant name
+   */
+  variantName: string;
+
+  /**
+   * Assignment timestamp
+   */
+  assignedAt: Date;
+}
+
+/**
+ * Results from an A/B test experiment
+ */
+export interface ABTestResults {
+  /**
+   * Experiment ID
+   */
+  experimentId: string;
+
+  /**
+   * Winning variant name (or null if inconclusive)
+   */
+  winner: string | null;
+
+  /**
+   * Statistical confidence in winner (0-1)
+   */
+  confidence: number;
+
+  /**
+   * Per-variant statistics
+   */
+  variantStats: Record<string, VariantStatistics>;
+
+  /**
+   * Statistical test results
+   */
+  statisticalTests: {
+    testType: 't-test' | 'chi-square' | 'mann-whitney';
+    pValue: number;
+    effectSize: number;
+    confidenceInterval: [number, number];
+  };
+
+  /**
+   * Recommendation
+   */
+  recommendation: string;
+}
+
+/**
+ * Statistics for a single variant
+ */
+export interface VariantStatistics {
+  /**
+   * Variant name
+   */
+  variantName: string;
+
+  /**
+   * Sample size
+   */
+  sampleSize: number;
+
+  /**
+   * Success rate
+   */
+  successRate: number;
+
+  /**
+   * Mean value of success metric
+   */
+  mean: number;
+
+  /**
+   * Standard deviation
+   */
+  stdDev: number;
+
+  /**
+   * 95% confidence interval
+   */
+  confidenceInterval: [number, number];
+}
+
+/**
+ * Phase 3: Federated Learning Types
+ */
+
+/**
+ * Federated learning configuration
+ */
+export interface FederatedLearningConfig {
+  /**
+   * Minimum number of agents required for aggregation
+   */
+  minAgents: number;
+
+  /**
+   * Aggregation method
+   */
+  aggregationMethod: 'federated_averaging' | 'weighted_average' | 'median';
+
+  /**
+   * Privacy budget (differential privacy epsilon)
+   */
+  privacyBudget: number;
+
+  /**
+   * Maximum rounds of aggregation
+   */
+  maxRounds: number;
+}
+
+/**
+ * Local model update from a single agent (privacy-preserving)
+ */
+export interface LocalModelUpdate {
+  /**
+   * Update ID
+   */
+  id: string;
+
+  /**
+   * Agent ID (can be pseudonymous)
+   */
+  agentId: string;
+
+  /**
+   * Round number
+   */
+  round: number;
+
+  /**
+   * Aggregated pattern statistics (no raw data)
+   */
+  patternStats: {
+    patternType: 'success' | 'failure' | 'optimization' | 'anti-pattern';
+    count: number;
+    avgConfidence: number;
+    avgSuccessRate: number;
+    contextDistribution: Record<string, number>;
+  }[];
+
+  /**
+   * Number of local samples used
+   */
+  sampleSize: number;
+
+  /**
+   * Timestamp
+   */
+  timestamp: Date;
+}
+
+/**
+ * Aggregated global model from federated learning
+ */
+export interface GlobalModel {
+  /**
+   * Model version
+   */
+  version: string;
+
+  /**
+   * Round number
+   */
+  round: number;
+
+  /**
+   * Aggregated patterns
+   */
+  patterns: ContextualPattern[];
+
+  /**
+   * Number of participating agents
+   */
+  participatingAgents: number;
+
+  /**
+   * Total samples across all agents
+   */
+  totalSamples: number;
+
+  /**
+   * Created timestamp
+   */
+  createdAt: Date;
+}

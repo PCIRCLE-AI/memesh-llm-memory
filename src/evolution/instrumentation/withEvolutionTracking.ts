@@ -10,7 +10,7 @@
 import { SpanTracker, getGlobalTracker, ActiveSpan } from './SpanTracker';
 import type { SpanAttributes } from '../storage/types';
 import type { TelemetryCollector } from '../../telemetry/TelemetryCollector';
-import { hashStackTrace } from '../../telemetry/sanitization';
+import { hashStackTrace, sanitizeEvent } from '../../telemetry/sanitization';
 
 export interface TrackingOptions {
   /**
@@ -122,16 +122,19 @@ export function withEvolutionTracking<T extends (...args: any[]) => Promise<any>
     } catch (error: any) {
       const duration = Date.now() - startTime;
 
+      // Sanitize error message to remove sensitive data
+      const sanitizedMessage = sanitizeErrorMessage(error.message);
+
       // Record failure
       span.setStatus({
         code: 'ERROR',
-        message: error.message,
+        message: sanitizedMessage,
       });
 
       span.setAttributes({
         'execution.success': false,
         'error.type': error.constructor.name,
-        'error.message': error.message,
+        'error.message': sanitizedMessage,
       });
 
       // Emit error telemetry (sanitized)
@@ -158,6 +161,57 @@ function categorizeError(error: Error): string {
   if (error.name.includes('Timeout')) return 'timeout';
   if (error.name.includes('Type')) return 'runtime';
   return 'unknown';
+}
+
+/**
+ * Sanitize error message to remove sensitive data
+ * - Removes API keys, passwords, tokens, emails, file paths
+ * - Preserves general structure for debugging
+ */
+function sanitizeErrorMessage(message: string): string {
+  if (!message) return '[Error occurred]';
+
+  let sanitized = message;
+
+  // Pattern matching for sensitive data
+  const SENSITIVE_PATTERNS = [
+    // API Keys (various formats)
+    { pattern: /sk-[a-zA-Z0-9-_]{32,}/gi, replacement: '[REDACTED_API_KEY]' },
+    { pattern: /api[_-]?key[=:\s]+[a-zA-Z0-9-_]{16,}/gi, replacement: 'API_KEY=[REDACTED]' },
+
+    // Bearer tokens
+    { pattern: /Bearer\s+[a-zA-Z0-9-_\.]+/gi, replacement: 'Bearer [REDACTED_TOKEN]' },
+
+    // Passwords
+    { pattern: /password[=:\s]+[^\s,]+/gi, replacement: 'PASSWORD=[REDACTED]' },
+    { pattern: /pass[=:\s]+[^\s,]+/gi, replacement: 'PASS=[REDACTED]' },
+
+    // Auth tokens
+    { pattern: /token[=:\s]+[a-zA-Z0-9-_\.]{16,}/gi, replacement: 'TOKEN=[REDACTED]' },
+    { pattern: /auth[=:\s]+[a-zA-Z0-9-_\.]{16,}/gi, replacement: 'AUTH=[REDACTED]' },
+
+    // Emails
+    { pattern: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, replacement: '[REDACTED_EMAIL]' },
+
+    // File paths (Unix and Windows)
+    { pattern: /\/(?:Users|home|usr|opt|var)\/[^\s,\)]+/g, replacement: '[REDACTED_PATH]' },
+    { pattern: /[A-Z]:\\[^\s,\)]+/g, replacement: '[REDACTED_PATH]' },
+
+    // JWT tokens
+    { pattern: /eyJ[a-zA-Z0-9_-]*\.eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*/g, replacement: '[REDACTED_JWT]' },
+  ];
+
+  // Apply all patterns
+  for (const { pattern, replacement } of SENSITIVE_PATTERNS) {
+    sanitized = sanitized.replace(pattern, replacement);
+  }
+
+  // Truncate if too long
+  if (sanitized.length > 500) {
+    sanitized = sanitized.substring(0, 497) + '...';
+  }
+
+  return sanitized;
 }
 
 /**

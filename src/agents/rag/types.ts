@@ -91,13 +91,9 @@ export interface EmbeddingStats {
 }
 
 /**
- * RAG 配置
+ * RAG 配置 (Vectra-based)
  */
 export const RAGConfigSchema = z.object({
-  chromaHost: z.string(),
-  chromaPort: z.number(),
-  chromaUrl: z.string(),
-  collectionName: z.string(),
   embeddingModel: z.string(),
   embeddingDimension: z.number().default(1536),
   maxBatchSize: z.number().default(100),

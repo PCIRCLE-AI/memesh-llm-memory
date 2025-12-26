@@ -91,6 +91,8 @@ data/vectorstore/
 # Documentation - DO NOT PUSH PLANNING/ARCHIVE DOCS
 docs/archive/**
 !docs/archive/README.md
+docs/plans/**
+!docs/plans/README.md
 
 # Manual Test Scripts - DO NOT PUSH
 tests/manual/**

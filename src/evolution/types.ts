@@ -357,3 +357,53 @@ export interface ContextualPattern {
    */
   context: PatternContext;
 }
+
+/**
+ * Optimization objective values (0-1, higher is better) (Phase 2)
+ */
+export interface OptimizationObjectives {
+  /**
+   * Accuracy/quality score
+   */
+  accuracy?: number;
+
+  /**
+   * Speed (inverse of duration)
+   */
+  speed?: number;
+
+  /**
+   * Cost efficiency (inverse of cost)
+   */
+  cost?: number;
+
+  /**
+   * User satisfaction
+   */
+  satisfaction?: number;
+
+  /**
+   * Custom objectives (dynamic)
+   */
+  [key: string]: number | undefined;
+}
+
+/**
+ * Optimization candidate for multi-objective optimization (Phase 2)
+ */
+export interface OptimizationCandidate {
+  /**
+   * Candidate ID
+   */
+  id: string;
+
+  /**
+   * Objective values
+   */
+  objectives: OptimizationObjectives;
+
+  /**
+   * Optional metadata
+   */
+  metadata?: Record<string, any>;
+}

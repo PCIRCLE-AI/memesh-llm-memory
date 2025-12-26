@@ -277,3 +277,83 @@ export interface EvolutionStats {
    */
   lastLearningDate: Date;
 }
+
+/**
+ * Context information for pattern matching (Phase 2)
+ */
+export interface PatternContext {
+  /**
+   * Agent type (e.g., 'data-analyst', 'frontend-developer')
+   */
+  agent_type?: string;
+
+  /**
+   * Task type (e.g., 'sql_query', 'component_optimization')
+   */
+  task_type?: string;
+
+  /**
+   * Task complexity level
+   */
+  complexity?: 'low' | 'medium' | 'high';
+
+  /**
+   * Configuration keys used in this context
+   */
+  config_keys?: string[];
+
+  /**
+   * Additional metadata
+   */
+  metadata?: Record<string, any>;
+}
+
+/**
+ * Contextual pattern with rich context metadata (Phase 2)
+ */
+export interface ContextualPattern {
+  /**
+   * Pattern ID
+   */
+  id: string;
+
+  /**
+   * Pattern type
+   */
+  type: 'success' | 'failure' | 'optimization' | 'anti-pattern';
+
+  /**
+   * Pattern description
+   */
+  description: string;
+
+  /**
+   * Confidence level (0-1)
+   */
+  confidence: number;
+
+  /**
+   * Number of observations
+   */
+  observations: number;
+
+  /**
+   * Success rate
+   */
+  success_rate: number;
+
+  /**
+   * Average execution time (ms)
+   */
+  avg_execution_time: number;
+
+  /**
+   * Last seen timestamp
+   */
+  last_seen: string;
+
+  /**
+   * Rich context for pattern matching
+   */
+  context: PatternContext;
+}

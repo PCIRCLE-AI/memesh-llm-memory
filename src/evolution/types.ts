@@ -116,7 +116,13 @@ export interface LearnedPattern {
   observationCount: number;
 
   /**
-   * Success rate when applied
+   * Number of successful observations
+   * @internal - derived field, updated with observationCount
+   */
+  successCount: number;
+
+  /**
+   * Success rate when applied (derived: successCount / observationCount)
    */
   successRate: number;
 

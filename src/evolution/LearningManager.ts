@@ -25,26 +25,31 @@ import { PatternExplainer } from './PatternExplainer.js';
 export interface LearningConfig {
   /**
    * Minimum observations before creating a pattern
+   * Default: 10 (statistical minimum for reasonable confidence)
    */
   minObservations: number;
 
   /**
    * Minimum confidence threshold (0-1)
+   * Default: 0.7 (70% confidence required to apply patterns)
    */
   minConfidence: number;
 
   /**
    * Success rate threshold for positive patterns
+   * Default: 0.8 (80% success rate = reliable pattern)
    */
   successRateThreshold: number;
 
   /**
    * Failure rate threshold for anti-patterns
+   * Default: 0.3 (30% failure rate = problematic pattern)
    */
   failureRateThreshold: number;
 
   /**
    * Maximum patterns to store per agent
+   * Default: 100 (prevent unbounded memory growth)
    */
   maxPatternsPerAgent: number;
 }
@@ -60,6 +65,27 @@ export class LearningManager {
   private multiObjectiveOptimizer: MultiObjectiveOptimizer;
   private patternExplainer: PatternExplainer;
   private contextualPatterns: Map<string, ContextualPattern[]> = new Map(); // agentId -> contextual patterns[]
+
+  // Quality score thresholds
+  private readonly QUALITY_HIGH = 0.8; // High quality threshold
+  private readonly QUALITY_LOW = 0.5; // Low quality threshold (below = poor)
+  private readonly COST_REDUCTION_TARGET = 0.8; // 20% cost reduction target
+
+  // Confidence and learning parameters
+  private readonly CONFIDENCE_INCREMENT = 0.02; // 2% confidence boost per successful validation (gradual learning)
+  private readonly STATISTICAL_BASELINE_SAMPLES = 30; // Statistical baseline for reasonable confidence
+
+  // Complexity inference thresholds (based on execution duration)
+  private readonly COMPLEXITY_LOW_THRESHOLD_MS = 5000; // < 5s = simple task
+  private readonly COMPLEXITY_MEDIUM_THRESHOLD_MS = 15000; // < 15s = moderate task
+  // >= 15s = complex task
+
+  // Cost variation threshold
+  private readonly COST_VARIATION_PERCENT = 0.1; // 10% variation threshold
+  private readonly COST_VARIATION_MIN_ABSOLUTE = 0.01; // $0.01 minimum absolute variation
+
+  // P95 minimum sample size
+  private readonly P95_MIN_SAMPLE_SIZE = 20; // Minimum samples for meaningful P95 calculation
 
   constructor(
     performanceTracker: PerformanceTracker,
@@ -151,7 +177,7 @@ export class LearningManager {
 
     // Pattern 1: Consistent high quality (works with uniform data)
     const consistentHighQuality = successfulMetrics.filter(
-      m => m.qualityScore >= 0.8
+      m => m.qualityScore >= this.QUALITY_HIGH
     );
 
     if (consistentHighQuality.length >= this.config.minObservations) {
@@ -183,11 +209,14 @@ export class LearningManager {
 
     // Pattern 2: Cost efficiency (only if there's variation in cost)
     const medianCost = this.getMedianCost(metrics);
-    const costVariation = metrics.some(m => Math.abs(m.cost - medianCost) > medianCost * 0.1);
+    const costVariation = metrics.some(m => {
+      const diff = Math.abs(m.cost - medianCost);
+      return diff > Math.max(medianCost * this.COST_VARIATION_PERCENT, this.COST_VARIATION_MIN_ABSOLUTE);
+    });
 
     if (costVariation) {
       const highQualityLowCost = successfulMetrics.filter(
-        m => m.qualityScore >= 0.8 && m.cost <= medianCost
+        m => m.qualityScore >= this.QUALITY_HIGH && m.cost <= medianCost
       );
 
       if (highQualityLowCost.length >= this.config.minObservations) {
@@ -267,7 +296,7 @@ export class LearningManager {
 
     // Anti-pattern: Low quality output
     const lowQualityMetrics = metrics.filter(
-      m => m.success && m.qualityScore < 0.5
+      m => m.success && m.qualityScore < this.QUALITY_LOW
     );
 
     if (lowQualityMetrics.length >= this.config.minObservations / 2) {
@@ -313,7 +342,7 @@ export class LearningManager {
     if (successfulMetrics.length >= this.config.minObservations) {
       const avgCost = successfulMetrics.reduce((sum, m) => sum + m.cost, 0) / successfulMetrics.length;
       const lowCostHighQuality = successfulMetrics.filter(
-        m => m.cost < avgCost * 0.8 && m.qualityScore >= 0.8
+        m => m.cost < avgCost * this.COST_REDUCTION_TARGET && m.qualityScore >= this.QUALITY_HIGH
       );
 
       if (lowCostHighQuality.length >= this.config.minObservations / 2) {
@@ -439,7 +468,7 @@ export class LearningManager {
 
         // Increase confidence as pattern is validated through use
         // Don't recalculate - validated patterns become more confident over time
-        pattern.confidence = Math.min(pattern.confidence + 0.02, 1.0);
+        pattern.confidence = Math.min(pattern.confidence + this.CONFIDENCE_INCREMENT, 1.0);
         pattern.updatedAt = new Date();
 
         logger.debug('Pattern updated', {
@@ -486,24 +515,45 @@ export class LearningManager {
     return groups;
   }
 
-  private getMedianCost(metrics: PerformanceMetrics[]): number {
-    const sorted = metrics.map(m => m.cost).sort((a, b) => a - b);
+  /**
+   * Calculate median value from an array of numbers
+   */
+  private calculateMedian(values: number[]): number {
+    if (values.length === 0) {
+      return 0;
+    }
+
+    const sorted = [...values].sort((a, b) => a - b);
     const mid = Math.floor(sorted.length / 2);
+
     return sorted.length % 2 === 0
       ? (sorted[mid - 1] + sorted[mid]) / 2
       : sorted[mid];
+  }
+
+  private getMedianCost(metrics: PerformanceMetrics[]): number {
+    return this.calculateMedian(metrics.map(m => m.cost));
   }
 
   private getMedianDuration(metrics: PerformanceMetrics[]): number {
-    const sorted = metrics.map(m => m.durationMs).sort((a, b) => a - b);
-    const mid = Math.floor(sorted.length / 2);
-    return sorted.length % 2 === 0
-      ? (sorted[mid - 1] + sorted[mid]) / 2
-      : sorted[mid];
+    return this.calculateMedian(metrics.map(m => m.durationMs));
   }
 
   private getP95Duration(metrics: PerformanceMetrics[]): number {
+    if (metrics.length === 0) {
+      return 0;
+    }
+
     const sorted = metrics.map(m => m.durationMs).sort((a, b) => a - b);
+
+    // For small samples, use max instead of P95
+    if (sorted.length < this.P95_MIN_SAMPLE_SIZE) {
+      logger.debug('Using max duration for P95 (insufficient samples)', {
+        sampleSize: sorted.length,
+      });
+      return sorted[sorted.length - 1];
+    }
+
     const index = Math.floor(sorted.length * 0.95);
     return sorted[index];
   }
@@ -511,8 +561,8 @@ export class LearningManager {
   private inferComplexity(metrics: PerformanceMetrics[]): 'low' | 'medium' | 'high' {
     const avgDuration = metrics.reduce((sum, m) => sum + m.durationMs, 0) / metrics.length;
 
-    if (avgDuration < 5000) return 'low';
-    if (avgDuration < 15000) return 'medium';
+    if (avgDuration < this.COMPLEXITY_LOW_THRESHOLD_MS) return 'low';
+    if (avgDuration < this.COMPLEXITY_MEDIUM_THRESHOLD_MS) return 'medium';
     return 'high';
   }
 
@@ -523,8 +573,7 @@ export class LearningManager {
     const n = totalSamples;
 
     // Confidence increases with sample size and proportion
-    // Use 30 as baseline (reasonable for statistical significance)
-    const sampleSizeBonus = Math.min(n / 30, 1); // Max 1.0 at 30+ samples
+    const sampleSizeBonus = Math.min(n / this.STATISTICAL_BASELINE_SAMPLES, 1);
     const proportionScore = proportion;
 
     return Math.min(sampleSizeBonus * proportionScore, 1.0);
@@ -622,6 +671,18 @@ export class LearningManager {
     agentId: string,
     weights: OptimizationObjectives
   ): OptimizationCandidate | undefined {
+    // Validate weights
+    const weightValues = Object.values(weights).filter(v => v !== undefined) as number[];
+    if (weightValues.length === 0) {
+      logger.warn('No weights provided for optimization', { agentId });
+      return undefined;
+    }
+
+    if (weightValues.some(w => w < 0 || !Number.isFinite(w))) {
+      logger.error('Invalid weights for optimization', { agentId, weights });
+      return undefined;
+    }
+
     const metrics = this.performanceTracker.getMetrics(agentId);
 
     if (metrics.length === 0) {
@@ -633,8 +694,12 @@ export class LearningManager {
       id: m.executionId,
       objectives: {
         accuracy: m.qualityScore,
-        speed: m.durationMs > 0 ? 1 / (m.durationMs / 1000) : 0, // Inverse of seconds
-        cost: m.cost > 0 ? 1 / m.cost : 0, // Inverse of cost (higher is better)
+        speed: m.durationMs > 0 && Number.isFinite(m.durationMs)
+          ? 1 / (m.durationMs / 1000)
+          : 0,
+        cost: m.cost > 0 && Number.isFinite(m.cost)
+          ? 1 / m.cost
+          : 0,
         satisfaction: m.userSatisfaction,
       },
       metadata: m.metadata,

@@ -265,11 +265,16 @@ describe('Security Tests: Command Injection Prevention', () => {
     // Mock spawn to capture command execution
     let vault: CredentialVault;
     let testDbPath: string;
+    const testIdentity: Identity = { id: 'test-admin', type: 'user' };
 
     beforeEach(async () => {
       testDbPath = join(tmpdir(), `test-vault-${Date.now()}.db`);
       vault = new CredentialVault(testDbPath);
       await vault.initialize();
+
+      // Set up test identity with admin role for testing
+      vault.assignRole(testIdentity, Role.ADMIN);
+      vault.setIdentity(testIdentity);
     });
 
     afterEach(() => {
@@ -365,11 +370,16 @@ describe('Security Tests: Command Injection Prevention', () => {
 describe('Security Tests: SQL Injection Prevention', () => {
   let vault: CredentialVault;
   let testDbPath: string;
+  const testIdentity: Identity = { id: 'test-admin', type: 'user' };
 
   beforeEach(async () => {
     testDbPath = join(tmpdir(), `test-vault-${Date.now()}.db`);
     vault = new CredentialVault(testDbPath);
     await vault.initialize();
+
+    // Set up test identity with admin role for testing
+    vault.assignRole(testIdentity, Role.ADMIN);
+    vault.setIdentity(testIdentity);
   });
 
   afterEach(() => {
@@ -435,11 +445,16 @@ describe('Security Tests: SQL Injection Prevention', () => {
 describe('Security Tests: Path Traversal Prevention', () => {
   let vault: CredentialVault;
   let testDbPath: string;
+  const testIdentity: Identity = { id: 'test-admin', type: 'user' };
 
   beforeEach(async () => {
     testDbPath = join(tmpdir(), `test-vault-${Date.now()}.db`);
     vault = new CredentialVault(testDbPath);
     await vault.initialize();
+
+    // Set up test identity with admin role for testing
+    vault.assignRole(testIdentity, Role.ADMIN);
+    vault.setIdentity(testIdentity);
   });
 
   afterEach(() => {

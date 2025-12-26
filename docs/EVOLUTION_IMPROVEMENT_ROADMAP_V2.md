@@ -874,6 +874,452 @@ export async function generateReport(
 
 ---
 
+#### 1.6 Privacy-First Telemetry (2-3 days)
+
+**Inspired by privacy-first analytics - Collect usage insights without compromising user privacy**
+
+**Core Principles**:
+1. **Opt-In by Default**: Telemetry disabled unless user explicitly enables
+2. **Local-First**: All events stored locally before any sending
+3. **Transparency**: Users can preview exactly what will be sent
+4. **Sanitization**: Automatic removal of PII and sensitive data
+5. **Easy Opt-Out**: One command to disable completely
+
+**What We Collect** (6 categories):
+
+```typescript
+// 1. Agent Usage (most valuable)
+interface AgentUsageEvent {
+  event: 'agent_execution';
+  agent_type: string;           // "code-reviewer", "debugger", etc.
+  success: boolean;
+  duration_ms: number;
+  cost?: number;
+  task_type?: string;           // "bug_fix", "feature_dev", etc.
+  anonymous_id: string;         // UUID, NO user identification
+  timestamp: string;
+  // NO: code content, file paths, error messages
+}
+
+// 2. Skill Usage (NEW - for skill improvement)
+interface SkillUsageEvent {
+  event: 'skill_execution';
+  skill_name: string;
+  skill_version?: string;
+  success: boolean;
+  duration_ms: number;
+  user_satisfaction?: number;  // 1-5 stars (if user provides feedback)
+  used_with_agent?: string;    // Which agent used this skill
+  anonymous_id: string;
+  timestamp: string;
+}
+
+// 3. Feature Usage
+interface FeatureUsageEvent {
+  event: 'feature_used';
+  feature: 'evolution_system' | 'multi_agent' | 'context_manager' | etc;
+  action: string;              // "enabled", "disabled", "configured"
+  anonymous_id: string;
+  timestamp: string;
+}
+
+// 4. Error Events (sanitized)
+interface ErrorEvent {
+  event: 'error';
+  error_type: string;          // "TypeError", "NetworkError", etc.
+  component: string;           // "evolution/storage", "agents/code-reviewer"
+  stack_trace_hash: string;    // Hash of stack trace (NO actual code)
+  anonymous_id: string;
+  timestamp: string;
+  // NO: actual error message, file contents, secrets
+}
+
+// 5. Performance Events
+interface PerformanceEvent {
+  event: 'performance';
+  operation: string;           // "pattern_learning", "span_query"
+  duration_ms: number;
+  data_size?: number;          // Optional: size of data processed
+  anonymous_id: string;
+  timestamp: string;
+}
+
+// 6. Workflow Events
+interface WorkflowEvent {
+  event: 'workflow';
+  workflow_type: string;       // "code_review", "refactoring", "debugging"
+  steps_completed: number;
+  total_steps: number;
+  success: boolean;
+  anonymous_id: string;
+  timestamp: string;
+}
+```
+
+**What We DON'T Collect** (Privacy Guarantees):
+
+```typescript
+const BANNED_FIELDS = [
+  // User identification
+  'email', 'username', 'user_id', 'ip_address', 'mac_address',
+
+  // Sensitive credentials
+  'api_key', 'password', 'token', 'secret', 'auth_token',
+
+  // Code and file contents
+  'file_content', 'code_content', 'file_path', 'directory_path',
+
+  // Specific project data
+  'git_commit', 'git_branch', 'repository_url',
+
+  // Detailed error info
+  'error_message',  // Only error_type, not message
+  'stack_trace',     // Only hash, not actual trace
+
+  // Any custom user data
+  'input_data', 'output_data', 'prompt_content', 'llm_response'
+];
+```
+
+**Implementation**:
+
+```typescript
+// src/telemetry/TelemetryCollector.ts
+
+export class TelemetryCollector {
+  private localStorePath: string;
+  private enabled: boolean;
+  private anonymousId: string;
+
+  constructor(options?: {
+    localStorePath?: string;
+    enabled?: boolean;
+  }) {
+    this.localStorePath = options?.localStorePath ||
+      path.join(os.homedir(), '.smart-agents', 'telemetry');
+
+    // Default: DISABLED
+    this.enabled = options?.enabled || false;
+
+    // Generate anonymous ID (persisted locally)
+    this.anonymousId = this.loadOrCreateAnonymousId();
+  }
+
+  /**
+   * Record an event (always stored locally first)
+   */
+  async recordEvent(event: TelemetryEvent): Promise<void> {
+    if (!this.enabled) return;
+
+    // Sanitize event
+    const sanitized = this.sanitize(event);
+
+    // Add common fields
+    const fullEvent = {
+      ...sanitized,
+      anonymous_id: this.anonymousId,
+      timestamp: new Date().toISOString(),
+      sdk_version: getVersion(),
+    };
+
+    // Store locally
+    await this.storeLocally(fullEvent);
+  }
+
+  /**
+   * Sanitize event (remove PII, secrets, code)
+   */
+  private sanitize(event: any): any {
+    const sanitized = { ...event };
+
+    // Remove banned fields
+    for (const field of BANNED_FIELDS) {
+      if (field in sanitized) {
+        delete sanitized[field];
+      }
+    }
+
+    // Hash any remaining sensitive-looking strings
+    for (const [key, value] of Object.entries(sanitized)) {
+      if (typeof value === 'string' && this.looksLikeSensitive(value)) {
+        sanitized[key] = this.hashValue(value);
+      }
+    }
+
+    return sanitized;
+  }
+
+  /**
+   * Store event locally
+   */
+  private async storeLocally(event: any): Promise<void> {
+    const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const filePath = path.join(this.localStorePath, `${date}.jsonl`);
+
+    await fs.ensureDir(this.localStorePath);
+    await fs.appendFile(filePath, JSON.stringify(event) + '\n');
+  }
+
+  /**
+   * Send local events to server (only if user enables)
+   */
+  async sendEvents(): Promise<void> {
+    if (!this.enabled) {
+      throw new Error('Telemetry is disabled');
+    }
+
+    // Read all local events
+    const events = await this.readLocalEvents();
+
+    // Preview before sending
+    console.log(`\n📊 Preview of data to be sent (${events.length} events):`);
+    console.log(JSON.stringify(events.slice(0, 5), null, 2));
+    console.log(`\n... and ${events.length - 5} more events\n`);
+
+    // Ask for confirmation
+    const confirmed = await this.confirmSend();
+    if (!confirmed) {
+      console.log('❌ Telemetry send cancelled by user');
+      return;
+    }
+
+    // Send to server
+    try {
+      await this.sendToServer(events);
+      console.log('✅ Telemetry sent successfully');
+
+      // Archive sent events
+      await this.archiveSentEvents();
+    } catch (error) {
+      console.error('❌ Failed to send telemetry:', error.message);
+    }
+  }
+
+  /**
+   * Get telemetry status
+   */
+  getStatus(): {
+    enabled: boolean;
+    anonymous_id: string;
+    local_events_count: number;
+    last_sent?: Date;
+  } {
+    // Implementation
+  }
+
+  /**
+   * Enable telemetry (user opt-in)
+   */
+  async enable(): Promise<void> {
+    this.enabled = true;
+    await this.saveConfig({ enabled: true });
+    console.log('✅ Telemetry enabled');
+    console.log('📊 Usage data will be collected to improve smart-agents');
+    console.log('🔒 All data is stored locally first at:', this.localStorePath);
+    console.log('👁️  Preview before sending with: npm run telemetry:preview');
+  }
+
+  /**
+   * Disable telemetry (user opt-out)
+   */
+  async disable(): Promise<void> {
+    this.enabled = false;
+    await this.saveConfig({ enabled: false });
+    console.log('❌ Telemetry disabled');
+  }
+
+  /**
+   * Clear all local telemetry data
+   */
+  async clearLocalData(): Promise<void> {
+    await fs.remove(this.localStorePath);
+    console.log('🗑️  All local telemetry data cleared');
+  }
+}
+```
+
+**CLI Commands**:
+
+```typescript
+// package.json scripts
+{
+  "scripts": {
+    "telemetry:status": "tsx src/cli/telemetry-status.ts",
+    "telemetry:enable": "tsx src/cli/telemetry-enable.ts",
+    "telemetry:disable": "tsx src/cli/telemetry-disable.ts",
+    "telemetry:preview": "tsx src/cli/telemetry-preview.ts",
+    "telemetry:send": "tsx src/cli/telemetry-send.ts",
+    "telemetry:clear": "tsx src/cli/telemetry-clear.ts"
+  }
+}
+```
+
+**Usage Examples**:
+
+```bash
+# Check status
+$ npm run telemetry:status
+📊 Telemetry Status:
+   Enabled: false
+   Anonymous ID: 550e8400-e29b-41d4-a716-446655440000
+   Local Events: 142
+   Last Sent: Never
+
+# Enable (opt-in)
+$ npm run telemetry:enable
+✅ Telemetry enabled
+📊 Usage data will be collected to improve smart-agents
+🔒 All data is stored locally first
+👁️  Preview before sending: npm run telemetry:preview
+
+# Preview what will be sent
+$ npm run telemetry:preview
+📊 Preview of telemetry data (142 events):
+
+AgentUsageEvent (85 events):
+  - code-reviewer: 32 executions (91% success)
+  - debugger: 28 executions (85% success)
+  - refactoring-specialist: 25 executions (96% success)
+
+SkillUsageEvent (42 events):
+  - systematic-debugging: 18 uses (94% success, 4.2★ avg)
+  - frontend-design: 14 uses (100% success, 4.8★ avg)
+  - test-driven-development: 10 uses (90% success, 4.5★ avg)
+
+PerformanceEvent (15 events):
+  - pattern_learning: avg 234ms
+  - span_query: avg 12ms
+
+# Send to server (with confirmation)
+$ npm run telemetry:send
+📊 Preview of data to be sent (142 events):
+[... preview shown ...]
+
+❓ Send this data to improve smart-agents? (y/N): y
+✅ Telemetry sent successfully
+
+# Disable (opt-out)
+$ npm run telemetry:disable
+❌ Telemetry disabled
+
+# Clear all local data
+$ npm run telemetry:clear
+🗑️  All local telemetry data cleared
+```
+
+**Integration with Evolution System**:
+
+```typescript
+// src/evolution/instrumentation/withEvolutionTracking.ts
+
+export function withEvolutionTracking<T extends BaseAgent>(
+  agent: T,
+  options?: TrackingOptions
+): T {
+  const tracker = options?.tracker || getGlobalTracker();
+  const telemetry = getTelemetryCollector(); // Get global collector
+
+  return new Proxy(agent, {
+    async apply(target, thisArg, args) {
+      const span = tracker.startSpan({ ... });
+
+      try {
+        const result = await target.apply(thisArg, args);
+
+        // Record telemetry (if enabled)
+        await telemetry.recordEvent({
+          event: 'agent_execution',
+          agent_type: agent.constructor.name,
+          success: true,
+          duration_ms: span.duration_ms,
+          cost: result.cost,
+          task_type: extractTaskType(args[0]),
+        });
+
+        return result;
+
+      } catch (error) {
+        // Record error telemetry (sanitized)
+        await telemetry.recordEvent({
+          event: 'error',
+          error_type: error.constructor.name,
+          component: `agents/${agent.constructor.name}`,
+          stack_trace_hash: hashStackTrace(error.stack),
+        });
+
+        throw error;
+      }
+    }
+  });
+}
+```
+
+**Privacy Compliance**:
+
+- ✅ **GDPR Compliant**: No personal data collection
+- ✅ **CCPA Compliant**: Explicit opt-in, easy opt-out
+- ✅ **Open Source**: Telemetry code is open source and auditable
+- ✅ **Data Retention**: 90 days for raw events, aggregated stats indefinitely
+- ✅ **User Control**: Users control what is sent and when
+
+**Analytics Dashboard** (Internal - for smart-agents developers):
+
+```typescript
+// What we learn from telemetry:
+
+1. **Most Used Agents**:
+   - code-reviewer: 42% of executions
+   - debugger: 28%
+   - refactoring-specialist: 18%
+   → Focus development on these
+
+2. **Success Rates**:
+   - Overall: 89%
+   - By agent: code-reviewer (91%), debugger (85%), ...
+   → Improve debugger reliability
+
+3. **Skills Analytics**:
+   - Most used: systematic-debugging (18% of tasks)
+   - Highest satisfaction: frontend-design (4.8★)
+   - Needs improvement: test-driven-development (3.2★)
+   → Improve TDD skill
+
+4. **Performance Bottlenecks**:
+   - pattern_learning: avg 234ms (acceptable)
+   - span_query with tags: avg 89ms (optimize indexes)
+
+5. **Feature Adoption**:
+   - evolution_system enabled: 45% of users
+   - multi_agent_coordination: 32%
+   - skills: 67%
+   → Promote evolution_system more
+
+6. **Common Errors**:
+   - NetworkError in evolution/api: 5% of requests
+   - TypeError in agents/code-reviewer: 2%
+   → Fix these bugs
+
+7. **Workflow Patterns**:
+   - Most common: code_review → refactoring → testing
+   - Average workflow length: 4.2 steps
+   → Optimize multi-step workflows
+```
+
+**Files to Create**:
+- `src/telemetry/TelemetryCollector.ts`
+- `src/telemetry/sanitization.ts`
+- `src/telemetry/types.ts`
+- `src/cli/telemetry-*.ts` (CLI commands)
+- `docs/TELEMETRY.md` (user-facing documentation)
+- `tests/telemetry/` (comprehensive tests)
+
+**Timeline**:
+- Day 1: Core TelemetryCollector implementation
+- Day 2: Sanitization and privacy guarantees
+- Day 3: CLI commands and integration tests
+
+---
+
 ### Phase 2: Advanced Learning (Week 3-4)
 
 #### 2.1 Context-Aware Pattern Learning
@@ -1032,6 +1478,9 @@ open report.html
 - [ ] **Tags**: Query by tags returns correct results
 - [ ] **API**: HTTP API returns correct data
 - [ ] **Dashboard**: Can view task timeline and span traces
+- [ ] **Telemetry**: Privacy-first telemetry collection with opt-in mechanism
+- [ ] **Telemetry Sanitization**: All PII and sensitive data properly removed
+- [ ] **Telemetry CLI**: All CLI commands (status, enable, disable, preview, send, clear) working
 - [ ] **Tests**: 100% test coverage for storage layer
 
 ### Phase 2 Success Criteria:
@@ -1071,6 +1520,7 @@ open report.html
 3. ✅ Link & Tag management
 4. ✅ HTTP API
 5. ✅ Basic dashboard (or static HTML reports)
+6. ✅ Privacy-first telemetry
 
 ### Should-Have (Phase 2):
 6. Context-aware learning

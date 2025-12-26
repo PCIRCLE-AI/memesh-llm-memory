@@ -2,18 +2,26 @@
 
 This directory contains optional enterprise integrations that require paid services or additional dependencies.
 
-## AWS Secrets Manager Integration
+## Cloud Provider Secret Management
+
+### AWS Secrets Manager
 
 **Status**: Optional Enterprise Feature
-**Cost**: AWS Secrets Manager is a paid service (~$0.40/secret/month + API calls)
+**Cost**: Paid service (~$0.40/secret/month + API calls)
 
-### Why It's Here
+### Azure Key Vault
 
-AWS Secrets Manager provides enterprise-grade features:
+**Status**: Optional Enterprise Feature
+**Cost**: Paid service (~$0.03/10,000 operations + vault fees)
+
+### Why They're Here
+
+Cloud provider secret managers provide enterprise-grade features:
 - Automatic secret rotation
 - Cross-region replication
-- Fine-grained IAM access control
+- Fine-grained access control (IAM/RBAC)
 - Compliance & audit logging
+- Integration with cloud services
 
 ### For Open-Source Use
 
@@ -23,7 +31,9 @@ AWS Secrets Manager provides enterprise-grade features:
 3. **Environment Variables** - `.env` files with gitignore
 4. **HashiCorp Vault** - Open-source, self-hosted secret management
 
-### How to Use AWS Secrets Manager (If Needed)
+### How to Use (If Needed)
+
+#### AWS Secrets Manager
 
 1. **Install AWS SDK**:
 ```bash
@@ -35,13 +45,45 @@ npm install @aws-sdk/client-secrets-manager
 cp docs/examples/enterprise/AWSSecretsManager.ts src/credentials/storage/
 ```
 
-3. **Configure AWS credentials**:
+3. **Update exports**: Add to `src/credentials/storage/index.ts`:
+```typescript
+export { AWSSecretsManager, type AWSSecretsManagerConfig } from './AWSSecretsManager.js';
+```
+
+4. **Configure**:
 ```typescript
 import { AWSSecretsManager } from './credentials/storage/AWSSecretsManager.js';
 
 const storage = new AWSSecretsManager({
   region: 'us-east-1',
   // Will use AWS credential chain (env vars, ~/.aws/credentials, IAM role)
+});
+```
+
+#### Azure Key Vault
+
+1. **Install Azure SDK**:
+```bash
+npm install @azure/keyvault-secrets @azure/identity
+```
+
+2. **Copy implementation**:
+```bash
+cp docs/examples/enterprise/AzureKeyVault.ts src/credentials/storage/
+```
+
+3. **Update exports**: Add to `src/credentials/storage/index.ts`:
+```typescript
+export { AzureKeyVault, type AzureKeyVaultConfig } from './AzureKeyVault.js';
+```
+
+4. **Configure**:
+```typescript
+import { AzureKeyVault } from './credentials/storage/AzureKeyVault.js';
+
+const storage = new AzureKeyVault({
+  vaultUrl: 'https://your-vault.vault.azure.net',
+  // Uses DefaultAzureCredential or provide clientSecret
 });
 ```
 

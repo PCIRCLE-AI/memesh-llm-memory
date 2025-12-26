@@ -49,12 +49,34 @@ export interface PatternMatch {
 }
 
 export class ContextMatcher {
+  /**
+   * Default context similarity weights
+   *
+   * Rationale:
+   * - agent_type (0.4): Strongest signal - same agent type means similar capabilities
+   * - task_type (0.3): Second strongest - same task type means similar requirements
+   * - complexity (0.2): Moderate signal - complexity affects strategy choice
+   * - config_keys (0.1): Weakest signal - configuration is most variable
+   *
+   * Total: 1.0 (ensures similarity score is normalized 0-1)
+   */
   private defaultWeights = {
     agent_type: 0.4,
     task_type: 0.3,
     complexity: 0.2,
     config_keys: 0.1,
   };
+
+  /**
+   * Check if two optional values match (both equal OR both undefined)
+   * @returns true if match, false otherwise
+   */
+  private valuesMatch<T>(val1: T | undefined, val2: T | undefined): boolean {
+    if (val1 !== undefined && val2 !== undefined) {
+      return val1 === val2;
+    }
+    return val1 === undefined && val2 === undefined;
+  }
 
   /**
    * Compute weighted similarity between two contexts
@@ -73,33 +95,30 @@ export class ContextMatcher {
     weights?: MatchOptions['weights']
   ): number {
     const w = weights || this.defaultWeights;
+
+    // Validate weights sum to ~1.0 (allow small floating point error)
+    if (weights) {
+      const sum = Object.values(weights).reduce((a, b) => a + b, 0);
+      if (Math.abs(sum - 1.0) > 0.01) {
+        console.warn('[ContextMatcher] Weights do not sum to 1.0', {
+          weights,
+          sum,
+        });
+      }
+    }
+
     let similarity = 0;
 
-    // Agent type matching
-    // Match if: both defined and equal, OR both undefined
-    if (ctx1.agent_type !== undefined && ctx2.agent_type !== undefined) {
-      if (ctx1.agent_type === ctx2.agent_type) {
-        similarity += w.agent_type;
-      }
-    } else if (ctx1.agent_type === undefined && ctx2.agent_type === undefined) {
+    // Categorical field matching (agent_type, task_type, complexity)
+    if (this.valuesMatch(ctx1.agent_type, ctx2.agent_type)) {
       similarity += w.agent_type;
     }
 
-    // Task type matching
-    if (ctx1.task_type !== undefined && ctx2.task_type !== undefined) {
-      if (ctx1.task_type === ctx2.task_type) {
-        similarity += w.task_type;
-      }
-    } else if (ctx1.task_type === undefined && ctx2.task_type === undefined) {
+    if (this.valuesMatch(ctx1.task_type, ctx2.task_type)) {
       similarity += w.task_type;
     }
 
-    // Complexity matching
-    if (ctx1.complexity !== undefined && ctx2.complexity !== undefined) {
-      if (ctx1.complexity === ctx2.complexity) {
-        similarity += w.complexity;
-      }
-    } else if (ctx1.complexity === undefined && ctx2.complexity === undefined) {
+    if (this.valuesMatch(ctx1.complexity, ctx2.complexity)) {
       similarity += w.complexity;
     }
 
@@ -131,6 +150,18 @@ export class ContextMatcher {
     patterns: ContextualPattern[],
     options: MatchOptions = {}
   ): PatternMatch[] {
+    // Validate current context has at least one defined field
+    const hasDefinedField = Object.values(currentContext).some(
+      (v) => v !== undefined
+    );
+    if (!hasDefinedField) {
+      console.warn(
+        '[ContextMatcher] Current context has no defined fields',
+        { currentContext }
+      );
+      return [];
+    }
+
     if (patterns.length === 0) {
       return [];
     }
@@ -154,9 +185,8 @@ export class ContextMatcher {
     // Filter by minimum similarity if specified
     let filteredMatches = matches;
     if (options.min_similarity !== undefined) {
-      filteredMatches = matches.filter(
-        (m) => m.similarity >= options.min_similarity!
-      );
+      const minSimilarity = options.min_similarity; // Extract to variable
+      filteredMatches = matches.filter((m) => m.similarity >= minSimilarity);
     }
 
     // Sort by score (descending)
@@ -174,6 +204,11 @@ export class ContextMatcher {
    * Compute Jaccard similarity between two sets
    *
    * Jaccard similarity = |A ∩ B| / |A ∪ B|
+   *
+   * Edge cases:
+   * - Both empty: 1.0 (identical)
+   * - One empty, one non-empty: 0.0 (no overlap)
+   * - Duplicate elements in arrays: handled by Set deduplication
    *
    * @param set1 First set
    * @param set2 Second set

@@ -15,6 +15,12 @@ import type {
 } from './types.js';
 
 export class PatternExplainer {
+  // Confidence level thresholds (based on statistical significance conventions)
+  private readonly CONFIDENCE_VERY_HIGH = 0.9; // 90%+ = very strong evidence
+  private readonly CONFIDENCE_HIGH = 0.75; // 75-90% = strong evidence
+  private readonly CONFIDENCE_MODERATE = 0.6; // 60-75% = moderate evidence
+  // Below 60% = low confidence (insufficient evidence)
+
   /**
    * Generate human-readable explanation for a pattern
    *
@@ -32,20 +38,25 @@ export class PatternExplainer {
   }
 
   /**
+   * Format context string with proper grammar
+   */
+  private formatContextString(context: PatternContext): string {
+    if (context.agent_type && context.task_type) {
+      return `${context.agent_type} doing ${context.task_type}`;
+    } else if (context.agent_type) {
+      return context.agent_type;
+    } else if (context.task_type) {
+      return `${context.task_type} tasks`;
+    } else {
+      return 'general contexts';
+    }
+  }
+
+  /**
    * Generate one-line summary
    */
   private generateSummary(pattern: ContextualPattern): string {
-    const contextParts: string[] = [];
-
-    if (pattern.context.agent_type) {
-      contextParts.push(pattern.context.agent_type);
-    }
-
-    if (pattern.context.task_type) {
-      contextParts.push(pattern.context.task_type);
-    }
-
-    const contextStr = contextParts.join(' doing ');
+    const contextStr = this.formatContextString(pattern.context);
 
     switch (pattern.type) {
       case 'success':
@@ -140,11 +151,11 @@ export class PatternExplainer {
 
     let interpretation: string;
 
-    if (pattern.confidence >= 0.9) {
+    if (pattern.confidence >= this.CONFIDENCE_VERY_HIGH) {
       interpretation = 'Very high confidence';
-    } else if (pattern.confidence >= 0.75) {
+    } else if (pattern.confidence >= this.CONFIDENCE_HIGH) {
       interpretation = 'High confidence';
-    } else if (pattern.confidence >= 0.6) {
+    } else if (pattern.confidence >= this.CONFIDENCE_MODERATE) {
       interpretation = 'Moderate confidence';
     } else {
       interpretation = 'Low confidence';

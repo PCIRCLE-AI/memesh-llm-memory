@@ -71,13 +71,19 @@ export function looksLikeSensitive(value: string): boolean {
 
 /**
  * Hash a sensitive value (SHA-256, first 16 chars)
+ * Handles errors gracefully and returns a fallback hash
  */
 export function hashValue(value: string): string {
-  return crypto
-    .createHash('sha256')
-    .update(value)
-    .digest('hex')
-    .substring(0, 16);
+  try {
+    return crypto
+      .createHash('sha256')
+      .update(value)
+      .digest('hex')
+      .substring(0, 16);
+  } catch (error) {
+    // Fallback: return a consistent placeholder if hashing fails
+    return '[hash_failed]'.padEnd(16, '0');
+  }
 }
 
 /**
@@ -85,55 +91,145 @@ export function hashValue(value: string): string {
  * - Removes banned fields
  * - Hashes sensitive-looking strings
  * - Truncates long strings
+ * - Handles circular references, null/undefined, and errors gracefully
  */
-export function sanitizeEvent(event: any): any {
-  const sanitized = { ...event };
-
-  // Remove banned fields
-  for (const field of BANNED_FIELDS) {
-    if (field in sanitized) {
-      delete sanitized[field];
+export function sanitizeEvent(event: any, visited = new WeakSet(), depth = 0): any {
+  try {
+    // Prevent stack overflow from deeply nested objects
+    const MAX_DEPTH = 50;
+    if (depth > MAX_DEPTH) {
+      return '[Max Depth Exceeded]';
     }
-  }
 
-  // Hash sensitive-looking strings
-  for (const [key, value] of Object.entries(sanitized)) {
-    if (typeof value === 'string') {
-      // Hash if looks sensitive
-      if (looksLikeSensitive(value)) {
-        sanitized[key] = hashValue(value);
+    // Handle null, undefined, primitives
+    if (event == null) {
+      return event;
+    }
+
+    if (typeof event !== 'object') {
+      return event;
+    }
+
+    // Handle circular references
+    if (visited.has(event)) {
+      return '[Circular Reference]';
+    }
+    visited.add(event);
+
+    // Handle arrays
+    if (Array.isArray(event)) {
+      return event.map(item => sanitizeEvent(item, visited, depth + 1));
+    }
+
+    // Handle Date objects
+    if (event instanceof Date) {
+      return event.toISOString();
+    }
+
+    // Handle Error objects
+    if (event instanceof Error) {
+      return {
+        name: event.name,
+        message: '[Error Message Redacted]',
+        // Don't include stack trace (privacy)
+      };
+    }
+
+    // Create sanitized copy
+    const sanitized: any = {};
+
+    // Process all enumerable properties
+    for (const key in event) {
+      try {
+        // Skip banned fields
+        if (BANNED_FIELDS.includes(key)) {
+          continue;
+        }
+
+        // Skip non-own properties (prototype chain)
+        if (!Object.prototype.hasOwnProperty.call(event, key)) {
+          continue;
+        }
+
+        // Get value safely (might be a getter that throws)
+        let value;
+        try {
+          value = event[key];
+        } catch (error) {
+          // Getter threw error - skip this field
+          continue;
+        }
+
+        // Sanitize based on type
+        if (typeof value === 'string') {
+          // Hash if looks sensitive
+          if (looksLikeSensitive(value)) {
+            sanitized[key] = hashValue(value);
+          }
+          // Truncate very long strings
+          else if (value.length > 1000) {
+            sanitized[key] = value.substring(0, 1000) + '...[truncated]';
+          }
+          else {
+            sanitized[key] = value;
+          }
+        }
+        // Recursively sanitize objects
+        else if (value && typeof value === 'object') {
+          sanitized[key] = sanitizeEvent(value, visited, depth + 1);
+        }
+        // Copy primitives
+        else {
+          sanitized[key] = value;
+        }
+      } catch (error) {
+        // Field-level error - skip this field but continue processing
+        continue;
       }
-      // Truncate very long strings
-      else if (value.length > 1000) {
-        sanitized[key] = value.substring(0, 1000) + '...[truncated]';
-      }
     }
-  }
 
-  // Recursively sanitize nested objects
-  for (const [key, value] of Object.entries(sanitized)) {
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-      sanitized[key] = sanitizeEvent(value);
-    }
+    return sanitized;
+  } catch (error) {
+    // Catastrophic error - return minimal safe object
+    return {
+      event: event?.event || 'sanitization_failed',
+      error: 'Failed to sanitize event',
+    };
   }
-
-  return sanitized;
 }
 
 /**
  * Hash a stack trace for grouping errors
+ * Handles errors gracefully and returns a fallback hash
  */
 export function hashStackTrace(stackTrace: string): string {
-  // Remove line numbers and file paths, keep only function names and structure
-  const normalized = stackTrace
-    .split('\n')
-    .map(line => line.replace(/:\d+:\d+/g, ''))  // Remove line:col
-    .map(line => line.replace(/\/[^\s]+\//g, ''))  // Remove paths
-    .join('\n');
+  try {
+    // Handle empty or invalid input
+    if (!stackTrace || typeof stackTrace !== 'string') {
+      return '[invalid_stack]'.padEnd(16, '0');
+    }
 
-  return crypto
-    .createHash('sha256')
-    .update(normalized)
-    .digest('hex')
-    .substring(0, 16);
+    // Remove line numbers and file paths, keep only function names and structure
+    const normalized = stackTrace
+      .split('\n')
+      .map(line => {
+        try {
+          return line
+            .replace(/:\d+:\d+/g, '')  // Remove line:col
+            .replace(/\/[^\s]+\//g, '');  // Remove paths
+        } catch {
+          return line;
+        }
+      })
+      .join('\n');
+
+    return crypto
+      .createHash('sha256')
+      .update(normalized)
+      .digest('hex')
+      .substring(0, 16);
+  } catch (error) {
+    // Fallback: return a consistent placeholder if hashing fails
+    return '[hash_failed]'.padEnd(16, '0');
+  }
 }

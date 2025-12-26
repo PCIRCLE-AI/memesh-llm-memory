@@ -38,6 +38,11 @@ export enum AuditEventType {
   // System Events
   VAULT_INITIALIZED = 'vault_initialized',
   VAULT_CLOSED = 'vault_closed',
+
+  // Rotation Events
+  ROTATION_SCHEDULED = 'rotation_scheduled',
+  ROTATION_COMPLETED = 'rotation_completed',
+  ROTATION_FAILED = 'rotation_failed',
 }
 
 /**

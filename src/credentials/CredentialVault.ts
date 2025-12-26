@@ -20,6 +20,7 @@ import { logger } from '../utils/logger.js';
 import { RateLimiter } from './RateLimiter.js';
 import { AuditLogger, AuditEventType, AuditSeverity } from './AuditLogger.js';
 import { RotationPolicy } from './RotationPolicy.js';
+import { AccessControl, Permission, type Identity } from './AccessControl.js';
 
 /**
  * Validate service name
@@ -101,10 +102,11 @@ export class CredentialVault {
   private rateLimiter: RateLimiter;
   private rotationPolicy: RotationPolicy;
   private auditLogger: AuditLogger;
+  private accessControl: AccessControl;
   private static cleanupRegistered = false;
   private static instances: Set<CredentialVault> = new Set();
 
-  constructor(dbPath?: string) {
+  constructor(dbPath?: string, identity?: Identity) {
     const path = dbPath || getVaultPath();
 
     // Initialize SQLite database
@@ -125,6 +127,9 @@ export class CredentialVault {
 
     // Initialize rotation policy
     this.rotationPolicy = new RotationPolicy(this.db);
+
+    // Initialize access control
+    this.accessControl = new AccessControl(this.db, identity);
 
     // Register this instance for cleanup
     CredentialVault.instances.add(this);
@@ -191,6 +196,25 @@ export class CredentialVault {
         details: (error as Error).message,
       });
       throw error;
+    }
+
+    // Check permission
+    const permCheck = this.accessControl.checkPermission(
+      Permission.WRITE,
+      input.service,
+      input.account
+    );
+
+    if (!permCheck.allowed) {
+      this.auditLogger.log(AuditEventType.ACCESS_DENIED_VALIDATION, {
+        service: input.service,
+        account: input.account,
+        success: false,
+        severity: AuditSeverity.WARNING,
+        details: permCheck.reason || 'Permission denied: WRITE',
+      });
+
+      throw new Error(permCheck.reason || 'Permission denied: WRITE operation');
     }
 
     if (!this.storage) {
@@ -283,6 +307,25 @@ export class CredentialVault {
         details: (error as Error).message,
       });
       throw error;
+    }
+
+    // Check permission
+    const permCheck = this.accessControl.checkPermission(
+      Permission.READ,
+      service,
+      account
+    );
+
+    if (!permCheck.allowed) {
+      this.auditLogger.log(AuditEventType.ACCESS_DENIED_VALIDATION, {
+        service,
+        account,
+        success: false,
+        severity: AuditSeverity.WARNING,
+        details: permCheck.reason || 'Permission denied: READ',
+      });
+
+      throw new Error(permCheck.reason || 'Permission denied: READ operation');
     }
 
     // Check rate limit
@@ -413,9 +456,39 @@ export class CredentialVault {
     account: string,
     updates: Partial<CredentialInput>
   ): Promise<Credential> {
-    // Validate input
-    validateServiceName(service);
-    validateAccountName(account);
+    try {
+      // Validate input
+      validateServiceName(service);
+      validateAccountName(account);
+    } catch (error) {
+      // Log validation failure
+      this.auditLogger.log(AuditEventType.ACCESS_DENIED_VALIDATION, {
+        service,
+        account,
+        success: false,
+        details: (error as Error).message,
+      });
+      throw error;
+    }
+
+    // Check permission
+    const permCheck = this.accessControl.checkPermission(
+      Permission.WRITE,
+      service,
+      account
+    );
+
+    if (!permCheck.allowed) {
+      this.auditLogger.log(AuditEventType.ACCESS_DENIED_VALIDATION, {
+        service,
+        account,
+        success: false,
+        severity: AuditSeverity.WARNING,
+        details: permCheck.reason || 'Permission denied: WRITE',
+      });
+
+      throw new Error(permCheck.reason || 'Permission denied: WRITE operation');
+    }
 
     if (!this.storage) {
       await this.initialize();
@@ -486,6 +559,25 @@ export class CredentialVault {
         details: (error as Error).message,
       });
       throw error;
+    }
+
+    // Check permission
+    const permCheck = this.accessControl.checkPermission(
+      Permission.DELETE,
+      service,
+      account
+    );
+
+    if (!permCheck.allowed) {
+      this.auditLogger.log(AuditEventType.ACCESS_DENIED_VALIDATION, {
+        service,
+        account,
+        success: false,
+        severity: AuditSeverity.WARNING,
+        details: permCheck.reason || 'Permission denied: DELETE',
+      });
+
+      throw new Error(permCheck.reason || 'Permission denied: DELETE operation');
     }
 
     if (!this.storage) {
@@ -981,5 +1073,120 @@ export class CredentialVault {
    */
   getRotationStats(): import('./RotationPolicy.js').RotationStats {
     return this.rotationPolicy.getRotationStats();
+  }
+
+  // ==================== Access Control Management ====================
+
+  /**
+   * Set current identity for permission checks
+   */
+  setIdentity(identity: Identity): void {
+    this.accessControl.setIdentity(identity);
+  }
+
+  /**
+   * Get current identity
+   */
+  getIdentity(): Identity | undefined {
+    return this.accessControl.getIdentity();
+  }
+
+  /**
+   * Create a custom role
+   */
+  createRole(
+    config: Omit<import('./AccessControl.js').RoleConfig, 'id' | 'isBuiltIn' | 'createdAt'>
+  ): import('./AccessControl.js').RoleConfig {
+    return this.accessControl.createRole(config);
+  }
+
+  /**
+   * Get a role by name
+   */
+  getRole(name: string): import('./AccessControl.js').RoleConfig | null {
+    return this.accessControl.getRole(name);
+  }
+
+  /**
+   * List all roles
+   */
+  listRoles(): import('./AccessControl.js').RoleConfig[] {
+    return this.accessControl.listRoles();
+  }
+
+  /**
+   * Delete a custom role
+   */
+  deleteRole(name: string): void {
+    this.accessControl.deleteRole(name);
+  }
+
+  /**
+   * Assign a role to an identity
+   */
+  assignRole(
+    identity: Identity,
+    roleName: string,
+    options?: { grantedBy?: string; expiresAt?: Date }
+  ): void {
+    this.accessControl.assignRole(identity, roleName, options);
+  }
+
+  /**
+   * Revoke a role from an identity
+   */
+  revokeRole(identity: Identity, roleName: string): void {
+    this.accessControl.revokeRole(identity, roleName);
+  }
+
+  /**
+   * Get roles assigned to an identity
+   */
+  getRoles(identity: Identity): import('./AccessControl.js').RoleConfig[] {
+    return this.accessControl.getRoles(identity);
+  }
+
+  /**
+   * Grant specific permissions to an identity
+   */
+  grantPermissions(
+    entry: Omit<import('./AccessControl.js').AccessControlEntry, 'id' | 'grantedAt'>
+  ): void {
+    this.accessControl.grantPermissions(entry);
+  }
+
+  /**
+   * Revoke permissions from an identity
+   */
+  revokePermissions(identity: Identity, service?: string, account?: string): void {
+    this.accessControl.revokePermissions(identity, service, account);
+  }
+
+  /**
+   * Check if identity has permission
+   */
+  checkPermission(
+    permission: Permission,
+    service: string,
+    account?: string,
+    identity?: Identity
+  ): import('./AccessControl.js').PermissionCheckResult {
+    return this.accessControl.checkPermission(permission, service, account, identity);
+  }
+
+  /**
+   * List all ACL entries for an identity
+   */
+  listAccessEntries(
+    identity: Identity
+  ): import('./AccessControl.js').AccessControlEntry[] {
+    return this.accessControl.listAccessEntries(identity);
+  }
+
+  /**
+   * Check if identity is admin
+   */
+  isAdmin(identity?: Identity): boolean {
+    return this.accessControl.isAdmin(identity);
   }
 }

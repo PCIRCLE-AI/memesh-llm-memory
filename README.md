@@ -4,7 +4,7 @@
 
 ## 📋 專案概述
 
-Smart Agents 是一個高性能、模組化的 AI Agent 協調平台，專為 MacBook Pro M2 (16GB RAM) 優化。
+Smart Agents 是一個高性能、模組化的 AI Agent 協調平台，具備智能資源管理與多平台支持。
 
 ### 核心能力
 
@@ -123,9 +123,10 @@ Layer 1: Provider Integration
 
 ### 前置需求
 
-- macOS (M2 Pro 或更高)
-- Node.js 18+
-- Python 3.9+
+- **作業系統**: macOS / Linux / Windows (建議 16GB+ RAM)
+- **Node.js**: 18+ (必需)
+- **Python**: 3.9+ (必需)
+- **Ollama** (選用): 本地模型運行
 
 ### 安裝
 
@@ -349,4 +350,4 @@ MIT License
 
 **建立日期**: 2025-12-24
 **V2 完成日期**: 2025-12-26
-**優化目標**: MacBook Pro M2 (16GB RAM) 流暢運行
+**系統特性**: 跨平台支持、智能資源管理、成本優化

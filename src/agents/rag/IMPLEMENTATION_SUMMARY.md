@@ -282,7 +282,7 @@ const results = await rag.search(query, {
 - [ ] **LLM-based Reranking**: 使用 Claude 重排序
 - [ ] **多模態支援**: 圖片 + 文字 embedding
 - [ ] **增量學習**: 線上更新知識庫
-- [ ] **分散式部署**: 多節點 ChromaDB
+- [ ] **分散式部署**: 多節點向量資料庫同步
 - [ ] **Query 擴展**: 自動生成相關查詢
 - [ ] **Answer Generation**: 直接生成答案
 - [ ] **Citation Tracking**: 來源引用追蹤

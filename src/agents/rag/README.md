@@ -145,7 +145,7 @@ const results = await rag.search('React hooks', {
 
 #### `initialize(): Promise<void>`
 
-初始化 RAG Agent 和 ChromaDB 連接。
+初始化 RAG Agent 和 Vectra 本地向量資料庫。
 
 #### `indexDocument(content: string, metadata: DocumentMetadata, id?: string): Promise<void>`
 
@@ -309,7 +309,7 @@ tsx src/agents/rag/demo.ts
 ```
 rag/
 ├── index.ts          # RAG Agent 主類別
-├── vectorstore.ts    # ChromaDB 封裝
+├── vectorstore.ts    # Vectra 向量資料庫封裝
 ├── embeddings.ts     # OpenAI Embeddings 服務
 ├── reranker.ts       # 結果重排序邏輯
 ├── types.ts          # 類型定義
@@ -324,7 +324,7 @@ rag/
   ↓
 EmbeddingService (生成 embeddings)
   ↓
-VectorStore (ChromaDB 儲存)
+VectorStore (Vectra 本地存儲)
   ↓
 搜尋查詢
   ↓
@@ -337,17 +337,17 @@ Reranker (重排序、去重、多樣性優化)
 
 ## 故障排除
 
-### ChromaDB 連接失敗
+### 向量資料庫初始化失敗
 
 ```bash
-# 檢查 ChromaDB 是否運行
-curl http://localhost:8000/api/v1/heartbeat
+# 確認資料目錄存在且有寫入權限
+ls -la data/vectorstore/
 
-# 檢查 Docker 容器
-docker ps | grep chromadb
+# 如果目錄不存在，會自動創建
+# 確保應用程序有權限寫入 data/ 目錄
 
-# 重啟 ChromaDB
-docker restart chromadb
+# 清空向量資料（如需重新開始）
+rm -rf data/vectorstore/
 ```
 
 ### Embedding API 錯誤

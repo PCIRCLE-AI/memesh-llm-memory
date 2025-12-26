@@ -44,7 +44,7 @@ export class RAGAgent {
     // 檢查健康狀態
     const isHealthy = await this.vectorStore.healthCheck();
     if (!isHealthy) {
-      throw new Error('ChromaDB health check failed');
+      throw new Error('Vector store health check failed');
     }
 
     this.isInitialized = true;

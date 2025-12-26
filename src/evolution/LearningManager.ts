@@ -2,6 +2,8 @@
  * Learning Manager - Pattern Recognition and Knowledge Extraction
  *
  * Analyzes agent performance to identify successful patterns and anti-patterns
+ *
+ * Phase 2: Enhanced with context-aware learning, multi-objective optimization, and explainability
  */
 
 import { logger } from '../utils/logger.js';
@@ -10,8 +12,15 @@ import type {
   PerformanceMetrics,
   LearnedPattern,
   AgentFeedback,
+  ContextualPattern,
+  PatternExplanation,
+  OptimizationCandidate,
+  OptimizationObjectives,
 } from './types.js';
 import { v4 as uuidv4 } from 'uuid';
+import { ContextMatcher } from './ContextMatcher.js';
+import { MultiObjectiveOptimizer } from './MultiObjectiveOptimizer.js';
+import { PatternExplainer } from './PatternExplainer.js';
 
 export interface LearningConfig {
   /**
@@ -46,6 +55,12 @@ export class LearningManager {
   private config: LearningConfig;
   private performanceTracker: PerformanceTracker;
 
+  // Phase 2: Advanced learning components
+  private contextMatcher: ContextMatcher;
+  private multiObjectiveOptimizer: MultiObjectiveOptimizer;
+  private patternExplainer: PatternExplainer;
+  private contextualPatterns: Map<string, ContextualPattern[]> = new Map(); // agentId -> contextual patterns[]
+
   constructor(
     performanceTracker: PerformanceTracker,
     config?: Partial<LearningConfig>
@@ -58,6 +73,11 @@ export class LearningManager {
       failureRateThreshold: config?.failureRateThreshold || 0.3,
       maxPatternsPerAgent: config?.maxPatternsPerAgent || 100,
     };
+
+    // Phase 2: Initialize advanced learning components
+    this.contextMatcher = new ContextMatcher();
+    this.multiObjectiveOptimizer = new MultiObjectiveOptimizer();
+    this.patternExplainer = new PatternExplainer();
 
     logger.info('Learning manager initialized', this.config);
   }
@@ -523,5 +543,136 @@ export class LearningManager {
    */
   getAgentsWithPatterns(): string[] {
     return Array.from(this.patterns.keys());
+  }
+
+  /**
+   * Phase 2: Identify context-aware patterns for an agent
+   *
+   * @param agentId Agent identifier
+   * @returns Array of contextual patterns with rich metadata
+   */
+  async identifyContextualPatterns(agentId: string): Promise<ContextualPattern[]> {
+    const metrics = this.performanceTracker.getMetrics(agentId);
+
+    if (metrics.length < this.config.minObservations) {
+      logger.debug('Insufficient data for contextual pattern analysis', {
+        agentId,
+        count: metrics.length,
+        required: this.config.minObservations,
+      });
+      return [];
+    }
+
+    const contextualPatterns: ContextualPattern[] = [];
+
+    // Group metrics by task type
+    const metricsByTask = this.groupByTaskType(metrics);
+
+    for (const [taskType, taskMetrics] of metricsByTask.entries()) {
+      // Extract context from metadata
+      const complexity = this.inferComplexity(taskMetrics);
+
+      // Create contextual pattern for success patterns
+      const successfulMetrics = taskMetrics.filter((m) => m.success);
+      const successRate = successfulMetrics.length / taskMetrics.length;
+
+      if (
+        successfulMetrics.length >= this.config.minObservations &&
+        successRate >= this.config.successRateThreshold
+      ) {
+        const avgDuration = taskMetrics.reduce((sum, m) => sum + m.durationMs, 0) / taskMetrics.length;
+
+        contextualPatterns.push({
+          id: uuidv4(),
+          type: 'success',
+          description: `Successful execution pattern for ${taskType}`,
+          confidence: this.calculateConfidence(successfulMetrics.length, taskMetrics.length),
+          observations: successfulMetrics.length,
+          success_rate: successRate,
+          avg_execution_time: avgDuration,
+          last_seen: new Date().toISOString(),
+          context: {
+            agent_type: agentId,
+            task_type: taskType,
+            complexity,
+          },
+        });
+      }
+    }
+
+    // Store contextual patterns
+    this.contextualPatterns.set(agentId, contextualPatterns);
+
+    logger.info('Contextual pattern analysis complete', {
+      agentId,
+      patternsFound: contextualPatterns.length,
+    });
+
+    return contextualPatterns;
+  }
+
+  /**
+   * Phase 2: Find optimal configuration using multi-objective optimization
+   *
+   * @param agentId Agent identifier
+   * @param weights Objective weights (should sum to ~1.0)
+   * @returns Best configuration candidate or undefined
+   */
+  findOptimalConfiguration(
+    agentId: string,
+    weights: OptimizationObjectives
+  ): OptimizationCandidate | undefined {
+    const metrics = this.performanceTracker.getMetrics(agentId);
+
+    if (metrics.length === 0) {
+      return undefined;
+    }
+
+    // Convert metrics to optimization candidates
+    const candidates: OptimizationCandidate[] = metrics.map((m) => ({
+      id: m.executionId,
+      objectives: {
+        accuracy: m.qualityScore,
+        speed: m.durationMs > 0 ? 1 / (m.durationMs / 1000) : 0, // Inverse of seconds
+        cost: m.cost > 0 ? 1 / m.cost : 0, // Inverse of cost (higher is better)
+        satisfaction: m.userSatisfaction,
+      },
+      metadata: m.metadata,
+    }));
+
+    // Find Pareto front
+    const paretoFront = this.multiObjectiveOptimizer.findParetoFront(candidates);
+
+    // Select best from Pareto front using weights
+    const best = this.multiObjectiveOptimizer.selectBest(paretoFront, weights);
+
+    if (best) {
+      logger.info('Optimal configuration found', {
+        agentId,
+        candidateId: best.id,
+        objectives: best.objectives,
+      });
+    }
+
+    return best;
+  }
+
+  /**
+   * Phase 2: Generate human-readable explanation for a pattern
+   *
+   * @param patternId Pattern identifier
+   * @returns Pattern explanation or undefined if not found
+   */
+  explainPattern(patternId: string): PatternExplanation | undefined {
+    // Search in contextual patterns
+    for (const [agentId, patterns] of this.contextualPatterns.entries()) {
+      const pattern = patterns.find((p) => p.id === patternId);
+      if (pattern) {
+        return this.patternExplainer.explain(pattern);
+      }
+    }
+
+    logger.warn('Pattern not found for explanation', { patternId });
+    return undefined;
   }
 }

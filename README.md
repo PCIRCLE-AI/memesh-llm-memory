@@ -30,7 +30,7 @@ Smart Agents 是一個高性能、模組化的 AI Agent 協調平台，具備智
    - Complete working demo with collaborative analysis
 
 3. **Testing Framework**
-   - Vitest integration with 112+ passing tests (58 core + 16 teams + 22 evolution + 16 collaboration)
+   - Vitest integration with 157+ passing tests (58 core + 16 teams + 22 evolution Phase 1-2 + 45 evolution Phase 3 + 16 collaboration)
    - ≥80% code coverage for core modules
    - Comprehensive test documentation
 
@@ -310,12 +310,19 @@ smart-agents/
   - [x] Orchestration & Optimization Team - 編排優化
   - [x] 完整測試覆蓋 (16/16 passing tests)
   - [x] 團隊選擇指南與協作框架 (TEAMS.md)
-- [x] **Self-Evolving Agent 機制** ✅ (2025-12-26)
+- [x] **Self-Evolving Agent 機制 - Phase 1 & 2** ✅ (2025-12-26)
   - [x] PerformanceTracker - 性能監控與異常檢測
   - [x] LearningManager - 模式識別與知識萃取
   - [x] AdaptationEngine - 動態行為調整
   - [x] 完整測試覆蓋 (22/22 passing tests)
-  - [x] 完整系統文檔 (EVOLUTION.md)
+- [x] **Self-Evolving Agent 機制 - Phase 3** ✅ (2025-12-27)
+  - [x] Cross-Agent Knowledge Transfer - Agent 間知識轉移
+    - [x] TransferabilityChecker - 加權上下文相似度評估
+    - [x] KnowledgeTransferManager - 模式發現與轉移管理
+  - [x] A/B Testing Framework - 科學驗證配置效果
+    - [x] StatisticalAnalyzer - Welch's t-test, effect size, confidence intervals
+    - [x] ABTestManager - 實驗管理與統計分析
+  - [x] 完整測試覆蓋 (45/45 passing tests)
 - [x] 完整文檔 (README.md, TEAMS.md, EVOLUTION.md)
 
 ## 💰 成本估算

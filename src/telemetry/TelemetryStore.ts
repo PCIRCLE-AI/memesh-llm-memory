@@ -17,19 +17,26 @@ export interface TelemetryStoreOptions {
 }
 
 export class TelemetryStore {
-  private db: Database.Database;
+  private db!: Database.Database; // Will be initialized in initialize()
   private storagePath: string;
+  private isInitialized: boolean = false;
 
   constructor(options: TelemetryStoreOptions = {}) {
     this.storagePath = options.storagePath ||
       path.join(os.homedir(), '.smart-agents', 'telemetry');
-
-    const dbPath = path.join(this.storagePath, 'telemetry.db');
-    this.db = new Database(dbPath);
   }
 
   async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      return; // Already initialized
+    }
+
+    // Create directory first, then database
     await fs.ensureDir(this.storagePath);
+
+    const dbPath = path.join(this.storagePath, 'telemetry.db');
+    this.db = new Database(dbPath);
+    this.isInitialized = true;
 
     // Create tables
     this.db.exec(`

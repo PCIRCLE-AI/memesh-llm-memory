@@ -42,3 +42,6 @@ main().catch((error) => {
   logger.error('Failed to start Smart Agents:', error);
   process.exit(1);
 });
+
+// Module exports
+export * from './telemetry';

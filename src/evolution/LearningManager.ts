@@ -740,4 +740,20 @@ export class LearningManager {
     logger.warn('Pattern not found for explanation', { patternId });
     return undefined;
   }
+
+  /**
+   * Phase 3: Get learned patterns for an agent (for cross-agent transfer)
+   *
+   * @param agentId Agent identifier
+   * @returns Array of contextual patterns for the agent
+   */
+  async getLearnedPatterns(agentId: string): Promise<ContextualPattern[]> {
+    const patterns = this.contextualPatterns.get(agentId);
+    if (!patterns) {
+      logger.debug('No patterns found for agent', { agentId });
+      return [];
+    }
+
+    return patterns;
+  }
 }

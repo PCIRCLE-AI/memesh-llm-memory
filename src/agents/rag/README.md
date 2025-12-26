@@ -1,6 +1,6 @@
 # Advanced RAG Agent 📚
 
-進階檢索增強生成（Retrieval-Augmented Generation）代理，使用 ChromaDB 和 OpenAI Embeddings。
+進階檢索增強生成（Retrieval-Augmented Generation）代理，使用 Vectra 本地向量資料庫和 OpenAI Embeddings。
 
 ## 功能特性
 
@@ -15,7 +15,7 @@
 
 ### 🔧 技術棧
 
-- **Vector Database**: ChromaDB (本地或 Docker)
+- **Vector Database**: Vectra (本地檔案存儲，零依賴)
 - **Embeddings**: OpenAI `text-embedding-3-small` / `text-embedding-3-large`
 - **Language**: TypeScript with strict type checking
 - **Memory Integration**: 支援 MCP Memory 持久化
@@ -29,32 +29,13 @@
 ```json
 {
   "dependencies": {
-    "chromadb": "^1.9.2",
+    "vectra": "^0.11.1",
     "openai": "^4.70.4"
   }
 }
 ```
 
-### 2. 啟動 ChromaDB
-
-#### 選項 A：使用 Docker（推薦）
-
-```bash
-docker run -d \
-  --name chromadb \
-  -p 8000:8000 \
-  -v chromadb_data:/chroma/chroma \
-  chromadb/chroma:latest
-```
-
-#### 選項 B：本地安裝
-
-```bash
-pip install chromadb
-chroma run --path ./chromadb_data --port 8000
-```
-
-### 3. 配置環境變數
+### 2. 配置環境變數
 
 在專案根目錄的 `.env` 文件中：
 
@@ -62,14 +43,13 @@ chroma run --path ./chromadb_data --port 8000
 # OpenAI API (for embeddings)
 OPENAI_API_KEY=sk-xxxxx
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small  # 或 text-embedding-3-large
-
-# ChromaDB
-CHROMA_HOST=localhost
-CHROMA_PORT=8000
-CHROMA_COLLECTION_NAME=smart_agents_kb
 ```
 
-### 4. 基礎使用
+**就這樣！** Vectra 是純 Node.js 實現，無需啟動服務或 Docker。
+
+向量資料會自動存儲在 `data/vectorstore/` 目錄。
+
+### 3. 基礎使用
 
 ```typescript
 import { RAGAgent } from './agents/rag/index.js';

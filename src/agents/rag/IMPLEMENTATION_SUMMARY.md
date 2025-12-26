@@ -17,13 +17,13 @@
    - Token 估算
    - 支援多種 embedding 模型
 
-3. **vectorstore.ts** - ChromaDB 封裝
-   - ChromaDB 客戶端封裝
-   - Collection 管理（創建、刪除、清空）
+3. **vectorstore.ts** - Vectra 本地向量資料庫封裝
+   - Vectra LocalIndex 封裝
+   - 本地檔案存儲（data/vectorstore/）
    - 文檔添加（單個、批次）
    - 向量搜尋（語義相似度）
    - 元數據過濾
-   - 健康檢查
+   - 零依賴、無需服務
 
 4. **reranker.ts** - 結果重排序
    - Reciprocal Rank Fusion (RRF)
@@ -66,24 +66,17 @@
    - 效能優化
    - 故障排除
 
-### 部署與整合（3 個檔案）
+### 部署與整合（2 個檔案）
 
-9. **docker-compose.rag.yml** - Docker Compose 配置
-   - ChromaDB 服務配置
-   - 資料持久化
-   - 健康檢查
-   - 網路配置
+9. **RAG_DEPLOYMENT.md** - 部署指南
+   - 系統需求
+   - 本地開發部署
+   - 生產環境配置
+   - 效能調優
+   - 監控與維護
+   - 故障排除
 
-10. **RAG_DEPLOYMENT.md** - 部署指南
-    - 系統需求
-    - 本地開發部署
-    - Docker 部署
-    - 生產環境配置
-    - 效能調優
-    - 監控與維護
-    - 故障排除
-
-11. **INTEGRATION_GUIDE.md** - 整合指南
+10. **INTEGRATION_GUIDE.md** - 整合指南
     - 與 Agent Orchestrator 整合
     - 與 MCP Memory 整合
     - 與 Claude API 整合
@@ -148,8 +141,8 @@ RAG Agent 架構
 │   └── 成本追蹤
 │
 ├── VectorStore (vectorstore.ts)
-│   ├── ChromaDB 客戶端
-│   ├── Collection 管理
+│   ├── Vectra LocalIndex
+│   ├── 本地檔案存儲
 │   └── 向量搜尋
 │
 ├── Reranker (reranker.ts)
@@ -173,7 +166,7 @@ RAG Agent 架構
 
 ### 搜尋效能
 
-- **平均延遲**: < 500ms（本地 ChromaDB）
+- **平均延遲**: < 100ms（本地檔案，無網路開銷）
 - **Top-K**: 預設 5，可調整到 100
 - **準確率**: 依賴 embedding 模型品質
 
@@ -188,7 +181,7 @@ RAG Agent 架構
 ## 🔧 技術棧
 
 - **Language**: TypeScript 5.7
-- **Vector DB**: ChromaDB 1.9.2
+- **Vector DB**: Vectra 0.11+ (本地檔案存儲，零依賴)
 - **Embeddings**: OpenAI API 4.70.4
 - **Testing**: Vitest 2.1.8
 - **Type Safety**: Zod 3.24.1
@@ -210,13 +203,7 @@ npm run test:coverage
 
 ## 🚀 快速啟動
 
-### 1. 啟動 ChromaDB
-
-```bash
-docker-compose -f docker-compose.rag.yml up -d
-```
-
-### 2. 執行 Demo
+### 1. 執行 Demo
 
 ```bash
 npm run rag
@@ -224,7 +211,9 @@ npm run rag
 tsx src/agents/rag/demo.ts
 ```
 
-### 3. 執行測試
+**就這樣！** Vectra 無需啟動服務，直接使用。
+
+### 2. 執行測試
 
 ```bash
 npm test src/agents/rag/rag.test.ts
@@ -247,8 +236,6 @@ src/agents/rag/
 
 docs/
 └── RAG_DEPLOYMENT.md           # 部署指南
-
-docker-compose.rag.yml          # Docker Compose
 ```
 
 ## 🎁 額外功能
@@ -311,21 +298,15 @@ const results = await rag.search(query, {
 
 ## 📝 重要注意事項
 
-### 1. ChromaDB 必須先啟動
-
-```bash
-# 啟動 ChromaDB
-docker-compose -f docker-compose.rag.yml up -d
-
-# 驗證
-curl http://localhost:8000/api/v1/heartbeat
-```
-
-### 2. OpenAI API Key 必須設置
+### 1. OpenAI API Key 必須設置
 
 ```env
 OPENAI_API_KEY=sk-xxxxx
 ```
+
+### 2. 本地資料存儲
+
+向量資料自動存儲在 `data/vectorstore/` 目錄，無需額外配置。
 
 ### 3. 成本控制
 
@@ -388,9 +369,8 @@ OPENAI_API_KEY=sk-xxxxx
 
 ### 生產就緒
 
-✅ Docker Compose 配置
-✅ 健康檢查
-✅ 資料持久化
+✅ 本地檔案存儲（零依賴）
+✅ 自動資料持久化
 ✅ 成本控制
 ✅ 效能監控
 ✅ 故障排除指南

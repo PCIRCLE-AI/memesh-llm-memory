@@ -17,11 +17,8 @@ const envSchema = z.object({
   CLAUDE_MODEL: z.string().default('claude-sonnet-4-5-20250929'),
   CLAUDE_OPUS_MODEL: z.string().default('claude-opus-4-5-20251101'),
 
-  // OpenAI API - Optional (voice feature removed)
+  // OpenAI API - Optional
   OPENAI_API_KEY: z.string().optional(),
-  OPENAI_WHISPER_MODEL: z.string().default('whisper-1'),
-  OPENAI_TTS_MODEL: z.string().default('tts-1'),
-  OPENAI_TTS_VOICE: z.string().default('alloy'),
   OPENAI_EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
   OPENAI_CHAT_MODEL: z.string().default('gpt-4-turbo-preview'),
   OPENAI_CODE_MODEL: z.string().default('gpt-4-turbo-preview'),
@@ -93,13 +90,6 @@ export const appConfig = {
   // OpenAI
   openai: {
     apiKey: env.OPENAI_API_KEY,
-    whisper: {
-      model: env.OPENAI_WHISPER_MODEL,
-    },
-    tts: {
-      model: env.OPENAI_TTS_MODEL,
-      voice: env.OPENAI_TTS_VOICE,
-    },
     embeddings: {
       model: env.OPENAI_EMBEDDING_MODEL,
     },

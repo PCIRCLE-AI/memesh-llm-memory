@@ -34,47 +34,27 @@ CLAUDE_OPUS_MODEL=claude-opus-4-5-20251101
 
 # OpenAI API
 OPENAI_API_KEY=sk-your-key-here
-OPENAI_WHISPER_MODEL=whisper-1
-OPENAI_TTS_MODEL=tts-1
-OPENAI_TTS_VOICE=alloy
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
-
-# ChromaDB (默認配置即可)
-CHROMA_HOST=localhost
-CHROMA_PORT=8000
 
 # 成本控制
 MONTHLY_BUDGET_USD=50
 COST_ALERT_THRESHOLD=0.8
 ```
 
-## 步驟 2: 啟動 ChromaDB
+**就這樣！** 向量資料庫（Vectra）是純 Node.js 實現，會自動創建在 `data/vectorstore/`，無需額外配置。
 
-### 選項 A: 使用 Docker（推薦）
-
-```bash
-# 啟動 ChromaDB 容器
-docker run -d -p 8000:8000 --name chroma chromadb/chroma
-
-# 驗證運行
-curl http://localhost:8000/api/v1/heartbeat
-```
-
-### 選項 B: 本地安裝
+## 步驟 2: 安裝依賴
 
 ```bash
-# 安裝 ChromaDB
-pip install chromadb
-
-# 啟動伺服器
-python -m chromadb.server --host localhost --port 8000
+# 安裝 Node.js 依賴
+npm install
 ```
 
 ## 步驟 3: 測試配置
 
 ```bash
 # 運行測試腳本
-npm run test:config
+npm test
 ```
 
 ## 步驟 4: 啟動 Smart Agents
@@ -82,6 +62,11 @@ npm run test:config
 ```bash
 # 開發模式
 npm run dev
+
+# 運行特定 agent
+npm run rag          # RAG Agent
+npm run orchestrator # Orchestrator
+npm run dashboard    # Monitoring Dashboard
 
 # 生產模式
 npm run build
@@ -92,9 +77,9 @@ npm start
 
 - [ ] Claude API key 已配置且有效
 - [ ] OpenAI API key 已配置且有效
-- [ ] ChromaDB 正在運行（`http://localhost:8000`）
 - [ ] 環境變數已正確設置
 - [ ] 所有依賴已安裝（`npm install`）
+- [ ] 測試通過（`npm test`）
 
 ## 常見問題
 
@@ -105,23 +90,44 @@ npm start
 2. 確認 key 未過期
 3. 檢查 API 配額是否用完
 
-### Q: ChromaDB 連接失敗
+### Q: 向量資料庫初始化失敗
 
 **解決方案**：
-1. 確認 Docker 容器正在運行：`docker ps | grep chroma`
-2. 檢查端口是否被佔用：`lsof -i :8000`
-3. 重啟容器：`docker restart chroma`
+1. 確認 `data/` 目錄有寫入權限
+2. 檢查磁碟空間：`df -h`
+3. 如果資料損毀，刪除並重建：`rm -rf data/vectorstore/`
 
 ### Q: 記憶體不足
 
 **解決方案**：
 1. 關閉其他應用程式
 2. 調整 `.env` 中的 `MAX_MEMORY_MB`
-3. 使用更輕量的模型（Haiku 替代 Sonnet）
+3. 增加 Node.js 記憶體限制：`NODE_OPTIONS="--max-old-space-size=4096" npm run dev`
+
+### Q: Embedding API 速率限制
+
+**解決方案**：
+1. 減少批次大小（在代碼中調整 `batchSize` 和 `maxConcurrent`）
+2. 等待速率限制重置（通常 1 分鐘）
+3. 升級 OpenAI API plan
+
+## 系統需求
+
+### 最低需求
+- **Node.js**: >= 18.0.0
+- **RAM**: 4 GB
+- **硬碟**: 10 GB 可用空間
+
+### 推薦配置
+- **Node.js**: >= 20.0.0
+- **RAM**: 8+ GB
+- **硬碟**: 50+ GB SSD
+- **網路**: 穩定連接（OpenAI/Anthropic API）
 
 ## 下一步
 
 配置完成後，查看：
+- [RAG 部署指南](./RAG_DEPLOYMENT.md) - RAG Agent 詳細部署
 - [使用指南](./USAGE.md) - 如何使用各種 agents
 - [架構文檔](./ARCHITECTURE.md) - 系統架構說明
 - [API 文檔](./API.md) - API 參考

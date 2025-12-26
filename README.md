@@ -9,7 +9,7 @@ Smart Agents 是一個高性能、模組化的 AI Agent 協調平台，具備智
 ### 核心能力
 
 - 🎯 **智能 Orchestrator** - 自動路由任務到最適合的 agent
-- 🧠 **Advanced RAG** - 向量資料庫驅動的知識檢索（Vectra 本地存儲）
+- 🧠 **Advanced RAG** - 本地向量資料庫驅動的知識檢索（Vectra/ChromaDB 支持）
 - 🤝 **Multi-Agent 協作** - 專業化 agent teams 協同工作（✅ Month 1）
 - 🏗️ **Specialized Teams** - 4 個專業團隊（代碼、研究、品質、編排）（✅ Month 2-3）
 - 🧠 **Self-Evolving Agent** - Agent 自主學習與行為優化（✅ Month 2-3）
@@ -57,7 +57,7 @@ Smart Agents 是一個高性能、模組化的 AI Agent 協調平台，具備智
 - Gemini 2.5 Flash - 多模態任務 (vision, audio, video) - FREE tier
 
 **基礎設施**:
-- Vectra - 本地向量資料庫
+- Vector Database - Vectra (本地) / ChromaDB (Docker)
 - MCP (Model Context Protocol) - Agent 整合框架
 - Node.js / TypeScript - 開發語言
 
@@ -233,7 +233,7 @@ npm run dashboard
 # 運行 Architecture Team Demo
 npm run demo:architecture
 
-# RAG Agent (Vectra Demo)
+# RAG Agent Demo
 npm run rag
 
 # 編譯專案
@@ -294,7 +294,7 @@ smart-agents/
 ### Week 1 ✅
 - [x] 專案初始化
 - [x] Agent Orchestrator 核心
-- [x] Vectra RAG 基礎
+- [x] RAG 向量資料庫基礎
 
 ### Month 1 ✅ (2025-12-24)
 - [x] Multi-Agent 協作框架
@@ -335,7 +335,7 @@ smart-agents/
 - Grok API: $3-8 (中等推理任務)
 - Gemini API: $0 (FREE tier, 10,000 次/日)
 - Ollama: $0 (本地運行，60% 簡單任務)
-- Vectra: $0 (本地)
+- Vector DB: $0 (Vectra 本地 / ChromaDB Docker)
 - **總計**: ~$20-35/月 (↓ 40% vs 單一提供商)
 
 ### 成本優化策略
@@ -352,9 +352,3 @@ smart-agents/
 ## 📄 授權
 
 MIT License
-
----
-
-**建立日期**: 2025-12-24
-**V2 完成日期**: 2025-12-26
-**系統特性**: 跨平台支持、智能資源管理、成本優化

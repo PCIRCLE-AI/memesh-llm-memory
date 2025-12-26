@@ -22,10 +22,6 @@ export class VectorStore {
 
   constructor(config?: Partial<RAGConfig>) {
     this.config = {
-      chromaHost: config?.chromaHost || appConfig.chroma.host,
-      chromaPort: config?.chromaPort || appConfig.chroma.port,
-      chromaUrl: config?.chromaUrl || appConfig.chroma.url,
-      collectionName: config?.collectionName || appConfig.chroma.collectionName,
       embeddingModel: config?.embeddingModel || appConfig.openai.embeddings.model,
       embeddingDimension: config?.embeddingDimension || 1536,
       maxBatchSize: config?.maxBatchSize || 100,

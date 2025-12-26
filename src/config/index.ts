@@ -53,11 +53,6 @@ const envSchema = z.object({
   DEFAULT_REASONING_PROVIDER: z.string().default('claude'),
   FALLBACK_PROVIDER: z.string().default('ollama'),
 
-  // ChromaDB
-  CHROMA_HOST: z.string().default('localhost'),
-  CHROMA_PORT: z.string().default('8000'),
-  CHROMA_COLLECTION_NAME: z.string().default('smart_agents_kb'),
-
   // Orchestrator
   DEFAULT_MODE: z.enum(['cloud', 'hybrid', 'local']).default('cloud'),
   MAX_MEMORY_MB: z.string().default('8000'),
@@ -126,14 +121,6 @@ export const appConfig = {
   // Gemini (Google AI Studio)
   gemini: {
     apiKey: env.GOOGLE_API_KEY,
-  },
-
-  // ChromaDB
-  chroma: {
-    host: env.CHROMA_HOST,
-    port: parseInt(env.CHROMA_PORT),
-    collectionName: env.CHROMA_COLLECTION_NAME,
-    url: `http://${env.CHROMA_HOST}:${env.CHROMA_PORT}`,
   },
 
   // Quota Limits

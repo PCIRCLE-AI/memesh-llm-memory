@@ -1,12 +1,11 @@
 # RAG Agent 部署指南
 
-本文檔說明如何部署 Advanced RAG Agent，包含本地開發和生產環境配置。
+本文檔說明如何部署 Advanced RAG Agent（使用 Vectra 本地向量資料庫）。
 
 ## 目錄
 
 - [系統需求](#系統需求)
 - [本地開發部署](#本地開發部署)
-- [Docker 部署](#docker-部署)
 - [生產環境部署](#生產環境部署)
 - [效能調優](#效能調優)
 - [監控與維護](#監控與維護)
@@ -20,13 +19,12 @@
 - **RAM**: 4 GB
 - **硬碟**: 10 GB 可用空間
 - **Node.js**: >= 18.0.0
-- **Docker**: >= 20.10 (如使用 Docker 部署)
 
 ### 推薦配置
 
 - **CPU**: 4+ 核心
 - **RAM**: 8+ GB
-- **硬碟**: 50+ GB SSD
+- **硬碟**: 50+ GB SSD（用於向量資料存儲）
 - **網路**: 穩定的網路連接（OpenAI API）
 
 ### 軟體依賴
@@ -35,11 +33,9 @@
 # Node.js 和 npm
 node --version  # >= 18.0.0
 npm --version   # >= 9.0.0
-
-# Docker (可選)
-docker --version
-docker-compose --version
 ```
+
+**就這樣！** Vectra 是純 Node.js 實現，無需 Docker、Python 或其他依賴。
 
 ## 本地開發部署
 
@@ -59,48 +55,24 @@ cp .env.example .env
 ### 2. 配置 .env
 
 ```env
-# OpenAI API
+# OpenAI API (僅需此項！)
 OPENAI_API_KEY=sk-xxxxx
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
-
-# ChromaDB
-CHROMA_HOST=localhost
-CHROMA_PORT=8000
-CHROMA_COLLECTION_NAME=smart_agents_kb
 ```
 
-### 3. 啟動 ChromaDB
-
-#### 選項 A: Docker (推薦)
+### 3. 運行 RAG Agent
 
 ```bash
-docker-compose -f docker-compose.rag.yml up -d
-
-# 驗證啟動
-curl http://localhost:8000/api/v1/heartbeat
-```
-
-#### 選項 B: 本地安裝
-
-```bash
-# 安裝 ChromaDB
-pip install chromadb
-
-# 啟動 ChromaDB server
-chroma run --path ./chromadb_data --port 8000
-```
-
-### 4. 運行 RAG Agent
-
-```bash
-# 執行 demo
+# 執行 demo（會自動創建 data/vectorstore/ 目錄）
 npm run rag
 
 # 或直接執行
 tsx src/agents/rag/demo.ts
 ```
 
-### 5. 執行測試
+向量資料會自動存儲在 `data/vectorstore/` 目錄，無需手動創建。
+
+### 4. 執行測試
 
 ```bash
 # 執行所有測試
@@ -111,77 +83,6 @@ npm test -- src/agents/rag/rag.test.ts
 
 # 生成覆蓋率報告
 npm run test:coverage
-```
-
-## Docker 部署
-
-### 完整 Docker Compose 設置
-
-```yaml
-# docker-compose.yml
-version: '3.8'
-
-services:
-  chromadb:
-    image: chromadb/chroma:latest
-    container_name: smart-agents-chromadb
-    ports:
-      - "8000:8000"
-    volumes:
-      - chromadb_data:/chroma/chroma
-    environment:
-      - IS_PERSISTENT=TRUE
-      - ANONYMIZED_TELEMETRY=FALSE
-    restart: unless-stopped
-
-  smart-agents:
-    build: .
-    container_name: smart-agents-app
-    depends_on:
-      - chromadb
-    environment:
-      - CHROMA_HOST=chromadb
-      - CHROMA_PORT=8000
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-    volumes:
-      - ./src:/app/src
-      - ./data:/app/data
-    restart: unless-stopped
-
-volumes:
-  chromadb_data:
-```
-
-### 啟動服務
-
-```bash
-# 啟動所有服務
-docker-compose up -d
-
-# 查看日誌
-docker-compose logs -f
-
-# 停止服務
-docker-compose down
-
-# 停止並刪除資料
-docker-compose down -v
-```
-
-### 資料持久化
-
-```bash
-# 備份 ChromaDB 資料
-docker run --rm \
-  -v smart-agents_chromadb_data:/data \
-  -v $(pwd)/backups:/backup \
-  ubuntu tar cvf /backup/chromadb-backup-$(date +%Y%m%d).tar /data
-
-# 恢復資料
-docker run --rm \
-  -v smart-agents_chromadb_data:/data \
-  -v $(pwd)/backups:/backup \
-  ubuntu tar xvf /backup/chromadb-backup-YYYYMMDD.tar -C /
 ```
 
 ## 生產環境部署
@@ -200,90 +101,124 @@ export OPENAI_API_KEY=sk-xxxxx
 # - Kubernetes Secrets
 ```
 
-#### 網路安全
+#### 檔案系統權限
 
-```yaml
-# 限制 ChromaDB 僅接受內部連接
-services:
-  chromadb:
-    networks:
-      - internal
-    # 不暴露到外部網路
+```bash
+# 確保應用程序有權限寫入資料目錄
+mkdir -p data/vectorstore
+chmod 750 data/vectorstore
+
+# 設置適當的擁有者
+chown -R app_user:app_group data/
 ```
 
-### 2. 效能優化
+### 2. 資料持久化
 
-#### ChromaDB 配置
+#### 備份策略
 
-```yaml
-environment:
-  - CHROMA_SERVER_HTTP_PORT=8000
-  - CHROMA_SERVER_CORS_ALLOW_ORIGINS=["*"]
-  - PERSIST_DIRECTORY=/chroma/chroma
-  - ALLOW_RESET=FALSE
+```bash
+# 定期備份向量資料（簡單的 tar 即可）
+tar -czf backups/vectorstore-$(date +%Y%m%d).tar.gz data/vectorstore/
+
+# 恢復資料
+tar -xzf backups/vectorstore-YYYYMMDD.tar.gz
 ```
 
-#### 資源限制
+#### 版本控制
 
-```yaml
-services:
-  chromadb:
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 4G
-        reservations:
-          cpus: '1'
-          memory: 2G
+```bash
+# .gitignore 應包含（已配置）
+data/vectorstore/
 ```
 
-### 3. 監控設置
+### 3. Process Manager 配置
+
+#### 使用 PM2
+
+```bash
+# 安裝 PM2
+npm install -g pm2
+
+# 啟動應用
+pm2 start npm --name "rag-agent" -- run rag
+
+# 保存配置
+pm2 save
+
+# 設置開機啟動
+pm2 startup
+```
+
+#### PM2 ecosystem 配置
+
+```javascript
+// ecosystem.config.js
+module.exports = {
+  apps: [{
+    name: 'rag-agent',
+    script: 'npm',
+    args: 'run rag',
+    instances: 1,
+    autorestart: true,
+    watch: false,
+    max_memory_restart: '1G',
+    env: {
+      NODE_ENV: 'production',
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    }
+  }]
+};
+```
+
+### 4. 監控設置
 
 #### 健康檢查
 
-```yaml
-healthcheck:
-  test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
-  interval: 30s
-  timeout: 10s
-  retries: 3
-  start_period: 40s
+```typescript
+// health-check.ts
+import { RAGAgent } from './agents/rag/index.js';
+
+async function healthCheck() {
+  const rag = new RAGAgent();
+  await rag.initialize();
+
+  const stats = await rag.getStats();
+  const isHealthy = stats.totalDocuments >= 0; // 基本檢查
+
+  await rag.close();
+  return isHealthy;
+}
+
+healthCheck()
+  .then(healthy => process.exit(healthy ? 0 : 1))
+  .catch(() => process.exit(1));
+```
+
+```bash
+# Cron 健康檢查（每小時）
+0 * * * * cd /path/to/smart-agents && tsx health-check.ts || alert
 ```
 
 #### 日誌管理
 
-```yaml
-logging:
-  driver: "json-file"
-  options:
-    max-size: "10m"
-    max-file: "3"
-```
-
-### 4. 高可用性配置
-
-#### 多實例部署
-
-```yaml
-services:
-  chromadb:
-    deploy:
-      replicas: 3
-      update_config:
-        parallelism: 1
-        delay: 10s
-```
-
-#### 負載平衡
-
 ```bash
-# 使用 Nginx 作為反向代理
-upstream chromadb_backend {
-    server chromadb-1:8000;
-    server chromadb-2:8000;
-    server chromadb-3:8000;
+# 應用日誌
+tail -f logs/rag-agent.log
+
+# 錯誤日誌
+grep "ERROR" logs/rag-agent.log | tail -20
+
+# 日誌輪轉（使用 logrotate）
+cat > /etc/logrotate.d/rag-agent <<EOF
+/path/to/smart-agents/logs/*.log {
+  daily
+  rotate 7
+  compress
+  delaycompress
+  missingok
+  notifempty
 }
+EOF
 ```
 
 ## 效能調優
@@ -304,19 +239,17 @@ await rag.indexDocuments(docs, {
 });
 ```
 
-### 2. ChromaDB 索引優化
+### 2. 檔案系統優化
 
-```python
-# 調整 HNSW 參數
-collection = client.create_collection(
-    name="my_collection",
-    metadata={
-        "hnsw:space": "cosine",
-        "hnsw:construction_ef": 200,  # 建構時的精度
-        "hnsw:M": 16,                 # 連接數
-        "hnsw:search_ef": 100,        # 搜尋時的精度
-    }
-)
+```bash
+# 使用 SSD 存儲向量資料
+# 確保 data/vectorstore/ 在快速存儲裝置上
+
+# 檢查磁碟 I/O 性能
+sudo iotop
+
+# 優化檔案系統（ext4）
+sudo tune2fs -O dir_index /dev/sdX
 ```
 
 ### 3. 快取策略
@@ -325,7 +258,7 @@ collection = client.create_collection(
 // 啟用 reranker 快取
 const results = await rag.searchWithRerank(query, {
   rerankAlgorithm: 'reciprocal-rank',
-  useCache: true,
+  useCache: true,  // 預設啟用
 });
 ```
 
@@ -339,6 +272,28 @@ OPENAI_EMBEDDING_MODEL=text-embedding-3-small  // $0.02/1M tokens
 OPENAI_EMBEDDING_MODEL=text-embedding-3-large  // $0.13/1M tokens
 ```
 
+### 5. 記憶體管理
+
+```typescript
+// 對於大量文檔，使用流式處理
+async function indexLargeDataset(docs: DocumentInput[]) {
+  const chunkSize = 1000;
+
+  for (let i = 0; i < docs.length; i += chunkSize) {
+    const chunk = docs.slice(i, i + chunkSize);
+    await rag.indexDocuments(chunk, {
+      batchSize: 100,
+      maxConcurrent: 5,
+    });
+
+    console.log(`Indexed ${i + chunk.length}/${docs.length} documents`);
+
+    // 釋放記憶體
+    if (global.gc) global.gc();
+  }
+}
+```
+
 ## 監控與維護
 
 ### 1. 成本監控
@@ -349,8 +304,10 @@ const stats = await rag.getStats();
 console.log(`Current cost: $${stats.embeddingStats.totalCost.toFixed(4)}`);
 
 // 設置成本警報
+const MONTHLY_BUDGET_USD = 50;
 if (stats.embeddingStats.totalCost > MONTHLY_BUDGET_USD * 0.8) {
   console.warn('⚠️ 80% of monthly budget reached!');
+  // 發送警報（email, Slack, etc.）
 }
 ```
 
@@ -363,54 +320,64 @@ const results = await rag.search(query);
 const latency = Date.now() - startTime;
 
 console.log(`Search latency: ${latency}ms`);
+
+// 記錄到監控系統（Prometheus, DataDog, etc.）
 ```
 
 ### 3. 定期維護
 
 ```bash
 # 每週備份
-0 0 * * 0 /path/to/backup-chromadb.sh
+0 0 * * 0 /path/to/backup-vectorstore.sh
 
-# 每月清理舊資料
+# 每月清理舊資料（如需要）
 0 0 1 * * /path/to/cleanup-old-data.sh
 
 # 每日健康檢查
-0 */6 * * * curl http://localhost:8000/api/v1/heartbeat || alert
+0 */6 * * * tsx /path/to/health-check.ts || alert
 ```
 
-### 4. 日誌分析
+### 4. 資料完整性檢查
 
-```bash
-# ChromaDB 日誌
-docker logs smart-agents-chromadb --tail 100
+```typescript
+// 定期檢查向量資料完整性
+import { LocalIndex } from 'vectra';
 
-# 應用日誌
-tail -f logs/rag-agent.log
+async function checkIntegrity() {
+  const index = new LocalIndex('data/vectorstore');
 
-# 錯誤日誌
-grep "ERROR" logs/rag-agent.log | tail -20
+  if (!(await index.isIndexCreated())) {
+    console.error('❌ Index not found!');
+    return false;
+  }
+
+  console.log('✅ Index integrity OK');
+  return true;
+}
 ```
 
 ## 故障排除
 
-### 問題 1: ChromaDB 連接失敗
+### 問題 1: 向量資料庫初始化失敗
 
-**症狀**: `Failed to connect to ChromaDB`
+**症狀**: `VectorStore initialization failed`
 
 **解決方案**:
 
 ```bash
-# 1. 檢查 ChromaDB 是否運行
-curl http://localhost:8000/api/v1/heartbeat
+# 1. 檢查目錄權限
+ls -la data/vectorstore/
 
-# 2. 檢查 Docker 容器狀態
-docker ps | grep chromadb
+# 2. 確保目錄存在且可寫
+mkdir -p data/vectorstore
+chmod 750 data/vectorstore
 
-# 3. 查看容器日誌
-docker logs smart-agents-chromadb
+# 3. 檢查磁碟空間
+df -h
 
-# 4. 重啟服務
-docker-compose restart chromadb
+# 4. 如果資料損毀，刪除並重建
+rm -rf data/vectorstore/
+# 重新運行應用，會自動創建新 index
 ```
 
 ### 問題 2: Embedding API 速率限制
@@ -441,18 +408,13 @@ async function indexWithRetry(docs, maxRetries = 3) {
 
 ### 問題 3: 記憶體不足
 
-**症狀**: `Out of memory`
+**症狀**: `JavaScript heap out of memory`
 
 **解決方案**:
 
 ```bash
-# 增加 Docker 記憶體限制
-docker update --memory 8g smart-agents-chromadb
-
-# 或修改 docker-compose.yml
-services:
-  chromadb:
-    mem_limit: 8g
+# 增加 Node.js 記憶體限制
+NODE_OPTIONS="--max-old-space-size=4096" npm run rag
 ```
 
 ```typescript
@@ -460,6 +422,9 @@ services:
 await rag.indexDocuments(docs, {
   batchSize: 20,  // 減少記憶體使用
 });
+
+// 使用流式處理大量文檔
+// 見「效能調優 -> 記憶體管理」章節
 ```
 
 ### 問題 4: 搜尋結果不準確
@@ -485,90 +450,95 @@ const results = await rag.searchWithRerank(query, {
 OPENAI_EMBEDDING_MODEL=text-embedding-3-large
 ```
 
-### 問題 5: 資料損毀
+### 問題 5: 磁碟空間不足
 
-**症狀**: Collection 無法載入
+**症狀**: `ENOSPC: no space left on device`
 
 **解決方案**:
 
 ```bash
-# 1. 從備份恢復
-docker run --rm \
-  -v smart-agents_chromadb_data:/data \
-  -v $(pwd)/backups:/backup \
-  ubuntu tar xvf /backup/chromadb-backup-YYYYMMDD.tar -C /
+# 檢查磁碟使用
+du -sh data/vectorstore/
 
-# 2. 重建 collection
-```
-
-```typescript
-// 清空並重新索引
+# 清理舊的向量資料（謹慎！）
 await rag.clearAll();
-await rag.indexDocuments(allDocuments);
+
+# 或刪除特定文檔
+const oldDocIds = [...];  // 獲取舊文檔 ID
+await rag.deleteDocuments(oldDocIds);
+
+# 壓縮資料目錄（備份）
+tar -czf vectorstore-backup.tar.gz data/vectorstore/
 ```
 
-## 進階配置
+### 問題 6: 檔案權限錯誤
 
-### 分散式部署
+**症狀**: `EACCES: permission denied`
 
-```yaml
-# 使用 Kubernetes
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: chromadb
-spec:
-  replicas: 3
-  template:
-    spec:
-      containers:
-      - name: chromadb
-        image: chromadb/chroma:latest
-        resources:
-          requests:
-            memory: "2Gi"
-            cpu: "1"
-          limits:
-            memory: "4Gi"
-            cpu: "2"
+**解決方案**:
+
+```bash
+# 修正擁有者
+chown -R $USER:$USER data/vectorstore/
+
+# 修正權限
+chmod -R 750 data/vectorstore/
 ```
 
-### CI/CD 整合
-
-```yaml
-# .github/workflows/rag-deploy.yml
-name: Deploy RAG Agent
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Build and deploy
-        run: |
-          docker-compose -f docker-compose.rag.yml build
-          docker-compose -f docker-compose.rag.yml up -d
-
-      - name: Run health check
-        run: |
-          sleep 10
-          curl -f http://localhost:8000/api/v1/heartbeat
-```
-
-## 總結
+## 部署檢查清單
 
 完整的 RAG Agent 部署流程：
 
-1. ✅ 環境準備（Node.js, Docker, OpenAI API）
-2. ✅ 啟動 ChromaDB（Docker Compose 推薦）
-3. ✅ 配置環境變數（.env 或 secrets）
-4. ✅ 執行測試驗證
-5. ✅ 設置監控和警報
-6. ✅ 定期備份和維護
+- [ ] ✅ 環境準備（Node.js >= 18）
+- [ ] ✅ 安裝依賴（`npm install`）
+- [ ] ✅ 配置 OpenAI API Key
+- [ ] ✅ 設置資料目錄權限
+- [ ] ✅ 執行測試驗證（`npm test`）
+- [ ] ✅ 配置 Process Manager（PM2）
+- [ ] ✅ 設置備份腳本
+- [ ] ✅ 配置監控和警報
+- [ ] ✅ 設置日誌輪轉
+- [ ] ✅ 執行健康檢查
+
+## Vectra vs ChromaDB 比較
+
+| 特性 | Vectra (目前使用) | ChromaDB (已移除) |
+|------|------------------|------------------|
+| **部署** | 零配置，npm install 即可 | 需要 Docker 或 Python server |
+| **依賴** | 純 Node.js，零依賴 | Docker + Python |
+| **資料存儲** | 本地檔案（data/vectorstore/） | 需要 SQLite + 向量檔案 |
+| **備份** | 簡單 tar 壓縮 | Docker volume 或 Python 腳本 |
+| **性能** | < 100ms (本地檔案) | < 500ms (HTTP 請求) |
+| **維護** | 極低 | 需要監控 Docker 容器 |
+| **成本** | $0 基礎設施 | Docker 資源成本 |
+
+**選擇 Vectra 的原因**：簡單、快速、零維護成本。
+
+## 生產環境建議
+
+### 小型部署（< 100K 文檔）
+- 使用單機 Vectra 部署
+- PM2 管理進程
+- 定期備份到 S3/NAS
+
+### 中型部署（100K - 1M 文檔）
+- 使用 SSD 存儲
+- 增加 Node.js 記憶體限制
+- 實施分片策略（多個 Vectra index）
+
+### 大型部署（> 1M 文檔）
+- 考慮分散式向量資料庫（Qdrant, Weaviate）
+- 實施快取層（Redis）
+- 使用 CDN 加速查詢
+
+## 總結
+
+Vectra 部署的優勢：
+
+✅ **零配置** - npm install 即可開始
+✅ **零維護** - 無需管理 Docker 容器
+✅ **快速** - 本地檔案存取，< 100ms 延遲
+✅ **簡單備份** - tar 壓縮即可
+✅ **低成本** - 無額外基礎設施成本
 
 如有問題，請參考 [故障排除](#故障排除) 章節或提交 Issue。

@@ -188,3 +188,17 @@ export interface GitHubIssueSuggestion {
   body: string;
   labels: string[];
 }
+
+/**
+ * Session Metrics (for Phase 3 Task 5)
+ * Productivity tracking for the current session
+ */
+export interface SessionMetrics {
+  sessionId: string;
+  startedAt: Date;
+  tasksCompleted: number;
+  tasksFailed: number;
+  totalTimeSaved: number; // minutes
+  totalTokensUsed: number;
+  agentUsageBreakdown: Record<string, number>; // agentId -> count
+}

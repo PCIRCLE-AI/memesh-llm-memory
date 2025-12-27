@@ -1,0 +1,63 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { Dashboard } from '../../src/ui/Dashboard.js';
+import { ResourceMonitor } from '../../src/core/ResourceMonitor.js';
+import type { UIConfig } from '../../src/ui/types.js';
+
+describe('Dashboard', () => {
+  let dashboard: Dashboard;
+  let resourceMonitor: ResourceMonitor;
+
+  beforeEach(() => {
+    resourceMonitor = new ResourceMonitor();
+    dashboard = new Dashboard(resourceMonitor);
+  });
+
+  afterEach(() => {
+    dashboard.stop();
+  });
+
+  it('should start and stop dashboard', () => {
+    dashboard.start();
+    expect(dashboard.isRunning()).toBe(true);
+
+    dashboard.stop();
+    expect(dashboard.isRunning()).toBe(false);
+  });
+
+  it('should use custom UI config', () => {
+    const customConfig: Partial<UIConfig> = {
+      updateInterval: 500,
+      maxRecentAttributions: 10,
+      colorEnabled: false,
+    };
+
+    const customDashboard = new Dashboard(resourceMonitor, customConfig);
+    expect(customDashboard).toBeDefined();
+  });
+
+  it('should get current dashboard state', () => {
+    const state = dashboard.getState();
+
+    expect(state.resources).toBeDefined();
+    expect(state.agents).toEqual([]);
+    expect(state.recentAttributions).toEqual([]);
+    expect(state.sessionMetrics).toBeDefined();
+  });
+
+  it('should update resource stats periodically', async () => {
+    dashboard.start();
+
+    const initialState = dashboard.getState();
+    const initialCPU = initialState.resources.cpu.usage;
+
+    // Wait for at least one update cycle
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    const updatedState = dashboard.getState();
+    expect(updatedState.resources).toBeDefined();
+    // CPU should be a valid number (may or may not have changed)
+    expect(typeof updatedState.resources.cpu.usage).toBe('number');
+
+    dashboard.stop();
+  });
+});

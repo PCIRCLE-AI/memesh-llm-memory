@@ -40,6 +40,13 @@ Smart Agents 是一個高性能、模組化的 AI Agent 協調平台，具備智
    - Agent and team status display
    - Auto-refresh web UI on port 3001
 
+5. **Terminal UI Dashboard** (NEW - Phase 3)
+   - Real-time progress tracking with animated spinners
+   - Attribution transparency (success/error)
+   - Productivity metrics (time saved, tokens used)
+   - GitHub issue auto-generation for errors
+   - Beautiful terminal interface with log-update
+
 ### 技術棧
 
 **核心 AI 模型** (智能路由 - 5 提供商協作):
@@ -222,6 +229,10 @@ npm run dev
 ```bash
 # 運行測試
 npm test
+
+# 🆕 Terminal UI Dashboard Demo (Phase 3)
+npm run demo:dashboard
+# Shows live terminal dashboard with real-time progress tracking
 
 # 啟動 Agent Orchestrator (CLI Demo)
 npm run orchestrator

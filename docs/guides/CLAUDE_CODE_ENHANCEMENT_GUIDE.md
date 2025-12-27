@@ -117,21 +117,18 @@ class AdaptiveRAGSkill {
 ```
 
 **MacBook Pro 優化**：
-- ✅ ChromaDB Docker（僅 ~200MB 記憶體）
+- ✅ Vectra 本地向量資料庫（零依賴，< 50MB 記憶體）
 - ✅ text-embedding-3-small（512 維，$0.02/1M tokens）
 - ✅ 批次處理（避免記憶體峰值）
 - ✅ 向量快取（重複查詢不重新計算）
 
 **整合方式**：
 ```bash
-# 啟動 ChromaDB
-docker run -d -p 8000:8000 --name chroma chromadb/chroma
-
-# 創建 skill
+# 創建 skill（無需 Docker）
 mkdir -p ~/.claude/skills/advanced-rag
 cd ~/.claude/skills/advanced-rag
 npm init -y
-npm install chromadb@^1.9.2 openai@^4.70.4
+npm install vectra openai@^4.70.4
 ```
 
 **Skill 定義**（`skill.md`）：
@@ -409,7 +406,7 @@ EOF
 - 成本 < $5/月（假設每日 10 分鐘使用）
 
 ### Week 2: Advanced RAG（高 ROI）
-- [ ] Day 1-2: 設置 ChromaDB Docker
+- [ ] Day 1-2: 設置 Vectra 本地向量資料庫
 - [ ] Day 3-4: 創建 advanced-rag skill
 - [ ] Day 5: 實作自適應檢索策略
 - [ ] Day 6-7: 測試多跳推理功能
@@ -476,10 +473,11 @@ EOF
 npm install
 ```
 
-2. **啟動 ChromaDB（用於 RAG）**
+2. **設置 Vectra 向量資料庫（用於 RAG）**
 ```bash
-docker run -d -p 8000:8000 --name chroma chromadb/chroma
-curl http://localhost:8000/api/v1/heartbeat  # 驗證
+# Vectra 是純 Node.js 實作，無需 Docker
+# 會在首次使用時自動創建 data/vectorstore/ 目錄
+npm install vectra  # 安裝依賴即可
 ```
 
 3. **創建能力追蹤文檔**
@@ -489,7 +487,7 @@ cat > ~/Developer/Projects/smart-agents/docs/CAPABILITY_TRACKING.md << 'EOF'
 
 ## 本週目標
 - [ ] Voice Intelligence skill 完成
-- [ ] ChromaDB 設置完成
+- [ ] Vectra 向量資料庫設置完成
 - [ ] 第一個語音測試案例
 
 ## 下週目標

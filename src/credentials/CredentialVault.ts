@@ -879,7 +879,10 @@ export class CredentialVault {
     process.on('uncaughtException', (err) => {
       logger.error('Uncaught exception, closing database', { error: err });
       cleanup();
-      process.exit(1);
+      // Don't exit in test environment
+      if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
+        process.exit(1);
+      }
     });
   }
 

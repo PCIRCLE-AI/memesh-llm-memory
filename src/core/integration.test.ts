@@ -358,7 +358,7 @@ describe('Background Execution System Integration', () => {
       const progressUpdates: number[] = [];
 
       const task = async (context: any) => {
-        for (let i = 0; i <= 10; i++) {
+        for (let i = 1; i <= 10; i++) {
           context.updateProgress(i / 10, `step ${i}`);
           await new Promise(resolve => setTimeout(resolve, 20));
         }

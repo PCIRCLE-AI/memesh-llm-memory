@@ -318,24 +318,33 @@ describe('BackgroundExecutor', () => {
 
   describe('priority queue processing', () => {
     it('should process high priority tasks first', async () => {
+      // Create executor with limited concurrency to force queueing
+      const limitedMonitor = new ResourceMonitor(1, {
+        maxCPU: 90,
+        maxMemory: 32768,
+      });
+      const limitedExecutor = new BackgroundExecutor(limitedMonitor);
+
       const executionOrder: string[] = [];
 
       const createOrderedTask = (id: string) => async () => {
         executionOrder.push(id);
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise(resolve => setTimeout(resolve, 50));
         return id;
       };
 
-      // Enqueue tasks with different priorities
-      await executor.executeTask(createOrderedTask('low-1'), createTestConfig('low'));
-      await executor.executeTask(createOrderedTask('high-1'), createTestConfig('high'));
-      await executor.executeTask(createOrderedTask('medium-1'), createTestConfig('medium'));
+      // Enqueue tasks with different priorities (all will queue due to limit=1)
+      await limitedExecutor.executeTask(createOrderedTask('low-1'), createTestConfig('low'));
+      await limitedExecutor.executeTask(createOrderedTask('high-1'), createTestConfig('high'));
+      await limitedExecutor.executeTask(createOrderedTask('medium-1'), createTestConfig('medium'));
 
       // Wait for all tasks to complete
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-      // High priority should be first (or among first)
-      expect(executionOrder[0]).toBe('high-1');
+      // High priority should be first (after initial low-1)
+      // First task (low-1) starts immediately, then queue is sorted by priority
+      expect(executionOrder[1]).toBe('high-1');
+      expect(executionOrder[2]).toBe('medium-1');
     });
   });
 });

@@ -57,8 +57,9 @@ export class BackgroundExecutor {
     // Check if resources are available (but only fail if it's a hard limit)
     const resourceCheck = this.resourceMonitor.canRunBackgroundTask(config);
 
-    // Allow queueing if only issue is max concurrent agents
-    const canQueue = resourceCheck.reason?.includes('Max concurrent background agents');
+    // Allow queueing if only issue is max concurrent agents (but not if max is 0)
+    const canQueue = resourceCheck.reason?.includes('Max concurrent background agents') &&
+                     !resourceCheck.reason?.includes('(0)');
 
     if (!resourceCheck.canExecute && !canQueue) {
       throw new Error(
@@ -355,6 +356,15 @@ export class BackgroundExecutor {
     const worker = this.activeWorkers.get(taskId);
     if (worker) {
       worker.cancel();
+
+      // Update task status immediately
+      const task = this.tasks.get(taskId);
+      if (task) {
+        task.status = 'cancelled';
+        task.endTime = new Date();
+        this.tasks.set(taskId, task);
+      }
+
       logger.info(`BackgroundExecutor: Cancelling running task ${taskId}`);
       return;
     }

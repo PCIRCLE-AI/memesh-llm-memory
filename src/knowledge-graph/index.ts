@@ -8,7 +8,7 @@
 import Database from 'better-sqlite3';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
-import { createDatabase } from '../credentials/DatabaseFactory.js';
+import { SimpleDatabaseFactory } from '../config/simple-config.js';
 import type { Entity, Relation, SearchQuery, RelationTrace } from './types.js';
 
 export class KnowledgeGraph {
@@ -25,7 +25,7 @@ export class KnowledgeGraph {
       mkdirSync(dataDir, { recursive: true });
     }
 
-    this.db = createDatabase(this.dbPath);
+    this.db = SimpleDatabaseFactory.getInstance(this.dbPath);
     this.initialize();
 
     console.log(`[KnowledgeGraph] Initialized at: ${this.dbPath}`);

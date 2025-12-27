@@ -6,7 +6,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { UIEventType, ProgressIndicator, SuccessEvent, ErrorEvent, MetricsSnapshot } from './types.js';
+import { UIEventType, ProgressIndicator, SuccessEvent, ErrorEvent, MetricsSnapshot, AttributionMessage } from './types.js';
 
 /**
  * UIEventBus Singleton
@@ -183,6 +183,25 @@ export class UIEventBus extends EventEmitter {
     const wrappedHandler = this.wrapHandler(handler);
     this.on(UIEventType.METRICS_UPDATE, wrappedHandler);
     return () => this.off(UIEventType.METRICS_UPDATE, wrappedHandler);
+  }
+
+  // ===== Attribution Events (Phase 3 Task 4) =====
+
+  /**
+   * Emit attribution message (success/error tracking)
+   */
+  public emitAttribution(attribution: AttributionMessage): void {
+    this.emit(UIEventType.ATTRIBUTION, attribution);
+  }
+
+  /**
+   * Subscribe to attribution messages
+   * Returns unsubscribe function
+   */
+  public onAttribution(handler: (attribution: AttributionMessage) => void): () => void {
+    const wrappedHandler = this.wrapHandler(handler);
+    this.on(UIEventType.ATTRIBUTION, wrappedHandler);
+    return () => this.off(UIEventType.ATTRIBUTION, wrappedHandler);
   }
 
   // ===== Memory Management =====

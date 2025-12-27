@@ -45,7 +45,7 @@ export default defineConfig({
     },
 
     // File patterns
-    include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
+    include: ['src/**/*.test.ts', 'src/**/*.spec.ts', 'tests/**/*.test.ts', 'tests/**/*.spec.ts'],
     exclude: ['node_modules', 'dist'],
 
     // Explicit cleanup on test completion

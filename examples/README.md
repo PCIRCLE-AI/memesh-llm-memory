@@ -1,4 +1,27 @@
-# Terminal UI Examples & Documentation
+# Smart-Agents Examples
+
+Example scripts demonstrating smart-agents features.
+
+## Terminal UI Dashboard Demo (Phase 3)
+
+**NEW:** Live terminal dashboard with real-time progress tracking and productivity metrics.
+
+```bash
+npm run demo:dashboard
+```
+
+**Features:**
+- Real-time progress updates with animated spinners
+- Attribution tracking (success/error)
+- Productivity metrics (time saved, tokens used)
+- GitHub issue auto-generation for errors
+- Daily report generation
+
+See: [dashboard-demo.ts](./dashboard-demo.ts)
+
+---
+
+## Legacy Terminal UI Examples & Documentation
 
 Complete technical assessment and implementation guide for building elegant terminal UIs in the smart-agents project.
 
@@ -6,6 +29,7 @@ Complete technical assessment and implementation guide for building elegant term
 
 | Document | Purpose | Location |
 |----------|---------|----------|
+| **Dashboard Demo** | Live Phase 3 dashboard | [dashboard-demo.ts](./dashboard-demo.ts) |
 | **Technical Assessment** | Comprehensive library evaluation | [TERMINAL_UI_ASSESSMENT.md](../docs/TERMINAL_UI_ASSESSMENT.md) |
 | **Setup Guide** | Step-by-step integration | [SETUP_GUIDE.md](./SETUP_GUIDE.md) |
 | **Comparison** | Library feature comparison | [terminal-ui-comparison.md](./terminal-ui-comparison.md) |

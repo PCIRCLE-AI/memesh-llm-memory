@@ -8,6 +8,7 @@
 import Database from 'better-sqlite3';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
+import { createDatabase } from '../credentials/DatabaseFactory.js';
 import type { Entity, Relation, SearchQuery, RelationTrace } from './types.js';
 
 export class KnowledgeGraph {
@@ -24,15 +25,13 @@ export class KnowledgeGraph {
       mkdirSync(dataDir, { recursive: true });
     }
 
-    this.db = new Database(this.dbPath);
+    this.db = createDatabase(this.dbPath);
     this.initialize();
 
     console.log(`[KnowledgeGraph] Initialized at: ${this.dbPath}`);
   }
 
   private initialize() {
-    // Enable foreign keys
-    this.db.pragma('foreign_keys = ON');
 
     // Create schema
     const schema = `

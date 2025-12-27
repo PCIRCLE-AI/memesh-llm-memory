@@ -16,56 +16,14 @@ import {
   CredentialQuery,
 } from './types.js';
 import { createSecureStorage } from './storage/index.js';
+import { createDatabase } from './DatabaseFactory.js';
 import { logger } from '../utils/logger.js';
 import { RateLimiter } from './RateLimiter.js';
 import { AuditLogger, AuditEventType, AuditSeverity } from './AuditLogger.js';
 import { RotationPolicy } from './RotationPolicy.js';
 import { AccessControl, Permission, type Identity } from './AccessControl.js';
-
-/**
- * Validate service name
- */
-function validateServiceName(service: string): void {
-  if (!service || service.length === 0) {
-    throw new Error('Service name cannot be empty');
-  }
-  if (service.length > 255) {
-    throw new Error('Service name too long (max 255 characters)');
-  }
-  if (!/^[a-zA-Z0-9_.-]+$/.test(service)) {
-    throw new Error(
-      'Service name contains invalid characters (allowed: a-z, A-Z, 0-9, _, ., -)'
-    );
-  }
-  if (service.includes('..')) {
-    throw new Error('Service name cannot contain ".."');
-  }
-  if (service.startsWith('.') || service.endsWith('.')) {
-    throw new Error('Service name cannot start or end with "."');
-  }
-}
-
-/**
- * Validate account name
- */
-function validateAccountName(account: string): void {
-  if (!account || account.length === 0) {
-    throw new Error('Account name cannot be empty');
-  }
-  if (account.length > 255) {
-    throw new Error('Account name too long (max 255 characters)');
-  }
-  if (account.includes('\0')) {
-    throw new Error('Account name cannot contain null bytes');
-  }
-  if (account.includes(':')) {
-    throw new Error('Account name cannot contain ":" (reserved for ID generation)');
-  }
-  // Prevent path traversal
-  if (account.includes('..') || account.includes('/') || account.includes('\\')) {
-    throw new Error('Account name cannot contain path traversal characters');
-  }
-}
+import { safeTimestampToDate } from './utils/timestamp.js';
+import { validateServiceName, validateAccountName } from './validation.js';
 
 /**
  * Get vault database path
@@ -97,41 +55,90 @@ interface CredentialMetadata {
 }
 
 export class CredentialVault {
-  private db: Database.Database;
-  private storage: SecureStorage;
-  private rateLimiter: RateLimiter;
-  private rotationPolicy: RotationPolicy;
-  private auditLogger: AuditLogger;
-  private accessControl: AccessControl;
+  private db!: Database.Database;
+  private storage!: SecureStorage;
+  private rateLimiter!: RateLimiter;
+  private rotationPolicy!: RotationPolicy;
+  private auditLogger!: AuditLogger;
+  private accessControl!: AccessControl;
   private static cleanupRegistered = false;
   private static instances: Set<CredentialVault> = new Set();
+  private ownsDb!: boolean; // Track if we created the DB (for cleanup)
 
-  constructor(dbPath?: string, identity?: Identity) {
+  /**
+   * Factory method: Create CredentialVault with traditional mode (creates own DB and storage)
+   *
+   * @param dbPath - Path to SQLite database file (default: ~/.smart-agents/credentials.db)
+   * @param identity - Optional identity for access control
+   * @returns CredentialVault instance
+   */
+  static create(dbPath?: string, identity?: Identity): CredentialVault {
     const path = dbPath || getVaultPath();
 
-    // Initialize SQLite database
-    this.db = new Database(path);
-    this.db.pragma('journal_mode = WAL');
+    // Initialize SQLite database with standard configuration
+    const db = createDatabase(path);
 
-    // Initialize secure storage
-    this.storage = null as any; // Will be set in initialize()
+    const vault = new CredentialVault();
+    vault.db = db;
+    vault.storage = null as any; // Will be set in initialize()
+    vault.ownsDb = true; // We created the DB, so we should close it
 
     // Create tables
-    this.initializeSchema();
+    vault.initializeSchema();
 
-    // Initialize rate limiter
-    this.rateLimiter = new RateLimiter(this.db);
+    // Initialize components
+    vault.rateLimiter = new RateLimiter(db);
+    vault.auditLogger = new AuditLogger(db);
+    vault.rotationPolicy = new RotationPolicy(db);
+    vault.accessControl = new AccessControl(db, identity);
 
-    // Initialize audit logger
-    this.auditLogger = new AuditLogger(this.db);
+    vault.registerInstance();
+    return vault;
+  }
 
-    // Initialize rotation policy
-    this.rotationPolicy = new RotationPolicy(this.db);
+  /**
+   * Factory method: Create CredentialVault with dependency injection
+   *
+   * @param db - Shared SQLite database
+   * @param storage - Shared secure storage
+   * @param auditLogger - Shared audit logger
+   * @param identity - Optional identity for access control
+   * @returns CredentialVault instance
+   */
+  static createWithDI(
+    db: Database.Database,
+    storage: SecureStorage,
+    auditLogger: AuditLogger,
+    identity?: Identity
+  ): CredentialVault {
+    const vault = new CredentialVault();
+    vault.db = db;
+    vault.storage = storage;
+    vault.auditLogger = auditLogger;
+    vault.ownsDb = false; // Don't close the injected DB
 
-    // Initialize access control
-    this.accessControl = new AccessControl(this.db, identity);
+    // Initialize other components
+    vault.rateLimiter = new RateLimiter(db);
+    vault.rotationPolicy = new RotationPolicy(db);
+    vault.accessControl = new AccessControl(db, identity);
 
-    // Register this instance for cleanup
+    vault.registerInstance();
+    return vault;
+  }
+
+  /**
+   * Private constructor - use factory methods instead
+   *
+   * Use CredentialVault.create() or CredentialVault.createWithDI() to create instances.
+   */
+  private constructor() {
+    // Empty constructor - all initialization done by factory methods
+  }
+
+  /**
+   * Register this instance for cleanup
+   */
+  private registerInstance(): void {
     CredentialVault.instances.add(this);
 
     // Register global cleanup handlers (only once)
@@ -162,6 +169,7 @@ export class CredentialVault {
       CREATE INDEX IF NOT EXISTS idx_account ON credentials(account);
       CREATE INDEX IF NOT EXISTS idx_created_at ON credentials(created_at);
       CREATE INDEX IF NOT EXISTS idx_expires_at ON credentials(expires_at);
+      CREATE INDEX IF NOT EXISTS idx_id_prefix ON credentials(id);
     `);
   }
 
@@ -177,6 +185,26 @@ export class CredentialVault {
       success: true,
       details: `Storage type: ${this.storage.getType()}`,
     });
+  }
+
+  /**
+   * Helper method to map database row timestamps to credential metadata
+   * Consolidates repeated timestamp conversion logic
+   */
+  private mapTimestampsToMetadata(row: {
+    created_at: number;
+    updated_at: number;
+    expires_at?: number | null;
+    notes?: string | null;
+    tags?: string | null;
+  }): Credential['metadata'] {
+    return {
+      createdAt: safeTimestampToDate(row.created_at) || new Date(),
+      updatedAt: safeTimestampToDate(row.updated_at) || new Date(),
+      expiresAt: row.expires_at ? safeTimestampToDate(row.expires_at) || undefined : undefined,
+      notes: row.notes || undefined,
+      tags: row.tags ? JSON.parse(row.tags) : undefined,
+    };
   }
 
   /**
@@ -427,13 +455,7 @@ export class CredentialVault {
     }
 
     // Merge metadata from SQLite
-    credential.metadata = {
-      createdAt: new Date(metadata.created_at),
-      updatedAt: new Date(metadata.updated_at),
-      expiresAt: metadata.expires_at ? new Date(metadata.expires_at) : undefined,
-      notes: metadata.notes || undefined,
-      tags: metadata.tags ? JSON.parse(metadata.tags) : undefined,
-    };
+    credential.metadata = this.mapTimestampsToMetadata(metadata);
 
     // Record successful attempt (reset counter)
     this.rateLimiter.recordSuccessfulAttempt(service, account);
@@ -623,7 +645,7 @@ export class CredentialVault {
    */
   async list(query?: CredentialQuery): Promise<Omit<Credential, 'value'>[]> {
     let sql = 'SELECT * FROM credentials WHERE 1=1';
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     // Build query
     if (query?.service) {
@@ -656,13 +678,7 @@ export class CredentialVault {
       id: row.id,
       service: row.service,
       account: row.account,
-      metadata: {
-        createdAt: new Date(row.created_at),
-        updatedAt: new Date(row.updated_at),
-        expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
-        notes: row.notes || undefined,
-        tags: row.tags ? JSON.parse(row.tags) : undefined,
-      },
+      metadata: this.mapTimestampsToMetadata(row),
     }));
   }
 
@@ -687,13 +703,7 @@ export class CredentialVault {
       id: row.id,
       service: row.service,
       account: row.account,
-      metadata: {
-        createdAt: new Date(row.created_at),
-        updatedAt: new Date(row.updated_at),
-        expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
-        notes: row.notes || undefined,
-        tags: row.tags ? JSON.parse(row.tags) : undefined,
-      },
+      metadata: this.mapTimestampsToMetadata(row),
     }));
   }
 
@@ -892,7 +902,8 @@ export class CredentialVault {
       // Stop rotation policy cleanup
       this.rotationPolicy.stopCleanup();
 
-      if (this.db) {
+      // Only close the database if we created it (not injected)
+      if (this.db && this.ownsDb) {
         this.db.close();
       }
       // Remove from instances

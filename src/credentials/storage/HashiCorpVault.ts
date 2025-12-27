@@ -158,7 +158,7 @@ export class HashiCorpVault implements SecureStorage {
         return null; // No content (e.g., from DELETE)
       }
 
-      return await response.json();
+      return (await response.json()) as VaultResponse<T>;
     } catch (error: any) {
       if (error.name === 'AbortError') {
         throw new Error(`Vault request timeout after ${this.config.timeout}ms`);
@@ -301,9 +301,10 @@ export class HashiCorpVault implements SecureStorage {
 
     try {
       // List all secrets under the mount path
+      const mountPath = this.config.mountPath || 'secret';  // Default to 'secret' if not specified
       const listPath = this.config.useKVv2
-        ? `${this.config.mountPath}/metadata`
-        : this.config.mountPath;
+        ? `${mountPath}/metadata`
+        : mountPath;
 
       const response = await this.vaultRequest<{ keys: string[] }>('LIST', listPath);
 
@@ -396,6 +397,13 @@ export class HashiCorpVault implements SecureStorage {
       });
       return false;
     }
+  }
+
+  /**
+   * Get storage type (for debugging)
+   */
+  getType(): string {
+    return 'hashicorp-vault';
   }
 
   /**

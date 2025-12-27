@@ -128,8 +128,9 @@ export class RealtimeNotifier extends EventEmitter {
 
   /**
    * Emit an event to all subscribers
+   * Note: Renamed from 'emit' to 'emitEvent' to avoid conflict with EventEmitter.emit()
    */
-  async emit(type: EventType, data: {
+  async emitEvent(type: EventType, data: {
     tenantId: string;
     data: Record<string, any>;
     actor?: Identity;
@@ -283,7 +284,7 @@ export class RealtimeNotifier extends EventEmitter {
     credential: Omit<Credential, 'value'>,
     actor?: Identity
   ): Promise<void> {
-    await this.emit(EventType.CREDENTIAL_CREATED, {
+    await this.emitEvent(EventType.CREDENTIAL_CREATED, {
       tenantId,
       data: {
         service: credential.service,
@@ -301,7 +302,7 @@ export class RealtimeNotifier extends EventEmitter {
     fields: string[],
     actor?: Identity
   ): Promise<void> {
-    await this.emit(EventType.CREDENTIAL_UPDATED, {
+    await this.emitEvent(EventType.CREDENTIAL_UPDATED, {
       tenantId,
       data: { service, account, fields },
       actor,
@@ -314,7 +315,7 @@ export class RealtimeNotifier extends EventEmitter {
     account: string,
     actor?: Identity
   ): Promise<void> {
-    await this.emit(EventType.CREDENTIAL_DELETED, {
+    await this.emitEvent(EventType.CREDENTIAL_DELETED, {
       tenantId,
       data: { service, account },
       actor,
@@ -327,7 +328,7 @@ export class RealtimeNotifier extends EventEmitter {
     account: string,
     reason?: string
   ): Promise<void> {
-    await this.emit(EventType.CREDENTIAL_ROTATED, {
+    await this.emitEvent(EventType.CREDENTIAL_ROTATED, {
       tenantId,
       data: { service, account, reason },
     });
@@ -340,7 +341,7 @@ export class RealtimeNotifier extends EventEmitter {
     expiresAt: Date,
     daysUntilExpiry: number
   ): Promise<void> {
-    await this.emit(EventType.CREDENTIAL_EXPIRING, {
+    await this.emitEvent(EventType.CREDENTIAL_EXPIRING, {
       tenantId,
       data: { service, account, expiresAt, daysUntilExpiry },
     });
@@ -353,7 +354,7 @@ export class RealtimeNotifier extends EventEmitter {
     limit: number,
     percentage: number
   ): Promise<void> {
-    await this.emit(EventType.QUOTA_WARNING, {
+    await this.emitEvent(EventType.QUOTA_WARNING, {
       tenantId,
       data: { resource, usage, limit, percentage },
     });
@@ -365,7 +366,7 @@ export class RealtimeNotifier extends EventEmitter {
     usage: number,
     limit: number
   ): Promise<void> {
-    await this.emit(EventType.QUOTA_EXCEEDED, {
+    await this.emitEvent(EventType.QUOTA_EXCEEDED, {
       tenantId,
       data: { resource, usage, limit },
     });
@@ -377,7 +378,7 @@ export class RealtimeNotifier extends EventEmitter {
     severity: string,
     details: Record<string, any>
   ): Promise<void> {
-    await this.emit(EventType.SECURITY_ALERT, {
+    await this.emitEvent(EventType.SECURITY_ALERT, {
       tenantId,
       data: { alertType, severity, ...details },
     });
@@ -418,9 +419,10 @@ export class RealtimeNotifier extends EventEmitter {
   private addToHistory(event: Event): void {
     this.eventHistory.push(event);
 
-    // Trim history if too large
-    if (this.eventHistory.length > this.maxHistorySize) {
-      this.eventHistory = this.eventHistory.slice(-this.maxHistorySize);
+    // Trim history if too large - use shift() for memory efficiency
+    // This removes elements from the front in-place instead of creating a new array
+    while (this.eventHistory.length > this.maxHistorySize) {
+      this.eventHistory.shift();
     }
   }
 

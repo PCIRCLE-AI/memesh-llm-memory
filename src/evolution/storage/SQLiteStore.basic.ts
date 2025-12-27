@@ -15,6 +15,7 @@
 
 import Database from 'better-sqlite3';
 import { v4 as uuid } from 'uuid';
+import { createDatabase } from '../../credentials/DatabaseFactory.js';
 import type { EvolutionStore } from './EvolutionStore';
 import type {
   Task,
@@ -60,17 +61,12 @@ export class SQLiteStore implements EvolutionStore {
       enableWAL: options.enableWAL !== false,
     };
 
-    this.db = new Database(this.options.dbPath, {
-      verbose: this.options.verbose ? console.log : undefined,
+    // Initialize SQLite database with standard configuration
+    this.db = createDatabase({
+      path: this.options.dbPath,
+      verbose: this.options.verbose,
+      skipWAL: !this.options.enableWAL || this.options.dbPath === ':memory:',
     });
-
-    // Enable WAL mode for better concurrency
-    if (this.options.enableWAL && this.options.dbPath !== ':memory:') {
-      this.db.pragma('journal_mode = WAL');
-    }
-
-    // Enable foreign keys
-    this.db.pragma('foreign_keys = ON');
   }
 
   // ========================================================================
@@ -715,6 +711,15 @@ export class SQLiteStore implements EvolutionStore {
     `);
 
     const rows = stmt.all(spanId) as any[];
+    return rows.map((row) => this.rowToReward(row));
+  }
+
+  async queryRewardsByOperationSpan(operationSpanId: string): Promise<Reward[]> {
+    const stmt = this.db.prepare(`
+      SELECT * FROM rewards WHERE operation_span_id = ? ORDER BY provided_at DESC
+    `);
+
+    const rows = stmt.all(operationSpanId) as any[];
     return rows.map((row) => this.rowToReward(row));
   }
 

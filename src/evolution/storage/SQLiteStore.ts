@@ -15,6 +15,8 @@
 
 import Database from 'better-sqlite3';
 import { v4 as uuid } from 'uuid';
+import { logger } from '../../utils/logger.js';
+import { createDatabase } from '../../credentials/DatabaseFactory.js';
 import { MigrationManager } from './migrations/MigrationManager';
 import {
   validateSpan,
@@ -57,8 +59,8 @@ export interface SQLiteStoreOptions {
 }
 
 export class SQLiteStore implements EvolutionStore {
-  private db: Database.Database;
-  private migrationManager: MigrationManager;
+  protected db: Database.Database;
+  protected migrationManager: MigrationManager;
   private options: Required<SQLiteStoreOptions>;
 
   constructor(options: SQLiteStoreOptions = {}) {
@@ -68,17 +70,12 @@ export class SQLiteStore implements EvolutionStore {
       enableWAL: options.enableWAL !== false,
     };
 
-    this.db = new Database(this.options.dbPath, {
-      verbose: this.options.verbose ? console.log : undefined,
+    // Initialize SQLite database with standard configuration
+    this.db = createDatabase({
+      path: this.options.dbPath,
+      verbose: this.options.verbose,
+      skipWAL: !this.options.enableWAL || this.options.dbPath === ':memory:',
     });
-
-    // Enable WAL mode for better concurrency
-    if (this.options.enableWAL && this.options.dbPath !== ':memory:') {
-      this.db.pragma('journal_mode = WAL');
-    }
-
-    // Enable foreign keys
-    this.db.pragma('foreign_keys = ON');
 
     // Initialize migration manager
     this.migrationManager = new MigrationManager(this.db);
@@ -1018,14 +1015,58 @@ export class SQLiteStore implements EvolutionStore {
     const config_keys = row.config_keys ? JSON.parse(row.config_keys) : undefined;
     const metadata = row.context_metadata ? JSON.parse(row.context_metadata) : undefined;
 
+    // Calculate success_rate from adaptations
+    let success_rate = 0;
+    try {
+      const adaptationStats = this.db.prepare(`
+        SELECT
+          COUNT(*) as total,
+          SUM(CASE WHEN outcome_status = 'success' THEN 1 ELSE 0 END) as successes
+        FROM adaptations
+        WHERE pattern_id = ?
+      `).get(row.id) as any;
+
+      if (adaptationStats && adaptationStats.total > 0) {
+        success_rate = adaptationStats.successes / adaptationStats.total;
+      }
+    } catch (error) {
+      // If adaptations table doesn't exist or query fails, use 0
+      logger.warn('Failed to calculate success_rate for pattern', {
+        patternId: row.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      success_rate = 0;
+    }
+
+    // Calculate avg_execution_time from spans
+    let avg_execution_time = 0;
+    try {
+      const spanStats = this.db.prepare(`
+        SELECT AVG(duration_ms) as avg_duration
+        FROM spans
+        WHERE json_extract(attributes, '$.pattern.id') = ?
+      `).get(row.id) as any;
+
+      if (spanStats && spanStats.avg_duration !== null) {
+        avg_execution_time = spanStats.avg_duration;
+      }
+    } catch (error) {
+      // If spans table doesn't exist or query fails, use 0
+      logger.warn('Failed to calculate avg_execution_time for pattern', {
+        patternId: row.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      avg_execution_time = 0;
+    }
+
     return {
       id: row.id,
       type: row.type,
       description: pattern_data.description || '',
       confidence: row.confidence,
       observations: row.occurrences,
-      success_rate: 0, // TODO: Calculate from pattern_data or adaptations
-      avg_execution_time: 0, // TODO: Calculate from spans
+      success_rate,
+      avg_execution_time,
       last_seen: row.last_observed,
       context: {
         agent_type: row.applies_to_agent_type || undefined,
@@ -1498,7 +1539,7 @@ export class SQLiteStore implements EvolutionStore {
     };
   }
 
-  private rowToSpan(row: any): Span {
+  protected rowToSpan(row: any): Span {
     return {
       trace_id: row.trace_id,
       span_id: row.span_id,

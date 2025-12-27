@@ -68,14 +68,26 @@ Focus on:
       {
         name: 'technical-research',
         description: 'Technical research on frameworks, libraries, and tools',
+        inputSchema: { topic: 'string', depth: 'string', sources: 'array' },
+        outputSchema: { findings: 'array', recommendations: 'array', sources: 'array' },
+        estimatedCost: 0.02,
+        estimatedTimeMs: 10000,
       },
       {
         name: 'competitive-analysis',
         description: 'Competitive product and feature analysis',
+        inputSchema: { product: 'string', competitors: 'array', criteria: 'array' },
+        outputSchema: { analysis: 'string', comparison: 'object', insights: 'array' },
+        estimatedCost: 0.025,
+        estimatedTimeMs: 12000,
       },
       {
         name: 'best-practices',
         description: 'Research industry best practices and patterns',
+        inputSchema: { domain: 'string', context: 'string' },
+        outputSchema: { practices: 'array', examples: 'array', references: 'array' },
+        estimatedCost: 0.015,
+        estimatedTimeMs: 8000,
       },
     ];
 
@@ -200,6 +212,9 @@ Present in a clear, comparative format.
     this.status = 'busy';
 
     try {
+      // Convert message content to string format for Claude API
+      const userContent = message.content.task || JSON.stringify(message.content);
+
       const response = await this.anthropic.messages.create({
         model: appConfig.claude.models.sonnet,
         max_tokens: 2000,
@@ -207,7 +222,7 @@ Present in a clear, comparative format.
         messages: [
           {
             role: 'user',
-            content: message.content,
+            content: userContent,
           },
         ],
       });
@@ -221,8 +236,10 @@ Present in a clear, comparative format.
         id: uuidv4(),
         from: this.id,
         to: message.from,
-        content: responseText,
-        timestamp: Date.now(),
+        content: {
+          result: responseText,
+        },
+        timestamp: new Date(),
         type: 'response',
       };
     } catch (error) {
@@ -243,5 +260,50 @@ Present in a clear, comparative format.
       status: this.status,
       capabilities: this.capabilities,
     };
+  }
+
+  /**
+   * Initialize agent (required by CollaborativeAgent interface)
+   */
+  async initialize(): Promise<void> {
+    logger.info(`ResearchAgent ${this.name} initialized`);
+  }
+
+  /**
+   * Shutdown agent (required by CollaborativeAgent interface)
+   */
+  async shutdown(): Promise<void> {
+    this.status = 'idle';
+    logger.info(`ResearchAgent ${this.name} shutdown`);
+  }
+
+  /**
+   * Handle message (required by CollaborativeAgent interface)
+   */
+  async handleMessage(message: AgentMessage): Promise<AgentMessage> {
+    return this.processMessage(message);
+  }
+
+  /**
+   * Execute capability (required by CollaborativeAgent interface)
+   */
+  async execute(capability: string, input: any): Promise<any> {
+    switch (capability) {
+      case 'technical-research':
+        return this.conductResearch(input);
+      case 'competitive-analysis':
+      case 'best-practices':
+        // Use processMessage for now, can be specialized later
+        return this.processMessage({
+          id: uuidv4(),
+          from: 'system',
+          to: this.id,
+          content: { task: JSON.stringify(input) },
+          timestamp: new Date(),
+          type: 'request',
+        });
+      default:
+        throw new Error(`Unknown capability: ${capability}`);
+    }
   }
 }

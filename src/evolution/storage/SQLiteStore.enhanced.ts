@@ -13,7 +13,8 @@ import Database from 'better-sqlite3';
 import { v4 as uuid } from 'uuid';
 import * as path from 'path';
 import * as fs from 'fs-extra';
-import type { EvolutionStore } from './EvolutionStore';
+import { createDatabase } from '../../credentials/DatabaseFactory.js';
+import { SQLiteStore } from './SQLiteStore.js';
 import type {
   Task,
   Execution,
@@ -322,15 +323,20 @@ export interface EnhancedSQLiteStoreOptions {
   performanceMonitoring?: boolean;
 }
 
-export class EnhancedSQLiteStore implements EvolutionStore {
-  private db: Database.Database;
-  private migrationManager: MigrationManager;
-  private options: Required<EnhancedSQLiteStoreOptions>;
+export class EnhancedSQLiteStore extends SQLiteStore {
+  private enhancedOptions: Required<EnhancedSQLiteStoreOptions>;
   private performanceMetrics: Map<string, { count: number; totalMs: number }>;
   private backupTimer?: NodeJS.Timeout;
 
   constructor(options: EnhancedSQLiteStoreOptions = {}) {
-    this.options = {
+    // Call parent constructor with base options
+    super({
+      dbPath: options.dbPath,
+      verbose: options.verbose,
+      enableWAL: options.enableWAL,
+    });
+
+    this.enhancedOptions = {
       dbPath: options.dbPath || ':memory:',
       verbose: options.verbose || false,
       enableWAL: options.enableWAL !== false,
@@ -339,23 +345,10 @@ export class EnhancedSQLiteStore implements EvolutionStore {
       performanceMonitoring: options.performanceMonitoring || false,
     };
 
-    this.db = new Database(this.options.dbPath, {
-      verbose: this.options.verbose ? console.log : undefined,
-    });
-
-    // Enable WAL mode
-    if (this.options.enableWAL && this.options.dbPath !== ':memory:') {
-      this.db.pragma('journal_mode = WAL');
-    }
-
-    // Enable foreign keys
-    this.db.pragma('foreign_keys = ON');
-
     // Performance metrics
     this.performanceMetrics = new Map();
 
-    // Migration manager
-    this.migrationManager = new MigrationManager(this.db);
+    // Note: migrationManager is inherited from parent class
   }
 
   // ========================================================================
@@ -363,17 +356,11 @@ export class EnhancedSQLiteStore implements EvolutionStore {
   // ========================================================================
 
   async initialize(): Promise<void> {
-    // Initialize migration system
-    await this.migrationManager.initialize();
+    // Call parent initialize (creates schema, indexes, runs migrations)
+    await super.initialize();
 
-    // Run migrations
-    await this.migrationManager.migrate();
-
-    // Create indexes (if not created by migrations)
-    this.createIndexes();
-
-    // Start backup timer
-    if (this.options.enableBackup && this.options.dbPath !== ':memory:') {
+    // Start backup timer (enhanced feature)
+    if (this.enhancedOptions.enableBackup && this.enhancedOptions.dbPath !== ':memory:') {
       this.startBackupTimer();
     }
   }
@@ -385,12 +372,12 @@ export class EnhancedSQLiteStore implements EvolutionStore {
     }
 
     // Final backup
-    if (this.options.enableBackup) {
+    if (this.enhancedOptions.enableBackup) {
       await this.backup();
     }
 
     // Print performance metrics
-    if (this.options.performanceMonitoring) {
+    if (this.enhancedOptions.performanceMonitoring) {
       this.printPerformanceMetrics();
     }
 
@@ -405,7 +392,7 @@ export class EnhancedSQLiteStore implements EvolutionStore {
     operation: string,
     fn: () => T
   ): T {
-    if (!this.options.performanceMonitoring) {
+    if (!this.enhancedOptions.performanceMonitoring) {
       return fn();
     }
 
@@ -442,16 +429,16 @@ export class EnhancedSQLiteStore implements EvolutionStore {
   private startBackupTimer(): void {
     this.backupTimer = setInterval(() => {
       this.backup().catch(console.error);
-    }, this.options.backupInterval * 60 * 1000);
+    }, this.enhancedOptions.backupInterval * 60 * 1000);
   }
 
   async backup(): Promise<string> {
-    if (this.options.dbPath === ':memory:') {
+    if (this.enhancedOptions.dbPath === ':memory:') {
       throw new Error('Cannot backup in-memory database');
     }
 
     const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
-    const backupPath = this.options.dbPath + `.backup.${timestamp}.db`;
+    const backupPath = this.enhancedOptions.dbPath + `.backup.${timestamp}.db`;
 
     return this.trackPerformance('backup', () => {
       this.db.backup(backupPath);
@@ -469,60 +456,16 @@ export class EnhancedSQLiteStore implements EvolutionStore {
     this.db.close();
 
     // Replace with backup
-    fs.copyFileSync(backupPath, this.options.dbPath);
+    fs.copyFileSync(backupPath, this.enhancedOptions.dbPath);
 
-    // Reopen
-    this.db = new Database(this.options.dbPath);
-    this.db.pragma('foreign_keys = ON');
+    // Reopen with standard configuration
+    this.db = createDatabase(this.enhancedOptions.dbPath);
 
     console.log(`✅ Database restored from: ${backupPath}`);
   }
 
   // ========================================================================
-  // Indexes (moved to separate method for clarity)
-  // ========================================================================
-
-  private createIndexes(): void {
-    // Task indexes
-    this.db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
-      CREATE INDEX IF NOT EXISTS idx_tasks_task_type ON tasks(task_type);
-      CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at);
-    `);
-
-    // Execution indexes
-    this.db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_executions_task_id ON executions(task_id);
-      CREATE INDEX IF NOT EXISTS idx_executions_agent_id ON executions(agent_id);
-      CREATE INDEX IF NOT EXISTS idx_executions_status ON executions(status);
-    `);
-
-    // Span indexes (critical for query performance)
-    this.db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_spans_trace_id ON spans(trace_id);
-      CREATE INDEX IF NOT EXISTS idx_spans_task_id ON spans(task_id);
-      CREATE INDEX IF NOT EXISTS idx_spans_execution_id ON spans(execution_id);
-      CREATE INDEX IF NOT EXISTS idx_spans_parent_span_id ON spans(parent_span_id);
-      CREATE INDEX IF NOT EXISTS idx_spans_start_time ON spans(start_time);
-      CREATE INDEX IF NOT EXISTS idx_spans_status_code ON spans(status_code);
-      CREATE INDEX IF NOT EXISTS idx_spans_skill_name ON spans((json_extract(attributes, '$.skill.name')));
-    `);
-
-    // Pattern indexes
-    this.db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_patterns_type ON patterns(type);
-      CREATE INDEX IF NOT EXISTS idx_patterns_confidence ON patterns(confidence);
-      CREATE INDEX IF NOT EXISTS idx_patterns_agent_type ON patterns(applies_to_agent_type);
-      CREATE INDEX IF NOT EXISTS idx_patterns_task_type ON patterns(applies_to_task_type);
-      CREATE INDEX IF NOT EXISTS idx_patterns_skill ON patterns(applies_to_skill);
-      CREATE INDEX IF NOT EXISTS idx_patterns_is_active ON patterns(is_active);
-    `);
-
-    // ... (rest of indexes as before)
-  }
-
-  // ========================================================================
-  // Span Tracking with Validation
+  // Span Tracking with Validation (parent class handles indexes)
   // ========================================================================
 
   async recordSpan(span: Span): Promise<void> {
@@ -761,8 +704,8 @@ export class EnhancedSQLiteStore implements EvolutionStore {
   }
 
   // ========================================================================
-  // (Rest of the methods same as basic SQLiteStore...)
+  // Helper Methods (from basic SQLiteStore)
   // ========================================================================
 
-  // ... (keeping all other methods from basic implementation)
+  // Note: rowToSpan and other helper methods inherited from parent class
 }

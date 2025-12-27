@@ -139,7 +139,7 @@ async function addCredential(options: {
   tags?: string;
   expires?: string;
 }) {
-  const vault = new CredentialVault();
+  const vault = CredentialVault.create();
   await vault.initialize();
 
   try {
@@ -194,7 +194,7 @@ async function addCredential(options: {
  * Get credential command
  */
 async function getCredential(service: string, account: string, options: { show?: boolean }) {
-  const vault = new CredentialVault();
+  const vault = CredentialVault.create();
   await vault.initialize();
 
   try {
@@ -251,7 +251,7 @@ async function listCredentials(options: {
   tag?: string;
   json?: boolean;
 }) {
-  const vault = new CredentialVault();
+  const vault = CredentialVault.create();
   await vault.initialize();
 
   try {
@@ -316,7 +316,7 @@ async function updateCredential(
     expires?: string;
   }
 ) {
-  const vault = new CredentialVault();
+  const vault = CredentialVault.create();
   await vault.initialize();
 
   try {
@@ -360,7 +360,7 @@ async function updateCredential(
  * Delete credential command
  */
 async function deleteCredential(service: string, account: string, options: { force?: boolean }) {
-  const vault = new CredentialVault();
+  const vault = CredentialVault.create();
   await vault.initialize();
 
   try {
@@ -386,7 +386,7 @@ async function deleteCredential(service: string, account: string, options: { for
  * Show vault statistics
  */
 async function showStats() {
-  const vault = new CredentialVault();
+  const vault = CredentialVault.create();
   await vault.initialize();
 
   try {
@@ -417,7 +417,7 @@ async function showStats() {
  * Clean expired credentials
  */
 async function cleanExpired(options: { force?: boolean }) {
-  const vault = new CredentialVault();
+  const vault = CredentialVault.create();
   await vault.initialize();
 
   try {

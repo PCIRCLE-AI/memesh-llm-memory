@@ -86,10 +86,13 @@ export interface PermissionCheckResult {
 export class AccessControl {
   private db: Database.Database;
   private currentIdentity?: Identity;
+  private accessControlEnabled: boolean;
 
   constructor(db: Database.Database, identity?: Identity) {
     this.db = db;
     this.currentIdentity = identity;
+    // Access control is only enabled when an identity is explicitly provided
+    this.accessControlEnabled = identity !== undefined;
     this.initializeSchema();
     this.initializeBuiltInRoles();
   }
@@ -645,7 +648,7 @@ export class AccessControl {
       DELETE FROM ac_entries
       WHERE identity_id = ? AND identity_type = ?
     `;
-    const params: any[] = [identity.id, identity.type];
+    const params: unknown[] = [identity.id, identity.type];
 
     if (service) {
       query += ' AND service = ?';
@@ -673,12 +676,21 @@ export class AccessControl {
     account?: string,
     identity?: Identity
   ): PermissionCheckResult {
+    // If access control is not enabled, grant full access
+    if (!this.accessControlEnabled) {
+      return {
+        allowed: true,
+        reason: 'Access control disabled (no identity required)',
+        effectivePermissions: Object.values(Permission),
+      };
+    }
+
     const checkIdentity = identity || this.currentIdentity;
 
     if (!checkIdentity) {
       return {
         allowed: false,
-        reason: 'No identity specified',
+        reason: 'No identity specified (access control enabled)',
         effectivePermissions: [],
       };
     }

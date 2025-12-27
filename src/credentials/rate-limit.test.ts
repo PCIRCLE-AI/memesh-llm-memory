@@ -23,7 +23,7 @@ describe('Rate Limiting Tests', () => {
   beforeEach(async () => {
     // Create temporary database for testing
     testDbPath = join(tmpdir(), `test-vault-ratelimit-${Date.now()}.db`);
-    vault = new CredentialVault(testDbPath);
+    vault = CredentialVault.create(testDbPath);
     await vault.initialize();
 
     // Set up test identity with admin role for testing

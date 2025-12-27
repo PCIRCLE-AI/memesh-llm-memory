@@ -79,7 +79,7 @@ interface RateLimitEntry {
  */
 export class RateLimiter {
   private store: Map<string, RateLimitEntry> = new Map();
-  private config: RateLimitConfig;
+  protected config: RateLimitConfig;  // Protected to allow subclass access
   private cleanupInterval: NodeJS.Timeout | null = null;
 
   constructor(config: RateLimitConfig) {

@@ -13,6 +13,7 @@ import type Database from 'better-sqlite3';
 import { logger } from '../utils/logger.js';
 import { AuditLogger, AuditEventType } from './AuditLogger.js';
 import type { Identity } from './AccessControl.js';
+import { safeTimestampToDate } from './utils/timestamp.js';
 
 /**
  * Tenant status
@@ -161,6 +162,21 @@ export interface TenantUsageStats {
   apiCallsThisMonth: number;
   lastActivityAt: Date | null;
   topServices: Array<{ service: string; count: number }>;
+}
+
+/**
+ * Database row type for tenants table
+ * Internal interface for type-safe row mapping
+ */
+interface TenantRow {
+  id: string;
+  name: string;
+  tier: string;
+  status: string;
+  created_at: number;
+  updated_at: number;
+  settings?: string | null;
+  metadata?: string | null;
 }
 
 /**
@@ -341,7 +357,7 @@ export class MultiTenantManager {
 
     const now = Date.now();
     const updateFields: string[] = [];
-    const updateValues: any[] = [];
+    const updateValues: unknown[] = [];
 
     if (updates.name !== undefined) {
       updateFields.push('name = ?');
@@ -436,7 +452,7 @@ export class MultiTenantManager {
     offset?: number;
   }): Tenant[] {
     let query = 'SELECT * FROM tenants WHERE 1=1';
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     if (filters?.status) {
       query += ' AND status = ?';
@@ -584,7 +600,7 @@ export class MultiTenantManager {
     }
   ): void {
     const updateFields: string[] = [];
-    const updateValues: any[] = [];
+    const updateValues: unknown[] = [];
 
     if (quotas.maxCredentials !== undefined) {
       updateFields.push('max_credentials = ?');
@@ -794,14 +810,85 @@ export class MultiTenantManager {
       )
       .get(tenantId, `${thisMonth}%`) as any;
 
+    // Calculate actual storage used by tenant's credentials
+    // Use SQL aggregation to calculate storage size (in bytes)
+    // For UTF-8 TEXT, length() gives characters, so we multiply by average byte-per-char ratio
+    let storageBytes = 0;
+    try {
+      const storageStats = this.db
+        .prepare(
+          `SELECT
+            SUM(COALESCE(length(notes), 0) + COALESCE(length(tags), 0)) as char_count
+           FROM credentials
+           WHERE id LIKE ?`
+        )
+        .get(`${tenantId}:%`) as any;
+
+      // For UTF-8, average 1.5 bytes per character (conservative estimate)
+      // Most English text is 1 byte/char, CJK can be 3 bytes/char
+      storageBytes = storageStats?.char_count
+        ? Math.ceil(storageStats.char_count * 1.5)
+        : 0;
+    } catch (error) {
+      logger.warn('Failed to calculate storage for tenant', {
+        tenantId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      storageBytes = 0;
+    }
+
+    // Track last activity from most recent credential update or API call
+    let lastActivityAt: Date | null = null;
+    try {
+      // Get most recent credential update
+      const recentCredential = this.db
+        .prepare(
+          `SELECT MAX(updated_at) as last_update
+           FROM credentials
+           WHERE id LIKE ?`
+        )
+        .get(`${tenantId}:%`) as any;
+
+      // Get most recent API call date
+      const recentUsage = this.db
+        .prepare(
+          `SELECT MAX(date) as last_date
+           FROM tenant_usage
+           WHERE tenant_id = ?`
+        )
+        .get(tenantId) as any;
+
+      const credentialTime = recentCredential?.last_update
+        ? safeTimestampToDate(recentCredential.last_update)
+        : null;
+      const usageTime = recentUsage?.last_date
+        ? safeTimestampToDate(recentUsage.last_date)
+        : null;
+
+      // Use the most recent activity
+      if (credentialTime && usageTime) {
+        lastActivityAt = credentialTime > usageTime ? credentialTime : usageTime;
+      } else if (credentialTime) {
+        lastActivityAt = credentialTime;
+      } else if (usageTime) {
+        lastActivityAt = usageTime;
+      }
+    } catch (error) {
+      logger.warn('Failed to track last activity for tenant', {
+        tenantId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      lastActivityAt = null;
+    }
+
     return {
       credentialCount: credentialRow?.count || 0,
       userCount: userRow?.count || 0,
-      storageBytes: 0, // TODO: Calculate actual storage
+      storageBytes,
       apiCallsPerHour: todayUsage?.api_calls || 0,
       apiCallsToday: todayUsage?.api_calls || 0,
       apiCallsThisMonth: monthUsage?.total || 0,
-      lastActivityAt: null, // TODO: Track last activity
+      lastActivityAt,
     };
   }
 
@@ -815,14 +902,14 @@ export class MultiTenantManager {
   /**
    * Convert database row to Tenant
    */
-  private rowToTenant(row: any): Tenant {
+  private rowToTenant(row: TenantRow): Tenant {
     return {
       id: row.id,
       name: row.name,
       tier: row.tier as TenantTier,
       status: row.status as TenantStatus,
-      createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at),
+      createdAt: safeTimestampToDate(row.created_at) || new Date(),
+      updatedAt: safeTimestampToDate(row.updated_at) || new Date(),
       settings: row.settings ? JSON.parse(row.settings) : undefined,
       metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
     };

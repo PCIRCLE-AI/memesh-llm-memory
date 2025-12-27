@@ -11,6 +11,70 @@
 import { Task, TaskAnalysis, TaskComplexity, ExecutionMode, AgentType } from './types.js';
 import { MODEL_COSTS, CLAUDE_MODELS } from '../config/models.js';
 
+/**
+ * Complexity detection configuration
+ * Centralized indicator arrays for easier maintenance
+ */
+interface ComplexityRule {
+  level: TaskComplexity;
+  indicators: string[];
+  wordCountLimit?: number;
+  priority: number;
+}
+
+const COMPLEXITY_RULES: ComplexityRule[] = [
+  // Complex tasks (highest priority)
+  {
+    level: 'complex',
+    indicators: [
+      'analyze system',
+      'architecture',
+      'design database',
+      'database schema',
+      'refactor codebase',
+      'implement algorithm',
+      'optimize performance',
+      'security audit',
+      'multi-step',
+      'comprehensive',
+      'security considerations',
+    ],
+    priority: 1,
+  },
+  // Medium tasks
+  {
+    level: 'medium',
+    indicators: [
+      'validation',
+      'create function',
+      'email',
+      'user',
+      'api',
+      'endpoint',
+      'component',
+      'service',
+      'authentication',
+      'authorization',
+    ],
+    priority: 2,
+  },
+  // Simple tasks (requires word count check)
+  {
+    level: 'simple',
+    indicators: [
+      'format',
+      'rename',
+      'simple',
+      'basic',
+      'quick fix',
+      'typo',
+      'comment',
+    ],
+    wordCountLimit: 15,
+    priority: 3,
+  },
+];
+
 export class TaskAnalyzer {
   constructor() {
     // Constructor intentionally empty - configuration loaded when needed
@@ -45,77 +109,14 @@ export class TaskAnalyzer {
     const description = task.description.toLowerCase();
     const wordCount = task.description.split(/\s+/).length;
 
-    // 複雜任務指標
-    const complexIndicators = [
-      'analyze system',
-      'architecture',
-      'design database',
-      'database schema',
-      'refactor codebase',
-      'implement algorithm',
-      'optimize performance',
-      'security audit',
-      'multi-step',
-      'comprehensive',
-      'security considerations',
-    ];
-
-    // 中等任務指標
-    const mediumIndicators = [
-      'validation',
-      'create function',
-      'email',
-      'user',
-      'api',
-      'endpoint',
-      'component',
-      'service',
-      'authentication',
-      'authorization',
-    ];
-
-    // 簡單任務指標
-    const simpleIndicators = [
-      'format',
-      'rename',
-      'simple',
-      'basic',
-      'quick fix',
-      'typo',
-      'comment',
-    ];
-
-    // 檢查複雜指標
-    const hasComplexIndicator = complexIndicators.some(indicator =>
-      description.includes(indicator)
-    );
-
-    // 檢查中等指標
-    const hasMediumIndicator = mediumIndicators.some(indicator =>
-      description.includes(indicator)
-    );
-
-    // 檢查簡單指標
-    const hasSimpleIndicator = simpleIndicators.some(indicator =>
-      description.includes(indicator)
-    );
-
-    // 複雜任務優先
-    if (hasComplexIndicator) {
-      return 'complex';
+    // Check rules in priority order
+    for (const rule of COMPLEXITY_RULES) {
+      if (this.matchesRule(description, wordCount, rule)) {
+        return rule.level;
+      }
     }
 
-    // 中等任務
-    if (hasMediumIndicator) {
-      return 'medium';
-    }
-
-    // 簡單任務
-    if (hasSimpleIndicator && wordCount < 15) {
-      return 'simple';
-    }
-
-    // 根據字數判斷
+    // Fallback: word count-based classification
     if (wordCount > 20) {
       return 'complex';
     }
@@ -125,6 +126,30 @@ export class TaskAnalyzer {
     }
 
     return 'medium';
+  }
+
+  /**
+   * Check if task description matches a complexity rule
+   */
+  private matchesRule(
+    description: string,
+    wordCount: number,
+    rule: ComplexityRule
+  ): boolean {
+    const hasIndicator = rule.indicators.some(indicator =>
+      description.includes(indicator)
+    );
+
+    if (!hasIndicator) {
+      return false;
+    }
+
+    // Check word count limit if specified
+    if (rule.wordCountLimit !== undefined && wordCount >= rule.wordCountLimit) {
+      return false;
+    }
+
+    return true;
   }
 
   /**

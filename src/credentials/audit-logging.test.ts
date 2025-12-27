@@ -24,7 +24,7 @@ describe('Audit Logging Tests', () => {
   beforeEach(async () => {
     // Create temporary database for testing
     testDbPath = join(tmpdir(), `test-vault-audit-${Date.now()}.db`);
-    vault = new CredentialVault(testDbPath);
+    vault = CredentialVault.create(testDbPath);
     await vault.initialize();
 
     // Set up test identity with admin role for testing
@@ -457,7 +457,7 @@ describe('Audit Logging Tests', () => {
       vault.close();
 
       // Can't query after close, so create new vault to check logs
-      const vault2 = new CredentialVault(testDbPath);
+      const vault2 = CredentialVault.create(testDbPath);
       await vault2.initialize();
 
       const logs = vault2.getAuditLogs({

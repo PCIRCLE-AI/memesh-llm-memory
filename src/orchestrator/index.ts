@@ -31,6 +31,9 @@ import { GlobalResourcePool } from './GlobalResourcePool.js';
 import { randomBytes } from 'crypto';
 import { KnowledgeAgent } from '../agents/knowledge/index.js';
 import { join } from 'path';
+import { BackgroundExecutor } from '../core/BackgroundExecutor.js';
+import { ResourceMonitor } from '../core/ResourceMonitor.js';
+import { ExecutionConfig, Progress, BackgroundTask } from '../core/types.js';
 
 export class Orchestrator {
   private router: Router;
@@ -38,6 +41,8 @@ export class Orchestrator {
   private orchestratorId: string;
   private resourcePool: GlobalResourcePool;
   private knowledge: KnowledgeAgent;
+  private backgroundExecutor: BackgroundExecutor;
+  private resourceMonitor: ResourceMonitor;
 
   constructor(options?: { knowledgeDbPath?: string }) {
     this.router = new Router();
@@ -51,6 +56,9 @@ export class Orchestrator {
     // 初始化 Knowledge Graph
     const dbPath = options?.knowledgeDbPath || join(process.cwd(), 'data', 'knowledge-graph.db');
     this.knowledge = new KnowledgeAgent(dbPath);
+    // 初始化 Background Execution 相關組件
+    this.resourceMonitor = new ResourceMonitor();
+    this.backgroundExecutor = new BackgroundExecutor(this.resourceMonitor);
 
     console.log(`[Orchestrator] Initialized with ID: ${this.orchestratorId}`);
   }
@@ -383,6 +391,118 @@ export class Orchestrator {
    */
   async getKnowledgeStats(): Promise<Awaited<ReturnType<KnowledgeAgent['getStats']>>> {
     return this.knowledge.getStats();
+  }
+
+  /**
+   * Execute task with execution mode choice
+   * @param task Task to execute
+   * @param config Execution configuration
+   * @returns taskId for background mode, result for foreground mode
+   */
+  async executeTaskWithMode(
+    task: Task,
+    config: ExecutionConfig
+  ): Promise<{ taskId?: string; result?: Awaited<ReturnType<Orchestrator['executeTask']>> }> {
+    if (config.mode === 'background') {
+      // Background execution
+      const wrappedTask = async (context: {
+        updateProgress: (progress: number, stage?: string) => void;
+        isCancelled: () => boolean;
+      }) => {
+        // Execute the actual orchestrator task
+        const result = await this.executeTask(task);
+
+        // Update progress throughout execution
+        context.updateProgress(0.3, 'routing');
+        context.updateProgress(0.6, 'executing');
+        context.updateProgress(0.9, 'finalizing');
+        context.updateProgress(1.0, 'completed');
+
+        return result;
+      };
+
+      const taskId = await this.backgroundExecutor.executeTask(wrappedTask, config);
+      return { taskId };
+    } else if (config.mode === 'foreground') {
+      // Foreground execution (existing behavior)
+      const result = await this.executeTask(task);
+      return { result };
+    } else {
+      // Auto mode - decide based on task analysis
+      const { analysis } = await this.analyzeTask(task);
+
+      // Simple heuristic: complex tasks run in background
+      if (analysis.complexity === 'complex') {
+        const backgroundConfig: ExecutionConfig = {
+          ...config,
+          mode: 'background',
+        };
+        const taskId = await this.backgroundExecutor.executeTask(
+          async (context: any) => this.executeTask(task),
+          backgroundConfig
+        );
+        return { taskId };
+      } else {
+        const result = await this.executeTask(task);
+        return { result };
+      }
+    }
+  }
+
+  /**
+   * Get background task progress
+   * @param taskId Task ID
+   * @returns Current progress
+   */
+  async getBackgroundTaskProgress(taskId: string): Promise<Progress> {
+    return this.backgroundExecutor.getProgress(taskId);
+  }
+
+  /**
+   * Get background task by ID
+   * @param taskId Task ID
+   * @returns Background task or undefined
+   */
+  getBackgroundTask(taskId: string): BackgroundTask | undefined {
+    return this.backgroundExecutor.getTask(taskId);
+  }
+
+  /**
+   * Cancel background task
+   * @param taskId Task ID
+   */
+  async cancelBackgroundTask(taskId: string): Promise<void> {
+    return this.backgroundExecutor.cancelTask(taskId);
+  }
+
+  /**
+   * Get all background tasks
+   * @returns Array of all background tasks
+   */
+  getAllBackgroundTasks(): BackgroundTask[] {
+    return this.backgroundExecutor.getAllTasks();
+  }
+
+  /**
+   * Get background execution statistics
+   */
+  getBackgroundStats(): ReturnType<BackgroundExecutor['getStats']> {
+    return this.backgroundExecutor.getStats();
+  }
+
+  /**
+   * Clear finished background tasks
+   * @returns Number of tasks cleared
+   */
+  clearFinishedBackgroundTasks(): number {
+    return this.backgroundExecutor.clearFinishedTasks();
+  }
+
+  /**
+   * Get current resource status
+   */
+  getResourceStatus(): ReturnType<ResourceMonitor['getCurrentResources']> {
+    return this.resourceMonitor.getCurrentResources();
   }
 
   /**

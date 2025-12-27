@@ -17,6 +17,7 @@ import type {
   AttributionMessage,
   SessionMetrics,
   DashboardConfig,
+  AgentStatus,
 } from './types.js';
 import { DEFAULT_UI_CONFIG } from './types.js';
 
@@ -33,7 +34,7 @@ export class Dashboard {
   private resourceMonitor: ResourceMonitor;
   private config: UIConfig;
 
-  private activeAgents: Map<string, ProgressIndicator> = new Map();
+  private activeAgents: Map<string, AgentStatus> = new Map();
   private running: boolean = false;
   private resourceUpdateInterval: NodeJS.Timeout | null = null;
 
@@ -123,9 +124,20 @@ export class Dashboard {
    * Get current dashboard state
    */
   public getState(): DashboardStateForRendering {
+    // Convert AgentStatus back to ProgressIndicator for external API
+    const progressIndicators: ProgressIndicator[] = Array.from(this.activeAgents.values()).map(agent => ({
+      agentId: agent.agentId,
+      agentType: agent.agentType,
+      taskDescription: agent.currentTask || '',
+      progress: agent.progress,
+      currentStage: agent.currentTask,
+      startTime: agent.startTime,
+      endTime: agent.endTime,
+    }));
+
     return {
       resources: this.resourceMonitor.getCurrentResources(),
-      agents: Array.from(this.activeAgents.values()),
+      agents: progressIndicators,
       recentAttributions: this.attributionManager.getRecentAttributions(
         this.config.maxRecentAttributions
       ),
@@ -136,19 +148,19 @@ export class Dashboard {
   /**
    * Get dashboard state (alias for ProgressRenderer compatibility)
    */
-  private getDashboardState() {
+  private getDashboardState(): import('./types.js').DashboardState {
     // ProgressRenderer expects DashboardState with activeAgents Map
     // Convert our state to match the expected format
     const state = this.getState();
     return {
       activeAgents: this.activeAgents,
       recentEvents: state.recentAttributions.map(attr => ({
-        type: attr.type,
+        type: (attr.type === 'success' || attr.type === 'error') ? attr.type : 'error' as 'success' | 'error',
         agentType: attr.agentIds[0] || 'unknown',
         taskDescription: attr.taskDescription,
         timestamp: attr.timestamp,
         result: attr.type === 'success' ? attr.metadata : undefined,
-        error: attr.type === 'error' ? attr.metadata?.error : undefined,
+        error: attr.type === 'error' ? (attr.metadata?.error ? new Error(attr.metadata.error.message) : undefined) : undefined,
         sanitized: attr.type === 'error',
       })),
       metrics: {
@@ -198,8 +210,7 @@ export class Dashboard {
       if (agentStatus.status === 'completed' || agentStatus.status === 'failed' || agentStatus.status === 'cancelled') {
         this.activeAgents.delete(progress.agentId);
       } else {
-        // Store as ProgressIndicator (matches the type expected by getState())
-        this.activeAgents.set(progress.agentId, progress);
+        this.activeAgents.set(progress.agentId, agentStatus);
       }
     });
     this.unsubscribeFunctions.push(unsubProgress);

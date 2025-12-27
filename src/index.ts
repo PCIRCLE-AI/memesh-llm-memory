@@ -25,7 +25,7 @@ async function main() {
   logger.info('\n✅ Smart Agents ready!');
   logger.info('\n📋 Available Agents:');
   logger.info('   - Voice AI (Whisper STT + TTS)');
-  logger.info('   - RAG Agent (ChromaDB + Semantic Search)');
+  logger.info('   - RAG Agent (Vectra + Semantic Search)');
   logger.info('   - Code Agent (Code generation and review)');
   logger.info('   - Research Agent (Web search and analysis)');
   logger.info('\n💡 Use Orchestrator to route tasks intelligently\n');

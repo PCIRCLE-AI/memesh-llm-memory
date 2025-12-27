@@ -183,7 +183,7 @@ npm test -- --grep="specific test name"
 
 ### 🔴 重要：防止系統資源耗盡
 
-E2E 測試會啟動真實服務（Express server, ChromaDB, WebSocket），消耗大量資源。**不當配置可能導致系統凍結**。
+E2E 測試會啟動真實服務（Express server, Vectra, WebSocket），消耗大量資源。**不當配置可能導致系統凍結**。
 
 ### 安全配置原則
 
@@ -280,7 +280,7 @@ npm run test:e2e & npm run test:e2e:collaboration &  # ❌ 資源爆炸
 
 1. **並行不是越多越好** - 本地資源有限，2-3 個並行已足夠
 2. **重試可能適得其反** - 認證失敗 + 重試 = 請求爆炸
-3. **本地服務有成本** - ChromaDB、Express、WebSocket 都消耗資源
+3. **本地服務有成本** - Vectra、Express、WebSocket 都消耗資源
 4. **監控是必要的** - 預防勝於事後處理
 5. **了解你的系統限制** - MacBook Pro M2: 強大但非無限
 

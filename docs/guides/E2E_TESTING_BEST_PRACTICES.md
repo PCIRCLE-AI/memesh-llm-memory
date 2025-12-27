@@ -4,6 +4,8 @@
 
 This guide consolidates learnings from the 2025-12-26 system freeze incident and industry best practices for E2E testing in resource-constrained environments.
 
+**📝 Note**: Examples in this guide use ChromaDB for illustration purposes. **The Smart Agents project currently uses Vectra** (file-based, zero dependencies, no Docker required). See [RAG_DEPLOYMENT.md](./RAG_DEPLOYMENT.md) for our actual implementation.
+
 ---
 
 ## 📊 What We've Implemented (Current State)

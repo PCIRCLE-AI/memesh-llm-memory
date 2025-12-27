@@ -188,7 +188,7 @@ export class SystemResourceManager {
    * 計算建議的 E2E 並行數
    *
    * E2E 測試特別考量：
-   * - 每個測試啟動多個服務（Express, ChromaDB, WebSocket 等）
+   * - 每個測試啟動多個服務（Express, Vectra, WebSocket 等）
    * - 假設每個 E2E 測試需要 2GB memory + 2 CPU cores
    */
   private calculateRecommendedE2E(

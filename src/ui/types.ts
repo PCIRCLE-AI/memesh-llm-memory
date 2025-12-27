@@ -15,6 +15,7 @@ export const UIEventType = {
   SUCCESS: 'success',
   ERROR: 'error',
   METRICS_UPDATE: 'metrics_update',
+  ATTRIBUTION: 'attribution', // Phase 3 Task 4
 } as const;
 
 export type UIEventTypeValue = typeof UIEventType[keyof typeof UIEventType];
@@ -145,4 +146,45 @@ export interface GitHubIssueOptions {
   labels?: string[]; // labels to apply to issues
   assignees?: string[]; // users to assign
   sanitize?: SanitizationOptions; // privacy sanitization options
+}
+
+/**
+ * Attribution Message Types (for Phase 3 Task 4)
+ */
+export type AttributionType = 'success' | 'error' | 'warning';
+
+/**
+ * Error Details for Attribution
+ */
+export interface ErrorDetails {
+  name: string;
+  message: string;
+  stack?: string;
+}
+
+/**
+ * Attribution Message
+ * Used by AttributionManager for success/error tracking
+ */
+export interface AttributionMessage {
+  id: string;
+  type: AttributionType;
+  timestamp: Date;
+  agentIds: string[];
+  taskDescription: string;
+  metadata?: {
+    timeSaved?: number;
+    tokensUsed?: number;
+    error?: ErrorDetails;
+    suggestGitHubIssue?: boolean;
+  };
+}
+
+/**
+ * GitHub Issue Suggestion
+ */
+export interface GitHubIssueSuggestion {
+  title: string;
+  body: string;
+  labels: string[];
 }

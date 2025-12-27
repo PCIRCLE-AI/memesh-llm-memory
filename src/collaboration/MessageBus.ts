@@ -165,4 +165,115 @@ export class MessageBus extends EventEmitter {
       activeTopics: this.subscribers.size,
     };
   }
+
+  /**
+   * Publish message asynchronously
+   * Allows handlers to be async and waits for all to complete
+   */
+  async publishAsync(message: AgentMessage): Promise<void> {
+    // Record message in history
+    this.messageHistory.push(message);
+    if (this.messageHistory.length > this.maxHistorySize) {
+      this.messageHistory.shift();
+    }
+
+    logger.debug(`MessageBus (async): ${message.from} → ${message.to} (${message.type})`);
+
+    // Get all listeners for this message
+    const listeners: Array<Function> = [];
+
+    if (message.type === 'broadcast') {
+      // Broadcast to all subscribers
+      const broadcastListeners = this.listeners('broadcast');
+      listeners.push(...(broadcastListeners as Function[]));
+
+      // Also send to message:* listeners
+      const eventNames = this.eventNames();
+      eventNames.forEach(name => {
+        if (typeof name === 'string' && name.startsWith('message:')) {
+          const messageListeners = this.listeners(name);
+          listeners.push(...(messageListeners as Function[]));
+        }
+      });
+    } else {
+      // Point-to-point message
+      const targetListeners = this.listeners(`message:${message.to}`);
+      listeners.push(...(targetListeners as Function[]));
+    }
+
+    // Execute all listeners and wait for completion
+    const promises = listeners.map(listener => {
+      try {
+        const result = listener(message) as any;
+        // If listener returns a promise, wait for it
+        if (result && typeof result === 'object' && typeof result.then === 'function') {
+          return result as Promise<void>;
+        }
+        return Promise.resolve();
+      } catch (error) {
+        logger.error('MessageBus: Error in async message handler:', error);
+        return Promise.resolve(); // Continue with other handlers
+      }
+    });
+
+    await Promise.all(promises);
+  }
+
+  /**
+   * Subscribe to messages with async handler
+   */
+  subscribeAsync(
+    agentId: string,
+    handler: (message: AgentMessage) => Promise<void>
+  ): void {
+    this.on(`message:${agentId}`, handler);
+    logger.debug(`MessageBus: ${agentId} subscribed to async messages`);
+  }
+
+  /**
+   * Subscribe to topic with async handler
+   */
+  subscribeTopicAsync(
+    agentId: string,
+    topic: string,
+    handler: (message: AgentMessage) => Promise<void>
+  ): void {
+    if (!this.subscribers.has(topic)) {
+      this.subscribers.set(topic, new Set());
+    }
+    this.subscribers.get(topic)!.add(agentId);
+    this.on(`topic:${topic}`, handler);
+    logger.debug(`MessageBus: ${agentId} subscribed to async topic: ${topic}`);
+  }
+
+  /**
+   * Publish to topic asynchronously
+   */
+  async publishTopicAsync(topic: string, message: AgentMessage): Promise<void> {
+    const listeners = this.listeners(`topic:${topic}`) as Function[];
+
+    logger.debug(`MessageBus (async): Published to topic: ${topic}`);
+
+    const promises = listeners.map(listener => {
+      try {
+        const result = listener(message) as any;
+        if (result && typeof result === 'object' && typeof result.then === 'function') {
+          return result as Promise<void>;
+        }
+        return Promise.resolve();
+      } catch (error) {
+        logger.error(`MessageBus: Error in async topic handler for ${topic}:`, error);
+        return Promise.resolve();
+      }
+    });
+
+    await Promise.all(promises);
+  }
+
+  /**
+   * Broadcast message asynchronously (convenience method)
+   */
+  async broadcastAsync(message: AgentMessage): Promise<void> {
+    await this.publishAsync({ ...message, type: 'broadcast' });
+  }
 }

@@ -13,7 +13,7 @@ import Database from 'better-sqlite3';
 import { v4 as uuid } from 'uuid';
 import * as path from 'path';
 import * as fs from 'fs-extra';
-import { createDatabase } from '../../credentials/DatabaseFactory.js';
+import { SimpleDatabaseFactory } from '../../config/simple-config.js';
 import { SQLiteStore } from './SQLiteStore.js';
 import type {
   Task,
@@ -459,7 +459,7 @@ export class EnhancedSQLiteStore extends SQLiteStore {
     fs.copyFileSync(backupPath, this.enhancedOptions.dbPath);
 
     // Reopen with standard configuration
-    this.db = createDatabase(this.enhancedOptions.dbPath);
+    this.db = SimpleDatabaseFactory.getInstance(this.enhancedOptions.dbPath);
 
     console.log(`✅ Database restored from: ${backupPath}`);
   }

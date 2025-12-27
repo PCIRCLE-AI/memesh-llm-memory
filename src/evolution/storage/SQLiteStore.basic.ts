@@ -15,7 +15,7 @@
 
 import Database from 'better-sqlite3';
 import { v4 as uuid } from 'uuid';
-import { createDatabase } from '../../credentials/DatabaseFactory.js';
+import { SimpleDatabaseFactory } from '../../config/simple-config.js';
 import type { EvolutionStore } from './EvolutionStore';
 import type {
   Task,
@@ -62,11 +62,9 @@ export class SQLiteStore implements EvolutionStore {
     };
 
     // Initialize SQLite database with standard configuration
-    this.db = createDatabase({
-      path: this.options.dbPath,
-      verbose: this.options.verbose,
-      skipWAL: !this.options.enableWAL || this.options.dbPath === ':memory:',
-    });
+    this.db = this.options.dbPath === ':memory:'
+      ? SimpleDatabaseFactory.createTestDatabase()
+      : SimpleDatabaseFactory.getInstance(this.options.dbPath);
   }
 
   // ========================================================================

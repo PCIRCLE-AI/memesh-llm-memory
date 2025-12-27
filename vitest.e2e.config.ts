@@ -38,7 +38,7 @@ export default defineConfig({
     // Parallel execution
     // CRITICAL: SINGLE THREAD ONLY to prevent system freeze
     // 2025-12-26: After system freeze incident, reduced from 2 to 1
-    // - Each E2E test spawns multiple services (Express, ChromaDB, WebSocket, RAG)
+    // - Each E2E test spawns multiple services (Express, Vectra, WebSocket, RAG)
     // - Parallel execution causes 48+ concurrent processes → system freeze
     // - Must use sequential execution for stability
     pool: 'threads',

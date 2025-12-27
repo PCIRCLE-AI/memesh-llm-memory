@@ -202,3 +202,55 @@ export interface SessionMetrics {
   totalTokensUsed: number;
   agentUsageBreakdown: Record<string, number>; // agentId -> count
 }
+
+/**
+ * UI Configuration (for Phase 3 Task 7)
+ * Customization options for the Dashboard
+ */
+export interface UIConfig {
+  /**
+   * Update interval in milliseconds
+   */
+  updateInterval: number;
+
+  /**
+   * Maximum recent attributions to display
+   */
+  maxRecentAttributions: number;
+
+  /**
+   * Enable color output
+   */
+  colorEnabled: boolean;
+
+  /**
+   * Enable animations (spinners)
+   */
+  animationsEnabled: boolean;
+
+  /**
+   * Terminal width (auto-detect if undefined)
+   */
+  terminalWidth?: number;
+}
+
+/**
+ * Default UI configuration
+ */
+export const DEFAULT_UI_CONFIG: UIConfig = {
+  updateInterval: 200, // 5 FPS
+  maxRecentAttributions: 5,
+  colorEnabled: true,
+  animationsEnabled: true,
+};
+
+/**
+ * Complete dashboard state for rendering
+ * Combines resources, agents, attributions, and metrics
+ */
+export interface DashboardStateForRendering {
+  resources: import('../core/types.js').SystemResources;
+  agents: ProgressIndicator[];
+  recentAttributions: AttributionMessage[];
+  sessionMetrics: SessionMetrics;
+}

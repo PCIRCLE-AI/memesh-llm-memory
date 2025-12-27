@@ -15,6 +15,7 @@ import { AuditLogger, AuditEventType } from './AuditLogger.js';
 import type { Credential, CredentialQuery, SecureStorage } from './types.js';
 import type { Identity } from './AccessControl.js';
 import { logger } from '../utils/logger.js';
+import { MULTI_TENANT } from './constants.js';
 
 /**
  * Tenant context for operations
@@ -56,17 +57,22 @@ export class TenantAwareCredentialVault {
   private auditLogger: AuditLogger;
   private db: Database.Database;
 
+  // Tenant validation cache to reduce database queries
+  private tenantValidationCache: Map<string, { isValid: boolean; timestamp: number }> = new Map();
+  private readonly VALIDATION_CACHE_TTL = MULTI_TENANT.VALIDATION_CACHE_TTL_MS;
+
   constructor(
     db: Database.Database,
     storage: SecureStorage,
     auditLogger: AuditLogger
   ) {
     this.db = db;
-    this.vault = new CredentialVault(db, storage, auditLogger);
+    // Use factory method for dependency injection
+    this.vault = CredentialVault.createWithDI(db, storage, auditLogger);
     this.tenantManager = new MultiTenantManager(db, auditLogger);
     this.auditLogger = auditLogger;
 
-    logger.info('Tenant-aware credential vault initialized');
+    logger.info('Tenant-aware credential vault initialized with dependency injection');
   }
 
   /**
@@ -112,13 +118,17 @@ export class TenantAwareCredentialVault {
     }
 
     try {
-      // Add tenant prefix to credential ID
-      const tenantedCredential: Credential = {
-        ...credential,
-        id: this.getTenantedId(context.tenantId, credential.service, credential.account),
+      // Convert to CredentialInput (CredentialVault.add will generate the ID)
+      const credentialInput = {
+        service: credential.service,
+        account: credential.account,
+        value: credential.value,
+        expiresAt: credential.metadata?.expiresAt,
+        notes: credential.metadata?.notes,
+        tags: credential.metadata?.tags,
       };
 
-      await this.vault.set(tenantedCredential);
+      await this.vault.add(credentialInput);
 
       // Record API call
       this.tenantManager.recordApiCall(context.tenantId);
@@ -161,7 +171,7 @@ export class TenantAwareCredentialVault {
     // Validate tenant
     const validationResult = this.validateTenant(context);
     if (!validationResult.success) {
-      return validationResult;
+      return validationResult as TenantOperationResult<Credential | null>;
     }
 
     try {
@@ -287,7 +297,7 @@ export class TenantAwareCredentialVault {
     // Validate tenant
     const validationResult = this.validateTenant(context);
     if (!validationResult.success) {
-      return validationResult;
+      return validationResult as TenantOperationResult<Omit<Credential, 'value'>[]>;
     }
 
     try {
@@ -415,23 +425,72 @@ export class TenantAwareCredentialVault {
 
   /**
    * Validate tenant status and access
+   * Optimized with caching to reduce database queries
    */
   private validateTenant(context: TenantContext): TenantOperationResult<void> {
+    // Check cache first (skip if cross-tenant admin operation)
+    if (!context.isCrossTenant) {
+      const cached = this.tenantValidationCache.get(context.tenantId);
+      const now = Date.now();
+
+      if (cached && now - cached.timestamp < this.VALIDATION_CACHE_TTL) {
+        if (!cached.isValid) {
+          return {
+            success: false,
+            tenantDisabled: true,
+            error: `Tenant is not active`,
+          };
+        }
+        return { success: true };
+      }
+    }
+
+    // Validate tenant ID format (cheap check before database query)
+    if (!context.tenantId || typeof context.tenantId !== 'string' || context.tenantId.length === 0) {
+      return {
+        success: false,
+        error: `Invalid tenant ID format`,
+      };
+    }
+
+    // Fetch from database
     const tenant = this.tenantManager.getTenant(context.tenantId);
 
     if (!tenant) {
+      // Cache negative result
+      this.tenantValidationCache.set(context.tenantId, {
+        isValid: false,
+        timestamp: Date.now(),
+      });
+
       return {
         success: false,
         error: `Tenant not found: ${context.tenantId}`,
       };
     }
 
-    if (tenant.status !== TenantStatus.ACTIVE && !context.isCrossTenant) {
+    const isActive = tenant.status === TenantStatus.ACTIVE;
+
+    if (!isActive && !context.isCrossTenant) {
+      // Cache negative result
+      this.tenantValidationCache.set(context.tenantId, {
+        isValid: false,
+        timestamp: Date.now(),
+      });
+
       return {
         success: false,
         tenantDisabled: true,
         error: `Tenant is ${tenant.status}`,
       };
+    }
+
+    // Cache positive result
+    if (isActive) {
+      this.tenantValidationCache.set(context.tenantId, {
+        isValid: true,
+        timestamp: Date.now(),
+      });
     }
 
     return { success: true };

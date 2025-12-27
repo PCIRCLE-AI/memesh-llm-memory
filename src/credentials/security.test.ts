@@ -28,7 +28,7 @@ describe('Security Tests: Input Validation', () => {
   beforeEach(async () => {
     // Create temporary database for testing
     testDbPath = join(tmpdir(), `test-vault-${Date.now()}.db`);
-    vault = new CredentialVault(testDbPath);
+    vault = CredentialVault.create(testDbPath);
     await vault.initialize();
 
     // Set up test identity with admin role for testing
@@ -269,7 +269,7 @@ describe('Security Tests: Command Injection Prevention', () => {
 
     beforeEach(async () => {
       testDbPath = join(tmpdir(), `test-vault-${Date.now()}.db`);
-      vault = new CredentialVault(testDbPath);
+      vault = CredentialVault.create(testDbPath);
       await vault.initialize();
 
       // Set up test identity with admin role for testing
@@ -374,7 +374,7 @@ describe('Security Tests: SQL Injection Prevention', () => {
 
   beforeEach(async () => {
     testDbPath = join(tmpdir(), `test-vault-${Date.now()}.db`);
-    vault = new CredentialVault(testDbPath);
+    vault = CredentialVault.create(testDbPath);
     await vault.initialize();
 
     // Set up test identity with admin role for testing
@@ -449,7 +449,7 @@ describe('Security Tests: Path Traversal Prevention', () => {
 
   beforeEach(async () => {
     testDbPath = join(tmpdir(), `test-vault-${Date.now()}.db`);
-    vault = new CredentialVault(testDbPath);
+    vault = CredentialVault.create(testDbPath);
     await vault.initialize();
 
     // Set up test identity with admin role for testing
@@ -515,7 +515,7 @@ describe('Security Tests: Path Traversal Prevention', () => {
 describe('Security Tests: Resource Cleanup', () => {
   it('should properly clean up database connections on process exit', () => {
     const testDbPath = join(tmpdir(), `test-vault-cleanup-${Date.now()}.db`);
-    const vault = new CredentialVault(testDbPath);
+    const vault = CredentialVault.create(testDbPath);
 
     // Verify instance was registered
     expect(CredentialVault['instances'].has(vault)).toBe(true);
@@ -534,9 +534,9 @@ describe('Security Tests: Resource Cleanup', () => {
 
   it('should handle multiple vault instances', () => {
     const vaults = [
-      new CredentialVault(join(tmpdir(), `vault1-${Date.now()}.db`)),
-      new CredentialVault(join(tmpdir(), `vault2-${Date.now()}.db`)),
-      new CredentialVault(join(tmpdir(), `vault3-${Date.now()}.db`)),
+      CredentialVault.create(join(tmpdir(), `vault1-${Date.now()}.db`)),
+      CredentialVault.create(join(tmpdir(), `vault2-${Date.now()}.db`)),
+      CredentialVault.create(join(tmpdir(), `vault3-${Date.now()}.db`)),
     ];
 
     // Verify all registered

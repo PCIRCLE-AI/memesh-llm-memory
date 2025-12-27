@@ -6,6 +6,7 @@ import { v4 as uuid } from 'uuid';
 import path from 'path';
 import os from 'os';
 import fs from 'fs-extra';
+import { createDatabase } from '../credentials/DatabaseFactory.js';
 import type {
   TelemetryEvent,
   TelemetryConfig,
@@ -35,7 +36,7 @@ export class TelemetryStore {
     await fs.ensureDir(this.storagePath);
 
     const dbPath = path.join(this.storagePath, 'telemetry.db');
-    this.db = new Database(dbPath);
+    this.db = createDatabase(dbPath);
     this.isInitialized = true;
 
     // Create tables

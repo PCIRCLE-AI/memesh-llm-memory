@@ -183,10 +183,17 @@ describe('QuotaManager', () => {
       const stats1 = quotaManager.getUsageStats();
       expect(stats1['claude'].usage.daily).toBe(1);
 
-      // Same day, few hours later
+      // Same day, few hours later (use safe hour to avoid day rollover)
       const later = new Date();
-      later.setHours(later.getHours() + 3);
+      later.setHours(10); // Set to 10 AM to ensure adding hours won't cross midnight
+      later.setMinutes(0);
+      later.setSeconds(0);
       vi.setSystemTime(later);
+
+      // Advance by 3 hours (still same day: 10 AM → 1 PM)
+      const laterStill = new Date(later);
+      laterStill.setHours(13);
+      vi.setSystemTime(laterStill);
 
       quotaManager.checkQuota('claude');
 

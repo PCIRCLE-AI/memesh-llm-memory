@@ -17,9 +17,15 @@ import { logger } from '../utils/logger.js';
 export enum AuditEventType {
   // CRUD Operations
   CREDENTIAL_ADDED = 'credential_added',
+  CREDENTIAL_CREATED = 'credential_created',  // Alias for CREDENTIAL_ADDED
   CREDENTIAL_RETRIEVED = 'credential_retrieved',
+  CREDENTIAL_ACCESSED = 'credential_accessed',  // Alias for CREDENTIAL_RETRIEVED
   CREDENTIAL_UPDATED = 'credential_updated',
   CREDENTIAL_DELETED = 'credential_deleted',
+
+  // Sharing & Access Control
+  ACCESS_GRANTED = 'access_granted',
+  ACCESS_REVOKED = 'access_revoked',
 
   // Rate Limiting
   RATE_LIMIT_HIT = 'rate_limit_hit',

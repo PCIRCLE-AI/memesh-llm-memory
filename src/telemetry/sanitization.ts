@@ -51,15 +51,46 @@ export const BANNED_FIELDS = [
 
 /**
  * Patterns that indicate sensitive data
+ * Enhanced with more credential types and PII patterns
  */
 const SENSITIVE_PATTERNS = [
-  /sk-[a-zA-Z0-9-_]+/,           // API keys (OpenAI, etc.)
+  // API Keys and Tokens
+  /sk-[a-zA-Z0-9-_]+/,           // OpenAI API keys
   /Bearer\s+[a-zA-Z0-9-_\.]+/,   // Bearer tokens
+  /ghp_[a-zA-Z0-9]{36}/,         // GitHub Personal Access Tokens
+  /gho_[a-zA-Z0-9]{36}/,         // GitHub OAuth tokens
+  /ghu_[a-zA-Z0-9]{36}/,         // GitHub User tokens
+  /ghs_[a-zA-Z0-9]{36}/,         // GitHub Server tokens
+  /ghr_[a-zA-Z0-9]{36}/,         // GitHub Refresh tokens
+  /AKIA[0-9A-Z]{16}/,            // AWS Access Key IDs
+  /[a-zA-Z0-9\/\+]{40}/,         // AWS Secret Access Keys (base64-ish 40 chars)
+  /AIza[0-9A-Za-z_-]{35}/,       // Google API keys
+  /ya29\.[0-9A-Za-z_-]+/,        // Google OAuth tokens
+
+  // JWT Tokens
+  /eyJ[a-zA-Z0-9_-]*\.eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*/,  // JWT pattern
+
+  // Database Connection Strings
+  /postgres:\/\/[^:]+:[^@]+@[^\/]+/,     // PostgreSQL
+  /mysql:\/\/[^:]+:[^@]+@[^\/]+/,        // MySQL
+  /mongodb(\+srv)?:\/\/[^:]+:[^@]+@[^\/]+/,  // MongoDB
+  /redis:\/\/[^:]+:[^@]+@[^\/]+/,        // Redis
+
+  // File Paths (expanded)
   /\/Users\/[^\/]+\//,            // macOS user paths
   /\/home\/[^\/]+\//,             // Linux user paths
   /C:\\Users\\[^\\]+\\/,          // Windows user paths
+  /\/private\/[^\/]+\//,          // macOS private paths
+
+  // PII Patterns
   /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/, // Email addresses
   /\d{3}-\d{2}-\d{4}/,           // SSN-like patterns
+  /\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}/,  // Credit card numbers
+  /\+?1?\d{10,14}/,              // Phone numbers
+
+  // Cryptographic Material
+  /-----BEGIN (RSA |DSA |EC |OPENSSH )?PRIVATE KEY-----/,  // Private keys
+  /-----BEGIN CERTIFICATE-----/,                             // Certificates
 ];
 
 /**

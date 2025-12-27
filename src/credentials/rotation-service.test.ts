@@ -8,6 +8,7 @@ import fs from 'fs';
 import { RotationService, type RotationProvider, type RotationJob } from './RotationService.js';
 import { RotationPolicy } from './RotationPolicy.js';
 import { AuditLogger } from './AuditLogger.js';
+import { createTestDatabase } from './DatabaseFactory.js';
 
 describe('RotationService', () => {
   let db: Database.Database;
@@ -18,7 +19,7 @@ describe('RotationService', () => {
 
   beforeEach(() => {
     testDbPath = `/tmp/rotation-service-test-${Date.now()}-${Math.random()}.db`;
-    db = new Database(testDbPath);
+    db = createTestDatabase(testDbPath);
 
     // Initialize credentials table (required by RotationPolicy)
     db.exec(`

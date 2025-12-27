@@ -159,6 +159,40 @@ export class LearningManager {
   }
 
   /**
+   * Helper method to create a pattern with consistent structure
+   * Reduces duplication across pattern extraction methods
+   */
+  private createPattern(
+    agentId: string,
+    taskType: string,
+    patternType: 'success' | 'anti-pattern' | 'optimization',
+    description: string,
+    observedMetrics: PerformanceMetrics[],
+    totalMetrics: PerformanceMetrics[],
+    action: LearnedPattern['action'],
+    successCount: number,
+    successRate: number
+  ): LearnedPattern {
+    return {
+      id: uuidv4(),
+      type: patternType,
+      agentId,
+      taskType,
+      description,
+      conditions: {
+        taskComplexity: this.inferComplexity(observedMetrics),
+      },
+      action,
+      confidence: this.calculateConfidence(observedMetrics.length, totalMetrics.length),
+      observationCount: observedMetrics.length,
+      successCount,
+      successRate,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
+
+  /**
    * Extract successful execution patterns
    */
   private extractSuccessPatterns(
@@ -181,30 +215,25 @@ export class LearningManager {
     );
 
     if (consistentHighQuality.length >= this.config.minObservations) {
-      const avgCost = consistentHighQuality.reduce((sum, m) => sum + m.cost, 0) / consistentHighQuality.length;
-
-      patterns.push({
-        id: uuidv4(),
-        type: 'success',
-        agentId,
-        taskType,
-        description: `Consistent high quality (≥0.8) for ${taskType}`,
-        conditions: {
-          taskComplexity: this.inferComplexity(consistentHighQuality),
-        },
-        action: {
-          type: 'adjust_prompt',
-          parameters: {
-            strategy: 'quality-focused',
-            focusAreas: ['accuracy', 'consistency'],
+      patterns.push(
+        this.createPattern(
+          agentId,
+          taskType,
+          'success',
+          `Consistent high quality (≥0.8) for ${taskType}`,
+          consistentHighQuality,
+          metrics,
+          {
+            type: 'adjust_prompt',
+            parameters: {
+              strategy: 'quality-focused',
+              focusAreas: ['accuracy', 'consistency'],
+            },
           },
-        },
-        confidence: this.calculateConfidence(consistentHighQuality.length, metrics.length),
-        observationCount: consistentHighQuality.length,
-        successRate,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+          consistentHighQuality.length,  // All high-quality observations are successful
+          successRate
+        )
+      );
     }
 
     // Pattern 2: Cost efficiency (only if there's variation in cost)
@@ -220,28 +249,25 @@ export class LearningManager {
       );
 
       if (highQualityLowCost.length >= this.config.minObservations) {
-        patterns.push({
-          id: uuidv4(),
-          type: 'success',
-          agentId,
-          taskType,
-          description: `High quality (≥0.8) with cost-efficient execution for ${taskType}`,
-          conditions: {
-            taskComplexity: this.inferComplexity(highQualityLowCost),
-          },
-          action: {
-            type: 'adjust_prompt',
-            parameters: {
-              strategy: 'efficient',
-              focusAreas: ['quality', 'cost-optimization'],
+        patterns.push(
+          this.createPattern(
+            agentId,
+            taskType,
+            'success',
+            `High quality (≥0.8) with cost-efficient execution for ${taskType}`,
+            highQualityLowCost,
+            metrics,
+            {
+              type: 'adjust_prompt',
+              parameters: {
+                strategy: 'efficient',
+                focusAreas: ['quality', 'cost-optimization'],
+              },
             },
-          },
-          confidence: this.calculateConfidence(highQualityLowCost.length, metrics.length),
-          observationCount: highQualityLowCost.length,
-          successRate,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
+            highQualityLowCost.length,  // All high-quality low-cost observations are successful
+            successRate
+          )
+        );
       }
     }
 
@@ -271,27 +297,24 @@ export class LearningManager {
     );
 
     if (timeoutFailures.length >= this.config.minObservations / 2) {
-      patterns.push({
-        id: uuidv4(),
-        type: 'anti-pattern',
-        agentId,
-        taskType,
-        description: `Timeout failures (P95 duration) for ${taskType}`,
-        conditions: {
-          taskComplexity: this.inferComplexity(timeoutFailures),
-        },
-        action: {
-          type: 'modify_timeout',
-          parameters: {
-            timeoutMs: Math.round(this.getP95Duration(metrics) * 1.5),
+      patterns.push(
+        this.createPattern(
+          agentId,
+          taskType,
+          'anti-pattern',
+          `Timeout failures (P95 duration) for ${taskType}`,
+          timeoutFailures,
+          failedMetrics,
+          {
+            type: 'modify_timeout',
+            parameters: {
+              timeoutMs: Math.round(this.getP95Duration(metrics) * 1.5),
+            },
           },
-        },
-        confidence: this.calculateConfidence(timeoutFailures.length, failedMetrics.length),
-        observationCount: timeoutFailures.length,
-        successRate: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+          0,  // All timeout failures are unsuccessful
+          0
+        )
+      );
     }
 
     // Anti-pattern: Low quality output
@@ -300,28 +323,25 @@ export class LearningManager {
     );
 
     if (lowQualityMetrics.length >= this.config.minObservations / 2) {
-      patterns.push({
-        id: uuidv4(),
-        type: 'anti-pattern',
-        agentId,
-        taskType,
-        description: `Low quality output (<0.5) for ${taskType}`,
-        conditions: {
-          taskComplexity: this.inferComplexity(lowQualityMetrics),
-        },
-        action: {
-          type: 'adjust_prompt',
-          parameters: {
-            strategy: 'quality-focused',
-            additionalInstructions: 'Prioritize output quality over speed',
+      patterns.push(
+        this.createPattern(
+          agentId,
+          taskType,
+          'anti-pattern',
+          `Low quality output (<0.5) for ${taskType}`,
+          lowQualityMetrics,
+          metrics,
+          {
+            type: 'adjust_prompt',
+            parameters: {
+              strategy: 'quality-focused',
+              additionalInstructions: 'Prioritize output quality over speed',
+            },
           },
-        },
-        confidence: this.calculateConfidence(lowQualityMetrics.length, metrics.length),
-        observationCount: lowQualityMetrics.length,
-        successRate: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+          0,  // Low-quality outputs are not considered successful
+          0
+        )
+      );
     }
 
     return patterns;
@@ -346,28 +366,25 @@ export class LearningManager {
       );
 
       if (lowCostHighQuality.length >= this.config.minObservations / 2) {
-        patterns.push({
-          id: uuidv4(),
-          type: 'optimization',
-          agentId,
-          taskType,
-          description: `Cost optimization opportunity: 20% cost reduction with quality ≥0.8 for ${taskType}`,
-          conditions: {
-            taskComplexity: this.inferComplexity(lowCostHighQuality),
-          },
-          action: {
-            type: 'change_model',
-            parameters: {
-              targetCostReduction: 0.2,
-              minQualityScore: 0.8,
+        patterns.push(
+          this.createPattern(
+            agentId,
+            taskType,
+            'optimization',
+            `Cost optimization opportunity: 20% cost reduction with quality ≥0.8 for ${taskType}`,
+            lowCostHighQuality,
+            successfulMetrics,
+            {
+              type: 'change_model',
+              parameters: {
+                targetCostReduction: 0.2,
+                minQualityScore: 0.8,
+              },
             },
-          },
-          confidence: this.calculateConfidence(lowCostHighQuality.length, successfulMetrics.length),
-          observationCount: lowCostHighQuality.length,
-          successRate: lowCostHighQuality.length / successfulMetrics.length,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
+            lowCostHighQuality.length,  // All low-cost high-quality observations are successful
+            lowCostHighQuality.length / successfulMetrics.length
+          )
+        );
       }
     }
 

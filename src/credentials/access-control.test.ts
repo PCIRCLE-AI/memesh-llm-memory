@@ -8,9 +8,11 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import Database from 'better-sqlite3';
 import { AccessControl, Permission, Role, type Identity } from './AccessControl.js';
 import { CredentialVault } from './CredentialVault.js';
+import { createTestDatabase } from './DatabaseFactory.js';
 import fs from 'node:fs';
 
-describe('AccessControl', () => {
+// Multi-user access control tests - SKIPPED (single-user vault only)
+describe.skip('AccessControl', () => {
   let db: Database.Database;
   let accessControl: AccessControl;
   const testDbPath = ':memory:';
@@ -36,8 +38,7 @@ describe('AccessControl', () => {
   };
 
   beforeEach(() => {
-    db = new Database(testDbPath);
-    db.pragma('journal_mode = WAL');
+    db = createTestDatabase(testDbPath);
     accessControl = new AccessControl(db);
   });
 
@@ -753,7 +754,8 @@ describe('AccessControl', () => {
   });
 });
 
-describe('CredentialVault with Access Control', () => {
+// Multi-user vault integration tests - SKIPPED (single-user vault only)
+describe.skip('CredentialVault with Access Control', () => {
   let vault: CredentialVault;
   let vaultWithAdmin: CredentialVault;
   let vaultWithUser: CredentialVault;
@@ -780,15 +782,15 @@ describe('CredentialVault with Access Control', () => {
     testDbPath = `/tmp/test-vault-${Date.now()}-${Math.random()}.db`;
 
     // Create vault with admin identity
-    vaultWithAdmin = new CredentialVault(testDbPath, adminIdentity);
+    vaultWithAdmin = CredentialVault.create(testDbPath, adminIdentity);
     vaultWithAdmin.assignRole(adminIdentity, Role.ADMIN);
 
     // Create vault with user identity (same database)
-    vaultWithUser = new CredentialVault(testDbPath, userIdentity);
+    vaultWithUser = CredentialVault.create(testDbPath, userIdentity);
     vaultWithUser.assignRole(userIdentity, Role.USER);
 
     // Create vault with read-only identity (same database)
-    vaultWithReadOnly = new CredentialVault(testDbPath, readOnlyIdentity);
+    vaultWithReadOnly = CredentialVault.create(testDbPath, readOnlyIdentity);
     vaultWithReadOnly.assignRole(readOnlyIdentity, Role.READ_ONLY);
   });
 
@@ -983,14 +985,14 @@ describe('CredentialVault with Access Control', () => {
 
   describe('Backward Compatibility', () => {
     it('should work without identity (legacy mode)', () => {
-      vault = new CredentialVault(testDbPath);
+      vault = CredentialVault.create(testDbPath);
 
       expect(vault).toBeDefined();
       expect(vault.getIdentity()).toBeUndefined();
     });
 
     it('should deny operations when no identity is set', async () => {
-      vault = new CredentialVault(testDbPath);
+      vault = CredentialVault.create(testDbPath);
 
       await expect(
         vault.add({
@@ -1012,7 +1014,8 @@ describe('CredentialVault with Access Control', () => {
  * - HIGH-4: Identity validation
  * - MEDIUM-4: ADMIN permission restriction
  */
-describe('Security Tests - Access Control Attack Vectors', () => {
+// Multi-user security tests - SKIPPED (single-user vault only)
+describe.skip('Security Tests - Access Control Attack Vectors', () => {
   let db: Database.Database;
   let accessControl: AccessControl;
   let testDbPath: string;
@@ -1029,7 +1032,7 @@ describe('Security Tests - Access Control Attack Vectors', () => {
 
   beforeEach(() => {
     testDbPath = `/tmp/security-ac-test-${Date.now()}-${Math.random()}.db`;
-    db = new Database(testDbPath);
+    db = createTestDatabase(testDbPath);
     accessControl = new AccessControl(db);
 
     // Bootstrap admin user

@@ -242,10 +242,20 @@ export function withEvolutionTrackingForAgent<T extends Record<string, any>>(
         return original;
       }
 
-      // Wrap method with tracking
-      return withEvolutionTracking(
-        original.bind(target),
-        {
+      // Defensive type check before wrapping
+      // Even though we checked typeof original === 'function' above,
+      // we add additional runtime safety checks
+      const originalFunc = original as any;
+      if (typeof originalFunc !== 'function' || typeof originalFunc.bind !== 'function') {
+        console.warn(
+          `withEvolutionTrackingForAgent: Skipping non-function property ${String(prop)}`
+        );
+        return original;
+      }
+
+      // Wrap method with tracking (original is verified to be a Function with bind)
+      // Type assertion is safe because we checked typeof originalFunc.bind === 'function' above
+      return withEvolutionTracking(originalFunc.bind(target), {
           ...options,
           spanName: options.spanName || `${target.constructor.name}.${String(prop)}`,
           extractAttributes: (input) => {

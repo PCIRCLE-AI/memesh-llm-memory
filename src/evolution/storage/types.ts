@@ -563,42 +563,7 @@ export interface SkillRecommendation {
 }
 
 // ============================================================================
-// Export all types
+// Re-exports from main evolution types (Phase 2+)
 // ============================================================================
 
-export type {
-  // Core
-  Task,
-  Execution,
-  Span,
-  SpanKind,
-  SpanStatus,
-  SpanAttributes,
-  ResourceAttributes,
-  SpanLink,
-  SpanEvent,
-
-  // Patterns
-  Pattern,
-  PatternType,
-  PatternData,
-
-  // Adaptations
-  Adaptation,
-  AdaptationType,
-
-  // Statistics
-  EvolutionStats,
-
-  // Queries
-  SpanQuery,
-  PatternQuery,
-  TimeRange,
-
-  // Rewards
-  Reward,
-
-  // Skills
-  SkillPerformance,
-  SkillRecommendation,
-};
+export type { PatternContext, ContextualPattern } from '../types.js';

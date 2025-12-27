@@ -22,7 +22,7 @@ import { v4 as uuidv4 } from 'uuid';
 export class CodeReviewAgent implements CollaborativeAgent {
   id: string;
   name: string;
-  type: 'code-review' = 'code-review';
+  type: 'code' = 'code';
   status: 'idle' | 'busy' | 'error' = 'idle';
   capabilities: AgentCapability[];
 
@@ -63,14 +63,26 @@ Focus areas:
       {
         name: 'code-review',
         description: 'Comprehensive code review including security, performance, and best practices',
+        inputSchema: { code: 'string', language: 'string', context: 'string' },
+        outputSchema: { review: 'string', issues: 'array', suggestions: 'array' },
+        estimatedCost: 0.01,
+        estimatedTimeMs: 5000,
       },
       {
         name: 'security-audit',
         description: 'Security vulnerability detection and analysis',
+        inputSchema: { code: 'string', language: 'string' },
+        outputSchema: { vulnerabilities: 'array', severity: 'string' },
+        estimatedCost: 0.015,
+        estimatedTimeMs: 7000,
       },
       {
         name: 'performance-analysis',
         description: 'Performance optimization suggestions',
+        inputSchema: { code: 'string', language: 'string', metrics: 'object' },
+        outputSchema: { analysis: 'string', optimizations: 'array' },
+        estimatedCost: 0.012,
+        estimatedTimeMs: 6000,
       },
     ];
 
@@ -157,6 +169,9 @@ Format your response as:
     this.status = 'busy';
 
     try {
+      // Convert message content to string format for Claude API
+      const userContent = message.content.task || JSON.stringify(message.content);
+
       const response = await this.anthropic.messages.create({
         model: appConfig.claude.models.sonnet,
         max_tokens: 2000,
@@ -164,7 +179,7 @@ Format your response as:
         messages: [
           {
             role: 'user',
-            content: message.content,
+            content: userContent,
           },
         ],
       });
@@ -178,8 +193,10 @@ Format your response as:
         id: uuidv4(),
         from: this.id,
         to: message.from,
-        content: responseText,
-        timestamp: Date.now(),
+        content: {
+          result: responseText,
+        },
+        timestamp: new Date(),
         type: 'response',
       };
     } catch (error) {
@@ -200,5 +217,53 @@ Format your response as:
       status: this.status,
       capabilities: this.capabilities,
     };
+  }
+
+  /**
+   * Initialize agent (required by CollaborativeAgent interface)
+   */
+  async initialize(): Promise<void> {
+    logger.info(`CodeReviewAgent ${this.name} initialized`);
+  }
+
+  /**
+   * Shutdown agent (required by CollaborativeAgent interface)
+   */
+  async shutdown(): Promise<void> {
+    this.status = 'idle';
+    logger.info(`CodeReviewAgent ${this.name} shutdown`);
+  }
+
+  /**
+   * Handle message (required by CollaborativeAgent interface)
+   */
+  async handleMessage(message: AgentMessage): Promise<AgentMessage> {
+    return this.processMessage(message);
+  }
+
+  /**
+   * Execute capability (required by CollaborativeAgent interface)
+   */
+  async execute(capability: string, input: any): Promise<any> {
+    switch (capability) {
+      case 'code-review':
+        return this.reviewCode(input.code, {
+          language: input.language,
+          focus: input.focus || 'all'
+        });
+      case 'security-audit':
+      case 'performance-analysis':
+        // Use processMessage for now, can be specialized later
+        return this.processMessage({
+          id: uuidv4(),
+          from: 'system',
+          to: this.id,
+          content: { task: JSON.stringify(input) },
+          timestamp: new Date(),
+          type: 'request',
+        });
+      default:
+        throw new Error(`Unknown capability: ${capability}`);
+    }
   }
 }

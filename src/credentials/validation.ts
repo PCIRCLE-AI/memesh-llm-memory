@@ -56,6 +56,43 @@ export function validateServiceName(service: string): void {
       service
     );
   }
+
+  // Check for double dots (path traversal attempt)
+  if (service.includes('..')) {
+    throw new ValidationError(
+      'Service name cannot contain ".."',
+      'service',
+      service
+    );
+  }
+
+  // Check for leading or trailing dot
+  if (service.startsWith('.') || service.endsWith('.')) {
+    throw new ValidationError(
+      'Service name cannot start or end with "."',
+      'service',
+      service
+    );
+  }
+
+  // Check for path traversal sequences
+  if (service.includes('../') || service.includes('..\\')) {
+    throw new ValidationError(
+      'Service name cannot contain path traversal sequences',
+      'service',
+      service
+    );
+  }
+
+  // Check for invalid characters (spaces, special chars, command injection)
+  const invalidChars = /[\s/\\;|$`&<>(){}[\]!*?~]/;
+  if (invalidChars.test(service)) {
+    throw new ValidationError(
+      'Service name contains invalid characters',
+      'service',
+      service
+    );
+  }
 }
 
 /**
@@ -87,10 +124,37 @@ export function validateAccountName(account: string): void {
     );
   }
 
+  // Check for null bytes specifically (before general control characters)
+  if (account.includes('\0')) {
+    throw new ValidationError(
+      'Account name cannot contain null bytes',
+      'account',
+      account
+    );
+  }
+
   // Check for dangerous characters
   if (/[\x00-\x1F\x7F]/.test(account)) {
     throw new ValidationError(
       'Account name contains control characters',
+      'account',
+      account
+    );
+  }
+
+  // Check for colon (used as delimiter in multi-tenant IDs)
+  if (account.includes(':')) {
+    throw new ValidationError(
+      'Account name cannot contain ":"',
+      'account',
+      account
+    );
+  }
+
+  // Check for path traversal characters (slashes)
+  if (account.includes('/') || account.includes('\\')) {
+    throw new ValidationError(
+      'Account name cannot contain path traversal characters',
       'account',
       account
     );

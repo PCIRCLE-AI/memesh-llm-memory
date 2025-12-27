@@ -416,6 +416,13 @@ export class StoragePool implements SecureStorage {
   }
 
   /**
+   * Get storage type (for debugging)
+   */
+  getType(): string {
+    return 'storage-pool';
+  }
+
+  /**
    * Clean up resources
    */
   dispose(): void {

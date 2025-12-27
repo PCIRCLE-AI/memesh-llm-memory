@@ -29,7 +29,7 @@ describe('Background Execution System Integration', () => {
     priority,
     resourceLimits: {
       maxCPU: 50,
-      maxMemory: 64, // Reduced for CI/test environment (typically ~100-200MB free)
+      maxMemory: 32, // Conservative limit for stable tests across environments
       maxDuration: 300,
     },
     callbacks,

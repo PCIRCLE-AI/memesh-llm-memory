@@ -25,7 +25,7 @@ describe('BackgroundExecutor', () => {
     priority,
     resourceLimits: {
       maxCPU: 50,
-      maxMemory: 256, // Reduced for test environment
+      maxMemory: 64, // Reduced for CI/test environment (typically ~100-200MB free)
       maxDuration: 300,
     },
   });

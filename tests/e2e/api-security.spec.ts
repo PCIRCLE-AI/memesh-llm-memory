@@ -215,7 +215,8 @@ describe('API Security E2E Tests', () => {
     });
   });
 
-  describe('File Upload Validation', () => {
+  // SKIPPED: Voice RAG API removed from project
+  describe.skip('File Upload Validation', () => {
     const VOICE_RAG_API = process.env.VOICE_RAG_API || 'http://localhost:3003';
 
     it('should reject files exceeding size limit (10MB)', async () => {
@@ -336,7 +337,8 @@ describe('API Security E2E Tests', () => {
     });
   });
 
-  describe('Input Validation', () => {
+  // SKIPPED: Voice RAG API removed from project
+  describe.skip('Input Validation', () => {
     const VOICE_RAG_API = process.env.VOICE_RAG_API || 'http://localhost:3003';
 
     it('should validate document indexing input', async () => {
@@ -385,7 +387,8 @@ describe('API Security E2E Tests', () => {
     });
   });
 
-  describe('Error Response Sanitization', () => {
+  // SKIPPED: Voice RAG API removed from project
+  describe.skip('Error Response Sanitization', () => {
     const VOICE_RAG_API = process.env.VOICE_RAG_API || 'http://localhost:3003';
 
     it('should not expose internal errors in production', async () => {
@@ -430,7 +433,8 @@ describe('API Security E2E Tests', () => {
     });
   });
 
-  describe('Security Headers', () => {
+  // SKIPPED: Voice RAG API removed from project
+  describe.skip('Security Headers', () => {
     const VOICE_RAG_API = process.env.VOICE_RAG_API || 'http://localhost:3003';
 
     it('should include security headers in responses', async () => {

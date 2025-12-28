@@ -109,6 +109,134 @@ tsx src/agents/rag/demo.ts
 
 向量資料會自動存儲在 `data/vectorstore/` 目錄，無需手動創建。
 
+### 3a. 使用檔案投放功能（可選）
+
+**檔案投放功能** 讓您輕鬆建立知識庫，只需將檔案投放到指定資料夾，RAG Agent 會自動索引。
+
+#### 📂 檔案投放資料夾位置（平台友好）
+
+```bash
+# macOS / Linux
+~/Documents/smart-agents-knowledge/
+
+# Windows
+%USERPROFILE%\Documents\smart-agents-knowledge\
+```
+
+**為什麼使用 Documents 資料夾？**
+- ✅ 用戶熟悉的位置（跨平台標準）
+- ✅ 容易存取和管理
+- ✅ 不與專案代碼混在一起
+- ✅ 可以跨專案共用知識庫
+
+#### 啟動 File Watcher
+
+```bash
+# 啟動 File Watcher（自動創建資料夾）
+npm run rag:watch
+
+# 輸出範例：
+📁 File Watcher Started
+📂 Watching directory: /Users/你的用戶名/Documents/smart-agents-knowledge
+📄 Supported extensions: .md, .txt, .json, .pdf, .docx
+⏱️  Polling interval: 5000ms (每 5 秒掃描一次)
+
+💡 Tip: Drop your files into this folder and they will be automatically indexed!
+
+📡 File Watcher is running... (Press Ctrl+C to stop)
+```
+
+#### 使用流程
+
+1. **啟動 File Watcher**：
+   ```bash
+   npm run rag:watch
+   ```
+
+2. **投放檔案**：
+   - 將您的文檔、筆記、代碼文件投放到 `~/Documents/smart-agents-knowledge/`
+   - 支援格式：`.md`, `.txt`, `.json`, `.pdf`, `.docx`
+
+3. **自動索引**：
+   - File Watcher 每 5 秒掃描一次資料夾
+   - 自動檢測並索引新檔案
+   - 顯示索引進度和統計
+
+4. **立即可用**：
+   - 所有 22 個 agents 立即可以搜尋這些知識
+   - 使用語義搜尋找到最相關的資訊
+
+#### 支援的檔案格式
+
+| 格式 | 副檔名 | 說明 |
+|------|--------|------|
+| Markdown | `.md` | 筆記、文檔 |
+| 文字檔 | `.txt` | 純文字內容 |
+| JSON | `.json` | 結構化資料 |
+| PDF | `.pdf` | PDF 文檔（需額外處理）|
+| Word | `.docx` | Word 文檔（需額外處理）|
+
+**注意**：PDF 和 .docx 檔案需要額外的文字提取處理，建議使用 Markdown 或純文字格式以獲得最佳效果。
+
+#### 實例：建立專案知識庫
+
+```bash
+# 1. 啟動 File Watcher
+npm run rag:watch
+
+# 2. 在另一個終端，投放檔案到資料夾
+cp ~/Downloads/project-docs/*.md ~/Documents/smart-agents-knowledge/
+cp ~/Downloads/api-specs/*.json ~/Documents/smart-agents-knowledge/
+
+# 3. File Watcher 會自動索引
+# 輸出：
+🆕 Found 5 new file(s):
+   - api-v1-spec.json
+   - database-schema.md
+   - deployment-guide.md
+   - security-guidelines.md
+   - troubleshooting.md
+
+📥 Processing batch of 5 file(s)...
+   ✅ Indexed: api-v1-spec.json
+   ✅ Indexed: database-schema.md
+   ✅ Indexed: deployment-guide.md
+   ✅ Indexed: security-guidelines.md
+   ✅ Indexed: troubleshooting.md
+✅ Batch processing complete
+
+✨ Successfully indexed 5 file(s)
+
+# 4. 所有 agents 現在都可以搜尋這些知識
+```
+
+#### 進階配置（可選）
+
+如果需要自訂監控行為，可以直接使用 `FileWatcher` API：
+
+```typescript
+import { RAGAgent } from './agents/rag/index.js';
+import { FileWatcher } from './agents/rag/FileWatcher.js';
+
+const rag = new RAGAgent();
+await rag.initialize();
+
+const watcher = new FileWatcher(rag, {
+  watchDir: '/custom/path/to/watch',           // 自訂監控資料夾
+  supportedExtensions: ['.md', '.txt'],        // 自訂支援格式
+  batchSize: 20,                               // 批次大小
+  pollingInterval: 10000,                      // 掃描間隔（毫秒）
+  onIndexed: (files) => {
+    console.log(`Indexed ${files.length} files`);
+  },
+  onError: (error, file) => {
+    console.error(`Error indexing ${file}:`, error);
+  },
+});
+
+await watcher.start();
+```
+
 ### 4. 執行測試
 
 ```bash

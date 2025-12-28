@@ -409,6 +409,7 @@ export async function getRAGAgent(): Promise<RAGAgent> {
 
 // 匯出類型和組件
 export { VectorStore, EmbeddingProviderFactory, Reranker };
+export { FileWatcher } from './FileWatcher.js';
 export type {
   DocumentInput,
   SearchResult,

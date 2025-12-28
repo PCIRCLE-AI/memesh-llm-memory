@@ -170,6 +170,50 @@ await rag.enableRAG('sk-xxxxx'); // 或不傳 API key，會提示輸入
 
 **不使用 RAG agent 可跳過此步驟。** 其他 21 個 agents 無需額外配置。
 
+**5a. （可選）使用檔案投放功能**
+
+RAG Agent 支援自動索引投放的檔案，讓您輕鬆建立知識庫：
+
+**📂 檔案投放資料夾位置**（平台友好）：
+
+```bash
+# macOS / Linux
+~/Documents/smart-agents-knowledge/
+
+# Windows
+%USERPROFILE%\Documents\smart-agents-knowledge\
+```
+
+**啟動檔案監控**：
+
+```bash
+# 啟動 File Watcher（自動創建資料夾）
+npm run rag:watch
+
+# 輸出範例：
+📁 File Watcher Started
+📂 Watching directory: /Users/你的用戶名/Documents/smart-agents-knowledge
+📄 Supported extensions: .md, .txt, .json, .pdf, .docx
+⏱️  Polling interval: 5000ms
+
+💡 Tip: Drop your files into this folder and they will be automatically indexed!
+
+📡 File Watcher is running... (Press Ctrl+C to stop)
+```
+
+**使用方式**：
+1. 啟動 File Watcher：`npm run rag:watch`
+2. 將檔案（.md, .txt, .json, .pdf, .docx）投放到上述資料夾
+3. File Watcher 會自動檢測並索引新檔案
+4. 所有 agents 立即可以搜尋這些知識
+
+**支援的檔案格式**：
+- Markdown (`.md`)
+- 文字檔 (`.txt`)
+- JSON (`.json`)
+- PDF (`.pdf`)
+- Word 文檔 (`.docx`)
+
 **6. 重啟 Claude Code**
 
 重啟後，smart-agents MCP server 會自動啟動。

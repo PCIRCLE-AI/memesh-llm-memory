@@ -27,6 +27,7 @@ import { HumanInLoopUI } from './HumanInLoopUI.js';
 import { FeedbackCollector } from '../evolution/FeedbackCollector.js';
 import { PerformanceTracker } from '../evolution/PerformanceTracker.js';
 import { LearningManager } from '../evolution/LearningManager.js';
+import { EvolutionMonitor } from '../evolution/EvolutionMonitor.js';
 
 // Agent Registry is now used instead of static AGENT_TOOLS array
 // See src/core/AgentRegistry.ts for agent definitions
@@ -43,6 +44,7 @@ class SmartAgentsMCPServer {
   private feedbackCollector: FeedbackCollector;
   private performanceTracker: PerformanceTracker;
   private learningManager: LearningManager;
+  private evolutionMonitor: EvolutionMonitor;
 
   constructor() {
     this.server = new Server(
@@ -66,6 +68,13 @@ class SmartAgentsMCPServer {
     this.performanceTracker = new PerformanceTracker();
     this.learningManager = new LearningManager(this.performanceTracker);
     this.feedbackCollector = new FeedbackCollector(this.learningManager);
+
+    // Initialize evolution monitor using Router's evolution components
+    this.evolutionMonitor = new EvolutionMonitor(
+      this.router.getPerformanceTracker(),
+      this.router.getLearningManager(),
+      this.router.getAdaptationEngine()
+    );
 
     this.setupHandlers();
   }
@@ -100,6 +109,22 @@ class SmartAgentsMCPServer {
         },
       };
 
+      // Evolution dashboard tool
+      const evolutionDashboardTool = {
+        name: 'evolution_dashboard',
+        description: 'View evolution system dashboard showing agent learning progress, patterns, and performance improvements. Displays statistics for all 22 agents.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            format: {
+              type: 'string',
+              description: 'Dashboard format: "summary" (default) or "detailed"',
+              enum: ['summary', 'detailed'],
+            },
+          },
+        },
+      };
+
       // Individual agent tools (advanced mode)
       const agentTools = allAgents.map(agent => ({
         name: agent.name,
@@ -123,7 +148,7 @@ class SmartAgentsMCPServer {
       }));
 
       return {
-        tools: [smartRouterTool, ...agentTools],
+        tools: [smartRouterTool, evolutionDashboardTool, ...agentTools],
       };
     });
 
@@ -149,6 +174,11 @@ class SmartAgentsMCPServer {
       // Handle smart_route_task (smart router mode)
       if (toolName === 'smart_route_task') {
         return await this.handleSmartRouting(args);
+      }
+
+      // Handle evolution_dashboard
+      if (toolName === 'evolution_dashboard') {
+        return await this.handleEvolutionDashboard(args);
       }
 
       // Handle individual agent invocation (advanced mode)
@@ -377,6 +407,67 @@ class SmartAgentsMCPServer {
     }
 
     return baseConfidence;
+  }
+
+  /**
+   * Handle evolution_dashboard tool call
+   *
+   * Returns evolution system dashboard with agent learning progress
+   */
+  private async handleEvolutionDashboard(
+    args: Record<string, unknown>
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      // Get format parameter (default: 'summary')
+      const format =
+        args.format && typeof args.format === 'string' ? args.format : 'summary';
+
+      let dashboardText: string;
+
+      if (format === 'detailed') {
+        // Detailed format: formatted dashboard + learning progress
+        dashboardText = this.evolutionMonitor.formatDashboard();
+
+        // Add detailed learning progress
+        const progress = this.evolutionMonitor.getLearningProgress();
+        const activeAgents = progress.filter(p => p.learnedPatterns > 0);
+
+        if (activeAgents.length > 0) {
+          dashboardText += '\n\n📋 Detailed Learning Progress:\n';
+          activeAgents.forEach(agent => {
+            dashboardText += `\n${agent.agentId}:\n`;
+            dashboardText += `  - Total Executions: ${agent.totalExecutions}\n`;
+            dashboardText += `  - Learned Patterns: ${agent.learnedPatterns}\n`;
+            dashboardText += `  - Applied Adaptations: ${agent.appliedAdaptations}\n`;
+            dashboardText += `  - Success Rate Improvement: ${agent.successRateImprovement >= 0 ? '+' : ''}${(agent.successRateImprovement * 100).toFixed(1)}%\n`;
+            dashboardText += `  - Last Learning: ${agent.lastLearningDate ? agent.lastLearningDate.toISOString() : 'Never'}\n`;
+          });
+        }
+      } else {
+        // Summary format: use formatted dashboard
+        dashboardText = this.evolutionMonitor.formatDashboard();
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: dashboardText,
+          },
+        ],
+      };
+    } catch (error) {
+      // Return formatted error response
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Evolution dashboard failed: ${errorMessage}`,
+          },
+        ],
+      };
+    }
   }
 
   /**

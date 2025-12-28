@@ -22,81 +22,10 @@ import {
 import { Router } from '../orchestrator/router.js';
 import { Task, AgentType } from '../orchestrator/types.js';
 import { ResponseFormatter, AgentResponse } from '../ui/ResponseFormatter.js';
+import { AgentRegistry } from '../core/AgentRegistry.js';
 
-// Agent definitions for MCP tools
-const AGENT_TOOLS: Array<{
-  name: AgentType;
-  description: string;
-  category: string;
-}> = [
-  // Development Agents
-  {
-    name: 'code-reviewer',
-    description: 'Expert code review, security analysis, and best practices validation',
-    category: 'development',
-  },
-  {
-    name: 'test-writer',
-    description: 'Test automation specialist, TDD expert, coverage analysis',
-    category: 'development',
-  },
-  {
-    name: 'debugger',
-    description: 'Root cause analysis, debugging specialist, systematic troubleshooting',
-    category: 'development',
-  },
-  {
-    name: 'refactorer',
-    description: 'Code refactoring expert, design patterns, clean architecture',
-    category: 'development',
-  },
-  {
-    name: 'api-designer',
-    description: 'API design specialist, RESTful principles, GraphQL expert',
-    category: 'development',
-  },
-
-  // Analysis Agents
-  {
-    name: 'rag-agent',
-    description: 'Knowledge retrieval, vector search, embedding-based context search',
-    category: 'analysis',
-  },
-  {
-    name: 'research-agent',
-    description: 'Research specialist, investigation, comparative analysis',
-    category: 'analysis',
-  },
-  {
-    name: 'architecture-agent',
-    description: 'System architecture expert, design patterns, scalability analysis',
-    category: 'analysis',
-  },
-  {
-    name: 'data-analyst',
-    description: 'Data analysis, statistics, metrics, visualization specialist',
-    category: 'analysis',
-  },
-
-  // Knowledge Agents
-  {
-    name: 'knowledge-agent',
-    description: 'Knowledge management, organization, information synthesis',
-    category: 'knowledge',
-  },
-  {
-    name: 'documentation-writer',
-    description: 'Technical documentation, API docs, guides, tutorials',
-    category: 'knowledge',
-  },
-
-  // General Agent
-  {
-    name: 'general-agent',
-    description: 'Versatile AI assistant for general tasks and fallback operations',
-    category: 'general',
-  },
-];
+// Agent Registry is now used instead of static AGENT_TOOLS array
+// See src/core/AgentRegistry.ts for agent definitions
 
 /**
  * MCP Server Main Class
@@ -105,6 +34,7 @@ class SmartAgentsMCPServer {
   private server: Server;
   private router: Router;
   private formatter: ResponseFormatter;
+  private agentRegistry: AgentRegistry;
 
   constructor() {
     this.server = new Server(
@@ -121,6 +51,7 @@ class SmartAgentsMCPServer {
 
     this.router = new Router();
     this.formatter = new ResponseFormatter();
+    this.agentRegistry = new AgentRegistry();
 
     this.setupHandlers();
   }
@@ -129,38 +60,89 @@ class SmartAgentsMCPServer {
    * Setup MCP request handlers
    */
   private setupHandlers(): void {
-    // List available tools (agents)
+    // List available tools (smart router + individual agents)
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      return {
-        tools: AGENT_TOOLS.map(agent => ({
-          name: agent.name,
-          description: agent.description,
-          inputSchema: {
-            type: 'object',
-            properties: {
-              task_description: {
-                type: 'string',
-                description: 'Description of the task to be performed',
-              },
-              priority: {
-                type: 'number',
-                description: 'Task priority (optional, 1-10)',
-                minimum: 1,
-                maximum: 10,
-              },
+      const allAgents = this.agentRegistry.getAllAgents();
+
+      // Smart router tool (recommended)
+      const smartRouterTool = {
+        name: 'smart_route_task',
+        description: 'Smart task router that analyzes your task and recommends the best agent. Shows reasoning and alternatives with human-in-the-loop confirmation.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            taskDescription: {
+              type: 'string',
+              description: 'Description of the task to be performed',
             },
-            required: ['task_description'],
+            priority: {
+              type: 'number',
+              description: 'Task priority (optional, 1-10)',
+              minimum: 1,
+              maximum: 10,
+            },
           },
-        })),
+          required: ['taskDescription'],
+        },
+      };
+
+      // Individual agent tools (advanced mode)
+      const agentTools = allAgents.map(agent => ({
+        name: agent.name,
+        description: agent.description,
+        inputSchema: agent.inputSchema || {
+          type: 'object',
+          properties: {
+            task_description: {
+              type: 'string',
+              description: 'Description of the task to be performed',
+            },
+            priority: {
+              type: 'number',
+              description: 'Task priority (optional, 1-10)',
+              minimum: 1,
+              maximum: 10,
+            },
+          },
+          required: ['task_description'],
+        },
+      }));
+
+      return {
+        tools: [smartRouterTool, ...agentTools],
       };
     });
 
     // Execute tool (route task to agent)
     this.server.setRequestHandler(CallToolRequestSchema, async request => {
-      const { name: agentName, arguments: args } = request.params as {
-        name: string;
-        arguments: { task_description: string; priority?: number };
-      };
+      // Safely extract and validate parameters
+      const params = request.params;
+
+      // Type guard: validate params structure
+      if (
+        !params ||
+        typeof params !== 'object' ||
+        typeof params.name !== 'string' ||
+        !params.arguments ||
+        typeof params.arguments !== 'object'
+      ) {
+        throw new Error('Invalid request parameters');
+      }
+
+      const agentName = params.name;
+      const args = params.arguments as Record<string, unknown>;
+
+      // Validate required task_description
+      if (typeof args.task_description !== 'string') {
+        throw new Error('Missing or invalid task_description');
+      }
+
+      // Validate optional priority
+      const taskDescription = args.task_description;
+      const priority =
+        args.priority !== undefined && typeof args.priority === 'number'
+          ? args.priority
+          : undefined;
 
       try {
         // Validate agent name
@@ -171,8 +153,8 @@ class SmartAgentsMCPServer {
         // Create task
         const task: Task = {
           id: this.generateTaskId(),
-          description: args.task_description,
-          priority: args.priority,
+          description: taskDescription,
+          priority,
         };
 
         // Route task through the pipeline
@@ -212,9 +194,10 @@ class SmartAgentsMCPServer {
         };
       } catch (error) {
         // Error handling - format error response
+        // Safe cast: agentName has been validated by isValidAgent
         const errorResponse: AgentResponse = {
           agentType: agentName as AgentType,
-          taskDescription: args.task_description,
+          taskDescription: taskDescription,
           status: 'error',
           error: error instanceof Error ? error : new Error(String(error)),
         };
@@ -236,9 +219,10 @@ class SmartAgentsMCPServer {
 
   /**
    * Validate if agent name is valid
+   * Type guard that narrows string to AgentType
    */
-  private isValidAgent(name: string): boolean {
-    return AGENT_TOOLS.some(agent => agent.name === name);
+  private isValidAgent(name: string): name is AgentType {
+    return this.agentRegistry.hasAgent(name as AgentType);
   }
 
   /**
@@ -257,7 +241,7 @@ class SmartAgentsMCPServer {
 
     // Server ready
     console.error('Smart-Agents MCP Server started');
-    console.error(`Available agents: ${AGENT_TOOLS.length}`);
+    console.error(`Available agents: ${this.agentRegistry.getAgentCount()}`);
     console.error('Waiting for requests...');
   }
 }

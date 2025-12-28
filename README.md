@@ -1,20 +1,26 @@
 # 🤖 Smart Agents
 
-**智能 AI Agent 生態系統** - 基於 Claude Sonnet 4.5 和雲端優先架構
+**智能 AI Agent 生態系統** - MCP Server Pattern with Self-Evolving Agents
 
 ## 📋 專案概述
 
-Smart Agents 是一個高性能、模組化的 AI Agent 協調平台，具備智能資源管理與多平台支持。
+Smart Agents 是一個專業化的 AI Agent 系統，透過 **MCP (Model Context Protocol)** 整合到 Claude Code，提供 22 個自我優化的專業 agents。
 
-### 核心能力
+### 🎯 V2.0 核心能力（當前實現 - MCP Server Pattern）
 
-- 🎯 **智能 Orchestrator** - 自動路由任務到最適合的 agent
-- 🧠 **Advanced RAG** - 本地向量資料庫驅動的知識檢索（Vectra）
-- 🤝 **Multi-Agent 協作** - 專業化 agent teams 協同工作（✅ Month 1）
-- 🏗️ **Specialized Teams** - 4 個專業團隊（代碼、研究、品質、編排）（✅ Month 2-3）
-- 🧠 **Self-Evolving Agent** - Agent 自主學習與行為優化（✅ Month 2-3）
-- 💾 **Knowledge Graph** - 持久化記憶系統（MCP Memory）
-- 📊 **Real-time Dashboard** - 系統監控與成本追蹤（✅ Month 1）
+- ✅ **22 個專業化 Agents** - 基於任務能力智能路由（code-review → code-reviewer）
+- ✅ **Prompt Enhancement Mode** - 生成針對特定 agent 優化的 prompts
+- ✅ **Self-Evolving 系統** - 自動學習並優化 agent 行為（已完整實現並測試）
+- ✅ **Evolution Dashboard** - 監控所有 22 agents 的學習進度（透過 MCP）
+- ✅ **Claude Code 整合** - MCP server 實現（已實現，待部署）
+- ✅ **完整測試覆蓋** - 457 passing tests（單元、整合、E2E、回歸、性能）
+
+### 📋 V3.0 規劃中功能（配置已準備，邏輯未實現）
+
+- 🔄 **Multi-Provider Routing** - 自動路由到 Ollama/Claude/ChatGPT/Grok/Gemini
+- 🔄 **智能成本優化** - 40% 成本節省（理論估算，未實際驗證）
+- 🔄 **配額感知路由** - 基於用量自動切換 provider
+- 🔄 **本地 Ollama 整合** - 60% 簡單任務本地執行
 
 ### ✅ Month 1 完成功能（2025-12-24）
 
@@ -91,39 +97,99 @@ Smart Agents 是一個高性能、模組化的 AI Agent 協調平台，具備智
 
 ### 技術棧
 
-**核心 AI 模型** (智能路由 - 5 提供商協作):
+**當前實現（V2.0 - MCP Server Pattern）**:
 
-**本地模型** (Ollama - $0 成本):
-- qwen2.5-coder:14b - 代碼審查、重構建議 (complexity 1-7)
-- qwen2.5:14b - 通用文字任務 (complexity 1-5)
-- llama3.2:1b - 超快簡單任務 (complexity 1-2)
+**核心架構**:
+- **AgentRouter** - 基於任務能力路由到 22 個專業 agents
+- **PromptEnhancer** - 生成針對特定 agent 優化的 prompts
+- **Evolution System** - PerformanceTracker + LearningManager + AdaptationEngine
+- **MCP Server** - 透過 Claude Code 調用（使用用戶的 API subscription）
 
-**雲端模型** (智能配額管理):
-- Claude Sonnet 4.5 - 複雜代碼、創意寫作 (complexity 8-10)
-- Claude Opus 4.5 - 最複雜推理任務 (complexity 9-10)
-- ChatGPT (GPT-4) - 中等代碼生成、測試撰寫 (complexity 6-7)
-- Grok (xAI) - 中等推理、創意任務 (complexity 6-8)
-- Gemini 2.5 Flash - 多模態任務 (vision, audio, video) - FREE tier
+**22 個專業 Agents（6 大類別）**:
+- **開發類 (9)**: code-reviewer, test-writer, debugger, refactorer, api-designer, db-optimizer, frontend-specialist, backend-specialist, development-butler
+- **研究類 (5)**: rag-agent, research-agent, architecture-agent, data-analyst, performance-profiler
+- **知識類 (1)**: knowledge-agent
+- **營運類 (2)**: devops-engineer, security-auditor
+- **創意類 (2)**: technical-writer, ui-designer
+- **工具類 (2)**: migration-assistant, api-integrator
+- **通用類 (1)**: general-agent（後備）
 
 **基礎設施**:
-- Vector Database - Vectra (本地檔案存儲)
-- MCP (Model Context Protocol) - Agent 整合框架
-- Node.js / TypeScript - 開發語言
+- **MCP (Model Context Protocol)** - Agent 整合框架 ✅
+- **Node.js / TypeScript** - 開發語言 ✅
+- **Vitest** - 測試框架 ✅
+- **Evolution Monitoring** - 自我優化系統 ✅
 
-**已整合的 MCP Servers**:
-- Memory MCP - 知識圖譜
-- Perplexity MCP - 深度搜尋
-- Playwright MCP - E2E 測試
-- Semgrep MCP - 代碼安全掃描
-- GitLab MCP - 專案管理
+**執行模式**:
+- ✅ **Prompt Enhancement Mode**: 返回 enhanced prompts 給 Claude Code
+- ✅ **User's API Subscription**: 由 Claude Code 執行，使用用戶的 API keys
+- 🔄 **Multi-Provider Routing**: 規劃中（配置已準備，邏輯未實現）
 
-## 🎯 智能路由與配額管理
+**規劃中的 Provider 整合（V3.0）**:
+- 🔄 Ollama - 本地模型執行
+- 🔄 Claude API - 複雜推理任務
+- 🔄 ChatGPT - 代碼生成
+- 🔄 Grok (xAI) - 中等推理
+- 🔄 Gemini - 多模態任務
 
-### 五層架構 (Five-Layer Architecture)
+## 🎯 V2.0 智能路由（當前實現）
+
+### MCP Server Pattern 架構
+
+```
+Claude Code (MCP Client)
+    ↓ stdio transport
+Smart-Agents MCP Server
+    ├─→ TaskAnalyzer (分析任務類型和複雜度)
+    ├─→ AgentRouter (路由到 22 個專業 agents)
+    ├─→ PromptEnhancer (生成優化的 prompts)
+    └─→ Evolution System (自我學習與優化)
+    ↓
+返回 Enhanced Prompt
+    ↓
+Claude Code 執行 (使用用戶的 API subscription)
+```
+
+**核心特點**:
+- ✅ **基於能力路由**: 根據任務需要的能力（code-review, testing, debugging 等）選擇專業 agent
+- ✅ **Prompt 優化**: 為每個 agent 生成針對性優化的 prompts
+- ✅ **Self-Learning**: Evolution System 自動學習並優化 agent 行為
+- ✅ **成本透明**: 估算理論成本，用戶使用自己的 API subscription
+
+### Agent 路由規則（V2.0）
+
+| 任務能力需求 | 路由到 Agent | Agent 類別 |
+|-------------|-------------|----------|
+| code-review | code-reviewer | Development |
+| testing | test-writer | Development |
+| debugging | debugger | Development |
+| refactoring | refactorer | Development |
+| api-design | api-designer | Development |
+| rag-search | rag-agent | Research |
+| research | research-agent | Research |
+| architecture | architecture-agent | Research |
+| data-analysis | data-analyst | Research |
+| knowledge-query | knowledge-agent | Knowledge |
+| devops | devops-engineer | Operations |
+| security | security-auditor | Operations |
+| documentation | technical-writer | Creative |
+| ui-design | ui-designer | Creative |
+| (後備) | general-agent | General |
+
+---
+
+## 🔄 V3.0 規劃：Multi-Provider Routing（未實現）
+
+> **注意**: 以下為 V3.0 規劃功能，配置文件已準備，但路由邏輯尚未實現。
+
+### 五層架構（V3.0 計劃）
+
+<details>
+<summary>展開查看 V3.0 架構設計</summary>
 
 ```
 Layer 5: User Interface
-    Claude Code (existing) + Smart Agents MCP Server
+    Claude Code + Smart Agents API Service
     │
     ↓
 Layer 4: Skills Coordination Layer
@@ -144,7 +210,7 @@ Layer 1: Provider Integration
     Ollama | Gemini | Claude | Grok | ChatGPT
 ```
 
-### 智能路由規則
+### 智能路由規則（V3.0 計劃）
 
 | 任務類型 | Complexity | 首選提供商 | 理由 |
 |---------|-----------|----------|------|
@@ -155,57 +221,96 @@ Layer 1: Provider Integration
 | 複雜推理 | 9-10 | Claude Opus | 最強推理 |
 | 多模態 | any | Gemini FREE tier | 支援 vision/audio/video |
 
-### 三層故障轉移 (Three-Tier Failover)
+### 故障轉移策略（V3.0 計劃）
 
 1. **Tier 1**: 根據任務類型和複雜度選擇最佳提供商
 2. **Tier 2**: 如配額不足，使用 QuotaManager 建議的替代方案
-3. **Tier 3**: 所有雲端提供商不可用時，fallback 到本地 Ollama ($0 成本)
+3. **Tier 3**: 所有雲端提供商不可用時，fallback 到本地 Ollama
 
-### 配額管理
+### 配額管理（V3.0 計劃）
 
 - **每日/每月限制**: 每個提供商獨立追蹤使用量
 - **自動重置**: 每日午夜、每月月初自動重置計數器
-- **持久化儲存**: 跨 session 保留配額數據 (localStorage/文件系統)
+- **持久化儲存**: 跨 session 保留配額數據
 - **即時監控**: 每次 API 調用前檢查可用配額
+
+</details>
 
 ## 🚀 快速開始
 
-### 前置需求
+### V2.0 安裝（MCP Server 模式）
 
-- **作業系統**: macOS / Linux / Windows (建議 16GB+ RAM)
+**前置需求**:
+- **Claude Code**: 已安裝 Claude CLI
 - **Node.js**: 18+ (必需)
-- **Python**: 3.9+ (必需)
-- **Ollama** (選用): 本地模型運行
+- **Git**: 用於克隆專案
 
-### 安裝
+**安裝步驟**:
 
 ```bash
-# Clone repository
+# 1. Clone repository
 git clone <your-repo-url> smart-agents
 cd smart-agents
 
-# 安裝依賴
+# 2. 安裝依賴
 npm install
 
-# 設置環境變數
-cp .env.example .env
-# 編輯 .env，填入你的 API keys
+# 3. 編譯 TypeScript
+npm run build
+
+# 4. 配置 Claude Code MCP server
+# 編輯 ~/.claude/mcp_settings.json，添加:
+{
+  "mcpServers": {
+    "smart-agents": {
+      "command": "npm",
+      "args": ["run", "mcp"],
+      "cwd": "/path/to/smart-agents",
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}
+
+# 5. 重啟 Claude Code
+# MCP server 會自動啟動
 ```
 
-### 配置 API Keys
+**無需配置 API Keys**:
+- ✅ smart-agents 只生成 enhanced prompts
+- ✅ Claude Code 使用您自己的 Claude API subscription
+- ✅ 不需要 `.env` 文件
+
+---
+
+### V3.0 安裝（獨立服務模式 - 計劃中）
+
+> **注意**: 以下為 V3.0 規劃內容，當前版本不需要。
+
+<details>
+<summary>展開查看 V3.0 配置說明</summary>
+
+**前置需求** (V3.0):
+- **作業系統**: macOS / Linux / Windows (建議 16GB+ RAM)
+- **Node.js**: 18+ (必需)
+- **Python**: 3.9+ (選用，用於某些 agents)
+- **Ollama** (選用): 本地模型運行
+
+**配置 API Keys** (V3.0):
 
 ```bash
-# .env 文件
+# .env 文件（V3.0 才需要）
 
 # ====================================
-# Claude API (必需)
+# Claude API (V3.0 需要)
 # ====================================
 ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
 CLAUDE_MODEL=claude-sonnet-4-5-20250929
 CLAUDE_OPUS_MODEL=claude-opus-4-5-20251101
 
 # ====================================
-# OpenAI API (Code)
+# OpenAI API (V3.0 需要)
 # ====================================
 OPENAI_API_KEY=sk-xxxxx
 OPENAI_CHAT_MODEL=gpt-4-turbo-preview
@@ -213,19 +318,19 @@ OPENAI_CODE_MODEL=gpt-4-turbo-preview
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 
 # ====================================
-# Grok API (xAI)
+# Grok API (V3.0 需要)
 # ====================================
 GROK_API_KEY=xai-xxxxx
 GROK_MODEL=grok-beta
 GROK_BASE_URL=https://api.x.ai/v1
 
 # ====================================
-# Gemini API (Google AI Studio)
+# Gemini API (V3.0 需要)
 # ====================================
 GOOGLE_API_KEY=xxxxx
 
 # ====================================
-# API 配額限制 (Quota Limits)
+# API 配額限制 (V3.0 需要)
 # ====================================
 # 每日/每月請求限制
 
@@ -249,15 +354,8 @@ GEMINI_MONTHLY_LIMIT=300000
 OLLAMA_DAILY_LIMIT=999999
 OLLAMA_MONTHLY_LIMIT=999999
 
-# ====================================
-# 智能路由偏好 (Smart Routing)
-# ====================================
-DEFAULT_TEXT_PROVIDER=ollama
-DEFAULT_CODE_PROVIDER=ollama
-DEFAULT_MULTIMODAL_PROVIDER=gemini
-DEFAULT_REASONING_PROVIDER=claude
-FALLBACK_PROVIDER=ollama  # 最後備用 (本地、免費、無限)
 ```
+
 
 ### 啟動
 
@@ -380,7 +478,34 @@ smart-agents/
 
 ## 💰 成本估算
 
-### 智能路由優化後成本 (40% 節省)
+### V2.0 成本結構（MCP Server Pattern）
+
+**實際月費** (V2.0 當前實現):
+- **Smart-Agents MCP Server**: $0 (本地運行，開源免費)
+- **Claude API**: 由您自己的 Claude Code subscription 支付
+  - 具體費用取決於：
+    - 您的 API 使用量（tokens consumed）
+    - Claude API 定價（參考 ARCHITECTURE.md 中的價格表）
+    - Smart-Agents 提供的 prompt enhancement 幫助優化 token 使用
+- **Vector DB (Vectra)**: $0 (本地運行)
+- **其他 MCP Servers** (optional): 依各工具而定
+
+**優勢**：
+- ✅ **無中介成本** - 直接使用您自己的 Claude API subscription
+- ✅ **透明計價** - 看得見每次 API 調用的實際成本
+- ✅ **Prompt 優化** - Enhanced prompts 減少不必要的 token 消耗
+- ✅ **本地運行** - MCP server 和 vector DB 完全免費
+
+---
+
+### V3.0 規劃：Multi-Provider 成本優化（未實現）
+
+> **注意**: 以下為 V3.0 規劃功能，描述未來 Multi-Provider Routing 的成本節省潛力。
+
+<details>
+<summary>展開查看 V3.0 成本優化策略</summary>
+
+#### 智能路由優化後成本 (40% 節省)
 
 **預期月費** (保守使用，含智能路由優化):
 - Claude API: $8-15 (↓ 47%, 複雜任務專用)
@@ -391,12 +516,14 @@ smart-agents/
 - Vector DB: $0 (Vectra 本地)
 - **總計**: ~$20-35/月 (↓ 40% vs 單一提供商)
 
-### 成本優化策略
+#### 成本優化策略
 
 - ✅ **60% 簡單任務** → 本地 Ollama ($0)
 - ✅ **多模態任務** → Gemini FREE tier ($0)
 - ✅ **配額感知路由** → 避免超額費用
 - ✅ **三層故障轉移** → 確保服務連續性
+
+</details>
 
 ## 🤝 貢獻
 

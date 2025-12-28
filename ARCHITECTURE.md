@@ -211,6 +211,28 @@ interface RoutingDecision {
 }
 ```
 
+**Agent 實作架構**:
+
+所有 22 個 agents 都通過 **Prompt Enhancement Mode** 工作：
+- **AgentRegistry** (`src/core/AgentRegistry.ts`) 註冊所有 agents 的 metadata
+- **PromptEnhancer** (`src/core/PromptEnhancer.ts`) 為每個 agent 定義專業 persona
+- 部分 agents 有完整的類別實作，其他通過 PromptEnhancer 的 persona 工作
+
+**完整實作的 Agents** (5 個):
+| Agent | 路徑 | 實作內容 |
+|-------|------|---------|
+| code-reviewer | `src/agents/code/` | 代碼審查邏輯、安全檢查 |
+| architecture-agent | `src/agents/architecture/` | 架構分析、設計建議 |
+| rag-agent | `src/agents/rag/` | 向量搜尋、embeddings、reranking |
+| research-agent | `src/agents/research/` | 研究流程、資訊收集 |
+| knowledge-agent | `src/agents/knowledge/` | 知識組織、檢索 |
+
+**通過 Prompt Enhancement 工作的 Agents** (17 個):
+- 無需獨立類別實作
+- PromptEnhancer 為每個 agent 定義詳細的 persona（專長、工作流程、最佳實踐）
+- 生成優化的 prompt 後返回給 Claude Code 執行
+- 同樣具備專業能力，通過精心設計的 prompts 實現
+
 ---
 
 ### 4. CostTracker

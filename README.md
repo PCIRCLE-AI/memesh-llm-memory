@@ -485,7 +485,7 @@ Smart-Agents 建議：
 - **[Evolution 系統文檔](docs/EVOLUTION.md)** - 了解 agents 如何自我學習
 - **[架構文檔](docs/architecture/OVERVIEW.md)** - 深入了解系統設計
 - **[設置指南](docs/guides/SETUP.md)** - 詳細的安裝說明
-- **[Pattern Detection 實作計劃](docs/plans/2025-12-29-pattern-detection-skill-suggestion.md)** - 模式偵測功能詳細設計
+- **[綜合實作計劃](docs/plans/2025-12-29-comprehensive-implementation-plan.md)** - 完整功能實作計劃（包含 User Onboarding、Pattern Detection、Evolution Enhancement）
 
 ---
 

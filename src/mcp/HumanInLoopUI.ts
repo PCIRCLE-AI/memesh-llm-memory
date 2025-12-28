@@ -53,6 +53,18 @@ export class HumanInLoopUI {
    * - Clear prompt [y/n/1-3]
    */
   formatConfirmationRequest(request: ConfirmationRequest): string {
+    // Validate required fields
+    if (!request.taskDescription || !request.taskDescription.trim()) {
+      throw new Error('Invalid confirmation request: taskDescription is required');
+    }
+    if (!request.recommendedAgent) {
+      throw new Error('Invalid confirmation request: recommendedAgent is required');
+    }
+
+    // Safe defaults for optional arrays
+    const reasoning = request.reasoning || [];
+    const alternatives = request.alternatives || [];
+
     const lines: string[] = [];
 
     // Header
@@ -72,15 +84,18 @@ export class HumanInLoopUI {
 
     // Reasoning
     lines.push('💡 Reasoning:');
-    request.reasoning.forEach(reason => {
-      lines.push(`   • ${reason}`);
+    reasoning.forEach(reason => {
+      // Filter empty reasons
+      if (reason && reason.trim()) {
+        lines.push(`   • ${reason}`);
+      }
     });
     lines.push('');
 
     // Alternatives (if any)
-    if (request.alternatives.length > 0) {
+    if (alternatives.length > 0) {
       lines.push('🔄 Alternative Agents:');
-      request.alternatives.forEach((alt, index) => {
+      alternatives.forEach((alt, index) => {
         const altConfidence = Math.round(alt.confidence * 100);
         lines.push(`   ${index + 1}. ${alt.agent} (${altConfidence}%) - ${alt.reason}`);
       });
@@ -88,8 +103,8 @@ export class HumanInLoopUI {
     }
 
     // Prompt
-    if (request.alternatives.length > 0) {
-      const maxIndex = request.alternatives.length;
+    if (alternatives.length > 0) {
+      const maxIndex = alternatives.length;
       lines.push(`❓ Proceed with ${request.recommendedAgent}? [y/n/1-${maxIndex}]`);
       lines.push(`   y = Accept recommendation`);
       lines.push(`   n = Reject`);

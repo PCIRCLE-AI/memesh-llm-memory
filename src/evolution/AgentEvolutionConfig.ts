@@ -412,3 +412,57 @@ export function getAgentsByCategory(category: AgentCategory): AgentEvolutionConf
 
   return agents;
 }
+
+/**
+ * Convert AgentEvolutionConfig to AdaptationConfig
+ *
+ * Maps our agent evolution config to the format expected by AdaptationEngine
+ */
+export function toAdaptationConfig(config: AgentEvolutionConfig): {
+  agentId: string;
+  enabledAdaptations: {
+    promptOptimization: boolean;
+    modelSelection: boolean;
+    timeoutAdjustment: boolean;
+    retryStrategy: boolean;
+  };
+  learningRate: number;
+  minConfidence: number;
+  minObservations: number;
+  maxPatterns: number;
+} {
+  // Determine enabled adaptations based on category
+  const enabledAdaptations = {
+    promptOptimization: true, // All agents benefit from prompt optimization
+    modelSelection: config.category !== 'operations', // Ops need consistency
+    timeoutAdjustment: true, // All agents can adjust timeouts
+    retryStrategy: ['operations', 'knowledge'].includes(config.category), // Only ops and knowledge retry
+  };
+
+  // Calculate learning rate from weights (average of all weights)
+  const learningRate =
+    (config.learningWeights.successRate +
+      config.learningWeights.userFeedback +
+      config.learningWeights.performanceMetrics) /
+    3;
+
+  // Max patterns based on category
+  const maxPatternsByCategory: Record<AgentCategory, number> = {
+    development: 100,
+    research: 150,
+    knowledge: 200,
+    operations: 50,
+    creative: 120,
+    utility: 100,
+    general: 80,
+  };
+
+  return {
+    agentId: config.agentId,
+    enabledAdaptations,
+    learningRate,
+    minConfidence: config.confidenceThreshold,
+    minObservations: config.minObservationsForAdaptation,
+    maxPatterns: maxPatternsByCategory[config.category],
+  };
+}

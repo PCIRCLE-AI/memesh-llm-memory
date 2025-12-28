@@ -273,33 +273,46 @@ class SmartAgentsMCPServer {
       priority,
     };
 
-    // Route task through pipeline
-    const result = await this.router.routeTask(task);
+    try {
+      // Route task through pipeline
+      const result = await this.router.routeTask(task);
 
-    // Generate alternatives (top 2-3 other suitable agents)
-    const alternatives = this.generateAlternatives(result.routing.selectedAgent, result.analysis);
+      // Generate alternatives (top 2-3 other suitable agents)
+      const alternatives = this.generateAlternatives(result.routing.selectedAgent, result.analysis);
 
-    // Create confirmation request
-    const confirmationRequest = {
-      taskDescription: task.description,
-      recommendedAgent: result.routing.selectedAgent,
-      confidence: this.estimateConfidence(result.analysis, result.routing),
-      reasoning: result.routing.reasoning.split('. ').slice(0, 3).filter(r => r.length > 0),
-      alternatives,
-    };
+      // Create confirmation request
+      const confirmationRequest = {
+        taskDescription: task.description,
+        recommendedAgent: result.routing.selectedAgent,
+        confidence: this.estimateConfidence(result.analysis, result.routing),
+        reasoning: result.routing.reasoning.split('. ').slice(0, 3).filter(r => r.length > 0),
+        alternatives,
+      };
 
-    // Format using HumanInLoopUI
-    const formattedConfirmation = this.ui.formatConfirmationRequest(confirmationRequest);
+      // Format using HumanInLoopUI
+      const formattedConfirmation = this.ui.formatConfirmationRequest(confirmationRequest);
 
-    // Return formatted confirmation
-    return {
-      content: [
-        {
-          type: 'text',
-          text: formattedConfirmation,
-        },
-      ],
-    };
+      // Return formatted confirmation
+      return {
+        content: [
+          {
+            type: 'text',
+            text: formattedConfirmation,
+          },
+        ],
+      };
+    } catch (error) {
+      // Return formatted error response
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Smart routing failed: ${errorMessage}\n\nPlease try again or use a specific agent directly.`,
+          },
+        ],
+      };
+    }
   }
 
   /**

@@ -25,7 +25,7 @@ describe('TaskAnalyzer', () => {
     const analysis = await analyzer.analyze(task);
 
     expect(analysis.complexity).toBe('simple');
-    expect(analysis.requiredAgents).toContain('claude-haiku');
+    expect(analysis.requiredAgents).toContain('general-agent');
   });
 
   it('should classify complex tasks correctly', async () => {
@@ -37,7 +37,8 @@ describe('TaskAnalyzer', () => {
     const analysis = await analyzer.analyze(task);
 
     expect(analysis.complexity).toBe('complex');
-    expect(analysis.requiredAgents).toContain('claude-opus');
+    // Complex tasks now suggest general-agent and architecture-agent
+    expect(analysis.requiredAgents).toContain('general-agent');
   });
 
   it('should classify medium tasks correctly', async () => {
@@ -49,7 +50,7 @@ describe('TaskAnalyzer', () => {
     const analysis = await analyzer.analyze(task);
 
     expect(analysis.complexity).toBe('medium');
-    expect(analysis.requiredAgents).toContain('claude-sonnet');
+    expect(analysis.requiredAgents).toContain('general-agent');
   });
 
   it('should estimate tokens correctly', async () => {
@@ -101,7 +102,7 @@ describe('AgentRouter', () => {
     analyzer = new TaskAnalyzer();
   });
 
-  it('should route simple tasks to Haiku', async () => {
+  it('should route simple tasks to general-agent', async () => {
     const task: Task = {
       id: 'test-1',
       description: 'Format JSON',
@@ -110,11 +111,12 @@ describe('AgentRouter', () => {
     const analysis = await analyzer.analyze(task);
     const routing = await router.route(analysis);
 
-    expect(routing.selectedAgent).toBe('claude-haiku');
-    expect(routing.modelName).toContain('haiku');
+    expect(routing.selectedAgent).toBe('general-agent');
+    expect(routing.enhancedPrompt).toBeDefined();
+    expect(routing.enhancedPrompt.suggestedModel).toBeTruthy();
   });
 
-  it('should route complex tasks to Opus (or fallback to Haiku if memory insufficient)', async () => {
+  it('should route complex tasks to appropriate agent (or fallback to general-agent if memory insufficient)', async () => {
     const task: Task = {
       id: 'test-2',
       description: 'Analyze system architecture and design comprehensive security audit',
@@ -123,9 +125,9 @@ describe('AgentRouter', () => {
     const analysis = await analyzer.analyze(task);
     const routing = await router.route(analysis);
 
-    // In test environment with limited memory, may fallback to Haiku
-    expect(['claude-opus', 'claude-haiku']).toContain(routing.selectedAgent);
-    expect(routing.modelName).toBeTruthy();
+    // In test environment with limited memory, may fallback to general-agent
+    expect(['general-agent', 'architecture-agent']).toContain(routing.selectedAgent);
+    expect(routing.enhancedPrompt).toBeDefined();
   });
 
   it('should get system resources', async () => {
@@ -146,8 +148,8 @@ describe('AgentRouter', () => {
     const analysis = await analyzer.analyze(task);
     const routing = await router.route(analysis);
 
-    // Fallback may be undefined for Haiku (lowest tier)
-    if (routing.selectedAgent === 'claude-opus' || routing.selectedAgent === 'claude-sonnet') {
+    // Fallback may be undefined for general-agent (default fallback)
+    if (routing.selectedAgent === 'architecture-agent' || routing.selectedAgent === 'code-reviewer') {
       expect(routing.fallbackAgent).toBeTruthy();
     }
   });
@@ -162,9 +164,9 @@ describe('AgentRouter', () => {
     const routings = await router.routeBatch(analyses);
 
     expect(routings).toHaveLength(2);
-    expect(routings[0].selectedAgent).toBe('claude-haiku');
-    // Second task may be opus or haiku depending on memory
-    expect(['claude-opus', 'claude-haiku']).toContain(routings[1].selectedAgent);
+    expect(routings[0].selectedAgent).toBe('general-agent');
+    // Second task may be general-agent or architecture-agent depending on memory
+    expect(['general-agent', 'architecture-agent']).toContain(routings[1].selectedAgent);
   });
 });
 

@@ -109,12 +109,14 @@ export class Orchestrator {
       });
 
       // 步驟 2: 執行任務
-      const response = await this.callClaude(routing.modelName, task.description);
+      // 使用 enhancedPrompt 中建議的模型，如果沒有則使用 fallback
+      const modelToUse = routing.enhancedPrompt.suggestedModel || 'claude-sonnet-4-5-20250929';
+      const response = await this.callClaude(modelToUse, task.description);
 
       // 步驟 3: 記錄成本
       const actualCost = this.router.recordTaskCost(
         task.id,
-        routing.modelName,
+        modelToUse,
         response.usage.input_tokens,
         response.usage.output_tokens
       );
@@ -128,7 +130,7 @@ export class Orchestrator {
       await this.knowledge.recordFeature({
         name: `Task ${task.id} Execution`,
         description: task.description.substring(0, 100),
-        implementation: `Model: ${routing.modelName}, Tokens: ${response.usage.input_tokens + response.usage.output_tokens}`,
+        implementation: `Agent: ${routing.selectedAgent}, Model: ${modelToUse}, Tokens: ${response.usage.input_tokens + response.usage.output_tokens}`,
         challenges: actualCost > routing.estimatedCost ? ['Cost exceeded estimate'] : undefined,
         tags: ['task-execution', routing.selectedAgent, task.id]
       });

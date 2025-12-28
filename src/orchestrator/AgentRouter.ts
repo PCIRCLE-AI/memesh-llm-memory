@@ -1,21 +1,28 @@
 /**
- * AgentRouter - 智能 Agent 路由器
+ * AgentRouter - Specialized Agent Router for MCP Server
  *
- * 功能：
- * - 根據任務分析結果路由到最佳 Agent
- * - 支援 Claude Sonnet 4.5、Opus 4.5、Haiku
- * - 記憶體感知路由 (檢查系統資源)
- * - 成本最佳化決策
- * - 提供 fallback 機制
+ * Features:
+ * - Routes to specialized agents based on task capabilities
+ * - Prompt Enhancement Mode: Returns enhanced prompts instead of API calls
+ * - Capability-based routing (not model-based)
+ * - Resource-aware routing (checks system resources)
+ * - Fallback mechanism to general-agent
+ *
+ * MCP Server Pattern:
+ * - No direct API calls
+ * - Returns enhanced prompts to Claude Code
+ * - Claude Code executes with user's API subscription
  */
 
 import os from 'os';
-import { TaskAnalysis, RoutingDecision, AgentType, SystemResources } from './types.js';
-import { CLAUDE_MODELS } from '../config/models.js';
+import { TaskAnalysis, RoutingDecision, AgentType, SystemResources, TaskCapability, Task } from './types.js';
+import { PromptEnhancer } from '../core/PromptEnhancer.js';
 
 export class AgentRouter {
+  private promptEnhancer: PromptEnhancer;
+
   constructor() {
-    // Constructor intentionally empty - configuration loaded when needed
+    this.promptEnhancer = new PromptEnhancer();
   }
 
   /**
@@ -29,15 +36,32 @@ export class AgentRouter {
       return this.createFallbackDecision(analysis, 'Insufficient memory');
     }
 
-    // 根據複雜度選擇 Agent
+    // 根據任務能力需求選擇專業 Agent
     const selectedAgent = this.selectAgent(analysis);
-    const modelName = this.getModelName(selectedAgent);
     const fallbackAgent = this.getFallbackAgent(selectedAgent);
+
+    // 建立 Task 物件用於 Prompt Enhancement
+    const task: Task = {
+      id: analysis.taskId,
+      description: `Task requiring ${analysis.requiredAgents.join(', ')} capabilities`,
+      requiredCapabilities: this.getCapabilitiesForAgent(selectedAgent),
+      metadata: {
+        complexity: analysis.complexity,
+        estimatedTokens: analysis.estimatedTokens,
+      },
+    };
+
+    // 使用 PromptEnhancer 生成 enhanced prompt
+    const enhancedPrompt = this.promptEnhancer.enhance(
+      selectedAgent,
+      task,
+      analysis.complexity
+    );
 
     return {
       taskId: analysis.taskId,
       selectedAgent,
-      modelName,
+      enhancedPrompt,
       estimatedCost: analysis.estimatedCost,
       fallbackAgent,
       reasoning: this.generateRoutingReasoning(
@@ -95,44 +119,86 @@ export class AgentRouter {
   }
 
   /**
-   * 選擇最佳 Agent
+   * 選擇最佳 Agent（基於能力需求）
    */
   private selectAgent(analysis: TaskAnalysis): AgentType {
-    // 優先使用分析結果推薦的第一個 Agent
-    const recommendedAgent = analysis.requiredAgents[0];
+    // 根據 requiredAgents 包含的能力選擇對應的專業 Agent
+    const requiredAgents = analysis.requiredAgents;
 
-    const agentMap: Record<string, AgentType> = {
-      'claude-haiku': 'claude-haiku',
-      'claude-sonnet': 'claude-sonnet',
-      'claude-opus': 'claude-opus',
+    // 能力到 Agent 的映射
+    const capabilityToAgent: Record<string, AgentType> = {
+      'code-review': 'code-reviewer',
+      'code-generation': 'general-agent',
+      'testing': 'test-writer',
+      'debugging': 'debugger',
+      'refactoring': 'refactorer',
+      'api-design': 'api-designer',
+      'rag-search': 'rag-agent',
+      'research': 'research-agent',
+      'architecture': 'architecture-agent',
+      'data-analysis': 'data-analyst',
+      'knowledge-query': 'knowledge-agent',
+      'documentation': 'documentation-writer',
     };
 
-    return agentMap[recommendedAgent] || 'claude-sonnet';
+    // 嘗試從 requiredAgents 映射到 AgentType
+    for (const required of requiredAgents) {
+      if (capabilityToAgent[required]) {
+        return capabilityToAgent[required];
+      }
+    }
+
+    // 如果無法映射，fallback 到 general-agent
+    return 'general-agent';
   }
 
   /**
-   * 獲取 Agent 對應的模型名稱
+   * 獲取 Agent 對應的能力清單
    */
-  private getModelName(agent: AgentType): string {
-    const modelMap: Record<AgentType, string> = {
-      'claude-haiku': CLAUDE_MODELS.HAIKU,
-      'claude-sonnet': CLAUDE_MODELS.SONNET,
-      'claude-opus': CLAUDE_MODELS.OPUS,
-      'openai-gpt4': 'gpt-4-turbo-preview',
+  private getCapabilitiesForAgent(agent: AgentType): TaskCapability[] {
+    const agentCapabilities: Record<AgentType, TaskCapability[]> = {
+      'code-reviewer': ['code-review'],
+      'test-writer': ['testing', 'code-generation'],
+      'debugger': ['debugging'],
+      'refactorer': ['refactoring', 'code-generation'],
+      'api-designer': ['api-design', 'code-generation'],
+      'rag-agent': ['rag-search'],
+      'research-agent': ['research'],
+      'architecture-agent': ['architecture'],
+      'data-analyst': ['data-analysis'],
+      'knowledge-agent': ['knowledge-query'],
+      'documentation-writer': ['documentation'],
+      'general-agent': ['general'],
     };
 
-    return modelMap[agent];
+    return agentCapabilities[agent] || ['general'];
   }
 
   /**
    * 獲取備用 Agent
    */
   private getFallbackAgent(primaryAgent: AgentType): AgentType | undefined {
+    // 定義 Agent 的降級策略
     const fallbackMap: Record<AgentType, AgentType | undefined> = {
-      'claude-opus': 'claude-sonnet',
-      'claude-sonnet': 'claude-haiku',
-      'claude-haiku': undefined,
-      'openai-gpt4': 'claude-sonnet',
+      // 開發類 Agent fallback
+      'code-reviewer': 'general-agent',
+      'test-writer': 'general-agent',
+      'debugger': 'general-agent',
+      'refactorer': 'general-agent',
+      'api-designer': 'general-agent',
+
+      // 分析類 Agent fallback
+      'rag-agent': 'research-agent',
+      'research-agent': 'general-agent',
+      'architecture-agent': 'general-agent',
+      'data-analyst': 'general-agent',
+
+      // 知識類 Agent fallback
+      'knowledge-agent': 'research-agent',
+      'documentation-writer': 'general-agent',
+
+      // general-agent 沒有 fallback
+      'general-agent': undefined,
     };
 
     return fallbackMap[primaryAgent];
@@ -148,17 +214,29 @@ export class AgentRouter {
   ): string {
     const reasons: string[] = [];
 
-    reasons.push(`Selected ${selectedAgent} based on ${analysis.complexity} complexity`);
+    reasons.push(`Selected ${selectedAgent} based on task capabilities and ${analysis.complexity} complexity`);
     reasons.push(`Available memory: ${resources.availableMemoryMB}MB`);
     reasons.push(`Memory usage: ${resources.memoryUsagePercent}%`);
     reasons.push(`Estimated cost: $${analysis.estimatedCost.toFixed(6)}`);
 
-    if (selectedAgent === 'claude-opus') {
-      reasons.push('Using Opus for complex reasoning tasks');
-    } else if (selectedAgent === 'claude-haiku') {
-      reasons.push('Using Haiku for cost-efficient simple tasks');
-    } else {
-      reasons.push('Using Sonnet for balanced performance');
+    // Agent 專業說明
+    const agentDescriptions: Record<AgentType, string> = {
+      'code-reviewer': 'Specialized in code quality analysis and security review',
+      'test-writer': 'Expert in test automation and TDD',
+      'debugger': 'Specialized in root cause analysis and debugging',
+      'refactorer': 'Expert in code refactoring and design patterns',
+      'api-designer': 'Specialized in API design and RESTful principles',
+      'rag-agent': 'Expert in knowledge retrieval and context search',
+      'research-agent': 'Specialized in research and information gathering',
+      'architecture-agent': 'Expert in system architecture and design',
+      'data-analyst': 'Specialized in data analysis and visualization',
+      'knowledge-agent': 'Expert in knowledge management and organization',
+      'documentation-writer': 'Specialized in technical documentation',
+      'general-agent': 'Versatile AI assistant for general tasks',
+    };
+
+    if (agentDescriptions[selectedAgent]) {
+      reasons.push(agentDescriptions[selectedAgent]);
     }
 
     return reasons.join('. ');
@@ -171,14 +249,32 @@ export class AgentRouter {
     analysis: TaskAnalysis,
     reason: string
   ): RoutingDecision {
-    // 降級到更輕量的模型
-    const fallbackAgent: AgentType = 'claude-haiku';
+    // 降級到通用 Agent
+    const fallbackAgent: AgentType = 'general-agent';
+
+    // 建立簡化的 Task 物件
+    const task: Task = {
+      id: analysis.taskId,
+      description: `Fallback task due to: ${reason}`,
+      requiredCapabilities: ['general'],
+      metadata: {
+        complexity: 'simple',
+        isFallback: true,
+      },
+    };
+
+    // 使用 PromptEnhancer 生成 enhanced prompt（使用 simple complexity）
+    const enhancedPrompt = this.promptEnhancer.enhance(
+      fallbackAgent,
+      task,
+      'simple'
+    );
 
     return {
       taskId: analysis.taskId,
       selectedAgent: fallbackAgent,
-      modelName: this.getModelName(fallbackAgent),
-      estimatedCost: analysis.estimatedCost * 0.2, // Haiku 成本約為 Sonnet 的 20%
+      enhancedPrompt,
+      estimatedCost: analysis.estimatedCost * 0.2, // general-agent 降低成本估算
       reasoning: `Fallback to ${fallbackAgent} due to: ${reason}`,
     };
   }
@@ -216,9 +312,9 @@ export class AgentRouter {
    * 檢查是否應該使用平行執行
    */
   async shouldUseParallel(decisions: RoutingDecision[]): Promise<boolean> {
-    // 如果所有任務都是簡單任務，可以平行執行
+    // 如果所有任務都是簡單任務（general-agent），可以平行執行
     const allSimple = decisions.every(
-      decision => decision.selectedAgent === 'claude-haiku'
+      decision => decision.selectedAgent === 'general-agent'
     );
 
     if (allSimple) {

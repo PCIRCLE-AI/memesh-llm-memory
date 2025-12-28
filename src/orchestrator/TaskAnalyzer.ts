@@ -168,18 +168,22 @@ export class TaskAnalyzer {
   }
 
   /**
-   * 確定所需 Agent 類型
+   * 確定所需 Agent 類型（基於複雜度建議專業 Agent）
    */
   private determineRequiredAgents(complexity: TaskComplexity): AgentType[] {
+    // 基於複雜度建議 Agent
+    // 注意：這裡返回的是建議的 Agent，實際路由會由 AgentRouter 根據能力需求決定
     switch (complexity) {
       case 'simple':
-        return ['claude-haiku'];
+        return ['general-agent']; // 簡單任務使用通用 Agent
       case 'medium':
-        return ['claude-sonnet'];
+        return ['general-agent']; // 中等任務也使用通用 Agent，除非有特定需求
       case 'complex':
-        return ['claude-opus', 'claude-sonnet']; // Opus 優先，Sonnet 作為備選
+        // 複雜任務可能需要多個專業 Agent 協作
+        // AgentRouter 會根據實際任務內容選擇最合適的專業 Agent
+        return ['general-agent', 'architecture-agent'];
       default:
-        return ['claude-sonnet'];
+        return ['general-agent'];
     }
   }
 

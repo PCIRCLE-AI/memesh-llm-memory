@@ -13,9 +13,46 @@ export type TaskComplexity = 'simple' | 'medium' | 'complex';
 export type ExecutionMode = 'sequential' | 'parallel';
 
 /**
- * Agent 類型
+ * Agent 類型 (專業化 Agents for MCP Server)
  */
-export type AgentType = 'claude-sonnet' | 'claude-opus' | 'claude-haiku' | 'openai-gpt4';
+export type AgentType =
+  // 開發類
+  | 'code-reviewer'
+  | 'test-writer'
+  | 'debugger'
+  | 'refactorer'
+  | 'api-designer'
+
+  // 分析類
+  | 'rag-agent'
+  | 'research-agent'
+  | 'architecture-agent'
+  | 'data-analyst'
+
+  // 知識類
+  | 'knowledge-agent'
+  | 'documentation-writer'
+
+  // 通用 (fallback)
+  | 'general-agent';
+
+/**
+ * 任務能力需求 (用於 Agent 路由)
+ */
+export type TaskCapability =
+  | 'code-review'
+  | 'code-generation'
+  | 'testing'
+  | 'debugging'
+  | 'refactoring'
+  | 'api-design'
+  | 'rag-search'
+  | 'research'
+  | 'architecture'
+  | 'data-analysis'
+  | 'knowledge-query'
+  | 'documentation'
+  | 'general';
 
 /**
  * 任務定義
@@ -24,6 +61,7 @@ export interface Task {
   id: string;
   description: string;
   priority?: number;
+  requiredCapabilities?: TaskCapability[];
   metadata?: Record<string, unknown>;
 }
 
@@ -41,15 +79,28 @@ export interface TaskAnalysis {
 }
 
 /**
- * Agent 路由決策
+ * Enhanced Prompt (Prompt Enhancement Mode)
+ */
+export interface EnhancedPrompt {
+  systemPrompt: string;
+  userPrompt: string;
+  suggestedModel?: string;
+  metadata?: Record<string, any>;
+}
+
+/**
+ * Agent 路由決策 (支援 Prompt Enhancement Mode)
  */
 export interface RoutingDecision {
   taskId: string;
   selectedAgent: AgentType;
-  modelName: string;
+  enhancedPrompt: EnhancedPrompt;
   reasoning: string;
   estimatedCost: number;
   fallbackAgent?: AgentType;
+
+  // Legacy support (will be removed)
+  modelName?: string;
 }
 
 /**

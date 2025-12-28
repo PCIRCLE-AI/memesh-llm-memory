@@ -23,6 +23,7 @@ import { Router } from '../orchestrator/router.js';
 import { Task, AgentType } from '../orchestrator/types.js';
 import { ResponseFormatter, AgentResponse } from '../ui/ResponseFormatter.js';
 import { AgentRegistry } from '../core/AgentRegistry.js';
+import { HumanInLoopUI } from './HumanInLoopUI.js';
 
 // Agent Registry is now used instead of static AGENT_TOOLS array
 // See src/core/AgentRegistry.ts for agent definitions
@@ -35,6 +36,7 @@ class SmartAgentsMCPServer {
   private router: Router;
   private formatter: ResponseFormatter;
   private agentRegistry: AgentRegistry;
+  private ui: HumanInLoopUI;
 
   constructor() {
     this.server = new Server(
@@ -52,6 +54,7 @@ class SmartAgentsMCPServer {
     this.router = new Router();
     this.formatter = new ResponseFormatter();
     this.agentRegistry = new AgentRegistry();
+    this.ui = new HumanInLoopUI();
 
     this.setupHandlers();
   }
@@ -129,8 +132,16 @@ class SmartAgentsMCPServer {
         throw new Error('Invalid request parameters');
       }
 
-      const agentName = params.name;
+      const toolName = params.name;
       const args = params.arguments as Record<string, unknown>;
+
+      // Handle smart_route_task (smart router mode)
+      if (toolName === 'smart_route_task') {
+        return await this.handleSmartRouting(args);
+      }
+
+      // Handle individual agent invocation (advanced mode)
+      const agentName = toolName;
 
       // Validate required task_description
       if (typeof args.task_description !== 'string') {
@@ -230,6 +241,118 @@ class SmartAgentsMCPServer {
    */
   private generateTaskId(): string {
     return `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * Handle smart routing with human-in-the-loop confirmation
+   *
+   * Steps:
+   * 1. Analyze task using Router
+   * 2. Generate alternatives
+   * 3. Format confirmation request using HumanInLoopUI
+   * 4. Return formatted confirmation to user
+   */
+  private async handleSmartRouting(
+    args: Record<string, unknown>
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    // Validate taskDescription (using camelCase for smart_route_task)
+    if (typeof args.taskDescription !== 'string') {
+      throw new Error('Missing or invalid taskDescription');
+    }
+
+    const taskDescription = args.taskDescription;
+    const priority =
+      args.priority !== undefined && typeof args.priority === 'number'
+        ? args.priority
+        : undefined;
+
+    // Create task
+    const task: Task = {
+      id: this.generateTaskId(),
+      description: taskDescription,
+      priority,
+    };
+
+    // Route task through pipeline
+    const result = await this.router.routeTask(task);
+
+    // Generate alternatives (top 2-3 other suitable agents)
+    const alternatives = this.generateAlternatives(result.routing.selectedAgent, result.analysis);
+
+    // Create confirmation request
+    const confirmationRequest = {
+      taskDescription: task.description,
+      recommendedAgent: result.routing.selectedAgent,
+      confidence: this.estimateConfidence(result.analysis, result.routing),
+      reasoning: result.routing.reasoning.split('. ').slice(0, 3).filter(r => r.length > 0),
+      alternatives,
+    };
+
+    // Format using HumanInLoopUI
+    const formattedConfirmation = this.ui.formatConfirmationRequest(confirmationRequest);
+
+    // Return formatted confirmation
+    return {
+      content: [
+        {
+          type: 'text',
+          text: formattedConfirmation,
+        },
+      ],
+    };
+  }
+
+  /**
+   * Generate alternative agent options
+   */
+  private generateAlternatives(
+    selectedAgent: AgentType,
+    analysis: any
+  ): Array<{ agent: AgentType; confidence: number; reason: string }> {
+    const alternatives: Array<{ agent: AgentType; confidence: number; reason: string }> = [];
+
+    // Get fallback agent if available
+    const agentsByCategory = this.agentRegistry.getAgentsByCategory(
+      this.agentRegistry.getAgent(selectedAgent)?.category || 'general'
+    );
+
+    // Add agents from same category (excluding selected)
+    agentsByCategory
+      .filter(a => a.name !== selectedAgent)
+      .slice(0, 2)
+      .forEach((agent, index) => {
+        alternatives.push({
+          agent: agent.name,
+          confidence: 0.7 - index * 0.1,
+          reason: `Alternative from ${agent.category} category`,
+        });
+      });
+
+    // Add general-agent as fallback if not already selected
+    if (selectedAgent !== 'general-agent' && alternatives.length < 3) {
+      alternatives.push({
+        agent: 'general-agent',
+        confidence: 0.5,
+        reason: 'General-purpose fallback',
+      });
+    }
+
+    return alternatives.slice(0, 3);
+  }
+
+  /**
+   * Estimate confidence based on analysis
+   */
+  private estimateConfidence(analysis: any, routing: any): number {
+    // Simple confidence estimation based on complexity match
+    const baseConfidence = 0.75;
+
+    // Higher confidence for specific agent matches
+    if (routing.selectedAgent !== 'general-agent') {
+      return Math.min(baseConfidence + 0.15, 0.95);
+    }
+
+    return baseConfidence;
   }
 
   /**

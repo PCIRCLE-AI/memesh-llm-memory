@@ -125,21 +125,35 @@ npm run build
 
 **5. （可選）配置 RAG Agent**
 
-如需使用 **rag-agent** 進行知識檢索，需要配置 OpenAI API key：
+如需使用 **rag-agent** 進行知識檢索，需要配置 embedding provider。支援兩種選項：
+
+**選項 1: HuggingFace Inference API（推薦 - 免費）**
 
 ```bash
 # 複製環境變數範本
 cp .env.example .env
 
-# 編輯 .env 並填入 RAG 相關配置
+# 編輯 .env 並填入 HuggingFace 配置
 ```
 
 在 `.env` 中添加：
 ```bash
-# OpenAI API (僅用於 RAG embeddings)
-OPENAI_API_KEY=sk-your-key-here
+# HuggingFace Inference API (免費層：1,000 requests/hour)
+EMBEDDING_PROVIDER=huggingface
+HUGGINGFACE_API_KEY=hf_xxxxx  # 從 https://huggingface.co/settings/tokens 獲取
+HUGGINGFACE_MODEL=sentence-transformers/all-MiniLM-L6-v2  # 可選，預設值
+```
+
+**選項 2: OpenAI Embeddings API（付費 - $0.02/1M tokens）**
+
+```bash
+# 在 .env 中添加
+EMBEDDING_PROVIDER=openai
+OPENAI_API_KEY=sk-xxxxx
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 ```
+
+**自動選擇**: 如果不設定 `EMBEDDING_PROVIDER`，系統會自動選擇可用的 provider（優先 HuggingFace 免費層）。
 
 **不使用 RAG agent 可跳過此步驟。** 其他 21 個 agents 無需額外配置。
 

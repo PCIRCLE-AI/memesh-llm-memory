@@ -18,8 +18,6 @@ import {
   TaskStatus,
 } from './types.js';
 import { logger } from '../utils/logger.js';
-import type { UIEventBus } from '../ui/UIEventBus.js';
-import { AttributionManager } from '../ui/AttributionManager.js';
 
 interface WorkerHandle {
   promise: Promise<any>;
@@ -33,20 +31,12 @@ export class BackgroundExecutor {
   private resourceMonitor: ResourceMonitor;
   private tasks: Map<string, BackgroundTask>;
   private processingQueue: boolean = false;
-  private eventBus?: UIEventBus; // Optional for backwards compatibility
-  private attributionManager?: AttributionManager; // Optional for backwards compatibility
 
-  constructor(resourceMonitor: ResourceMonitor, eventBus?: UIEventBus) {
+  constructor(resourceMonitor: ResourceMonitor) {
     this.taskQueue = new ExecutionQueue();
     this.activeWorkers = new Map();
     this.resourceMonitor = resourceMonitor;
     this.tasks = new Map();
-    this.eventBus = eventBus;
-
-    // Only create AttributionManager if UI integration is enabled
-    if (eventBus) {
-      this.attributionManager = new AttributionManager(eventBus);
-    }
   }
 
   /**
@@ -88,18 +78,6 @@ export class BackgroundExecutor {
     this.taskQueue.enqueue(backgroundTask);
 
     logger.info(`BackgroundExecutor: Task ${taskId} queued with priority ${config.priority}`);
-
-    // Emit initial progress (queued) if UI is enabled
-    if (this.eventBus) {
-      this.eventBus.emitProgress({
-        agentId: taskId,
-        agentType: (task.type as string) || 'unknown',
-        taskDescription: (task.description as string) || JSON.stringify(task).substring(0, 50),
-        progress: 0,
-        currentStage: 'queued',
-        startTime: backgroundTask.startTime,
-      });
-    }
 
     // Start processing queue if not already processing
     this.processQueue();
@@ -459,28 +437,7 @@ export class BackgroundExecutor {
     };
     this.tasks.set(taskId, task);
 
-    // Emit completion progress if UI is enabled
-    if (this.eventBus) {
-      this.eventBus.emitProgress({
-        agentId: taskId,
-        agentType: (task.task.type as string) || 'unknown',
-        taskDescription: (task.task.description as string) || 'Task',
-        progress: 1.0,
-        currentStage: 'completed',
-        startTime: task.startTime,
-        endTime: task.endTime,
-      });
-    }
-
-    // Emit success attribution if UI is enabled
-    if (this.attributionManager) {
-      const timeSaved = this.estimateTimeSaved(task);
-      this.attributionManager.recordSuccess(
-        [taskId],
-        (task.task.description as string) || 'Task',
-        { timeSaved }
-      );
-    }
+    logger.info(`BackgroundExecutor: Task ${taskId} manually completed`);
   }
 
   /**
@@ -498,27 +455,7 @@ export class BackgroundExecutor {
     task.error = error;
     this.tasks.set(taskId, task);
 
-    // Emit failure progress if UI is enabled
-    if (this.eventBus) {
-      this.eventBus.emitProgress({
-        agentId: taskId,
-        agentType: (task.task.type as string) || 'unknown',
-        taskDescription: (task.task.description as string) || 'Task',
-        progress: task.progress?.progress || 0,
-        currentStage: 'failed',
-        startTime: task.startTime,
-        endTime: task.endTime,
-      });
-    }
-
-    // Emit error attribution if UI is enabled
-    if (this.attributionManager) {
-      this.attributionManager.recordError(
-        [taskId],
-        (task.task.description as string) || 'Task',
-        error
-      );
-    }
+    logger.error(`BackgroundExecutor: Task ${taskId} manually failed:`, error);
   }
 
   /**

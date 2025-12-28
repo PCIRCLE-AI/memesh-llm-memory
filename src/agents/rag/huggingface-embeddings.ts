@@ -30,7 +30,7 @@ export class HuggingFaceEmbeddingService {
   private apiKey: string | undefined;
   private model: string;
   private costTracker: CostTracker;
-  private baseUrl: string = 'https://api-inference.huggingface.co/models';
+  private baseUrl: string = 'https://router.huggingface.co/hf-inference/models';
 
   constructor(apiKey?: string, model?: string) {
     this.apiKey = apiKey || process.env.HUGGINGFACE_API_KEY;
@@ -62,7 +62,7 @@ export class HuggingFaceEmbeddingService {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/${this.model}`, {
+      const response = await fetch(`${this.baseUrl}/${this.model}/embeddings`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
@@ -121,7 +121,7 @@ export class HuggingFaceEmbeddingService {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/${this.model}`, {
+      const response = await fetch(`${this.baseUrl}/${this.model}/embeddings`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,

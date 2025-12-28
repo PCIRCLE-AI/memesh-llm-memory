@@ -20,7 +20,7 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { Router } from '../orchestrator/router.js';
-import { Task, AgentType } from '../orchestrator/types.js';
+import { Task, AgentType, TaskAnalysis, RoutingDecision } from '../orchestrator/types.js';
 import { ResponseFormatter, AgentResponse } from '../ui/ResponseFormatter.js';
 import { AgentRegistry } from '../core/AgentRegistry.js';
 import { HumanInLoopUI } from './HumanInLoopUI.js';
@@ -307,7 +307,7 @@ class SmartAgentsMCPServer {
    */
   private generateAlternatives(
     selectedAgent: AgentType,
-    analysis: any
+    analysis: TaskAnalysis
   ): Array<{ agent: AgentType; confidence: number; reason: string }> {
     const alternatives: Array<{ agent: AgentType; confidence: number; reason: string }> = [];
 
@@ -343,7 +343,7 @@ class SmartAgentsMCPServer {
   /**
    * Estimate confidence based on analysis
    */
-  private estimateConfidence(analysis: any, routing: any): number {
+  private estimateConfidence(analysis: TaskAnalysis, routing: RoutingDecision): number {
     // Simple confidence estimation based on complexity match
     const baseConfidence = 0.75;
 

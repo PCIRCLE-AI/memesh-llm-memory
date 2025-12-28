@@ -241,7 +241,7 @@ Smart Agents 使用 **Prompt Enhancement Mode**：
 ## 📚 延伸閱讀
 
 - **[Evolution 系統文檔](docs/EVOLUTION.md)** - 了解 agents 如何自我學習
-- **[架構文檔](ARCHITECTURE.md)** - 深入了解系統設計
+- **[架構文檔](docs/architecture/OVERVIEW.md)** - 深入了解系統設計
 - **[設置指南](docs/guides/SETUP.md)** - 詳細的安裝說明
 
 ---

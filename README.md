@@ -184,7 +184,17 @@ RAG Agent 支援自動索引投放的檔案，讓您輕鬆建立知識庫：
 %USERPROFILE%\Documents\smart-agents-knowledge\
 ```
 
-**啟動檔案監控**：
+**✨ 自動啟動（推薦）**：
+
+當您配置 RAG 功能（設定 OPENAI_API_KEY）後，**檔案監控會自動啟動**：
+
+- 每次啟動 Claude Code 新 session，MCP server 會自動檢測 RAG 是否啟用
+- 如果啟用，會自動開始監控 `~/Documents/smart-agents-knowledge/`
+- **無需手動運行任何命令** - 完全零配置
+
+**手動啟動（可選）**：
+
+如果您想單獨運行 File Watcher（不透過 MCP server）：
 
 ```bash
 # 啟動 File Watcher（自動創建資料夾）
@@ -202,10 +212,11 @@ npm run rag:watch
 ```
 
 **使用方式**：
-1. 啟動 File Watcher：`npm run rag:watch`
-2. 將檔案（.md, .txt, .json, .pdf, .docx）投放到上述資料夾
-3. File Watcher 會自動檢測並索引新檔案
-4. 所有 agents 立即可以搜尋這些知識
+1. **自動模式**（推薦）：配置 RAG 後重啟 Claude Code - File Watcher 自動運行
+2. **手動模式**：執行 `npm run rag:watch`
+3. 將檔案（.md, .txt, .json, .pdf, .docx）投放到上述資料夾
+4. File Watcher 會自動檢測並索引新檔案
+5. 所有 agents 立即可以搜尋這些知識
 
 **支援的檔案格式**：
 - Markdown (`.md`)

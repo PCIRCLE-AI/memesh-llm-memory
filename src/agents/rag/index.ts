@@ -3,7 +3,7 @@
  */
 
 import { VectorStore } from './vectorstore.js';
-import { EmbeddingService } from './embeddings.js';
+import { EmbeddingProviderFactory, type IEmbeddingProvider } from './embedding-provider.js';
 import { Reranker } from './reranker.js';
 import type {
   DocumentInput,
@@ -17,13 +17,13 @@ import type {
 
 export class RAGAgent {
   private vectorStore: VectorStore;
-  private embeddings: EmbeddingService;
+  private embeddings: IEmbeddingProvider;
   private reranker: Reranker;
   private isInitialized = false;
 
   constructor() {
     this.vectorStore = new VectorStore();
-    this.embeddings = new EmbeddingService();
+    this.embeddings = EmbeddingProviderFactory.create();
     this.reranker = new Reranker();
   }
 
@@ -98,12 +98,6 @@ export class RAGAgent {
     console.log(`Indexing ${documents.length} documents...`);
     console.log(`Batch size: ${batchSize}, Max concurrent: ${maxConcurrent}`);
 
-    // 估算成本
-    const estimatedCost = this.embeddings.estimateCost(
-      documents.map((d) => d.content)
-    );
-    console.log(`Estimated cost: $${estimatedCost.toFixed(4)}`);
-
     const startTime = Date.now();
     let processedCount = 0;
 
@@ -113,7 +107,7 @@ export class RAGAgent {
 
       // 批次生成 embeddings
       const contents = batch.map((d) => d.content);
-      const embeddings = await this.embeddings.createEmbeddingsBatch(contents);
+      const embeddings = await this.embeddings.createEmbeddings(contents);
 
       // 準備文檔輸入
       const docsToAdd: DocumentInput[] = batch.map((doc, index) => ({
@@ -292,7 +286,6 @@ export class RAGAgent {
   async clearAll(): Promise<void> {
     this.ensureInitialized();
     await this.vectorStore.clear();
-    this.embeddings.resetCostTracker();
     this.reranker.clearCache();
     console.log('All documents cleared');
   }
@@ -334,11 +327,13 @@ export class RAGAgent {
    */
   private async printStats(): Promise<void> {
     const stats = await this.getStats();
+    const modelInfo = this.embeddings.getModelInfo();
     console.log('\n=== RAG Agent Status ===');
     console.log(`Collection: ${stats.collectionInfo.name}`);
     console.log(`Documents: ${stats.documentCount}`);
-    console.log(`Embedding model: ${this.embeddings.getModel()}`);
-    console.log(`Embedding dimension: ${this.embeddings.getModelDimension()}`);
+    console.log(`Embedding provider: ${modelInfo.provider}`);
+    console.log(`Embedding model: ${modelInfo.model}`);
+    console.log(`Embedding dimension: ${modelInfo.dimensions}`);
     console.log('========================\n');
   }
 }
@@ -357,7 +352,7 @@ export async function getRAGAgent(): Promise<RAGAgent> {
 }
 
 // 匯出類型和組件
-export { VectorStore, EmbeddingService, Reranker };
+export { VectorStore, EmbeddingProviderFactory, Reranker };
 export type {
   DocumentInput,
   SearchResult,
@@ -366,4 +361,5 @@ export type {
   BatchOptions,
   EmbeddingStats,
   DocumentMetadata,
+  IEmbeddingProvider,
 };

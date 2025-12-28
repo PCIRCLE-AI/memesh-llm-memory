@@ -235,6 +235,24 @@ export class EmbeddingService {
     };
     return dimensions[this.model] || 1536;
   }
+
+  /**
+   * 統一接口：批量生成 embeddings（別名方法）
+   */
+  async createEmbeddings(texts: string[]): Promise<number[][]> {
+    return this.createEmbeddingsBatch(texts);
+  }
+
+  /**
+   * 統一接口：取得模型資訊
+   */
+  getModelInfo(): { provider: string; model: string; dimensions: number } {
+    return {
+      provider: 'openai',
+      model: this.model,
+      dimensions: this.getModelDimension(),
+    };
+  }
 }
 
 /**

@@ -18,6 +18,8 @@ import {
   TaskStatus,
 } from './types.js';
 import { logger } from '../utils/logger.js';
+import { UIEventBus } from '../ui/UIEventBus.js';
+import { AttributionManager } from '../ui/AttributionManager.js';
 
 interface WorkerHandle {
   promise: Promise<any>;
@@ -31,12 +33,20 @@ export class BackgroundExecutor {
   private resourceMonitor: ResourceMonitor;
   private tasks: Map<string, BackgroundTask>;
   private processingQueue: boolean = false;
+  private eventBus?: UIEventBus;
+  private attributionManager?: AttributionManager;
 
-  constructor(resourceMonitor: ResourceMonitor) {
+  constructor(resourceMonitor: ResourceMonitor, eventBus?: UIEventBus) {
     this.taskQueue = new ExecutionQueue();
     this.activeWorkers = new Map();
     this.resourceMonitor = resourceMonitor;
     this.tasks = new Map();
+    this.eventBus = eventBus;
+
+    // Create AttributionManager if UIEventBus provided
+    if (this.eventBus) {
+      this.attributionManager = new AttributionManager(this.eventBus);
+    }
   }
 
   /**
@@ -47,9 +57,14 @@ export class BackgroundExecutor {
     // Check if resources are available (but only fail if it's a hard limit)
     const resourceCheck = this.resourceMonitor.canRunBackgroundTask(config);
 
-    // Allow queueing if only issue is max concurrent agents (but not if max is 0)
-    const canQueue = resourceCheck.reason?.includes('Max concurrent background agents') &&
-                     !resourceCheck.reason?.includes('(0)');
+    // Allow queueing for temporary resource constraints:
+    // - Max concurrent agents reached (but not if max is 0)
+    // - CPU/Memory temporarily insufficient (task can wait for resources)
+    const canQueue =
+      (resourceCheck.reason?.includes('Max concurrent background agents') &&
+       !resourceCheck.reason?.includes('(0)')) ||
+      (resourceCheck.reason?.includes('requires') &&
+       resourceCheck.reason?.includes('available'));
 
     if (!resourceCheck.canExecute && !canQueue) {
       throw new Error(
@@ -158,6 +173,18 @@ export class BackgroundExecutor {
           currentStage: stage,
         };
         this.tasks.set(taskId, currentTask);
+
+        // Emit UIEventBus progress event if available
+        if (this.eventBus) {
+          this.eventBus.emitProgress({
+            agentId: taskId,
+            agentType: 'background-executor',
+            taskDescription: currentTask.task.description || 'Background task',
+            progress: Math.max(0, Math.min(1, progress)),
+            currentStage: stage,
+            startTime: currentTask.startTime,
+          });
+        }
 
         // Call progress callback if provided
         config.callbacks?.onProgress?.(progress);
@@ -438,6 +465,16 @@ export class BackgroundExecutor {
     this.tasks.set(taskId, task);
 
     logger.info(`BackgroundExecutor: Task ${taskId} manually completed`);
+
+    // Emit success attribution if AttributionManager available
+    if (this.attributionManager) {
+      const timeSaved = this.estimateTimeSaved(task);
+      this.attributionManager.recordSuccess(
+        [taskId],
+        task.task.description || 'Background task completed',
+        { timeSaved }
+      );
+    }
   }
 
   /**
@@ -456,6 +493,16 @@ export class BackgroundExecutor {
     this.tasks.set(taskId, task);
 
     logger.error(`BackgroundExecutor: Task ${taskId} manually failed:`, error);
+
+    // Emit error attribution if AttributionManager available
+    if (this.attributionManager) {
+      this.attributionManager.recordError(
+        [taskId],
+        task.task.description || 'Background task failed',
+        error,
+        false // Don't suggest GitHub issue for manual failures
+      );
+    }
   }
 
   /**

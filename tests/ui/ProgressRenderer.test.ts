@@ -62,7 +62,7 @@ describe('ProgressRenderer', () => {
       expect(renderer.isRunning()).toBe(false);
     });
 
-    it('should stop rendering and clear interval', (done) => {
+    it('should stop rendering and clear interval', async () => {
       const getState = vi.fn().mockReturnValue({
         activeAgents: new Map(),
         recentEvents: [],
@@ -80,16 +80,14 @@ describe('ProgressRenderer', () => {
       renderer.start(getState);
       expect(renderer.isRunning()).toBe(true);
 
-      setTimeout(() => {
-        renderer.stop();
-        expect(renderer.isRunning()).toBe(false);
-        done();
-      }, 50);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      renderer.stop();
+      expect(renderer.isRunning()).toBe(false);
     });
   });
 
   describe('Throttling', () => {
-    it('should throttle render calls to minimum interval', (done) => {
+    it('should throttle render calls to minimum interval', async () => {
       const getState = vi.fn().mockReturnValue({
         activeAgents: new Map(),
         recentEvents: [],
@@ -107,16 +105,14 @@ describe('ProgressRenderer', () => {
       renderer.start(getState);
 
       // Wait for some updates
-      setTimeout(() => {
-        const callCount = getState.mock.calls.length;
-        renderer.stop();
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      const callCount = getState.mock.calls.length;
+      renderer.stop();
 
-        // Should not call too frequently (100ms interval + 100ms throttle = ~200ms per call minimum)
-        // In 250ms, should have ~1-2 calls, not 25 calls
-        expect(callCount).toBeLessThan(5);
-        expect(callCount).toBeGreaterThan(0);
-        done();
-      }, 250);
+      // Should not call too frequently (100ms interval + 100ms throttle = ~200ms per call minimum)
+      // In 250ms, should have ~1-2 calls, not 25 calls
+      expect(callCount).toBeLessThan(5);
+      expect(callCount).toBeGreaterThan(0);
     });
   });
 

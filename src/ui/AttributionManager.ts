@@ -1,17 +1,19 @@
 // src/ui/AttributionManager.ts
 import { randomBytes } from 'crypto';
 import type { AttributionMessage, GitHubIssueSuggestion } from './types.js';
+import { UIEventBus } from './UIEventBus.js';
 
 /**
  * Manages attribution tracking for success/error events
- * Standalone version for MCP server (no UIEventBus dependency)
+ * Integrated with UIEventBus for event emission
  */
 export class AttributionManager {
   private attributions: AttributionMessage[] = [];
   private readonly maxStoredAttributions: number = 100;
+  private eventBus: UIEventBus;
 
-  constructor() {
-    // No dependencies needed
+  constructor(eventBus: UIEventBus) {
+    this.eventBus = eventBus;
   }
 
   /**
@@ -32,7 +34,7 @@ export class AttributionManager {
     };
 
     this.storeAttribution(attribution);
-    // Attribution stored in memory, retrievable via getRecentAttributions()
+    this.eventBus.emitAttribution(attribution); // Emit attribution event
   }
 
   /**
@@ -61,7 +63,7 @@ export class AttributionManager {
     };
 
     this.storeAttribution(attribution);
-    // Attribution stored in memory, retrievable via getRecentAttributions()
+    this.eventBus.emitAttribution(attribution); // Emit attribution event
   }
 
   /**
@@ -71,7 +73,7 @@ export class AttributionManager {
     attribution: AttributionMessage,
     error: Error
   ): GitHubIssueSuggestion {
-    const title = `[smart-agents] Error: ${error.message.substring(0, 80)}`;
+    const title = `Error: ${error.message.substring(0, 80)}`;
 
     const sanitizedStack = this.sanitizeSensitiveData(error.stack || '');
     const sanitizedMessage = this.sanitizeSensitiveData(error.message);
@@ -111,7 +113,7 @@ ${sanitizedStack}
     return {
       title,
       body,
-      labels: ['bug', 'smart-agents', 'auto-reported'],
+      labels: ['bug', 'smart-agents'],
     };
   }
 

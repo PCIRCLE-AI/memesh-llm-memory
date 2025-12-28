@@ -16,24 +16,40 @@ export type ExecutionMode = 'sequential' | 'parallel';
  * Agent 類型 (專業化 Agents for MCP Server)
  */
 export type AgentType =
-  // 開發類
+  // Development Agents
   | 'code-reviewer'
   | 'test-writer'
   | 'debugger'
   | 'refactorer'
   | 'api-designer'
+  | 'db-optimizer'
+  | 'frontend-specialist'
+  | 'backend-specialist'
+  | 'development-butler'
 
-  // 分析類
+  // Analysis Agents
   | 'rag-agent'
   | 'research-agent'
   | 'architecture-agent'
   | 'data-analyst'
+  | 'performance-profiler'
 
-  // 知識類
+  // Knowledge Agents
   | 'knowledge-agent'
-  | 'documentation-writer'
 
-  // 通用 (fallback)
+  // Operations Agents
+  | 'devops-engineer'
+  | 'security-auditor'
+
+  // Creative Agents
+  | 'technical-writer'
+  | 'ui-designer'
+
+  // Utility Agents
+  | 'migration-assistant'
+  | 'api-integrator'
+
+  // General Agent (fallback)
   | 'general-agent';
 
 /**
@@ -70,6 +86,7 @@ export interface Task {
  */
 export interface TaskAnalysis {
   taskId: string;
+  taskType: string; // Short description of task type
   complexity: TaskComplexity;
   estimatedTokens: number;
   estimatedCost: number;

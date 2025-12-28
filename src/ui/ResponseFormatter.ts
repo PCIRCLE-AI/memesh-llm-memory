@@ -42,7 +42,7 @@ export interface EnhancedPrompt {
   systemPrompt: string;
   userPrompt: string;
   suggestedModel?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -63,33 +63,61 @@ export class ResponseFormatter {
     const sections: string[] = [];
 
     // Header - Agent Type and Status
-    sections.push(this.formatHeader(response));
+    try {
+      sections.push(this.formatHeader(response));
+    } catch (error) {
+      sections.push(chalk.red('[Error formatting header]'));
+    }
 
     // Task Description
-    sections.push(this.formatTaskDescription(response.taskDescription));
+    try {
+      sections.push(this.formatTaskDescription(response.taskDescription));
+    } catch (error) {
+      sections.push(chalk.gray('Task: [Error formatting description]'));
+    }
 
     // Enhanced Prompt (if Prompt Enhancement Mode)
     if (response.enhancedPrompt) {
-      sections.push(this.formatEnhancedPrompt(response.enhancedPrompt));
+      try {
+        sections.push(this.formatEnhancedPrompt(response.enhancedPrompt));
+      } catch (error) {
+        sections.push(chalk.magenta('[Error formatting enhanced prompt]'));
+      }
     }
 
     // Results (if available)
     if (response.results && response.status === 'success') {
-      sections.push(this.formatResults(response.results));
+      try {
+        sections.push(this.formatResults(response.results));
+      } catch (error) {
+        sections.push(chalk.green('Results: [Error formatting results]'));
+      }
     }
 
     // Error (if failed)
     if (response.error && response.status === 'error') {
-      sections.push(this.formatError(response.error));
+      try {
+        sections.push(this.formatError(response.error));
+      } catch (error) {
+        sections.push(chalk.red('[Error formatting error details]'));
+      }
     }
 
     // Metadata - Duration, Tokens, Model
     if (response.metadata) {
-      sections.push(this.formatMetadata(response.metadata));
+      try {
+        sections.push(this.formatMetadata(response.metadata));
+      } catch (error) {
+        // Silently skip metadata on error (non-critical)
+      }
     }
 
     // Attribution Footer
-    sections.push(this.formatAttribution());
+    try {
+      sections.push(this.formatAttribution());
+    } catch (error) {
+      // Silently skip attribution on error (non-critical)
+    }
 
     return sections.join('\n\n');
   }
@@ -143,7 +171,7 @@ export class ResponseFormatter {
   /**
    * Format results
    */
-  private formatResults(results: any): string {
+  private formatResults(results: unknown): string {
     const sections: string[] = [chalk.bold.green('Results:')];
 
     // Handle different result types
@@ -151,8 +179,8 @@ export class ResponseFormatter {
       sections.push(chalk.white(results));
     } else if (Array.isArray(results)) {
       sections.push(this.formatArray(results));
-    } else if (typeof results === 'object') {
-      sections.push(this.formatObject(results));
+    } else if (typeof results === 'object' && results !== null) {
+      sections.push(this.formatObject(results as Record<string, unknown>));
     } else {
       sections.push(chalk.white(String(results)));
     }
@@ -210,14 +238,14 @@ export class ResponseFormatter {
   /**
    * Format array as table (if objects) or list
    */
-  private formatArray(arr: any[]): string {
+  private formatArray(arr: unknown[]): string {
     if (arr.length === 0) {
       return chalk.gray('(empty array)');
     }
 
     // If array of objects, format as table
     if (typeof arr[0] === 'object' && arr[0] !== null) {
-      return this.formatTable(arr);
+      return this.formatTable(arr as Array<Record<string, unknown>>);
     }
 
     // Otherwise, format as list
@@ -227,11 +255,11 @@ export class ResponseFormatter {
   /**
    * Format object as key-value pairs
    */
-  private formatObject(obj: Record<string, any>): string {
+  private formatObject(obj: Record<string, unknown>): string {
     const lines: string[] = [];
 
     for (const [key, value] of Object.entries(obj)) {
-      const formattedValue = typeof value === 'object'
+      const formattedValue = typeof value === 'object' && value !== null
         ? JSON.stringify(value, null, 2)
         : String(value);
 
@@ -244,7 +272,7 @@ export class ResponseFormatter {
   /**
    * Format array of objects as table
    */
-  private formatTable(data: any[]): string {
+  private formatTable(data: Array<Record<string, unknown>>): string {
     if (data.length === 0) return '';
 
     // Get all unique keys from all objects
@@ -306,10 +334,18 @@ export class ResponseFormatter {
 
   /**
    * Truncate text to maximum length
+   * Properly handles Unicode characters (emoji, CJK, etc.) by splitting on code points
    */
   private truncateText(text: string, maxLength: number): string {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + chalk.gray('... (truncated)');
+    // Use Array.from to properly handle Unicode code points
+    // This prevents breaking multi-byte characters (emoji, surrogate pairs)
+    const chars = Array.from(text);
+
+    if (chars.length <= maxLength) {
+      return text;
+    }
+
+    return chars.slice(0, maxLength).join('') + chalk.gray('... (truncated)');
   }
 
   /**

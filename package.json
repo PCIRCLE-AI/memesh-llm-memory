@@ -26,7 +26,8 @@
     "rag:index": "echo 'RAG indexing not yet implemented'",
     "dashboard": "tsx src/dashboard/server.ts",
     "demo:architecture": "tsx src/agents/architecture/demo.ts",
-    "demo:dashboard": "tsx examples/dashboard-demo.ts"
+    "demo:dashboard": "tsx examples/dashboard-demo.ts",
+    "mcp": "node dist/mcp/server.js"
   },
   "keywords": [
     "ai",

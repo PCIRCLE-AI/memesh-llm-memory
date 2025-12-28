@@ -24,6 +24,9 @@ import { Task, AgentType, TaskAnalysis, RoutingDecision } from '../orchestrator/
 import { ResponseFormatter, AgentResponse } from '../ui/ResponseFormatter.js';
 import { AgentRegistry } from '../core/AgentRegistry.js';
 import { HumanInLoopUI } from './HumanInLoopUI.js';
+import { FeedbackCollector } from '../evolution/FeedbackCollector.js';
+import { PerformanceTracker } from '../evolution/PerformanceTracker.js';
+import { LearningManager } from '../evolution/LearningManager.js';
 
 // Agent Registry is now used instead of static AGENT_TOOLS array
 // See src/core/AgentRegistry.ts for agent definitions
@@ -37,6 +40,9 @@ class SmartAgentsMCPServer {
   private formatter: ResponseFormatter;
   private agentRegistry: AgentRegistry;
   private ui: HumanInLoopUI;
+  private feedbackCollector: FeedbackCollector;
+  private performanceTracker: PerformanceTracker;
+  private learningManager: LearningManager;
 
   constructor() {
     this.server = new Server(
@@ -55,6 +61,11 @@ class SmartAgentsMCPServer {
     this.formatter = new ResponseFormatter();
     this.agentRegistry = new AgentRegistry();
     this.ui = new HumanInLoopUI();
+
+    // Initialize evolution system
+    this.performanceTracker = new PerformanceTracker();
+    this.learningManager = new LearningManager(this.performanceTracker);
+    this.feedbackCollector = new FeedbackCollector(this.learningManager);
 
     this.setupHandlers();
   }

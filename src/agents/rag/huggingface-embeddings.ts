@@ -1,8 +1,15 @@
 /**
  * HuggingFace Inference API Embeddings 整合
- * 
- * 提供免費的 embedding 服務作為 OpenAI 的替代方案
+ *
+ * ⚠️ WARNING: HuggingFace Inference API 基礎架構已改變
+ * - 舊端點 api-inference.huggingface.co 已廢棄
+ * - 新端點 router.huggingface.co 不建議直接 HTTP 存取
+ * - 官方建議使用 Python InferenceClient（無 JS/TS 版本）
+ * - 此實作可能不穩定，建議使用 OpenAI embeddings
+ *
+ * 提供免費的 embedding 服務作為 OpenAI 的替代方案（實驗性）
  * API 文檔: https://huggingface.co/docs/api-inference/
+ * 新架構: https://huggingface.co/docs/inference-providers/
  */
 
 import { logger } from '../../utils/logger.js';

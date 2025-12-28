@@ -86,7 +86,7 @@ export class TaskAnalyzer {
   async analyze(task: Task): Promise<TaskAnalysis> {
     const complexity = this.determineComplexity(task);
     const estimatedTokens = this.estimateTokens(task, complexity);
-    const requiredAgents = this.determineRequiredAgents(complexity);
+    const requiredAgents = this.detectRequiredCapabilities(task, complexity);
     const executionMode = this.determineExecutionMode(task);
     const estimatedCost = this.calculateEstimatedCost(estimatedTokens, complexity);
     const reasoning = this.generateReasoning(task, complexity, estimatedTokens);
@@ -168,23 +168,73 @@ export class TaskAnalyzer {
   }
 
   /**
-   * 確定所需 Agent 類型（基於複雜度建議專業 Agent）
+   * 檢測任務所需能力（基於任務描述關鍵字分析）
+   * 改進：不再僅基於複雜度，而是分析任務內容來檢測實際需要的能力
    */
-  private determineRequiredAgents(complexity: TaskComplexity): AgentType[] {
-    // 基於複雜度建議 Agent
-    // 注意：這裡返回的是建議的 Agent，實際路由會由 AgentRouter 根據能力需求決定
-    switch (complexity) {
-      case 'simple':
-        return ['general-agent']; // 簡單任務使用通用 Agent
-      case 'medium':
-        return ['general-agent']; // 中等任務也使用通用 Agent，除非有特定需求
-      case 'complex':
-        // 複雜任務可能需要多個專業 Agent 協作
-        // AgentRouter 會根據實際任務內容選擇最合適的專業 Agent
-        return ['general-agent', 'architecture-agent'];
-      default:
-        return ['general-agent'];
+  private detectRequiredCapabilities(task: Task, complexity: TaskComplexity): AgentType[] {
+    const description = task.description.toLowerCase();
+    const detectedAgents: AgentType[] = [];
+
+    // 關鍵字到 Agent 的映射
+    const keywordToAgent: Record<string, { keywords: string[]; agent: AgentType }> = {
+      'code-review': {
+        keywords: ['review', 'code review', 'check code', 'audit', 'quality', 'best practices'],
+        agent: 'code-reviewer',
+      },
+      'testing': {
+        keywords: ['test', 'testing', 'unit test', 'integration test', 'e2e', 'tdd', 'coverage'],
+        agent: 'test-writer',
+      },
+      'debugging': {
+        keywords: ['debug', 'bug', 'fix', 'error', 'issue', 'troubleshoot', 'investigate'],
+        agent: 'debugger',
+      },
+      'refactoring': {
+        keywords: ['refactor', 'improve', 'optimize', 'clean up', 'restructure', 'simplify'],
+        agent: 'refactorer',
+      },
+      'api-design': {
+        keywords: ['api', 'endpoint', 'rest', 'graphql', 'interface design'],
+        agent: 'api-designer',
+      },
+      'rag-search': {
+        keywords: ['search', 'retrieve', 'knowledge', 'vector', 'embedding', 'query'],
+        agent: 'rag-agent',
+      },
+      'research': {
+        keywords: ['research', 'investigate', 'study', 'analyze', 'compare', 'survey'],
+        agent: 'research-agent',
+      },
+      'architecture': {
+        keywords: ['architecture', 'design system', 'structure', 'architecture pattern', 'system design'],
+        agent: 'architecture-agent',
+      },
+      'data-analysis': {
+        keywords: ['data analysis', 'statistics', 'metrics', 'analytics', 'visualization'],
+        agent: 'data-analyst',
+      },
+      'documentation': {
+        keywords: ['document', 'documentation', 'readme', 'api docs', 'guide', 'tutorial'],
+        agent: 'documentation-writer',
+      },
+    };
+
+    // 檢測任務描述中的關鍵字
+    for (const [capability, { keywords, agent }] of Object.entries(keywordToAgent)) {
+      if (keywords.some(keyword => description.includes(keyword))) {
+        detectedAgents.push(agent);
+      }
     }
+
+    // 如果沒有檢測到特定能力，根據複雜度返回默認 Agent
+    if (detectedAgents.length === 0) {
+      if (complexity === 'complex') {
+        return ['general-agent', 'architecture-agent'];
+      }
+      return ['general-agent'];
+    }
+
+    return detectedAgents;
   }
 
   /**

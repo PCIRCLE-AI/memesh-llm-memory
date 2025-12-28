@@ -10,9 +10,11 @@ export const CLAUDE_MODELS = {
 
   // 複雜任務專用 - 深度推理和創意寫作
   OPUS: 'claude-3-opus-20240229',
+  OPUS_4_5: 'claude-opus-4-5-20251101',
 
   // 快速響應 - 簡單任務
   HAIKU: 'claude-3-haiku-20240307',
+  HAIKU_3_5: 'claude-3-5-haiku-20241022',
   HAIKU_4: 'claude-haiku-4-20250514',
 } as const;
 
@@ -58,9 +60,17 @@ export const MODEL_COSTS = {
     input: 15.0,  // Claude 3 Opus pricing
     output: 75.0,
   },
+  [CLAUDE_MODELS.OPUS_4_5]: {
+    input: 15.0,  // Claude Opus 4.5 pricing
+    output: 75.0,
+  },
   [CLAUDE_MODELS.HAIKU]: {
     input: 0.25,  // Claude 3 Haiku pricing
     output: 1.25,
+  },
+  [CLAUDE_MODELS.HAIKU_3_5]: {
+    input: 0.80,  // Claude 3.5 Haiku pricing
+    output: 4.0,
   },
   [CLAUDE_MODELS.HAIKU_4]: {
     input: 0.80,  // Claude Haiku 4 pricing

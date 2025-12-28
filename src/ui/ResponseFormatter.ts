@@ -24,7 +24,7 @@ export interface AgentResponse {
   agentType: string;
   taskDescription: string;
   status: 'success' | 'error' | 'partial';
-  results?: any;
+  results?: Record<string, unknown> | string | Array<unknown>;
   enhancedPrompt?: EnhancedPrompt;
   error?: Error;
   metadata?: {
@@ -51,6 +51,9 @@ export interface EnhancedPrompt {
  * Formats agent responses into beautiful Terminal output
  */
 export class ResponseFormatter {
+  // Configuration constants
+  private readonly MAX_PROMPT_LENGTH = 300;
+  private readonly MAX_STACK_LENGTH = 500;
   /**
    * Format complete agent response
    * @param response Agent execution result
@@ -123,11 +126,11 @@ export class ResponseFormatter {
 
     // System Prompt
     sections.push(chalk.gray('System:'));
-    sections.push(chalk.white(this.truncateText(prompt.systemPrompt, 300)));
+    sections.push(chalk.white(this.truncateText(prompt.systemPrompt, this.MAX_PROMPT_LENGTH)));
 
     // User Prompt
     sections.push(chalk.gray('User:'));
-    sections.push(chalk.white(this.truncateText(prompt.userPrompt, 300)));
+    sections.push(chalk.white(this.truncateText(prompt.userPrompt, this.MAX_PROMPT_LENGTH)));
 
     // Suggested Model
     if (prompt.suggestedModel) {
@@ -167,7 +170,7 @@ export class ResponseFormatter {
 
     if (error.stack) {
       sections.push(chalk.gray('Stack Trace:'));
-      sections.push(chalk.gray(this.truncateText(error.stack, 500)));
+      sections.push(chalk.gray(this.truncateText(error.stack, this.MAX_STACK_LENGTH)));
     }
 
     return sections.join('\n');

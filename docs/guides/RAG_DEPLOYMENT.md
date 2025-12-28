@@ -52,35 +52,50 @@ npm install
 cp .env.example .env
 ```
 
-### 2. 配置 .env
+### 2. 配置 OpenAI API Key
 
-#### 推薦配置：OpenAI Embeddings（穩定可靠）
+RAG Agent 使用 OpenAI Embeddings API（穩定可靠）
+
+#### 方式 1：環境變數預先設定
+
+```bash
+cp .env.example .env
+```
+
+編輯 `.env` 文件：
 
 ```env
-# OpenAI API - 推薦使用
+# OpenAI Embeddings API
 OPENAI_API_KEY=sk-xxxxx
-OPENAI_EMBEDDING_MODEL=text-embedding-3-small
-
-# 明確指定使用 OpenAI（可選，系統會自動偵測）
-EMBEDDING_PROVIDER=openai
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small  # 可選，預設值
 ```
 
 **成本參考**：
 - text-embedding-3-small: $0.02 / 1M tokens (~62,500 pages of text)
 - text-embedding-3-large: $0.13 / 1M tokens (更高品質)
 
-#### 實驗性選項：HuggingFace Embeddings（免費但不穩定）
+#### 方式 2：使用時互動式設定
 
-```env
-# HuggingFace API - 免費但可能不穩定
-HUGGINGFACE_API_KEY=hf_xxxxx
-HUGGINGFACE_MODEL=sentence-transformers/all-MiniLM-L6-v2
+如果沒有預先設定 API key，第一次使用時會提示輸入：
 
-# 明確指定使用 HuggingFace
-EMBEDDING_PROVIDER=huggingface
+```typescript
+const rag = new RAGAgent();
+await rag.initialize();
+
+// 系統會顯示 RAG 功能說明並提示輸入 API key
 ```
 
-⚠️ **警告**：HuggingFace Inference API 基礎架構已改變，直接 HTTP 存取不再是官方建議的做法。此整合可能不穩定，僅建議用於開發測試。生產環境請使用 OpenAI embeddings。
+#### 方式 3：程式碼中啟用
+
+```typescript
+const rag = new RAGAgent();
+await rag.initialize(); // RAG 功能 disabled
+
+// 稍後啟用
+await rag.enableRAG('sk-xxxxx'); // 提供 API key
+// 或
+await rag.enableRAG(); // 互動式提示
+```
 
 ### 3. 運行 RAG Agent
 
@@ -522,19 +537,33 @@ chmod -R 750 data/vectorstore/
 - [ ] ✅ 設置日誌輪轉
 - [ ] ✅ 執行健康檢查
 
-## Vectra vs ChromaDB 比較
+## 技術架構說明
 
-| 特性 | Vectra (目前使用) | ChromaDB (已移除) |
-|------|------------------|------------------|
-| **部署** | 零配置，npm install 即可 | 需要 Docker 或 Python server |
-| **依賴** | 純 Node.js，零依賴 | Docker + Python |
-| **資料存儲** | 本地檔案（data/vectorstore/） | 需要 SQLite + 向量檔案 |
-| **備份** | 簡單 tar 壓縮 | Docker volume 或 Python 腳本 |
-| **性能** | < 100ms (本地檔案) | < 500ms (HTTP 請求) |
-| **維護** | 極低 | 需要監控 Docker 容器 |
-| **成本** | $0 基礎設施 | Docker 資源成本 |
+### Vectra 向量資料庫
+
+Smart-Agents RAG 使用 Vectra 作為向量資料庫：
+
+| 特性 | 說明 |
+|------|------|
+| **部署** | 零配置，npm install 即可 |
+| **依賴** | 純 Node.js，零額外依賴 |
+| **資料存儲** | 本地檔案（data/vectorstore/） |
+| **備份** | 簡單 tar 壓縮即可 |
+| **性能** | < 100ms (本地檔案存取) |
+| **維護** | 零維護成本 |
+| **基礎設施成本** | $0 |
 
 **選擇 Vectra 的原因**：簡單、快速、零維護成本。
+
+### OpenAI Embeddings API
+
+使用 OpenAI Embeddings API 的優勢：
+
+- ✅ **穩定可靠** - 官方維護的 API，穩定性高
+- ✅ **簡單整合** - 官方 SDK 支援完善
+- ✅ **高品質** - text-embedding-3-small/large 模型品質優秀
+- ✅ **成本實惠** - $0.02 / 1M tokens，約 62,500 頁文本
+- ✅ **無需維護** - 雲端服務，無需自行部署
 
 ## 生產環境建議
 

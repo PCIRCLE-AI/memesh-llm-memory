@@ -1,15 +1,13 @@
 /**
- * Embedding Provider 抽象層
- * 
- * 統一 OpenAI 和 HuggingFace 的接口
+ * Embedding Provider - OpenAI Embeddings Only
+ *
+ * Simplified to use only OpenAI embeddings API for stability and reliability
  */
 
 import { EmbeddingService } from './embeddings.js';
-import { HuggingFaceEmbeddingService } from './huggingface-embeddings.js';
 import { logger } from '../../utils/logger.js';
 import type { CostTracker } from './types.js';
-
-export type EmbeddingProviderType = 'openai' | 'huggingface';
+import * as readline from 'readline';
 
 /**
  * 統一的 Embedding Provider 接口
@@ -23,83 +21,144 @@ export interface IEmbeddingProvider {
 }
 
 /**
+ * RAG 功能說明
+ */
+const RAG_BENEFITS = `
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                    🧠 Smart-Agents RAG Features                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+啟用 RAG (Retrieval-Augmented Generation) 功能將為您的 AI agents 帶來：
+
+✨ 核心優勢：
+  • 📚 知識庫管理：索引並搜尋大量文檔、代碼庫、筆記
+  • 🔍 語義搜尋：基於含義而非關鍵字的智能搜尋
+  • 🎯 精準檢索：快速找到最相關的資訊片段
+  • 💡 上下文增強：為 AI 回應提供準確的背景知識
+  • 📊 批次處理：高效處理數千份文件
+
+🚀 實際應用場景：
+  • 代碼庫問答：「這個專案如何處理認證？」
+  • 文檔查詢：「我們的 API 限流策略是什麼？」
+  • 知識管理：建立個人/團隊知識庫
+  • 技術研究：快速搜尋相關技術文檔
+
+💰 成本：
+  • OpenAI Embeddings: $0.02 / 1M tokens
+  • 約等於 62,500 頁文本
+  • 非常實惠的投資
+
+═══════════════════════════════════════════════════════════════════════════
+
+需要 OpenAI API Key 來啟用此功能。
+取得免費試用額度：https://platform.openai.com/signup
+`;
+
+/**
+ * 互動式提示取得 API Key
+ */
+async function promptForApiKey(): Promise<string | null> {
+  console.log(RAG_BENEFITS);
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    rl.question('\n請輸入您的 OpenAI API Key (或按 Enter 跳過): ', (answer) => {
+      rl.close();
+      const apiKey = answer.trim();
+
+      if (!apiKey) {
+        console.log('\n⚠️  跳過 RAG 功能設定。');
+        console.log('   您可以稍後設定 OPENAI_API_KEY 環境變數來啟用。\n');
+        resolve(null);
+      } else if (apiKey.startsWith('sk-')) {
+        console.log('\n✅ API Key 已設定！');
+        console.log('   💡 建議：將此 key 加入 .env 檔案以長期使用\n');
+        resolve(apiKey);
+      } else {
+        console.log('\n❌ 無效的 API Key 格式（應該以 "sk-" 開頭）\n');
+        resolve(null);
+      }
+    });
+  });
+}
+
+/**
  * Embedding Provider Factory
- * 
- * 根據配置創建對應的 provider
+ *
+ * 僅支援 OpenAI embeddings（穩定可靠）
  */
 export class EmbeddingProviderFactory {
   /**
    * 創建 embedding provider
-   * 
-   * 優先順序：
-   * 1. 環境變數指定的 provider (EMBEDDING_PROVIDER)
-   * 2. HuggingFace（如果有 API key）
-   * 3. OpenAI（如果有 API key）
-   * 4. 拋出錯誤（無可用 provider）
+   *
+   * 如果沒有 API key，會提示使用者輸入
    */
-  static create(preferredProvider?: EmbeddingProviderType): IEmbeddingProvider {
-    const envProvider = process.env.EMBEDDING_PROVIDER as EmbeddingProviderType | undefined;
-    const provider = preferredProvider || envProvider;
+  static async create(options: {
+    apiKey?: string;
+    interactive?: boolean;
+  } = {}): Promise<IEmbeddingProvider> {
+    let apiKey = options.apiKey || process.env.OPENAI_API_KEY;
 
-    // 如果指定了 provider，嘗試創建
-    if (provider === 'huggingface') {
-      const hfService = new HuggingFaceEmbeddingService();
-      if (hfService.isAvailable()) {
-        logger.info('Using HuggingFace Inference API for embeddings');
-        return hfService;
-      } else {
-        logger.warn('HuggingFace provider requested but API key not found');
+    // 如果沒有 API key 且允許互動模式
+    if (!apiKey && options.interactive) {
+      apiKey = await promptForApiKey() || undefined;
+
+      // 如果使用者提供了 key，設定到環境變數（本次執行有效）
+      if (apiKey) {
+        process.env.OPENAI_API_KEY = apiKey;
       }
     }
 
-    if (provider === 'openai') {
-      const openaiService = new EmbeddingService();
-      if (openaiService.isAvailable()) {
-        logger.info('Using OpenAI API for embeddings');
-        return openaiService;
-      } else {
-        logger.warn('OpenAI provider requested but API key not found');
-      }
-    }
+    const openaiService = new EmbeddingService(apiKey);
 
-    // 自動選擇可用的 provider
-    logger.info('Auto-detecting available embedding provider...');
-
-    // 優先選擇 HuggingFace（免費）
-    const hfService = new HuggingFaceEmbeddingService();
-    if (hfService.isAvailable()) {
-      logger.info('Auto-selected HuggingFace Inference API (free tier)');
-      return hfService;
-    }
-
-    // 其次選擇 OpenAI
-    const openaiService = new EmbeddingService();
     if (openaiService.isAvailable()) {
-      logger.info('Auto-selected OpenAI API for embeddings');
+      logger.info('Using OpenAI Embeddings API for RAG');
       return openaiService;
     }
 
     // 無可用 provider
+    const errorMessage = options.interactive
+      ? 'OpenAI API key is required for RAG features. Please provide a valid API key.'
+      : 'OpenAI API key not found. Please set OPENAI_API_KEY environment variable or pass apiKey parameter.';
+
+    throw new Error(errorMessage + '\n\nGet your API key at: https://platform.openai.com/api-keys');
+  }
+
+  /**
+   * 同步版本（不提示，僅檢查環境變數）
+   *
+   * @param options.apiKey - Optional API key
+   * @param options.optional - If true, returns null instead of throwing when no key available
+   */
+  static createSync(options: { apiKey?: string; optional?: boolean } = {}): IEmbeddingProvider | null {
+    const key = options.apiKey || process.env.OPENAI_API_KEY;
+    const openaiService = new EmbeddingService(key);
+
+    if (openaiService.isAvailable()) {
+      logger.info('Using OpenAI Embeddings API for RAG');
+      return openaiService;
+    }
+
+    // If optional, return null instead of throwing
+    if (options.optional) {
+      logger.info('RAG features disabled (no OpenAI API key configured)');
+      return null;
+    }
+
     throw new Error(
-      'No embedding provider available. ' +
-      'Please set either HUGGINGFACE_API_KEY or OPENAI_API_KEY. ' +
-      'HuggingFace is free: https://huggingface.co/settings/tokens'
+      'OpenAI API key not found. Please set OPENAI_API_KEY environment variable.\n' +
+      'Get your API key at: https://platform.openai.com/api-keys'
     );
   }
 
   /**
-   * 列出可用的 providers
+   * 檢查 OpenAI provider 是否可用
    */
-  static listAvailableProviders(): Array<{ provider: EmbeddingProviderType; available: boolean }> {
-    return [
-      {
-        provider: 'huggingface',
-        available: new HuggingFaceEmbeddingService().isAvailable(),
-      },
-      {
-        provider: 'openai',
-        available: new EmbeddingService().isAvailable(),
-      },
-    ];
+  static isAvailable(): boolean {
+    return new EmbeddingService().isAvailable();
   }
 }

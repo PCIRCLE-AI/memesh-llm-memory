@@ -28,6 +28,8 @@ import { FeedbackCollector } from '../evolution/FeedbackCollector.js';
 import { PerformanceTracker } from '../evolution/PerformanceTracker.js';
 import { LearningManager } from '../evolution/LearningManager.js';
 import { EvolutionMonitor } from '../evolution/EvolutionMonitor.js';
+import { getRAGAgent } from '../agents/rag/index.js';
+import { FileWatcher } from '../agents/rag/FileWatcher.js';
 
 // Agent Registry is now used instead of static AGENT_TOOLS array
 // See src/core/AgentRegistry.ts for agent definitions
@@ -45,6 +47,7 @@ class SmartAgentsMCPServer {
   private performanceTracker: PerformanceTracker;
   private learningManager: LearningManager;
   private evolutionMonitor: EvolutionMonitor;
+  private fileWatcher?: FileWatcher;
 
   constructor() {
     this.server = new Server(
@@ -480,7 +483,52 @@ class SmartAgentsMCPServer {
     // Server ready
     console.error('Smart-Agents MCP Server started');
     console.error(`Available agents: ${this.agentRegistry.getAgentCount()}`);
+
+    // Auto-start FileWatcher if RAG is enabled
+    await this.startFileWatcherIfEnabled();
+
     console.error('Waiting for requests...');
+  }
+
+  /**
+   * Auto-start FileWatcher if RAG is enabled
+   *
+   * This method checks if RAG functionality is enabled (by checking OPENAI_API_KEY)
+   * and automatically starts the FileWatcher to monitor the watch directory for new files.
+   *
+   * Files dropped into ~/Documents/smart-agents-knowledge/ will be automatically indexed.
+   */
+  private async startFileWatcherIfEnabled(): Promise<void> {
+    try {
+      // Check if OPENAI_API_KEY is configured
+      if (!process.env.OPENAI_API_KEY) {
+        console.error('RAG File Watcher: Skipped (no OpenAI API key)');
+        return;
+      }
+
+      // Initialize RAG Agent
+      const rag = await getRAGAgent();
+
+      if (!rag.isRAGEnabled()) {
+        console.error('RAG File Watcher: Skipped (RAG not enabled)');
+        return;
+      }
+
+      // Start FileWatcher
+      this.fileWatcher = new FileWatcher(rag, {
+        onIndexed: (files) => {
+          console.error(`RAG: Indexed ${files.length} file(s)`);
+        },
+        onError: (error, file) => {
+          console.error(`RAG Error: ${file || 'unknown'}:`, error.message);
+        },
+      });
+
+      await this.fileWatcher.start();
+      console.error(`RAG File Watcher: Started monitoring ${this.fileWatcher.getWatchDir()}`);
+    } catch (error) {
+      console.error('RAG File Watcher: Failed to start:', error);
+    }
   }
 }
 

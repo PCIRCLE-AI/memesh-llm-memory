@@ -1,18 +1,17 @@
 // src/ui/AttributionManager.ts
 import { randomBytes } from 'crypto';
-import type { UIEventBus } from './UIEventBus.js';
-import type { AttributionMessage, GitHubIssueSuggestion, ErrorDetails } from './types.js';
+import type { AttributionMessage, GitHubIssueSuggestion } from './types.js';
 
 /**
  * Manages attribution tracking for success/error events
+ * Standalone version for MCP server (no UIEventBus dependency)
  */
 export class AttributionManager {
-  private eventBus: UIEventBus;
   private attributions: AttributionMessage[] = [];
   private readonly maxStoredAttributions: number = 100;
 
-  constructor(eventBus: UIEventBus) {
-    this.eventBus = eventBus;
+  constructor() {
+    // No dependencies needed
   }
 
   /**
@@ -33,7 +32,7 @@ export class AttributionManager {
     };
 
     this.storeAttribution(attribution);
-    this.eventBus.emitAttribution(attribution);
+    // Attribution stored in memory, retrievable via getRecentAttributions()
   }
 
   /**
@@ -62,7 +61,7 @@ export class AttributionManager {
     };
 
     this.storeAttribution(attribution);
-    this.eventBus.emitAttribution(attribution);
+    // Attribution stored in memory, retrievable via getRecentAttributions()
   }
 
   /**

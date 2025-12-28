@@ -1,28 +1,34 @@
 /**
  * Smart-Agents Terminal UI System
  *
- * Beautiful, elegant terminal interface components
+ * MCP Server Response Formatting for Beautiful Terminal Output
  *
  * @example
- * ```tsx
- * import { Box, Text, Spinner, ProgressBar } from './ui';
+ * ```ts
+ * import { ResponseFormatter } from './ui';
  *
- * <Box flexDirection="column">
- *   <Text variant="primary" size="lg">Smart-Agents</Text>
- *   <Spinner label="Loading..." />
- *   <ProgressBar value={75} label="Progress" />
- * </Box>
+ * const formatter = new ResponseFormatter();
+ * const output = formatter.format({
+ *   agentType: 'code-reviewer',
+ *   taskDescription: 'Review authentication code',
+ *   status: 'success',
+ *   results: { issues: 0, suggestions: 2 },
+ * });
+ * console.log(output);
  * ```
  */
 
-export * from './components/index.js';
+// Response Formatter (NEW - MCP Server integration)
+export { ResponseFormatter } from './ResponseFormatter.js';
+export type { AgentResponse, EnhancedPrompt } from './ResponseFormatter.js';
+
+// Theme System
 export { theme } from './theme.js';
 export type { Theme } from './theme.js';
 
-// Phase 3 Dashboard (Task 7)
-export { Dashboard } from './Dashboard.js';
-export { UIEventBus } from './UIEventBus.js';
-export { ProgressRenderer } from './ProgressRenderer.js';
+// Metrics & Attribution (may be useful for tracking)
 export { AttributionManager } from './AttributionManager.js';
 export { MetricsStore } from './MetricsStore.js';
+
+// Type Definitions
 export * from './types.js';

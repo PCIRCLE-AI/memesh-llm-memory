@@ -23,6 +23,7 @@
     "orchestrator": "tsx src/orchestrator/index.ts",
     "rag": "tsx src/agents/rag/index.ts",
     "rag:demo": "tsx src/agents/rag/demo.ts",
+    "rag:watch": "tsx src/agents/rag/watch.ts",
     "rag:index": "echo 'RAG indexing not yet implemented'",
     "dashboard": "tsx src/dashboard/server.ts",
     "demo:architecture": "tsx src/agents/architecture/demo.ts",

@@ -54,11 +54,33 @@ cp .env.example .env
 
 ### 2. 配置 .env
 
+#### 推薦配置：OpenAI Embeddings（穩定可靠）
+
 ```env
-# OpenAI API (僅需此項！)
+# OpenAI API - 推薦使用
 OPENAI_API_KEY=sk-xxxxx
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+
+# 明確指定使用 OpenAI（可選，系統會自動偵測）
+EMBEDDING_PROVIDER=openai
 ```
+
+**成本參考**：
+- text-embedding-3-small: $0.02 / 1M tokens (~62,500 pages of text)
+- text-embedding-3-large: $0.13 / 1M tokens (更高品質)
+
+#### 實驗性選項：HuggingFace Embeddings（免費但不穩定）
+
+```env
+# HuggingFace API - 免費但可能不穩定
+HUGGINGFACE_API_KEY=hf_xxxxx
+HUGGINGFACE_MODEL=sentence-transformers/all-MiniLM-L6-v2
+
+# 明確指定使用 HuggingFace
+EMBEDDING_PROVIDER=huggingface
+```
+
+⚠️ **警告**：HuggingFace Inference API 基礎架構已改變，直接 HTTP 存取不再是官方建議的做法。此整合可能不穩定，僅建議用於開發測試。生產環境請使用 OpenAI embeddings。
 
 ### 3. 運行 RAG Agent
 

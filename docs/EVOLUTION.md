@@ -1181,6 +1181,601 @@ if (results.winner && results.statisticalTests.pValue < 0.05) {
 
 ---
 
+## 📊 Phase 4: Evolution Dashboard & Monitoring
+
+Phase 4 引入統一的監控儀表板，提供所有 agents 的演化進度、學習狀態和性能趨勢的即時可視化。
+
+### 核心組件
+
+#### 4. EvolutionMonitor
+
+**職責**: 統一監控所有 agents 的演化狀態，提供儀表板和進度追蹤
+
+**功能**:
+- 聚合所有 agents 的演化統計
+- 提供儀表板摘要 (總代理數、總模式數、平均成功率)
+- 追蹤個別 agent 的學習進度
+- 識別表現最佳和改進最快的 agents
+- 格式化美觀的終端輸出
+
+**使用範例**:
+```typescript
+import { EvolutionMonitor } from './evolution';
+import { Router } from './orchestrator';
+
+const router = new Router();
+const monitor = new EvolutionMonitor(
+  router.getPerformanceTracker(),
+  router.getLearningManager(),
+  router.getAdaptationEngine()
+);
+
+// 獲取儀表板摘要
+const summary = monitor.getDashboardSummary();
+console.log(`
+📊 Evolution Dashboard Summary
+==============================
+Total Agents: ${summary.totalAgents}
+Agents with Patterns: ${summary.agentsWithPatterns}
+Total Patterns: ${summary.totalPatterns}
+Total Executions: ${summary.totalExecutions}
+Average Success Rate: ${(summary.averageSuccessRate * 100).toFixed(1)}%
+
+Top Improving Agents:
+${summary.topImprovingAgents.map(a =>
+  `  - ${a.agentId}: +${(a.improvement * 100).toFixed(1)}%`
+).join('\n')}
+`);
+
+// 查看特定 agent 的統計
+const agentStats = monitor.getAgentStats('code-reviewer');
+console.log(`
+Agent: ${agentStats.agentId}
+Total Executions: ${agentStats.totalExecutions}
+Learned Patterns: ${agentStats.learnedPatterns}
+Applied Adaptations: ${agentStats.appliedAdaptations}
+Success Rate Improvement: +${(agentStats.successRateImprovement * 100).toFixed(1)}%
+`);
+
+// 獲取所有 agents 的學習進度
+const progress = monitor.getLearningProgress();
+progress.forEach(p => {
+  if (p.totalExecutions > 0) {
+    console.log(`
+${p.agentId}:
+  Executions: ${p.totalExecutions}
+  Patterns: ${p.learnedPatterns}
+  Adaptations: ${p.appliedAdaptations}
+  Improvement: +${(p.successRateImprovement * 100).toFixed(1)}%
+  Last Learning: ${p.lastLearningDate.toISOString()}
+    `);
+  }
+});
+
+// 格式化完整儀表板 (終端友好格式)
+const dashboard = monitor.formatDashboard();
+console.log(dashboard);
+```
+
+**關鍵 API**:
+- `getDashboardSummary()` - 獲取總覽統計
+- `getAgentStats(agentId)` - 獲取特定 agent 統計
+- `getLearningProgress()` - 獲取所有 agents 的學習進度
+- `formatDashboard()` - 格式化美觀的終端輸出
+
+**Dashboard 介面定義**:
+```typescript
+interface DashboardSummary {
+  totalAgents: number;              // 總 agent 數量
+  agentsWithPatterns: number;       // 有 patterns 的 agent 數量
+  totalPatterns: number;            // 總 pattern 數量
+  totalExecutions: number;          // 總執行次數
+  averageSuccessRate: number;       // 平均成功率
+  topImprovingAgents: Array<{
+    agentId: string;
+    improvement: number;            // 成功率改進幅度
+  }>;
+}
+
+interface AgentLearningProgress {
+  agentId: string;
+  totalExecutions: number;          // 執行次數
+  learnedPatterns: number;          // 學到的 patterns
+  appliedAdaptations: number;       // 應用的 adaptations
+  successRateImprovement: number;   // 成功率改進
+  lastLearningDate: Date;           // 最後學習時間
+}
+```
+
+---
+
+### MCP Server 整合
+
+Evolution dashboard 已整合到 MCP server，可透過 Claude Code 直接查看：
+
+**evolution_dashboard Tool**:
+```typescript
+// Claude Code 中使用
+mcp__smart_agents__evolution_dashboard({ format: 'summary' })
+mcp__smart_agents__evolution_dashboard({ format: 'detailed' })
+```
+
+**Tool 定義**:
+```typescript
+{
+  name: 'evolution_dashboard',
+  description: 'View evolution system dashboard showing agent learning progress, patterns, and performance improvements. Displays statistics for all 22 agents.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      format: {
+        type: 'string',
+        description: 'Dashboard format: "summary" (default) or "detailed"',
+        enum: ['summary', 'detailed'],
+      },
+    },
+  },
+}
+```
+
+**輸出格式**:
+
+- **Summary Format**: 精簡版儀表板，顯示總覽統計和 top 5 改進最快的 agents
+- **Detailed Format**: 完整版儀表板，包含所有 agents 的詳細學習進度
+
+---
+
+## 🧪 Phase 5: Testing & Validation Infrastructure
+
+Phase 5 建立完整的測試和驗證基礎設施，確保演化系統的可靠性、性能和向後兼容性。
+
+### 測試套件架構
+
+```
+tests/
+├── evolution/
+│   ├── PerformanceTracker.test.ts
+│   ├── LearningManager.test.ts
+│   ├── AdaptationEngine.test.ts
+│   └── EvolutionMonitor.test.ts         ← Phase 4
+├── integration/
+│   └── evolution-e2e.test.ts            ← Phase 5: E2E Integration
+├── benchmarks/
+│   └── evolution-performance.bench.ts   ← Phase 5: Performance
+├── regression/
+│   └── evolution-regression.test.ts     ← Phase 5: Regression
+└── ...
+
+scripts/
+└── user-acceptance-test.ts              ← Phase 5: UAT
+
+experiments/
+└── self-improvement-demo.ts             ← Phase 5: Self-Improvement
+```
+
+### 1. 端對端整合測試 (E2E)
+
+**檔案**: `tests/integration/evolution-e2e.test.ts`
+
+**目的**: 測試完整工作流程，從 task routing 到 dashboard 的整個演化系統
+
+**測試場景**:
+```typescript
+describe('Evolution System E2E Integration', () => {
+  it('should route task and track performance', async () => {
+    // 1. Route task
+    const result = await router.routeTask(task);
+
+    // 2. Verify performance tracking
+    const stats = router.getPerformanceTracker()
+      .getEvolutionStats(result.routing.selectedAgent);
+
+    expect(stats.totalExecutions).toBeGreaterThan(0);
+  });
+
+  it('should collect performance metrics across multiple tasks', async () => {
+    // Execute multiple tasks
+    for (const task of tasks) {
+      await router.routeTask(task);
+    }
+
+    // Verify dashboard summary
+    const summary = monitor.getDashboardSummary();
+    expect(summary.totalExecutions).toBeGreaterThanOrEqual(3);
+  });
+
+  it('should show evolution progress in dashboard', async () => {
+    // Execute tasks
+    // ...
+
+    // Verify dashboard formatting
+    const dashboard = monitor.formatDashboard();
+    expect(dashboard).toContain('Evolution Dashboard');
+    expect(dashboard).toContain('Total Agents');
+    expect(dashboard).toContain('22');
+  });
+});
+```
+
+**覆蓋範圍**:
+- Task routing → Performance tracking
+- Evolution configuration integration
+- Dashboard summary generation
+- Learning progress tracking
+- Adaptation application
+- Cost tracking integration
+- Error handling
+- System resources
+
+---
+
+### 2. 性能基準測試 (Performance Benchmarks)
+
+**檔案**: `tests/benchmarks/evolution-performance.bench.ts`
+
+**目的**: 確保演化系統的性能開銷在可接受範圍內，防止性能退化
+
+**基準測試項目**:
+```typescript
+describe('Evolution System Performance Benchmarks', () => {
+  // Task routing performance
+  bench('single task routing', async () => {
+    await router.routeTask(task);
+  });
+
+  bench('batch task routing (10 tasks)', async () => {
+    await router.routeBatch(tasks);
+  });
+
+  // Performance tracking overhead
+  bench('track single metric', () => {
+    performanceTracker.track(metrics);
+  });
+
+  bench('track 100 metrics', () => {
+    for (let i = 0; i < 100; i++) {
+      performanceTracker.track(metrics);
+    }
+  });
+
+  // Pattern analysis performance
+  bench('analyze patterns (5 observations)', () => {
+    learningManager.analyzePatterns('agent-id');
+  });
+
+  // Dashboard generation performance
+  bench('get dashboard summary', () => {
+    monitor.getDashboardSummary();
+  });
+
+  bench('format dashboard', () => {
+    monitor.formatDashboard();
+  });
+});
+```
+
+**性能目標**:
+```typescript
+/**
+ * Performance Targets:
+ *
+ * Task Routing:
+ * - Single task: < 100ms
+ * - Batch (10 tasks): < 500ms
+ * - Batch (50 tasks): < 2000ms
+ *
+ * Performance Tracking:
+ * - Single metric: < 1ms
+ * - 100 metrics: < 10ms
+ * - Get stats: < 5ms
+ *
+ * Pattern Analysis:
+ * - Analyze patterns: < 50ms
+ * - Get patterns: < 1ms
+ * - Get recommendations: < 5ms
+ *
+ * Dashboard:
+ * - Get summary: < 10ms
+ * - Get progress: < 20ms
+ * - Format dashboard: < 50ms
+ *
+ * Concurrent:
+ * - 10 parallel tasks: < 500ms
+ * - 100 parallel tracking: < 20ms
+ *
+ * Memory:
+ * - 1000 metrics: < 100MB
+ */
+```
+
+**運行方式**:
+```bash
+npx vitest bench tests/benchmarks/evolution-performance.bench.ts
+```
+
+---
+
+### 3. 回歸測試套件 (Regression Tests)
+
+**檔案**: `tests/regression/evolution-regression.test.ts`
+
+**目的**: 確保演化系統變更不會破壞現有功能，維持向後兼容性
+
+**測試項目**:
+
+**3.1 API 向後兼容性**
+```typescript
+describe('API Backward Compatibility', () => {
+  it('should maintain Router.routeTask() signature', async () => {
+    const result = await router.routeTask(task);
+
+    // Original return type structure
+    expect(result).toHaveProperty('analysis');
+    expect(result).toHaveProperty('routing');
+    expect(result).toHaveProperty('approved');
+    expect(result).toHaveProperty('message');
+
+    // New evolution field (additive only)
+    expect(result).toHaveProperty('adaptedExecution');
+  });
+
+  it('should maintain Router getter methods', () => {
+    // Original getters
+    expect(router.getAnalyzer()).toBeDefined();
+    expect(router.getRouter()).toBeDefined();
+    expect(router.getCostTracker()).toBeDefined();
+
+    // New evolution getters (additive only)
+    expect(router.getPerformanceTracker()).toBeDefined();
+    expect(router.getLearningManager()).toBeDefined();
+    expect(router.getAdaptationEngine()).toBeDefined();
+  });
+});
+```
+
+**3.2 Evolution Configuration 穩定性**
+```typescript
+describe('Evolution Configuration Stability', () => {
+  it('should maintain all 22 agent configurations', () => {
+    const configs = getAllAgentConfigs();
+    expect(configs.size).toBe(22);
+
+    // Verify all required agents exist
+    const requiredAgents = [
+      'code-reviewer', 'test-writer', 'debugger',
+      // ... (complete list)
+    ];
+
+    requiredAgents.forEach(agentId => {
+      expect(configs.has(agentId as any)).toBe(true);
+    });
+  });
+
+  it('should maintain config structure for all agents', () => {
+    configs.forEach((config, agentId) => {
+      expect(config.agentId).toBe(agentId);
+      expect(config.category).toBeDefined();
+      expect(config.evolutionEnabled).toBeDefined();
+      expect(config.confidenceThreshold).toBeGreaterThanOrEqual(0);
+      expect(config.confidenceThreshold).toBeLessThanOrEqual(1);
+    });
+  });
+});
+```
+
+**3.3 性能回歸防護**
+```typescript
+describe('Performance Regression Prevention', () => {
+  it('should route tasks within performance threshold', async () => {
+    const startTime = Date.now();
+    await router.routeTask(task);
+    const duration = Date.now() - startTime;
+
+    // Should complete within 200ms (with evolution overhead)
+    expect(duration).toBeLessThan(200);
+  });
+});
+```
+
+**3.4 數據完整性**
+```typescript
+describe('Data Integrity', () => {
+  it('should preserve task data through routing', async () => {
+    const result = await router.routeTask(task);
+
+    expect(result.analysis.taskType).toBeDefined();
+    expect(result.analysis.complexity).toBeGreaterThan(0);
+    expect(result.routing.selectedAgent).toBeDefined();
+  });
+});
+```
+
+---
+
+### 4. 用戶驗收測試 (User Acceptance Test)
+
+**檔案**: `scripts/user-acceptance-test.ts`
+
+**目的**: 從用戶角度模擬真實工作流程，驗證 UX 和系統可用性
+
+**測試場景**:
+```typescript
+class UserAcceptanceTest {
+  async runAllTests(): Promise<void> {
+    await this.testScenario1_BasicTaskRouting();
+    await this.testScenario2_SmartAgentSelection();
+    await this.testScenario3_EvolutionDashboard();
+    await this.testScenario4_LearningProgress();
+    await this.testScenario5_PerformanceImprovement();
+
+    this.printFinalResults();
+  }
+}
+```
+
+**Scenario 1: Basic Task Routing**
+```typescript
+console.log(`User: "Route my code review task to appropriate agent"`);
+const result = await this.router.routeTask(task);
+
+console.log(`System: Selected agent "${result.routing.selectedAgent}"`);
+console.log(`System: ${result.message}`);
+```
+
+**Scenario 2: Smart Agent Selection**
+```typescript
+// 測試不同任務類型是否選擇合適的 agent
+const testCases = [
+  { description: 'Debug login error', expectedCategory: 'development' },
+  { description: 'Research best practices', expectedCategory: 'research' },
+  { description: 'Deploy to production', expectedCategory: 'operations' },
+];
+```
+
+**Scenario 3: Evolution Dashboard**
+```typescript
+console.log('User: "Show me the evolution dashboard"');
+const dashboard = this.monitor.formatDashboard();
+console.log(dashboard);
+```
+
+**Scenario 4: Learning Progress**
+```typescript
+console.log('User: "Show learning progress for all agents"');
+const progress = this.monitor.getLearningProgress();
+// Verify progress for all 22 agents
+```
+
+**Scenario 5: Performance Improvement**
+```typescript
+console.log('User: "Execute same task 3 times to test learning"');
+// Execute same task 3 times, verify consistent agent selection
+```
+
+**成功標準**:
+```typescript
+private printFinalResults(): void {
+  const passRate = (this.passed / total) * 100;
+
+  if (passRate >= 80) {
+    console.log('\n✅ USER ACCEPTANCE: PASS');
+    console.log('Evolution system meets user acceptance criteria!');
+  } else {
+    console.log('\n❌ USER ACCEPTANCE: FAIL');
+  }
+}
+```
+
+**運行方式**:
+```bash
+npx tsx scripts/user-acceptance-test.ts
+```
+
+---
+
+### 5. 自我改進實驗 (Self-Improvement Experiment)
+
+**檔案**: `experiments/self-improvement-demo.ts`
+
+**目的**: 演示演化系統的學習能力，展示 3 輪執行中的性能改進
+
+**實驗設計**:
+```typescript
+class SelfImprovementExperiment {
+  async runExperiment(): Promise<void> {
+    // Round 1: Baseline performance (10 tasks)
+    console.log('🔵 Round 1: Baseline Performance');
+    await this.runRound('code-review', 10, 'Round 1');
+
+    // Round 2: Learning phase (10 tasks)
+    console.log('🟡 Round 2: Learning Phase');
+    await this.runRound('code-review', 10, 'Round 2');
+
+    // Round 3: Improved performance (10 tasks)
+    console.log('🟢 Round 3: Improved Performance');
+    await this.runRound('code-review', 10, 'Round 3');
+
+    this.generateReport();
+  }
+
+  private generateReport(): void {
+    // Compare metrics across rounds
+    const round1 = this.getRoundStats('Round 1');
+    const round2 = this.getRoundStats('Round 2');
+    const round3 = this.getRoundStats('Round 3');
+
+    console.log(`
+📊 Self-Improvement Experiment Results
+=========================================
+
+Round 1 (Baseline):
+  Average patterns: ${round1.avgPatterns.toFixed(1)}
+  Success rate: ${(round1.successRate * 100).toFixed(1)}%
+
+Round 2 (Learning):
+  Average patterns: ${round2.avgPatterns.toFixed(1)}
+  Success rate: ${(round2.successRate * 100).toFixed(1)}%
+  Improvement: +${((round2.successRate - round1.successRate) * 100).toFixed(1)}%
+
+Round 3 (Improved):
+  Average patterns: ${round3.avgPatterns.toFixed(1)}
+  Success rate: ${(round3.successRate * 100).toFixed(1)}%
+  Improvement: +${((round3.successRate - round1.successRate) * 100).toFixed(1)}%
+
+✅ Evidence of Learning: System applied ${round3.avgPatterns} patterns in Round 3
+    `);
+  }
+}
+```
+
+**運行方式**:
+```bash
+npx tsx experiments/self-improvement-demo.ts
+```
+
+**預期輸出**:
+- Round 1: 無 patterns，baseline 性能
+- Round 2: 開始學習 patterns，性能開始改進
+- Round 3: 應用學到的 patterns，顯著改進
+
+---
+
+### 測試覆蓋率目標
+
+| 測試類型 | 目標覆蓋率 | 檔案 |
+|---------|-----------|------|
+| Unit Tests | ≥ 85% | `tests/evolution/*.test.ts` |
+| Integration Tests | ≥ 80% | `tests/integration/*.test.ts` |
+| Regression Tests | 100% API | `tests/regression/*.test.ts` |
+| Performance Benchmarks | All critical paths | `tests/benchmarks/*.bench.ts` |
+| UAT Scenarios | ≥ 5 scenarios | `scripts/user-acceptance-test.ts` |
+
+---
+
+### 持續集成 (CI)
+
+**建議的 CI Pipeline**:
+```yaml
+# .gitlab-ci.yml or .github/workflows/evolution-tests.yml
+
+evolution-tests:
+  script:
+    - npm install
+    - npm run test:evolution       # Unit tests
+    - npm run test:integration     # E2E tests
+    - npm run test:regression      # Regression tests
+    - npm run test:uat             # User acceptance tests
+    - npm run benchmark:evolution  # Performance benchmarks
+```
+
+**品質門檻**:
+- ✅ All tests pass (100%)
+- ✅ Unit test coverage ≥ 85%
+- ✅ No performance regressions (< 10% slowdown)
+- ✅ UAT pass rate ≥ 80%
+
+---
+
 ## 🔮 未來發展
 
 ### 計劃中的功能
@@ -1205,6 +1800,11 @@ if (results.winner && results.statisticalTests.pValue < 0.05) {
    - 互動式 pattern 管理
    - 視覺化 A/B 測試結果
 
+5. **Real-time Dashboard** (Phase 4 擴展)
+   - WebSocket 即時更新
+   - 圖表化趨勢顯示
+   - 告警與異常檢測
+
 ---
 
 ## 🤝 貢獻
@@ -1218,6 +1818,7 @@ if (results.winner && results.statisticalTests.pValue < 0.05) {
 
 ---
 
-**文檔版本**: V2.0
-**最後更新**: 2025-12-26
+**文檔版本**: V2.1
+**最後更新**: 2025-12-28
 **作者**: Smart Agents Team
+**Phase 4 & 5 新增**: EvolutionMonitor, evolution_dashboard MCP tool, 完整測試基礎設施

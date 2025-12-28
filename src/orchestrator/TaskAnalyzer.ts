@@ -93,6 +93,7 @@ export class TaskAnalyzer {
 
     return {
       taskId: task.id,
+      taskType: task.description.substring(0, 50), // First 50 chars as task type
       complexity,
       estimatedTokens,
       estimatedCost,
@@ -215,7 +216,7 @@ export class TaskAnalyzer {
       },
       'documentation': {
         keywords: ['document', 'documentation', 'readme', 'api docs', 'guide', 'tutorial'],
-        agent: 'documentation-writer',
+        agent: 'technical-writer',
       },
     };
 

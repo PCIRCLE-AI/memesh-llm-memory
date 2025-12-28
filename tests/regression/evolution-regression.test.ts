@@ -210,7 +210,7 @@ describe('Evolution System Regression Tests', () => {
 
       // Task analysis should preserve task data
       expect(result.analysis.taskType).toBeDefined();
-      expect(result.analysis.complexity).toBeGreaterThan(0);
+      expect(['simple', 'medium', 'complex']).toContain(result.analysis.complexity);
 
       // Routing should preserve task intent
       expect(result.routing.selectedAgent).toBeDefined();

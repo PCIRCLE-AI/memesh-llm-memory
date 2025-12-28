@@ -61,7 +61,8 @@ describe('Evolution System E2E Integration', () => {
 
       // Verify adaptation
       expect(result.adaptedExecution).toBeDefined();
-      expect(result.adaptedExecution?.baseExecution).toBeDefined();
+      expect(result.adaptedExecution?.originalConfig).toBeDefined();
+      expect(result.adaptedExecution?.adaptedConfig).toBeDefined();
 
       // Check agent has evolution configuration
       const agentId = result.routing.selectedAgent;
@@ -176,13 +177,14 @@ describe('Evolution System E2E Integration', () => {
       const result = await router.routeTask(task);
 
       expect(result.adaptedExecution).toBeDefined();
-      expect(result.adaptedExecution?.baseExecution).toBeDefined();
+      expect(result.adaptedExecution?.originalConfig).toBeDefined();
+      expect(result.adaptedExecution?.adaptedConfig).toBeDefined();
 
       // Adaptations should be based on agent category
       const agentId = result.routing.selectedAgent;
       const config = router
         .getAdaptationEngine()
-        .getAgentConfig(agentId as any);
+        .getConfig(agentId as any);
 
       if (config) {
         expect(config.enabledAdaptations).toBeDefined();

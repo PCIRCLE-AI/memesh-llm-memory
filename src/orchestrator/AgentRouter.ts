@@ -138,7 +138,7 @@ export class AgentRouter {
       'architecture': 'architecture-agent',
       'data-analysis': 'data-analyst',
       'knowledge-query': 'knowledge-agent',
-      'documentation': 'documentation-writer',
+      'documentation': 'technical-writer',
     };
 
     // 嘗試從 requiredAgents 映射到 AgentType
@@ -167,7 +167,17 @@ export class AgentRouter {
       'architecture-agent': ['architecture'],
       'data-analyst': ['data-analysis'],
       'knowledge-agent': ['knowledge-query'],
-      'documentation-writer': ['documentation'],
+      'db-optimizer': ['general'],
+      'frontend-specialist': ['general'],
+      'backend-specialist': ['general'],
+      'development-butler': ['general'],
+      'performance-profiler': ['general'],
+      'devops-engineer': ['general'],
+      'security-auditor': ['general'],
+      'technical-writer': ['general'],
+      'ui-designer': ['general'],
+      'migration-assistant': ['general'],
+      'api-integrator': ['general'],
       'general-agent': ['general'],
     };
 
@@ -195,7 +205,18 @@ export class AgentRouter {
 
       // 知識類 Agent fallback
       'knowledge-agent': 'research-agent',
-      'documentation-writer': 'general-agent',
+
+      'db-optimizer': 'general-agent',
+      'development-butler': 'general-agent',
+      'frontend-specialist': 'general-agent',
+      'backend-specialist': 'general-agent',
+      'performance-profiler': 'general-agent',
+      'devops-engineer': 'general-agent',
+      'security-auditor': 'general-agent',
+      'technical-writer': 'general-agent',
+      'ui-designer': 'general-agent',
+      'migration-assistant': 'general-agent',
+      'api-integrator': 'general-agent',
 
       // general-agent 沒有 fallback
       'general-agent': undefined,
@@ -231,7 +252,17 @@ export class AgentRouter {
       'architecture-agent': 'Expert in system architecture and design',
       'data-analyst': 'Specialized in data analysis and visualization',
       'knowledge-agent': 'Expert in knowledge management and organization',
-      'documentation-writer': 'Specialized in technical documentation',
+      'db-optimizer': 'Database optimization, query tuning, index design specialist',
+      'development-butler': 'Event-driven workflow automation, automates everything except coding/planning/reviewing',
+      'frontend-specialist': 'Frontend development, React, Vue, modern web frameworks expert',
+      'backend-specialist': 'Backend development, API design, server architecture expert',
+      'performance-profiler': 'Performance profiling, optimization, bottleneck identification',
+      'devops-engineer': 'DevOps, CI/CD, infrastructure automation, deployment expert',
+      'security-auditor': 'Security auditing, vulnerability assessment, compliance expert',
+      'technical-writer': 'Technical writing, documentation, user guides, API docs expert',
+      'ui-designer': 'UI/UX design, user experience, interface design specialist',
+      'migration-assistant': 'Migration assistance, upgrade planning, legacy modernization',
+      'api-integrator': 'API integration, third-party services, SDK implementation',
       'general-agent': 'Versatile AI assistant for general tasks',
     };
 

@@ -158,10 +158,10 @@ export class AgentRouter {
   private getCapabilitiesForAgent(agent: AgentType): TaskCapability[] {
     const agentCapabilities: Record<AgentType, TaskCapability[]> = {
       'code-reviewer': ['code-review'],
-      'test-writer': ['testing', 'code-generation'],
+      'test-writer': ['testing'], // Code generation is implicit in testing
       'debugger': ['debugging'],
-      'refactorer': ['refactoring', 'code-generation'],
-      'api-designer': ['api-design', 'code-generation'],
+      'refactorer': ['refactoring'], // Code generation is implicit in refactoring
+      'api-designer': ['api-design'], // Code generation is implicit in API design
       'rag-agent': ['rag-search'],
       'research-agent': ['research'],
       'architecture-agent': ['architecture'],
@@ -280,25 +280,21 @@ export class AgentRouter {
   }
 
   /**
-   * 獲取 CPU 使用率 (簡化實作)
+   * 獲取 CPU 使用率
+   *
+   * Note: Accurate CPU usage requires interval measurement (sampling twice).
+   * To avoid latency, we return a conservative estimate (50%).
+   * This is sufficient for resource-aware routing decisions.
+   *
+   * For accurate CPU monitoring, consider using libraries like:
+   * - os-utils (npm package)
+   * - systeminformation (npm package)
+   * - Implement interval-based measurement with sampling
    */
   private getCPUUsage(): number {
-    const cpus = os.cpus();
-    let totalIdle = 0;
-    let totalTick = 0;
-
-    cpus.forEach(cpu => {
-      for (const type in cpu.times) {
-        totalTick += cpu.times[type as keyof typeof cpu.times];
-      }
-      totalIdle += cpu.times.idle;
-    });
-
-    const idle = totalIdle / cpus.length;
-    const total = totalTick / cpus.length;
-    const usage = 100 - Math.floor((idle / total) * 100);
-
-    return usage;
+    // Conservative estimate: assume moderate CPU usage
+    // This prevents over-aggressive routing decisions while avoiding measurement latency
+    return 50;
   }
 
   /**

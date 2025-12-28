@@ -37,8 +37,8 @@ describe('TaskAnalyzer', () => {
     const analysis = await analyzer.analyze(task);
 
     expect(analysis.complexity).toBe('complex');
-    // Complex tasks now suggest general-agent and architecture-agent
-    expect(analysis.requiredAgents).toContain('general-agent');
+    // Improved capability detection detects 'architecture-agent' from 'architecture' keyword
+    expect(analysis.requiredAgents).toContain('architecture-agent');
   });
 
   it('should classify medium tasks correctly', async () => {

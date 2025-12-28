@@ -60,11 +60,23 @@ export class CostTracker {
   ): number {
     const costs = MODEL_COSTS[modelName as keyof typeof MODEL_COSTS];
 
+    // Error handling for unknown models or models without input/output pricing
     if (!costs || !('input' in costs && 'output' in costs)) {
-      console.warn(`⚠️  Unknown model: ${modelName}, using default cost`);
-      return 0;
+      console.warn(
+        `⚠️  Unknown model or unsupported cost structure: ${modelName}\n` +
+        `   Using fallback pricing (Claude Sonnet: $3/$15 per 1M tokens) for cost estimation.\n` +
+        `   Please add this model to MODEL_COSTS configuration.`
+      );
+
+      // Use Claude Sonnet as conservative fallback pricing
+      // This prevents unknown models from appearing "free" in cost tracking
+      const inputCost = (inputTokens / 1_000_000) * 3.0;
+      const outputCost = (outputTokens / 1_000_000) * 15.0;
+
+      return Number((inputCost + outputCost).toFixed(6));
     }
 
+    // TypeScript now knows costs has input and output properties
     const inputCost = (inputTokens / 1_000_000) * costs.input;
     const outputCost = (outputTokens / 1_000_000) * costs.output;
 

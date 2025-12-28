@@ -6,6 +6,32 @@
 
 Smart Agents V2 的 Self-Evolving Agent System 讓 AI agents 能夠從執行經驗中學習，自動識別成功模式，並動態調整行為以提升性能、品質和成本效益。
 
+### V2.0 MCP Server Pattern 說明
+
+**Evolution System 在 V2.0 中的運作方式**：
+
+在 V2.0 MCP Server Pattern 中，smart-agents 作為 MCP server 生成 enhanced prompts 並返回給 Claude Code。Evolution System 的各項功能在 V2.0 的實際行為如下：
+
+1. **Prompt Optimization** ✅ 完全支援
+   - Evolution System 可以優化和調整 prompts
+   - 生成的 enhanced prompts 直接包含優化建議
+
+2. **Model Selection** ⚠️ 建議模式
+   - Evolution System **建議**適合的模型（Opus/Sonnet/Haiku）
+   - 建議包含在 enhanced prompt 的 metadata 中
+   - **實際模型選擇由 Claude Code 或用戶決定**
+   - V3.0 將支援直接模型選擇和執行
+
+3. **Timeout Adjustment** ✅ 完全支援
+   - Evolution System 可以調整 timeout 設定
+   - 包含在返回的配置建議中
+
+4. **Retry Strategy** ✅ 完全支援
+   - Evolution System 可以建議 retry 策略
+   - 包含在返回的配置建議中
+
+**總結**：Evolution System 在 V2.0 中以「建議」和「prompt 優化」的形式運作，在 V3.0 中將擴展為直接執行能力。
+
 ### 核心理念
 
 **Learn → Adapt → Improve → Repeat**

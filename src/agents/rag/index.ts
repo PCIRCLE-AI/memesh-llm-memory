@@ -17,14 +17,45 @@ import type {
 
 export class RAGAgent {
   private vectorStore: VectorStore;
-  private embeddings: IEmbeddingProvider;
+  private embeddings: IEmbeddingProvider | null;
   private reranker: Reranker;
   private isInitialized = false;
 
   constructor() {
     this.vectorStore = new VectorStore();
-    this.embeddings = EmbeddingProviderFactory.create();
+    // Try to create embeddings provider, but don't fail if no API key
+    this.embeddings = EmbeddingProviderFactory.createSync({ optional: true });
     this.reranker = new Reranker();
+  }
+
+  /**
+   * Check if RAG features are enabled
+   */
+  isRAGEnabled(): boolean {
+    return this.embeddings !== null;
+  }
+
+  /**
+   * Enable RAG features by providing OpenAI API key
+   * This will prompt the user interactively for the API key
+   */
+  async enableRAG(apiKey?: string): Promise<boolean> {
+    if (this.embeddings !== null) {
+      console.log('✅ RAG features are already enabled');
+      return true;
+    }
+
+    try {
+      this.embeddings = await EmbeddingProviderFactory.create({
+        apiKey,
+        interactive: !apiKey, // Only prompt if no key provided
+      });
+      console.log('✅ RAG features enabled successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to enable RAG features:', error);
+      return false;
+    }
   }
 
   /**
@@ -63,9 +94,10 @@ export class RAGAgent {
     id?: string
   ): Promise<void> {
     this.ensureInitialized();
+    this.ensureRAGEnabled();
 
     // 生成 embedding
-    const embedding = await this.embeddings.createEmbedding(content);
+    const embedding = await this.embeddings!.createEmbedding(content);
 
     // 添加到 vector store
     await this.vectorStore.addDocument({
@@ -90,6 +122,7 @@ export class RAGAgent {
     options: Partial<BatchOptions> = {}
   ): Promise<EmbeddingStats> {
     this.ensureInitialized();
+    this.ensureRAGEnabled();
 
     const batchSize = options.batchSize || 100;
     const maxConcurrent = options.maxConcurrent || 5;
@@ -107,7 +140,7 @@ export class RAGAgent {
 
       // 批次生成 embeddings
       const contents = batch.map((d) => d.content);
-      const embeddings = await this.embeddings.createEmbeddings(contents);
+      const embeddings = await this.embeddings!.createEmbeddings(contents);
 
       // 準備文檔輸入
       const docsToAdd: DocumentInput[] = batch.map((doc, index) => ({
@@ -131,7 +164,7 @@ export class RAGAgent {
     }
 
     const duration = (Date.now() - startTime) / 1000;
-    const costTracker = this.embeddings.getCostTracker();
+    const costTracker = this.embeddings!.getCostTracker();
 
     const stats: EmbeddingStats = {
       totalDocuments: documents.length,
@@ -156,11 +189,12 @@ export class RAGAgent {
    */
   async search(query: string, options: Partial<SearchOptions> = {}): Promise<SearchResult[]> {
     this.ensureInitialized();
+    this.ensureRAGEnabled();
 
     console.log(`Searching: "${query}"`);
 
     // 生成 query embedding
-    const queryEmbedding = await this.embeddings.createEmbedding(query);
+    const queryEmbedding = await this.embeddings!.createEmbedding(query);
 
     // 執行搜尋
     const results = await this.vectorStore.searchWithEmbedding(queryEmbedding, options);
@@ -251,9 +285,10 @@ export class RAGAgent {
     collectionInfo: any;
   }> {
     this.ensureInitialized();
+    this.ensureRAGEnabled();
 
     const documentCount = await this.vectorStore.count();
-    const costTracker = this.embeddings.getCostTracker();
+    const costTracker = this.embeddings!.getCostTracker();
     const collectionInfo = await this.vectorStore.getCollectionInfo();
 
     const embeddingStats: EmbeddingStats = {
@@ -309,6 +344,19 @@ export class RAGAgent {
   }
 
   /**
+   * 內部方法：確保 RAG 功能已啟用
+   */
+  private ensureRAGEnabled(): void {
+    if (this.embeddings === null) {
+      throw new Error(
+        'RAG features are not enabled. Please provide OpenAI API key.\n' +
+        'Use enableRAG() method or set OPENAI_API_KEY environment variable.\n' +
+        'Get your API key at: https://platform.openai.com/api-keys'
+      );
+    }
+  }
+
+  /**
    * 內部方法：提取關鍵字（簡化版）
    */
   private extractKeywords(query: string): string[] {
@@ -326,8 +374,16 @@ export class RAGAgent {
    * 內部方法：顯示統計資訊
    */
   private async printStats(): Promise<void> {
+    if (!this.isRAGEnabled()) {
+      console.log('\n=== RAG Agent Status ===');
+      console.log('RAG features: ❌ Disabled (no OpenAI API key)');
+      console.log('Tip: Use enableRAG() to enable RAG features');
+      console.log('========================\n');
+      return;
+    }
+
     const stats = await this.getStats();
-    const modelInfo = this.embeddings.getModelInfo();
+    const modelInfo = this.embeddings!.getModelInfo();
     console.log('\n=== RAG Agent Status ===');
     console.log(`Collection: ${stats.collectionInfo.name}`);
     console.log(`Documents: ${stats.documentCount}`);

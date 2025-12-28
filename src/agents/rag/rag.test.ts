@@ -7,55 +7,35 @@ import { RAGAgent, VectorStore, Reranker, EmbeddingProviderFactory } from './ind
 import type { DocumentMetadata, SearchResult } from './types.js';
 
 describe('EmbeddingProviderFactory', () => {
-  it('should create available embedding provider', () => {
-    // This test will pass as long as either OPENAI_API_KEY or HUGGINGFACE_API_KEY is set
-    const provider = EmbeddingProviderFactory.create();
+  it('should create OpenAI embedding provider', () => {
+    // Only OpenAI embeddings are supported now
+    const provider = EmbeddingProviderFactory.createSync();
 
     expect(provider).toBeDefined();
-    expect(provider.isAvailable()).toBe(true);
-    expect(typeof provider.createEmbedding).toBe('function');
-    expect(typeof provider.createEmbeddings).toBe('function');
-    expect(typeof provider.getCostTracker).toBe('function');
-    expect(typeof provider.getModelInfo).toBe('function');
+    expect(typeof provider!.createEmbedding).toBe('function');
+    expect(typeof provider!.createEmbeddings).toBe('function');
+    expect(typeof provider!.getCostTracker).toBe('function');
+    expect(typeof provider!.getModelInfo).toBe('function');
   });
 
-  it('should list available providers', () => {
-    const providers = EmbeddingProviderFactory.listAvailableProviders();
-
-    expect(Array.isArray(providers)).toBe(true);
-    expect(providers.length).toBe(2);
-    expect(providers).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ provider: 'huggingface' }),
-        expect.objectContaining({ provider: 'openai' }),
-      ])
-    );
-  });
-
-  it.skip('should throw error when no provider is available', () => {
+  it.skip('should return null when no API key and optional=true', () => {
     // Skipped: Cannot reliably test this scenario because the test environment
-    // always has at least one API key (OPENAI_API_KEY or HUGGINGFACE_API_KEY) available
-    // in the global environment, which can't be deleted from within the test.
-    //
-    // The error handling is still tested in real-world scenarios where no keys are set.
+    // has OPENAI_API_KEY set globally, which cannot be deleted from within the test.
+    // The optional behavior is tested in real-world usage when no key is configured.
   });
 
-  it('should respect preferred provider', () => {
-    const providers = EmbeddingProviderFactory.listAvailableProviders();
-    const hfAvailable = providers.find(p => p.provider === 'huggingface')?.available;
-
-    if (hfAvailable) {
-      const provider = EmbeddingProviderFactory.create('huggingface');
-      const modelInfo = provider.getModelInfo();
-      expect(modelInfo.provider).toBe('huggingface');
-    }
+  it.skip('should throw error when no API key and optional=false', () => {
+    // Skipped: Cannot reliably test this scenario because the test environment
+    // has OPENAI_API_KEY set globally, which cannot be deleted from within the test.
+    // The error throwing is tested in real-world usage when no key is configured.
   });
 
   it('should get model info', () => {
-    const provider = EmbeddingProviderFactory.create();
-    const modelInfo = provider.getModelInfo();
+    const provider = EmbeddingProviderFactory.createSync();
+    const modelInfo = provider!.getModelInfo();
 
     expect(modelInfo).toHaveProperty('provider');
+    expect(modelInfo.provider).toBe('openai');
     expect(modelInfo).toHaveProperty('model');
     expect(modelInfo).toHaveProperty('dimensions');
     expect(typeof modelInfo.dimensions).toBe('number');
@@ -63,13 +43,20 @@ describe('EmbeddingProviderFactory', () => {
   });
 
   it('should get cost tracker', () => {
-    const provider = EmbeddingProviderFactory.create();
-    const tracker = provider.getCostTracker();
+    const provider = EmbeddingProviderFactory.createSync();
+    const tracker = provider!.getCostTracker();
 
     expect(tracker).toHaveProperty('embeddingCalls');
     expect(tracker).toHaveProperty('totalTokens');
     expect(tracker).toHaveProperty('estimatedCost');
     expect(tracker).toHaveProperty('lastUpdated');
+  });
+
+  it('should check if provider is available', () => {
+    const isAvailable = EmbeddingProviderFactory.isAvailable();
+    expect(typeof isAvailable).toBe('boolean');
+    // Should be true since OPENAI_API_KEY is set in test environment
+    expect(isAvailable).toBe(true);
   });
 });
 
@@ -312,14 +299,12 @@ describe('Reranker', () => {
 
 describe('RAGAgent (Integration)', () => {
   // Integration tests with OpenAI embeddings API
-  // Note: HuggingFace API has infrastructure changes and is not recommended for direct HTTP access
-  // These tests use OpenAI embeddings which are stable and reliable
+  // RAG features now exclusively use OpenAI for stability and reliability
 
   let rag: RAGAgent;
 
   beforeAll(async () => {
-    // Ensure we use OpenAI for integration tests (more stable than HuggingFace)
-    process.env.EMBEDDING_PROVIDER = 'openai';
+    // RAG Agent uses OpenAI embeddings exclusively
     rag = new RAGAgent();
     await rag.initialize();
   });

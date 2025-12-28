@@ -125,34 +125,48 @@ npm run build
 
 **5. （可選）配置 RAG Agent**
 
-如需使用 **rag-agent** 進行知識檢索，需要配置 embedding provider。支援兩種選項：
+RAG agent 為可選功能，可在安裝後隨時啟用。
 
-**選項 1: OpenAI Embeddings API（推薦 - 穩定可靠）**
+**方式 1：啟用時互動式設定**
+
+使用 RAG 功能時，系統會自動提示您輸入 OpenAI API key：
+
+```typescript
+const rag = new RAGAgent();
+await rag.initialize();
+
+// 第一次使用時會看到提示：
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                    🧠 Smart-Agents RAG Features                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+啟用 RAG 功能將為您的 AI agents 帶來：
+✨ 語義搜尋、知識庫管理、精準檢索...
+
+請輸入您的 OpenAI API Key (或按 Enter 跳過):
+```
+
+**方式 2：環境變數預先設定**
 
 ```bash
 # 複製環境變數範本
 cp .env.example .env
 
 # 在 .env 中添加
-EMBEDDING_PROVIDER=openai
 OPENAI_API_KEY=sk-xxxxx
-OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 ```
 
-**成本**: $0.02 / 1M tokens (~62,500 頁文本，非常實惠)
+**方式 3：稍後啟用**
 
-**選項 2: HuggingFace Inference API（實驗性 - 免費但不穩定）**
+```typescript
+const rag = new RAGAgent();
+await rag.initialize(); // RAG 功能 disabled
 
-```bash
-# 在 .env 中添加
-EMBEDDING_PROVIDER=huggingface
-HUGGINGFACE_API_KEY=hf_xxxxx  # 從 https://huggingface.co/settings/tokens 獲取
-HUGGINGFACE_MODEL=sentence-transformers/all-MiniLM-L6-v2
+// 稍後可以啟用
+await rag.enableRAG('sk-xxxxx'); // 或不傳 API key，會提示輸入
 ```
 
-⚠️ **警告**: HuggingFace Inference API 基礎架構已改變，直接 HTTP 存取不穩定。僅建議用於開發測試，生產環境請使用 OpenAI。
-
-**自動選擇**: 如果不設定 `EMBEDDING_PROVIDER`，系統會自動選擇可用的 provider（優先 HuggingFace）。
+**成本**: OpenAI Embeddings API 為 $0.02 / 1M tokens (~62,500 頁文本，非常實惠)
 
 **不使用 RAG agent 可跳過此步驟。** 其他 21 個 agents 無需額外配置。
 

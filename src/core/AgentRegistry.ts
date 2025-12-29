@@ -6,6 +6,7 @@
  */
 
 import { AgentType } from '../orchestrator/types.js';
+import { AgentClassification } from '../types/AgentClassification.js';
 
 /**
  * Agent metadata for MCP tool registration
@@ -19,6 +20,15 @@ export interface AgentMetadata {
 
   /** Agent category for organization (development, analysis, knowledge, operations, creative, utility, general) */
   category: string;
+
+  /** Agent classification (real-implementation, enhanced-prompt, optional-feature) */
+  classification: AgentClassification;
+
+  /** MCP tools required by this agent */
+  mcpTools?: string[];
+
+  /** External dependencies required for optional agents */
+  requiredDependencies?: string[];
 
   /** Optional JSON schema for input validation */
   inputSchema?: {
@@ -123,6 +133,39 @@ export class AgentRegistry {
   }
 
   /**
+   * Get agents by classification type
+   *
+   * @returns Array of agents with REAL_IMPLEMENTATION classification
+   */
+  getRealImplementations(): AgentMetadata[] {
+    return this.getAllAgents().filter(
+      agent => agent.classification === AgentClassification.REAL_IMPLEMENTATION
+    );
+  }
+
+  /**
+   * Get agents by classification type
+   *
+   * @returns Array of agents with ENHANCED_PROMPT classification
+   */
+  getEnhancedPrompts(): AgentMetadata[] {
+    return this.getAllAgents().filter(
+      agent => agent.classification === AgentClassification.ENHANCED_PROMPT
+    );
+  }
+
+  /**
+   * Get agents by classification type
+   *
+   * @returns Array of agents with OPTIONAL_FEATURE classification
+   */
+  getOptionalAgents(): AgentMetadata[] {
+    return this.getAllAgents().filter(
+      agent => agent.classification === AgentClassification.OPTIONAL_FEATURE
+    );
+  }
+
+  /**
    * Register all agents (called automatically in constructor)
    *
    * This is the centralized list of all available agents.
@@ -131,128 +174,94 @@ export class AgentRegistry {
    */
   private registerAllAgents(): void {
     const allAgents: AgentMetadata[] = [
-      // Development Agents (9)
+      // Real Implementation Agents (5)
       {
-        name: 'code-reviewer',
-        description: 'Expert code review, security analysis, and best practices validation',
+        name: 'development-butler',
+        description: 'Event-driven workflow automation, code maintenance, testing, dependency management, git workflow, build automation, development monitoring',
         category: 'development',
+        classification: AgentClassification.REAL_IMPLEMENTATION,
+        mcpTools: ['filesystem', 'memory', 'bash'],
       },
       {
         name: 'test-writer',
         description: 'Test automation specialist, TDD expert, coverage analysis',
         category: 'development',
+        classification: AgentClassification.REAL_IMPLEMENTATION,
+        mcpTools: ['filesystem', 'bash'],
       },
-      {
-        name: 'debugger',
-        description: 'Root cause analysis, debugging specialist, systematic troubleshooting',
-        category: 'development',
-      },
-      {
-        name: 'refactorer',
-        description: 'Code refactoring expert, design patterns, clean architecture',
-        category: 'development',
-      },
-      {
-        name: 'api-designer',
-        description: 'API design specialist, RESTful principles, GraphQL expert',
-        category: 'development',
-      },
-      {
-        name: 'db-optimizer',
-        description: 'Database optimization, query tuning, index design specialist',
-        category: 'development',
-      },
-      {
-        name: 'frontend-specialist',
-        description: 'Frontend development, React, Vue, modern web frameworks expert',
-        category: 'development',
-      },
-      {
-        name: 'backend-specialist',
-        description: 'Backend development, API design, server architecture expert',
-        category: 'development',
-      },
-      {
-        name: 'development-butler',
-        description: 'Event-driven workflow automation, code maintenance, testing, dependency management, git workflow, build automation, development monitoring',
-        category: 'development',
-      },
-
-      // Analysis Agents (5)
-      {
-        name: 'rag-agent',
-        description: 'Knowledge retrieval, vector search, embedding-based context search',
-        category: 'analysis',
-      },
-      {
-        name: 'research-agent',
-        description: 'Research specialist, investigation, comparative analysis',
-        category: 'analysis',
-      },
-      {
-        name: 'architecture-agent',
-        description: 'System architecture expert, design patterns, scalability analysis',
-        category: 'analysis',
-      },
-      {
-        name: 'data-analyst',
-        description: 'Data analysis, statistics, metrics, visualization specialist',
-        category: 'analysis',
-      },
-      {
-        name: 'performance-profiler',
-        description: 'Performance profiling, optimization, bottleneck identification',
-        category: 'analysis',
-      },
-
-      // Knowledge Agents (1)
-      {
-        name: 'knowledge-agent',
-        description: 'Knowledge management, organization, information synthesis',
-        category: 'knowledge',
-      },
-
-      // Operations Agents (2)
       {
         name: 'devops-engineer',
         description: 'DevOps, CI/CD, infrastructure automation, deployment expert',
         category: 'operations',
+        classification: AgentClassification.REAL_IMPLEMENTATION,
+        mcpTools: ['bash', 'filesystem'],
+      },
+      {
+        name: 'project-manager',
+        description: 'Project planning, task management, milestone tracking, team coordination',
+        category: 'management',
+        classification: AgentClassification.REAL_IMPLEMENTATION,
+        mcpTools: ['memory', 'filesystem'],
+      },
+      {
+        name: 'data-engineer',
+        description: 'Data pipeline development, ETL processes, data quality management',
+        category: 'engineering',
+        classification: AgentClassification.REAL_IMPLEMENTATION,
+        mcpTools: ['bash', 'filesystem'],
+      },
+
+      // Enhanced Prompt Agents (7)
+      {
+        name: 'architecture-agent',
+        description: 'System architecture expert, design patterns, scalability analysis',
+        category: 'analysis',
+        classification: AgentClassification.ENHANCED_PROMPT,
+      },
+      {
+        name: 'code-reviewer',
+        description: 'Expert code review, security analysis, and best practices validation',
+        category: 'development',
+        classification: AgentClassification.ENHANCED_PROMPT,
       },
       {
         name: 'security-auditor',
         description: 'Security auditing, vulnerability assessment, compliance expert',
         category: 'operations',
-      },
-
-      // Creative Agents (2)
-      {
-        name: 'technical-writer',
-        description: 'Technical writing, documentation, user guides, API docs expert',
-        category: 'creative',
+        classification: AgentClassification.ENHANCED_PROMPT,
       },
       {
         name: 'ui-designer',
         description: 'UI/UX design, user experience, interface design specialist',
         category: 'creative',
+        classification: AgentClassification.ENHANCED_PROMPT,
+      },
+      {
+        name: 'marketing-strategist',
+        description: 'Marketing strategy, brand positioning, growth hacking expert',
+        category: 'business',
+        classification: AgentClassification.ENHANCED_PROMPT,
+      },
+      {
+        name: 'product-manager',
+        description: 'Product strategy, user research, feature prioritization expert',
+        category: 'management',
+        classification: AgentClassification.ENHANCED_PROMPT,
+      },
+      {
+        name: 'ml-engineer',
+        description: 'Machine learning engineering, model training, ML pipeline expert',
+        category: 'engineering',
+        classification: AgentClassification.ENHANCED_PROMPT,
       },
 
-      // Utility Agents (2)
+      // Optional Feature Agents (1)
       {
-        name: 'migration-assistant',
-        description: 'Migration assistance, upgrade planning, legacy modernization',
-        category: 'utility',
-      },
-      {
-        name: 'api-integrator',
-        description: 'API integration, third-party services, SDK implementation',
-        category: 'utility',
-      },
-
-      // General Agent (1)
-      {
-        name: 'general-agent',
-        description: 'Versatile AI assistant for general tasks and fallback operations',
-        category: 'general',
+        name: 'rag-agent',
+        description: 'Knowledge retrieval, vector search, embedding-based context search',
+        category: 'analysis',
+        classification: AgentClassification.OPTIONAL_FEATURE,
+        requiredDependencies: ['chromadb', 'openai'],
       },
     ];
 

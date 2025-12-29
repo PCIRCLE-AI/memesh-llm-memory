@@ -15,6 +15,12 @@ Smart-Agents is a **Prompt Enhancement System** that supercharges Claude Code wi
 ✅ **MCP-Native Integration** - Leverages Model Context Protocol tools
 ✅ **Knowledge Graph** - Persistent learning and memory
 
+## 📋 Prerequisites
+
+- Node.js >= 18.0.0
+- npm >= 9.0.0
+- Git
+
 ## 📦 Installation
 
 ```bash
@@ -32,18 +38,53 @@ npm run build
 npm test
 ```
 
+## ⚙️ Environment Setup
+
+### Basic Setup
+
+No environment configuration required for core functionality.
+
+### Optional: RAG Agent (Advanced)
+
+If you want to use the optional RAG agent:
+
+1. Install additional dependencies:
+   ```bash
+   npm install chromadb openai
+   ```
+
+2. Configure environment variables (create `.env` file):
+   ```env
+   OPENAI_API_KEY=your_api_key_here
+   ```
+
+### MCP Tools Configuration
+
+Smart-Agents works with Claude Code's MCP (Model Context Protocol) tools. No additional configuration needed if you're using:
+- `filesystem` MCP tool (for file operations)
+- `memory` MCP tool (for knowledge graph)
+
+See [MCP Documentation](https://modelcontextprotocol.io/) for advanced configuration.
+
 ## 🎯 Quick Start
 
 ### 1. Enable Development Butler
 
 The butler automatically activates at checkpoints (no configuration needed):
 
-- **BEFORE_COMMIT**: Runs code review and test verification
-- **SIGNIFICANT_CHANGE**: Analyzes impact and updates docs
-- **TEST_FAILURE**: Debugs and suggests fixes
-- **SESSION_END**: Saves progress and generates summary
-- **SECURITY_CONCERN**: Audits security issues
-- **PERFORMANCE_ISSUE**: Analyzes bottlenecks
+- **`Checkpoint.BEFORE_COMMIT`**: Runs code review and test verification
+- **`Checkpoint.SIGNIFICANT_CHANGE`**: Analyzes impact and updates docs
+- **`Checkpoint.TEST_FAILURE`**: Debugs and suggests fixes
+- **`Checkpoint.SESSION_END`**: Saves progress and generates summary
+- **`Checkpoint.SECURITY_CONCERN`**: Audits security issues
+- **`Checkpoint.PERFORMANCE_ISSUE`**: Analyzes bottlenecks
+
+```typescript
+import { Checkpoint } from 'smart-agents';
+
+// Checkpoints are automatically triggered by the Development Butler
+// You can also manually register checkpoint handlers
+```
 
 ### 2. Use Real Implementation Agents
 
@@ -85,13 +126,13 @@ const uiDesigner = registry.getAgent('ui-designer');
 ┌─────────────────────────────────────────────────────────────┐
 │  Layer 1: Prompt Enhancement Core                          │
 │  - AgentRegistry (12 agents)                               │
-│  - Hooks system (session-start, post-tool-use, stop)       │
+│  - Claude Code Hooks (session-start, post-tool-use)        │
 │  - Knowledge Graph for learning                            │
 └─────────────────────────────────────────────────────────────┘
                           ↓
 ┌─────────────────────────────────────────────────────────────┐
 │  Layer 2: Event-Driven Development Butler                  │
-│  - Checkpoint detection (6 types)                          │
+│  - Checkpoint detection (9 types via Checkpoint enum)      │
 │  - Workflow automation at logical points                   │
 │  - Zero-interruption assistance                            │
 └─────────────────────────────────────────────────────────────┘
@@ -106,10 +147,22 @@ const uiDesigner = registry.getAgent('ui-designer');
 
 ## 📚 Documentation
 
-- [User Guide](./docs/USER_GUIDE.md) - Complete usage guide
-- [Agent Reference](./docs/AGENT_REFERENCE.md) - All 12 agents documented
-- [Troubleshooting](./docs/TROUBLESHOOTING.md) - Common issues and solutions
-- [Design Document](./docs/plans/2025-12-30-smart-agents-v2.1-design.md) - Full architecture
+### User Documentation
+- **[User Guide](./docs/USER_GUIDE.md)** - Complete usage guide with examples
+- **[Agent Reference](./docs/AGENT_REFERENCE.md)** - All 12 agents documented
+- **[Troubleshooting](./docs/TROUBLESHOOTING.md)** - Common issues and solutions
+
+### Technical Documentation
+- **[Architecture](./docs/plans/2025-12-30-smart-agents-v2.1-design.md)** - System design and architecture
+- **[API Reference](./docs/API.md)** - Complete API documentation (coming soon)
+- **[MCP Integration](https://modelcontextprotocol.io/)** - Model Context Protocol docs
+
+### Getting Help
+
+- 📖 Check the [User Guide](./docs/USER_GUIDE.md) first
+- 🔍 Search [existing issues](https://github.com/your-username/smart-agents/issues)
+- 💬 Ask in [Discussions](https://github.com/your-username/smart-agents/discussions)
+- 🐛 Report bugs via [Issues](https://github.com/your-username/smart-agents/issues/new)
 
 ## 🤖 Agents
 
@@ -146,6 +199,8 @@ npm test -- --coverage
 
 ## 🔧 Development
 
+### Development Commands
+
 ```bash
 # Watch mode for development
 npm run dev
@@ -159,6 +214,36 @@ npm run lint
 # Type check
 npm run type-check
 ```
+
+### Project Structure
+
+```
+smart-agents/
+├── src/
+│   ├── agents/          # Agent implementations
+│   │   ├── DevelopmentButler.ts
+│   │   ├── TestWriterAgent.ts
+│   │   └── DevOpsEngineerAgent.ts
+│   ├── core/            # Core infrastructure
+│   │   ├── AgentRegistry.ts
+│   │   ├── MCPToolInterface.ts
+│   │   └── CheckpointDetector.ts
+│   └── index.ts         # Main exports
+├── tests/
+│   ├── unit/            # Unit tests
+│   └── integration/     # Integration tests
+└── docs/                # Documentation
+```
+
+### Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 
 ## 📝 License
 

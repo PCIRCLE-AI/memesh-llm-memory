@@ -60,3 +60,6 @@ export { DevOpsEngineerAgent } from './agents/DevOpsEngineerAgent.js';
 export type { ToolMetadata, ToolInvocationResult, ToolDependencyCheck } from './core/MCPToolInterface.js';
 export type { AgentMetadata } from './core/AgentRegistry.js';
 export type { CheckpointCallback, CheckpointMetadata, CheckpointTriggerResult } from './core/CheckpointDetector.js';
+
+// Enum exports
+export { Checkpoint } from './types/Checkpoint.js';

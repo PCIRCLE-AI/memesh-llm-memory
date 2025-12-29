@@ -64,6 +64,7 @@ export {
   type AdaptationResult,
   type AdaptedExecution,
 } from './AdaptationEngine.js';
+export { EvolutionBootstrap } from './EvolutionBootstrap.js';
 
 // Types
 export type {

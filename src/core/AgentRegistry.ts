@@ -11,9 +11,16 @@ import { AgentType } from '../orchestrator/types.js';
  * Agent metadata for MCP tool registration
  */
 export interface AgentMetadata {
+  /** Unique agent identifier */
   name: AgentType;
+
+  /** Human-readable description of agent capabilities */
   description: string;
+
+  /** Agent category for organization (development, analysis, knowledge, operations, creative, utility, general) */
   category: string;
+
+  /** Optional JSON schema for input validation */
   inputSchema?: {
     type: string;
     properties: Record<string, unknown>;
@@ -37,6 +44,8 @@ export class AgentRegistry {
 
   /**
    * Register a single agent
+   *
+   * @param agent - Agent metadata to register
    */
   registerAgent(agent: AgentMetadata): void {
     this.agents.set(agent.name, agent);
@@ -44,6 +53,8 @@ export class AgentRegistry {
 
   /**
    * Get all registered agents
+   *
+   * @returns Array of all agent metadata
    */
   getAllAgents(): AgentMetadata[] {
     return Array.from(this.agents.values());
@@ -51,30 +62,64 @@ export class AgentRegistry {
 
   /**
    * Get agent by name
+   *
+   * @param name - Agent type identifier
+   * @returns Agent metadata or undefined if not found
+   * @throws Error if name is empty or invalid
    */
   getAgent(name: AgentType): AgentMetadata | undefined {
+    if (!name || typeof name !== 'string' || name.trim() === '') {
+      throw new Error('Agent name must be a non-empty string');
+    }
     return this.agents.get(name);
   }
 
   /**
    * Get agents by category
+   *
+   * @param category - Category to filter by (e.g., 'development', 'analysis')
+   * @returns Array of agents in the specified category
+   * @throws Error if category is empty or invalid
    */
   getAgentsByCategory(category: string): AgentMetadata[] {
+    if (!category || typeof category !== 'string' || category.trim() === '') {
+      throw new Error('Category must be a non-empty string');
+    }
     return this.getAllAgents().filter(agent => agent.category === category);
   }
 
   /**
    * Check if agent exists
+   *
+   * @param name - Agent type identifier
+   * @returns True if agent is registered
+   * @throws Error if name is empty or invalid
    */
   hasAgent(name: AgentType): boolean {
+    if (!name || typeof name !== 'string' || name.trim() === '') {
+      throw new Error('Agent name must be a non-empty string');
+    }
     return this.agents.has(name);
   }
 
   /**
    * Get total agent count
+   *
+   * @returns Number of registered agents
    */
   getAgentCount(): number {
     return this.agents.size;
+  }
+
+  /**
+   * Get all agent types (names only)
+   *
+   * Useful for validation and type checking
+   *
+   * @returns Array of all agent type identifiers
+   */
+  getAllAgentTypes(): AgentType[] {
+    return Array.from(this.agents.keys());
   }
 
   /**

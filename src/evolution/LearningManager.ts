@@ -773,4 +773,84 @@ export class LearningManager {
 
     return patterns;
   }
+
+  /**
+   * Add bootstrap pattern (for new user initialization)
+   * Used by EvolutionBootstrap to preload common workflow patterns
+   *
+   * @param pattern Bootstrap pattern to add
+   */
+  addBootstrapPattern(pattern: LearnedPattern): void {
+    const agentId = pattern.agentId;
+
+    if (!this.patterns.has(agentId)) {
+      this.patterns.set(agentId, []);
+    }
+
+    const existing = this.patterns.get(agentId)!;
+
+    // Check if pattern already exists
+    const existingPatternIndex = existing.findIndex((p) => p.id === pattern.id);
+
+    if (existingPatternIndex !== -1) {
+      const existingPattern = existing[existingPatternIndex];
+
+      // Compare key fields to detect updates
+      const hasContentChanges =
+        existingPattern.description !== pattern.description ||
+        existingPattern.confidence !== pattern.confidence ||
+        existingPattern.observationCount !== pattern.observationCount ||
+        existingPattern.successCount !== pattern.successCount ||
+        existingPattern.successRate !== pattern.successRate;
+
+      if (hasContentChanges) {
+        // Update existing pattern with new data
+        existing[existingPatternIndex] = {
+          ...pattern,
+          createdAt: existingPattern.createdAt, // Preserve original creation time
+          updatedAt: new Date(), // Update timestamp
+        };
+
+        logger.info('Bootstrap pattern updated with new content', {
+          patternId: pattern.id,
+          agentId,
+          taskType: pattern.taskType,
+          oldConfidence: existingPattern.confidence,
+          newConfidence: pattern.confidence,
+          oldObservationCount: existingPattern.observationCount,
+          newObservationCount: pattern.observationCount,
+        });
+      } else {
+        // Identical pattern, skip
+        logger.debug('Bootstrap pattern already exists with same content, skipping', {
+          patternId: pattern.id,
+          agentId,
+        });
+      }
+
+      return;
+    }
+
+    // Add new pattern
+    existing.push(pattern);
+
+    logger.debug('Bootstrap pattern added', {
+      patternId: pattern.id,
+      agentId,
+      taskType: pattern.taskType,
+      confidence: pattern.confidence,
+    });
+
+    // Trim if exceeds max (keep highest confidence patterns)
+    if (existing.length > this.config.maxPatternsPerAgent) {
+      existing.sort((a, b) => b.confidence - a.confidence);
+      this.patterns.set(agentId, existing.slice(0, this.config.maxPatternsPerAgent));
+
+      logger.debug('Trimmed patterns for agent', {
+        agentId,
+        kept: this.config.maxPatternsPerAgent,
+        removed: existing.length - this.config.maxPatternsPerAgent,
+      });
+    }
+  }
 }

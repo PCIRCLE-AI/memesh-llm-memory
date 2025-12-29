@@ -11,8 +11,9 @@ Smart Agents 是一個專業化的 AI Agent 系統，提供 **22 個具備自我
 **核心特點**：
 - ✅ **22 個專業 Agents** - 涵蓋開發、研究、設計、運維等各領域
 - ✅ **智能任務路由** - 自動選擇最適合的 agent 處理您的請求
+- ✅ **事件驅動激活** - Agents 根據您的工作流程自動激活（透過 Claude Code hooks）
 - ✅ **自我學習系統** - Agents 會從每次執行中學習並持續優化
-- ✅ **零額外成本** - 使用您自己的 Claude API subscription
+- ✅ **零額外成本** - 使用您自己的 Claude API subscription（僅支援 Claude）
 
 ---
 
@@ -295,18 +296,44 @@ Smart Agents 提供兩種使用方式：
 使用 rag-agent 搜尋相關文檔
 ```
 
+#### 3. **事件驅動模式**（進階功能）
+透過 Claude Code hooks，agents 可以自動激活並在背景工作：
+
+**自動激活場景**：
+- 🔄 **Session 開始** → Router 初始化 + Evolution 系統啟動
+- 🛠️ **工具執行後** → 自動追蹤性能指標，學習優化模式
+- 📊 **定期監控** → 配額檢查、合規驗證、學習儀表板更新
+- ✅ **Session 結束** → 儲存演化狀態到 MCP Memory
+
+**優勢**：
+- ✨ 無需手動調用 - agents 根據事件自動工作
+- ⏱️ 非阻塞執行 - 主對話繼續，agents 在背景完成任務
+- 🤝 人機協作 - 保持互動性，隨時可介入決策
+
+**配置方式**：參見 [Claude Code Integration Plan](docs/architecture/CLAUDE_CODE_INTEGRATION_PLAN.md)
+
 ### 工作原理
 
-Smart Agents 使用 **Prompt Enhancement Mode**：
+Smart Agents 支援兩種運作模式：
+
+#### **Mode 1: Prompt Enhancement（當前預設）**
 1. 接收您的任務
 2. 選擇最適合的專業 agent
 3. 生成優化的 prompt（包含該 agent 的專業知識）
 4. 返回給 Claude Code 執行
-5. 使用您的 Claude API subscription（無需額外 API key）
+5. 使用您的 Claude API subscription（僅支援 Claude）
 
-**重要**：Smart-Agents 不會自動接管所有任務，而是作為「專業助手工具箱」。您需要：
-- 明確請求使用 Smart-Agents（例如：「使用 smart-agents 的 code-reviewer 審查...」）
-- 或者任務明確匹配某個 agent 的專長時，Claude Code 會建議使用
+#### **Mode 2: Event-Driven Orchestration（進階功能）**
+1. Claude Code hooks 觸發事件（SessionStart, PostToolUse, Stop）
+2. Router 自動分配任務給適合的 agents
+3. Agents 在背景執行（非阻塞）
+4. 性能追蹤 + 自我學習系統持續優化
+5. 結果整合回主對話流程
+
+**重要**：Smart-Agents 作為「專業助手工具箱」，不會自動接管所有任務。您可以：
+- 明確請求使用（例如：「使用 smart-agents 的 code-reviewer 審查...」）
+- 配置 hooks 實現自動激活（參見 Integration Plan）
+- 任務明確匹配 agent 專長時，Claude Code 會建議使用
 
 ### 查看 Agent 學習進度
 
@@ -426,7 +453,7 @@ Waiting for requests...
 ## ❓ 常見問題
 
 ### Q: 需要配置 API keys 嗎？
-**A**: 不需要。Smart Agents 使用您在 Claude Code 中已配置的 Claude API subscription。
+**A**: 不需要。Smart Agents 使用您在 Claude Code 中已配置的 Claude API subscription。（RAG agent 需要可選的 OpenAI API key 用於 embeddings）
 
 ### Q: 如何知道使用了哪個 agent？
 **A**: Claude Code 會在回應中顯示使用的 agent 資訊。

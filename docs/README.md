@@ -44,7 +44,7 @@ Step-by-step guides for common tasks and best practices.
 
 Example configurations and quick references.
 
-- **[Architecture Examples](./examples/ARCHITECTURE.md)** - Architecture examples
+- **[Terminal UI Architecture](./architecture/TERMINAL_UI.md)** - Terminal UI architecture examples
 - **[Quick Reference](./examples/QUICK_REFERENCE.md)** - Quick reference guide
 - **[Enterprise](./examples/enterprise/)** - Enterprise deployment examples
 

@@ -2203,7 +2203,7 @@ if (recentReads.length === 0) {
 - **Hooks README**: `~/.claude/hooks/README.md`
 - **Smart-Router Skill**: `~/.claude/skills/smart-router/skill.md`
 - **Evolution Dashboard**: 本文檔 Phase 4
-- **Claude Code 整合計畫**: `/docs/architecture/CLAUDE_CODE_INTEGRATION_PLAN.md`
+- **MCP 整合指南**: `/docs/MCP_INTEGRATION.md` (取代已棄用的 hooks 計畫)
 
 ---
 

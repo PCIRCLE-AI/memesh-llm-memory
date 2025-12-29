@@ -672,7 +672,7 @@ PORT=3000
 
 ## Related Documentation
 
-- **[Claude Code Integration Plan](./CLAUDE_CODE_INTEGRATION_PLAN.md)** - Event-driven implementation details
+- **[MCP Integration Guide](../MCP_INTEGRATION.md)** - Claude Code integration via MCP (replaces deprecated hooks plan)
 - **[Evolution System](../EVOLUTION.md)** - Deep dive into learning system
 - **[Setup Guide](../guides/SETUP.md)** - Installation and configuration
 - **[README](../../README.md)** - User-facing documentation

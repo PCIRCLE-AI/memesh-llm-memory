@@ -9,11 +9,11 @@ import { AgentRegistry } from '../../src/core/AgentRegistry.js';
 
 describe('MCP Server Tools', () => {
   describe('AgentRegistry', () => {
-    it('should register all 22 agents', () => {
+    it('should register all 13 agents', () => {
       const registry = new AgentRegistry();
       const allAgents = registry.getAllAgents();
 
-      expect(allAgents.length).toBe(22);
+      expect(allAgents.length).toBe(13);
     });
 
     it('should have agents from all categories', () => {
@@ -24,11 +24,10 @@ describe('MCP Server Tools', () => {
 
       expect(categories).toContain('development');
       expect(categories).toContain('analysis');
-      expect(categories).toContain('knowledge');
       expect(categories).toContain('operations');
       expect(categories).toContain('creative');
-      expect(categories).toContain('utility');
-      expect(categories).toContain('general');
+      expect(categories).toContain('management');
+      expect(categories).toContain('engineering');
     });
 
     it('should include development-butler agent', () => {

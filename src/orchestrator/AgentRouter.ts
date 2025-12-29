@@ -320,7 +320,8 @@ export class AgentRouter {
       taskId: analysis.taskId,
       selectedAgent: fallbackAgent,
       enhancedPrompt,
-      estimatedCost: analysis.estimatedCost * 0.2, // general-agent 降低成本估算
+      // general-agent 降低成本估算 (80% discount)
+      estimatedCost: Math.round(analysis.estimatedCost * 0.2) as import('../utils/money.js').MicroDollars,
       reasoning: `Fallback to ${fallbackAgent} due to: ${reason}`,
     };
   }

@@ -37,6 +37,10 @@ const envSchema = z.object({
   // Development
   NODE_ENV: z.string().default('development'),
   PORT: z.string().default('3000'),
+
+  // Orchestrator Configuration
+  ORCHESTRATOR_MODE: z.enum(['local', 'distributed']).default('local'),
+  ORCHESTRATOR_MAX_MEMORY_MB: z.string().default('2048'),
 });
 
 /**
@@ -90,6 +94,12 @@ export const appConfig = {
   server: {
     env: env.NODE_ENV,
     port: parseInt(env.PORT),
+  },
+
+  // Orchestrator
+  orchestrator: {
+    mode: env.ORCHESTRATOR_MODE,
+    maxMemoryMB: parseInt(env.ORCHESTRATOR_MAX_MEMORY_MB),
   },
 } as const;
 

@@ -179,6 +179,11 @@ export class AgentRouter {
       'migration-assistant': ['general'],
       'api-integrator': ['general'],
       'general-agent': ['general'],
+      'project-manager': ['general'],
+      'product-manager': ['general'],
+      'data-engineer': ['data-analysis'],
+      'ml-engineer': ['data-analysis'],
+      'marketing-strategist': ['general'],
     };
 
     return agentCapabilities[agent] || ['general'];
@@ -217,6 +222,11 @@ export class AgentRouter {
       'ui-designer': 'general-agent',
       'migration-assistant': 'general-agent',
       'api-integrator': 'general-agent',
+      'project-manager': 'general-agent',
+      'product-manager': 'general-agent',
+      'data-engineer': 'data-analyst',
+      'ml-engineer': 'data-analyst',
+      'marketing-strategist': 'general-agent',
 
       // general-agent 沒有 fallback
       'general-agent': undefined,
@@ -264,6 +274,11 @@ export class AgentRouter {
       'migration-assistant': 'Migration assistance, upgrade planning, legacy modernization',
       'api-integrator': 'API integration, third-party services, SDK implementation',
       'general-agent': 'Versatile AI assistant for general tasks',
+      'project-manager': 'Project planning, task management, resource allocation, risk management',
+      'product-manager': 'Product strategy, roadmap planning, user requirements, feature prioritization',
+      'data-engineer': 'Data pipeline engineering, ETL/ELT, data infrastructure, data quality',
+      'ml-engineer': 'Machine learning engineering, model development, ML ops, deployment',
+      'marketing-strategist': 'Marketing strategy, campaign planning, growth, customer acquisition',
     };
 
     if (agentDescriptions[selectedAgent]) {

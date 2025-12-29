@@ -20,7 +20,7 @@
 
 ## 系統概覽
 
-Smart-Agents 是一個智能 AI Agent 協調平台，透過 **MCP (Model Context Protocol)** 整合到 Claude Code，提供 14 個自我優化的專業 agents。
+Smart-Agents 是一個智能 AI Agent 協調平台，透過 **MCP (Model Context Protocol)** 整合到 Claude Code，提供 13 個自我優化的專業 agents。
 
 ### 核心設計原則
 
@@ -188,7 +188,7 @@ interface TaskAnalysis {
 
 **職責**: 根據任務分析選擇最合適的 agent
 
-**14 個 Agents**:
+**13 個 Agents**:
 
 | Category | Agents | Count |
 |----------|--------|-------|
@@ -200,7 +200,7 @@ interface TaskAnalysis {
 | Creative | ui-designer | 1 |
 | Business | marketing-strategist | 1 |
 
-**註**: 14 agents (5 個完整實作, 8 個增強 prompts, 1 個可選功能)
+**註**: 13 agents (5 個完整實作, 7 個增強 prompts, 1 個可選功能)
 
 **路由決策**:
 ```typescript
@@ -215,7 +215,7 @@ interface RoutingDecision {
 
 **Agent 實作架構**:
 
-所有 14 個 agents 都通過 **Prompt Enhancement Mode** 工作：
+所有 13 個 agents 都通過 **Prompt Enhancement Mode** 工作：
 - **AgentRegistry** (`src/core/AgentRegistry.ts`) 註冊所有 agents 的 metadata
 - **PromptEnhancer** (`src/core/PromptEnhancer.ts`) 為每個 agent 定義專業 persona
 - 部分 agents 有完整的類別實作，其他通過 PromptEnhancer 的 persona 工作

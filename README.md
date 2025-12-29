@@ -184,7 +184,7 @@ The orchestrator can route to agents in these categories:
 - **Creative** (1 agent): ui-designer
 - **Business** (1 agent): marketing-strategist
 
-**Total**: 14 agents (5 real implementations, 8 enhanced prompts, 1 optional feature)
+**Total**: 13 agents (5 real implementations, 7 enhanced prompts, 1 optional feature)
 
 ---
 

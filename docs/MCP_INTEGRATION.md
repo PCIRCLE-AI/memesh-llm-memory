@@ -12,6 +12,9 @@
 cd /path/to/smart-agents
 npm install
 npm run build
+
+# Verify setup (optional but recommended)
+./scripts/verify-mcp-setup.sh
 ```
 
 ### Step 2: Configure Claude Code
@@ -321,6 +324,24 @@ npm run build
 ---
 
 ## ✅ Verification Checklist
+
+### Automated Verification
+
+Run the verification script to check everything:
+
+```bash
+./scripts/verify-mcp-setup.sh
+```
+
+This checks:
+- ✓ Node.js version >= 18.0.0
+- ✓ Dependencies installed
+- ✓ Build artifacts exist
+- ✓ Environment variables configured
+- ✓ MCP server starts successfully
+- ✓ Agent registry loads
+
+### Manual Verification
 
 After setup, verify:
 

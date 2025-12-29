@@ -1,6 +1,6 @@
 # Dependencies
 node_modules/
-package-lock.json
+# package-lock.json should be committed for reproducible builds
 yarn.lock
 pnpm-lock.yaml
 
@@ -33,6 +33,8 @@ Thumbs.db
 *~
 
 # Build outputs
+# Note: dist/ contains compiled TypeScript for npm package
+# If publishing to npm, dist/ should be included in package
 dist/
 build/
 out/
@@ -93,6 +95,10 @@ docs/archive/**
 !docs/archive/README.md
 docs/plans/**
 !docs/plans/README.md
+
+# Experimental code (cleaned up - do not recreate)
+experiments/
+skills/
 
 # Manual Test Scripts - DO NOT PUSH
 tests/manual/**

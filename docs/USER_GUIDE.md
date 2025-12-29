@@ -1,13 +1,25 @@
-# Smart-Agents V2.1 User Guide
+# Smart-Agents User Guide
+
+Complete guide to using the Smart-Agents AI orchestration platform.
 
 ## Table of Contents
 1. [Getting Started](#getting-started)
 2. [Core Concepts](#core-concepts)
-3. [Using Agents](#using-agents)
-4. [Event-Driven Butler](#event-driven-butler)
+3. [Usage Modes](#usage-modes)
+4. [Available Agents](#available-agents)
 5. [Best Practices](#best-practices)
+6. [Troubleshooting](#troubleshooting)
+
+---
 
 ## Getting Started
+
+### Prerequisites
+
+- Node.js >= 18.0.0
+- npm >= 9.0.0
+- (Optional) OpenAI API key for RAG functionality
+- (Optional) Anthropic API key for orchestrator
 
 ### Installation
 
@@ -22,86 +34,163 @@ npm install
 # Build the project
 npm run build
 
-# Run tests
+# Run tests to verify installation
 npm test
 ```
 
-### Quick Start
+### Environment Setup
 
-1. **Enable the Development Butler**:
-   The butler automatically activates at logical checkpoints in your workflow.
+Create a `.env` file in the project root:
 
-2. **Use Agents**:
-   ```typescript
-   import { TestWriterAgent } from 'smart-agents';
-   import { MCPToolInterface } from 'smart-agents';
+```env
+# For Orchestrator (optional)
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
 
-   const mcp = new MCPToolInterface();
-   const testWriter = new TestWriterAgent(mcp);
+# For RAG Agent (optional)
+OPENAI_API_KEY=your_openai_api_key_here
+```
 
-   await testWriter.writeTestFile('src/utils.ts');
-   ```
+See `.env.example` for all available configuration options.
+
+---
 
 ## Core Concepts
 
-### Three-Layer Architecture
+### What is Smart-Agents?
 
-**Layer 1: Prompt Enhancement Core**
-- AgentRegistry with 12 essential agents
-- Hooks system (session-start, post-tool-use, stop)
-- Knowledge Graph for persistent learning
+Smart-Agents is an **AI agent orchestration platform** with three main components:
 
-**Layer 2: Event-Driven Development Butler**
-- Automatic assistance at 6 checkpoint types
-- Zero-interruption workflow automation
-- Intelligent recommendations
+1. **Orchestrator**: Intelligently routes tasks to the most appropriate agent
+2. **RAG System**: Vector-based retrieval augmented generation for knowledge queries
+3. **Development Agents**: Specialized agents for development automation
 
-**Layer 3: Selective Agent Implementations**
-- 5 Real implementations: development-butler, test-writer, devops-engineer, project-manager, data-engineer
-- 7 Enhanced prompts: architecture-agent, code-reviewer, security-auditor, ui-designer, marketing-strategist, product-manager, ml-engineer
-- 1 Optional feature: RAG agent (requires ChromaDB + OpenAI API key)
+### Architecture Overview
 
-### Checkpoints
+```
+Claude Code (MCP)
+    ↓
+Smart-Agents MCP Server
+    ↓
+Orchestrator (Router)
+    ↓
+├─ RAG System
+├─ Development Agents
+└─ Knowledge Graph
+```
 
-The butler activates at these checkpoints:
+### Key Features
 
-1. **BEFORE_COMMIT**: Before git commit
-   - Runs code review
-   - Verifies tests pass
+- **Intelligent Routing**: Automatically selects the best agent for each task
+- **Cost Optimization**: Tracks and manages API costs across agents
+- **Resource Monitoring**: Built-in CPU/memory monitoring
+- **Self-Learning**: Evolution system improves performance over time
+- **MCP Integration**: Seamlessly integrates with Claude Code
 
-2. **SIGNIFICANT_CHANGE**: Large code changes
-   - Analyzes impact
-   - Updates documentation
+---
 
-3. **TEST_FAILURE**: Test failures
-   - Debugs issues
-   - Suggests fixes
+## Usage Modes
 
-4. **SESSION_END**: End of coding session
-   - Saves progress
-   - Generates summary
+Smart-Agents can be used in three ways:
 
-5. **SECURITY_CONCERN**: Security issues detected
-   - Runs security audit
-   - Suggests fixes
+### 1. As an MCP Server
 
-6. **PERFORMANCE_ISSUE**: Performance problems
-   - Analyzes bottlenecks
-   - Suggests optimizations
+Best for: Integration with Claude Code
 
-## Using Agents
+```bash
+# Start the MCP server
+npm run mcp
+```
 
-### Real Implementation Agents
+Then configure Claude Code to connect to the server.
 
-#### Test Writer Agent
+### 2. As a Running Service
 
-Automatically generates tests for your code:
+Best for: Standalone orchestration or RAG queries
+
+```bash
+# Start the orchestrator
+npm run orchestrator
+
+# Or run specific services
+npm run rag         # RAG agent
+npm run dashboard   # Evolution dashboard
+```
+
+### 3. As a Library
+
+Best for: Importing agents into your own code
 
 ```typescript
-import { TestWriterAgent } from 'smart-agents';
+import {
+  TestWriterAgent,
+  DevOpsEngineerAgent,
+  DevelopmentButler
+} from 'smart-agents';
 import { MCPToolInterface } from 'smart-agents';
 
 const mcp = new MCPToolInterface();
+
+// Use agents programmatically
+const testWriter = new TestWriterAgent(mcp);
+await testWriter.writeTestFile('src/utils.ts');
+```
+
+---
+
+## Available Agents
+
+### Core Agents (Implemented)
+
+#### RAG Agent
+
+Vector-based retrieval and semantic search.
+
+```bash
+# Start RAG agent
+npm run rag
+
+# Query the RAG system
+# (via API or MCP interface)
+```
+
+**Features**:
+- Semantic search over documents
+- Vector embeddings with OpenAI
+- ChromaDB vector storage
+- Re-ranking for better results
+
+#### Development Butler
+
+Event-driven development automation that activates at logical checkpoints.
+
+```typescript
+import { DevelopmentButler, Checkpoint } from 'smart-agents';
+
+const butler = new DevelopmentButler(mcp);
+
+// Analyze code changes
+await butler.analyzeCodeChanges({
+  files: ['src/app.ts'],
+  type: 'modification',
+  hasTests: true
+});
+```
+
+**Checkpoints**:
+- `BEFORE_COMMIT`: Code review and test verification
+- `SIGNIFICANT_CHANGE`: Impact analysis and doc updates
+- `TEST_FAILURE`: Debug assistance
+- `SESSION_END`: Progress saving and summary
+- `SECURITY_CONCERN`: Security audits
+- `PERFORMANCE_ISSUE`: Performance analysis
+
+#### Test Writer Agent
+
+Automated test generation for your codebase.
+
+```typescript
+import { TestWriterAgent } from 'smart-agents';
+
 const testWriter = new TestWriterAgent(mcp);
 
 // Generate tests for a file
@@ -110,85 +199,176 @@ await testWriter.writeTestFile('src/utils.ts');
 
 #### DevOps Engineer Agent
 
-Automates CI/CD setup:
+CI/CD automation and deployment configuration.
 
 ```typescript
 import { DevOpsEngineerAgent } from 'smart-agents';
-import { MCPToolInterface } from 'smart-agents';
 
-const mcp = new MCPToolInterface();
 const devops = new DevOpsEngineerAgent(mcp);
 
 // Setup GitHub Actions CI
-await devops.setupCI({
+await devops.generateCIConfig({
   platform: 'github-actions',
   testCommand: 'npm test',
   buildCommand: 'npm run build'
 });
-
-// Analyze deployment readiness
-const analysis = await devops.analyzeDeploymentReadiness();
-console.log('Ready to deploy:', analysis.readyToDeploy);
 ```
 
-### Enhanced Prompt Agents
+### Agent Categories (via Orchestrator)
 
-Enhanced prompt agents leverage MCP tools but don't have dedicated implementations.
-Use them via the AgentRegistry:
+When using the orchestrator, tasks can be routed to agents in these categories:
 
-```typescript
-import { AgentRegistry } from 'smart-agents';
+- **Development** (9 types): code-reviewer, test-writer, debugger, refactorer, api-designer, db-optimizer, frontend-specialist, backend-specialist, development-butler
+- **Research** (5 types): rag-agent, research-agent, architecture-agent, data-analyst, performance-profiler
+- **Operations** (2 types): devops-engineer, security-auditor
+- **Creative** (2 types): technical-writer, ui-designer
+- **Utility** (3 types): knowledge-agent, migration-assistant, api-integrator
+- **General** (1 type): general-agent (fallback)
 
-const registry = new AgentRegistry();
-
-// Get enhanced prompt agent
-const codeReviewer = registry.getAgent('code-reviewer');
-console.log(codeReviewer.description);
-```
-
-## Event-Driven Butler
-
-The butler automatically triggers at checkpoints. You can also manually trigger it:
-
-```typescript
-import { DevelopmentButler } from 'smart-agents';
-import { Checkpoint, CheckpointContext } from 'smart-agents';
-
-const butler = new DevelopmentButler();
-
-const context: CheckpointContext = {
-  checkpoint: Checkpoint.BEFORE_COMMIT,
-  metadata: { files: ['src/test.ts'] },
-  timestamp: new Date()
-};
-
-const response = await butler.handleCheckpoint(context);
-console.log('Butler actions:', response.actions);
-console.log('Recommendations:', response.recommendations);
-```
+---
 
 ## Best Practices
 
-### 1. Let the Butler Work for You
+### 1. Choose the Right Usage Mode
 
-Don't interrupt the butler - it activates automatically at the right moments.
+- **MCP Server**: For Claude Code integration
+- **Service**: For standalone orchestration
+- **Library**: For custom integrations
 
-### 2. Review Butler Recommendations
+### 2. Use the Orchestrator for Routing
 
-The butler provides recommendations, not forced actions. Review and apply as needed.
+Let the orchestrator select the best agent instead of hardcoding agent choices:
 
-### 3. Use Real Agents for Automation
+```typescript
+// Good: Let orchestrator route
+const result = await orchestrator.route(task);
 
-For repetitive tasks, use the real implementation agents (test-writer, devops-engineer, etc.).
+// Less optimal: Hardcode agent choice
+const agent = new SpecificAgent();
+```
 
-### 4. Leverage Knowledge Graph
+### 3. Monitor Resource Usage
 
-The system learns from your work. Check the Knowledge Graph for past decisions and solutions.
+Use the built-in monitoring to track resource usage:
 
-### 5. Keep MCP Tools Updated
+```bash
+# Check system status
+npm run orchestrator
+# Shows CPU, memory, and cost metrics
+```
 
-Ensure your MCP tools are up to date for best agent performance.
+### 4. Leverage the Knowledge Graph
+
+The system learns from past decisions. Check the Knowledge Graph for:
+- Previous solutions to similar problems
+- Successful patterns and approaches
+- Historical performance data
+
+### 5. Keep API Keys Secure
+
+- Never commit `.env` files
+- Use environment variables in production
+- Rotate keys regularly
+
+### 6. Use Safe E2E Testing
+
+Always use `:safe` versions of E2E tests:
+
+```bash
+# Good
+npm run test:e2e:safe
+
+# Bad (can cause system freeze)
+npm run test:e2e
+```
+
+---
 
 ## Troubleshooting
 
-See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for common issues and solutions.
+### Common Issues
+
+#### 1. API Key Errors
+
+**Problem**: `ANTHROPIC_API_KEY is not set`
+
+**Solution**:
+```bash
+# Check .env file exists
+ls -la .env
+
+# Verify key is set
+cat .env | grep ANTHROPIC_API_KEY
+```
+
+#### 2. RAG Agent Not Starting
+
+**Problem**: ChromaDB connection errors
+
+**Solution**:
+```bash
+# Install ChromaDB dependencies
+npm install chromadb openai
+
+# Verify OpenAI API key
+echo $OPENAI_API_KEY
+```
+
+#### 3. MCP Server Connection Issues
+
+**Problem**: Claude Code can't connect to MCP server
+
+**Solution**: See [MCP Integration Guide](./architecture/CLAUDE_CODE_INTEGRATION_PLAN.md)
+
+#### 4. E2E Tests Causing System Freeze
+
+**Problem**: Running E2E tests freezes the system
+
+**Solution**: Always use the `:safe` version:
+```bash
+npm run test:e2e:safe
+```
+
+### Getting Help
+
+- Check [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for detailed solutions
+- Review [Architecture Documentation](../ARCHITECTURE.md) for system internals
+- Open an issue on GitHub if problems persist
+
+---
+
+## Next Steps
+
+- **For Developers**: Check out the [API Reference](./api/API_REFERENCE.md)
+- **For Architects**: Read the [Architecture Documentation](../ARCHITECTURE.md)
+- **For Contributors**: See [CONTRIBUTING.md](../CONTRIBUTING.md)
+- **For Setup Help**: Consult [Setup Guide](./guides/SETUP_GUIDE.md)
+
+---
+
+## Quick Reference
+
+```bash
+# Start services
+npm run orchestrator  # Orchestrator
+npm run rag          # RAG agent
+npm run mcp          # MCP server
+npm run dashboard    # Dashboard
+
+# Development
+npm run dev          # Watch mode
+npm run build        # Build
+npm test             # Tests
+
+# E2E Testing (always use :safe)
+npm run test:e2e:safe
+npm run test:e2e:collaboration:safe
+npm run test:e2e:security:safe
+```
+
+---
+
+For more details, see:
+- [Agent Reference](./AGENT_REFERENCE.md)
+- [Architecture Documentation](../ARCHITECTURE.md)
+- [Troubleshooting Guide](./TROUBLESHOOTING.md)

@@ -1,827 +1,573 @@
-# Claude Code Integration Plan - Autonomous Smart-Agents
+# Smart-Agents Implementation Plan - Hook-Based Automation [未實作/已棄用]
 
-**Version**: 1.0
+> ⚠️ **重要通知：此計劃從未實作**
+>
+> - 此文件是 **2025-12-29 撰寫的實作計劃**，但從未實際執行
+> - Claude Code hooks 系統（SessionStart, PostToolUse, Stop）**從未被實作**
+> - 在 **2025-12-30**，已確認 hooks 方案已棄用
+> - 此文件保留作為**歷史參考**，記錄當時的設計思路
+> - 相關文檔狀態：
+>   - ✅ HOOKS_IMPLEMENTATION_GUIDE.md - 已標記為 DEPRECATED
+>   - ✅ README.md - Hooks 章節已標記為已棄用
+>   - ⚠️ 本文件 - 記錄未實作的計劃（保留供參考）
+
+**Version**: 3.0 (Hook-Based Architecture - Corrected Approach)
 **Date**: 2025-12-29
-**Status**: 📋 Pending Review
-
-## Executive Summary
-
-This plan integrates **Claude Code native features** with the **existing smart-agents architecture** to create truly autonomous agents that work proactively in the background without explicit user invocation.
-
-### What We Have (Existing)
-
-**5-Layer Multi-Model Routing Architecture**:
-- **Layer 1**: Provider Integration (Ollama, Gemini, Grok, ChatGPT, Claude)
-- **Layer 2**: Quota Manager (real-time quota tracking, failover logic)
-- **Layer 3**: Smart Router (complexity analysis, provider selection)
-- **Layer 4**: Skills Coordination (multi-model orchestration)
-- **Layer 5**: User Interface (MCP Server integration)
-
-**Evolution System** (4 Components):
-- `PerformanceTracker`: Tracks execution metrics (duration, cost, quality, success rate)
-- `LearningManager`: Identifies patterns (min 10 observations, min 0.6 confidence)
-- `AdaptationEngine`: Applies learned patterns (prompt optimization, model selection, timeout adjustment, retry strategy)
-- `EvolutionMonitor`: Dashboard for all 22 agents' learning progress
-
-**22 Specialized Agents** configured with evolution capabilities
-
-### What We Need (Claude Code Native Features)
-
-**Hooks System**:
-- `SessionStart`: Initialize Router with evolution system
-- `PostToolUse`: Track performance after each tool execution
-- `Stop`: Save evolution state before session ends
-
-**Background Execution**:
-- Background Bash: Long-running monitoring processes
-- Non-blocking operation: Main dialogue continues while monitoring runs
-
-**MCP Memory Integration**:
-- Persistent storage for learned patterns
-- Cross-session learning continuity
-
-### Core Principle
-
-**Use 100% existing smart-agents design + Claude Code native capabilities = Autonomous agents working proactively in background**
+**Status**: ❌ 未實作 - 計劃已棄用
 
 ---
 
-## Architecture Integration
+## 🎯 Core Philosophy (First Principles)
 
-### Current State (What Works)
+**"讓Claude Code 自發地去使用 smart-agents 的任務分配系統和 Claude Code 的 subagent 並行工作能力和活用 skills + MCP tools 來完成計畫的實作。"**
 
-```
-User Request → Claude Code → MCP Server (smart-agents)
-                              ↓
-                         Router.routeTask()
-                              ↓
-                         [Manual Invocation]
-```
+**Translation**: Make Claude Code **proactively** use smart-agents' task distribution system and Claude Code's subagent parallel working capabilities, leveraging skills + MCP tools to complete implementations.
 
-**Problem**: Requires explicit invocation, agents don't work proactively
+### Key Insight: Automation Requires Both Content + Delivery
 
-### Target State (What We Want)
+**CONTENT** (Smart Orchestrator Skill):
+- Task analysis logic (complexity, dependencies)
+- 22-agent registry with capabilities
+- Smart routing (Sequential vs Parallel decision trees)
+- User permission flow templates
 
-```
-Claude Code Session Start
-    ↓
-SessionStart Hook → Initialize Router + Evolution System
-    ↓
-Background Monitoring:
-    - Quota checking (every 10 min)
-    - Evolution dashboard (every 30 min)
-    - Compliance checking (READ BEFORE EDIT, RUN BEFORE CLAIM)
-    ↓
-User Dialogue (main thread, non-blocking)
-    ↓
-PostToolUse Hook → Track performance metrics → Learn patterns
-    ↓
-MCP Memory → Persist learned patterns
-    ↓
-Stop Hook → Save evolution state
-```
+**DELIVERY** (Hooks System):
+- **SessionStart Hook**: Initialize Router + Evolution System, load patterns from MCP Memory
+- **PostToolUse Hook**: Track performance, detect anomalies, learn patterns, persist to MCP Memory
+- **Stop Hook**: Save evolution state, generate session summary, cleanup
 
-**Benefit**: Autonomous operation, proactive monitoring, continuous learning
+**Why We Need Both**:
+- ✅ Skill alone = reactive (requires manual invocation)
+- ✅ Hooks alone = no intelligence (what to do?)
+- ✅ Skill + Hooks = proactive automation (自發地)
 
 ---
 
-## UX Design & User Interaction
+## 🏗️ Architecture (Hook-Based Automation)
 
-### Core Principle: Permission-Based Agent Deployment
+### System Components (Verified)
 
-**即使 agents 在背景自動執行，仍需先徵求用戶許可**
+**Claude Code Hooks** (✅ Real Feature):
+- SessionStart hook - Runs when session begins
+- PostToolUse hook - Runs after each tool execution
+- Stop hook - Runs when session ends
+- Configured in: `~/.claude/settings.json` or project `.claude/hooks/`
 
-This ensures human-in-the-loop control while maintaining autonomous operation.
+**Claude Code Task Tool** (✅ Verified):
+- **Parallel Execution**: Multiple Task calls in one message → run simultaneously
+- **Sequential Execution**: Make Task call → wait → make next Task call in follow-up
+- **NO Background Execution**: `run_in_background` parameter does NOT exist for Task tool (only for Bash tool)
 
-### Notification Format
+**Smart-Agents Components** (✅ Already Exists):
+- **22 Specialized Agents**: Metadata registry with descriptions, categories, capabilities
+- **Router**: Task complexity analysis, agent selection, prompt enhancement
+- **Evolution System**: PerformanceTracker, LearningManager, AdaptationEngine, EvolutionMonitor
+- **RAG Agent**: Vector search, file indexing, **drop folder feature (FULLY IMPLEMENTED)**
 
-**Design Requirements**:
-- ✅ Short and clear (easy to understand)
-- ✅ SmartAgents branding (prefix all notifications)
-- ✅ User choice (Yes / Provide feedback)
-- ✅ Context (what, why, when)
+**MCP Tools** (✅ Available):
+- **mcp__MCP_DOCKER__* (Knowledge Graph)**: create_entities, add_observations, create_relations, search_nodes
+- **mcp__memory__***: store_memory, retrieve_memory, recall_memory
+- **mcp__filesystem__***: read, write, edit, search
 
-**Standard Format**:
+### Hook-Based Architecture Diagram
+
 ```
-🤖 SmartAgents: Deploying [agent-name] to [action] triggered by [event]
-   Permission to proceed?
-   1) Yes
-   2) Provide feedback
+┌─────────────────────────────────────────────────────────────┐
+│ SessionStart Hook (Automatic on Session Start)             │
+│ - Load smart-orchestrator skill                            │
+│ - Initialize Router + Evolution System                     │
+│ - Load saved patterns from MCP Memory                      │
+│ - Start background monitoring (quota, compliance)          │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+                        ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Main Dialogue (User Request Processing)                    │
+│ - Claude Code receives user request                        │
+│ - Smart-orchestrator skill is already loaded               │
+│ - Analyzes task complexity & dependencies                  │
+│ - Decides: Sequential OR Parallel execution                │
+│ - Recommends approach to user → Gets permission            │
+│ - Executes using chosen approach                           │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+                        ↓
+┌─────────────────────────────────────────────────────────────┐
+│ PostToolUse Hook (Automatic after Each Tool)               │
+│ - Track performance metrics (duration, tokens, cost)       │
+│ - Detect anomalies (slow, expensive, low quality)          │
+│ - Learn patterns (every 10 executions)                     │
+│ - Persist to MCP Memory                                    │
+│ - Compliance check (READ_BEFORE_EDIT, etc.)                │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+                        ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Stop Hook (Automatic on Session End)                       │
+│ - Save evolution state to MCP Memory                       │
+│ - Generate session summary                                 │
+│ - Clean up background processes                            │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Real-World Examples
+**Key Point**: Hooks provide **automatic** triggering, Skill provides **intelligent** decision-making.
 
-**Example 1: Anomaly Detection**
-```
-🤖 SmartAgents: Deploying debugger + performance-profiler to investigate slow execution triggered by PostToolUse (Read > 2s)
-   Permission to proceed?
-   1) Yes
-   2) Provide feedback
-```
+---
 
-**Example 2: Code Review**
-```
-🤖 SmartAgents: Deploying code-reviewer to review recent changes triggered by git commit
-   Permission to proceed?
-   1) Yes
-   2) Provide feedback
-```
+## 📋 Implementation Plan (What Needs to Be Done)
 
-**Example 3: Session Start**
-```
-🤖 SmartAgents: Deploying evolution-monitor + quota-checker + compliance-monitor to start background monitoring triggered by SessionStart
-   Permission to proceed?
-   1) Yes
-   2) Provide feedback
-```
+### Phase 1: Complete Smart-Orchestrator Skill ✅ Priority
 
-### Permission Requirements by Event Type
+**File**: `/Users/ktseng/Developer/Projects/smart-agents/.claude/skills/smart-orchestrator/skill.md`
 
-| Event Type | When | Example Agents | Permission Required |
-|------------|------|----------------|---------------------|
-| **SessionStart** | Claude Code session starts | evolution-monitor, quota-checker | ✅ Yes (once per session) |
-| **PostToolUse** | Tool execution completes | code-reviewer, debugger, performance-profiler | ✅ Yes (per anomaly) |
-| **Threshold Breach** | Quota/budget exceeded | quota-checker (80% budget), compliance-monitor | ✅ Yes (per alert) |
-| **Periodic** | Scheduled check | evolution-monitor (30 min), quota-checker (10 min) | ❌ No (background) |
-| **Stop** | Session ends | evolution-monitor (save state) | ❌ No (cleanup) |
+**Status**: 80% complete, needs final updates
 
-### Permission Caching (Smart Defaults)
+**Purpose**: Provides the CONTENT (logic, instructions) that hooks will use
 
-**Goal**: Reduce notification fatigue while maintaining control
+**Remaining Work**:
 
-**Strategy**:
-- First deployment in session → Always ask
-- Same deployment type within 30 min → Auto-approve (cached)
-- Different deployment type → Ask again
+1. **Add Dependency Analysis Section**
+   - Decision tree: Dependencies → Sequential, Independent → Parallel, Mixed → Hybrid
+   - Examples of each scenario
+   - How to identify dependencies
+
+2. **Add Recommendation Flow**
+   - Format for presenting recommendation to user
+   - Permission request template
+   - User options: Yes / Override / Provide feedback
+
+3. **Add Hybrid Execution Pattern**
+   - Phase-based execution (parallel prep → sequential implementation)
+   - Example: Research phase (parallel) → Implementation phase (sequential)
+
+4. **Add Resource Constraint Checking**
+   - CPU < 70%, Memory > 4GB before recommending parallel
+   - Token budget division for parallel agents
+   - E2E testing safety rules (NO multi-agent E2E tests)
+
+5. **Update Examples**
+   - Show BOTH sequential and parallel use cases
+   - Real-world scenarios (authentication system, dashboard components, bug investigation)
+   - When each approach is recommended
+
+**Acceptance Criteria**:
+- [ ] Dependency analysis logic complete
+- [ ] Recommendation format defined
+- [ ] Hybrid pattern documented
+- [ ] Resource checks included
+- [ ] Examples show both sequential and parallel
+- [ ] No mention of "background execution" for Task tool
+
+---
+
+### Phase 2: Implement Hooks System ✅ Critical
+
+**Purpose**: Provides the DELIVERY (automatic triggering) mechanism
+
+**Files to Create**:
+
+#### 2.1 SessionStart Hook (`~/.claude/hooks/session-start.js`)
+
+**Purpose**: Initialize smart-agents system at session start
 
 **Implementation**:
 ```javascript
-const permissionCache = {
-  // Key: deployment signature (agents + trigger)
-  // Value: { approved, timestamp, sessionId }
+#!/usr/bin/env node
+
+// Purpose: Initialize Router + Evolution System at session start
+// Runs: Automatically when Claude Code session starts
+// Non-blocking: Main dialogue continues while this runs in background
+
+const initializeSmartAgents = async () => {
+  // 1. Load smart-orchestrator skill (ensure it's available)
+  console.log('[Smart-Agents] Loading orchestration logic...');
+
+  // 2. Initialize Router + Evolution System
+  console.log('[Smart-Agents] Initializing Router and Evolution System...');
+
+  // 3. Load saved patterns from MCP Memory
+  console.log('[Smart-Agents] Loading learned patterns from previous sessions...');
+
+  // 4. Start background monitoring (quota, compliance)
+  console.log('[Smart-Agents] Starting background monitoring...');
+
+  // 5. Ready indicator
+  console.log('✅ [Smart-Agents] System initialized and ready');
 };
 
-// If approved in this session within 30 min → auto-approve
-if (cached && cached.approved &&
-    cached.sessionId === currentSessionId &&
-    Date.now() - cached.timestamp < 30 * 60 * 1000) {
-  console.log(`[SmartAgents] Auto-approved (cached): ${agents}`);
-  return { approved: true };
-}
+initializeSmartAgents().catch(err => {
+  console.error('❌ [Smart-Agents] Initialization failed:', err.message);
+});
 ```
 
-### User Feedback Integration
-
-**Option 1: User says "Yes"**
-- Agent deploys immediately
-- Works in background (non-blocking)
-- User can continue dialogue
-
-**Option 2: User provides feedback**
-- Collect feedback text
-- Pass feedback to deployed agents as context
-- Agents adjust behavior based on feedback
-- Example: "Focus on security issues" → code-reviewer prioritizes security
-
----
-
-## Implementation Design
-
-### Phase 1: Hooks Configuration
-
-#### 1.1 Settings.local.json Configuration
-
-**Location**: `/Users/ktseng/.claude/settings.local.json`
-
-**Add hooks section**:
-
+**Integration**:
+- Add to `~/.claude/settings.json`:
 ```json
 {
   "hooks": {
-    "sessionStart": {
-      "command": "node",
-      "args": [
-        "/Users/ktseng/.claude/hooks/session-start.js",
-        "{sessionId}"
-      ],
-      "description": "Initialize smart-agents Router with evolution system"
-    },
-    "postToolUse": {
-      "command": "node",
-      "args": [
-        "/Users/ktseng/.claude/hooks/post-tool-use.js",
-        "{toolName}",
-        "{result}",
-        "{durationMs}"
-      ],
-      "description": "Track tool execution performance for evolution"
-    },
-    "stop": {
-      "command": "node",
-      "args": [
-        "/Users/ktseng/.claude/hooks/stop.js",
-        "{sessionId}"
-      ],
-      "description": "Save evolution state before session ends"
-    }
+    "sessionStart": "~/.claude/hooks/session-start.js"
   }
 }
 ```
 
-#### 1.2 Hook Scripts
+#### 2.2 PostToolUse Hook (`~/.claude/hooks/post-tool-use.js`)
 
-**Directory**: `/Users/ktseng/.claude/hooks/`
+**Purpose**: Track performance and learn from each tool execution
 
-**Files to create**:
-- `session-start.js`: Initialize Router, request permission, start background monitoring
-- `post-tool-use.js`: Track performance metrics, request permission for anomaly investigation, learn patterns
-- `stop.js`: Save evolution state, generate session report
-- `background-monitor.js`: Quota checking, compliance validation
-- `utils/permission.js`: **NEW** - Centralized permission request handling with caching
-
-### Phase 2: Router Integration
-
-#### 2.1 Session Start Hook (`session-start.js`)
-
-**Responsibilities**:
-1. Initialize Router (automatically initializes all 22 agents + evolution system)
-2. Load saved evolution state from MCP Memory
-3. **Request permission** to start background monitoring
-4. Start background monitoring processes (if approved)
-5. Log initialization summary
-
-**Key Implementation**:
-
+**Implementation**:
 ```javascript
-import { Router } from '/Users/ktseng/Developer/Projects/smart-agents/src/orchestrator/router.js';
-import { EvolutionMonitor } from '/Users/ktseng/Developer/Projects/smart-agents/src/evolution/EvolutionMonitor.js';
-import { askUserPermission } from './utils/permission.js';
+#!/usr/bin/env node
 
-async function handleSessionStart(sessionId) {
-  // 1. Initialize Router (always, no permission needed)
-  const router = new Router();
-  const monitor = new EvolutionMonitor(
-    router.getPerformanceTracker(),
-    router.getLearningManager(),
-    router.getAdaptationEngine()
-  );
+// Purpose: Track tool performance and learn patterns
+// Runs: Automatically after EACH tool execution
+// Input: stdin receives { toolName, arguments, result, duration, ... }
 
-  // 2. Load saved patterns (always, no permission needed)
-  await loadPatternsFromMemory(router.getLearningManager());
+const trackToolPerformance = async (toolUseData) => {
+  // 1. Parse tool use data from stdin
+  const { toolName, duration, tokensUsed, success } = toolUseData;
 
-  // 3. REQUEST PERMISSION for background monitoring
-  const permission = await askUserPermission({
-    prefix: "🤖 SmartAgents",
-    agents: "evolution-monitor + quota-checker + compliance-monitor",
-    action: "start background monitoring (quota, compliance, learning)",
-    trigger: "SessionStart",
+  // 2. Track performance metrics
+  // Call: mcp__MCP_DOCKER__add_observations to PerformanceTracker entity
+
+  // 3. Detect anomalies (slow, expensive, low quality)
+  if (duration > 10000) {
+    console.warn(`⚠️  [Smart-Agents] Slow tool execution: ${toolName} (${duration}ms)`);
+  }
+
+  // 4. Learn patterns (every 10 executions)
+  // Check execution count, trigger learning if threshold reached
+
+  // 5. Compliance check (READ_BEFORE_EDIT, etc.)
+  // Verify rules from CLAUDE.md are followed
+};
+
+// Read from stdin
+let inputData = '';
+process.stdin.on('data', chunk => { inputData += chunk; });
+process.stdin.on('end', () => {
+  const toolUseData = JSON.parse(inputData);
+  trackToolPerformance(toolUseData).catch(err => {
+    console.error('❌ [Smart-Agents] PostToolUse hook failed:', err.message);
   });
-
-  if (permission.approved) {
-    // 4. Start background monitoring (non-blocking)
-    startBackgroundMonitoring(sessionId, router, monitor, {
-      userFeedback: permission.feedback,
-    });
-
-    console.log("[SmartAgents] Background monitoring started ✓");
-  } else {
-    console.log("[SmartAgents] Background monitoring disabled by user");
-  }
-}
-```
-
-**Background Monitoring Tasks**:
-
-| Task | Interval | Purpose |
-|------|----------|---------|
-| Quota Check | 10 minutes | Warn if approaching 80% of budget |
-| Evolution Dashboard | 30 minutes | Log learning progress |
-| Compliance Check | On each tool use | Validate READ BEFORE EDIT, RUN BEFORE CLAIM |
-
-#### 2.2 Post-Tool-Use Hook (`post-tool-use.js`)
-
-**Responsibilities**:
-1. Track performance metrics for each tool execution
-2. Detect anomalies (slow execution, high cost, low quality)
-3. **Request permission** to deploy investigation agents (if anomaly detected)
-4. Update learning patterns (background, no permission needed)
-5. Persist to MCP Memory
-
-**Key Implementation**:
-
-```javascript
-import { askUserPermissionWithCache } from './utils/permission.js';
-
-async function handlePostToolUse(toolName, result, durationMs) {
-  // 1. Track performance (always, no permission needed)
-  const metrics = performanceTracker.track({
-    agentId: inferAgentFromTool(toolName),
-    taskType: toolName,
-    success: !result.error,
-    durationMs,
-    cost: estimateCost(toolName, result),
-    qualityScore: assessQuality(result),
-    metadata: { toolName, resultSize: JSON.stringify(result).length }
-  });
-
-  // 2. Detect anomalies
-  const anomaly = performanceTracker.detectAnomalies(agentId, metrics);
-
-  // 3. If anomaly detected → REQUEST PERMISSION to deploy agents
-  if (anomaly.isAnomaly) {
-    const agentsToDeploy = selectAgentsForAnomaly(anomaly);
-
-    // Permission request with SmartAgents branding
-    const permission = await askUserPermissionWithCache({
-      prefix: "🤖 SmartAgents",
-      agents: agentsToDeploy.map(a => a.name).join(" + "),
-      action: anomaly.type === "slow" ? "investigate slow execution" :
-              anomaly.type === "expensive" ? "analyze high cost" :
-              "review low quality output",
-      trigger: `PostToolUse (${toolName} ${anomaly.type})`,
-    });
-
-    if (permission.approved) {
-      // Deploy agents in background (non-blocking)
-      await deployAgentsInBackground(agentsToDeploy, {
-        context: { toolName, result, metrics, anomaly },
-        userFeedback: permission.feedback,
-      });
-
-      console.log(`[SmartAgents] Deployed ${agentsToDeploy.map(a => a.name).join(", ")} ✓`);
-    } else {
-      console.log(`[SmartAgents] User declined: ${agentsToDeploy.map(a => a.name).join(", ")}`);
-    }
-  }
-
-  // 4. Periodic learning (every 10 executions, no permission needed)
-  if (performanceTracker.getTotalTaskCount() % 10 === 0) {
-    const patterns = learningManager.analyzePatterns(agentId);
-    await persistPatternsToMemory(patterns);
-  }
-}
-```
-
-**Helper: Select Agents for Anomaly**:
-
-```javascript
-function selectAgentsForAnomaly(anomaly) {
-  switch (anomaly.type) {
-    case "slow":
-      return [
-        { name: "debugger", priority: "high" },
-        { name: "performance-profiler", priority: "high" }
-      ];
-    case "expensive":
-      return [
-        { name: "performance-profiler", priority: "high" },
-        { name: "code-reviewer", priority: "medium" }
-      ];
-    case "low_quality":
-      return [
-        { name: "code-reviewer", priority: "high" },
-        { name: "test-writer", priority: "medium" }
-      ];
-    default:
-      return [{ name: "general-agent", priority: "low" }];
-  }
-}
-```
-
-#### 2.3 Stop Hook (`stop.js`)
-
-**Responsibilities**:
-1. Save evolution state to MCP Memory
-2. Generate session summary report
-3. Clean up background monitoring processes
-
-**Key Implementation**:
-
-```javascript
-// Get final evolution summary
-const summary = monitor.getDashboardSummary();
-
-// Save to MCP Memory
-await mcp.createEntities({
-  entities: [{
-    name: `Session ${sessionId} Evolution Summary`,
-    entityType: 'session_evolution',
-    observations: [
-      `Total Executions: ${summary.totalExecutions}`,
-      `Average Success Rate: ${(summary.averageSuccessRate * 100).toFixed(1)}%`,
-      `Agents with Learning Progress: ${summary.agentsWithLearningProgress}`,
-      `Top Performing Agent: ${summary.topAgent}`
-    ]
-  }]
-});
-
-// Generate session report
-const report = monitor.formatDashboard();
-console.log(report);
-```
-
-#### 2.4 Permission Utility (`utils/permission.js`)
-
-**Purpose**: Centralized permission request handling with SmartAgents branding and caching
-
-**Key Implementation**:
-
-```javascript
-/**
- * Request user permission to deploy agents (with caching)
- *
- * @param {Object} options
- * @param {string} options.prefix - Brand prefix (e.g., "🤖 SmartAgents")
- * @param {string} options.agents - Agent names (e.g., "debugger + performance-profiler")
- * @param {string} options.action - Action to perform (e.g., "investigate slow execution")
- * @param {string} options.trigger - Trigger event (e.g., "PostToolUse (Read slow)")
- * @returns {Promise<{approved: boolean, feedback?: string}>}
- */
-async function askUserPermissionWithCache({ prefix, agents, action, trigger }) {
-  const signature = `${agents}::${trigger}`;
-  const cached = permissionCache[signature];
-
-  // If approved in this session within last 30 min → auto-approve
-  if (cached && cached.approved &&
-      cached.sessionId === currentSessionId &&
-      Date.now() - cached.timestamp < 30 * 60 * 1000) {
-    console.log(`[SmartAgents] Auto-approved (cached): ${agents}`);
-    return { approved: true };
-  }
-
-  // Otherwise, ask user
-  const result = await askUserPermission({ prefix, agents, action, trigger });
-
-  // Cache the decision
-  permissionCache[signature] = {
-    approved: result.approved,
-    timestamp: Date.now(),
-    sessionId: currentSessionId,
-  };
-
-  return result;
-}
-
-/**
- * Request user permission to deploy agents (no caching)
- *
- * @param {Object} options - Same as askUserPermissionWithCache
- * @returns {Promise<{approved: boolean, feedback?: string}>}
- */
-async function askUserPermission({ prefix, agents, action, trigger }) {
-  // Format: Short, clear, branded
-  const message = `${prefix}: Deploying ${agents} to ${action} triggered by ${trigger}
-   Permission to proceed?
-   1) Yes
-   2) Provide feedback`;
-
-  console.log(message);
-
-  // Use Claude Code's built-in prompt mechanism or MCP tool
-  const response = await promptUser(message, {
-    options: [
-      { value: "yes", label: "1) Yes" },
-      { value: "feedback", label: "2) Provide feedback" }
-    ]
-  });
-
-  if (response.choice === "yes") {
-    return { approved: true };
-  } else {
-    // User chose option 2: collect feedback
-    const feedback = await promptUser("Your feedback:", { type: "text" });
-    return { approved: true, feedback };
-  }
-}
-
-// Permission cache (in-memory, session-scoped)
-const permissionCache = {};
-let currentSessionId = null;
-
-/**
- * Initialize permission system for new session
- */
-function initPermissionSystem(sessionId) {
-  currentSessionId = sessionId;
-  // Clear cache from previous session
-  Object.keys(permissionCache).forEach(key => delete permissionCache[key]);
-}
-
-export { askUserPermission, askUserPermissionWithCache, initPermissionSystem };
-```
-
-**Integration with Hooks**:
-
-```javascript
-// In session-start.js
-import { initPermissionSystem, askUserPermission } from './utils/permission.js';
-
-async function handleSessionStart(sessionId) {
-  // Initialize permission system
-  initPermissionSystem(sessionId);
-
-  // ... rest of session start logic
-}
-```
-
-### Phase 3: MCP Memory Integration
-
-#### 3.1 Learned Patterns Persistence
-
-**Strategy**: Use MCP Memory Knowledge Graph for structured storage
-
-```javascript
-// Save learned pattern
-await mcp.createEntities({
-  entities: [{
-    name: `Pattern: ${pattern.id}`,
-    entityType: 'learned_pattern',
-    observations: [
-      `Type: ${pattern.type}`,
-      `Agent: ${pattern.agentId}`,
-      `Task Type: ${pattern.taskType}`,
-      `Confidence: ${pattern.confidence}`,
-      `Success Rate: ${pattern.successRate}`,
-      `Observation Count: ${pattern.observationCount}`,
-      `Action: ${JSON.stringify(pattern.action)}`
-    ]
-  }]
-});
-
-// Create relation to agent
-await mcp.createRelations({
-  relations: [{
-    from: `Pattern: ${pattern.id}`,
-    to: `Agent: ${pattern.agentId}`,
-    relationType: 'learned_by'
-  }]
 });
 ```
 
-#### 3.2 Cross-Session Learning
+**Integration**:
+- Add to `~/.claude/settings.json`:
+```json
+{
+  "hooks": {
+    "postToolUse": "~/.claude/hooks/post-tool-use.js"
+  }
+}
+```
 
-**Session Start**: Load all learned patterns from MCP Memory
+#### 2.3 Stop Hook (`~/.claude/hooks/stop.js`)
 
+**Purpose**: Save state and cleanup on session end
+
+**Implementation**:
 ```javascript
-// Query all learned patterns
-const nodes = await mcp.searchNodes({ query: 'learned_pattern' });
+#!/usr/bin/env node
 
-// Import patterns into LearningManager
-for (const node of nodes) {
-  const pattern = parsePatternFromNode(node);
-  learningManager.addBootstrapPattern(pattern);
+// Purpose: Save evolution state and generate session summary
+// Runs: Automatically when Claude Code session ends
+
+const saveSessionState = async () => {
+  // 1. Save evolution state to MCP Memory
+  console.log('[Smart-Agents] Saving evolution state...');
+
+  // 2. Generate session summary
+  console.log('[Smart-Agents] Generating session summary...');
+
+  // 3. Clean up background processes
+  console.log('[Smart-Agents] Cleaning up background processes...');
+
+  // 4. Goodbye indicator
+  console.log('✅ [Smart-Agents] Session state saved successfully');
+};
+
+saveSessionState().catch(err => {
+  console.error('❌ [Smart-Agents] Stop hook failed:', err.message);
+});
+```
+
+**Integration**:
+- Add to `~/.claude/settings.json`:
+```json
+{
+  "hooks": {
+    "stop": "~/.claude/hooks/stop.js"
+  }
 }
 ```
 
-### Phase 4: Compliance Monitoring
-
-#### 4.1 CLAUDE.md Rules Enforcement
-
-**Rules to Monitor** (from `/Users/ktseng/.claude/CLAUDE.md`):
-
-1. **READ BEFORE EDIT**: Must read file before editing
-2. **RUN BEFORE CLAIM**: Must execute command before claiming result
-3. **FIX ALL ISSUES**: All discovered issues must be fixed
-4. **ROOT CAUSE ANALYSIS**: Must use systematic-debugging for problems
-
-**Implementation in PostToolUse Hook**:
-
-```javascript
-// Check READ BEFORE EDIT
-if (toolName === 'Edit' && !recentlyReadFile(args.file_path)) {
-  await reportViolation({
-    rule: 'READ BEFORE EDIT',
-    toolName,
-    message: 'Attempted to edit file without reading it first'
-  });
-}
-
-// Check RUN BEFORE CLAIM
-if (isClaimingResult() && !recentlyExecutedCommand()) {
-  await reportViolation({
-    rule: 'RUN BEFORE CLAIM',
-    toolName,
-    message: 'Claiming result without execution'
-  });
-}
-```
-
-**Violation Reporting**:
-
-```javascript
-async function reportViolation(violation) {
-  // Log to MCP Memory
-  await mcp.createEntities({
-    entities: [{
-      name: `Violation: ${violation.rule} ${Date.now()}`,
-      entityType: 'rule_violation',
-      observations: [
-        `Rule: ${violation.rule}`,
-        `Tool: ${violation.toolName}`,
-        `Message: ${violation.message}`,
-        `Timestamp: ${new Date().toISOString()}`
-      ]
-    }]
-  });
-
-  // Warn user (non-blocking)
-  console.warn(`[Compliance Violation] ${violation.rule}: ${violation.message}`);
-}
-```
+**Acceptance Criteria**:
+- [ ] SessionStart hook created and tested
+- [ ] PostToolUse hook created and tested
+- [ ] Stop hook created and tested
+- [ ] Hooks configured in settings.json
+- [ ] Hooks run non-blocking (main dialogue continues)
+- [ ] Background monitoring works (quota, compliance)
 
 ---
 
-## File Structure
+### Phase 3: Activate RAG Drop Folder Feature ✅ Ready
 
-```
-/Users/ktseng/.claude/
-├── settings.local.json               # Updated with hooks configuration
-├── hooks/
-│   ├── session-start.js              # Initialize Router + Evolution
-│   ├── post-tool-use.js              # Track performance + Learn patterns
-│   ├── stop.js                       # Save evolution state
-│   ├── background-monitor.js         # Quota + Compliance monitoring
-│   └── state/                        # Runtime state storage
-│       ├── current-session.json      # Current session state
-│       ├── quota-{sessionId}.jsonl   # Quota logs
-│       └── evolution-{sessionId}.jsonl # Evolution snapshots
-└── CLAUDE.md                         # Existing rules (no changes)
+**Status**: Feature is FULLY IMPLEMENTED, just needs activation and documentation
 
-/Users/ktseng/Developer/Projects/smart-agents/
-├── src/
-│   ├── orchestrator/
-│   │   └── router.ts                 # Existing Router (no changes)
-│   └── evolution/
-│       ├── PerformanceTracker.ts     # Existing (no changes)
-│       ├── LearningManager.ts        # Existing (no changes)
-│       ├── AdaptationEngine.ts       # Existing (no changes)
-│       └── EvolutionMonitor.ts       # Existing (no changes)
-└── docs/
-    └── architecture/
-        └── CLAUDE_CODE_INTEGRATION_PLAN.md  # This document
-```
+**What Already Exists**:
+- ✅ `FileWatcher.ts` - Complete implementation
+- ✅ `watch.ts` - Standalone startup script
+- ✅ `RAG_DEPLOYMENT.md` - Full documentation
+- ✅ Drop folder location: `~/Documents/smart-agents-knowledge/`
+- ✅ Supported formats: .md, .txt, .json, .pdf, .docx
+- ✅ Auto-indexing every 5 seconds
+- ✅ NPM command: `npm run rag:watch`
 
----
+**What Needs to Be Done**:
 
-## Implementation Steps
+1. **Update README.md**
+   - Add "Drop Folder for Knowledge Indexing" section
+   - Document `npm run rag:watch` command
+   - Show example workflow
 
-### Step 1: Create Hooks Directory Structure ✅
+2. **Update smart-orchestrator skill**
+   - Include rag-agent in 22-agent registry description
+   - Mention drop folder capability
+   - When to use rag-agent (knowledge retrieval tasks)
 
-```bash
-mkdir -p /Users/ktseng/.claude/hooks/state
-```
+3. **Test & Verify**
+   - Start file watcher: `npm run rag:watch`
+   - Drop test files into `~/Documents/smart-agents-knowledge/`
+   - Verify auto-indexing works
+   - Test search functionality
 
-### Step 2: Create Hook Scripts
+4. **Create Quick Start Guide** (Optional)
+   - One-page guide for users
+   - How to enable RAG features (OpenAI API key)
+   - How to use drop folder
+   - Example queries
 
-**Order**:
-1. `session-start.js` (Router initialization)
-2. `post-tool-use.js` (Performance tracking)
-3. `stop.js` (State persistence)
-4. `background-monitor.js` (Quota + Compliance)
-
-### Step 3: Update settings.local.json
-
-Add hooks configuration to existing permissions
-
-### Step 4: Test Individual Hooks
-
-```bash
-# Test session-start hook
-node /Users/ktseng/.claude/hooks/session-start.js test-session-123
-
-# Test post-tool-use hook
-node /Users/ktseng/.claude/hooks/post-tool-use.js Read '{"success":true}' 1234
-
-# Test stop hook
-node /Users/ktseng/.claude/hooks/stop.js test-session-123
-```
-
-### Step 5: Integration Testing
-
-1. Start new Claude Code session
-2. Verify Router initialization in logs
-3. Execute some tools (Read, Edit, Bash)
-4. Verify performance tracking in state files
-5. End session
-6. Verify evolution state saved to MCP Memory
-
-### Step 6: Monitor and Iterate
-
-1. Review quota logs
-2. Check evolution dashboard snapshots
-3. Analyze learned patterns
-4. Tune background monitoring intervals
+**Acceptance Criteria**:
+- [ ] README updated with drop folder section
+- [ ] Skill mentions RAG capability
+- [ ] File watcher tested and working
+- [ ] Search functionality verified
 
 ---
 
-## Success Criteria
+### Phase 4: Update Documentation ✅ Important
 
-✅ **Autonomous Operation**:
-- Router initializes automatically on session start
-- Background monitoring runs without blocking main dialogue
-- No explicit user invocation required
+**Files to Update**:
 
-✅ **Continuous Learning**:
-- Performance metrics tracked for every tool execution
-- Patterns learned after sufficient observations
-- Patterns persisted across sessions via MCP Memory
+1. **README.md**
+   - Update architecture section (hook-based system)
+   - Add quick start examples (hooks + skill usage)
+   - Add RAG drop folder usage
+   - Explain automation benefits
 
-✅ **Proactive Monitoring**:
-- Quota warnings before 80% consumption
-- Evolution dashboard updates every 30 minutes
-- Compliance violations detected and reported
+2. **ARCHITECTURE.md** → `docs/architecture/OVERVIEW.md`
+   - Update with hook-based approach
+   - Document SessionStart, PostToolUse, Stop hooks
+   - Show architecture diagram with hooks
+   - Document verified Claude Code capabilities
 
-✅ **Full Architecture Integration**:
-- All 22 agents configured with evolution
-- 5-layer routing system accessible via hooks
-- No simplification or reduction of existing design
+3. **Create HOOKS_IMPLEMENTATION_GUIDE.md** (New)
+   - Detailed hook implementation guide
+   - Hook script examples
+   - Configuration instructions
+   - Troubleshooting
 
----
+4. **Update EVOLUTION.md** (If exists)
+   - Explain how hooks integrate with Evolution System
+   - Document performance tracking workflow
 
-## Risk Assessment
-
-### Technical Risks
-
-| Risk | Probability | Impact | Mitigation |
-|------|------------|--------|------------|
-| Hook execution overhead | Medium | Low | Use async operations, non-blocking monitoring |
-| MCP Memory quota limits | Low | Medium | Implement pattern pruning, keep top N patterns |
-| Background process crashes | Low | High | Error handling, restart logic, state persistence |
-| Import path issues (ESM) | Medium | Medium | Use absolute paths, verify imports in testing |
-
-### User Experience Risks
-
-| Risk | Probability | Impact | Mitigation |
-|------|------------|--------|------------|
-| Too many notifications | Medium | Low | Configure log levels, batch notifications |
-| Performance degradation | Low | High | Profile hook execution time, optimize critical path |
-| Unexpected behavior | Medium | Medium | Comprehensive testing, gradual rollout |
+**Acceptance Criteria**:
+- [ ] README reflects hook-based approach
+- [ ] OVERVIEW.md updated with hooks architecture
+- [ ] HOOKS_IMPLEMENTATION_GUIDE.md created
+- [ ] All documentation consistent
 
 ---
 
-## Alternatives Considered
+## 🎯 Success Criteria (How We Know It Works)
 
-### Alternative 1: Pure MCP Server (REJECTED)
+### Functional Success
 
-**Why Rejected**: User explicitly stated "making smart-agents a pure mcp is making it useless"
+1. **Automatic Initialization Works**
+   - ✅ SessionStart hook runs on session start
+   - ✅ Router + Evolution System initialized automatically
+   - ✅ Smart-orchestrator skill loaded automatically
+   - ✅ Main dialogue continues without blocking
 
-**Problem**: MCP servers are request-response only, cannot work proactively
+2. **Smart Routing Works (Proactively)**
+   - ✅ Claude Code automatically analyzes task complexity
+   - ✅ Identifies dependencies without manual trigger
+   - ✅ Recommends Sequential OR Parallel with reasoning
+   - ✅ User approves or overrides
+   - ✅ Executes using chosen approach
 
-### Alternative 2: Simplified Agent Definitions (REJECTED)
+3. **Performance Tracking Works (Automatic)**
+   - ✅ PostToolUse hook runs after each tool
+   - ✅ Metrics tracked (duration, tokens, cost)
+   - ✅ Anomalies detected (slow, expensive)
+   - ✅ Patterns learned (every 10 executions)
+   - ✅ Data persisted to MCP Memory
 
-**Why Rejected**: User explicitly stated "smart-agents features are not just these, i want full use of the design"
+4. **Session Management Works**
+   - ✅ Stop hook runs on session end
+   - ✅ Evolution state saved to MCP Memory
+   - ✅ Session summary generated
+   - ✅ Background processes cleaned up
 
-**Problem**: Lost sophisticated multi-model routing, evolution system, and 22 specialized agents
+5. **RAG Drop Folder Works**
+   - ✅ `npm run rag:watch` starts successfully
+   - ✅ Files dropped into folder are auto-indexed
+   - ✅ Search returns relevant results
+   - ✅ 22 agents can use RAG for knowledge retrieval
 
-### Alternative 3: Claude Code Hooks + Full Architecture (SELECTED)
+### Non-Functional Success
 
-**Why Selected**:
-- Leverages Claude Code native capabilities (hooks, background execution)
-- Preserves full sophisticated smart-agents design (5 layers, evolution, 22 agents)
-- Enables autonomous proactive operation
-- No reduction or simplification
+1. **True Automation (自發地)**
+   - ✅ No manual invocation required
+   - ✅ Proactive agent deployment
+   - ✅ User maintains control via permission requests
+   - ✅ Transparent reasoning
+
+2. **Performance**
+   - ✅ Hooks run non-blocking
+   - ✅ Main dialogue not interrupted
+   - ✅ Background monitoring lightweight
+
+3. **Reliability**
+   - ✅ Hook failures don't break main dialogue
+   - ✅ Evolution state persists across sessions
+   - ✅ Graceful degradation if hooks unavailable
 
 ---
 
-## Open Questions
+## 🚧 Implementation Notes
 
-1. **MCP Memory Quota**: How many learned patterns can we store before hitting limits?
-   - **Proposed**: Implement top-N pruning (keep 100 best patterns per agent)
+### Hooks vs Skill Clarification
 
-2. **Background Process Lifecycle**: Should background monitoring stop with session or persist?
-   - **Proposed**: Stop with session, restart on next session start
+**BOTH are needed for automation:**
 
-3. **Tool-to-Agent Mapping**: How to infer which agent executed each tool?
-   - **Proposed**: Heuristic mapping (Read → research-agent, Edit → code-reviewer, etc.)
+| Component | Role | Automatic? |
+|-----------|------|------------|
+| **Hooks** | Delivery mechanism - ensure skill is loaded and used | ✅ YES |
+| **Skill** | Content - provides intelligence and decision logic | ❌ NO (passive) |
 
-4. **Evolution Dashboard Access**: How should user access evolution dashboard?
-   - **Proposed**: Slash command `/evolution-dashboard` or auto-show on session end
+**Together**: Hooks + Skill = Proactive automation (自發地)
+
+### Background Monitoring
+
+**What runs in background** (via SessionStart hook):
+- Quota check (every 10 min) - warn at 80% budget
+- Evolution dashboard (every 30 min) - log learning progress
+- Compliance check (on tool use) - validate rules (READ_BEFORE_EDIT, etc.)
+
+**Non-blocking**: Main dialogue continues normally
+
+### User Permission Flow
+
+**Automatic analysis + Manual approval**:
+1. Hook ensures skill is loaded (automatic)
+2. Skill analyzes task and recommends approach (automatic)
+3. Present recommendation to user: "SmartAgents recommends deploying 3 agents in parallel. Permission to proceed?"
+4. User decides: Yes / No / Override (manual)
+5. Execute based on user decision (automatic)
+
+**User always maintains control.**
 
 ---
 
-## Next Steps (Pending Your Review)
+## 📅 Timeline & Next Steps
 
-1. ✅ Review this plan
-2. ⏸️ Approve or request modifications
-3. ⏸️ Implement hooks scripts (Phase 2)
-4. ⏸️ Update settings.local.json (Phase 1.1)
-5. ⏸️ Test individual hooks (Step 4)
-6. ⏸️ Integration testing (Step 5)
-7. ⏸️ Monitor and iterate (Step 6)
+### Immediate (This Session)
+
+1. ✅ Complete smart-orchestrator skill (Phase 1 remaining items)
+2. ✅ Implement hooks system (Phase 2)
+3. ✅ Test RAG drop folder feature (Phase 3)
+
+### Short Term (Next Session)
+
+1. Update README.md and documentation (Phase 4)
+2. Create HOOKS_IMPLEMENTATION_GUIDE.md
+3. Test end-to-end automation workflow
+
+### Ongoing
+
+1. Monitor hook performance and reliability
+2. Collect feedback and improve
+3. Evolve skill and hooks based on learnings
 
 ---
 
-## Conclusion
+## 🎓 Lessons Learned (First Principles Review)
 
-This plan achieves the user's goal:
+### Critical Clarification
 
-> "i want you to research claude code documents and find a way to reduce building with **full use of claude code's native features functions apis** to get smart-agents to work"
+**Misunderstanding**: Initially thought skill-based approach could achieve proactive ("自發地") behavior
 
-By integrating:
-- ✅ Claude Code native features (hooks, background execution, MCP Memory)
-- ✅ Full smart-agents architecture (5 layers, evolution system, 22 agents)
-- ✅ Autonomous proactive operation (no explicit invocation needed)
-- ✅ Continuous learning across sessions
-- ✅ Compliance monitoring (CLAUDE.md rules)
+**Reality**:
+- Skills are **reactive** (require manual invocation)
+- To achieve **proactive** ("自發地") behavior, need automation mechanism
+- Claude Code provides **hooks** as automation mechanism
+- **Correct approach**: Hooks (delivery) + Skill (content) = Automation
 
-**No reduction. No simplification. Full use of existing sophisticated design.**
+### What We Learned
+
+1. **Automation Requires Both**
+   - Content alone (skill) = not automatic
+   - Delivery alone (hooks) = no intelligence
+   - Both together = proactive automation
+
+2. **Verify User Goals**
+   - Don't assume simplified requirements
+   - Ask clarifying questions
+   - Confirm interpretation before major pivots
+
+3. **Feature Verification Still Critical**
+   - Verified: Task tool capabilities (parallel, sequential, no background)
+   - Verified: Hooks are real Claude Code features
+   - Verified: RAG drop folder fully implemented
+
+### Key Principles Going Forward
+
+1. **Verify Before Recommend** - No assumptions about features
+2. **Understand True Requirements** - Ask when unclear
+3. **Working Solutions Only** - Test and verify, not speculate
+4. **User-Driven** - Recommend, get permission, execute
+5. **First Principles** - Question all assumptions, focus on actual requirements
+
+---
+
+## 📚 References
+
+### Implementation Files
+
+- **Skill**: `/Users/ktseng/Developer/Projects/smart-agents/.claude/skills/smart-orchestrator/skill.md`
+- **Hooks**: `~/.claude/hooks/session-start.js`, `post-tool-use.js`, `stop.js`
+- **RAG Watcher**: `src/agents/rag/watch.ts`
+- **RAG Agent**: `src/agents/rag/index.ts`
+- **File Watcher**: `src/agents/rag/FileWatcher.ts`
+
+### Documentation
+
+- **RAG Deployment Guide**: `docs/guides/RAG_DEPLOYMENT.md`
+- **Architecture Overview**: `docs/architecture/OVERVIEW.md`
+- **Hooks Implementation Guide**: `docs/guides/HOOKS_IMPLEMENTATION_GUIDE.md` (to be created)
+- **README**: `README.md`
+
+### Knowledge Graph
+
+- Smart-Agents Core Philosophy 2025-12-29
+- Smart-Agents Automation Requirement Clarification 2025-12-29
+- Claude Code Task Tool Capabilities
+- RAG Drop Folder Feature Discovery
+
+---
+
+**Status**: ✅ Ready for implementation with hook-based automation approach
+**Next Action**: Complete Phase 1 (smart-orchestrator skill updates), then Phase 2 (implement hooks)

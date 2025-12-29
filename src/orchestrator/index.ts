@@ -29,7 +29,7 @@ import { Router } from './router.js';
 import { appConfig } from '../config/index.js';
 import { GlobalResourcePool } from './GlobalResourcePool.js';
 import { randomBytes } from 'crypto';
-import { KnowledgeAgent } from '../agents/knowledge/index.js';
+import { KnowledgeAgent, SimilarTask } from '../agents/knowledge/index.js';
 import { join } from 'path';
 import { BackgroundExecutor } from '../core/BackgroundExecutor.js';
 import { ResourceMonitor } from '../core/ResourceMonitor.js';
@@ -81,7 +81,7 @@ export class Orchestrator {
       const similarTasks = await this.knowledge.findSimilar(task.description, 'feature');
       if (similarTasks.length > 0) {
         console.log(`💡 Found ${similarTasks.length} similar past experiences`);
-        similarTasks.slice(0, 2).forEach((t, i) => {
+        similarTasks.slice(0, 2).forEach((t: SimilarTask, i: number) => {
           console.log(`   ${i + 1}. ${t.name}`);
         });
       }

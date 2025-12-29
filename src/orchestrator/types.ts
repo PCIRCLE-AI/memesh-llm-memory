@@ -49,6 +49,17 @@ export type AgentType =
   | 'migration-assistant'
   | 'api-integrator'
 
+  // Business & Product Agents
+  | 'project-manager'
+  | 'product-manager'
+
+  // Data & Analytics Agents
+  | 'data-engineer'
+  | 'ml-engineer'
+
+  // Marketing Agents
+  | 'marketing-strategist'
+
   // General Agent (fallback)
   | 'general-agent';
 

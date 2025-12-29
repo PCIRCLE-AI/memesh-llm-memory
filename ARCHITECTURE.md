@@ -20,13 +20,13 @@
 
 ## 系統概覽
 
-Smart-Agents 是一個智能 AI Agent 協調平台，透過 **MCP (Model Context Protocol)** 整合到 Claude Code，提供 22 個自我優化的專業 agents。
+Smart-Agents 是一個智能 AI Agent 協調平台，透過 **MCP (Model Context Protocol)** 整合到 Claude Code，提供 14 個自我優化的專業 agents。
 
 ### 核心設計原則
 
 1. **模組化** - 每個組件單一職責，低耦合高內聚
 2. **可擴展** - 易於新增 agents、capabilities
-3. **可測試** - 完整的測試覆蓋 (457 passing tests: unit, integration, E2E, regression)
+3. **可測試** - 完整的測試覆蓋 (447 passing tests: unit, integration, E2E, regression)
 4. **可觀測** - 實時監控、evolution dashboard、性能追蹤
 5. **Prompt Enhancement** - 生成針對 agent 優化的 prompts
 6. **自我改進** - 從執行經驗中學習，持續優化性能（Evolution System）
@@ -188,17 +188,19 @@ interface TaskAnalysis {
 
 **職責**: 根據任務分析選擇最合適的 agent
 
-**22 個 Agents**:
+**14 個 Agents**:
 
 | Category | Agents | Count |
 |----------|--------|-------|
-| Development | code-reviewer, test-writer, debugger, refactorer, api-designer, db-optimizer, frontend-specialist, backend-specialist, development-butler | 9 |
-| Research | rag-agent, research-agent, architecture-agent, data-analyst, performance-profiler | 5 |
-| Knowledge | knowledge-agent | 1 |
+| Development | development-butler, test-writer, code-reviewer | 3 |
 | Operations | devops-engineer, security-auditor | 2 |
-| Creative | technical-writer, ui-designer | 2 |
-| Utility | migration-assistant, api-integrator | 2 |
-| General | general-agent | 1 |
+| Management | project-manager, product-manager | 2 |
+| Engineering | data-engineer, ml-engineer | 2 |
+| Analysis | architecture-agent, rag-agent | 2 |
+| Creative | ui-designer | 1 |
+| Business | marketing-strategist | 1 |
+
+**註**: 14 agents (5 個完整實作, 8 個增強 prompts, 1 個可選功能)
 
 **路由決策**:
 ```typescript
@@ -213,7 +215,7 @@ interface RoutingDecision {
 
 **Agent 實作架構**:
 
-所有 22 個 agents 都通過 **Prompt Enhancement Mode** 工作：
+所有 14 個 agents 都通過 **Prompt Enhancement Mode** 工作：
 - **AgentRegistry** (`src/core/AgentRegistry.ts`) 註冊所有 agents 的 metadata
 - **PromptEnhancer** (`src/core/PromptEnhancer.ts`) 為每個 agent 定義專業 persona
 - 部分 agents 有完整的類別實作，其他通過 PromptEnhancer 的 persona 工作

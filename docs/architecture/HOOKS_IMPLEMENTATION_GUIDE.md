@@ -1223,7 +1223,7 @@ tail -f ~/.claude/state/hooks-debug.log
 
 ## References
 
-- **Plan Document**: `/Users/ktseng/Developer/Projects/smart-agents/docs/architecture/CLAUDE_CODE_INTEGRATION_PLAN.md`
+- **MCP Integration**: `/Users/ktseng/Developer/Projects/smart-agents/docs/MCP_INTEGRATION.md` (replaces hooks-based integration)
 - **Hooks README**: `~/.claude/hooks/README.md`
 - **Smart-Router Skill**: `~/.claude/skills/smart-router/skill.md`
 - **Smart-Orchestrator Skill**: `~/.claude/skills/smart-orchestrator/skill.md`

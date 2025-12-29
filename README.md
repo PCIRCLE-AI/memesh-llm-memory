@@ -32,7 +32,7 @@ Smart-Agents is a comprehensive AI agent orchestration platform that provides:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/smart-agents.git
+git clone https://github.com/kevintseng/smart-agents.git
 cd smart-agents
 
 # Install dependencies
@@ -176,14 +176,15 @@ See [Architecture Documentation](./ARCHITECTURE.md) for detailed system design.
 ### Agent Categories (via Orchestrator)
 
 The orchestrator can route to agents in these categories:
-- **Development** (2 agents): development-butler, code-reviewer
+- **Development** (3 agents): development-butler, test-writer, code-reviewer
 - **Operations** (2 agents): devops-engineer, security-auditor
 - **Management** (2 agents): project-manager, product-manager
 - **Engineering** (2 agents): data-engineer, ml-engineer
 - **Analysis** (2 agents): architecture-agent, rag-agent
 - **Creative** (1 agent): ui-designer
+- **Business** (1 agent): marketing-strategist
 
-**Total**: 13 agents (5 real implementations, 7 enhanced prompts, 1 optional feature)
+**Total**: 14 agents (5 real implementations, 8 enhanced prompts, 1 optional feature)
 
 ---
 
@@ -216,20 +217,34 @@ npm test -- tests/agents/rag/rag.test.ts
 # Development
 npm run dev              # Watch mode
 npm run build            # Build TypeScript
+npm start                # Start production build
 npm run typecheck        # Type checking
 
 # Services
 npm run orchestrator     # Start orchestrator
 npm run rag              # Start RAG agent
+npm run rag:demo         # RAG demo mode
+npm run rag:watch        # RAG watch mode (auto-index files)
 npm run dashboard        # Evolution dashboard
+npm run mcp              # Start MCP server
+
+# CLI Tools
+npm run cred             # Credential management
 
 # Testing
 npm test                 # Unit tests
+npm run test:coverage    # Test coverage report
 npm run test:e2e:safe    # E2E tests (safe mode)
+npm run test:e2e:collaboration:safe    # Collaboration E2E tests (safe)
+npm run test:e2e:security:safe         # Security E2E tests (safe)
 
 # Code Quality
 npm run lint             # ESLint
 npm run format           # Prettier
+
+# Demos
+npm run demo:architecture    # Architecture demo
+npm run demo:dashboard       # Dashboard demo
 ```
 
 ### Project Structure
@@ -275,7 +290,7 @@ smart-agents/
 
 ### Technical Documentation
 - **[Architecture](./ARCHITECTURE.md)** - System architecture and design
-- **[MCP Integration](./docs/architecture/CLAUDE_CODE_INTEGRATION_PLAN.md)** - Claude Code integration
+- **[MCP Integration](./docs/MCP_INTEGRATION.md)** - Claude Code integration
 - **[RAG Deployment](./docs/guides/RAG_DEPLOYMENT.md)** - RAG agent setup
 - **[Testing Best Practices](./docs/guides/E2E_TESTING_BEST_PRACTICES.md)** - Testing guidelines
 
@@ -334,6 +349,6 @@ Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for g
 ## 📞 Support
 
 - 📖 Check the [User Guide](./docs/USER_GUIDE.md) first
-- 🔍 Search [existing issues](https://github.com/your-username/smart-agents/issues)
-- 💬 Ask in [Discussions](https://github.com/your-username/smart-agents/discussions)
-- 🐛 Report bugs via [Issues](https://github.com/your-username/smart-agents/issues/new)
+- 🔍 Search [existing issues](https://github.com/kevintseng/smart-agents/issues)
+- 💬 Ask in [Discussions](https://github.com/kevintseng/smart-agents/discussions)
+- 🐛 Report bugs via [Issues](https://github.com/kevintseng/smart-agents/issues/new)

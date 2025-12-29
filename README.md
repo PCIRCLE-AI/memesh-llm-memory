@@ -65,7 +65,7 @@ See `.env.example` for all available configuration options.
 
 ### MCP Server Setup (for Claude Code Integration)
 
-Smart-Agents can be used as an MCP server with Claude Code. See [MCP Integration Guide](./docs/architecture/CLAUDE_CODE_INTEGRATION_PLAN.md) for details.
+Smart-Agents can be used as an MCP server with Claude Code. See [MCP Integration Guide](./docs/MCP_INTEGRATION.md) for step-by-step setup.
 
 ---
 

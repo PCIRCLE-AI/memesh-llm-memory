@@ -72,6 +72,7 @@ class SmartAgentsMCPServer {
       {
         capabilities: {
           tools: {},
+          resources: {},
         },
       }
     );
@@ -845,7 +846,7 @@ class SmartAgentsMCPServer {
           uri: 'smart-agents://usage-guide',
           name: 'Smart-Agents Complete Usage Guide',
           mimeType: 'text/markdown',
-          description: 'Comprehensive guide to all 22 specialized agents with examples and best practices',
+          description: 'Comprehensive guide to all 13 specialized agents with examples and best practices',
         },
         {
           uri: 'smart-agents://quick-reference',

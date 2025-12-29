@@ -318,7 +318,7 @@ echo $OPENAI_API_KEY
 
 **Problem**: Claude Code can't connect to MCP server
 
-**Solution**: See [MCP Integration Guide](./architecture/CLAUDE_CODE_INTEGRATION_PLAN.md)
+**Solution**: See [MCP Integration Guide](./MCP_INTEGRATION.md)
 
 #### 4. E2E Tests Causing System Freeze
 

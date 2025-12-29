@@ -2,7 +2,7 @@
 
 **Smart-Agents System**: Intelligent AI agent orchestration platform with MCP server integration
 
-**Total Agents**: 13 registered agents (27 routing types supported)
+**Total Agents**: 13 registered agents
 
 ---
 
@@ -11,7 +11,7 @@
 Smart-Agents uses a **hybrid architecture**:
 
 1. **Registered Agents (13)**: Fully implemented agents with complete metadata in AgentRegistry
-2. **Routing Types (27)**: All agent types supported by the orchestrator's routing system
+2. **Agent Classifications**: Real Implementation (5), Enhanced Prompt (7), Optional Feature (1)
 3. **Prompt Enhancement**: Returns enhanced prompts to Claude Code instead of making direct API calls
 
 ---
@@ -247,44 +247,6 @@ npm run rag
 ```
 
 **Status**: Complete implementation (see `src/agents/rag/`)
-
----
-
-## Orchestrator Routing System
-
-The orchestrator supports **27 agent routing types** for intelligent task distribution:
-
-### Development (9)
-- code-reviewer, test-writer, debugger, refactorer, api-designer, db-optimizer, frontend-specialist, backend-specialist, development-butler
-
-### Analysis (5)
-- rag-agent, research-agent, architecture-agent, data-analyst, performance-profiler
-
-### Knowledge (1)
-- knowledge-agent
-
-### Operations (2)
-- devops-engineer, security-auditor
-
-### Creative (2)
-- technical-writer, ui-designer
-
-### Utility (2)
-- migration-assistant, api-integrator
-
-### Business & Product (2)
-- project-manager, product-manager
-
-### Data & Analytics (2)
-- data-engineer, ml-engineer
-
-### Marketing (1)
-- marketing-strategist
-
-### General (1)
-- general-agent (fallback)
-
-**Note**: Not all routing types have registered agents. The orchestrator routes to the most appropriate registered agent or falls back to general-agent.
 
 ---
 

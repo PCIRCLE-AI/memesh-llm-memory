@@ -1330,7 +1330,7 @@ mcp__smart_agents__evolution_dashboard({ format: 'detailed' })
 ```typescript
 {
   name: 'evolution_dashboard',
-  description: 'View evolution system dashboard showing agent learning progress, patterns, and performance improvements. Displays statistics for all 22 agents.',
+  description: 'View evolution system dashboard showing agent learning progress, patterns, and performance improvements. Displays statistics for all 13 agents.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -1418,7 +1418,7 @@ describe('Evolution System E2E Integration', () => {
     const dashboard = monitor.formatDashboard();
     expect(dashboard).toContain('Evolution Dashboard');
     expect(dashboard).toContain('Total Agents');
-    expect(dashboard).toContain('22');
+    expect(dashboard).toContain('13');
   });
 });
 ```
@@ -1562,9 +1562,9 @@ describe('API Backward Compatibility', () => {
 **3.2 Evolution Configuration 穩定性**
 ```typescript
 describe('Evolution Configuration Stability', () => {
-  it('should maintain all 22 agent configurations', () => {
+  it('should maintain all 13 agent configurations', () => {
     const configs = getAllAgentConfigs();
-    expect(configs.size).toBe(22);
+    expect(configs.size).toBe(13);
 
     // Verify all required agents exist
     const requiredAgents = [
@@ -1669,7 +1669,7 @@ console.log(dashboard);
 ```typescript
 console.log('User: "Show learning progress for all agents"');
 const progress = this.monitor.getLearningProgress();
-// Verify progress for all 22 agents
+// Verify progress for all 13 agents
 ```
 
 **Scenario 5: Performance Improvement**

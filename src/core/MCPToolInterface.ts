@@ -51,6 +51,49 @@ export class MCPToolInterface {
   private tools: Map<string, ToolMetadata> = new Map();
 
   /**
+   * Filesystem helper methods
+   * Provides convenient access to filesystem MCP tool operations
+   */
+  public filesystem = {
+    /**
+     * Read file content
+     * @param path - File path to read
+     * @returns Promise<string> File content
+     */
+    readFile: async (path: string): Promise<string> => {
+      const result = await this.invokeTool('filesystem', 'readFile', { path });
+      if (result.success && result.data) {
+        return (result.data as Record<string, unknown>).content as string || '';
+      }
+      return '';
+    },
+
+    /**
+     * Write file content
+     * @param opts - Write options {path, content}
+     * @returns Promise<void>
+     */
+    writeFile: async (opts: { path: string; content: string }): Promise<void> => {
+      await this.invokeTool('filesystem', 'writeFile', opts);
+    },
+  };
+
+  /**
+   * Memory helper methods
+   * Provides convenient access to memory/knowledge graph MCP tool operations
+   */
+  public memory = {
+    /**
+     * Create entities in knowledge graph
+     * @param opts - Entity creation options
+     * @returns Promise<void>
+     */
+    createEntities: async (opts: Record<string, unknown>): Promise<void> => {
+      await this.invokeTool('memory', 'createEntities', opts);
+    },
+  };
+
+  /**
    * Register an MCP tool
    *
    * @param toolName - Name of the tool to register

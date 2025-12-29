@@ -85,6 +85,106 @@ Stop Hook → Save evolution state
 
 ---
 
+## UX Design & User Interaction
+
+### Core Principle: Permission-Based Agent Deployment
+
+**即使 agents 在背景自動執行，仍需先徵求用戶許可**
+
+This ensures human-in-the-loop control while maintaining autonomous operation.
+
+### Notification Format
+
+**Design Requirements**:
+- ✅ Short and clear (easy to understand)
+- ✅ SmartAgents branding (prefix all notifications)
+- ✅ User choice (Yes / Provide feedback)
+- ✅ Context (what, why, when)
+
+**Standard Format**:
+```
+🤖 SmartAgents: Deploying [agent-name] to [action] triggered by [event]
+   Permission to proceed?
+   1) Yes
+   2) Provide feedback
+```
+
+### Real-World Examples
+
+**Example 1: Anomaly Detection**
+```
+🤖 SmartAgents: Deploying debugger + performance-profiler to investigate slow execution triggered by PostToolUse (Read > 2s)
+   Permission to proceed?
+   1) Yes
+   2) Provide feedback
+```
+
+**Example 2: Code Review**
+```
+🤖 SmartAgents: Deploying code-reviewer to review recent changes triggered by git commit
+   Permission to proceed?
+   1) Yes
+   2) Provide feedback
+```
+
+**Example 3: Session Start**
+```
+🤖 SmartAgents: Deploying evolution-monitor + quota-checker + compliance-monitor to start background monitoring triggered by SessionStart
+   Permission to proceed?
+   1) Yes
+   2) Provide feedback
+```
+
+### Permission Requirements by Event Type
+
+| Event Type | When | Example Agents | Permission Required |
+|------------|------|----------------|---------------------|
+| **SessionStart** | Claude Code session starts | evolution-monitor, quota-checker | ✅ Yes (once per session) |
+| **PostToolUse** | Tool execution completes | code-reviewer, debugger, performance-profiler | ✅ Yes (per anomaly) |
+| **Threshold Breach** | Quota/budget exceeded | quota-checker (80% budget), compliance-monitor | ✅ Yes (per alert) |
+| **Periodic** | Scheduled check | evolution-monitor (30 min), quota-checker (10 min) | ❌ No (background) |
+| **Stop** | Session ends | evolution-monitor (save state) | ❌ No (cleanup) |
+
+### Permission Caching (Smart Defaults)
+
+**Goal**: Reduce notification fatigue while maintaining control
+
+**Strategy**:
+- First deployment in session → Always ask
+- Same deployment type within 30 min → Auto-approve (cached)
+- Different deployment type → Ask again
+
+**Implementation**:
+```javascript
+const permissionCache = {
+  // Key: deployment signature (agents + trigger)
+  // Value: { approved, timestamp, sessionId }
+};
+
+// If approved in this session within 30 min → auto-approve
+if (cached && cached.approved &&
+    cached.sessionId === currentSessionId &&
+    Date.now() - cached.timestamp < 30 * 60 * 1000) {
+  console.log(`[SmartAgents] Auto-approved (cached): ${agents}`);
+  return { approved: true };
+}
+```
+
+### User Feedback Integration
+
+**Option 1: User says "Yes"**
+- Agent deploys immediately
+- Works in background (non-blocking)
+- User can continue dialogue
+
+**Option 2: User provides feedback**
+- Collect feedback text
+- Pass feedback to deployed agents as context
+- Agents adjust behavior based on feedback
+- Example: "Focus on security issues" → code-reviewer prioritizes security
+
+---
+
 ## Implementation Design
 
 ### Phase 1: Hooks Configuration
@@ -133,10 +233,11 @@ Stop Hook → Save evolution state
 **Directory**: `/Users/ktseng/.claude/hooks/`
 
 **Files to create**:
-- `session-start.js`: Initialize Router, start background monitoring
-- `post-tool-use.js`: Track performance metrics, learn patterns
+- `session-start.js`: Initialize Router, request permission, start background monitoring
+- `post-tool-use.js`: Track performance metrics, request permission for anomaly investigation, learn patterns
 - `stop.js`: Save evolution state, generate session report
 - `background-monitor.js`: Quota checking, compliance validation
+- `utils/permission.js`: **NEW** - Centralized permission request handling with caching
 
 ### Phase 2: Router Integration
 
@@ -145,27 +246,48 @@ Stop Hook → Save evolution state
 **Responsibilities**:
 1. Initialize Router (automatically initializes all 22 agents + evolution system)
 2. Load saved evolution state from MCP Memory
-3. Start background monitoring processes
-4. Log initialization summary
+3. **Request permission** to start background monitoring
+4. Start background monitoring processes (if approved)
+5. Log initialization summary
 
 **Key Implementation**:
 
 ```javascript
 import { Router } from '/Users/ktseng/Developer/Projects/smart-agents/src/orchestrator/router.js';
 import { EvolutionMonitor } from '/Users/ktseng/Developer/Projects/smart-agents/src/evolution/EvolutionMonitor.js';
+import { askUserPermission } from './utils/permission.js';
 
-// Initialize Router (this automatically initializes evolution system)
-const router = new Router();
+async function handleSessionStart(sessionId) {
+  // 1. Initialize Router (always, no permission needed)
+  const router = new Router();
+  const monitor = new EvolutionMonitor(
+    router.getPerformanceTracker(),
+    router.getLearningManager(),
+    router.getAdaptationEngine()
+  );
 
-// Initialize Evolution Monitor
-const monitor = new EvolutionMonitor(
-  router.getPerformanceTracker(),
-  router.getLearningManager(),
-  router.getAdaptationEngine()
-);
+  // 2. Load saved patterns (always, no permission needed)
+  await loadPatternsFromMemory(router.getLearningManager());
 
-// Start background monitoring (non-blocking)
-startBackgroundMonitoring(sessionId, router, monitor);
+  // 3. REQUEST PERMISSION for background monitoring
+  const permission = await askUserPermission({
+    prefix: "🤖 SmartAgents",
+    agents: "evolution-monitor + quota-checker + compliance-monitor",
+    action: "start background monitoring (quota, compliance, learning)",
+    trigger: "SessionStart",
+  });
+
+  if (permission.approved) {
+    // 4. Start background monitoring (non-blocking)
+    startBackgroundMonitoring(sessionId, router, monitor, {
+      userFeedback: permission.feedback,
+    });
+
+    console.log("[SmartAgents] Background monitoring started ✓");
+  } else {
+    console.log("[SmartAgents] Background monitoring disabled by user");
+  }
+}
 ```
 
 **Background Monitoring Tasks**:
@@ -181,33 +303,88 @@ startBackgroundMonitoring(sessionId, router, monitor);
 **Responsibilities**:
 1. Track performance metrics for each tool execution
 2. Detect anomalies (slow execution, high cost, low quality)
-3. Update learning patterns
-4. Persist to MCP Memory
+3. **Request permission** to deploy investigation agents (if anomaly detected)
+4. Update learning patterns (background, no permission needed)
+5. Persist to MCP Memory
 
 **Key Implementation**:
 
 ```javascript
-// Track performance
-const metrics = performanceTracker.track({
-  agentId: inferAgentFromTool(toolName), // Map tool to agent
-  taskType: toolName,
-  success: !result.error,
-  durationMs,
-  cost: estimateCost(toolName, result),
-  qualityScore: assessQuality(result),
-  metadata: { toolName, resultSize: JSON.stringify(result).length }
-});
+import { askUserPermissionWithCache } from './utils/permission.js';
 
-// Detect anomalies
-const anomaly = performanceTracker.detectAnomalies(agentId, metrics);
-if (anomaly.isAnomaly) {
-  console.warn(`[Anomaly Detected] ${anomaly.type}: ${anomaly.message}`);
+async function handlePostToolUse(toolName, result, durationMs) {
+  // 1. Track performance (always, no permission needed)
+  const metrics = performanceTracker.track({
+    agentId: inferAgentFromTool(toolName),
+    taskType: toolName,
+    success: !result.error,
+    durationMs,
+    cost: estimateCost(toolName, result),
+    qualityScore: assessQuality(result),
+    metadata: { toolName, resultSize: JSON.stringify(result).length }
+  });
+
+  // 2. Detect anomalies
+  const anomaly = performanceTracker.detectAnomalies(agentId, metrics);
+
+  // 3. If anomaly detected → REQUEST PERMISSION to deploy agents
+  if (anomaly.isAnomaly) {
+    const agentsToDeploy = selectAgentsForAnomaly(anomaly);
+
+    // Permission request with SmartAgents branding
+    const permission = await askUserPermissionWithCache({
+      prefix: "🤖 SmartAgents",
+      agents: agentsToDeploy.map(a => a.name).join(" + "),
+      action: anomaly.type === "slow" ? "investigate slow execution" :
+              anomaly.type === "expensive" ? "analyze high cost" :
+              "review low quality output",
+      trigger: `PostToolUse (${toolName} ${anomaly.type})`,
+    });
+
+    if (permission.approved) {
+      // Deploy agents in background (non-blocking)
+      await deployAgentsInBackground(agentsToDeploy, {
+        context: { toolName, result, metrics, anomaly },
+        userFeedback: permission.feedback,
+      });
+
+      console.log(`[SmartAgents] Deployed ${agentsToDeploy.map(a => a.name).join(", ")} ✓`);
+    } else {
+      console.log(`[SmartAgents] User declined: ${agentsToDeploy.map(a => a.name).join(", ")}`);
+    }
+  }
+
+  // 4. Periodic learning (every 10 executions, no permission needed)
+  if (performanceTracker.getTotalTaskCount() % 10 === 0) {
+    const patterns = learningManager.analyzePatterns(agentId);
+    await persistPatternsToMemory(patterns);
+  }
 }
+```
 
-// Learn patterns (every 10 executions)
-if (performanceTracker.getTotalTaskCount() % 10 === 0) {
-  const patterns = learningManager.analyzePatterns(agentId);
-  await persistPatternsToMemory(patterns);
+**Helper: Select Agents for Anomaly**:
+
+```javascript
+function selectAgentsForAnomaly(anomaly) {
+  switch (anomaly.type) {
+    case "slow":
+      return [
+        { name: "debugger", priority: "high" },
+        { name: "performance-profiler", priority: "high" }
+      ];
+    case "expensive":
+      return [
+        { name: "performance-profiler", priority: "high" },
+        { name: "code-reviewer", priority: "medium" }
+      ];
+    case "low_quality":
+      return [
+        { name: "code-reviewer", priority: "high" },
+        { name: "test-writer", priority: "medium" }
+      ];
+    default:
+      return [{ name: "general-agent", priority: "low" }];
+  }
 }
 ```
 
@@ -241,6 +418,110 @@ await mcp.createEntities({
 // Generate session report
 const report = monitor.formatDashboard();
 console.log(report);
+```
+
+#### 2.4 Permission Utility (`utils/permission.js`)
+
+**Purpose**: Centralized permission request handling with SmartAgents branding and caching
+
+**Key Implementation**:
+
+```javascript
+/**
+ * Request user permission to deploy agents (with caching)
+ *
+ * @param {Object} options
+ * @param {string} options.prefix - Brand prefix (e.g., "🤖 SmartAgents")
+ * @param {string} options.agents - Agent names (e.g., "debugger + performance-profiler")
+ * @param {string} options.action - Action to perform (e.g., "investigate slow execution")
+ * @param {string} options.trigger - Trigger event (e.g., "PostToolUse (Read slow)")
+ * @returns {Promise<{approved: boolean, feedback?: string}>}
+ */
+async function askUserPermissionWithCache({ prefix, agents, action, trigger }) {
+  const signature = `${agents}::${trigger}`;
+  const cached = permissionCache[signature];
+
+  // If approved in this session within last 30 min → auto-approve
+  if (cached && cached.approved &&
+      cached.sessionId === currentSessionId &&
+      Date.now() - cached.timestamp < 30 * 60 * 1000) {
+    console.log(`[SmartAgents] Auto-approved (cached): ${agents}`);
+    return { approved: true };
+  }
+
+  // Otherwise, ask user
+  const result = await askUserPermission({ prefix, agents, action, trigger });
+
+  // Cache the decision
+  permissionCache[signature] = {
+    approved: result.approved,
+    timestamp: Date.now(),
+    sessionId: currentSessionId,
+  };
+
+  return result;
+}
+
+/**
+ * Request user permission to deploy agents (no caching)
+ *
+ * @param {Object} options - Same as askUserPermissionWithCache
+ * @returns {Promise<{approved: boolean, feedback?: string}>}
+ */
+async function askUserPermission({ prefix, agents, action, trigger }) {
+  // Format: Short, clear, branded
+  const message = `${prefix}: Deploying ${agents} to ${action} triggered by ${trigger}
+   Permission to proceed?
+   1) Yes
+   2) Provide feedback`;
+
+  console.log(message);
+
+  // Use Claude Code's built-in prompt mechanism or MCP tool
+  const response = await promptUser(message, {
+    options: [
+      { value: "yes", label: "1) Yes" },
+      { value: "feedback", label: "2) Provide feedback" }
+    ]
+  });
+
+  if (response.choice === "yes") {
+    return { approved: true };
+  } else {
+    // User chose option 2: collect feedback
+    const feedback = await promptUser("Your feedback:", { type: "text" });
+    return { approved: true, feedback };
+  }
+}
+
+// Permission cache (in-memory, session-scoped)
+const permissionCache = {};
+let currentSessionId = null;
+
+/**
+ * Initialize permission system for new session
+ */
+function initPermissionSystem(sessionId) {
+  currentSessionId = sessionId;
+  // Clear cache from previous session
+  Object.keys(permissionCache).forEach(key => delete permissionCache[key]);
+}
+
+export { askUserPermission, askUserPermissionWithCache, initPermissionSystem };
+```
+
+**Integration with Hooks**:
+
+```javascript
+// In session-start.js
+import { initPermissionSystem, askUserPermission } from './utils/permission.js';
+
+async function handleSessionStart(sessionId) {
+  // Initialize permission system
+  initPermissionSystem(sessionId);
+
+  // ... rest of session start logic
+}
 ```
 
 ### Phase 3: MCP Memory Integration

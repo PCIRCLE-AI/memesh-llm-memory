@@ -42,6 +42,19 @@ import { getRAGAgent } from '../agents/rag/index.js';
 import { FileWatcher } from '../agents/rag/FileWatcher.js';
 import { SkillManager } from '../skills/index.js';
 import { UninstallManager } from '../management/index.js';
+import { z } from 'zod';
+import {
+  TaskInputSchema,
+  DashboardInputSchema,
+  ListAgentsInputSchema,
+  ListSkillsInputSchema,
+  UninstallInputSchema,
+  formatValidationError,
+  type ValidatedTaskInput,
+  type ValidatedDashboardInput,
+  type ValidatedListSkillsInput,
+  type ValidatedUninstallInput,
+} from './validation.js';
 
 // Agent Registry is now used instead of static AGENT_TOOLS array
 // See src/core/AgentRegistry.ts for agent definitions
@@ -279,7 +292,7 @@ class SmartAgentsMCPServer {
       }
 
       const toolName = params.name;
-      const args = params.arguments as Record<string, unknown>;
+      const args = params.arguments;
 
       // Handle sa_task (new name)
       if (toolName === 'sa_task') {
@@ -319,17 +332,20 @@ class SmartAgentsMCPServer {
       // Handle individual agent invocation (advanced mode)
       const agentName = toolName;
 
-      // Validate required task_description
-      if (typeof args.task_description !== 'string') {
-        throw new Error('Missing or invalid task_description');
+      // Validate input using Zod schema
+      let validatedInput: ValidatedTaskInput;
+      try {
+        validatedInput = TaskInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new Error(formatValidationError(error));
+        }
+        throw error;
       }
 
-      // Validate optional priority
-      const taskDescription = args.task_description;
-      const priority =
-        args.priority !== undefined && typeof args.priority === 'number'
-          ? args.priority
-          : undefined;
+      // Extract validated task description and priority
+      const taskDescription = validatedInput.taskDescription || validatedInput.task_description!;
+      const priority = validatedInput.priority;
 
       try {
         // Validate agent name
@@ -429,18 +445,21 @@ class SmartAgentsMCPServer {
    * 4. Return formatted confirmation to user
    */
   private async handleSmartRouting(
-    args: Record<string, unknown>
+    args: unknown
   ): Promise<{ content: Array<{ type: string; text: string }> }> {
-    // Validate taskDescription (using camelCase for smart_route_task)
-    if (typeof args.taskDescription !== 'string') {
-      throw new Error('Missing or invalid taskDescription');
+    // Validate input using Zod schema
+    let validatedInput: ValidatedTaskInput;
+    try {
+      validatedInput = TaskInputSchema.parse(args);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new Error(formatValidationError(error));
+      }
+      throw error;
     }
 
-    const taskDescription = args.taskDescription;
-    const priority =
-      args.priority !== undefined && typeof args.priority === 'number'
-        ? args.priority
-        : undefined;
+    const taskDescription = validatedInput.taskDescription || validatedInput.task_description!;
+    const priority = validatedInput.priority;
 
     // Create task
     const task: Task = {
@@ -550,12 +569,21 @@ class SmartAgentsMCPServer {
    * Returns evolution system dashboard with agent learning progress
    */
   private async handleEvolutionDashboard(
-    args: Record<string, unknown>
+    args: unknown
   ): Promise<{ content: Array<{ type: string; text: string }> }> {
     try {
-      // Get format parameter (default: 'summary')
-      const format =
-        args.format && typeof args.format === 'string' ? args.format : 'summary';
+      // Validate input using Zod schema
+      let validatedInput: ValidatedDashboardInput;
+      try {
+        validatedInput = DashboardInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new Error(formatValidationError(error));
+        }
+        throw error;
+      }
+
+      const format = validatedInput.format;
 
       let dashboardText: string;
 
@@ -609,9 +637,19 @@ class SmartAgentsMCPServer {
    * Handle list agents request (sa_agents tool)
    */
   private async handleListAgents(
-    args: Record<string, unknown>
+    args: unknown
   ): Promise<{ content: Array<{ type: string; text: string }> }> {
     try {
+      // Validate input using Zod schema
+      try {
+        ListAgentsInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new Error(formatValidationError(error));
+        }
+        throw error;
+      }
+
       const allAgents = this.agentRegistry.getAllAgents();
 
       // Group agents by category
@@ -691,10 +729,21 @@ class SmartAgentsMCPServer {
    * Handle list skills request (sa_skills tool)
    */
   private async handleListSkills(
-    args: Record<string, unknown>
+    args: unknown
   ): Promise<{ content: Array<{ type: string; text: string }> }> {
     try {
-      const filter = (args.filter as string) || 'all';
+      // Validate input using Zod schema
+      let validatedInput: ValidatedListSkillsInput;
+      try {
+        validatedInput = ListSkillsInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new Error(formatValidationError(error));
+        }
+        throw error;
+      }
+
+      const filter = validatedInput.filter;
 
       // Get skills based on filter
       let skills: string[];
@@ -794,14 +843,25 @@ class SmartAgentsMCPServer {
    * Handle uninstall request (sa_uninstall tool)
    */
   private async handleUninstall(
-    args: Record<string, unknown>
+    args: unknown
   ): Promise<{ content: Array<{ type: string; text: string }> }> {
     try {
-      // Extract uninstall options from args
+      // Validate input using Zod schema
+      let validatedInput: ValidatedUninstallInput;
+      try {
+        validatedInput = UninstallInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new Error(formatValidationError(error));
+        }
+        throw error;
+      }
+
+      // Extract uninstall options from validated input
       const options = {
-        keepData: typeof args.keepData === 'boolean' ? args.keepData : false,
-        keepConfig: typeof args.keepConfig === 'boolean' ? args.keepConfig : false,
-        dryRun: typeof args.dryRun === 'boolean' ? args.dryRun : false,
+        keepData: validatedInput.keepData,
+        keepConfig: validatedInput.keepConfig,
+        dryRun: validatedInput.dryRun,
       };
 
       // Perform uninstallation

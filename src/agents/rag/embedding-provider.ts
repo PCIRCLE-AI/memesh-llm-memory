@@ -8,6 +8,7 @@ import { EmbeddingService } from './embeddings.js';
 import { logger } from '../../utils/logger.js';
 import type { CostTracker } from './types.js';
 import * as readline from 'readline';
+import { SecureKeyStore } from '../../utils/SecureKeyStore.js';
 
 /**
  * 統一的 Embedding Provider 接口
@@ -101,15 +102,16 @@ export class EmbeddingProviderFactory {
     apiKey?: string;
     interactive?: boolean;
   } = {}): Promise<IEmbeddingProvider> {
-    let apiKey = options.apiKey || process.env.OPENAI_API_KEY;
+    // Check SecureKeyStore first, then process.env, then provided apiKey
+    let apiKey = options.apiKey || SecureKeyStore.get('openai') || process.env.OPENAI_API_KEY;
 
     // 如果沒有 API key 且允許互動模式
     if (!apiKey && options.interactive) {
       apiKey = await promptForApiKey() || undefined;
 
-      // 如果使用者提供了 key，設定到環境變數（本次執行有效）
+      // 如果使用者提供了 key，安全儲存到記憶體（不修改 process.env）
       if (apiKey) {
-        process.env.OPENAI_API_KEY = apiKey;
+        SecureKeyStore.set('openai', apiKey);
       }
     }
 
@@ -135,7 +137,8 @@ export class EmbeddingProviderFactory {
    * @param options.optional - If true, returns null instead of throwing when no key available
    */
   static createSync(options: { apiKey?: string; optional?: boolean } = {}): IEmbeddingProvider | null {
-    const key = options.apiKey || process.env.OPENAI_API_KEY;
+    // Check SecureKeyStore first, then process.env, then provided apiKey
+    const key = options.apiKey || SecureKeyStore.get('openai') || process.env.OPENAI_API_KEY;
     const openaiService = new EmbeddingService(key);
 
     if (openaiService.isAvailable()) {

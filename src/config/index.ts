@@ -12,8 +12,11 @@ config({ override: true });
  * 環境變數 Schema 驗證
  */
 const envSchema = z.object({
-  // Claude API (primary provider)
-  ANTHROPIC_API_KEY: z.string().min(1, 'ANTHROPIC_API_KEY is required'),
+  // MCP Server Mode (when true, ANTHROPIC_API_KEY is not required)
+  MCP_SERVER_MODE: z.string().transform(val => val === 'true').default('false'),
+
+  // Claude API (primary provider - optional in MCP server mode)
+  ANTHROPIC_API_KEY: z.string().optional(),
   CLAUDE_MODEL: z.string().default('claude-sonnet-4-5-20250929'),
   CLAUDE_OPUS_MODEL: z.string().default('claude-opus-4-5-20251101'),
 
@@ -47,6 +50,17 @@ const envSchema = z.object({
  * 解析並驗證環境變數
  */
 export const env = envSchema.parse(process.env);
+
+/**
+ * Conditional validation: ANTHROPIC_API_KEY required when NOT in MCP server mode
+ */
+if (!env.MCP_SERVER_MODE && !env.ANTHROPIC_API_KEY) {
+  throw new Error(
+    'ANTHROPIC_API_KEY is required when not running in MCP server mode.\n' +
+    'Either set ANTHROPIC_API_KEY in your .env file, or set MCP_SERVER_MODE=true\n' +
+    'Get your API key at: https://console.anthropic.com/settings/keys'
+  );
+}
 
 /**
  * 應用配置

@@ -157,16 +157,25 @@ export class MCPToolInterface {
       );
     }
 
-    // TODO: Actual tool invocation will be implemented later
-    // For now, return a mock success result to pass tests
-    return {
-      success: true,
-      data: {
-        tool: toolName,
-        method,
-        params,
-      },
-    };
+    // KNOWN LIMITATION: MCP tool invocation not yet implemented in v2.1.0
+    // This is a documented limitation of the current MCP Server Pattern
+    //
+    // TODO for v3.0: Implement actual MCP client connection
+    // - Connect to MCP server via stdio/HTTP
+    // - Call tool with proper request/response protocol
+    // - Handle errors and timeouts
+    //
+    // Current workaround: Agents using MCPToolInterface should handle this error
+    // and use alternative methods (direct API calls, fallback mechanisms)
+    throw new Error(
+      `MCP tool invocation not yet implemented (v2.1.0 limitation).\n` +
+      `Tool: ${toolName}, Method: ${method}\n\n` +
+      `This is a known limitation of the current MCP Server Pattern.\n` +
+      `In v2.1.0, agents work via prompt enhancement instead of direct tool calls.\n\n` +
+      `For implementation guidance, see:\n` +
+      `- https://github.com/modelcontextprotocol/specification\n` +
+      `- docs/architecture/MCP_TOOL_INVOCATION.md`
+    );
   }
 
   /**

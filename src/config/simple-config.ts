@@ -174,19 +174,28 @@ export class SimpleDatabaseFactory {
    */
   static getInstance(path?: string): Database.Database {
     const dbPath = path || SimpleConfig.DATABASE_PATH;
-
     const existingDb = this.instances.get(dbPath);
 
-    // Check if database is closed or doesn't exist
-    if (!existingDb || !existingDb.open) {
-      // Remove closed instance and create new one
-      if (existingDb) {
-        this.instances.delete(dbPath);
-      }
-      this.instances.set(dbPath, this.createDatabase(dbPath, false));
+    // If database exists and is open, return it
+    if (existingDb?.open) {
+      return existingDb;
     }
 
-    return this.instances.get(dbPath)!;
+    // Close old connection if it exists but is not open (prevent resource leak)
+    if (existingDb && !existingDb.open) {
+      try {
+        existingDb.close();
+      } catch (error) {
+        // Already closed or error, ignore
+      }
+      this.instances.delete(dbPath);
+    }
+
+    // Create new connection
+    const newDb = this.createDatabase(dbPath, false);
+    this.instances.set(dbPath, newDb);
+
+    return newDb;
   }
 
   /**

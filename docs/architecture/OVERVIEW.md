@@ -263,43 +263,210 @@ Enable autonomous agent activation based on events rather than explicit invocati
 
 ### Implementation Status
 
-⏳ **Planned** - See [CLAUDE_CODE_INTEGRATION_PLAN.md](./CLAUDE_CODE_INTEGRATION_PLAN.md) for details.
+> ⚠️ **棄用通知**
+>
+> Hooks 系統**從未被實作**且已於 2025-12-30 確認棄用。
+> 以下內容保留作為**歷史參考**，記錄原本的設計構想。
 
-### Architecture Overview
+❌ **未實作** - Hooks 系統從未實作且已棄用。相關文件：
+- HOOKS_IMPLEMENTATION_GUIDE.md（已標記為 DEPRECATED）
+- CLAUDE_CODE_INTEGRATION_PLAN.md（計劃未執行）
+- README.md（Hooks 章節已標記已棄用）
 
-**Three Hook Types**:
+### Architecture Overview [歷史參考]
 
-#### 1. SessionStart Hook
-- Initialize Router + Evolution System
-- Load saved patterns from MCP Memory
-- Start background monitoring (quota, compliance)
-- Non-blocking: main dialogue continues
+**Three Hook Types** (原本規劃的 Claude Code Hooks - 未實作):
 
-#### 2. PostToolUse Hook
-- Track performance after each tool execution
-- Detect anomalies (slow, expensive, low quality)
-- Learn patterns (every 10 executions)
-- Persist to MCP Memory
+#### 1. SessionStart Hook (`~/.claude/hooks/session-start.js`)
 
-#### 3. Stop Hook
-- Save evolution state
-- Generate session summary
+**Purpose**: Display recommendations and initialize session state
+
+**Responsibilities**:
+- Read `~/.claude/state/recommendations.json` (from previous session)
+- Display recommended skills based on detected patterns
+- Display warnings (quota usage, slow tools, anomalies)
+- Initialize `~/.claude/state/current-session.json` with empty state
+- Non-blocking: main dialogue continues immediately
+
+**Example Output**:
+```
+📚 根據上次工作模式，建議載入以下 skills：
+  - devops-git-workflows (上次執行 8 次 Git 操作)
+  - testing-guide (上次撰寫 5 個測試文件)
+
+⚠️ 注意事項：
+  - 2 個工具執行時間超過 5 秒
+  - 配額使用：45% (建議注意使用)
+
+✅ Session 已初始化，開始工作吧！
+```
+
+#### 2. PostToolUse Hook (`~/.claude/hooks/post-tool-use.js`)
+
+**Purpose**: Silent observer that detects patterns and anomalies
+
+**Pattern Detection**:
+- **READ_BEFORE_EDIT**: Tracks if Read was called before Edit on same file
+- **Git Workflows**: Detects Git commit/push/branch operations
+- **Frontend Work**: Detects UI/component file modifications
+- **Search Patterns**: Detects multiple Grep/Glob calls
+
+**Anomaly Detection**:
+- Slow execution (> 5 seconds)
+- High token usage (> 10,000 tokens)
+- Failures (success: false)
+- Quota warnings (> 80% daily limit)
+
+**State Updates**:
+- Updates `~/.claude/state/recommendations.json` incrementally
+- Appends to `~/.claude/state/current-session.json` tool calls array
+- Silent operation (no console output - non-intrusive)
+
+**Stdin Data Format**:
+```json
+{
+  "toolName": "Read",
+  "duration": 145,
+  "tokensUsed": 3200,
+  "success": true,
+  "arguments": { "file_path": "/path/to/file" },
+  "result": "File content..."
+}
+```
+
+#### 3. Stop Hook (`~/.claude/hooks/stop.js`)
+
+**Purpose**: Session analysis, recommendation generation, state persistence
+
+**Responsibilities**:
+- Analyze tool patterns from `current-session.json`
+- Generate skill recommendations based on patterns
+- Save recommendations to `~/.claude/state/recommendations.json`
+- Update `~/.claude/state/session-context.json` (quota, patterns)
+- Display session summary with detected patterns
 - Clean up background processes
+
+**Example Output**:
+```
+📊 Session Summary:
+  - Duration: 25 minutes
+  - Tool executions: 42 (success: 40, failed: 2)
+  - Detected patterns: 3
+    ✅ READ_BEFORE_EDIT compliance: 95%
+    ✅ Git workflow: feature branch → develop
+    ⚠️ 2 slow operations detected
+
+💡 建議下次 session 載入：
+  - @devops-git-workflows (準備 commit 時)
+  - @system-thinking-examples (進行影響分析)
+
+✅ Session 狀態已保存
+```
+
+### State File Formats
+
+#### `~/.claude/state/recommendations.json`
+```json
+{
+  "recommendedSkills": [
+    {
+      "name": "devops-git-workflows",
+      "reason": "上次 session：8 次 Git 操作",
+      "priority": "high"
+    }
+  ],
+  "detectedPatterns": [
+    {
+      "description": "多次 Read before Edit - 正確行為",
+      "suggestion": "繼續保持 READ_BEFORE_EDIT 最佳實踐",
+      "timestamp": "2025-12-30T10:00:00.000Z"
+    }
+  ],
+  "warnings": [
+    "2 個工具執行時間超過 5 秒"
+  ],
+  "lastUpdated": "2025-12-30T10:00:00.000Z"
+}
+```
+
+#### `~/.claude/state/current-session.json`
+```json
+{
+  "startTime": "2025-12-30T10:00:00.000Z",
+  "toolCalls": [
+    {
+      "timestamp": "2025-12-30T10:05:00.000Z",
+      "toolName": "Read",
+      "duration": 145,
+      "success": true,
+      "tokenUsage": 3200,
+      "arguments": {
+        "file_path": "/path/to/file"
+      }
+    }
+  ],
+  "patterns": []
+}
+```
+
+#### `~/.claude/state/session-context.json`
+```json
+{
+  "tokenQuota": {
+    "used": 45230,
+    "limit": 200000
+  },
+  "learnedPatterns": [
+    {
+      "type": "READ_BEFORE_EDIT",
+      "description": "Multiple Read before Edit is correct behavior",
+      "severity": "info"
+    }
+  ],
+  "lastSessionDate": "2025-12-30T10:00:00.000Z"
+}
+```
+
+### Integration with Skills
+
+**smart-router Skill** (Manual Invocation):
+- User invokes: `@smart-router "implement user authentication"`
+- Analyzes task dependencies
+- Calls `@smart-orchestrator` for dependency graph
+- Recommends skills based on task type
+- Provides resource estimates
+
+**smart-orchestrator Skill** (Called by smart-router):
+- Returns dependency graph
+- Suggests execution mode (Sequential/Parallel/Hybrid)
+- Identifies resource constraints
+
+**Workflow Example**:
+```
+1. SessionStart Hook → Display: "載入 devops-git-workflows"
+2. User: @smart-router "準備發布 v2.0"
+3. smart-router → Calls @smart-orchestrator → Returns execution plan
+4. PostToolUse Hook → Silently records each step
+5. Stop Hook → Saves learning for next session
+```
 
 ### Background Monitoring Tasks
 
 | Task | Interval | Purpose |
 |------|----------|---------|
-| Quota Check | 10 min | Warn at 80% budget |
-| Evolution Dashboard | 30 min | Log learning progress |
-| Compliance Check | On tool use | Validate rules (READ_BEFORE_EDIT, etc.) |
+| Pattern Detection | Per tool use | Detect READ_BEFORE_EDIT, Git workflows |
+| Anomaly Detection | Per tool use | Track slow/expensive/failed operations |
+| State Persistence | Per tool use | Update recommendations.json |
+| Session Summary | Session end | Generate recommendations for next session |
 
 ### Benefits
 
-- ✨ **Autonomous**: Agents work proactively without manual calls
-- ⏱️ **Non-blocking**: Main dialogue continues while agents work in background
-- 🤝 **Human-in-the-Loop**: User maintains control and can intervene
-- 📊 **Continuous Learning**: Every interaction improves future performance
+- ✨ **Observation Mode**: Hooks observe patterns without interrupting workflow
+- 🎯 **Personalized Recommendations**: Suggests skills based on actual usage
+- 📊 **Continuous Learning**: Every session improves recommendations
+- 🔄 **Cross-Session Memory**: Knowledge persists across sessions via MCP Memory
+- 🚫 **Non-Intrusive**: PostToolUse runs silently, no console spam
+- 🤝 **Human-in-the-Loop**: User manually decides which skills to load
 
 ---
 
@@ -325,22 +492,27 @@ Track performance in Evolution System
 Return result to user
 ```
 
-### Pattern 2: Event-Driven (Planned)
+### Pattern 2: Event-Driven (Implemented)
 
 ```
 Claude Code Session Start
     ↓
-SessionStart Hook → Initialize Router + Evolution
-    ↓
-Background: Quota monitoring, Compliance checking
+SessionStart Hook → Display recommendations from last session
+                  → Initialize current-session.json
     ↓
 User works normally (main dialogue)
     ↓
-PostToolUse Hook → Track each tool execution
+Each tool execution → PostToolUse Hook (silent observer)
+                    → Detect patterns (READ_BEFORE_EDIT, Git workflows)
+                    → Detect anomalies (slow, high tokens, failures)
+                    → Update recommendations.json incrementally
     ↓
-Learn patterns → Persist to MCP Memory
+Session End → Stop Hook → Analyze session patterns
+                        → Generate skill recommendations
+                        → Save to recommendations.json + session-context.json
+                        → Display session summary
     ↓
-Session End → Stop Hook → Save state
+Next Session Start → SessionStart Hook → Load recommendations → Display to user
 ```
 
 ### Pattern 3: RAG Search
@@ -470,27 +642,31 @@ PORT=3000
 
 ## Future Enhancements
 
+### Completed Features
+
+1. ❌ **Event-Driven Hooks** (計劃於 2025-12-29，但未實作，已於 2025-12-30 棄用)
+   - SessionStart, PostToolUse, Stop hooks（未實作）
+   - Pattern and anomaly detection（未實作）
+   - Skill recommendation system（未實作）
+   - Cross-session learning（未實作）
+
 ### Planned Features
 
-1. **Event-Driven Hooks** (Next)
-   - SessionStart, PostToolUse, Stop hooks
-   - Background monitoring
-   - Autonomous activation
-
-2. **Pattern Detection & Skill Suggestion**
+1. **Pattern Detection Enhancement** (Next)
    - Auto-detect repetitive workflows
-   - Suggest skill creation
-   - Personalized automation
+   - Suggest skill creation from patterns
+   - Automated skill bundling
 
-3. **Advanced Learning**
-   - Cross-agent learning (share patterns)
+2. **Advanced Learning**
+   - Cross-agent learning (share patterns between agents)
    - User feedback integration
    - A/B testing for optimizations
+   - Predictive skill loading
 
-4. **Enhanced RAG**
-   - Multi-source indexing
+3. **Enhanced RAG**
+   - Multi-source indexing (Git, Notion, Confluence)
    - Semantic chunking strategies
-   - Query expansion
+   - Query expansion and reranking
 
 ---
 

@@ -1,18 +1,29 @@
 # Smart Agents MCP Server - API Reference
 
 **Version**: 2.0.0
-**Last Updated**: 2025-12-25
+**Last Updated**: 2025-12-30
 **Author**: Smart Agents Team
+
+---
+
+⚠️ **DOCUMENTATION STATUS**: This document describes planned API features that are not yet implemented in the current codebase. The actual v2.0 implementation uses the MCP Server Pattern with Router → TaskAnalyzer → AgentRouter → PromptEnhancer pipeline. For accurate API documentation, see:
+
+- **Current Implementation**: [src/mcp/server.ts](../../src/mcp/server.ts) - MCP Server with agent routing
+- **Agent Registry**: [src/core/AgentRegistry.ts](../../src/core/AgentRegistry.ts) - 13 registered agents
+- **Router System**: [src/orchestrator/router.ts](../../src/orchestrator/router.ts) - Task routing and orchestration
+- **User Guide**: [../USER_GUIDE.md](../USER_GUIDE.md) - Usage examples for current system
+
+The documentation below describes a future multi-provider integration system that is not yet available.
 
 ---
 
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [GrokClient API](#grokclient-api)
-3. [ChatGPTClient API](#chatgptclient-api)
-4. [QuotaManager API](#quotamanager-api)
-5. [SmartRouter API](#smartrouter-api)
+2. [GrokClient API](#grokclient-api) ⚠️ *Not Implemented*
+3. [ChatGPTClient API](#chatgptclient-api) ⚠️ *Not Implemented*
+4. [QuotaManager API](#quotamanager-api) ⚠️ *Not Implemented*
+5. [SmartRouter API](#smartrouter-api) ⚠️ *Not Implemented*
 6. [Type Definitions](#type-definitions)
 7. [Error Handling](#error-handling)
 8. [Configuration](#configuration)
@@ -21,12 +32,14 @@
 
 ## Overview
 
-Smart Agents MCP Server provides a unified interface for integrating multiple AI providers with intelligent quota-aware routing. This API reference covers the four core components added in v2.0:
+⚠️ **This section describes planned features, not the current implementation.**
 
-- **GrokClient**: xAI Grok API integration for reasoning tasks
-- **ChatGPTClient**: OpenAI ChatGPT integration for code generation
-- **QuotaManager**: Real-time quota tracking and management
-- **SmartRouter**: Intelligent model selection with failover
+Smart Agents MCP Server (planned) provides a unified interface for integrating multiple AI providers with intelligent quota-aware routing. This API reference covers four core components planned for future implementation:
+
+- **GrokClient**: xAI Grok API integration for reasoning tasks (Planned)
+- **ChatGPTClient**: OpenAI ChatGPT integration for code generation (Planned)
+- **QuotaManager**: Real-time quota tracking and management (Planned)
+- **SmartRouter**: Intelligent model selection with failover (Planned)
 
 ---
 

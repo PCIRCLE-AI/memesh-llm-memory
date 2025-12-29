@@ -18,9 +18,6 @@ npm run build
 
 # Check if hooks have butler integration
 cat ~/.claude/hooks/post-tool-use.js | grep -A 5 "integrateWithButler"
-
-# Verify no errors in hook log
-cat ~/.claude/state/hook-errors.log
 ```
 
 ---

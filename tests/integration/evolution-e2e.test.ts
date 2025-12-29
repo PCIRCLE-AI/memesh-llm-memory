@@ -209,19 +209,15 @@ describe('Evolution System E2E Integration', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle invalid tasks gracefully', async () => {
+    it('should reject invalid tasks with validation error', async () => {
       const invalidTask: Task = {
         id: 'invalid-task',
-        description: '',
+        description: '', // Empty description → empty taskType → validation error
         priority: 5,
       };
 
-      const result = await router.routeTask(invalidTask);
-
-      // Should still return valid result structure
-      expect(result).toBeDefined();
-      expect(result.analysis).toBeDefined();
-      expect(result.routing).toBeDefined();
+      // Should throw validation error due to empty taskType
+      await expect(router.routeTask(invalidTask)).rejects.toThrow('taskType must be a non-empty string');
     });
   });
 

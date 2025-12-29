@@ -233,18 +233,15 @@ describe('Evolution System Regression Tests', () => {
   });
 
   describe('Error Handling Stability', () => {
-    it('should handle empty task descriptions gracefully', async () => {
+    it('should reject empty task descriptions with validation error', async () => {
       const task: Task = {
         id: 'empty-desc',
-        description: '',
+        description: '', // Empty description → empty taskType → validation error
         priority: 5,
       };
 
-      const result = await router.routeTask(task);
-
-      // Should still return valid result
-      expect(result).toBeDefined();
-      expect(result.routing.selectedAgent).toBeDefined();
+      // Should throw validation error due to empty taskType
+      await expect(router.routeTask(task)).rejects.toThrow('taskType must be a non-empty string');
     });
 
     it('should handle missing priority gracefully', async () => {

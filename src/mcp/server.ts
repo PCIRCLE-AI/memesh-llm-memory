@@ -17,11 +17,17 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { Router } from '../orchestrator/router.js';
 import { Task, AgentType, TaskAnalysis, RoutingDecision } from '../orchestrator/types.js';
@@ -34,6 +40,8 @@ import { LearningManager } from '../evolution/LearningManager.js';
 import { EvolutionMonitor } from '../evolution/EvolutionMonitor.js';
 import { getRAGAgent } from '../agents/rag/index.js';
 import { FileWatcher } from '../agents/rag/FileWatcher.js';
+import { SkillManager } from '../skills/index.js';
+import { UninstallManager } from '../management/index.js';
 
 // Agent Registry is now used instead of static AGENT_TOOLS array
 // See src/core/AgentRegistry.ts for agent definitions
@@ -52,6 +60,8 @@ class SmartAgentsMCPServer {
   private learningManager: LearningManager;
   private evolutionMonitor: EvolutionMonitor;
   private fileWatcher?: FileWatcher;
+  private skillManager: SkillManager;
+  private uninstallManager: UninstallManager;
 
   constructor() {
     this.server = new Server(
@@ -70,6 +80,8 @@ class SmartAgentsMCPServer {
     this.formatter = new ResponseFormatter();
     this.agentRegistry = new AgentRegistry();
     this.ui = new HumanInLoopUI();
+    this.skillManager = new SkillManager();
+    this.uninstallManager = new UninstallManager(this.skillManager);
 
     // Initialize evolution system
     this.performanceTracker = new PerformanceTracker();
@@ -84,6 +96,7 @@ class SmartAgentsMCPServer {
     );
 
     this.setupHandlers();
+    this.setupResourceHandlers();
   }
 
   /**
@@ -94,42 +107,119 @@ class SmartAgentsMCPServer {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       const allAgents = this.agentRegistry.getAllAgents();
 
-      // Smart router tool (recommended)
-      const smartRouterTool = {
-        name: 'smart_route_task',
-        description: 'Smart task router that analyzes your task and recommends the best agent. Shows reasoning and alternatives with human-in-the-loop confirmation.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            taskDescription: {
-              type: 'string',
-              description: 'Description of the task to be performed',
-            },
-            priority: {
-              type: 'number',
-              description: 'Task priority (optional, 1-10)',
-              minimum: 1,
-              maximum: 10,
-            },
+      // Common input schema for task tools
+      const taskInputSchema = {
+        type: 'object' as const,
+        properties: {
+          taskDescription: {
+            type: 'string',
+            description: 'Description of the task to be performed',
           },
-          required: ['taskDescription'],
+          priority: {
+            type: 'number',
+            description: 'Task priority (optional, 1-10)',
+            minimum: 1,
+            maximum: 10,
+          },
+        },
+        required: ['taskDescription'],
+      };
+
+      // Common input schema for dashboard tools
+      const dashboardInputSchema = {
+        type: 'object' as const,
+        properties: {
+          format: {
+            type: 'string',
+            description: 'Dashboard format: "summary" (default) or "detailed"',
+            enum: ['summary', 'detailed'],
+          },
         },
       };
 
-      // Evolution dashboard tool
-      const evolutionDashboardTool = {
-        name: 'evolution_dashboard',
-        description: 'View evolution system dashboard showing agent learning progress, patterns, and performance improvements. Displays statistics for all 22 agents.',
+      // ========================================
+      // NEW: sa_* prefixed tools (recommended)
+      // ========================================
+
+      // sa_task - Main task routing tool
+      const saTaskTool = {
+        name: 'sa_task',
+        description: '🤖 Smart-Agents: Execute a task with autonomous agent routing. Analyzes your task, selects the best of 22 specialized agents, and returns an optimized execution plan.',
+        inputSchema: taskInputSchema,
+      };
+
+      // sa_dashboard - Evolution system dashboard
+      const saDashboardTool = {
+        name: 'sa_dashboard',
+        description: '📊 Smart-Agents: View evolution system dashboard showing agent learning progress, discovered patterns, and performance improvements across all 22 agents.',
+        inputSchema: dashboardInputSchema,
+      };
+
+      // sa_agents - List all available agents
+      const saAgentsTool = {
+        name: 'sa_agents',
+        description: '📋 Smart-Agents: List all 22 specialized agents with their capabilities and specializations.',
         inputSchema: {
-          type: 'object',
+          type: 'object' as const,
+          properties: {},
+        },
+      };
+
+      // sa_skills - List and manage smart-agents skills
+      const saSkillsTool = {
+        name: 'sa_skills',
+        description: '🎓 Smart-Agents: List all skills, differentiate sa: prefixed skills from user skills.',
+        inputSchema: {
+          type: 'object' as const,
           properties: {
-            format: {
+            filter: {
               type: 'string',
-              description: 'Dashboard format: "summary" (default) or "detailed"',
-              enum: ['summary', 'detailed'],
+              description: 'Filter skills: "all" (default), "smart-agents" (sa: prefix only), "user" (user skills only)',
+              enum: ['all', 'smart-agents', 'user'],
             },
           },
         },
+      };
+
+      // sa_uninstall - Uninstall smart-agents
+      const saUninstallTool = {
+        name: 'sa_uninstall',
+        description: '🗑️ Smart-Agents: Uninstall smart-agents and clean up files with control over data retention.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            keepData: {
+              type: 'boolean',
+              description: 'Keep user data (evolution patterns, task history). Default: false',
+            },
+            keepConfig: {
+              type: 'boolean',
+              description: 'Keep configuration files (~/.smart-agents/). Default: false',
+            },
+            dryRun: {
+              type: 'boolean',
+              description: 'Preview what would be removed without actually removing. Default: false',
+            },
+          },
+        },
+      };
+
+      // ========================================
+      // Backward compatibility (old names)
+      // ========================================
+
+      // Smart router tool (legacy name)
+      const smartRouterTool = {
+        name: 'smart_route_task',
+        description: '[LEGACY] Smart task router that analyzes your task and recommends the best agent. Use sa_task instead for shorter command.',
+        inputSchema: taskInputSchema,
+      };
+
+      // Evolution dashboard tool (legacy name)
+      const evolutionDashboardTool = {
+        name: 'evolution_dashboard',
+        description: '[LEGACY] View evolution system dashboard. Use sa_dashboard instead for shorter command.',
+        inputSchema: dashboardInputSchema,
       };
 
       // Individual agent tools (advanced mode)
@@ -155,7 +245,19 @@ class SmartAgentsMCPServer {
       }));
 
       return {
-        tools: [smartRouterTool, evolutionDashboardTool, ...agentTools],
+        tools: [
+          // New sa_* tools first (recommended)
+          saTaskTool,
+          saDashboardTool,
+          saAgentsTool,
+          saSkillsTool,
+          saUninstallTool,
+          // Legacy tools (backward compatibility)
+          smartRouterTool,
+          evolutionDashboardTool,
+          // Individual agents
+          ...agentTools,
+        ],
       };
     });
 
@@ -178,12 +280,37 @@ class SmartAgentsMCPServer {
       const toolName = params.name;
       const args = params.arguments as Record<string, unknown>;
 
-      // Handle smart_route_task (smart router mode)
+      // Handle sa_task (new name)
+      if (toolName === 'sa_task') {
+        return await this.handleSmartRouting(args);
+      }
+
+      // Handle sa_dashboard (new name)
+      if (toolName === 'sa_dashboard') {
+        return await this.handleEvolutionDashboard(args);
+      }
+
+      // Handle sa_agents (new tool)
+      if (toolName === 'sa_agents') {
+        return await this.handleListAgents(args);
+      }
+
+      // Handle sa_skills (new tool)
+      if (toolName === 'sa_skills') {
+        return await this.handleListSkills(args);
+      }
+
+      // Handle sa_uninstall (new tool)
+      if (toolName === 'sa_uninstall') {
+        return await this.handleUninstall(args);
+      }
+
+      // Handle smart_route_task (legacy name - backward compatibility)
       if (toolName === 'smart_route_task') {
         return await this.handleSmartRouting(args);
       }
 
-      // Handle evolution_dashboard
+      // Handle evolution_dashboard (legacy name - backward compatibility)
       if (toolName === 'evolution_dashboard') {
         return await this.handleEvolutionDashboard(args);
       }
@@ -475,6 +602,308 @@ class SmartAgentsMCPServer {
         ],
       };
     }
+  }
+
+  /**
+   * Handle list agents request (sa_agents tool)
+   */
+  private async handleListAgents(
+    args: Record<string, unknown>
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      const allAgents = this.agentRegistry.getAllAgents();
+
+      // Group agents by category
+      const categories = new Map<string, typeof allAgents>();
+      allAgents.forEach(agent => {
+        if (!categories.has(agent.category)) {
+          categories.set(agent.category, []);
+        }
+        categories.get(agent.category)!.push(agent);
+      });
+
+      // Category emojis
+      const categoryEmojis: Record<string, string> = {
+        development: '💻',
+        analysis: '🔍',
+        knowledge: '📚',
+        operations: '⚙️',
+        creative: '🎨',
+        utility: '🔧',
+        general: '🤖',
+      };
+
+      // Build formatted output
+      let output = '📋 Smart-Agents: All Available Agents\n';
+      output += '━'.repeat(60) + '\n\n';
+      output += `Total: ${allAgents.length} specialized agents across ${categories.size} categories\n\n`;
+
+      // Sort categories for consistent display
+      const sortedCategories = ['development', 'analysis', 'knowledge', 'operations', 'creative', 'utility', 'general'];
+
+      sortedCategories.forEach(categoryName => {
+        const agents = categories.get(categoryName);
+        if (!agents || agents.length === 0) return;
+
+        const emoji = categoryEmojis[categoryName] || '📌';
+        const categoryTitle = categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
+
+        output += `${emoji} ${categoryTitle} (${agents.length})\n`;
+        output += '─'.repeat(60) + '\n';
+
+        agents.forEach(agent => {
+          output += `  • ${agent.name}\n`;
+          output += `    ${agent.description}\n\n`;
+        });
+
+        output += '\n';
+      });
+
+      output += '━'.repeat(60) + '\n';
+      output += '\n💡 Usage:\n';
+      output += '  • sa_task - Route task to best agent automatically\n';
+      output += '  • <agent-name> - Call specific agent directly (advanced)\n';
+      output += '  • sa_dashboard - View learning progress\n';
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: output,
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ List agents failed: ${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle list skills request (sa_skills tool)
+   */
+  private async handleListSkills(
+    args: Record<string, unknown>
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      const filter = (args.filter as string) || 'all';
+
+      // Get skills based on filter
+      let skills: string[];
+      let title: string;
+
+      switch (filter) {
+        case 'smart-agents':
+          skills = await this.skillManager.listSmartAgentsSkills();
+          title = '🎓 Smart-Agents Skills (sa: prefix)';
+          break;
+        case 'user':
+          skills = await this.skillManager.listUserSkills();
+          title = '👤 User Skills';
+          break;
+        case 'all':
+        default:
+          const allSkillsMetadata = await this.skillManager.listAllSkills();
+          skills = allSkillsMetadata.map(s => s.name);
+          title = '🎓 All Skills';
+          break;
+      }
+
+      // Build formatted output
+      let output = `${title}\n`;
+      output += '━'.repeat(60) + '\n\n';
+
+      if (skills.length === 0) {
+        output += '  No skills found.\n\n';
+        if (filter === 'smart-agents') {
+          output += '💡 Smart-Agents can generate skills automatically.\n';
+          output += '   Skills will appear here once generated.\n';
+        }
+      } else {
+        output += `Total: ${skills.length} skill${skills.length === 1 ? '' : 's'}\n\n`;
+
+        // Group by prefix
+        const saSkills = skills.filter(s => s.startsWith('sa:'));
+        const userSkills = skills.filter(s => !s.startsWith('sa:'));
+
+        if (filter === 'all') {
+          if (saSkills.length > 0) {
+            output += '🎓 Smart-Agents Skills:\n';
+            output += '─'.repeat(60) + '\n';
+            saSkills.forEach(skill => {
+              output += `  • ${skill}\n`;
+            });
+            output += '\n';
+          }
+
+          if (userSkills.length > 0) {
+            output += '👤 User Skills:\n';
+            output += '─'.repeat(60) + '\n';
+            userSkills.forEach(skill => {
+              output += `  • ${skill}\n`;
+            });
+            output += '\n';
+          }
+        } else {
+          skills.forEach(skill => {
+            output += `  • ${skill}\n`;
+          });
+          output += '\n';
+        }
+      }
+
+      output += '━'.repeat(60) + '\n';
+      output += '\n💡 Usage:\n';
+      output += '  • sa_skills - List all skills\n';
+      output += '  • sa_skills --filter smart-agents - List only sa: skills\n';
+      output += '  • sa_skills --filter user - List only user skills\n';
+      output += '\n📚 Skill Naming Convention:\n';
+      output += '  • sa:<name> - Smart-Agents generated skills\n';
+      output += '  • <name> - User-installed skills\n';
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: output,
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ List skills failed: ${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle uninstall request (sa_uninstall tool)
+   */
+  private async handleUninstall(
+    args: Record<string, unknown>
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      // Extract uninstall options from args
+      const options = {
+        keepData: typeof args.keepData === 'boolean' ? args.keepData : false,
+        keepConfig: typeof args.keepConfig === 'boolean' ? args.keepConfig : false,
+        dryRun: typeof args.dryRun === 'boolean' ? args.dryRun : false,
+      };
+
+      // Perform uninstallation
+      const report = await this.uninstallManager.uninstall(options);
+
+      // Format report for display
+      const formattedReport = this.uninstallManager.formatReport(report);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: formattedReport,
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Uninstall failed: ${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Setup MCP Resource handlers
+   */
+  private setupResourceHandlers(): void {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const resourcesDir = path.join(__dirname, 'resources');
+
+    // List available resources
+    this.server.setRequestHandler(ListResourcesRequestSchema, async () => ({
+      resources: [
+        {
+          uri: 'smart-agents://usage-guide',
+          name: 'Smart-Agents Complete Usage Guide',
+          mimeType: 'text/markdown',
+          description: 'Comprehensive guide to all 22 specialized agents with examples and best practices',
+        },
+        {
+          uri: 'smart-agents://quick-reference',
+          name: 'Agents Quick Reference',
+          mimeType: 'text/markdown',
+          description: 'Quick lookup table for all agents, keywords, and common workflows',
+        },
+        {
+          uri: 'smart-agents://examples',
+          name: 'Real-world Examples',
+          mimeType: 'text/markdown',
+          description: 'Complete project workflows and single-task examples demonstrating agent usage',
+        },
+        {
+          uri: 'smart-agents://best-practices',
+          name: 'Best Practices Guide',
+          mimeType: 'text/markdown',
+          description: 'Tips, guidelines, and best practices for effective agent utilization',
+        },
+      ],
+    }));
+
+    // Read resource content
+    this.server.setRequestHandler(ReadResourceRequestSchema, async request => {
+      const uri = request.params.uri;
+
+      // Map URIs to file names
+      const resourceFiles: Record<string, string> = {
+        'smart-agents://usage-guide': 'usage-guide.md',
+        'smart-agents://quick-reference': 'quick-reference.md',
+        'smart-agents://examples': 'examples.md',
+        'smart-agents://best-practices': 'best-practices.md',
+      };
+
+      const fileName = resourceFiles[uri];
+      if (!fileName) {
+        throw new Error(`Unknown resource: ${uri}`);
+      }
+
+      const filePath = path.join(resourcesDir, fileName);
+
+      try {
+        const content = await fs.readFile(filePath, 'utf-8');
+
+        return {
+          contents: [
+            {
+              uri,
+              mimeType: 'text/markdown',
+              text: content,
+            },
+          ],
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        throw new Error(`Failed to read resource ${uri}: ${errorMessage}`);
+      }
+    });
   }
 
   /**

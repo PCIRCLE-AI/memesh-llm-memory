@@ -326,21 +326,46 @@ export class AgentRouter {
   }
 
   /**
+   * CPU usage cache to avoid frequent recalculation
+   */
+  private cpuUsageCache: { value: number; timestamp: number } = { value: 50, timestamp: 0 };
+  private readonly CPU_CACHE_TTL = 1000; // 1 second TTL
+
+  /**
    * 獲取 CPU 使用率
    *
-   * Note: Accurate CPU usage requires interval measurement (sampling twice).
-   * To avoid latency, we return a conservative estimate (50%).
-   * This is sufficient for resource-aware routing decisions.
-   *
-   * For accurate CPU monitoring, consider using libraries like:
-   * - os-utils (npm package)
-   * - systeminformation (npm package)
-   * - Implement interval-based measurement with sampling
+   * Uses Node.js built-in 'os' module to calculate actual CPU usage.
+   * Results are cached for 1 second to avoid performance overhead.
    */
   private getCPUUsage(): number {
-    // Conservative estimate: assume moderate CPU usage
-    // This prevents over-aggressive routing decisions while avoiding measurement latency
-    return 50;
+    const now = Date.now();
+
+    // Return cached value if still fresh
+    if (now - this.cpuUsageCache.timestamp < this.CPU_CACHE_TTL) {
+      return this.cpuUsageCache.value;
+    }
+
+    // Calculate actual CPU usage from os.cpus()
+    const cpus = os.cpus();
+    let totalIdle = 0;
+    let totalTick = 0;
+
+    for (const cpu of cpus) {
+      // Sum all CPU times
+      for (const type in cpu.times) {
+        totalTick += cpu.times[type as keyof typeof cpu.times];
+      }
+      totalIdle += cpu.times.idle;
+    }
+
+    // CPU usage = 100 - (idle percentage)
+    const idlePercentage = (100 * totalIdle) / totalTick;
+    const usage = Math.round(100 - idlePercentage);
+
+    // Update cache
+    this.cpuUsageCache = { value: usage, timestamp: now };
+
+    return usage;
   }
 
   /**

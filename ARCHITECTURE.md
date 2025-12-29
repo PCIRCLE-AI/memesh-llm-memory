@@ -260,12 +260,8 @@ estimatedCost = (promptTokens * INPUT_PRICE + completionTokens * OUTPUT_PRICE) /
 |-------|-------|--------|------|
 | Claude Sonnet 4.5 | $3.00 | $15.00 | 推薦用於複雜任務 |
 | Claude Opus 4.5 | $15.00 | $75.00 | 最高品質 |
-| GPT-4 Turbo | $10.00 | $30.00 | V3.0 計劃支援 |
-| Grok Beta | $5.00 | $15.00 | V3.0 計劃支援 |
-| Gemini 2.5 Flash | FREE | FREE | V3.0 計劃支援 |
-| Ollama (local) | $0 | $0 | V3.0 計劃支援 |
 
-> **注意**: 價格僅供參考，實際成本由用戶的 API provider 決定。V3.0 將支援 Multi-Provider Routing，屆時 smart-agents 可直接執行 API 調用。
+> **注意**: 價格僅供參考，實際成本由用戶的 Claude API subscription 決定。
 
 ---
 
@@ -573,28 +569,7 @@ export class NewAgent {
 // 3. MCP tool registration (automatic via AgentRegistry)
 ```
 
-### 2. 新增 Provider (V3.0 計劃功能)
-
-> **V3.0 說明**: Multi-Provider Routing 是 V3.0 的計劃功能。在 V2.0 MCP Server Pattern 中，smart-agents 只生成 enhanced prompts，不直接調用 providers。以下內容為 V3.0 的設計規劃。
-
-**步驟** (V3.0):
-1. 在 `src/providers/` 創建 provider 類
-2. 實現標準 `ProviderInterface`
-3. 在 `QuotaManager` 註冊
-4. 更新路由規則
-5. 添加環境變數配置
-
-**Interface** (V3.0):
-```typescript
-interface Provider {
-  name: string;
-  isAvailable(): Promise<boolean>;
-  estimateCost(tokens: number): number;
-  execute(prompt: string, config: ProviderConfig): Promise<Response>;
-}
-```
-
-### 3. 新增 Adaptation Type
+### 2. 新增 Adaptation Type
 
 **步驟**:
 1. 在 `AdaptationEngine` 添加新的 adaptation 類型
@@ -618,7 +593,7 @@ private applyContextOptimization(
 }
 ```
 
-### 4. 新增 Dashboard Metrics
+### 3. 新增 Dashboard Metrics
 
 **步驟**:
 1. 在 `PerformanceTracker` 添加新指標
@@ -654,26 +629,6 @@ Local Machine
 - 用戶使用自己的 Claude API subscription
 - 本地 vector database（Vectra）
 
-### V3.0 獨立服務部署（計劃中）
-
-> **V3.0 說明**: 未來版本將支援作為獨立 API service 部署，具備 Multi-Provider Routing 和直接 API 執行能力。
-
-**生產環境** (V3.0 計劃):
-```
-Cloud Infrastructure
-├── API Gateway (rate limiting, auth)
-├── Smart-Agents Service
-│   ├── Router instances (load balanced)
-│   ├── Evolution DB (PostgreSQL)
-│   ├── Vector DB (Pinecone/Weaviate)
-│   └── Provider Adapters (Ollama, GPT-4, Grok, Gemini)
-├── MCP Servers (containerized)
-└── Monitoring
-    ├── Prometheus (metrics)
-    ├── Grafana (dashboards)
-    └── Alertmanager (alerts)
-```
-
 ---
 
 ## 性能指標
@@ -702,17 +657,10 @@ Cloud Infrastructure
 
 ### API Key 管理
 
-**V2.0 (當前)**:
 - ✅ 用戶在 Claude Code 中管理自己的 API keys
 - ✅ smart-agents MCP server 不需要 API keys
 - ✅ 不需要 `.env` file（除非使用 external MCP servers）
 - ✅ 本地執行，無 API key 洩漏風險
-
-**V3.0 (計劃)**:
-- 環境變數存儲 (`.env` file)
-- Never commit to Git (`.gitignore` 設置)
-- Keychain integration (macOS)
-- Secret rotation policy
 
 ### 輸入驗證
 
@@ -743,4 +691,3 @@ Cloud Infrastructure
 
 **版本說明**:
 - **V2.0 (當前)**: MCP Server Pattern - 生成 enhanced prompts，由 Claude Code 執行
-- **V3.0 (計劃)**: Multi-Provider Routing - 直接調用多個 AI providers

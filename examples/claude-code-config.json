@@ -1,0 +1,19 @@
+{
+  "$schema": "https://claude.ai/schemas/config.json",
+  "mcpServers": {
+    "smart-agents": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/smart-agents/dist/mcp/server.js"
+      ],
+      "env": {
+        "ANTHROPIC_API_KEY": "your_anthropic_api_key_here",
+        "OPENAI_API_KEY": "your_openai_api_key_here_optional",
+        "LOG_LEVEL": "info",
+        "ENABLE_RAG": "false",
+        "ENABLE_EVOLUTION": "true"
+      },
+      "description": "Smart-Agents MCP server for intelligent task routing and development automation"
+    }
+  }
+}

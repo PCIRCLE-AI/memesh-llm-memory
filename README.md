@@ -176,12 +176,14 @@ See [Architecture Documentation](./ARCHITECTURE.md) for detailed system design.
 ### Agent Categories (via Orchestrator)
 
 The orchestrator can route to agents in these categories:
-- **Development** (9 types): code-reviewer, test-writer, debugger, refactorer, api-designer, db-optimizer, frontend-specialist, backend-specialist, development-butler
-- **Research** (5 types): rag-agent, research-agent, architecture-agent, data-analyst, performance-profiler
-- **Operations** (2 types): devops-engineer, security-auditor
-- **Creative** (2 types): technical-writer, ui-designer
-- **Utility** (3 types): knowledge-agent, migration-assistant, api-integrator
-- **General** (1 type): general-agent (fallback)
+- **Development** (2 agents): development-butler, code-reviewer
+- **Operations** (2 agents): devops-engineer, security-auditor
+- **Management** (2 agents): project-manager, product-manager
+- **Engineering** (2 agents): data-engineer, ml-engineer
+- **Analysis** (2 agents): architecture-agent, rag-agent
+- **Creative** (1 agent): ui-designer
+
+**Total**: 13 agents (5 real implementations, 7 enhanced prompts, 1 optional feature)
 
 ---
 

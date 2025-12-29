@@ -34,7 +34,7 @@
 
 - **Test Coverage**: 377 passing tests across 46 test files
 - **Code Quality**: TypeScript with strict type checking
-- **Agent Count**: 22 specialized agents
+- **Agent Count**: 13 specialized agents
 - **Learning System**: Real-time performance tracking and pattern recognition
 
 ---
@@ -47,7 +47,7 @@
 ┌─────────────────────────────────────────────────────────────┐
 │ Layer 4: MCP Server (User Interface)                        │
 │ - Claude Code integration via MCP Protocol                  │
-│ - 22 specialized agent tools                                │
+│ - 13 specialized agent tools                                │
 │ - RAG agent with file watching                              │
 │ - Evolution dashboard                                       │
 └───────────────────────────┬─────────────────────────────────┘
@@ -56,7 +56,7 @@
 ┌─────────────────────────────────────────────────────────────┐
 │ Layer 3: Router & Orchestration                             │
 │ - Task complexity analysis                                  │
-│ - Agent selection (22 specialized agents)                   │
+│ - Agent selection (13 specialized agents)                   │
 │ - Prompt enhancement                                        │
 │ - Cost estimation & budget control                          │
 └───────────────────────────┬─────────────────────────────────┘
@@ -102,7 +102,7 @@ Expose Smart Agents functionality to Claude Code via Model Context Protocol.
 **Key Components**:
 - **Router**: Task routing and agent selection
 - **ResponseFormatter**: Terminal-friendly output formatting
-- **AgentRegistry**: 22 specialized agent metadata
+- **AgentRegistry**: 13 specialized agent metadata
 - **SkillManager**: Manage reusable skills
 - **UninstallManager**: Cleanup utilities
 - **Evolution System**: Performance tracking and learning
@@ -220,25 +220,25 @@ Enable agents to learn from execution and continuously optimize.
 
 ### Purpose
 
-Metadata-based registry of 22 specialized agents.
+Metadata-based registry of 13 specialized agents.
 
 ### Implementation (`src/core/AgentRegistry.ts`)
 
 **Agent Categories**:
 
-1. **Development** (9 agents): code-reviewer, test-writer, debugger, refactorer, api-designer, db-optimizer, frontend-specialist, backend-specialist, development-butler
+1. **Development** (2 agents): development-butler, code-reviewer
 
-2. **Research** (5 agents): rag-agent, research-agent, architecture-agent, data-analyst, performance-profiler
+2. **Operations** (2 agents): devops-engineer, security-auditor
 
-3. **Knowledge** (1 agent): knowledge-agent
+3. **Management** (2 agents): project-manager, product-manager
 
-4. **Operations** (2 agents): devops-engineer, security-auditor
+4. **Engineering** (2 agents): data-engineer, ml-engineer
 
-5. **Creative** (2 agents): technical-writer, ui-designer
+5. **Analysis** (2 agents): architecture-agent, rag-agent
 
-6. **Tools** (2 agents): migration-assistant, api-integrator
+6. **Creative** (1 agent): ui-designer
 
-7. **General** (1 agent): general-agent
+**Total**: 13 agents (5 real implementations, 7 enhanced prompts, 1 optional feature)
 
 **Agent Metadata**:
 ```typescript
@@ -635,7 +635,7 @@ PORT=3000
 |-----------|--------|-------|
 | Performance metrics | ~10MB | 10,000 metrics global |
 | Learned patterns | ~1MB | 50 patterns per agent |
-| Agent metadata | < 1MB | 22 agents |
+| Agent metadata | < 1MB | 13 agents |
 | Total (typical) | ~20MB | Lightweight |
 
 ---

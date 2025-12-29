@@ -1,525 +1,171 @@
-# 🤖 Smart Agents
+# Smart-Agents V2.1
 
-**22 個自我優化的專業 AI Agents** - 透過 Claude Code 提供智能協作與專業能力
+**Production-ready Prompt Enhancement System with Event-Driven Development Automation for Claude Code**
 
----
+[![CI/CD](https://github.com/your-username/smart-agents/workflows/CI/badge.svg)](https://github.com/your-username/smart-agents/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## 什麼是 Smart Agents？
+## 🚀 What is Smart-Agents?
 
-Smart Agents 是一個專業化的 AI Agent 系統，提供 **22 個具備自我學習能力的專業 agents**，透過 MCP (Model Context Protocol) 無縫整合到 Claude Code 中。
+Smart-Agents is a **Prompt Enhancement System** that supercharges Claude Code with:
 
-**核心特點**：
-- ✅ **22 個專業 Agents** - 涵蓋開發、研究、設計、運維等各領域
-- ✅ **智能任務路由** - 自動選擇最適合的 agent 處理您的請求
-- ✅ **事件驅動激活** - Agents 根據您的工作流程自動激活（透過 Claude Code hooks）
-- ✅ **自我學習系統** - Agents 會從每次執行中學習並持續優化
-- ✅ **零額外成本** - 使用您自己的 Claude API subscription（僅支援 Claude）
+✅ **Event-Driven Development Butler** - Automatic assistance at logical checkpoints
+✅ **12 Essential Agents** - 5 real implementations + 7 enhanced prompts
+✅ **Zero-Interruption Workflow** - Butler triggers only when needed
+✅ **MCP-Native Integration** - Leverages Model Context Protocol tools
+✅ **Knowledge Graph** - Persistent learning and memory
 
----
+## 📦 Installation
 
-## 📋 可用的 22 個 Agents
-
-### 🔧 開發類 (9 個)
-
-| Agent | 專長 | 適用場景 |
-|-------|------|---------|
-| **code-reviewer** | 代碼審查 | 檢查代碼品質、安全漏洞、最佳實踐 |
-| **test-writer** | 測試撰寫 | 設計單元測試、整合測試、E2E測試 |
-| **debugger** | Bug 除錯 | 系統性分析錯誤、找出根本原因 |
-| **refactorer** | 代碼重構 | 改善代碼結構、減少技術債 |
-| **api-designer** | API 設計 | 設計 REST/GraphQL API 介面 |
-| **db-optimizer** | 資料庫優化 | 查詢優化、索引建議、Schema 設計 |
-| **frontend-specialist** | 前端開發 | React/Vue/Angular 組件開發 |
-| **backend-specialist** | 後端開發 | 伺服器邏輯、API 實作、資料處理 |
-| **development-butler** | 開發助理 | 一般開發任務協助 |
-
-### 🔍 研究類 (5 個)
-
-| Agent | 專長 | 適用場景 |
-|-------|------|---------|
-| **rag-agent** | 知識檢索 | 從文檔庫中搜尋相關資訊 |
-| **research-agent** | 技術調研 | 收集技術資訊、比較方案、趨勢分析 |
-| **architecture-agent** | 架構設計 | 系統架構規劃、技術選型建議 |
-| **data-analyst** | 資料分析 | 數據處理、統計分析、視覺化 |
-| **performance-profiler** | 性能分析 | 識別瓶頸、優化建議、負載測試 |
-
-### 🧠 知識類 (1 個)
-
-| Agent | 專長 | 適用場景 |
-|-------|------|---------|
-| **knowledge-agent** | 知識管理 | 組織和檢索專案知識庫 |
-
-### ⚙️ 營運類 (2 個)
-
-| Agent | 專長 | 適用場景 |
-|-------|------|---------|
-| **devops-engineer** | DevOps 自動化 | CI/CD、部署、監控設置 |
-| **security-auditor** | 安全審計 | 漏洞掃描、安全建議、合規檢查 |
-
-### 🎨 創意類 (2 個)
-
-| Agent | 專長 | 適用場景 |
-|-------|------|---------|
-| **technical-writer** | 技術文檔 | API 文檔、使用手冊、教學指南 |
-| **ui-designer** | UI/UX 設計 | 介面設計建議、可訪問性檢查 |
-
-### 🔄 工具類 (2 個)
-
-| Agent | 專長 | 適用場景 |
-|-------|------|---------|
-| **migration-assistant** | 系統遷移 | 資料庫遷移、框架升級、平台轉換 |
-| **api-integrator** | API 整合 | 第三方 API 串接、SDK 使用 |
-
-### 🌟 通用類 (1 個)
-
-| Agent | 專長 | 適用場景 |
-|-------|------|---------|
-| **general-agent** | 通用任務 | 不符合上述類別的一般性任務 |
-
----
-
-## 🚀 安裝與設置
-
-### 前置需求
-- **Claude Code**: 已安裝 Claude CLI
-- **Node.js**: 18 或更高版本
-- **Git**: 用於克隆專案
-
-### 安裝步驟
-
-**1. Clone 專案**
 ```bash
-git clone https://github.com/kevintseng/smart-agents.git
+# Clone the repository
+git clone https://github.com/your-username/smart-agents.git
 cd smart-agents
-```
 
-**2. 安裝依賴**
-```bash
+# Install dependencies
 npm install
-```
 
-**3. 編譯專案**
-```bash
+# Build the project
 npm run build
+
+# Run tests
+npm test
 ```
 
-**4. 配置 Claude Code**
+## 🎯 Quick Start
 
-編輯 `~/.claude/mcp_settings.json`，添加以下配置：
+### 1. Enable Development Butler
 
-```json
-{
-  "mcpServers": {
-    "smart-agents": {
-      "command": "npm",
-      "args": ["run", "mcp"],
-      "cwd": "/absolute/path/to/smart-agents",
-      "env": {
-        "NODE_ENV": "production"
-      }
-    }
-  }
-}
-```
+The butler automatically activates at checkpoints (no configuration needed):
 
-**重要**: 將 `/absolute/path/to/smart-agents` 替換為您專案的實際路徑。
+- **BEFORE_COMMIT**: Runs code review and test verification
+- **SIGNIFICANT_CHANGE**: Analyzes impact and updates docs
+- **TEST_FAILURE**: Debugs and suggests fixes
+- **SESSION_END**: Saves progress and generates summary
+- **SECURITY_CONCERN**: Audits security issues
+- **PERFORMANCE_ISSUE**: Analyzes bottlenecks
 
-**5. （可選）配置 RAG Agent**
-
-RAG agent 為可選功能，可在安裝後隨時啟用。
-
-**方式 1：啟用時互動式設定**
-
-使用 RAG 功能時，系統會自動提示您輸入 OpenAI API key：
+### 2. Use Real Implementation Agents
 
 ```typescript
-const rag = new RAGAgent();
-await rag.initialize();
+import { TestWriterAgent, DevOpsEngineerAgent } from 'smart-agents';
+import { MCPToolInterface } from 'smart-agents';
 
-// 第一次使用時會看到提示：
-╔═══════════════════════════════════════════════════════════════════════════╗
-║                    🧠 Smart-Agents RAG Features                           ║
-╚═══════════════════════════════════════════════════════════════════════════╝
+const mcp = new MCPToolInterface();
 
-啟用 RAG 功能將為您的 AI agents 帶來：
-✨ 語義搜尋、知識庫管理、精準檢索...
+// Generate tests automatically
+const testWriter = new TestWriterAgent(mcp);
+await testWriter.writeTestFile('src/utils.ts');
 
-請輸入您的 OpenAI API Key (或按 Enter 跳過):
+// Setup CI/CD
+const devops = new DevOpsEngineerAgent(mcp);
+await devops.setupCI({
+  platform: 'github-actions',
+  testCommand: 'npm test',
+  buildCommand: 'npm run build'
+});
 ```
 
-**方式 2：環境變數預先設定**
-
-```bash
-# 複製環境變數範本
-cp .env.example .env
-
-# 在 .env 中添加
-OPENAI_API_KEY=sk-xxxxx
-```
-
-**方式 3：稍後啟用**
+### 3. Leverage Enhanced Prompt Agents
 
 ```typescript
-const rag = new RAGAgent();
-await rag.initialize(); // RAG 功能 disabled
+import { AgentRegistry } from 'smart-agents';
 
-// 稍後可以啟用
-await rag.enableRAG('sk-xxxxx'); // 或不傳 API key，會提示輸入
+const registry = new AgentRegistry();
+
+// Access any of the 7 enhanced prompt agents
+const codeReviewer = registry.getAgent('code-reviewer');
+const securityAuditor = registry.getAgent('security-auditor');
+const uiDesigner = registry.getAgent('ui-designer');
 ```
 
-**成本**: OpenAI Embeddings API 為 $0.02 / 1M tokens (~62,500 頁文本，非常實惠)
-
-**不使用 RAG agent 可跳過此步驟。** 其他 21 個 agents 無需額外配置。
-
-**5a. （可選）使用檔案投放功能**
-
-RAG Agent 支援自動索引投放的檔案，讓您輕鬆建立知識庫：
-
-**📂 檔案投放資料夾位置**（平台友好）：
-
-```bash
-# macOS / Linux
-~/Documents/smart-agents-knowledge/
-
-# Windows
-%USERPROFILE%\Documents\smart-agents-knowledge\
-```
-
-**✨ 自動啟動（推薦）**：
-
-當您配置 RAG 功能（設定 OPENAI_API_KEY）後，**檔案監控會自動啟動**：
-
-- 每次啟動 Claude Code 新 session，MCP server 會自動檢測 RAG 是否啟用
-- 如果啟用，會自動開始監控 `~/Documents/smart-agents-knowledge/`
-- **無需手動運行任何命令** - 完全零配置
-
-**手動啟動（可選）**：
-
-如果您想單獨運行 File Watcher（不透過 MCP server）：
-
-```bash
-# 啟動 File Watcher（自動創建資料夾）
-npm run rag:watch
-
-# 輸出範例：
-📁 File Watcher Started
-📂 Watching directory: /Users/你的用戶名/Documents/smart-agents-knowledge
-📄 Supported extensions: .md, .txt, .json, .pdf, .docx
-⏱️  Polling interval: 5000ms
-
-💡 Tip: Drop your files into this folder and they will be automatically indexed!
-
-📡 File Watcher is running... (Press Ctrl+C to stop)
-```
-
-**使用方式**：
-1. **自動模式**（推薦）：配置 RAG 後重啟 Claude Code - File Watcher 自動運行
-2. **手動模式**：執行 `npm run rag:watch`
-3. 將檔案（.md, .txt, .json, .pdf, .docx）投放到上述資料夾
-4. File Watcher 會自動檢測並索引新檔案
-5. 所有 agents 立即可以搜尋這些知識
-
-**支援的檔案格式**：
-- Markdown (`.md`)
-- 文字檔 (`.txt`)
-- JSON (`.json`)
-- PDF (`.pdf`)
-- Word 文檔 (`.docx`)
-
-**6. 重啟 Claude Code**
-
-重啟後，smart-agents MCP server 會自動啟動。
-
----
-
-## 💡 使用方式
-
-### 系統架構
+## 🏗️ Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      Claude Code (您)                        │
-│                                                             │
-│  輸入任務 ──────────────────────────────────────────────▶   │
-│                                                             │
-└────────────────────────┬────────────────────────────────────┘
-                         │ MCP Protocol
-                         ▼
+│  Layer 1: Prompt Enhancement Core                          │
+│  - AgentRegistry (12 agents)                               │
+│  - Hooks system (session-start, post-tool-use, stop)       │
+│  - Knowledge Graph for learning                            │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
 ┌─────────────────────────────────────────────────────────────┐
-│              Smart-Agents MCP Server                        │
-│                                                             │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐  │
-│  │ Task Analyzer│───▶│Agent Router  │───▶│Prompt Builder│  │
-│  └──────────────┘    └──────────────┘    └──────────────┘  │
-│                                                             │
-│  選擇最適合的專業 agent + 生成優化的 prompt                   │
-│                                                             │
-└────────────────────────┬────────────────────────────────────┘
-                         │ Enhanced Prompt
-                         ▼
+│  Layer 2: Event-Driven Development Butler                  │
+│  - Checkpoint detection (6 types)                          │
+│  - Workflow automation at logical points                   │
+│  - Zero-interruption assistance                            │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                    Claude API (執行)                         │
-│                                                             │
-│  使用您的 Claude API subscription 執行增強的 prompt          │
-│                                                             │
+│  Layer 3: Selective Agent Implementations                  │
+│  - 5 Real: butler, test-writer, devops, pm, data-engineer │
+│  - 7 Enhanced: architecture, code-review, security, etc.   │
+│  - 1 Optional: RAG agent (ChromaDB + OpenAI)              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 兩種使用模式
+## 📚 Documentation
 
-Smart Agents 提供兩種使用方式：
+- [User Guide](./docs/USER_GUIDE.md) - Complete usage guide
+- [Agent Reference](./docs/AGENT_REFERENCE.md) - All 12 agents documented
+- [Troubleshooting](./docs/TROUBLESHOOTING.md) - Common issues and solutions
+- [Design Document](./docs/plans/2025-12-30-smart-agents-v2.1-design.md) - Full architecture
 
-#### 1. **智能路由模式**（推薦）
-自動分析任務並選擇最適合的 agent：
+## 🤖 Agents
 
-```
-請審查這段代碼的安全性和效能
-```
-→ 自動路由到 `code-reviewer` agent
+### Real Implementations (5)
 
-```
-幫我設計一個用戶認證的 REST API
-```
-→ 自動路由到 `api-designer` agent
+| Agent | Description | MCP Tools |
+|-------|-------------|-----------|
+| **development-butler** | Event-driven automation | filesystem, memory, bash |
+| **test-writer** | Automated test generation | filesystem, memory, bash |
+| **devops-engineer** | CI/CD automation | filesystem, bash, github |
+| **project-manager** | Task tracking | filesystem, memory |
+| **data-engineer** | Data pipelines | filesystem, bash, memory |
 
-```
-這個查詢太慢了，幫我優化
-```
-→ 自動路由到 `db-optimizer` agent
+### Enhanced Prompts (7)
 
-#### 2. **直接調用模式**
-明確指定要使用的 agent：
+architecture-agent • code-reviewer • security-auditor • ui-designer • marketing-strategist • product-manager • ml-engineer
 
-```
-使用 code-reviewer 審查這段代碼
-使用 test-writer 為這個函數寫測試
-使用 rag-agent 搜尋相關文檔
-```
+### Optional Feature (1)
 
-#### 3. **事件驅動模式**（進階功能）
-透過 Claude Code hooks，agents 可以自動激活並在背景工作：
+**rag-agent** - RAG-powered assistance (requires ChromaDB + OpenAI API key)
 
-**自動激活場景**：
-- 🔄 **Session 開始** → Router 初始化 + Evolution 系統啟動
-- 🛠️ **工具執行後** → 自動追蹤性能指標，學習優化模式
-- 📊 **定期監控** → 配額檢查、合規驗證、學習儀表板更新
-- ✅ **Session 結束** → 儲存演化狀態到 MCP Memory
-
-**優勢**：
-- ✨ 無需手動調用 - agents 根據事件自動工作
-- ⏱️ 非阻塞執行 - 主對話繼續，agents 在背景完成任務
-- 🤝 人機協作 - 保持互動性，隨時可介入決策
-
-**配置方式**：參見 [Claude Code Integration Plan](docs/architecture/CLAUDE_CODE_INTEGRATION_PLAN.md)
-
-### 工作原理
-
-Smart Agents 支援兩種運作模式：
-
-#### **Mode 1: Prompt Enhancement（當前預設）**
-1. 接收您的任務
-2. 選擇最適合的專業 agent
-3. 生成優化的 prompt（包含該 agent 的專業知識）
-4. 返回給 Claude Code 執行
-5. 使用您的 Claude API subscription（僅支援 Claude）
-
-#### **Mode 2: Event-Driven Orchestration（進階功能）**
-1. Claude Code hooks 觸發事件（SessionStart, PostToolUse, Stop）
-2. Router 自動分配任務給適合的 agents
-3. Agents 在背景執行（非阻塞）
-4. 性能追蹤 + 自我學習系統持續優化
-5. 結果整合回主對話流程
-
-**重要**：Smart-Agents 作為「專業助手工具箱」，不會自動接管所有任務。您可以：
-- 明確請求使用（例如：「使用 smart-agents 的 code-reviewer 審查...」）
-- 配置 hooks 實現自動激活（參見 Integration Plan）
-- 任務明確匹配 agent 專長時，Claude Code 會建議使用
-
-### 查看 Agent 學習進度
-
-您可以使用 MCP tool 查看所有 agents 的演化狀態：
-
-```
-在 Claude Code 中輸入：
-使用 smart-agents 的 evolution_dashboard 工具查看學習進度
-```
-
-這會顯示：
-- 22 個 agents 的學習統計
-- 每個 agent 發現的最佳實踐模式
-- 成功率和改進趨勢
-- 表現最佳的 agents
-
----
-
-## 🔧 疑難排解
-
-### Smart-Agents 沒有運作？
-
-如果您安裝了 Smart-Agents 但 Claude Code 沒有使用它，請檢查：
-
-**1. 驗證 MCP 配置是否正確**
-
-檢查 `~/.claude/mcp_settings.json`：
-```bash
-cat ~/.claude/mcp_settings.json
-```
-
-應該包含：
-```json
-{
-  "mcpServers": {
-    "smart-agents": {
-      "command": "npm",
-      "args": ["run", "mcp"],
-      "cwd": "/absolute/path/to/smart-agents",
-      "env": {
-        "NODE_ENV": "production"
-      }
-    }
-  }
-}
-```
-
-**2. 驗證專案已編譯**
+## 🧪 Testing
 
 ```bash
-cd /path/to/smart-agents
-ls dist/mcp/server.js  # 應該存在
+# Run all tests
+npm test
+
+# Run specific test file
+npm test -- tests/butler/DevelopmentButler.test.ts
+
+# Run with coverage
+npm test -- --coverage
 ```
 
-如果不存在，執行：
+## 🔧 Development
+
 ```bash
+# Watch mode for development
+npm run dev
+
+# Build
 npm run build
+
+# Lint
+npm run lint
+
+# Type check
+npm run type-check
 ```
 
-**3. 重啟 Claude Code**
+## 📝 License
 
-**重要**：MCP 配置變更後，必須完全重啟 Claude Code：
+MIT © 2025
 
-```bash
-# 完全退出 Claude Code（macOS）
-Cmd + Q
+## 🙏 Acknowledgments
 
-# 等待 3-5 秒
-
-# 重新啟動 Claude Code
-```
-
-**4. 驗證 Smart-Agents 可用**
-
-在新的 Claude Code session 中測試：
-
-```
-請使用 smart-agents 的 evolution_dashboard 查看 agents 狀態
-```
-
-或
-
-```
-請使用 smart-agents 的 smart_route_task 路由這個任務：[您的任務描述]
-```
-
-### 手動測試 MCP Server
-
-您可以手動啟動 MCP server 測試是否正常運作：
-
-```bash
-cd /path/to/smart-agents
-npm run mcp
-```
-
-預期輸出：
-```
-Smart-Agents MCP Server started
-Available agents: 22
-RAG File Watcher: Started monitoring /Users/你的用戶名/Documents/smart-agents-knowledge
-Waiting for requests...
-```
-
-如果看到此輸出，表示 server 正常運作。按 Ctrl+C 停止。
-
-### 常見問題診斷
-
-| 症狀 | 可能原因 | 解決方法 |
-|------|---------|---------|
-| Claude Code 看不到 smart-agents | MCP 配置未載入 | 完全重啟 Claude Code (Cmd+Q) |
-| Server 啟動失敗 | 未編譯或依賴缺失 | `npm install && npm run build` |
-| RAG 功能無法使用 | 缺少 OPENAI_API_KEY | 設定環境變數或 .env 檔案 |
-| Agents 列表不完整 | Server 版本過舊 | `git pull && npm install && npm run build` |
-
----
-
-## ❓ 常見問題
-
-### Q: 需要配置 API keys 嗎？
-**A**: 不需要。Smart Agents 使用您在 Claude Code 中已配置的 Claude API subscription。（RAG agent 需要可選的 OpenAI API key 用於 embeddings）
-
-### Q: 如何知道使用了哪個 agent？
-**A**: Claude Code 會在回應中顯示使用的 agent 資訊。
-
-### Q: Agents 如何自我學習？
-**A**: 每次執行後，agents 會記錄性能數據（執行時間、成功率等），並從中識別有效的模式來優化未來的執行。
-
-### Q: 可以指定使用特定 agent 嗎？
-**A**: 可以，在請求中明確提及 agent 名稱即可，例如：「使用 code-reviewer 審查這段代碼」
-
----
-
-## 🚀 規劃中的功能
-
-### Pattern Detection & Skill Suggestion（模式偵測與技能建議）
-
-**狀態**：設計完成，等待實作（[查看完整實作計劃](docs/plans/2025-12-29-pattern-detection-skill-suggestion.md)）
-
-**功能概述**：
-- 🔍 **自動偵測**：監控您的工作流程，識別重複的任務序列
-- 💡 **智能建議**：當偵測到重複模式（3 次以上），建議將其轉換為可重用的 Skill
-- 🎯 **個人化自動化**：根據您的實際工作習慣，自動生成專屬的工作流程技能
-- 📊 **整合到 Evolution Dashboard**：在每週報告中查看建議的技能
-
-**範例場景**：
-```
-您經常執行的工作流程：
-  1. brainstorming（構思）
-  2. writing-plans（撰寫計劃）
-  3. executing-plans（執行計劃）
-
-偵測到 5 次重複 ⬇️
-
-Smart-Agents 建議：
-「創建『feature-development-workflow』技能？
- 預計每次節省 15 分鐘」
-```
-
-**與 Bundled Skills 的關係**：
-- **Bundled Skills**（已包含）：預製的最佳實踐工作流程（適合所有用戶）
-- **Generated Skills**（此功能）：從您的個人習慣自動生成（完全個人化）
-
-**實作階段**：
-1. ✅ 架構設計完成
-2. ⏳ 數據收集層實作（預計 1-2 天）
-3. ⏳ 模式分析引擎（預計 2-3 天）
-4. ⏳ 技能建議介面（預計 2-3 天）
-5. ⏳ 自動技能生成（預計 3-4 天）
-
-**預計完成時間**：2-3 週
-
----
-
-## 📚 延伸閱讀
-
-- **[Evolution 系統文檔](docs/EVOLUTION.md)** - 了解 agents 如何自我學習
-- **[架構文檔](docs/architecture/OVERVIEW.md)** - 深入了解系統設計
-- **[設置指南](docs/guides/SETUP.md)** - 詳細的安裝說明
-- **[綜合實作計劃](docs/plans/2025-12-29-comprehensive-implementation-plan.md)** - 完整功能實作計劃（包含 User Onboarding、Pattern Detection、Evolution Enhancement）
-
----
-
-## 🤝 貢獻
-
-歡迎提交 Issues 和 Pull Requests！
-
-## 📄 授權
-
-MIT License
+- Built for [Claude Code](https://claude.com/claude-code)
+- Powered by [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)
+- Inspired by vibe coding workflow

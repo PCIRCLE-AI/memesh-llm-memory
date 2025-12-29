@@ -6,31 +6,46 @@
  * - 計算累積成本
  * - 預算警報
  * - 成本報告生成
+ *
+ * 使用整數運算 (micro-dollars) 避免浮點精度錯誤
  */
 
 import { CostRecord, CostStats } from './types.js';
 import { MODEL_COSTS } from '../config/models.js';
 import { appConfig } from '../config/index.js';
+import {
+  type MicroDollars,
+  toMicroDollars,
+  toDollars,
+  formatMoney,
+  calculateTokenCost,
+  addCosts,
+  calculateBudgetPercentage,
+} from '../utils/money.js';
 
 export class CostTracker {
   private costs: CostRecord[] = [];
-  private monthlyBudget: number;
+  /** Monthly budget in micro-dollars (μUSD) */
+  private monthlyBudget: MicroDollars;
   private alertThreshold: number;
 
   constructor() {
-    this.monthlyBudget = appConfig.costs.monthlyBudget;
+    // Convert USD budget to micro-dollars for precise tracking
+    this.monthlyBudget = toMicroDollars(appConfig.costs.monthlyBudget);
     this.alertThreshold = appConfig.costs.alertThreshold;
   }
 
   /**
    * 記錄任務成本
+   *
+   * @returns Cost in micro-dollars (μUSD)
    */
   recordCost(
     taskId: string,
     modelName: string,
     inputTokens: number,
     outputTokens: number
-  ): number {
+  ): MicroDollars {
     const cost = this.calculateCost(modelName, inputTokens, outputTokens);
 
     const record: CostRecord = {
@@ -51,13 +66,15 @@ export class CostTracker {
   }
 
   /**
-   * 計算特定模型的成本
+   * 計算特定模型的成本 (使用整數運算)
+   *
+   * @returns Cost in micro-dollars (μUSD) - integer for precision
    */
   private calculateCost(
     modelName: string,
     inputTokens: number,
     outputTokens: number
-  ): number {
+  ): MicroDollars {
     const costs = MODEL_COSTS[modelName as keyof typeof MODEL_COSTS];
 
     // Error handling for unknown models or models without input/output pricing
@@ -69,22 +86,23 @@ export class CostTracker {
       );
 
       // Use Claude Sonnet as conservative fallback pricing
-      // This prevents unknown models from appearing "free" in cost tracking
-      const inputCost = (inputTokens / 1_000_000) * 3.0;
-      const outputCost = (outputTokens / 1_000_000) * 15.0;
+      // Integer arithmetic: no floating-point errors
+      const inputCost = calculateTokenCost(inputTokens, 3.0);
+      const outputCost = calculateTokenCost(outputTokens, 15.0);
 
-      return Number((inputCost + outputCost).toFixed(6));
+      return addCosts(inputCost, outputCost);
     }
 
     // TypeScript now knows costs has input and output properties
-    const inputCost = (inputTokens / 1_000_000) * costs.input;
-    const outputCost = (outputTokens / 1_000_000) * costs.output;
+    // Use integer arithmetic for precision
+    const inputCost = calculateTokenCost(inputTokens, costs.input);
+    const outputCost = calculateTokenCost(outputTokens, costs.output);
 
-    return Number((inputCost + outputCost).toFixed(6));
+    return addCosts(inputCost, outputCost);
   }
 
   /**
-   * 獲取成本統計
+   * 獲取成本統計 (使用整數運算)
    */
   getStats(): CostStats {
     const now = new Date();
@@ -95,23 +113,33 @@ export class CostTracker {
       record => record.timestamp >= monthStart
     );
 
-    const totalCost = monthlyCosts.reduce((sum, record) => sum + record.cost, 0);
-    const taskCount = monthlyCosts.length;
-    const averageCostPerTask = taskCount > 0 ? totalCost / taskCount : 0;
+    // Integer addition - no floating-point errors
+    const totalCost = monthlyCosts.reduce(
+      (sum, record) => (sum + record.cost) as MicroDollars,
+      0 as MicroDollars
+    );
 
-    // 按模型統計成本
+    const taskCount = monthlyCosts.length;
+    const averageCostPerTask = taskCount > 0
+      ? Math.round(totalCost / taskCount) as MicroDollars
+      : 0 as MicroDollars;
+
+    // 按模型統計成本 (integer arithmetic)
     const costByModel = monthlyCosts.reduce((acc, record) => {
-      acc[record.modelName] = (acc[record.modelName] || 0) + record.cost;
+      const currentCost = (acc[record.modelName] || 0) as number;
+      acc[record.modelName] = (currentCost + record.cost) as MicroDollars;
       return acc;
-    }, {} as Record<string, number>);
+    }, {} as Record<string, MicroDollars>);
+
+    const remainingBudget = (this.monthlyBudget - totalCost) as MicroDollars;
 
     return {
-      totalCost: Number(totalCost.toFixed(6)),
+      totalCost,
       taskCount,
-      averageCostPerTask: Number(averageCostPerTask.toFixed(6)),
+      averageCostPerTask,
       costByModel,
-      monthlySpend: Number(totalCost.toFixed(6)),
-      remainingBudget: Number((this.monthlyBudget - totalCost).toFixed(6)),
+      monthlySpend: totalCost,
+      remainingBudget,
     };
   }
 
@@ -120,37 +148,48 @@ export class CostTracker {
    */
   private checkBudgetAlert(): void {
     const stats = this.getStats();
-    const budgetUsagePercent = stats.monthlySpend / this.monthlyBudget;
+    const budgetUsagePercent = calculateBudgetPercentage(
+      stats.monthlySpend,
+      this.monthlyBudget
+    ) / 100;
 
     if (budgetUsagePercent >= this.alertThreshold) {
       console.warn(
         `\n⚠️  BUDGET ALERT ⚠️\n` +
-        `Monthly spend: $${stats.monthlySpend.toFixed(2)} / $${this.monthlyBudget.toFixed(2)}\n` +
+        `Monthly spend: ${formatMoney(stats.monthlySpend, 2)} / ${formatMoney(this.monthlyBudget, 2)}\n` +
         `Usage: ${(budgetUsagePercent * 100).toFixed(1)}%\n` +
-        `Remaining: $${stats.remainingBudget.toFixed(2)}\n`
+        `Remaining: ${formatMoney(stats.remainingBudget, 2)}\n`
       );
     }
   }
 
   /**
    * 獲取特定時間範圍的成本
+   *
+   * @returns Cost in micro-dollars (μUSD)
    */
-  getCostByDateRange(startDate: Date, endDate: Date): number {
+  getCostByDateRange(startDate: Date, endDate: Date): MicroDollars {
     const filtered = this.costs.filter(
       record => record.timestamp >= startDate && record.timestamp <= endDate
     );
 
-    const total = filtered.reduce((sum, record) => sum + record.cost, 0);
-    return Number(total.toFixed(6));
+    return filtered.reduce(
+      (sum, record) => (sum + record.cost) as MicroDollars,
+      0 as MicroDollars
+    );
   }
 
   /**
    * 獲取特定任務的成本
+   *
+   * @returns Cost in micro-dollars (μUSD)
    */
-  getCostByTask(taskId: string): number {
+  getCostByTask(taskId: string): MicroDollars {
     const taskCosts = this.costs.filter(record => record.taskId === taskId);
-    const total = taskCosts.reduce((sum, record) => sum + record.cost, 0);
-    return Number(total.toFixed(6));
+    return taskCosts.reduce(
+      (sum, record) => (sum + record.cost) as MicroDollars,
+      0 as MicroDollars
+    );
   }
 
   /**
@@ -158,19 +197,22 @@ export class CostTracker {
    */
   generateReport(): string {
     const stats = this.getStats();
-    const budgetUsagePercent = (stats.monthlySpend / this.monthlyBudget) * 100;
+    const budgetUsagePercent = calculateBudgetPercentage(
+      stats.monthlySpend,
+      this.monthlyBudget
+    );
 
     const lines = [
       '📊 Cost Report',
       '═'.repeat(50),
       '',
       `Total Tasks: ${stats.taskCount}`,
-      `Total Cost: $${stats.totalCost.toFixed(6)}`,
-      `Average Cost/Task: $${stats.averageCostPerTask.toFixed(6)}`,
+      `Total Cost: ${formatMoney(stats.totalCost)}`,
+      `Average Cost/Task: ${formatMoney(stats.averageCostPerTask)}`,
       '',
-      `Monthly Budget: $${this.monthlyBudget.toFixed(2)}`,
-      `Monthly Spend: $${stats.monthlySpend.toFixed(6)}`,
-      `Remaining Budget: $${stats.remainingBudget.toFixed(6)}`,
+      `Monthly Budget: ${formatMoney(this.monthlyBudget, 2)}`,
+      `Monthly Spend: ${formatMoney(stats.monthlySpend)}`,
+      `Remaining Budget: ${formatMoney(stats.remainingBudget)}`,
       `Budget Usage: ${budgetUsagePercent.toFixed(1)}%`,
       '',
       'Cost by Model:',
@@ -178,8 +220,8 @@ export class CostTracker {
     ];
 
     for (const [model, cost] of Object.entries(stats.costByModel)) {
-      const percentage = (cost / stats.totalCost) * 100;
-      lines.push(`  ${model}: $${cost.toFixed(6)} (${percentage.toFixed(1)}%)`);
+      const percentage = calculateBudgetPercentage(cost, stats.totalCost);
+      lines.push(`  ${model}: ${formatMoney(cost)} (${percentage.toFixed(1)}%)`);
     }
 
     lines.push('═'.repeat(50));
@@ -214,10 +256,12 @@ export class CostTracker {
 
   /**
    * 檢查是否在預算內
+   *
+   * @param estimatedCost - Estimated cost in micro-dollars (μUSD)
    */
-  isWithinBudget(estimatedCost: number): boolean {
+  isWithinBudget(estimatedCost: MicroDollars): boolean {
     const stats = this.getStats();
-    const projectedSpend = stats.monthlySpend + estimatedCost;
+    const projectedSpend = (stats.monthlySpend + estimatedCost) as MicroDollars;
 
     return projectedSpend <= this.monthlyBudget;
   }
@@ -227,7 +271,10 @@ export class CostTracker {
    */
   getRecommendation(): string {
     const stats = this.getStats();
-    const budgetUsagePercent = (stats.monthlySpend / this.monthlyBudget) * 100;
+    const budgetUsagePercent = calculateBudgetPercentage(
+      stats.monthlySpend,
+      this.monthlyBudget
+    );
 
     if (budgetUsagePercent < 50) {
       return '✅ Budget usage is healthy. Continue normal operations.';

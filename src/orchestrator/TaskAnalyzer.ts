@@ -10,6 +10,7 @@
 
 import { Task, TaskAnalysis, TaskComplexity, ExecutionMode, AgentType } from './types.js';
 import { MODEL_COSTS, CLAUDE_MODELS } from '../config/models.js';
+import { type MicroDollars, calculateTokenCost, addCosts } from '../utils/money.js';
 
 /**
  * Complexity detection configuration
@@ -261,9 +262,11 @@ export class TaskAnalyzer {
   }
 
   /**
-   * 計算預估成本 (USD)
+   * 計算預估成本 (使用整數運算)
+   *
+   * @returns Cost in micro-dollars (μUSD) - integer for precision
    */
-  private calculateEstimatedCost(tokens: number, complexity: TaskComplexity): number {
+  private calculateEstimatedCost(tokens: number, complexity: TaskComplexity): MicroDollars {
     const modelCosts = {
       simple: MODEL_COSTS[CLAUDE_MODELS.HAIKU],
       medium: MODEL_COSTS[CLAUDE_MODELS.SONNET],
@@ -271,10 +274,12 @@ export class TaskAnalyzer {
     };
 
     const costs = modelCosts[complexity];
-    const inputCost = (tokens / 1_000_000) * costs.input;
-    const outputCost = (tokens / 1_000_000) * costs.output;
 
-    return Number((inputCost + outputCost).toFixed(6));
+    // Use integer arithmetic for precision
+    const inputCost = calculateTokenCost(tokens, costs.input);
+    const outputCost = calculateTokenCost(tokens, costs.output);
+
+    return addCosts(inputCost, outputCost);
   }
 
   /**

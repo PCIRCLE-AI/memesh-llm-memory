@@ -5,6 +5,7 @@
  */
 
 import { Orchestrator, Task } from './index.js';
+import { toDollars, toMicroDollars } from '../utils/money.js';
 
 async function main() {
   console.log('🎯 Agent Orchestrator Examples\n');
@@ -25,7 +26,7 @@ async function main() {
   console.log(`Complexity: ${simpleAnalysis.analysis.complexity}`);
   console.log(`Selected Agent: ${simpleAnalysis.routing.selectedAgent}`);
   console.log(`Model: ${simpleAnalysis.routing.modelName}`);
-  console.log(`Estimated Cost: $${simpleAnalysis.routing.estimatedCost.toFixed(6)}`);
+  console.log(`Estimated Cost: $${toDollars(simpleAnalysis.routing.estimatedCost).toFixed(6)}`);
   console.log(`Reasoning: ${simpleAnalysis.analysis.reasoning}`);
   console.log('\n' + '─'.repeat(60) + '\n');
 
@@ -45,7 +46,7 @@ async function main() {
   console.log(`Complexity: ${complexAnalysis.analysis.complexity}`);
   console.log(`Selected Agent: ${complexAnalysis.routing.selectedAgent}`);
   console.log(`Model: ${complexAnalysis.routing.modelName}`);
-  console.log(`Estimated Cost: $${complexAnalysis.routing.estimatedCost.toFixed(6)}`);
+  console.log(`Estimated Cost: $${toDollars(complexAnalysis.routing.estimatedCost).toFixed(6)}`);
   console.log(`Reasoning: ${complexAnalysis.analysis.reasoning}`);
   console.log('\n' + '─'.repeat(60) + '\n');
 
@@ -62,7 +63,7 @@ async function main() {
   console.log(`Complexity: ${mediumAnalysis.analysis.complexity}`);
   console.log(`Selected Agent: ${mediumAnalysis.routing.selectedAgent}`);
   console.log(`Model: ${mediumAnalysis.routing.modelName}`);
-  console.log(`Estimated Cost: $${mediumAnalysis.routing.estimatedCost.toFixed(6)}`);
+  console.log(`Estimated Cost: $${toDollars(mediumAnalysis.routing.estimatedCost).toFixed(6)}`);
   console.log(`Reasoning: ${mediumAnalysis.analysis.reasoning}`);
   console.log('\n' + '─'.repeat(60) + '\n');
 
@@ -90,11 +91,11 @@ async function main() {
     const task = batchTasks[index];
     console.log(`  ${index + 1}. ${task.description.substring(0, 50)}...`);
     console.log(`     Agent: ${routing.selectedAgent}`);
-    console.log(`     Cost: $${routing.estimatedCost.toFixed(6)}\n`);
+    console.log(`     Cost: $${toDollars(routing.estimatedCost).toFixed(6)}\n`);
   });
 
   const totalEstimatedCost = batchRoutings.reduce((sum, r) => sum + r.estimatedCost, 0);
-  console.log(`Total Estimated Cost: $${totalEstimatedCost.toFixed(6)}`);
+  console.log(`Total Estimated Cost: $${toDollars(totalEstimatedCost as import('../utils/money.js').MicroDollars).toFixed(6)}`);
   console.log('\n' + '─'.repeat(60) + '\n');
 
   // ==================== 範例 5: 系統狀態檢查 ====================
@@ -110,9 +111,9 @@ async function main() {
 
   console.log('\n💰 Cost Statistics:');
   console.log(`   Total Tasks: ${status.costStats.taskCount}`);
-  console.log(`   Total Cost: $${status.costStats.totalCost.toFixed(6)}`);
-  console.log(`   Monthly Spend: $${status.costStats.monthlySpend.toFixed(6)}`);
-  console.log(`   Remaining Budget: $${status.costStats.remainingBudget.toFixed(2)}`);
+  console.log(`   Total Cost: $${toDollars(status.costStats.totalCost).toFixed(6)}`);
+  console.log(`   Monthly Spend: $${toDollars(status.costStats.monthlySpend).toFixed(6)}`);
+  console.log(`   Remaining Budget: $${toDollars(status.costStats.remainingBudget).toFixed(2)}`);
 
   console.log(`\n💡 Recommendation: ${status.recommendation}`);
 
@@ -150,7 +151,8 @@ async function main() {
   ];
 
   testCosts.forEach(({ description, cost }) => {
-    const withinBudget = costTracker.isWithinBudget(cost);
+    const costInMicroDollars = toMicroDollars(cost);
+    const withinBudget = costTracker.isWithinBudget(costInMicroDollars);
     const icon = withinBudget ? '✅' : '❌';
     console.log(`${icon} ${description} ($${cost.toFixed(3)}): ${withinBudget ? 'Approved' : 'Blocked'}`);
   });

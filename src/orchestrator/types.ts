@@ -100,7 +100,8 @@ export interface TaskAnalysis {
   taskType: string; // Short description of task type
   complexity: TaskComplexity;
   estimatedTokens: number;
-  estimatedCost: number;
+  /** Estimated cost in micro-dollars (μUSD) - integer for precision */
+  estimatedCost: MicroDollars;
   requiredAgents: AgentType[];
   executionMode: ExecutionMode;
   reasoning: string;
@@ -124,7 +125,8 @@ export interface RoutingDecision {
   selectedAgent: AgentType;
   enhancedPrompt: EnhancedPrompt;
   reasoning: string;
-  estimatedCost: number;
+  /** Estimated cost in micro-dollars (μUSD) - integer for precision */
+  estimatedCost: MicroDollars;
   fallbackAgent?: AgentType;
 
   // Legacy support (will be removed)
@@ -141,6 +143,8 @@ export interface SystemResources {
   memoryUsagePercent: number;
 }
 
+import type { MicroDollars } from '../utils/money.js';
+
 /**
  * 成本追蹤
  */
@@ -150,17 +154,23 @@ export interface CostRecord {
   modelName: string;
   inputTokens: number;
   outputTokens: number;
-  cost: number;
+  /** Cost in micro-dollars (μUSD) - integer for precision */
+  cost: MicroDollars;
 }
 
 /**
  * 成本統計
  */
 export interface CostStats {
-  totalCost: number;
+  /** Total cost in micro-dollars (μUSD) - integer for precision */
+  totalCost: MicroDollars;
   taskCount: number;
-  averageCostPerTask: number;
-  costByModel: Record<string, number>;
-  monthlySpend: number;
-  remainingBudget: number;
+  /** Average cost per task in micro-dollars (μUSD) - integer for precision */
+  averageCostPerTask: MicroDollars;
+  /** Cost by model in micro-dollars (μUSD) - integer for precision */
+  costByModel: Record<string, MicroDollars>;
+  /** Monthly spend in micro-dollars (μUSD) - integer for precision */
+  monthlySpend: MicroDollars;
+  /** Remaining budget in micro-dollars (μUSD) - integer for precision */
+  remainingBudget: MicroDollars;
 }

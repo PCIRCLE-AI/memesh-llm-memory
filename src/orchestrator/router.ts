@@ -148,7 +148,10 @@ export class Router {
       return { analysis, routing, approved };
     });
 
-    const totalCost = routings.reduce((sum, r) => sum + r.estimatedCost, 0);
+    const totalCost = routings.reduce(
+      (sum, r) => (sum + r.estimatedCost) as import('../utils/money.js').MicroDollars,
+      0 as import('../utils/money.js').MicroDollars
+    );
     const approved = this.costTracker.isWithinBudget(totalCost);
 
     return {

@@ -7,6 +7,11 @@
 import { Orchestrator, Task } from './index.js';
 import { toDollars, toMicroDollars } from '../utils/money.js';
 
+// Money formatting constants
+const MICRO_COST_DECIMALS = 6; // Precision for sub-cent costs (micro-dollars)
+const BUDGET_DECIMALS = 2; // Standard currency precision
+const TEST_COST_DECIMALS = 3; // Precision for test cost examples
+
 async function main() {
   console.log('🎯 Agent Orchestrator Examples\n');
   console.log('═'.repeat(60) + '\n');
@@ -26,7 +31,7 @@ async function main() {
   console.log(`Complexity: ${simpleAnalysis.analysis.complexity}`);
   console.log(`Selected Agent: ${simpleAnalysis.routing.selectedAgent}`);
   console.log(`Model: ${simpleAnalysis.routing.modelName}`);
-  console.log(`Estimated Cost: $${toDollars(simpleAnalysis.routing.estimatedCost).toFixed(6)}`);
+  console.log(`Estimated Cost: $${toDollars(simpleAnalysis.routing.estimatedCost).toFixed(MICRO_COST_DECIMALS)}`);
   console.log(`Reasoning: ${simpleAnalysis.analysis.reasoning}`);
   console.log('\n' + '─'.repeat(60) + '\n');
 
@@ -46,7 +51,7 @@ async function main() {
   console.log(`Complexity: ${complexAnalysis.analysis.complexity}`);
   console.log(`Selected Agent: ${complexAnalysis.routing.selectedAgent}`);
   console.log(`Model: ${complexAnalysis.routing.modelName}`);
-  console.log(`Estimated Cost: $${toDollars(complexAnalysis.routing.estimatedCost).toFixed(6)}`);
+  console.log(`Estimated Cost: $${toDollars(complexAnalysis.routing.estimatedCost).toFixed(MICRO_COST_DECIMALS)}`);
   console.log(`Reasoning: ${complexAnalysis.analysis.reasoning}`);
   console.log('\n' + '─'.repeat(60) + '\n');
 
@@ -63,7 +68,7 @@ async function main() {
   console.log(`Complexity: ${mediumAnalysis.analysis.complexity}`);
   console.log(`Selected Agent: ${mediumAnalysis.routing.selectedAgent}`);
   console.log(`Model: ${mediumAnalysis.routing.modelName}`);
-  console.log(`Estimated Cost: $${toDollars(mediumAnalysis.routing.estimatedCost).toFixed(6)}`);
+  console.log(`Estimated Cost: $${toDollars(mediumAnalysis.routing.estimatedCost).toFixed(MICRO_COST_DECIMALS)}`);
   console.log(`Reasoning: ${mediumAnalysis.analysis.reasoning}`);
   console.log('\n' + '─'.repeat(60) + '\n');
 
@@ -91,11 +96,11 @@ async function main() {
     const task = batchTasks[index];
     console.log(`  ${index + 1}. ${task.description.substring(0, 50)}...`);
     console.log(`     Agent: ${routing.selectedAgent}`);
-    console.log(`     Cost: $${toDollars(routing.estimatedCost).toFixed(6)}\n`);
+    console.log(`     Cost: $${toDollars(routing.estimatedCost).toFixed(MICRO_COST_DECIMALS)}\n`);
   });
 
   const totalEstimatedCost = batchRoutings.reduce((sum, r) => sum + r.estimatedCost, 0);
-  console.log(`Total Estimated Cost: $${toDollars(totalEstimatedCost as import('../utils/money.js').MicroDollars).toFixed(6)}`);
+  console.log(`Total Estimated Cost: $${toDollars(totalEstimatedCost as import('../utils/money.js').MicroDollars).toFixed(MICRO_COST_DECIMALS)}`);
   console.log('\n' + '─'.repeat(60) + '\n');
 
   // ==================== 範例 5: 系統狀態檢查 ====================
@@ -111,9 +116,9 @@ async function main() {
 
   console.log('\n💰 Cost Statistics:');
   console.log(`   Total Tasks: ${status.costStats.taskCount}`);
-  console.log(`   Total Cost: $${toDollars(status.costStats.totalCost).toFixed(6)}`);
-  console.log(`   Monthly Spend: $${toDollars(status.costStats.monthlySpend).toFixed(6)}`);
-  console.log(`   Remaining Budget: $${toDollars(status.costStats.remainingBudget).toFixed(2)}`);
+  console.log(`   Total Cost: $${toDollars(status.costStats.totalCost).toFixed(MICRO_COST_DECIMALS)}`);
+  console.log(`   Monthly Spend: $${toDollars(status.costStats.monthlySpend).toFixed(MICRO_COST_DECIMALS)}`);
+  console.log(`   Remaining Budget: $${toDollars(status.costStats.remainingBudget).toFixed(BUDGET_DECIMALS)}`);
 
   console.log(`\n💡 Recommendation: ${status.recommendation}`);
 
@@ -154,7 +159,7 @@ async function main() {
     const costInMicroDollars = toMicroDollars(cost);
     const withinBudget = costTracker.isWithinBudget(costInMicroDollars);
     const icon = withinBudget ? '✅' : '❌';
-    console.log(`${icon} ${description} ($${cost.toFixed(3)}): ${withinBudget ? 'Approved' : 'Blocked'}`);
+    console.log(`${icon} ${description} ($${cost.toFixed(TEST_COST_DECIMALS)}): ${withinBudget ? 'Approved' : 'Blocked'}`);
   });
 
   console.log('\n' + '═'.repeat(60) + '\n');

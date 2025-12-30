@@ -34,7 +34,7 @@
 
 - **Test Coverage**: 377 passing tests across 46 test files
 - **Code Quality**: TypeScript with strict type checking
-- **Agent Count**: 13 agents (5 real implementations + 8 prompt-enhanced)
+- **Agent Count**: 13 agents (5 real implementations + 7 enhanced prompts + 1 optional)
 - **Learning System**: Real-time performance tracking and pattern recognition
 
 ---
@@ -47,7 +47,7 @@
 ┌─────────────────────────────────────────────────────────────┐
 │ Layer 4: MCP Server (User Interface)                        │
 │ - Claude Code integration via MCP Protocol                  │
-│ - 13 agent tools (5 real + 8 prompt-enhanced)               │
+│ - 13 agent tools (5 real + 7 enhanced + 1 optional)         │
 │ - RAG agent with file watching                              │
 │ - Evolution dashboard                                       │
 └───────────────────────────┬─────────────────────────────────┘
@@ -242,7 +242,8 @@ Metadata-based registry of 13 specialized agents.
 
 **Agent Types**:
 - **5 Real Implementations**: RAG Agent, Evolution System, Knowledge Graph, Development Butler, Test Writer
-- **8 Prompt-Enhanced**: Code Reviewer, Debugger, Refactorer, API Designer, Research Agent, Architecture Agent, Data Analyst, Knowledge Agent
+- **7 Enhanced Prompts**: Code Reviewer, Debugger, Refactorer, API Designer, Research Agent, Architecture Agent, Data Analyst
+- **1 Optional Feature**: Knowledge Agent
 
 **Agent Metadata**:
 ```typescript

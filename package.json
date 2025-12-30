@@ -1,7 +1,7 @@
 {
   "name": "smart-agents",
   "version": "2.1.0",
-  "description": "Intelligent AI Agent Ecosystem optimized for MacBook Pro M2",
+  "description": "Claude Code Prompt Enhancement System - Domain-expert prompt optimization with intelligent routing, performance tracking, and cost management",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {

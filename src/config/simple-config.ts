@@ -1,49 +1,49 @@
 /**
- * 簡化配置系統 - 僅從環境變數讀取
- * 取代過度設計的 credentials 系統
+ * Simplified Configuration System - Reads from environment variables only
+ * Replaces over-engineered credentials system
  *
- * 用途：
- * - MCP server 不需要管理 API keys（使用 Claude Code subscription）
- * - 簡單的環境變數讀取，無需複雜的加密/審計/RBAC
+ * Purpose:
+ * - MCP server doesn't need to manage API keys (uses Claude Code subscription)
+ * - Simple environment variable reading, without complex encryption/audit/RBAC
  *
- * 環境變數：
- * - CLAUDE_MODEL: Claude AI 模型名稱（預設：claude-sonnet-4-5-20250929）
- * - OPENAI_API_KEY: OpenAI API Key（用於 RAG，可選）
- * - VECTRA_INDEX_PATH: Vectra 向量索引路徑（預設：~/.smart-agents/vectra）
- * - DATABASE_PATH: SQLite 資料庫路徑（預設：~/.smart-agents/database.db）
- * - NODE_ENV: 環境（development/production/test）
- * - LOG_LEVEL: 日誌級別（debug/info/warn/error，預設：info）
+ * Environment Variables:
+ * - CLAUDE_MODEL: Claude AI model name (default: claude-sonnet-4-5-20250929)
+ * - OPENAI_API_KEY: OpenAI API Key (for RAG, optional)
+ * - VECTRA_INDEX_PATH: Vectra vector index path (default: ~/.smart-agents/vectra)
+ * - DATABASE_PATH: SQLite database path (default: ~/.smart-agents/database.db)
+ * - NODE_ENV: Environment (development/production/test)
+ * - LOG_LEVEL: Log level (debug/info/warn/error, default: info)
  */
 
 /**
- * 簡化配置類別 - 所有配置從環境變數讀取
+ * Simplified Configuration Class - All configuration read from environment variables
  */
 export class SimpleConfig {
   /**
-   * Claude AI Model（已不需要，MCP server 不直接調用 Claude API）
-   * 保留作為參考，實際由 Claude Code 管理
+   * Claude AI Model (No longer needed, MCP server doesn't directly call Claude API)
+   * Kept as reference, actually managed by Claude Code
    */
   static get CLAUDE_MODEL(): string {
     return process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250929';
   }
 
   /**
-   * OpenAI API Key（用於 RAG agent 的向量檢索，如需要）
-   * 可選配置，不是所有 agents 都需要
+   * OpenAI API Key (for RAG agent vector search, if needed)
+   * Optional configuration, not all agents need it
    */
   static get OPENAI_API_KEY(): string {
     return process.env.OPENAI_API_KEY || '';
   }
 
   /**
-   * Vectra Index Path（知識圖譜向量索引路徑）
+   * Vectra Index Path (Knowledge graph vector index path)
    */
   static get VECTRA_INDEX_PATH(): string {
     return process.env.VECTRA_INDEX_PATH || `${process.env.HOME}/.smart-agents/vectra`;
   }
 
   /**
-   * Database Path（SQLite 資料庫路徑）
+   * Database Path (SQLite database path)
    */
   static get DATABASE_PATH(): string {
     return process.env.DATABASE_PATH || `${process.env.HOME}/.smart-agents/database.db`;
@@ -57,7 +57,7 @@ export class SimpleConfig {
   }
 
   /**
-   * Log Level（日誌級別）
+   * Log Level
    */
   static get LOG_LEVEL(): 'debug' | 'info' | 'warn' | 'error' {
     const level = process.env.LOG_LEVEL || 'info';

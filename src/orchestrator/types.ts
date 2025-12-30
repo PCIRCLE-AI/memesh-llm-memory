@@ -1,19 +1,19 @@
 /**
- * Agent Orchestrator 類型定義
+ * Agent Orchestrator Type Definitions
  */
 
 /**
- * 任務複雜度等級
+ * Task Complexity Levels
  */
 export type TaskComplexity = 'simple' | 'medium' | 'complex';
 
 /**
- * 執行模式
+ * Execution Modes
  */
 export type ExecutionMode = 'sequential' | 'parallel';
 
 /**
- * Agent 類型 (專業化 Agents for MCP Server)
+ * Agent Types (Specialized Agents for MCP Server)
  */
 export type AgentType =
   // Development Agents
@@ -64,7 +64,7 @@ export type AgentType =
   | 'general-agent';
 
 /**
- * 任務能力需求 (用於 Agent 路由)
+ * Task Capability Requirements (for Agent Routing)
  */
 export type TaskCapability =
   | 'code-review'
@@ -82,7 +82,7 @@ export type TaskCapability =
   | 'general';
 
 /**
- * 任務定義
+ * Task Definition
  */
 export interface Task {
   id: string;
@@ -93,7 +93,7 @@ export interface Task {
 }
 
 /**
- * 任務分析結果
+ * Task Analysis Result
  */
 export interface TaskAnalysis {
   taskId: string;
@@ -118,7 +118,7 @@ export interface EnhancedPrompt {
 }
 
 /**
- * Agent 路由決策 (支援 Prompt Enhancement Mode)
+ * Agent Routing Decision (supports Prompt Enhancement Mode)
  */
 export interface RoutingDecision {
   taskId: string;
@@ -134,7 +134,7 @@ export interface RoutingDecision {
 }
 
 /**
- * 系統資源狀態
+ * System Resource Status
  */
 export interface SystemResources {
   availableMemoryMB: number;
@@ -146,7 +146,7 @@ export interface SystemResources {
 import type { MicroDollars } from '../utils/money.js';
 
 /**
- * 成本追蹤
+ * Cost Tracking
  */
 export interface CostRecord {
   timestamp: Date;
@@ -159,7 +159,7 @@ export interface CostRecord {
 }
 
 /**
- * 成本統計
+ * Cost Statistics
  */
 export interface CostStats {
   /** Total cost in micro-dollars (μUSD) - integer for precision */

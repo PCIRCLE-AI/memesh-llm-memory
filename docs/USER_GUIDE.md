@@ -58,11 +58,14 @@ See `.env.example` for all available configuration options.
 
 ### What is Smart-Agents?
 
-Smart-Agents is an **AI agent orchestration platform** with three main components:
+Smart-Agents is a **prompt enhancement system** for Claude Code with three main components:
 
-1. **Orchestrator**: Intelligently routes tasks to the most appropriate agent
+1. **Intelligent Router**: Analyzes tasks and routes to the best agent (via optimized prompts)
 2. **RAG System**: Vector-based retrieval augmented generation for knowledge queries
-3. **Development Agents**: Specialized agents for development automation
+3. **13 Specialized Agents**: 5 real implementations + 8 prompt-enhanced agents
+
+**What it is**: A routing and prompt optimization layer for Claude Code
+**What it isn't**: An autonomous multi-agent AI system (agents are prompt templates + routing logic)
 
 ### Architecture Overview
 
@@ -80,8 +83,9 @@ Orchestrator (Router)
 
 ### Key Features
 
-- **Intelligent Routing**: Automatically selects the best agent for each task
-- **Cost Optimization**: Tracks and manages API costs across agents
+- **Intelligent Routing**: Automatically selects the best agent and optimizes prompts
+- **Cost Optimization**: Tracks and manages API costs with budget controls
+- **Prompt Enhancement**: Generates domain-specific prompts based on agent expertise
 - **Resource Monitoring**: Built-in CPU/memory monitoring
 - **Self-Learning**: Evolution system improves performance over time
 - **MCP Integration**: Seamlessly integrates with Claude Code
@@ -225,7 +229,13 @@ When using the orchestrator, tasks can be routed to agents in these categories:
 - **Analysis** (2 agents): architecture-agent, rag-agent
 - **Creative** (1 agent): ui-designer
 
-**Total**: 13 agents (5 real implementations, 7 enhanced prompts, 1 optional feature)
+**Total**: 13 agents
+
+**Implementation Types**:
+- **5 Real Implementations**: RAG Agent, Evolution System, Knowledge Graph, Development Butler, Test Writer
+  - These have actual code execution capabilities (vector search, performance tracking, test generation, etc.)
+- **8 Prompt-Enhanced Agents**: Code Reviewer, Debugger, Refactorer, API Designer, Research Agent, Architecture Agent, Data Analyst, Knowledge Agent
+  - These use specialized prompts + routing logic (not separate autonomous implementations)
 
 ---
 

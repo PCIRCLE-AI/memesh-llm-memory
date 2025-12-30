@@ -11,7 +11,7 @@ The project currently has E2E integration test coverage through:
 - **Evolution System E2E Test**: `tests/integration/evolution-e2e.test.ts`
   - 11 comprehensive tests covering the complete evolution system workflow
   - Tests router integration, performance tracking, learning progress, and adaptations
-  - Validates all 22 agents are properly configured
+  - Validates all 13 agents are properly configured
   - **Status**: ✅ Implemented and passing
 
 **Run existing E2E tests:**
@@ -46,7 +46,7 @@ The following E2E test suites are documented as future implementation goals:
 - Agent registration and management
 - Team creation with capability matching
 - Task decomposition into subtasks
-- Load balancing across agents
+- Load balancing across 13 agents (routing + prompt optimization)
 - SQLite persistence and recovery
 - Session history tracking
 - Performance metrics

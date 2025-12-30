@@ -1,7 +1,7 @@
 # Smart-Agents System Architecture
 
-**Version**: V2.0 (MCP Server Pattern)
-**Last Updated**: 2025-12-29
+**Version**: V2.1 (MCP Server Pattern - Architectural Honesty)
+**Last Updated**: 2025-12-30
 **Author**: Smart Agents Team
 
 ---
@@ -20,7 +20,12 @@
 
 ## 系統概覽
 
-Smart-Agents 是一個智能 AI Agent 協調平台，透過 **MCP (Model Context Protocol)** 整合到 Claude Code，提供 13 個自我優化的專業 agents。
+Smart-Agents 是一個智能 prompt enhancement 系統，透過 **MCP (Model Context Protocol)** 整合到 Claude Code，提供 13 個專業化的 agent routing 和 prompt 優化功能。
+
+**Agent 架構說明**:
+- **5 個完整實作**: RAG Agent、Evolution System、Knowledge Graph、Development Butler、Test Writer
+- **8 個 prompt-enhanced agents**: 透過精心設計的 prompts 和 routing 邏輯提供專業能力
+- **Total**: 13 agents (不是獨立運行的 autonomous agents，而是 prompt templates + routing logic)
 
 ### 核心設計原則
 
@@ -47,8 +52,8 @@ Smart-Agents 是一個智能 AI Agent 協調平台，透過 **MCP (Model Context
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │ MCP Tools                                             │  │
 │  │ ┌────────────┐  ┌────────────┐  ┌────────────────┐  │  │
-│  │ │ smart_     │  │ evolution_ │  │ 22 individual  │  │  │
-│  │ │ router     │  │ dashboard  │  │ agent tools    │  │  │
+│  │ │ smart_     │  │ evolution_ │  │ 13 agent       │  │  │
+│  │ │ router     │  │ dashboard  │  │ tools          │  │  │
 │  │ └────────────┘  └────────────┘  └────────────────┘  │  │
 │  └──────────────────────────────────────────────────────┘  │
 └───────────────────────────────┬─────────────────────────────┘
@@ -74,20 +79,23 @@ Smart-Agents 是一個智能 AI Agent 協調平台，透過 **MCP (Model Context
 └───────────────────────────────┬─────────────────────────────┘
                                 ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   22 Specialized Agents                     │
+│         13 Specialized Agents (Routing + Prompts)          │
 │  ┌──────────────────────────────────────────────────────┐  │
-│  │ Development (9): code-reviewer, test-writer,         │  │
-│  │   debugger, refactorer, api-designer, db-optimizer,  │  │
-│  │   frontend/backend-specialist, development-butler    │  │
+│  │ 5 Real Implementations:                               │  │
+│  │   - RAG Agent (vector search, embeddings)             │  │
+│  │   - Evolution System (performance tracking)           │  │
+│  │   - Knowledge Graph (structured knowledge)            │  │
+│  │   - Development Butler (workflow automation)          │  │
+│  │   - Test Writer (automated test generation)           │  │
 │  │                                                       │  │
-│  │ Research (5): rag-agent, research-agent,             │  │
-│  │   architecture-agent, data-analyst, perf-profiler    │  │
+│  │ 8 Prompt-Enhanced Agents:                            │  │
+│  │   - Code Reviewer, Debugger, Refactorer              │  │
+│  │   - API Designer, Research Agent                     │  │
+│  │   - Architecture Agent, Data Analyst                 │  │
+│  │   - Knowledge Agent                                  │  │
 │  │                                                       │  │
-│  │ Knowledge (1): knowledge-agent                       │  │
-│  │ Operations (2): devops-engineer, security-auditor    │  │
-│  │ Creative (2): technical-writer, ui-designer          │  │
-│  │ Utility (2): migration-assistant, api-integrator     │  │
-│  │ General (1): general-agent (fallback)                │  │
+│  │ (Prompt-enhanced = specialized prompts + routing,    │  │
+│  │  not separate autonomous implementations)            │  │
 │  └──────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
                     ↓ Returns Enhanced Prompts ↓
@@ -200,7 +208,13 @@ interface TaskAnalysis {
 | Creative | ui-designer | 1 |
 | Business | marketing-strategist | 1 |
 
-**註**: 13 agents (5 個完整實作, 7 個增強 prompts, 1 個可選功能)
+**註**: 13 agents (5 個完整實作 + 8 個 prompt-enhanced agents)
+
+**重要說明**: Smart-Agents 不是多個獨立運行的 autonomous agents，而是一個 **prompt enhancement system**：
+- Agent Registry 提供 13 個 agent 的 metadata (能力、專長、最佳實踐)
+- Router 根據 task 分析選擇最適合的 agent
+- PromptEnhancer 使用 agent metadata 生成優化的 prompt
+- Claude Code 執行優化後的 prompt (使用用戶的 API subscription)
 
 **路由決策**:
 ```typescript
@@ -223,13 +237,16 @@ interface RoutingDecision {
 **完整實作的 Agents** (5 個):
 | Agent | 路徑 | 實作內容 |
 |-------|------|---------|
-| code-reviewer | `src/agents/code/` | 代碼審查邏輯、安全檢查 |
-| architecture-agent | `src/agents/architecture/` | 架構分析、設計建議 |
-| rag-agent | `src/agents/rag/` | 向量搜尋、embeddings、reranking |
-| research-agent | `src/agents/research/` | 研究流程、資訊收集 |
-| knowledge-agent | `src/agents/knowledge/` | 知識組織、檢索 |
+| RAG Agent | `src/agents/rag/` | 向量搜尋、embeddings、reranking |
+| Evolution System | `src/evolution/` | Performance tracking、pattern learning |
+| Knowledge Graph | `src/agents/knowledge/` | 結構化知識管理 |
+| Development Butler | `src/agents/butler/` | 工作流程自動化 |
+| Test Writer | `src/agents/test-writer/` | 自動測試生成 |
 
-**通過 Prompt Enhancement 工作的 Agents** (17 個):
+**通過 Prompt Enhancement 工作的 Agents** (8 個):
+- Code Reviewer, Debugger, Refactorer
+- API Designer, Research Agent
+- Architecture Agent, Data Analyst, Knowledge Agent
 - 無需獨立類別實作
 - PromptEnhancer 為每個 agent 定義詳細的 persona（專長、工作流程、最佳實踐）
 - 生成優化的 prompt 後返回給 Claude Code 執行
@@ -288,7 +305,7 @@ estimatedCost = (promptTokens * INPUT_PRICE + completionTokens * OUTPUT_PRICE) /
 │        ▼              ▼              ▼                 │
 │  ┌──────────────────────────────────────┐             │
 │  │      Agent Execution Layer           │             │
-│  │  (22 Agents with Evolution Config)   │             │
+│  │  (13 Agents with Evolution Config)   │             │
 │  └──────────────────────────────────────┘             │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -318,9 +335,9 @@ estimatedCost = (promptTokens * INPUT_PRICE + completionTokens * OUTPUT_PRICE) /
 **Dashboard Summary**:
 ```typescript
 {
-  totalAgents: 22,
-  agentsWithPatterns: 15,
-  totalPatterns: 87,
+  totalAgents: 13,
+  agentsWithPatterns: 10,
+  totalPatterns: 45,
   totalExecutions: 342,
   averageSuccessRate: 0.89,
   topImprovingAgents: [
@@ -378,8 +395,8 @@ estimatedCost = (promptTokens * INPUT_PRICE + completionTokens * OUTPUT_PRICE) /
 │  │  │ router     │  │ dashboard  │                 │  │
 │  │  └────────────┘  └────────────┘                 │  │
 │  │  ┌────────────────────────────────────────────┐ │  │
-│  │  │ 22 Individual Agent Tools                  │ │  │
-│  │  │ (code-reviewer, test-writer, debugger...)  │ │  │
+│  │  │ 13 Individual Agent Tools                  │ │  │
+│  │  │ (rag-agent, code-reviewer, test-writer...) │ │  │
 │  │  └────────────────────────────────────────────┘ │  │
 │  └──────────────────────────────────────────────────┘  │
 │  ┌──────────────────────────────────────────────────┐  │
@@ -424,15 +441,24 @@ estimatedCost = (promptTokens * INPUT_PRICE + completionTokens * OUTPUT_PRICE) /
 }
 ```
 
-**3. Individual Agent Tools** (22 agents):
+**3. Individual Agent Tools** (13 agents):
 ```typescript
 {
+  name: 'rag-agent',
+  description: 'Knowledge retrieval with vector search and embeddings',
+  inputSchema: { task: { /* ... */ } }
+},
+{
   name: 'code-reviewer',
-  description: 'Expert code review with security and performance analysis',
+  description: 'Code review with specialized prompts and best practices',
   inputSchema: { task: { /* ... */ } }
 }
-// ... (21 more agents)
+// ... (11 more agents)
 ```
+
+**Agent Types**:
+- 5 real implementations (RAG, Evolution, Knowledge Graph, Butler, Test Writer)
+- 8 prompt-enhanced agents (routing + optimized prompts)
 
 ### Integration with External MCP Servers
 
@@ -504,15 +530,15 @@ Smart-Agents integrates with:
    ↓
 4. EvolutionMonitor.getDashboardSummary()
    │
-   ├─→ Aggregate stats from 22 agents
+   ├─→ Aggregate stats from 13 agents
    │   ├─→ PerformanceTracker.getEvolutionStats(agent)
    │   ├─→ LearningManager.getPatterns(agent)
    │   └─→ AdaptationEngine.getAdaptationStats(agent)
    │
    └─→ DashboardSummary
-       ├─→ totalAgents: 22
-       ├─→ agentsWithPatterns: 15
-       ├─→ totalPatterns: 87
+       ├─→ totalAgents: 13
+       ├─→ agentsWithPatterns: 10
+       ├─→ totalPatterns: 45
        ├─→ totalExecutions: 342
        ├─→ averageSuccessRate: 0.89
        └─→ topImprovingAgents: [...]
@@ -614,7 +640,7 @@ Local Machine
 ├── Claude Code (作為 MCP client)
 ├── smart-agents MCP Server
 │   ├── Router (task analysis + agent selection)
-│   ├── 22 Agents (prompt generation)
+│   ├── 13 Agents (5 real + 8 prompt-enhanced)
 │   ├── Evolution System (self-learning)
 │   └── Vector DB (Vectra - local RAG storage)
 └── Other MCP Servers (optional)
@@ -709,9 +735,10 @@ See [Storage Enhancements](./src/evolution/storage/ENHANCEMENTS.md) for details.
 
 ---
 
-**文檔版本**: V2.0 (MCP Server Pattern)
-**最後更新**: 2025-12-29
+**文檔版本**: V2.1 (MCP Server Pattern - Architectural Honesty)
+**最後更新**: 2025-12-30
 **維護者**: Smart Agents Team
 
 **版本說明**:
-- **V2.0 (當前)**: MCP Server Pattern - 生成 enhanced prompts，由 Claude Code 執行
+- **V2.1 (當前)**: 架構誠實化 - 明確說明 13 agents (5 real + 8 prompt-enhanced)，移除誤導性的 "22 agents" 和 "autonomous multi-agent" 聲明
+- **V2.0**: MCP Server Pattern - 生成 enhanced prompts，由 Claude Code 執行

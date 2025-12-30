@@ -238,40 +238,6 @@ Everything through natural conversation:
 
 ---
 
-## 🤔 Is Smart Agents Right For You?
-
-### ✅ Best For
-
-- **Software Developers** building complex applications
-- **Technical Writers** documenting large codebases
-- **DevOps Engineers** automating workflows
-- **Teams** wanting consistent AI assistance
-- **AI Enthusiasts** exploring MCP and agent systems
-
-### ⚠️ May Not Be Ideal For
-
-- **Beginners** to programming (Claude Code alone may be simpler)
-- **Simple Projects** (< 1000 lines of code)
-- **Non-Technical Users** (requires development environment)
-- **Budget-Constrained** (OpenAI API costs for RAG features)
-
-### 💡 Quick Decision Guide
-
-**Choose Smart Agents if you:**
-- ✅ Use Claude Code regularly for development
-- ✅ Work on medium to large projects
-- ✅ Want specialized assistance for different tasks
-- ✅ Need cost/performance tracking
-- ✅ Value learning and adaptive systems
-
-**Skip Smart Agents if you:**
-- ❌ Rarely use Claude Code
-- ❌ Work only on small scripts
-- ❌ Prefer manual prompt crafting
-- ❌ Don't need performance analytics
-
----
-
 ## 📖 Documentation
 
 ### Quick Links

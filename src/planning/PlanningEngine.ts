@@ -1,5 +1,7 @@
 // src/planning/PlanningEngine.ts
 import type { AgentRegistry } from '../orchestrator/AgentRegistry.js';
+import type { LearningManager } from '../evolution/LearningManager.js';
+import type { ContextualPattern } from '../evolution/types.js';
 
 /**
  * Task priority levels
@@ -64,12 +66,15 @@ export interface PlanRequest {
  * Core planning engine that generates implementation plans
  */
 export class PlanningEngine {
-  constructor(private agentRegistry: AgentRegistry) {}
+  constructor(
+    private agentRegistry: AgentRegistry,
+    private learningManager?: LearningManager
+  ) {}
 
   /**
    * Generate complete implementation plan
    */
-  generatePlan(request: PlanRequest): ImplementationPlan {
+  async generatePlan(request: PlanRequest): Promise<ImplementationPlan> {
     // Validate input
     if (!request.featureDescription?.trim()) {
       throw new Error('featureDescription is required and cannot be empty');
@@ -84,7 +89,7 @@ export class PlanningEngine {
       throw new Error('requirements must be an array');
     }
 
-    const tasks = this.generateTasks(request);
+    const tasks = await this.generateTasks(request);
     const totalTime = this.estimateTotalTime(tasks);
 
     return {
@@ -100,21 +105,29 @@ export class PlanningEngine {
   /**
    * Generate bite-sized tasks following TDD workflow
    */
-  private generateTasks(request: PlanRequest): PlanTask[] {
+  private async generateTasks(request: PlanRequest): Promise<PlanTask[]> {
     const tasks: PlanTask[] = [];
     let taskCounter = 1;
 
+    // Get learned patterns if LearningManager is available
+    const learnedPatterns = await this.getLearnedPatterns(request);
+
     // Example: Break down feature into phases
-    const phases = this.identifyPhases(request);
+    let phases = this.identifyPhases(request);
+
+    // Apply learned ordering to phases
+    if (learnedPatterns.length > 0) {
+      phases = this.applyLearnedOrdering(phases, learnedPatterns);
+    }
 
     for (const phase of phases) {
       const task: PlanTask = {
         id: `task-${taskCounter++}`,
-        description: phase.description,
-        steps: this.generateTDDSteps(phase),
+        description: this.enhanceDescriptionWithLearning(phase, learnedPatterns),
+        steps: this.generateTDDStepsWithLearning(phase, learnedPatterns),
         suggestedAgent: this.assignAgent(phase),
         estimatedDuration: '2-5 minutes',
-        priority: phase.priority || 'medium',
+        priority: this.calculatePriorityWithLearning(phase, learnedPatterns),
         dependencies: phase.dependencies || [],
         files: phase.files || {},
       };
@@ -249,5 +262,199 @@ export class PlanningEngine {
       return `${hours}h ${minutes}m`;
     }
     return `${minutes}m`;
+  }
+
+  /**
+   * Get learned patterns from LearningManager
+   */
+  private async getLearnedPatterns(request: PlanRequest): Promise<ContextualPattern[]> {
+    if (!this.learningManager) {
+      return [];
+    }
+
+    try {
+      // Get patterns for all registered agents
+      const agents = this.agentRegistry.getAllAgents();
+      const allPatterns: ContextualPattern[] = [];
+
+      for (const agent of agents) {
+        const patterns = await this.learningManager.getLearnedPatterns(agent.name);
+        allPatterns.push(...patterns);
+      }
+
+      // Filter relevant patterns based on request context
+      return this.filterRelevantPatterns(allPatterns, request);
+    } catch (error) {
+      // Silently return empty array if patterns can't be retrieved
+      return [];
+    }
+  }
+
+  /**
+   * Filter patterns relevant to current request
+   */
+  private filterRelevantPatterns(
+    patterns: ContextualPattern[],
+    request: PlanRequest
+  ): ContextualPattern[] {
+    const domain = (request.existingContext?.domain as string) || '';
+    const projectType = (request.existingContext?.projectType as string) || '';
+
+    return patterns.filter((pattern) => {
+      // Only include successful patterns with high confidence
+      if (pattern.type !== 'success') return false;
+      if (pattern.success_rate < 0.75) return false;
+      if (pattern.observations < 5) return false;
+
+      // Check if pattern context matches request (use partial matching for domain)
+      const context = pattern.context;
+      if (projectType && context.project_type && context.project_type !== projectType) return false;
+
+      // Use partial domain matching - if either domain contains the other, it's a match
+      if (domain && context.domain) {
+        const domainMatches =
+          domain.includes(context.domain) ||
+          context.domain.includes(domain);
+        if (!domainMatches) return false;
+      }
+
+      return true;
+    });
+  }
+
+  /**
+   * Apply learned ordering patterns to phases
+   */
+  private applyLearnedOrdering(
+    phases: Phase[],
+    patterns: ContextualPattern[]
+  ): Phase[] {
+    // Extract ordering actions from patterns
+    const orderingActions: string[] = [];
+    for (const pattern of patterns) {
+      const actions = pattern.context.actions || [];
+      orderingActions.push(...actions);
+    }
+
+    // Sort phases based on learned patterns (e.g., "security-first", "schema-before-API")
+    const sortedPhases = [...phases].sort((a, b) => {
+      const aDesc = a.description.toLowerCase();
+      const bDesc = b.description.toLowerCase();
+
+      // Check for "first" priority patterns
+      for (const action of orderingActions) {
+        if (action.includes('first')) {
+          const keyword = action.replace('-first', '');
+          if (aDesc.includes(keyword) && !bDesc.includes(keyword)) return -1;
+          if (!aDesc.includes(keyword) && bDesc.includes(keyword)) return 1;
+        }
+
+        // Check for "before" patterns
+        if (action.includes('before')) {
+          const [before, after] = action.split('-before-');
+          if (aDesc.includes(before) && bDesc.includes(after)) return -1;
+          if (aDesc.includes(after) && bDesc.includes(before)) return 1;
+        }
+      }
+
+      return 0; // Keep original order if no pattern matches
+    });
+
+    return sortedPhases;
+  }
+
+  /**
+   * Enhance phase description with learned best practices
+   */
+  private enhanceDescriptionWithLearning(
+    phase: Phase,
+    patterns: ContextualPattern[]
+  ): string {
+    let description = phase.description;
+
+    // Extract best practices from patterns
+    const bestPractices: string[] = [];
+    for (const pattern of patterns) {
+      if (pattern.type === 'success' && pattern.context.actions) {
+        bestPractices.push(...pattern.context.actions);
+      }
+    }
+
+    // For API/backend tasks, always add the best practices
+    const phaseDesc = phase.description.toLowerCase();
+    if (
+      phaseDesc.includes('api') ||
+      phaseDesc.includes('authentication') ||
+      phaseDesc.includes('authorization') ||
+      phaseDesc.includes('endpoint')
+    ) {
+      // Filter for relevant best practices
+      const relevantPractices = bestPractices.filter((practice) =>
+        ['error-handling', 'input-validation', 'logging'].includes(practice)
+      );
+
+      if (relevantPractices.length > 0) {
+        description += ` (Include: ${relevantPractices.join(', ')})`;
+      }
+    }
+
+    return description;
+  }
+
+  /**
+   * Generate TDD steps enhanced with learned patterns
+   */
+  private generateTDDStepsWithLearning(
+    phase: Phase,
+    patterns: ContextualPattern[]
+  ): string[] {
+    const baseSteps = this.generateTDDSteps(phase);
+
+    // Extract learned actions
+    const learnedActions: string[] = [];
+    for (const pattern of patterns) {
+      if (pattern.context.actions) {
+        learnedActions.push(...pattern.context.actions);
+      }
+    }
+
+    // Enhance step 3 (implementation) with learned actions
+    if (learnedActions.length > 0) {
+      const relevantActions = learnedActions.filter((action) =>
+        ['error-handling', 'input-validation', 'logging'].includes(action)
+      );
+
+      if (relevantActions.length > 0) {
+        baseSteps[2] = `${baseSteps[2]} with ${relevantActions.join(', ')}`;
+      }
+    }
+
+    return baseSteps;
+  }
+
+  /**
+   * Calculate priority based on learned patterns
+   */
+  private calculatePriorityWithLearning(
+    phase: Phase,
+    patterns: ContextualPattern[]
+  ): TaskPriority {
+    const basePriority = phase.priority || 'medium';
+
+    // Check if this phase matches any critical learned patterns
+    const criticalPatterns = patterns.filter(
+      (p) =>
+        p.type === 'success' &&
+        p.success_rate > 0.85 &&
+        p.context.actions?.some((action) =>
+          phase.description.toLowerCase().includes(action.split('-')[0])
+        )
+    );
+
+    if (criticalPatterns.length > 0) {
+      return 'high';
+    }
+
+    return basePriority;
   }
 }

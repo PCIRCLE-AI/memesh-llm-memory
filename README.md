@@ -444,6 +444,23 @@ smart-agents/
 └── examples/            # Usage examples
 ```
 
+### Security Best Practices
+
+**Development Environment Security:**
+
+- ✅ **Never expose dev server to public network** - Dev server binds to `localhost` by default
+- ✅ **Separate browsing contexts** - Don't run dev server while browsing untrusted websites
+- ✅ **Use isolated environments** - Consider separate browser profiles for development
+- ✅ **Regular security audits** - Run `npm audit` periodically to check for vulnerabilities
+
+**Production Security:**
+- All MCP tool inputs validated with Zod schemas
+- No SQL injection risks (parameterized queries)
+- Resource limits enforced (cooldowns, rate limits)
+- No `eval()` or `exec()` of user input
+
+For detailed security audit results, see [docs/SECURITY_AUDIT_2025-12-31.md](docs/SECURITY_AUDIT_2025-12-31.md).
+
 ---
 
 

@@ -206,75 +206,28 @@ export class TaskDecomposer {
         tasks.push(
           this.createTask(
             `task-${startId}`,
-            'Define user schema for authentication',
+            'Implement JWT token generation',
             'backend',
             [
-              'Write test for user model',
-              'Run test to verify it fails',
-              'Define user schema',
-              'Run test to verify it passes',
-              'Commit changes'
+              'Write test for token generation',
+              'Run test (expect fail)',
+              'Implement token generation',
+              'Run test (expect pass)',
+              'Commit token logic',
             ]
           ),
           this.createTask(
             `task-${startId + 1}`,
-            'Implement user registration',
-            'backend',
-            [
-              'Write test for registration',
-              'Run test to verify it fails',
-              'Implement registration logic',
-              'Run test to verify it passes',
-              'Commit changes'
-            ]
-          ),
-          this.createTask(
-            `task-${startId + 2}`,
-            'Implement login functionality',
-            'backend',
-            [
-              'Write test for login',
-              'Run test to verify it fails',
-              'Implement login logic',
-              'Run test to verify it passes',
-              'Commit changes'
-            ]
-          ),
-          this.createTask(
-            `task-${startId + 3}`,
-            'Implement token generation',
-            'backend',
-            [
-              'Write test for token generation',
-              'Run test to verify it fails',
-              'Implement JWT signing',
-              'Run test to verify it passes',
-              'Commit changes'
-            ]
-          ),
-          this.createTask(
-            `task-${startId + 4}`,
             'Implement token validation',
             'backend',
             [
               'Write test for token validation',
-              'Run test to verify it fails',
-              'Implement JWT verification',
-              'Run test to verify it passes',
-              'Commit changes'
-            ]
-          ),
-          this.createTask(
-            `task-${startId + 5}`,
-            'Implement password reset',
-            'backend',
-            [
-              'Write test for password reset',
-              'Run test to verify it fails',
-              'Implement reset logic',
-              'Run test to verify it passes',
-              'Commit changes'
-            ]
+              'Run test (expect fail)',
+              'Implement validation logic',
+              'Run test (expect pass)',
+              'Commit validation',
+            ],
+            [`task-${startId}`] // Token validation depends on token generation
           )
         );
         break;

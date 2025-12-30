@@ -11,8 +11,8 @@ describe('TaskDecomposer', () => {
 
     const tasks = decomposer.decompose(request);
 
-    // Should have multiple tasks (>5 for this large feature)
-    expect(tasks.length).toBeGreaterThan(5);
+    // Should have 3 tasks: 2 for authentication + 1 for testing
+    expect(tasks.length).toBe(3);
 
     // Each task should be 2-5 minutes
     tasks.forEach(task => {

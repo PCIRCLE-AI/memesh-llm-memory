@@ -59,7 +59,7 @@ export class Router {
   }
 
   /**
-   * 完整的任務路由流程：分析 → 路由 → 成本檢查 → 演化適應
+   * Complete task routing flow: analysis → routing → cost check → evolution adaptation
    */
   async routeTask(task: Task): Promise<{
     analysis: TaskAnalysis;
@@ -70,13 +70,13 @@ export class Router {
   }> {
     const startTime = Date.now();
 
-    // 步驟 1: 分析任務
+    // Step 1: Analyze task
     const analysis = await this.analyzer.analyze(task);
 
-    // 步驟 2: 路由到 Agent
+    // Step 2: Route to Agent
     const routing = await this.router.route(analysis);
 
-    // 步驟 3: 應用學習到的適應模式
+    // Step 3: Apply learned adaptation patterns
     const adaptedExecution = await this.adaptationEngine.adaptExecution(
       routing.selectedAgent,
       task.description.substring(0, 50), // First 50 chars as task type
@@ -94,12 +94,12 @@ export class Router {
       });
     }
 
-    // 步驟 4: 檢查預算
+    // Step 4: Check budget
     const approved = this.costTracker.isWithinBudget(routing.estimatedCost);
 
     const duration = Date.now() - startTime;
 
-    // 步驟 5: 追蹤性能
+    // Step 5: Track performance
     this.performanceTracker.track({
       agentId: routing.selectedAgent,
       taskType: task.description.substring(0, 50),
@@ -127,7 +127,7 @@ export class Router {
   }
 
   /**
-   * 批次路由多個任務
+   * Batch route multiple tasks
    */
   async routeBatch(tasks: Task[]): Promise<{
     results: Array<{
@@ -162,7 +162,7 @@ export class Router {
   }
 
   /**
-   * 記錄任務執行後的實際成本
+   * Record actual cost after task execution
    */
   recordTaskCost(
     taskId: string,
@@ -174,14 +174,14 @@ export class Router {
   }
 
   /**
-   * 獲取成本報告
+   * Get cost report
    */
   getCostReport(): string {
     return this.costTracker.generateReport();
   }
 
   /**
-   * 獲取系統資源狀態
+   * Get system resource status
    */
   async getSystemStatus(): Promise<{
     resources: Awaited<ReturnType<AgentRouter['getSystemResources']>>;
@@ -200,42 +200,42 @@ export class Router {
   }
 
   /**
-   * 獲取 TaskAnalyzer 實例 (用於進階操作)
+   * Get TaskAnalyzer instance (for advanced operations)
    */
   getAnalyzer(): TaskAnalyzer {
     return this.analyzer;
   }
 
   /**
-   * 獲取 AgentRouter 實例 (用於進階操作)
+   * Get AgentRouter instance (for advanced operations)
    */
   getRouter(): AgentRouter {
     return this.router;
   }
 
   /**
-   * 獲取 CostTracker 實例 (用於進階操作)
+   * Get CostTracker instance (for advanced operations)
    */
   getCostTracker(): CostTracker {
     return this.costTracker;
   }
 
   /**
-   * 獲取 PerformanceTracker 實例 (用於演化系統)
+   * Get PerformanceTracker instance (for evolution system)
    */
   getPerformanceTracker(): PerformanceTracker {
     return this.performanceTracker;
   }
 
   /**
-   * 獲取 LearningManager 實例 (用於演化系統)
+   * Get LearningManager instance (for evolution system)
    */
   getLearningManager(): LearningManager {
     return this.learningManager;
   }
 
   /**
-   * 獲取 AdaptationEngine 實例 (用於演化系統)
+   * Get AdaptationEngine instance (for evolution system)
    */
   getAdaptationEngine(): AdaptationEngine {
     return this.adaptationEngine;

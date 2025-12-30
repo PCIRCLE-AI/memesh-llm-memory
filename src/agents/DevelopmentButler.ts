@@ -10,6 +10,10 @@ import { MCPToolInterface } from '../core/MCPToolInterface.js';
 import { WorkflowGuidanceEngine, WorkflowContext, WorkflowGuidance, WorkflowPhase } from '../core/WorkflowGuidanceEngine.js';
 import { FeedbackCollector } from '../evolution/FeedbackCollector.js';
 import type { LearningManager } from '../evolution/LearningManager.js';
+import { SessionTokenTracker } from '../core/SessionTokenTracker.js';
+import { SessionContextMonitor } from '../core/SessionContextMonitor.js';
+import { ClaudeMdReloader } from '../mcp/ClaudeMdReloader.js';
+import type { SessionHealth } from '../core/SessionContextMonitor.js';
 
 /**
  * Code analysis result
@@ -110,6 +114,11 @@ export class DevelopmentButler {
   private feedbackCollector?: FeedbackCollector;
   private activeRequests: Map<string, WorkflowGuidance> = new Map();
 
+  // Context monitoring integration
+  private tokenTracker: SessionTokenTracker;
+  private contextMonitor: SessionContextMonitor;
+  private claudeMdReloader: ClaudeMdReloader;
+
   constructor(
     checkpointDetector: CheckpointDetector,
     toolInterface: MCPToolInterface,
@@ -123,6 +132,11 @@ export class DevelopmentButler {
       this.guidanceEngine = new WorkflowGuidanceEngine(learningManager);
       this.feedbackCollector = new FeedbackCollector(learningManager);
     }
+
+    // Initialize context monitoring
+    this.tokenTracker = new SessionTokenTracker({ tokenLimit: 200000 });
+    this.contextMonitor = new SessionContextMonitor(this.tokenTracker);
+    this.claudeMdReloader = new ClaudeMdReloader();
 
     this.initialize();
   }
@@ -179,6 +193,20 @@ export class DevelopmentButler {
    */
   isInitialized(): boolean {
     return this.initialized;
+  }
+
+  /**
+   * Get token tracker (for testing and monitoring)
+   */
+  getTokenTracker(): SessionTokenTracker {
+    return this.tokenTracker;
+  }
+
+  /**
+   * Get context monitor (for testing and monitoring)
+   */
+  getContextMonitor(): SessionContextMonitor {
+    return this.contextMonitor;
   }
 
   /**
@@ -352,11 +380,11 @@ export class DevelopmentButler {
   }
 
   /**
-   * Process checkpoint and provide workflow guidance
+   * Process checkpoint and provide workflow guidance with context monitoring
    *
    * @param checkpointName - Name of the checkpoint
    * @param data - Checkpoint data
-   * @returns Workflow guidance with formatted request
+   * @returns Workflow guidance with formatted request and session health
    */
   async processCheckpoint(
     checkpointName: string,
@@ -365,6 +393,7 @@ export class DevelopmentButler {
     guidance: WorkflowGuidance;
     formattedRequest: string;
     requestId: string;
+    sessionHealth: SessionHealth;
   }> {
     if (!this.guidanceEngine) {
       throw new Error('Workflow guidance not initialized. Provide LearningManager to constructor.');
@@ -396,10 +425,40 @@ export class DevelopmentButler {
     const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     this.activeRequests.set(requestId, guidance);
 
+    // Check session health
+    const sessionHealth = this.contextMonitor.checkSessionHealth();
+
+    // If critical warnings, prepend to recommendations
+    if (sessionHealth.status === 'critical') {
+      const criticalWarnings = sessionHealth.warnings
+        .filter((w) => w.level === 'critical')
+        .map((w) => `⚠️ ${w.message}`)
+        .join('\n');
+
+      const criticalRecs = sessionHealth.recommendations
+        .filter((r) => r.priority === 'critical')
+        .map((r) => `• ${r.description}: ${r.reasoning}`)
+        .join('\n');
+
+      const enhancedRequest = `
+🚨 CRITICAL SESSION ALERTS:
+${criticalWarnings}
+
+Recommended Actions:
+${criticalRecs}
+
+---
+${formattedRequest}
+      `.trim();
+
+      return { guidance, formattedRequest: enhancedRequest, requestId, sessionHealth };
+    }
+
     return {
       guidance,
       formattedRequest,
       requestId,
+      sessionHealth,
     };
   }
 
@@ -494,5 +553,42 @@ export class DevelopmentButler {
 
     // Clean up
     this.activeRequests.delete(requestId);
+  }
+
+  /**
+   * Execute CLAUDE.md reload
+   *
+   * @param requestId - Request identifier
+   * @returns Result of reload operation
+   */
+  async executeContextReload(requestId: string): Promise<{
+    success: boolean;
+    resourceUpdate?: any;
+    error?: string;
+  }> {
+    // Check cooldown
+    if (!this.claudeMdReloader.canReload()) {
+      return {
+        success: false,
+        error: 'Reload cooldown active (5 minutes)',
+      };
+    }
+
+    try {
+      const resourceUpdate = this.claudeMdReloader.generateReloadRequest();
+
+      this.claudeMdReloader.recordReload({
+        reason: 'token-threshold',
+        triggeredBy: 'user',
+        metadata: { requestId },
+      });
+
+      return { success: true, resourceUpdate };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   }
 }

@@ -65,7 +65,7 @@ describe('evolution_dashboard MCP Tool', () => {
 
       expect(progress).toBeDefined();
       expect(Array.isArray(progress)).toBe(true);
-      expect(progress.length).toBe(22); // Should have all 22 agents
+      expect(progress.length).toBe(22); // Should have all 22 evolution configurations
 
       // Each agent should have required fields
       progress.forEach(agent => {

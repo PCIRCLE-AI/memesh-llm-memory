@@ -18,7 +18,7 @@ describe('AgentEvolutionConfig', () => {
     it('should return config for all 22 agents', () => {
       const configs = getAllAgentConfigs();
 
-      // Should have exactly 22 agents configured
+      // Should have exactly 22 agents configured (includes future/planned agents)
       expect(configs.size).toBe(22);
 
       // Verify some key agents are present

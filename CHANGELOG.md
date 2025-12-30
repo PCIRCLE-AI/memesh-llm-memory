@@ -5,9 +5,17 @@ All notable changes to Smart-Agents will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.1.0] - 2025-12-29
+## [2.1.0] - 2025-12-30
 
 ### Added
+- **Claude Code-Assisted Installation** ⭐ NEW
+  - One-command installation: "Install smart-agents MCP from [GitHub URL]"
+  - Interactive guided setup with feature prompts (RAG agent, API keys)
+  - Automated MCP server configuration
+  - Full customization via natural conversation with Claude Code
+  - Comprehensive installation guide: `docs/guides/CLAUDE_CODE_INSTALLATION.md`
+  - Setup time reduced from 15-20 minutes to 2-5 minutes
+  - Users can modify agents, create skills, update config - all through Claude Code
 - **MCP Server Integration**: Full integration with Claude Code via Model Context Protocol
   - MCP setup verification tools and example config
   - MCP server integration guide and comprehensive documentation
@@ -62,10 +70,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Standardized null handling patterns (|| null for inserts, ?? undefined for reads)
 
 ### Documentation
+- **English-Only Documentation**: All documentation files translated from Chinese to English
+  - Translated 8 major documentation files (HOOKS, OVERVIEW, SETUP, RAG, MODELS, EVOLUTION, etc.)
+  - Total ~5000+ lines of content converted for international accessibility
+  - Maintains technical accuracy while improving clarity and consistency
+  - Verified with automated checks: 0 Chinese characters remaining
+- **Documentation Simplification** - Embracing "Just Ask Claude Code" Philosophy
+  - README.md simplified from ~400 to ~200 lines (50% reduction)
+    - Removed all manual installation steps
+    - Removed detailed command reference
+    - Replaced with natural language prompts
+  - CLAUDE_CODE_INSTALLATION.md simplified from 417 to ~74 lines (82% reduction)
+    - Removed detailed bash commands and code templates
+    - Removed file structure reference and security details
+    - Kept only essentials: quick command, high-level workflow, example prompts
+  - All documentation now focuses on "what to ask Claude Code" rather than "how to do it manually"
+  - Users can customize everything through conversation - no manual file editing required
+- **Claude Code Installation Guide**: Interactive setup with one-command installation
+  - Quick Start: "Install smart-agents MCP from [GitHub URL]"
+  - Setup time reduced from 15-20 minutes to 2-5 minutes
+  - Interactive prompts for RAG feature selection and API key management
+  - Post-installation customization via natural conversation
 - Comprehensive v2.1.0 release notes
 - Complete user documentation and troubleshooting guide
 - Architecture diagram and design document
-- Updated README for V2.1 release
+- Updated README for V2.1 release with prominent Claude Code installation section
 - Fixed terminology inconsistencies across all docs
 - Agent implementation architecture details
 - MCP integration guide with step-by-step setup

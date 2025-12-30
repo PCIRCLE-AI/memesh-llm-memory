@@ -1,27 +1,27 @@
-# 🚀 Smart Agents 設置指南 (V2.0 MCP Server Pattern)
+# 🚀 Smart Agents Setup Guide (V2.0 MCP Server Pattern)
 
-## V2.0 MCP Server 設置（當前實現）
+## V2.0 MCP Server Setup (Current Implementation)
 
-### 步驟 1: 安裝依賴
+### Step 1: Install Dependencies
 
 ```bash
 # Clone repository
 git clone <your-repo-url> smart-agents
 cd smart-agents
 
-# 安裝 Node.js 依賴
+# Install Node.js dependencies
 npm install
 ```
 
-### 步驟 2: 編譯 TypeScript
+### Step 2: Compile TypeScript
 
 ```bash
 npm run build
 ```
 
-### 步驟 3: 配置 Claude Code MCP Server
+### Step 3: Configure Claude Code MCP Server
 
-編輯 `~/.claude/mcp_settings.json`，添加 smart-agents MCP server：
+Edit `~/.claude/mcp_settings.json` and add the smart-agents MCP server:
 
 ```json
 {
@@ -38,106 +38,106 @@ npm run build
 }
 ```
 
-**重要**: 將 `/path/to/smart-agents` 替換為實際的專案路徑。
+**Important**: Replace `/path/to/smart-agents` with the actual project path.
 
-### 步驟 4: （可選）配置 RAG Agent
+### Step 4: (Optional) Configure RAG Agent
 
-如果要使用 RAG agent，需要配置 OpenAI API key 用於 embeddings：
+If you want to use the RAG agent, configure the OpenAI API key for embeddings:
 
 ```bash
-# 複製環境變數範本
+# Copy environment template
 cp .env.example .env
 
-# 編輯 .env，只需填入 RAG 相關配置
+# Edit .env, only fill in RAG-related configuration
 nano .env
 ```
 
-在 `.env` 中添加：
+Add to `.env`:
 
 ```bash
-# OpenAI API (僅用於 RAG embeddings)
+# OpenAI API (for RAG embeddings only)
 OPENAI_API_KEY=sk-your-key-here
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 
-# Vector DB 路徑（可選）
+# Vector DB path (optional)
 VECTRA_INDEX_PATH=~/.smart-agents/vectra
 ```
 
-**如果不使用 RAG agent**，可以跳過此步驟，甚至不需要 .env 文件。
+**If not using RAG agent**, you can skip this step and don't even need a .env file.
 
-### 步驟 5: 重啟 Claude Code
+### Step 5: Restart Claude Code
 
-重啟 Claude Code，MCP server 會自動啟動。
+Restart Claude Code, and the MCP server will start automatically.
 
-### 步驟 6: 驗證安裝
+### Step 6: Verify Installation
 
-在 Claude Code 中測試：
+Test in Claude Code:
 
 ```
-請使用 smart-agents 的 code-reviewer 來審查這段代碼...
+Please use smart-agents' code-reviewer to review this code...
 ```
 
 ---
 
-## 驗證清單 (V2.0)
+## Verification Checklist (V2.0)
 
-- [ ] Node.js >= 18 已安裝
-- [ ] 專案依賴已安裝（`npm install`）
-- [ ] TypeScript 已編譯（`npm run build`）
-- [ ] MCP server 已配置在 `~/.claude/mcp_settings.json`
-- [ ] Claude Code 已重啟
-- [ ] （可選）RAG Agent 的 OpenAI API key 已配置
+- [ ] Node.js >= 18 installed
+- [ ] Project dependencies installed (`npm install`)
+- [ ] TypeScript compiled (`npm run build`)
+- [ ] MCP server configured in `~/.claude/mcp_settings.json`
+- [ ] Claude Code restarted
+- [ ] (Optional) RAG Agent OpenAI API key configured
 
-## 常見問題 (V2.0)
+## Common Issues (V2.0)
 
-### Q: MCP server 無法啟動
+### Q: MCP server fails to start
 
-**解決方案**：
-1. 檢查 `~/.claude/mcp_settings.json` 路徑是否正確
-2. 確認 `npm run build` 已成功執行
-3. 檢查 Claude Code 日誌：`~/.claude/logs/`
-4. 嘗試手動運行：`npm run mcp`
+**Solutions**:
+1. Check if `~/.claude/mcp_settings.json` path is correct
+2. Confirm `npm run build` executed successfully
+3. Check Claude Code logs: `~/.claude/logs/`
+4. Try running manually: `npm run mcp`
 
-### Q: 找不到 smart-agents tools
+### Q: Cannot find smart-agents tools
 
-**解決方案**：
-1. 確認 Claude Code 已重啟
-2. 檢查 MCP server 狀態
-3. 嘗試在 Claude Code 中執行：`/mcp list`
+**Solutions**:
+1. Confirm Claude Code has been restarted
+2. Check MCP server status
+3. Try running in Claude Code: `/mcp list`
 
-### Q: RAG Agent embedding 失敗
+### Q: RAG Agent embedding fails
 
-**解決方案**：
-1. 確認 `.env` 中的 `OPENAI_API_KEY` 已配置
-2. 檢查 API key 是否有效
-3. 確認 OpenAI API 配額未用盡
-4. 檢查 `VECTRA_INDEX_PATH` 目錄權限
+**Solutions**:
+1. Confirm `OPENAI_API_KEY` is configured in `.env`
+2. Check if API key is valid
+3. Confirm OpenAI API quota is not exhausted
+4. Check `VECTRA_INDEX_PATH` directory permissions
 
-### Q: 記憶體不足
+### Q: Out of memory
 
-**解決方案**：
-1. 關閉其他應用程式
-2. 增加 Node.js 記憶體限制：`NODE_OPTIONS="--max-old-space-size=4096" npm run mcp`
+**Solutions**:
+1. Close other applications
+2. Increase Node.js memory limit: `NODE_OPTIONS="--max-old-space-size=4096" npm run mcp`
 
-## 系統需求
+## System Requirements
 
-### 最低需求
+### Minimum Requirements
 - **Node.js**: >= 18.0.0
-- **Claude Code**: 已安裝
-- **RAM**: 2 GB（V2.0 MCP server 很輕量）
-- **硬碟**: 5 GB 可用空間
+- **Claude Code**: Installed
+- **RAM**: 2 GB (V2.0 MCP server is lightweight)
+- **Storage**: 5 GB available space
 
-### 推薦配置
+### Recommended Configuration
 - **Node.js**: >= 20.0.0
-- **Claude Code**: 最新版本
+- **Claude Code**: Latest version
 - **RAM**: 4+ GB
-- **硬碟**: 20+ GB SSD（如使用 RAG agent）
-- **網路**: 穩定連接（Claude Code → Claude API）
+- **Storage**: 20+ GB SSD (if using RAG agent)
+- **Network**: Stable connection (Claude Code → Claude API)
 
-## 下一步
+## Next Steps
 
-配置完成後，查看：
-- [RAG 部署指南](./RAG_DEPLOYMENT.md) - RAG Agent 詳細部署
-- [使用指南](./USAGE.md) - 如何使用各種 agents
-- [架構文檔](../../ARCHITECTURE.md) - 系統架構說明
-- [Evolution 系統](../EVOLUTION.md) - Self-learning 機制
+After configuration, see:
+- [RAG Deployment Guide](./RAG_DEPLOYMENT.md) - RAG Agent detailed deployment
+- [Usage Guide](./USAGE.md) - How to use various agents
+- [Architecture Documentation](../../ARCHITECTURE.md) - System architecture
+- [Evolution System](../EVOLUTION.md) - Self-learning mechanism

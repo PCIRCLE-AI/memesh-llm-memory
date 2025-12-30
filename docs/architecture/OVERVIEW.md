@@ -272,19 +272,19 @@ Enable event-driven prompt recommendations based on detected patterns (NOT auton
 
 ### Implementation Status
 
-> ⚠️ **棄用通知**
+> ⚠️ **DEPRECATION NOTICE**
 >
-> Hooks 系統**從未被實作**且已於 2025-12-30 確認棄用。
-> 以下內容保留作為**歷史參考**，記錄原本的設計構想。
+> The Hooks system was **never implemented** and was confirmed deprecated on 2025-12-30.
+> The following content is kept as **historical reference**, documenting the original design concept.
 
-❌ **未實作** - Hooks 系統從未實作且已棄用。相關文件：
-- HOOKS_IMPLEMENTATION_GUIDE.md（已標記為 DEPRECATED）
-- CLAUDE_CODE_INTEGRATION_PLAN.md（計劃未執行）
-- README.md（Hooks 章節已標記已棄用）
+❌ **NOT IMPLEMENTED** - The Hooks system was never implemented and is now deprecated. Related documents:
+- HOOKS_IMPLEMENTATION_GUIDE.md (marked as DEPRECATED)
+- CLAUDE_CODE_INTEGRATION_PLAN.md (plan not executed)
+- README.md (Hooks section marked as deprecated)
 
-### Architecture Overview [歷史參考]
+### Architecture Overview [Historical Reference]
 
-**Three Hook Types** (原本規劃的 Claude Code Hooks - 未實作):
+**Three Hook Types** (originally planned Claude Code Hooks - not implemented):
 
 #### 1. SessionStart Hook (`~/.claude/hooks/session-start.js`)
 
@@ -299,15 +299,15 @@ Enable event-driven prompt recommendations based on detected patterns (NOT auton
 
 **Example Output**:
 ```
-📚 根據上次工作模式，建議載入以下 skills：
-  - devops-git-workflows (上次執行 8 次 Git 操作)
-  - testing-guide (上次撰寫 5 個測試文件)
+📚 Based on last work patterns, recommended skills to load:
+  - devops-git-workflows (Last execution: 8 Git operations)
+  - testing-guide (Last wrote 5 test files)
 
-⚠️ 注意事項：
-  - 2 個工具執行時間超過 5 秒
-  - 配額使用：45% (建議注意使用)
+⚠️ Attention:
+  - 2 tools took more than 5 seconds to execute
+  - Quota usage: 45% (recommended to monitor)
 
-✅ Session 已初始化，開始工作吧！
+✅ Session initialized, let's start working!
 ```
 
 #### 2. PostToolUse Hook (`~/.claude/hooks/post-tool-use.js`)
@@ -365,11 +365,11 @@ Enable event-driven prompt recommendations based on detected patterns (NOT auton
     ✅ Git workflow: feature branch → develop
     ⚠️ 2 slow operations detected
 
-💡 建議下次 session 載入：
-  - @devops-git-workflows (準備 commit 時)
-  - @system-thinking-examples (進行影響分析)
+💡 Recommended for next session:
+  - @devops-git-workflows (when preparing commits)
+  - @system-thinking-examples (for impact analysis)
 
-✅ Session 狀態已保存
+✅ Session state saved
 ```
 
 ### State File Formats
@@ -380,19 +380,19 @@ Enable event-driven prompt recommendations based on detected patterns (NOT auton
   "recommendedSkills": [
     {
       "name": "devops-git-workflows",
-      "reason": "上次 session：8 次 Git 操作",
+      "reason": "Last session: 8 Git operations",
       "priority": "high"
     }
   ],
   "detectedPatterns": [
     {
-      "description": "多次 Read before Edit - 正確行為",
-      "suggestion": "繼續保持 READ_BEFORE_EDIT 最佳實踐",
+      "description": "Multiple Read before Edit - correct behavior",
+      "suggestion": "Continue maintaining READ_BEFORE_EDIT best practice",
       "timestamp": "2025-12-30T10:00:00.000Z"
     }
   ],
   "warnings": [
-    "2 個工具執行時間超過 5 秒"
+    "2 tools took more than 5 seconds to execute"
   ],
   "lastUpdated": "2025-12-30T10:00:00.000Z"
 }
@@ -452,8 +452,8 @@ Enable event-driven prompt recommendations based on detected patterns (NOT auton
 
 **Workflow Example**:
 ```
-1. SessionStart Hook → Display: "載入 devops-git-workflows"
-2. User: @smart-router "準備發布 v2.0"
+1. SessionStart Hook → Display: "Load devops-git-workflows"
+2. User: @smart-router "Prepare v2.0 release"
 3. smart-router → Calls @smart-orchestrator → Returns execution plan
 4. PostToolUse Hook → Silently records each step
 5. Stop Hook → Saves learning for next session
@@ -653,11 +653,11 @@ PORT=3000
 
 ### Completed Features
 
-1. ❌ **Event-Driven Hooks** (計劃於 2025-12-29，但未實作，已於 2025-12-30 棄用)
-   - SessionStart, PostToolUse, Stop hooks（未實作）
-   - Pattern and anomaly detection（未實作）
-   - Skill recommendation system（未實作）
-   - Cross-session learning（未實作）
+1. ❌ **Event-Driven Hooks** (Planned for 2025-12-29, but not implemented, deprecated on 2025-12-30)
+   - SessionStart, PostToolUse, Stop hooks (not implemented)
+   - Pattern and anomaly detection (not implemented)
+   - Skill recommendation system (not implemented)
+   - Cross-session learning (not implemented)
 
 ### Planned Features
 

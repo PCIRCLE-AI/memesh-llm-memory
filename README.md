@@ -386,9 +386,7 @@ This project is licensed under the GNU AGPL v3. See [LICENSE](LICENSE) for full 
 
 ---
 
-## 🇹🇼 Crafted in Taiwan | 台灣製造
-
-**Where innovation meets tradition**
+🇹🇼 **Crafted in Taiwan | 台灣製造** - Where innovation meets tradition
 
 ---
 

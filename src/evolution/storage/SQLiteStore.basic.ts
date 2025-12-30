@@ -29,6 +29,7 @@ import type {
   Execution,
   Span,
   Pattern,
+  PatternData,
   Adaptation,
   EvolutionStats,
   Reward,
@@ -37,6 +38,13 @@ import type {
   TimeRange,
   SkillPerformance,
   SkillRecommendation,
+  TaskRow,
+  ExecutionRow,
+  SpanRow,
+  PatternRow,
+  AdaptationRow,
+  RewardRow,
+  EvolutionStatsRow,
   SQLParam,
 } from './types';
 
@@ -363,7 +371,7 @@ export class SQLiteStore implements EvolutionStore {
       SELECT * FROM tasks WHERE id = ?
     `);
 
-    const row = stmt.get(taskId) as any;
+    const row = stmt.get(taskId) as TaskRow | undefined;
     if (!row) return null;
 
     return this.rowToTask(row);
@@ -425,7 +433,7 @@ export class SQLiteStore implements EvolutionStore {
     }
 
     const stmt = this.db.prepare(query);
-    const rows = stmt.all(...params) as any[];
+    const rows = stmt.all(...params) as TaskRow[];
 
     return rows.map((row) => this.rowToTask(row));
   }
@@ -472,7 +480,7 @@ export class SQLiteStore implements EvolutionStore {
 
   async getExecution(executionId: string): Promise<Execution | null> {
     const stmt = this.db.prepare('SELECT * FROM executions WHERE id = ?');
-    const row = stmt.get(executionId) as any;
+    const row = stmt.get(executionId) as ExecutionRow | undefined;
     if (!row) return null;
 
     return this.rowToExecution(row);
@@ -521,7 +529,7 @@ export class SQLiteStore implements EvolutionStore {
       SELECT * FROM executions WHERE task_id = ? ORDER BY attempt_number ASC
     `);
 
-    const rows = stmt.all(taskId) as any[];
+    const rows = stmt.all(taskId) as ExecutionRow[];
     return rows.map((row) => this.rowToExecution(row));
   }
 
@@ -655,14 +663,14 @@ export class SQLiteStore implements EvolutionStore {
     }
 
     const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as any[];
+    const rows = stmt.all(...params) as TaskRow[];
 
     return rows.map((row) => this.rowToSpan(row));
   }
 
   async getSpan(spanId: string): Promise<Span | null> {
     const stmt = this.db.prepare('SELECT * FROM spans WHERE span_id = ?');
-    const row = stmt.get(spanId) as any;
+    const row = stmt.get(spanId) as SpanRow | undefined;
     if (!row) return null;
 
     return this.rowToSpan(row);
@@ -672,7 +680,7 @@ export class SQLiteStore implements EvolutionStore {
     const stmt = this.db.prepare(
       'SELECT * FROM spans WHERE trace_id = ? ORDER BY start_time ASC'
     );
-    const rows = stmt.all(traceId) as any[];
+    const rows = stmt.all(traceId) as SpanRow[];
     return rows.map((row) => this.rowToSpan(row));
   }
 
@@ -680,7 +688,7 @@ export class SQLiteStore implements EvolutionStore {
     const stmt = this.db.prepare(
       'SELECT * FROM spans WHERE parent_span_id = ? ORDER BY start_time ASC'
     );
-    const rows = stmt.all(parentSpanId) as any[];
+    const rows = stmt.all(parentSpanId) as SpanRow[];
     return rows.map((row) => this.rowToSpan(row));
   }
 
@@ -695,7 +703,7 @@ export class SQLiteStore implements EvolutionStore {
     `);
 
     const escapedSpanId = this.escapeLikePattern(spanId);
-    const rows = stmt.all(`%"span_id":"${escapedSpanId}"%`) as any[];
+    const rows = stmt.all(`%"span_id":"${escapedSpanId}"%`) as SpanRow[];
     return rows.map((row) => this.rowToSpan(row));
   }
 
@@ -709,7 +717,7 @@ export class SQLiteStore implements EvolutionStore {
         SELECT * FROM spans WHERE tags IS NOT NULL AND (${conditions})
       `);
 
-      const rows = stmt.all(...params) as any[];
+      const rows = stmt.all(...params) as TaskRow[];
       return rows.map((row) => this.rowToSpan(row));
     } else {
       // Match all tags
@@ -720,7 +728,7 @@ export class SQLiteStore implements EvolutionStore {
         SELECT * FROM spans WHERE tags IS NOT NULL AND ${conditions}
       `);
 
-      const rows = stmt.all(...params) as any[];
+      const rows = stmt.all(...params) as TaskRow[];
       return rows.map((row) => this.rowToSpan(row));
     }
   }
@@ -758,7 +766,7 @@ export class SQLiteStore implements EvolutionStore {
       SELECT * FROM rewards WHERE operation_span_id = ? ORDER BY provided_at ASC
     `);
 
-    const rows = stmt.all(spanId) as any[];
+    const rows = stmt.all(spanId) as RewardRow[];
     return rows.map((row) => this.rowToReward(row));
   }
 
@@ -767,7 +775,7 @@ export class SQLiteStore implements EvolutionStore {
       SELECT * FROM rewards WHERE operation_span_id = ? ORDER BY provided_at DESC
     `);
 
-    const rows = stmt.all(operationSpanId) as any[];
+    const rows = stmt.all(operationSpanId) as RewardRow[];
     return rows.map((row) => this.rowToReward(row));
   }
 
@@ -803,7 +811,7 @@ export class SQLiteStore implements EvolutionStore {
     sql += ' ORDER BY provided_at DESC';
 
     const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as any[];
+    const rows = stmt.all(...params) as TaskRow[];
 
     return rows.map((row) => this.rowToReward(row));
   }
@@ -842,7 +850,7 @@ export class SQLiteStore implements EvolutionStore {
 
   async getPattern(patternId: string): Promise<Pattern | null> {
     const stmt = this.db.prepare('SELECT * FROM patterns WHERE id = ?');
-    const row = stmt.get(patternId) as any;
+    const row = stmt.get(patternId) as PatternRow | undefined;
     if (!row) return null;
 
     return this.rowToPattern(row);
@@ -930,7 +938,7 @@ export class SQLiteStore implements EvolutionStore {
     }
 
     const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as any[];
+    const rows = stmt.all(...params) as PatternRow[];
 
     return rows.map((row) => this.rowToPattern(row));
   }
@@ -1003,7 +1011,7 @@ export class SQLiteStore implements EvolutionStore {
     sql += ' ORDER BY confidence DESC';
 
     const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as any[];
+    const rows = stmt.all(...params) as PatternRow[];
 
     return rows.map((row) => this.rowToPattern(row));
   }
@@ -1043,7 +1051,7 @@ export class SQLiteStore implements EvolutionStore {
 
   async getAdaptation(adaptationId: string): Promise<Adaptation | null> {
     const stmt = this.db.prepare('SELECT * FROM adaptations WHERE id = ?');
-    const row = stmt.get(adaptationId) as any;
+    const row = stmt.get(adaptationId) as AdaptationRow | undefined;
     if (!row) return null;
 
     return this.rowToAdaptation(row);
@@ -1087,7 +1095,7 @@ export class SQLiteStore implements EvolutionStore {
     sql += ' ORDER BY applied_at DESC';
 
     const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as any[];
+    const rows = stmt.all(...params) as TaskRow[];
 
     return rows.map((row) => this.rowToAdaptation(row));
   }
@@ -1154,7 +1162,7 @@ export class SQLiteStore implements EvolutionStore {
       agentId,
       timeRange.start.toISOString(),
       timeRange.end.toISOString()
-    ) as any;
+    ) as EvolutionStatsRow | undefined;
 
     if (row) {
       return this.rowToEvolutionStats(row);
@@ -1192,7 +1200,7 @@ export class SQLiteStore implements EvolutionStore {
     const rows = stmt.all(
       timeRange.start.toISOString(),
       timeRange.end.toISOString()
-    ) as any[];
+    ) as EvolutionStatsRow[];
 
     return rows.map((row) => this.rowToEvolutionStats(row));
   }
@@ -1231,18 +1239,18 @@ export class SQLiteStore implements EvolutionStore {
       skillName,
       timeRange.start.getTime(),
       timeRange.end.getTime()
-    ) as any;
+    ) as { total_uses: number; successful_uses: number; failed_uses: number; avg_duration_ms: number } | undefined;
 
-    const total = row.total_uses || 0;
-    const successful = row.successful_uses || 0;
+    const total = row?.total_uses || 0;
+    const successful = row?.successful_uses || 0;
 
     return {
       skill_name: skillName,
       total_uses: total,
       successful_uses: successful,
-      failed_uses: row.failed_uses || 0,
+      failed_uses: row?.failed_uses || 0,
       success_rate: total > 0 ? successful / total : 0,
-      avg_duration_ms: row.avg_duration_ms || 0,
+      avg_duration_ms: row?.avg_duration_ms || 0,
       avg_user_satisfaction: 0, // Would need to query from rewards
       trend_7d: 'stable',
       trend_30d: 'stable',
@@ -1415,17 +1423,22 @@ export class SQLiteStore implements EvolutionStore {
     };
   }
 
-  private rowToPattern(row: any): Pattern {
+  private rowToPattern(row: PatternRow): Pattern {
     return {
       id: row.id,
-      type: row.type,
+      type: row.type as Pattern['type'],
       confidence: row.confidence,
       occurrences: row.occurrences,
-      pattern_data: safeJsonParse(row.pattern_data, {} as any),
+      pattern_data: safeJsonParse<PatternData>(row.pattern_data, {
+        conditions: {},
+        recommendations: {},
+        expected_improvement: {},
+        evidence: { sample_size: 0 },
+      }),
       source_span_ids: safeJsonParse(row.source_span_ids, []),
-      applies_to_agent_type: row.applies_to_agent_type,
-      applies_to_task_type: row.applies_to_task_type,
-      applies_to_skill: row.applies_to_skill,
+      applies_to_agent_type: row.applies_to_agent_type ?? undefined,
+      applies_to_task_type: row.applies_to_task_type ?? undefined,
+      applies_to_skill: row.applies_to_skill ?? undefined,
       first_observed: new Date(row.first_observed),
       last_observed: new Date(row.last_observed),
       is_active: row.is_active === 1,

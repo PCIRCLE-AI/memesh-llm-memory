@@ -33,15 +33,31 @@ export interface ResourceUpdateRequest {
 }
 
 /**
+ * Reload statistics
+ */
+export interface ReloadStats {
+  totalReloads: number;
+  lastReloadTime: Date | null;
+  reasonCounts: Record<string, number>;
+  cooldownMs: number;
+  canReloadNow: boolean;
+}
+
+/**
  * Handles CLAUDE.md reload via MCP resources API
  */
 export class ClaudeMdReloader {
+  private static readonly MAX_HISTORY_SIZE = 50;
+
   private reloadHistory: ReloadRecord[] = [];
   private lastReloadTime: Date | null = null;
   private cooldownMs: number;
 
   constructor(cooldownMs: number = 5 * 60 * 1000) {
-    // Default 5 minutes
+    // CRITICAL ISSUE 1: Validate constructor input
+    if (cooldownMs <= 0) {
+      throw new Error('cooldownMs must be positive');
+    }
     this.cooldownMs = cooldownMs;
   }
 
@@ -71,8 +87,15 @@ export class ClaudeMdReloader {
 
   /**
    * Record a reload event
+   *
+   * NOTE: Not thread-safe. Caller must ensure serial access in concurrent environments.
    */
   recordReload(record: ReloadRecord): void {
+    // CRITICAL ISSUE 2: Validate required fields
+    if (!record.reason || !record.triggeredBy) {
+      throw new Error('reason and triggeredBy are required');
+    }
+
     const completeRecord = {
       ...record,
       timestamp: record.timestamp || new Date(),
@@ -81,8 +104,8 @@ export class ClaudeMdReloader {
     this.reloadHistory.push(completeRecord);
     this.lastReloadTime = completeRecord.timestamp;
 
-    // Keep only last 50 records
-    if (this.reloadHistory.length > 50) {
+    // IMPORTANT ISSUE 3: Use constant instead of magic number
+    if (this.reloadHistory.length > ClaudeMdReloader.MAX_HISTORY_SIZE) {
       this.reloadHistory.shift();
     }
   }
@@ -97,7 +120,7 @@ export class ClaudeMdReloader {
   /**
    * Get statistics about reloads
    */
-  getStats() {
+  getStats(): ReloadStats {
     const reasonCounts: Record<string, number> = {};
     for (const record of this.reloadHistory) {
       reasonCounts[record.reason] = (reasonCounts[record.reason] || 0) + 1;

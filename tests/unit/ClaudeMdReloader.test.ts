@@ -55,4 +55,67 @@ describe('ClaudeMdReloader', () => {
 
     vi.useRealTimers();
   });
+
+  // CRITICAL ISSUE 1: Constructor validation
+  describe('Constructor validation', () => {
+    it('should reject negative cooldown', () => {
+      expect(() => new ClaudeMdReloader(-1000)).toThrow(
+        'cooldownMs must be positive'
+      );
+    });
+
+    it('should reject zero cooldown', () => {
+      expect(() => new ClaudeMdReloader(0)).toThrow(
+        'cooldownMs must be positive'
+      );
+    });
+  });
+
+  // CRITICAL ISSUE 2: recordReload validation
+  describe('recordReload validation', () => {
+    it('should reject invalid reload records - missing reason', () => {
+      expect(() =>
+        reloader.recordReload({ reason: '', triggeredBy: 'auto' } as any)
+      ).toThrow('reason and triggeredBy are required');
+    });
+
+    it('should reject invalid reload records - missing triggeredBy', () => {
+      expect(() =>
+        reloader.recordReload({ reason: 'manual', triggeredBy: '' } as any)
+      ).toThrow('reason and triggeredBy are required');
+    });
+  });
+
+  // IMPORTANT ISSUE 5: History overflow edge case
+  describe('History overflow', () => {
+    it('should limit history to 50 records', () => {
+      // Add 60 records
+      for (let i = 0; i < 60; i++) {
+        reloader.recordReload({
+          reason: 'manual',
+          triggeredBy: 'auto',
+          metadata: { index: i },
+        });
+      }
+
+      const history = reloader.getReloadHistory();
+      expect(history).toHaveLength(50);
+
+      // Verify oldest records were removed (FIFO)
+      expect(history[0].metadata).toEqual({ index: 10 });
+    });
+  });
+
+  // IMPORTANT ISSUE 6: Race condition documentation
+  describe('Rapid sequential reloads', () => {
+    it('should handle rapid sequential reloads', () => {
+      // Simulate rapid-fire reloads
+      for (let i = 0; i < 100; i++) {
+        reloader.recordReload({ reason: 'manual', triggeredBy: 'auto' });
+      }
+
+      const history = reloader.getReloadHistory();
+      expect(history.length).toBeLessThanOrEqual(50);
+    });
+  });
 });

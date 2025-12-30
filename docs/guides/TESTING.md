@@ -181,6 +181,12 @@ npm test -- --grep="specific test name"
 
 ## ⚠️ E2E 測試資源安全
 
+> **📝 注意**: 本節描述的 E2E 測試套件（voice-rag, collaboration, api-security）為**計畫中**的功能，尚未實作。
+>
+> **目前實作的 E2E 測試**: `tests/integration/evolution-e2e.test.ts` (11 個測試，已通過)
+>
+> 本節為未來實作時的安全指南和最佳實踐。
+
 ### 🔴 重要：防止系統資源耗盡
 
 E2E 測試會啟動真實服務（Express server, Vectra, WebSocket），消耗大量資源。**不當配置可能導致系統凍結**。

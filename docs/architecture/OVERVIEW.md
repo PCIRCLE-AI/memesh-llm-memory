@@ -1,8 +1,8 @@
 # Smart Agents - System Architecture
 
-**Version**: 3.0.0 (Simplified Claude-Only + Event-Driven)
-**Last Updated**: 2025-12-29
-**Status**: Cleanup Complete, Event-Driven Implementation Pending
+**Version**: 3.1.0 (Architectural Honesty - Accurate Agent Count)
+**Last Updated**: 2025-12-30
+**Status**: Agent documentation updated for honesty and accuracy
 
 ---
 
@@ -34,7 +34,7 @@
 
 - **Test Coverage**: 377 passing tests across 46 test files
 - **Code Quality**: TypeScript with strict type checking
-- **Agent Count**: 13 specialized agents
+- **Agent Count**: 13 agents (5 real implementations + 8 prompt-enhanced)
 - **Learning System**: Real-time performance tracking and pattern recognition
 
 ---
@@ -47,7 +47,7 @@
 ┌─────────────────────────────────────────────────────────────┐
 │ Layer 4: MCP Server (User Interface)                        │
 │ - Claude Code integration via MCP Protocol                  │
-│ - 13 specialized agent tools                                │
+│ - 13 agent tools (5 real + 8 prompt-enhanced)               │
 │ - RAG agent with file watching                              │
 │ - Evolution dashboard                                       │
 └───────────────────────────┬─────────────────────────────────┘
@@ -56,8 +56,8 @@
 ┌─────────────────────────────────────────────────────────────┐
 │ Layer 3: Router & Orchestration                             │
 │ - Task complexity analysis                                  │
-│ - Agent selection (13 specialized agents)                   │
-│ - Prompt enhancement                                        │
+│ - Agent selection (13 agents: routing + prompts)            │
+│ - Prompt enhancement with domain expertise                  │
 │ - Cost estimation & budget control                          │
 └───────────────────────────┬─────────────────────────────────┘
                             │
@@ -238,7 +238,11 @@ Metadata-based registry of 13 specialized agents.
 
 6. **Creative** (1 agent): ui-designer
 
-**Total**: 13 agents (5 real implementations, 7 enhanced prompts, 1 optional feature)
+**Total**: 13 agents
+
+**Agent Types**:
+- **5 Real Implementations**: RAG Agent, Evolution System, Knowledge Graph, Development Butler, Test Writer
+- **8 Prompt-Enhanced**: Code Reviewer, Debugger, Refactorer, API Designer, Research Agent, Architecture Agent, Data Analyst, Knowledge Agent
 
 **Agent Metadata**:
 ```typescript
@@ -248,10 +252,14 @@ interface AgentMetadata {
   category: AgentCategory;
   capabilities: string[]; // List of capabilities
   complexity: number;     // Preferred complexity range
+  implementationType: 'real' | 'prompt-enhanced'; // NEW: clarity
 }
 ```
 
-**Important**: Agents are **metadata-only**, not separate implementations. The Router uses metadata to enhance prompts sent to Claude API.
+**Important**:
+- **Prompt-enhanced agents** are metadata + routing logic, not separate autonomous implementations
+- The Router uses metadata to generate optimized prompts sent to Claude API
+- Real implementations have actual code execution capabilities (RAG search, test generation, etc.)
 
 ---
 
@@ -259,7 +267,7 @@ interface AgentMetadata {
 
 ### Purpose
 
-Enable autonomous agent activation based on events rather than explicit invocation.
+Enable event-driven prompt recommendations based on detected patterns (NOT autonomous agent activation).
 
 ### Implementation Status
 

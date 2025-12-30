@@ -23,6 +23,7 @@ import {
   validateAdaptation,
   validateReward,
 } from './validation';
+import { safeJsonParse } from '../../utils/json.js';
 import type {
   Task,
   Execution,
@@ -1363,14 +1364,14 @@ export class SQLiteStore implements EvolutionStore {
   private rowToTask(row: any): Task {
     return {
       id: row.id,
-      input: JSON.parse(row.input),
+      input: safeJsonParse(row.input, {}),
       task_type: row.task_type,
       origin: row.origin,
       status: row.status,
       created_at: new Date(row.created_at),
       started_at: row.started_at ? new Date(row.started_at) : undefined,
       completed_at: row.completed_at ? new Date(row.completed_at) : undefined,
-      metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+      metadata: safeJsonParse(row.metadata, undefined),
     };
   }
 
@@ -1384,9 +1385,9 @@ export class SQLiteStore implements EvolutionStore {
       status: row.status,
       started_at: new Date(row.started_at),
       completed_at: row.completed_at ? new Date(row.completed_at) : undefined,
-      result: row.result ? JSON.parse(row.result) : undefined,
+      result: safeJsonParse(row.result, undefined),
       error: row.error,
-      metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+      metadata: safeJsonParse(row.metadata, undefined),
     };
   }
 
@@ -1406,11 +1407,11 @@ export class SQLiteStore implements EvolutionStore {
         code: row.status_code,
         message: row.status_message,
       },
-      attributes: JSON.parse(row.attributes),
-      resource: JSON.parse(row.resource),
-      links: row.links ? JSON.parse(row.links) : undefined,
-      tags: row.tags ? JSON.parse(row.tags) : undefined,
-      events: row.events ? JSON.parse(row.events) : undefined,
+      attributes: safeJsonParse(row.attributes, {}),
+      resource: safeJsonParse(row.resource, { 'task.id': '', 'execution.id': '', 'execution.attempt': 0 }),
+      links: safeJsonParse(row.links, undefined),
+      tags: safeJsonParse(row.tags, undefined),
+      events: safeJsonParse(row.events, undefined),
     };
   }
 
@@ -1420,8 +1421,8 @@ export class SQLiteStore implements EvolutionStore {
       type: row.type,
       confidence: row.confidence,
       occurrences: row.occurrences,
-      pattern_data: JSON.parse(row.pattern_data),
-      source_span_ids: JSON.parse(row.source_span_ids),
+      pattern_data: safeJsonParse(row.pattern_data, {} as any),
+      source_span_ids: safeJsonParse(row.source_span_ids, []),
       applies_to_agent_type: row.applies_to_agent_type,
       applies_to_task_type: row.applies_to_task_type,
       applies_to_skill: row.applies_to_skill,
@@ -1438,8 +1439,8 @@ export class SQLiteStore implements EvolutionStore {
       id: row.id,
       pattern_id: row.pattern_id,
       type: row.type,
-      before_config: JSON.parse(row.before_config),
-      after_config: JSON.parse(row.after_config),
+      before_config: safeJsonParse(row.before_config, {}),
+      after_config: safeJsonParse(row.after_config, {}),
       applied_to_agent_id: row.applied_to_agent_id,
       applied_to_task_type: row.applied_to_task_type,
       applied_to_skill: row.applied_to_skill,
@@ -1462,12 +1463,12 @@ export class SQLiteStore implements EvolutionStore {
       id: row.id,
       operation_span_id: row.operation_span_id,
       value: row.value,
-      dimensions: row.dimensions ? JSON.parse(row.dimensions) : undefined,
+      dimensions: safeJsonParse(row.dimensions, undefined),
       feedback: row.feedback,
       feedback_type: row.feedback_type,
       provided_by: row.provided_by,
       provided_at: new Date(row.provided_at),
-      metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+      metadata: safeJsonParse(row.metadata, undefined),
     };
   }
 
@@ -1489,7 +1490,7 @@ export class SQLiteStore implements EvolutionStore {
       patterns_discovered: row.patterns_discovered,
       adaptations_applied: row.adaptations_applied,
       improvement_rate: row.improvement_rate,
-      skills_used: row.skills_used ? JSON.parse(row.skills_used) : undefined,
+      skills_used: safeJsonParse(row.skills_used, undefined),
       most_successful_skill: row.most_successful_skill,
       avg_skill_satisfaction: row.avg_skill_satisfaction,
       created_at: new Date(row.created_at),

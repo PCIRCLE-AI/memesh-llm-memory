@@ -423,8 +423,6 @@ Key terms:
 - ✅ Derivative works must use AGPL v3
 - ✅ Changes must be documented
 
-**Why AGPL?** Since Smart Agents is an MCP server that can run as a service, AGPL ensures source code sharing even when used over a network.
-
 ---
 
 ## 🙏 Acknowledgments

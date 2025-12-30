@@ -1,7 +1,7 @@
 /**
- * Router - 統一路由介面
+ * Router - Unified Routing Interface
  *
- * 提供高層級的路由功能，整合 TaskAnalyzer 和 AgentRouter
+ * Provides high-level routing functionality, integrating TaskAnalyzer and AgentRouter
  */
 
 import { Task, TaskAnalysis, RoutingDecision } from './types.js';

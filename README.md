@@ -339,14 +339,6 @@ smart-agents/
 
 This project is licensed under the GNU AGPL v3. See [LICENSE](LICENSE) for full terms.
 
-Key terms:
-- ✅ Free to use, modify, and distribute
-- ✅ Commercial use allowed
-- ✅ Must disclose source code
-- ✅ **Network use = distribution** (must share source even for SaaS)
-- ✅ Derivative works must use AGPL v3
-- ✅ Changes must be documented
-
 ---
 
 ## 🙏 Acknowledgments

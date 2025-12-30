@@ -125,4 +125,36 @@ describe('PlanningEngine', () => {
       expect(plan.tasks).toBeDefined();
     });
   });
+
+  // PRIORITY 1 FIX: Telemetry for silent failures
+  describe('Error Handling', () => {
+    it('should log error when learned patterns retrieval fails', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const mockError = new Error('Database connection failed');
+
+      const mockLearningManager = {
+        getLearnedPatterns: vi.fn().mockRejectedValue(mockError),
+      };
+
+      const engineWithLearning = new PlanningEngine(
+        mockAgentRegistry,
+        mockLearningManager as any
+      );
+
+      // Should still generate plan despite pattern retrieval failure
+      const plan = await engineWithLearning.generatePlan({
+        featureDescription: 'Add user authentication',
+      });
+
+      expect(plan.tasks).toBeDefined();
+
+      // Verify error was logged for observability
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '[PlanningEngine] Failed to retrieve learned patterns:',
+        mockError
+      );
+
+      consoleErrorSpy.mockRestore();
+    });
+  });
 });

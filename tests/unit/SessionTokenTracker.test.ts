@@ -70,4 +70,25 @@ describe('SessionTokenTracker', () => {
     expect(stats.interactionCount).toBe(1);
     expect(stats.triggeredThresholds).toEqual([]);
   });
+
+  it('should detect threshold at exact percentage', () => {
+    tracker.recordUsage({ inputTokens: 160000, outputTokens: 0 }); // Exactly 80%
+    const warnings = tracker.checkThresholds();
+    expect(warnings.length).toBe(1);
+    expect(warnings[0].threshold).toBe(80);
+  });
+
+  it('should support custom threshold configuration', () => {
+    const customTracker = new SessionTokenTracker({
+      tokenLimit: 100000,
+      thresholds: [
+        { percentage: 50, level: 'info' },
+        { percentage: 75, level: 'warning' },
+      ],
+    });
+    customTracker.recordUsage({ inputTokens: 50000, outputTokens: 0 });
+    const warnings = customTracker.checkThresholds();
+    expect(warnings[0].level).toBe('info');
+    expect(warnings[0].threshold).toBe(50);
+  });
 });

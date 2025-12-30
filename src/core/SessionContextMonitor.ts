@@ -13,7 +13,8 @@ export type SessionHealthStatus = 'healthy' | 'warning' | 'critical';
 export type WarningType =
   | 'token-threshold'
   | 'quality-degradation'
-  | 'context-staleness';
+  | 'context-staleness'
+  | 'system-error';
 
 /**
  * Session health warning
@@ -50,19 +51,50 @@ export interface SessionHealth {
  * Monitors session context including tokens and quality
  */
 export class SessionContextMonitor {
+  private static readonly MAX_QUALITY_HISTORY = 10;
+  private static readonly MIN_SCORES_FOR_TREND = 3;
+  private static readonly DEGRADATION_THRESHOLD = 0.15;
+
   private qualityHistory: number[] = [];
   private lastHealthCheck: Date | null = null;
 
-  constructor(private tokenTracker: SessionTokenTracker) {}
+  constructor(private tokenTracker: SessionTokenTracker) {
+    if (!tokenTracker) {
+      throw new Error('SessionTokenTracker is required');
+    }
+  }
 
   /**
    * Check overall session health
    */
   checkSessionHealth(): SessionHealth {
-    const thresholdWarnings = this.tokenTracker.checkThresholds();
-    const usagePercentage = this.tokenTracker.getUsagePercentage();
     const warnings: SessionWarning[] = [];
     const recommendations: MonitorRecommendation[] = [];
+    let thresholdWarnings;
+    let usagePercentage;
+
+    try {
+      thresholdWarnings = this.tokenTracker.checkThresholds();
+      usagePercentage = this.tokenTracker.getUsagePercentage();
+    } catch (error) {
+      // Return degraded health status
+      const timestamp = new Date();
+      this.lastHealthCheck = timestamp;
+      return {
+        status: 'critical',
+        tokenUsagePercentage: 0,
+        warnings: [
+          {
+            type: 'system-error',
+            level: 'critical',
+            message: `Token tracker error: ${error.message}`,
+            data: {},
+          },
+        ],
+        recommendations: [],
+        timestamp,
+      };
+    }
 
     // Convert threshold warnings
     for (const tw of thresholdWarnings) {
@@ -110,14 +142,15 @@ export class SessionContextMonitor {
     // Determine overall status
     const status = this.determineStatus(warnings);
 
-    this.lastHealthCheck = new Date();
+    const timestamp = new Date();
+    this.lastHealthCheck = timestamp;
 
     return {
       status,
       tokenUsagePercentage: usagePercentage,
       warnings,
       recommendations,
-      timestamp: new Date(),
+      timestamp,
     };
   }
 
@@ -125,9 +158,15 @@ export class SessionContextMonitor {
    * Record quality score for tracking
    */
   recordQualityScore(score: number): void {
+    if (!Number.isFinite(score) || score < 0 || score > 1) {
+      throw new Error('Quality score must be a finite number between 0 and 1');
+    }
+
     this.qualityHistory.push(score);
-    // Keep only last 10 scores
-    if (this.qualityHistory.length > 10) {
+    // Keep only last MAX_QUALITY_HISTORY scores
+    while (
+      this.qualityHistory.length > SessionContextMonitor.MAX_QUALITY_HISTORY
+    ) {
       this.qualityHistory.shift();
     }
   }
@@ -136,7 +175,7 @@ export class SessionContextMonitor {
    * Check for quality degradation pattern
    */
   private checkQualityDegradation(): SessionWarning | null {
-    if (this.qualityHistory.length < 3) {
+    if (this.qualityHistory.length < SessionContextMonitor.MIN_SCORES_FOR_TREND) {
       return null; // Not enough data
     }
 
@@ -152,8 +191,16 @@ export class SessionContextMonitor {
     const previousAvg =
       previous.reduce((a, b) => a + b, 0) / previous.length;
 
-    // If recent average is significantly lower (>15% drop)
-    if (recentAvg < previousAvg * 0.85) {
+    // Guard against division by zero
+    if (previousAvg === 0) {
+      return null; // No degradation detectable
+    }
+
+    // If recent average is significantly lower (>DEGRADATION_THRESHOLD% drop)
+    if (
+      recentAvg <
+      previousAvg * (1 - SessionContextMonitor.DEGRADATION_THRESHOLD)
+    ) {
       return {
         type: 'quality-degradation',
         level: 'warning',

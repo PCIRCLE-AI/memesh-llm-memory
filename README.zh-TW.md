@@ -2,7 +2,7 @@
 
 > **透過智能路由、提示優化和性能追蹤，將 Claude Code 轉變為專業的 AI 開發團隊。**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Non-Commercial](https://img.shields.io/badge/License-Non--Commercial-red.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/kevintseng/smart-agents/releases)
 [![Node.js >= 18.0.0](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![Claude Code MCP](https://img.shields.io/badge/Claude_Code-MCP_Server-purple.svg)](https://modelcontextprotocol.io/)
@@ -45,16 +45,11 @@ Smart Agents 在你和 Claude Code 之間加入智能層：
 
 **簡單比喻：** 就像給 Claude Code 配備一個專家團隊（代碼審查員、架構師、除錯專家等）和一個好記憶 - 讓你專注創作，而不是提示工程。
 
-### 它是什麼 vs. 它不是什麼
-
-| ✅ **是什麼**                              | ❌ **不是什麼**                          |
-|--------------------------------------------|------------------------------------------|
-| Claude Code 的提示增強層                   | 自主運行的多代理 AI 系統                  |
-| 擁有 13 個專業代理的 MCP 伺服器            | Claude Code 的替代品                     |
-| 智能任務路由系統                           | 獨立應用程式                             |
-| 成本與性能追蹤工具                         | 需要 API 金鑰的雲端服務*                 |
-
-*僅可選的 RAG 功能需要 OpenAI API 金鑰
+**它是什麼：**
+- Claude Code 的提示增強層
+- 擁有 13 個專業代理的 MCP 伺服器
+- 智能任務路由系統
+- 成本與性能追蹤工具
 
 ---
 
@@ -117,6 +112,23 @@ Smart Agents 在你和 Claude Code 之間加入智能層：
 6. 學習與適應（改進未來路由）
 ```
 
+### 技術堆疊
+
+**核心技術：**
+- **Node.js**（>= 18.0.0）- 執行環境
+- **TypeScript** - 型別安全開發
+- **Model Context Protocol (MCP)** - Claude Code 整合
+- **SQLite**（含 WAL 模式）- 性能追蹤與演化儲存
+- **Vectra** - 知識圖譜向量資料庫
+
+**可選依賴：**
+- **OpenAI API** - RAG 語義搜尋的嵌入向量（需要 API 金鑰）
+
+**開發工具：**
+- **Vitest** - 測試框架
+- **ESLint** - 代碼品質
+- **Prettier** - 代碼格式化
+
 ---
 
 ## ✨ 主要優勢
@@ -150,7 +162,7 @@ Smart Agents 在你和 Claude Code 之間加入智能層：
 
 | 代理 | 用途 | 主要功能 |
 |------|------|----------|
-| **RAG 代理** | 語義搜尋與檢索 | 向量搜尋、文件索引、上下文感知回應 |
+| **RAG 代理** *（可選 - 需要 OpenAI API 金鑰）* | 語義搜尋與檢索 | 向量搜尋、文件索引、上下文感知回應 |
 | **演化系統** | 性能優化 | 模式學習、自適應路由、成本優化 |
 | **知識圖譜** | 結構化知識管理 | 實體關係、查詢語言、知識綜合 |
 | **開發管家** | 事件驅動自動化 | 檢查點檢測、工作流程整合、掛鉤系統 |
@@ -399,7 +411,11 @@ smart-agents/
 
 ## 📝 授權
 
-MIT License © 2025 - 詳見 [LICENSE](LICENSE)
+**僅供非商業使用** © 2025
+
+本專案僅授權非商業使用。詳見 [LICENSE](LICENSE)。
+
+未經明確許可，禁止商業使用、重新分發或為商業目的進行修改。
 
 ---
 

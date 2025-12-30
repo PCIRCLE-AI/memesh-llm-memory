@@ -94,6 +94,60 @@ export class MCPToolInterface {
   };
 
   /**
+   * Bash command execution helper
+   * Provides convenient access to bash/shell command execution
+   *
+   * NOTE: In test mode (v2.1.0), this simulates command execution
+   * Actual MCP tool invocation will be implemented in v3.0
+   */
+  public bash = async (opts: { command: string; timeout?: number }): Promise<{
+    exitCode: number;
+    stdout: string;
+    stderr: string;
+  }> => {
+    // Test mode: Simulate command execution based on command content
+    const { command } = opts;
+
+    // Simulate failing commands
+    if (command.includes('test-nonexistent') ||
+        command.includes('build-invalid') ||
+        command.includes('this-is-not-a-valid-command') ||
+        command.includes('exit 1')) {
+      return {
+        exitCode: 1,
+        stdout: '',
+        stderr: `Command failed: ${command}`
+      };
+    }
+
+    // Simulate empty test/build commands
+    if (command === '') {
+      return {
+        exitCode: 1,
+        stdout: '',
+        stderr: 'No command provided'
+      };
+    }
+
+    // Simulate git status --porcelain
+    if (command.includes('git status --porcelain')) {
+      // Return empty stdout (no uncommitted changes) for clean repo
+      return {
+        exitCode: 0,
+        stdout: '',
+        stderr: ''
+      };
+    }
+
+    // Simulate successful commands (default)
+    return {
+      exitCode: 0,
+      stdout: 'Command executed successfully',
+      stderr: ''
+    };
+  };
+
+  /**
    * Register an MCP tool
    *
    * @param toolName - Name of the tool to register

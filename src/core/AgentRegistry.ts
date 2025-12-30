@@ -211,7 +211,7 @@ export class AgentRegistry {
         mcpTools: ['bash', 'filesystem'],
       },
 
-      // Enhanced Prompt Agents (7)
+      // Enhanced Prompt Agents (12)
       {
         name: 'architecture-agent',
         description: 'System architecture expert, design patterns, scalability analysis',
@@ -252,6 +252,36 @@ export class AgentRegistry {
         name: 'ml-engineer',
         description: 'Machine learning engineering, model training, ML pipeline expert',
         category: 'engineering',
+        classification: AgentClassification.ENHANCED_PROMPT,
+      },
+      {
+        name: 'debugger',
+        description: 'Advanced debugging, root cause analysis, systematic problem solving',
+        category: 'development',
+        classification: AgentClassification.ENHANCED_PROMPT,
+      },
+      {
+        name: 'refactorer',
+        description: 'Code refactoring, technical debt reduction, code quality improvement',
+        category: 'development',
+        classification: AgentClassification.ENHANCED_PROMPT,
+      },
+      {
+        name: 'api-designer',
+        description: 'API design, REST/GraphQL architecture, API documentation expert',
+        category: 'development',
+        classification: AgentClassification.ENHANCED_PROMPT,
+      },
+      {
+        name: 'research-agent',
+        description: 'Technical research, feasibility analysis, technology evaluation',
+        category: 'analysis',
+        classification: AgentClassification.ENHANCED_PROMPT,
+      },
+      {
+        name: 'data-analyst',
+        description: 'Data analysis, statistical modeling, business intelligence expert',
+        category: 'analysis',
         classification: AgentClassification.ENHANCED_PROMPT,
       },
 

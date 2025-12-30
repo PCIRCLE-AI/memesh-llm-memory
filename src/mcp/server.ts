@@ -45,6 +45,7 @@ import { UninstallManager } from '../management/index.js';
 import { DevelopmentButler } from '../agents/DevelopmentButler.js';
 import { CheckpointDetector } from '../core/CheckpointDetector.js';
 import { MCPToolInterface } from '../core/MCPToolInterface.js';
+import { PlanningEngine } from '../planning/PlanningEngine.js';
 import { z } from 'zod';
 import {
   TaskInputSchema,
@@ -81,6 +82,7 @@ class SmartAgentsMCPServer {
   private developmentButler: DevelopmentButler;
   private checkpointDetector: CheckpointDetector;
   private toolInterface: MCPToolInterface;
+  private planningEngine: PlanningEngine;
 
   constructor() {
     this.server = new Server(
@@ -121,6 +123,12 @@ class SmartAgentsMCPServer {
     this.developmentButler = new DevelopmentButler(
       this.checkpointDetector,
       this.toolInterface,
+      this.router.getLearningManager()
+    );
+
+    // Initialize PlanningEngine (Phase 2)
+    this.planningEngine = new PlanningEngine(
+      this.agentRegistry,
       this.router.getLearningManager()
     );
 
@@ -311,6 +319,43 @@ class SmartAgentsMCPServer {
       };
 
       // ========================================
+      // Smart Planning Tools (Phase 2)
+      // ========================================
+
+      // generate-smart-plan - Generate implementation plans
+      const generateSmartPlanTool = {
+        name: 'generate-smart-plan',
+        description: '📋 Smart-Agents: Generate intelligent implementation plan with agent-aware task breakdown and TDD structure. Creates bite-sized tasks (2-5 min each) with learning-enhanced recommendations.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            featureDescription: {
+              type: 'string',
+              description: 'Description of the feature to plan',
+            },
+            requirements: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'List of specific requirements',
+            },
+            constraints: {
+              type: 'object',
+              properties: {
+                projectType: { type: 'string' },
+                techStack: {
+                  type: 'array',
+                  items: { type: 'string' },
+                },
+                complexity: { type: 'string', enum: ['low', 'medium', 'high'] },
+              },
+              description: 'Project constraints and context',
+            },
+          },
+          required: ['featureDescription'],
+        },
+      };
+
+      // ========================================
       // Backward compatibility (old names)
       // ========================================
 
@@ -363,6 +408,8 @@ class SmartAgentsMCPServer {
           getSessionHealthTool,
           reloadContextTool,
           recordTokenUsageTool,
+          // Smart Planning tools (Phase 2)
+          generateSmartPlanTool,
           // Legacy tools (backward compatibility)
           smartRouterTool,
           evolutionDashboardTool,
@@ -431,6 +478,11 @@ class SmartAgentsMCPServer {
 
       if (toolName === 'record-token-usage') {
         return await this.handleRecordTokenUsage(args);
+      }
+
+      // Handle generate-smart-plan (Phase 2)
+      if (toolName === 'generate-smart-plan') {
+        return await this.handleGenerateSmartPlan(args);
       }
 
       // Handle smart_route_task (legacy name - backward compatibility)
@@ -1129,6 +1181,88 @@ class SmartAgentsMCPServer {
           {
             type: 'text',
             text: `❌ Token usage recording failed: ${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle generate-smart-plan tool (Phase 2)
+   */
+  private async handleGenerateSmartPlan(
+    args: unknown
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      const data = args as Record<string, unknown>;
+
+      // Validate input
+      if (!data.featureDescription || typeof data.featureDescription !== 'string') {
+        throw new Error('featureDescription is required and must be a string');
+      }
+
+      // Generate plan using PlanningEngine
+      const plan = await this.planningEngine.generatePlan({
+        featureDescription: data.featureDescription,
+        requirements: data.requirements as string[] | undefined,
+        constraints: data.constraints as string[] | undefined,
+      });
+
+      // Format plan as text
+      let planText = `# ${plan.title}\n\n`;
+      planText += `**Goal**: ${plan.goal}\n\n`;
+      planText += `**Architecture**: ${plan.architecture}\n\n`;
+      planText += `**Tech Stack**: ${plan.techStack.join(', ')}\n\n`;
+      planText += `**Total Estimated Time**: ${plan.totalEstimatedTime}\n\n`;
+      planText += `---\n\n`;
+      planText += `## Tasks\n\n`;
+
+      for (const task of plan.tasks) {
+        planText += `### ${task.id}: ${task.description}\n\n`;
+        planText += `- **Priority**: ${task.priority}\n`;
+        planText += `- **Estimated Duration**: ${task.estimatedDuration}\n`;
+
+        if (task.suggestedAgent) {
+          planText += `- **Suggested Agent**: ${task.suggestedAgent}\n`;
+        }
+
+        if (task.dependencies.length > 0) {
+          planText += `- **Dependencies**: ${task.dependencies.join(', ')}\n`;
+        }
+
+        planText += `\n**Steps**:\n`;
+        task.steps.forEach((step, index) => {
+          planText += `${index + 1}. ${step}\n`;
+        });
+
+        if (task.files.create && task.files.create.length > 0) {
+          planText += `\n**Files to Create**: ${task.files.create.join(', ')}\n`;
+        }
+        if (task.files.modify && task.files.modify.length > 0) {
+          planText += `**Files to Modify**: ${task.files.modify.join(', ')}\n`;
+        }
+        if (task.files.test && task.files.test.length > 0) {
+          planText += `**Test Files**: ${task.files.test.join(', ')}\n`;
+        }
+
+        planText += `\n---\n\n`;
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: planText,
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Smart plan generation failed: ${errorMessage}`,
           },
         ],
       };

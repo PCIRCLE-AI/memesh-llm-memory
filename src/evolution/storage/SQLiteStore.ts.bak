@@ -1123,9 +1123,9 @@ export class SQLiteStore implements EvolutionStore {
       avg_execution_time,
       last_seen: row.last_observed,
       context: {
-        agent_type: row.applies_to_agent_type ?? undefined,
-        task_type: row.applies_to_task_type ?? undefined,
-        complexity: row.complexity ?? undefined,
+        agent_type: row.applies_to_agent_type || undefined,
+        task_type: row.applies_to_task_type || undefined,
+        complexity: row.complexity || undefined,
         config_keys: config_keys,
         metadata: metadata,
       },

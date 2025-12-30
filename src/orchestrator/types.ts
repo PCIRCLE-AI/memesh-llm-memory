@@ -19,12 +19,16 @@ export type AgentType =
   // Development Agents
   | 'code-reviewer'
   | 'test-writer'
+  | 'test-automator'
   | 'debugger'
   | 'refactorer'
   | 'api-designer'
   | 'db-optimizer'
   | 'frontend-specialist'
   | 'backend-specialist'
+  | 'frontend-developer'
+  | 'backend-developer'
+  | 'database-administrator'
   | 'development-butler'
 
   // Analysis Agents
@@ -33,6 +37,7 @@ export type AgentType =
   | 'architecture-agent'
   | 'data-analyst'
   | 'performance-profiler'
+  | 'performance-engineer'
 
   // Knowledge Agents
   | 'knowledge-agent'

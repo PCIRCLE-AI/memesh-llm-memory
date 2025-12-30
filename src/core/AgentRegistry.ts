@@ -24,6 +24,9 @@ export interface AgentMetadata {
   /** Agent classification (real-implementation, enhanced-prompt, optional-feature) */
   classification: AgentClassification;
 
+  /** Agent capabilities for task assignment */
+  capabilities?: string[];
+
   /** MCP tools required by this agent */
   mcpTools?: string[];
 
@@ -188,6 +191,14 @@ export class AgentRegistry {
         category: 'development',
         classification: AgentClassification.REAL_IMPLEMENTATION,
         mcpTools: ['filesystem', 'bash'],
+        capabilities: ['test', 'test-generation', 'coverage'],
+      },
+      {
+        name: 'test-automator',
+        description: 'Test automation specialist, automated testing expert',
+        category: 'development',
+        classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['test', 'test-generation', 'automation'],
       },
       {
         name: 'devops-engineer',
@@ -211,78 +222,118 @@ export class AgentRegistry {
         mcpTools: ['bash', 'filesystem'],
       },
 
-      // Enhanced Prompt Agents (12)
+      // Enhanced Prompt Agents (16)
+      {
+        name: 'frontend-developer',
+        description: 'Frontend development expert, React/Vue/Angular specialist',
+        category: 'development',
+        classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['frontend', 'ui', 'component'],
+      },
+      {
+        name: 'backend-developer',
+        description: 'Backend development expert, API and server-side specialist',
+        category: 'development',
+        classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['backend', 'api', 'server'],
+      },
+      {
+        name: 'database-administrator',
+        description: 'Database expert, schema design, query optimization specialist',
+        category: 'development',
+        classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['database', 'schema', 'query'],
+      },
+      {
+        name: 'performance-engineer',
+        description: 'Performance optimization expert, bottleneck analysis, caching specialist',
+        category: 'development',
+        classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['performance', 'optimization', 'cache'],
+      },
       {
         name: 'architecture-agent',
         description: 'System architecture expert, design patterns, scalability analysis',
         category: 'analysis',
         classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['architecture', 'design-patterns', 'scalability'],
       },
       {
         name: 'code-reviewer',
         description: 'Expert code review, security analysis, and best practices validation',
         category: 'development',
         classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['code-review', 'best-practices'],
       },
       {
         name: 'security-auditor',
         description: 'Security auditing, vulnerability assessment, compliance expert',
         category: 'operations',
         classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['security-audit', 'vulnerability-assessment', 'compliance'],
       },
       {
         name: 'ui-designer',
         description: 'UI/UX design, user experience, interface design specialist',
         category: 'creative',
         classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['ui-design', 'ux-design', 'frontend'],
       },
       {
         name: 'marketing-strategist',
         description: 'Marketing strategy, brand positioning, growth hacking expert',
         category: 'business',
         classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['marketing', 'strategy', 'growth'],
       },
       {
         name: 'product-manager',
         description: 'Product strategy, user research, feature prioritization expert',
         category: 'management',
         classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['product-management', 'user-research', 'prioritization'],
       },
       {
         name: 'ml-engineer',
         description: 'Machine learning engineering, model training, ML pipeline expert',
         category: 'engineering',
         classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['machine-learning', 'model-training', 'ml-pipeline'],
       },
       {
         name: 'debugger',
         description: 'Advanced debugging, root cause analysis, systematic problem solving',
         category: 'development',
         classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['debugging', 'root-cause-analysis', 'problem-solving'],
       },
       {
         name: 'refactorer',
         description: 'Code refactoring, technical debt reduction, code quality improvement',
         category: 'development',
         classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['refactoring', 'code-quality', 'technical-debt'],
       },
       {
         name: 'api-designer',
         description: 'API design, REST/GraphQL architecture, API documentation expert',
         category: 'development',
         classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['api-design', 'rest', 'graphql', 'backend'],
       },
       {
         name: 'research-agent',
         description: 'Technical research, feasibility analysis, technology evaluation',
         category: 'analysis',
         classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['research', 'feasibility-analysis', 'evaluation'],
       },
       {
         name: 'data-analyst',
         description: 'Data analysis, statistical modeling, business intelligence expert',
         category: 'analysis',
         classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['data-analysis', 'statistics', 'business-intelligence'],
       },
 
       // Optional Feature Agents (1)

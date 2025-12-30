@@ -172,6 +172,38 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 
 While agents are the user-facing components, Smart Agents also includes powerful infrastructure that operates behind the scenes:
 
+### Workflow Guidance & Session Monitoring
+
+**Intelligent Recommendations** - Context-aware suggestions at development checkpoints
+- **Token Usage Tracking** - Automatic monitoring with threshold-based alerts (80%/90%)
+- **Session Health Monitoring** - Multi-signal quality tracking combining token usage and session state
+- **Automatic Context Refresh** - CLAUDE.md reload when token usage reaches critical threshold
+- **Workflow Phase Detection** - Identifies current development stage (code-written, test-complete, commit-ready, committed)
+
+**Components:**
+- **SessionTokenTracker** (`src/core/SessionTokenTracker.ts`) - Real-time token monitoring
+- **WorkflowGuidanceEngine** (`src/core/WorkflowGuidanceEngine.ts`) - Phase-aware recommendations
+- **SessionContextMonitor** (`src/core/SessionContextMonitor.ts`) - Health status aggregation
+- **ClaudeMdReloader** (`src/mcp/ClaudeMdReloader.ts`) - MCP-based context refresh with cooldown protection
+
+**MCP Tools:**
+- `get-workflow-guidance` - Get recommendations for current workflow phase
+- `get-session-health` - Check token usage and session quality
+- `reload-context` - Manually refresh CLAUDE.md context
+- `record-token-usage` - Track token consumption
+
+**How It Works:**
+```
+Workflow Checkpoint Detected → Analyze Phase → Generate Recommendations → Monitor Health → Auto-Reload if Critical
+```
+
+**Benefits:**
+- 🎯 Prevents session degradation before it happens
+- 📊 Transparent visibility into token budget
+- 🔄 Automatic CLAUDE.md reload at 90% threshold
+- ✨ Smart recommendations for next steps
+- 🧠 Learns from successful workflow patterns
+
 ### Evolution System
 
 The Evolution System is **not an agent** - it's the infrastructure that makes the agent system learn and improve over time.

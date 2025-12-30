@@ -13,10 +13,10 @@
 
 ## 🎯 什麼是 Smart Agents？
 
-**Smart Agents** 是一個 **MCP (Model Context Protocol) 伺服器**，透過智能提示優化和任務路由，為 Claude Code 提供**專業化 AI 代理**能力。
+**Smart Agents** 是一個 **MCP (Model Context Protocol) 伺服器**，透過智能提示優化和任務路由，為 Claude Code 提供**專業化 AI Agent**能力。
 
 **簡單來說：** 它讓 Claude Code 更聰明：
-- 🎯 **路由** 你的任務到合適的專業代理
+- 🎯 **路由** 你的任務到合適的專業 Agent
 - ✨ **優化** 提示詞，結合領域專業知識和最佳實踐
 - 📊 **追蹤** 成本和性能，自動化管理
 - 🧠 **學習** 從成功模式中持續進化
@@ -27,7 +27,7 @@
 
 ### 使用 Claude Code 時的挑戰
 
-當你用 Claude Code「無腦寫代碼」時，可能會遇到：
+當你用 Claude Code「Vibe Coding」時，可能會遇到：
 
 - 🤔 **同一套方法處理所有事** - 無論是除錯、設計 API 還是寫文檔，Claude 都用相同的通用知識，缺乏專業領域的深度
 - 💭 **不記得成功經驗** - Claude 不記得昨天哪個方案效果好，所以你要重複解釋相同的背景
@@ -47,7 +47,7 @@ Smart Agents 在你和 Claude Code 之間加入智能層：
 
 **它是什麼：**
 - Claude Code 的提示增強層
-- 擁有 18 個專業代理的 MCP 伺服器
+- 擁有 18 個專業 Agent的 MCP 伺服器
 - 智能任務路由系統
 - 成本與性能追蹤工具
 
@@ -74,7 +74,7 @@ Smart Agents 在你和 Claude Code 之間加入智能層：
 │                            │                                    │
 │                            ▼                                    │
 │              ┌─────────────────────────┐                       │
-│              │   18 個專業代理         │                       │
+│              │   18 個專業 Agent         │                       │
 │              └─────────────────────────┘                       │
 └─────────────────────────────────────────────────────────────────┘
                             │
@@ -131,7 +131,7 @@ Smart Agents 在你和 Claude Code 之間加入智能層：
 
 ---
 
-## 🎪 18 個專業代理
+## 🎪 18 個專業 Agent
 
 ### 實作代理（5 個）
 
@@ -171,6 +171,38 @@ Smart Agents 在你和 Claude Code 之間加入智能層：
 ## 🏗️ 系統基礎設施
 
 雖然代理是面向用戶的組件，Smart Agents 還包含在幕後運作的強大基礎設施：
+
+### 工作流程指引與 Session 監控
+
+**智能建議** - 基於開發檢查點的情境感知建議
+- **Token 使用追蹤** - 自動監控並提供閾值警報（80%/90%）
+- **Session 健康監控** - 結合 token 使用和 session 狀態的多訊號品質追蹤
+- **自動情境刷新** - Token 使用達臨界值時自動重載 CLAUDE.md
+- **工作流程階段檢測** - 識別當前開發階段（code-written、test-complete、commit-ready、committed）
+
+**組件：**
+- **SessionTokenTracker** (`src/core/SessionTokenTracker.ts`) - 即時 token 監控
+- **WorkflowGuidanceEngine** (`src/core/WorkflowGuidanceEngine.ts`) - 階段感知建議
+- **SessionContextMonitor** (`src/core/SessionContextMonitor.ts`) - 健康狀態彙整
+- **ClaudeMdReloader** (`src/mcp/ClaudeMdReloader.ts`) - 基於 MCP 的情境刷新與冷卻保護
+
+**MCP 工具：**
+- `get-workflow-guidance` - 取得當前工作流程階段的建議
+- `get-session-health` - 檢查 token 使用和 session 品質
+- `reload-context` - 手動刷新 CLAUDE.md 情境
+- `record-token-usage` - 追蹤 token 消耗
+
+**運作方式：**
+```
+檢測工作流程檢查點 → 分析階段 → 生成建議 → 監控健康 → 臨界時自動重載
+```
+
+**優勢：**
+- 🎯 在問題發生前預防 session 退化
+- 📊 Token 預算透明可視
+- 🔄 達 90% 閾值時自動重載 CLAUDE.md
+- ✨ 智能建議下一步行動
+- 🧠 從成功的工作流程模式中學習
 
 ### 演化系統
 

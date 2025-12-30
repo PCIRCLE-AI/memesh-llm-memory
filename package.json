@@ -1,6 +1,6 @@
 {
   "name": "smart-agents",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Claude Code Prompt Enhancement System - Domain-expert prompt optimization with intelligent routing, performance tracking, and cost management",
   "main": "dist/index.js",
   "type": "module",

@@ -280,7 +280,6 @@ Claude Code 會處理一切：
 - **[架構概覽](docs/architecture/OVERVIEW.md)** - 系統設計和組件
 - **[代理參考](docs/AGENT_REFERENCE.md)** - 所有代理說明
 - **[API 文件](docs/API.md)** - MCP 工具介面
-- **[貢獻指南](CONTRIBUTING.md)** - 如何貢獻
 
 ### 學習路徑
 
@@ -357,24 +356,8 @@ smart-agents/
 └── examples/            # 使用範例
 ```
 
-**更多細節：** [貢獻指南](CONTRIBUTING.md)
-
 ---
 
-## 🤝 貢獻
-
-我們歡迎貢獻！請參閱 [CONTRIBUTING.md](CONTRIBUTING.md)：
-- 開發設置
-- 代碼標準
-- 測試需求
-- Pull Request 流程
-
-**快速開始：**
-```
-詢問 Claude Code："我如何貢獻到 Smart Agents？"
-```
-
----
 
 ## 📊 性能與指標
 
@@ -433,6 +416,3 @@ smart-agents/
 - [Anthropic Claude API](https://anthropic.com) - LLM 能力
 - [OpenAI Embeddings](https://openai.com) - 語義搜尋（可選）
 
----
-
-**由 Smart Agents 社群用 ❤️ 打造**

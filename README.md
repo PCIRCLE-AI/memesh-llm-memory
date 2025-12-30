@@ -280,7 +280,6 @@ Everything through natural conversation:
 - **[Architecture Overview](docs/architecture/OVERVIEW.md)** - System design and components
 - **[Agent Reference](docs/AGENT_REFERENCE.md)** - All agents explained
 - **[API Documentation](docs/API.md)** - MCP tool interface
-- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute
 
 ### Learning Path
 
@@ -357,24 +356,8 @@ smart-agents/
 └── examples/            # Usage examples
 ```
 
-**More details:** [Contributing Guide](CONTRIBUTING.md)
-
 ---
 
-## 🤝 Contributing
-
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
-- Development setup
-- Code standards
-- Testing requirements
-- Pull request process
-
-**Quick start:**
-```
-Ask Claude Code: "How do I contribute to Smart Agents?"
-```
-
----
 
 ## 📊 Performance & Metrics
 
@@ -433,6 +416,3 @@ Built with:
 - [Anthropic Claude API](https://anthropic.com) - LLM capabilities
 - [OpenAI Embeddings](https://openai.com) - Semantic search (optional)
 
----
-
-**Made with ❤️ by the Smart Agents community**

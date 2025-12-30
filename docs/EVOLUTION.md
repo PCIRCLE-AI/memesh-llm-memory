@@ -2,43 +2,43 @@
 
 > V2 Month 2-3 Feature: Autonomous Agent Learning and Adaptation
 
-## 概述
+## Overview
 
-Smart Agents V2 的 Self-Evolving Agent System 讓 AI agents 能夠從執行經驗中學習，自動識別成功模式，並動態調整行為以提升性能、品質和成本效益。
+The Self-Evolving Agent System in Smart Agents V2 enables AI agents to learn from execution experience, automatically identify successful patterns, and dynamically adjust behaviors to improve performance, quality, and cost-effectiveness.
 
-### V2.0 MCP Server Pattern 說明
+### V2.0 MCP Server Pattern Explanation
 
-**Evolution System 在 V2.0 中的運作方式**：
+**How Evolution System Works in V2.0**:
 
-在 V2.0 MCP Server Pattern 中，smart-agents 作為 MCP server 生成 enhanced prompts 並返回給 Claude Code。Evolution System 的各項功能在 V2.0 的實際行為如下：
+In the V2.0 MCP Server Pattern, smart-agents acts as an MCP server that generates enhanced prompts and returns them to Claude Code. The actual behavior of Evolution System features in V2.0 is as follows:
 
-1. **Prompt Optimization** ✅ 完全支援
-   - Evolution System 可以優化和調整 prompts
-   - 生成的 enhanced prompts 直接包含優化建議
+1. **Prompt Optimization** ✅ Fully Supported
+   - Evolution System can optimize and adjust prompts
+   - Generated enhanced prompts directly include optimization suggestions
 
-2. **Model Selection** ⚠️ 建議模式
-   - Evolution System **建議**適合的模型（Opus/Sonnet/Haiku）
-   - 建議包含在 enhanced prompt 的 metadata 中
-   - **實際模型選擇由 Claude Code 或用戶決定**
+2. **Model Selection** ⚠️ Recommendation Mode
+   - Evolution System **recommends** suitable models (Opus/Sonnet/Haiku)
+   - Recommendations are included in enhanced prompt metadata
+   - **Actual model selection is decided by Claude Code or the user**
 
-3. **Timeout Adjustment** ✅ 完全支援
-   - Evolution System 可以調整 timeout 設定
-   - 包含在返回的配置建議中
+3. **Timeout Adjustment** ✅ Fully Supported
+   - Evolution System can adjust timeout settings
+   - Included in returned configuration recommendations
 
-4. **Retry Strategy** ✅ 完全支援
-   - Evolution System 可以建議 retry 策略
-   - 包含在返回的配置建議中
+4. **Retry Strategy** ✅ Fully Supported
+   - Evolution System can recommend retry strategies
+   - Included in returned configuration recommendations
 
-### 核心理念
+### Core Philosophy
 
 **Learn → Adapt → Improve → Repeat**
 
-1. **Learn**: 從每次執行中收集性能數據
-2. **Adapt**: 分析數據，識別成功與失敗模式
-3. **Improve**: 應用學到的模式，調整 agent 行為
-4. **Repeat**: 持續循環，實現持續改進
+1. **Learn**: Collect performance data from each execution
+2. **Adapt**: Analyze data to identify success and failure patterns
+3. **Improve**: Apply learned patterns to adjust agent behavior
+4. **Repeat**: Continuous cycle for ongoing improvement
 
-## 🏗️ 系統架構
+## 🏗️ System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -61,27 +61,27 @@ Smart Agents V2 的 Self-Evolving Agent System 讓 AI agents 能夠從執行經�
          └──────────────────┘             └──────────────────┘
 ```
 
-## 📦 核心組件
+## 📦 Core Components
 
 ### 1. PerformanceTracker
 
-**職責**: 記錄並分析 agent 執行指標
+**Responsibilities**: Record and analyze agent execution metrics
 
-**功能**:
-- 追蹤執行時間、成本、品質分數、成功率
-- 計算歷史與近期趨勢（success rate, cost efficiency, quality）
-- 偵測性能異常（slow, expensive, low-quality, failure）
-- 提供統計數據支持學習
+**Features**:
+- Track execution time, cost, quality score, success rate
+- Calculate historical and recent trends (success rate, cost efficiency, quality)
+- Detect performance anomalies (slow, expensive, low-quality, failure)
+- Provide statistical data to support learning
 
-**使用範例**:
+**Usage Example**:
 ```typescript
 import { PerformanceTracker } from './evolution';
 
 const tracker = new PerformanceTracker({
-  maxMetricsPerAgent: 1000 // 每個 agent 最多保留 1000 筆記錄
+  maxMetricsPerAgent: 1000 // Maximum 1000 records per agent
 });
 
-// 追蹤執行結果
+// Track execution results
 const metrics = tracker.track({
   agentId: 'code-review-agent',
   taskType: 'code-review',
@@ -91,131 +91,131 @@ const metrics = tracker.track({
   qualityScore: 0.9,
 });
 
-// 獲取演化統計
+// Get evolution statistics
 const stats = tracker.getEvolutionStats('code-review-agent');
 console.log(`Success rate improved by: ${stats.successRateTrend.improvement * 100}%`);
 
-// 偵測異常
+// Detect anomalies
 const anomaly = tracker.detectAnomalies('code-review-agent', metrics);
 if (anomaly.isAnomaly) {
   console.log(`⚠️ ${anomaly.type}: ${anomaly.message}`);
 }
 ```
 
-**關鍵 API**:
-- `track(metrics)` - 記錄執行指標
-- `getMetrics(agentId, filter?)` - 檢索指標（可篩選）
-- `getEvolutionStats(agentId)` - 計算演化趨勢
-- `detectAnomalies(agentId, metric)` - 異常檢測
-- `getAveragePerformance(agentId, taskType)` - 基準性能
+**Key API**:
+- `track(metrics)` - Record execution metrics
+- `getMetrics(agentId, filter?)` - Retrieve metrics (with optional filtering)
+- `getEvolutionStats(agentId)` - Calculate evolution trends
+- `detectAnomalies(agentId, metric)` - Anomaly detection
+- `getAveragePerformance(agentId, taskType)` - Baseline performance
 
 ---
 
 ### 2. LearningManager
 
-**職責**: 從性能數據中提取模式與知識
+**Responsibilities**: Extract patterns and knowledge from performance data
 
-**功能**:
-- 識別成功模式（high quality, cost-efficient, fast execution）
-- 識別反模式（timeout failures, low quality output）
-- 發現優化機會（20% cost reduction with same quality）
-- 整合用戶反饋
-- 提供基於信心度的建議
+**Features**:
+- Identify success patterns (high quality, cost-efficient, fast execution)
+- Identify anti-patterns (timeout failures, low quality output)
+- Discover optimization opportunities (20% cost reduction with same quality)
+- Integrate user feedback
+- Provide confidence-based recommendations
 
-**使用範例**:
+**Usage Example**:
 ```typescript
 import { LearningManager } from './evolution';
 
 const learner = new LearningManager(tracker, {
-  minObservations: 10,      // 至少 10 次觀察才建立模式
-  minConfidence: 0.6,       // 最低信心度 60%
-  successRateThreshold: 0.7, // 成功率閾值 70%
-  failureRateThreshold: 0.3, // 失敗率閾值 30%
-  maxPatternsPerAgent: 100,  // 每個 agent 最多保留 100 個模式
+  minObservations: 10,      // At least 10 observations required to establish a pattern
+  minConfidence: 0.6,       // Minimum confidence 60%
+  successRateThreshold: 0.7, // Success rate threshold 70%
+  failureRateThreshold: 0.3, // Failure rate threshold 30%
+  maxPatternsPerAgent: 100,  // Maximum 100 patterns per agent
 });
 
-// 分析並提取模式
+// Analyze and extract patterns
 const patterns = learner.analyzePatterns('code-review-agent');
-console.log(`發現 ${patterns.length} 個新模式`);
+console.log(`Discovered ${patterns.length} new patterns`);
 
 patterns.forEach(pattern => {
   console.log(`
-    類型: ${pattern.type}
-    描述: ${pattern.description}
-    信心度: ${(pattern.confidence * 100).toFixed(0)}%
-    觀察次數: ${pattern.observationCount}
-    成功率: ${(pattern.successRate * 100).toFixed(0)}%
+    Type: ${pattern.type}
+    Description: ${pattern.description}
+    Confidence: ${(pattern.confidence * 100).toFixed(0)}%
+    Observations: ${pattern.observationCount}
+    Success Rate: ${(pattern.successRate * 100).toFixed(0)}%
   `);
 });
 
-// 獲取建議
+// Get recommendations
 const recommendations = learner.getRecommendations(
   'code-review-agent',
   'code-review',
   'medium' // task complexity
 );
 
-console.log(`建議應用 ${recommendations.length} 個模式`);
+console.log(`Recommending to apply ${recommendations.length} patterns`);
 ```
 
-**Pattern 類型**:
+**Pattern Types**:
 
-1. **Success Pattern** (成功模式)
+1. **Success Pattern**
    - Consistent high quality (≥0.8)
    - Cost-efficient execution
    - Fast with high quality
 
-2. **Anti-Pattern** (反模式)
+2. **Anti-Pattern**
    - Timeout failures
    - Low quality output
    - Excessive cost
 
-3. **Optimization** (優化機會)
+3. **Optimization**
    - Cost reduction without quality loss
    - Speed improvement opportunities
 
-**關鍵 API**:
-- `analyzePatterns(agentId)` - 分析並提取模式
-- `getPatterns(agentId, filter?)` - 檢索模式
-- `getRecommendations(agentId, taskType, complexity?)` - 獲取建議
-- `addFeedback(feedback)` - 添加用戶反饋
-- `updatePattern(patternId, success)` - 更新模式信心度
+**Key API**:
+- `analyzePatterns(agentId)` - Analyze and extract patterns
+- `getPatterns(agentId, filter?)` - Retrieve patterns
+- `getRecommendations(agentId, taskType, complexity?)` - Get recommendations
+- `addFeedback(feedback)` - Add user feedback
+- `updatePattern(patternId, success)` - Update pattern confidence
 
 ---
 
 ### 3. AdaptationEngine
 
-**職責**: 應用學到的模式，動態調整 agent 行為
+**Responsibilities**: Apply learned patterns to dynamically adjust agent behavior
 
-**功能**:
-- 4 種適應類型：prompt optimization, model selection, timeout adjustment, retry strategy
-- 配置化的適應啟用控制
-- 模式信心度驗證
-- 適應效果追蹤
-- 回饋循環
+**Features**:
+- 4 adaptation types: prompt optimization, model selection, timeout adjustment, retry strategy
+- Configurable adaptation enablement control
+- Pattern confidence validation
+- Adaptation effectiveness tracking
+- Feedback loop
 
-**使用範例**:
+**Usage Example**:
 ```typescript
 import { AdaptationEngine } from './evolution';
 
 const adapter = new AdaptationEngine(learner, tracker);
 
-// 配置 agent 適應行為
+// Configure agent adaptation behavior
 adapter.configureAgent('code-review-agent', {
   agentId: 'code-review-agent',
   enabledAdaptations: {
-    promptOptimization: true,  // 啟用 prompt 優化
-    modelSelection: true,      // 啟用 model 選擇
-    timeoutAdjustment: true,   // 啟用 timeout 調整
-    retryStrategy: false,      // 禁用 retry 策略
+    promptOptimization: true,  // Enable prompt optimization
+    modelSelection: true,      // Enable model selection
+    timeoutAdjustment: true,   // Enable timeout adjustment
+    retryStrategy: false,      // Disable retry strategy
   },
-  learningRate: 0.1,        // 學習速率
-  minConfidence: 0.7,       // 最低信心度
-  minObservations: 10,      // 最少觀察次數
-  maxPatterns: 100,         // 最多模式數量
+  learningRate: 0.1,        // Learning rate
+  minConfidence: 0.7,       // Minimum confidence
+  minObservations: 10,      // Minimum observations
+  maxPatterns: 100,         // Maximum patterns
 });
 
-// 執行任務前應用適應
+// Apply adaptations before task execution
 const baseConfig = {
   model: 'claude-sonnet-4-5',
   maxTokens: 4000,
@@ -233,10 +233,10 @@ console.log('Original config:', adapted.originalConfig);
 console.log('Adapted config:', adapted.adaptedConfig);
 console.log('Applied patterns:', adapted.appliedPatterns);
 
-// 執行任務...
+// Execute task...
 const result = await executeTask(adapted.adaptedConfig);
 
-// 提供反饋
+// Provide feedback
 await adapter.provideFeedback(
   adapted.appliedPatterns[0],
   {
@@ -251,50 +251,50 @@ await adapter.provideFeedback(
   }
 );
 
-// 查看適應統計
+// View adaptation statistics
 const stats = adapter.getAdaptationStats('code-review-agent');
 console.log(`
-  總適應次數: ${stats.totalAdaptations}
-  按類型分布: ${JSON.stringify(stats.byType, null, 2)}
-  熱門模式: ${stats.topPatterns.slice(0, 3).map(p => p.patternId).join(', ')}
+  Total Adaptations: ${stats.totalAdaptations}
+  By Type: ${JSON.stringify(stats.byType, null, 2)}
+  Top Patterns: ${stats.topPatterns.slice(0, 3).map(p => p.patternId).join(', ')}
 `);
 ```
 
-**Adaptation 類型**:
+**Adaptation Types**:
 
 1. **Prompt Optimization**
-   - 策略: `efficient` (cost-focused) 或 `quality-focused`
-   - 焦點領域: quality, cost-optimization, accuracy, consistency
-   - 附加指示: 針對特定需求調整
+   - Strategy: `efficient` (cost-focused) or `quality-focused`
+   - Focus areas: quality, cost-optimization, accuracy, consistency
+   - Additional instructions: Tailored to specific needs
 
 2. **Model Selection**
-   - 成本優化: Opus → Sonnet → Haiku
-   - 品質優化: Haiku → Sonnet → Opus
-   - 動態選擇: 根據任務複雜度和歷史表現
+   - Cost optimization: Opus → Sonnet → Haiku
+   - Quality optimization: Haiku → Sonnet → Opus
+   - Dynamic selection: Based on task complexity and historical performance
 
 3. **Timeout Adjustment**
-   - 根據 P95 duration 調整
-   - 防止 timeout failures
-   - 優化執行時間
+   - Adjust based on P95 duration
+   - Prevent timeout failures
+   - Optimize execution time
 
 4. **Retry Strategy**
-   - 針對暫時性失敗
-   - 指數退避策略
-   - 最大重試次數限制
+   - Target transient failures
+   - Exponential backoff strategy
+   - Maximum retry limit
 
-**關鍵 API**:
-- `configureAgent(agentId, config)` - 配置 agent 適應行為
-- `adaptExecution(agentId, taskType, baseConfig)` - 應用適應
-- `provideFeedback(patternId, metrics)` - 提供反饋
-- `getAdaptationStats(agentId)` - 查看適應統計
-- `resetAdaptations(agentId)` - 重置適應
-- `updateAdaptationConfig(agentId, updates)` - 更新配置
+**Key API**:
+- `configureAgent(agentId, config)` - Configure agent adaptation behavior
+- `adaptExecution(agentId, taskType, baseConfig)` - Apply adaptations
+- `provideFeedback(patternId, metrics)` - Provide feedback
+- `getAdaptationStats(agentId)` - View adaptation statistics
+- `resetAdaptations(agentId)` - Reset adaptations
+- `updateAdaptationConfig(agentId, updates)` - Update configuration
 
 ---
 
-## 🔄 完整演化循環
+## 🔄 Complete Evolution Cycle
 
-以下展示一個完整的 agent 演化流程：
+The following demonstrates a complete agent evolution workflow:
 
 ```typescript
 import {
@@ -304,7 +304,7 @@ import {
 } from './evolution';
 
 // ========================================
-// Phase 1: 初始化系統
+// Phase 1: Initialize System
 // ========================================
 const tracker = new PerformanceTracker();
 const learner = new LearningManager(tracker, {
@@ -328,7 +328,7 @@ adapter.configureAgent('my-agent', {
 });
 
 // ========================================
-// Phase 2: 初始執行 (建立基準)
+// Phase 2: Initial Execution (Establish Baseline)
 // ========================================
 for (let i = 0; i < 20; i++) {
   const result = await executeTask({
@@ -347,13 +347,13 @@ for (let i = 0; i < 20; i++) {
 }
 
 // ========================================
-// Phase 3: 學習模式
+// Phase 3: Learn Patterns
 // ========================================
 const patterns = learner.analyzePatterns('my-agent');
-console.log(`✓ 發現 ${patterns.length} 個模式`);
+console.log(`✓ Discovered ${patterns.length} patterns`);
 
 // ========================================
-// Phase 4: 應用適應
+// Phase 4: Apply Adaptations
 // ========================================
 const adapted = await adapter.adaptExecution(
   'my-agent',
@@ -361,10 +361,10 @@ const adapted = await adapter.adaptExecution(
   { model: 'claude-sonnet-4-5', maxTokens: 2000 }
 );
 
-console.log(`✓ 應用了 ${adapted.appliedPatterns.length} 個模式`);
+console.log(`✓ Applied ${adapted.appliedPatterns.length} patterns`);
 
 // ========================================
-// Phase 5: 執行並記錄結果
+// Phase 5: Execute and Record Results
 // ========================================
 const result = await executeTask(adapted.adaptedConfig);
 
@@ -378,62 +378,62 @@ const metrics = tracker.track({
 });
 
 // ========================================
-// Phase 6: 提供反饋
+// Phase 6: Provide Feedback
 // ========================================
 if (adapted.appliedPatterns.length > 0) {
   await adapter.provideFeedback(adapted.appliedPatterns[0], metrics);
 }
 
 // ========================================
-// Phase 7: 驗證改進
+// Phase 7: Verify Improvement
 // ========================================
 const stats = tracker.getEvolutionStats('my-agent');
 console.log(`
-  成功率改進: ${(stats.successRateTrend.improvement * 100).toFixed(1)}%
-  成本效率改進: ${(stats.costEfficiencyTrend.improvement * 100).toFixed(1)}%
-  品質改進: ${(stats.qualityScoreTrend.improvement * 100).toFixed(1)}%
+  Success Rate Improvement: ${(stats.successRateTrend.improvement * 100).toFixed(1)}%
+  Cost Efficiency Improvement: ${(stats.costEfficiencyTrend.improvement * 100).toFixed(1)}%
+  Quality Improvement: ${(stats.qualityScoreTrend.improvement * 100).toFixed(1)}%
 `);
 ```
 
 ---
 
-## 🎯 使用場景
+## 🎯 Use Cases
 
-### 場景 1: 成本優化
+### Scenario 1: Cost Optimization
 
-**問題**: Agent 執行成本過高
+**Problem**: Agent execution cost is too high
 
-**解決方案**:
+**Solution**:
 ```typescript
-// 系統會自動識別「高品質低成本」的執行模式
-// 並建議切換到更經濟的 model 或優化 prompt
+// System automatically identifies "high quality, low cost" execution patterns
+// and recommends switching to more economical models or optimizing prompts
 
 const patterns = learner.getPatterns('expensive-agent', {
   type: 'optimization'
 });
 
-// 找到成本優化機會
+// Find cost optimization opportunities
 const costPattern = patterns.find(p =>
   p.description.includes('cost reduction')
 );
 
 if (costPattern) {
   console.log(`
-    發現成本優化機會:
-    - 預期降低成本: ${costPattern.action.parameters.targetCostReduction * 100}%
-    - 維持品質: ≥${costPattern.action.parameters.minQualityScore}
+    Cost optimization opportunity found:
+    - Expected cost reduction: ${costPattern.action.parameters.targetCostReduction * 100}%
+    - Maintaining quality: ≥${costPattern.action.parameters.minQualityScore}
   `);
 }
 ```
 
-### 場景 2: 品質改進
+### Scenario 2: Quality Improvement
 
-**問題**: Agent 輸出品質不穩定
+**Problem**: Agent output quality is inconsistent
 
-**解決方案**:
+**Solution**:
 ```typescript
-// 系統會識別低品質輸出的反模式
-// 並建議調整 prompt 為品質優先策略
+// System identifies anti-patterns of low quality output
+// and recommends adjusting prompt to quality-focused strategy
 
 const antiPatterns = learner.getPatterns('inconsistent-agent', {
   type: 'anti-pattern'
@@ -444,23 +444,23 @@ const qualityIssue = antiPatterns.find(p =>
 );
 
 if (qualityIssue) {
-  // 系統會自動應用 'quality-focused' strategy
+  // System automatically applies 'quality-focused' strategy
   adapter.configureAgent('inconsistent-agent', {
     enabledAdaptations: {
       promptOptimization: true,
-      modelSelection: true, // 可能升級到更強的 model
+      modelSelection: true, // May upgrade to more powerful model
     },
   });
 }
 ```
 
-### 場景 3: 性能調優
+### Scenario 3: Performance Tuning
 
-**問題**: Agent 執行時間過長，經常 timeout
+**Problem**: Agent execution time is too long, frequent timeouts
 
-**解決方案**:
+**Solution**:
 ```typescript
-// 系統會偵測 timeout 模式並調整 timeout 設定
+// System detects timeout patterns and adjusts timeout settings
 const anomalies = [];
 
 for (const metric of tracker.getMetrics('slow-agent')) {
@@ -471,92 +471,92 @@ for (const metric of tracker.getMetrics('slow-agent')) {
 }
 
 if (anomalies.length > 5) {
-  console.log('⚠️ 檢測到多次慢執行');
+  console.log('⚠️ Multiple slow executions detected');
 
-  // 系統會自動建議增加 timeout
+  // System automatically recommends increasing timeout
   const patterns = learner.analyzePatterns('slow-agent');
   const timeoutPattern = patterns.find(p =>
     p.action.type === 'modify_timeout'
   );
 
   if (timeoutPattern) {
-    console.log(`建議 timeout: ${timeoutPattern.action.parameters.timeoutMs}ms`);
+    console.log(`Recommended timeout: ${timeoutPattern.action.parameters.timeoutMs}ms`);
   }
 }
 ```
 
 ---
 
-## 📊 性能指標
+## 📊 Performance Metrics
 
-### 追蹤的指標
+### Tracked Metrics
 
-| 指標 | 說明 | 用途 |
+| Metric | Description | Purpose |
 |------|------|------|
-| **executionId** | 執行唯一 ID | 追蹤單次執行 |
-| **success** | 是否成功 | 計算成功率 |
-| **durationMs** | 執行時間 (ms) | 偵測慢執行 |
-| **cost** | 成本 (USD) | 成本優化 |
-| **qualityScore** | 品質分數 (0-1) | 品質改進 |
-| **userSatisfaction** | 用戶滿意度 (0-1) | 用戶反饋 |
-| **timestamp** | 時間戳 | 趨勢分析 |
+| **executionId** | Unique execution ID | Track individual execution |
+| **success** | Whether successful | Calculate success rate |
+| **durationMs** | Execution time (ms) | Detect slow execution |
+| **cost** | Cost (USD) | Cost optimization |
+| **qualityScore** | Quality score (0-1) | Quality improvement |
+| **userSatisfaction** | User satisfaction (0-1) | User feedback |
+| **timestamp** | Timestamp | Trend analysis |
 
-### 演化趨勢
+### Evolution Trends
 
-系統會計算以下趨勢（歷史 vs 近期）：
+The system calculates the following trends (historical vs recent):
 
 1. **Success Rate Trend**
-   - Historical: 歷史成功率
-   - Recent: 近期成功率 (default: 7 天)
-   - Improvement: 改進幅度
+   - Historical: Historical success rate
+   - Recent: Recent success rate (default: 7 days)
+   - Improvement: Improvement magnitude
 
 2. **Cost Efficiency Trend**
    - Formula: `qualityScore / cost`
-   - 衡量單位成本的品質產出
+   - Measures quality output per unit cost
 
 3. **Quality Score Trend**
-   - 平均品質分數變化
-   - 識別品質提升或下降
+   - Average quality score change
+   - Identify quality improvements or degradation
 
 ---
 
-## ⚙️ 配置選項
+## ⚙️ Configuration Options
 
-### PerformanceTracker 配置
+### PerformanceTracker Configuration
 
 ```typescript
 const tracker = new PerformanceTracker({
-  maxMetricsPerAgent: 1000  // 每個 agent 最多保留多少筆記錄（FIFO）
+  maxMetricsPerAgent: 1000  // Maximum records to retain per agent (FIFO)
 });
 ```
 
-### LearningManager 配置
+### LearningManager Configuration
 
 ```typescript
 const learner = new LearningManager(tracker, {
-  minObservations: 10,           // 最少觀察次數才建立模式
-  minConfidence: 0.6,            // 最低信心度閾值 (0-1)
-  successRateThreshold: 0.7,     // 成功模式的最低成功率
-  failureRateThreshold: 0.3,     // 反模式的最低失敗率
-  maxPatternsPerAgent: 100       // 每個 agent 最多保留多少模式
+  minObservations: 10,           // Minimum observations required to establish pattern
+  minConfidence: 0.6,            // Minimum confidence threshold (0-1)
+  successRateThreshold: 0.7,     // Minimum success rate for success patterns
+  failureRateThreshold: 0.3,     // Minimum failure rate for anti-patterns
+  maxPatternsPerAgent: 100       // Maximum patterns to retain per agent
 });
 ```
 
-### AdaptationEngine 配置
+### AdaptationEngine Configuration
 
 ```typescript
 adapter.configureAgent('agent-id', {
   agentId: 'agent-id',
   enabledAdaptations: {
-    promptOptimization: true,    // 是否啟用 prompt 優化
-    modelSelection: true,        // 是否啟用 model 選擇
-    timeoutAdjustment: true,     // 是否啟用 timeout 調整
-    retryStrategy: false         // 是否啟用 retry 策略
+    promptOptimization: true,    // Enable prompt optimization
+    modelSelection: true,        // Enable model selection
+    timeoutAdjustment: true,     // Enable timeout adjustment
+    retryStrategy: false         // Enable retry strategy
   },
-  learningRate: 0.1,             // 學習速率 (0-1)
-  minConfidence: 0.6,            // 應用模式的最低信心度
-  minObservations: 10,           // 應用模式的最少觀察次數
-  maxPatterns: 100               // 最多保留多少模式
+  learningRate: 0.1,             // Learning rate (0-1)
+  minConfidence: 0.6,            // Minimum confidence to apply patterns
+  minObservations: 10,           // Minimum observations to apply patterns
+  maxPatterns: 100               // Maximum patterns to retain
 });
 ```
 
@@ -689,9 +689,9 @@ For detailed refactoring documentation, see:
 
 ---
 
-## 🔍 除錯與監控
+## 🔍 Debugging and Monitoring
 
-### 查看演化統計
+### View Evolution Statistics
 
 ```typescript
 const stats = tracker.getEvolutionStats('agent-id');
@@ -723,7 +723,7 @@ Last Learning: ${stats.lastLearningDate.toISOString()}
 `);
 ```
 
-### 查看適應統計
+### View Adaptation Statistics
 
 ```typescript
 const adaptStats = adapter.getAdaptationStats('agent-id');
@@ -745,7 +745,7 @@ ${adaptStats.topPatterns.slice(0, 5).map((p, i) =>
 `);
 ```
 
-### 查看模式詳情
+### View Pattern Details
 
 ```typescript
 const patterns = learner.getPatterns('agent-id');
@@ -776,103 +776,103 @@ Updated: ${pattern.updatedAt.toISOString()}
 
 ---
 
-## 💡 最佳實踐
+## 💡 Best Practices
 
-### 1. 數據收集
+### 1. Data Collection
 
-- **足夠的樣本**: 至少 20+ 次執行才能可靠地建立模式
-- **多樣性**: 確保覆蓋不同 task complexity 和場景
-- **準確標記**: qualityScore 應準確反映實際品質
+- **Sufficient samples**: At least 20+ executions required to reliably establish patterns
+- **Diversity**: Ensure coverage of different task complexity levels and scenarios
+- **Accurate labeling**: qualityScore should accurately reflect actual quality
 
-### 2. Pattern 管理
+### 2. Pattern Management
 
-- **定期審查**: 檢查學到的 patterns 是否合理
-- **清理無效**: 刪除低成功率或過時的 patterns
-- **調整閾值**: 根據實際情況調整 minConfidence 和 minObservations
+- **Regular review**: Check if learned patterns are reasonable
+- **Clean invalid**: Delete patterns with low success rates or outdated patterns
+- **Adjust thresholds**: Tune minConfidence and minObservations based on actual situation
 
-### 3. Adaptation 控制
+### 3. Adaptation Control
 
-- **漸進式**: 先啟用部分 adaptations，觀察效果後再啟用更多
-- **A/B Testing**: 對比啟用/禁用 adaptation 的效果
-- **監控回退**: 如果適應導致性能下降，及時回退
+- **Gradual approach**: Enable some adaptations first, observe effects before enabling more
+- **A/B Testing**: Compare effects of enabling/disabling adaptations
+- **Monitor rollback**: If adaptation causes performance degradation, rollback promptly
 
-### 4. 性能優化
+### 4. Performance Optimization
 
-- **限制存儲**: 設定合理的 maxMetricsPerAgent 和 maxPatterns
-- **定期清理**: 清除舊的或無效的 patterns
-- **批量分析**: 定期批量分析 patterns，而非每次執行都分析
+- **Limit storage**: Set reasonable maxMetricsPerAgent and maxPatterns
+- **Regular cleanup**: Remove old or invalid patterns
+- **Batch analysis**: Analyze patterns in batches periodically, not on every execution
 
 ---
 
-## 🚨 注意事項
+## 🚨 Important Notes
 
-### 1. 信心度閾值
+### 1. Confidence Threshold
 
-- **過高** (>0.8): 可能錯失有效 patterns
-- **過低** (<0.5): 可能應用不可靠 patterns
-- **建議**: 0.6-0.7 為合理範圍
+- **Too high** (>0.8): May miss valid patterns
+- **Too low** (<0.5): May apply unreliable patterns
+- **Recommended**: 0.6-0.7 is a reasonable range
 
-### 2. 樣本大小
+### 2. Sample Size
 
-- **過少** (<10): patterns 不可靠
-- **過多** (>1000): 可能包含過時數據
-- **建議**: 保留最近 1000 筆即可
+- **Too few** (<10): Patterns are unreliable
+- **Too many** (>1000): May contain outdated data
+- **Recommended**: Retain most recent 1000 records
 
-### 3. Adaptation 衝突
+### 3. Adaptation Conflicts
 
-- 多個 patterns 可能建議不同的 adaptations
-- 系統會按信心度排序，優先應用高信心度 patterns
-- 如果衝突嚴重，考慮禁用部分 adaptations
+- Multiple patterns may recommend different adaptations
+- System sorts by confidence, prioritizing high-confidence patterns
+- If conflicts are severe, consider disabling some adaptations
 
 ### 4. Cold Start
 
-- 新 agent 沒有歷史數據時無法建立 patterns
-- 建議先執行 20+ 次累積基準數據
-- 或從類似 agent 複製初始 patterns
+- New agents without historical data cannot establish patterns
+- Recommend executing 20+ times to accumulate baseline data
+- Or copy initial patterns from similar agents
 
 ---
 
-## 📈 效益評估
+## 📈 Benefits Assessment
 
-### 預期改進
+### Expected Improvements
 
-基於測試數據，啟用 Self-Evolving 系統後的預期改進：
+Based on test data, expected improvements after enabling Self-Evolving system:
 
-- **成功率**: +5-15%
-- **成本效率**: +10-30%
-- **品質分數**: +5-10%
-- **執行時間**: -10-20%
+- **Success Rate**: +5-15%
+- **Cost Efficiency**: +10-30%
+- **Quality Score**: +5-10%
+- **Execution Time**: -10-20%
 
-### ROI 計算
+### ROI Calculation
 
-假設：
-- 每月執行 1000 次
-- 平均成本 $0.10/次
-- 啟用 evolution 後成本降低 20%
+Assumptions:
+- 1000 executions per month
+- Average cost $0.10/execution
+- 20% cost reduction after enabling evolution
 
-**月度節省**: 1000 * $0.10 * 20% = **$20/月**
+**Monthly savings**: 1000 * $0.10 * 20% = **$20/month**
 
-加上品質和成功率提升帶來的間接收益，ROI 非常可觀。
+Plus indirect benefits from quality and success rate improvements, ROI is very attractive.
 
 ---
 
-## 🌐 Phase 3: 進階協作功能
+## 🌐 Phase 3: Advanced Collaboration Features
 
-Phase 3 引入跨 agent 知識轉移、A/B 測試框架和聯邦學習功能，讓 agents 能夠互相學習、科學驗證改進效果。
+Phase 3 introduces cross-agent knowledge transfer, A/B testing framework, and federated learning capabilities, enabling agents to learn from each other and scientifically validate improvement effects.
 
-### 核心功能
+### Core Features
 
-1. **Cross-Agent Knowledge Transfer** - Agents 之間共享成功模式
-2. **A/B Testing Framework** - 科學驗證配置變更效果
-3. **Federated Learning** - 分散式模型訓練（規劃中）
+1. **Cross-Agent Knowledge Transfer** - Share successful patterns between agents
+2. **A/B Testing Framework** - Scientifically validate configuration change effects
+3. **Federated Learning** - Distributed model training (planned)
 
 ---
 
 ### 🔄 Cross-Agent Knowledge Transfer
 
-Agents 可以從其他 agents 的經驗中學習，加速新 agent 的訓練過程。
+Agents can learn from other agents' experiences, accelerating the training process for new agents.
 
-#### 架構
+#### Architecture
 
 ```
 ┌─────────────────┐         ┌─────────────────┐
@@ -893,23 +893,23 @@ Agents 可以從其他 agents 的經驗中學習，加速新 agent 的訓練過�
   └──────────────────────────────────────────┘
 ```
 
-#### 核心組件
+#### Core Components
 
 **1. TransferabilityChecker**
 
-評估 pattern 是否適用於目標 agent，使用加權上下文相似度：
+Evaluates whether a pattern is applicable to the target agent using weighted context similarity:
 
 ```typescript
 import { TransferabilityChecker } from './evolution';
 
 const checker = new TransferabilityChecker();
 
-// 評估 pattern 可轉移性
+// Evaluate pattern transferability
 const assessment = checker.assessTransferability(
-  pattern,           // 來源 pattern
+  pattern,           // Source pattern
   'source-agent',
   'target-agent',
-  {                  // 目標上下文
+  {                  // Target context
     agent_type: 'code-reviewer',
     task_type: 'security_audit',
     complexity: 'high',
@@ -917,22 +917,22 @@ const assessment = checker.assessTransferability(
 );
 
 console.log(`
-  適用性分數: ${(assessment.applicabilityScore * 100).toFixed(0)}%
-  上下文相似度: ${(assessment.contextSimilarity * 100).toFixed(0)}%
-  調整後信心度: ${(assessment.confidence * 100).toFixed(0)}%
-  理由: ${assessment.reasoning.join(', ')}
+  Applicability Score: ${(assessment.applicabilityScore * 100).toFixed(0)}%
+  Context Similarity: ${(assessment.contextSimilarity * 100).toFixed(0)}%
+  Adjusted Confidence: ${(assessment.confidence * 100).toFixed(0)}%
+  Reasoning: ${assessment.reasoning.join(', ')}
 `);
 ```
 
-**加權相似度計算**:
-- agent_type 匹配: **40%**
-- task_type 匹配: **30%**
-- complexity 匹配: **20%**
-- config_keys Jaccard 相似度: **10%**
+**Weighted Similarity Calculation**:
+- agent_type match: **40%**
+- task_type match: **30%**
+- complexity match: **20%**
+- config_keys Jaccard similarity: **10%**
 
 **2. KnowledgeTransferManager**
 
-管理 pattern 發現與轉移流程：
+Manages pattern discovery and transfer workflow:
 
 ```typescript
 import { KnowledgeTransferManager } from './evolution';
@@ -942,43 +942,43 @@ const transferManager = new KnowledgeTransferManager(
   transferabilityChecker
 );
 
-// 尋找可轉移的 patterns
+// Find transferable patterns
 const transferablePatterns = await transferManager.findTransferablePatterns(
-  'experienced-agent',  // 來源 agent
-  'new-agent',          // 目標 agent
-  {                     // 目標上下文
+  'experienced-agent',  // Source agent
+  'new-agent',          // Target agent
+  {                     // Target context
     agent_type: 'code-reviewer',
     task_type: 'code_review',
     complexity: 'medium',
   },
   {
-    minConfidence: 0.7,      // 最低信心度
-    minObservations: 10,     // 最少觀察次數
+    minConfidence: 0.7,      // Minimum confidence
+    minObservations: 10,     // Minimum observations
   }
 );
 
-console.log(`找到 ${transferablePatterns.length} 個可轉移的 patterns`);
+console.log(`Found ${transferablePatterns.length} transferable patterns`);
 
 transferablePatterns.forEach(tp => {
   console.log(`
     Pattern: ${tp.pattern.id}
-    原始信心度: ${(tp.originalConfidence * 100).toFixed(0)}%
-    調整後信心度: ${(tp.pattern.confidence * 100).toFixed(0)}%
-    轉移時間: ${tp.transferredAt.toISOString()}
+    Original Confidence: ${(tp.originalConfidence * 100).toFixed(0)}%
+    Adjusted Confidence: ${(tp.pattern.confidence * 100).toFixed(0)}%
+    Transferred At: ${tp.transferredAt.toISOString()}
   `);
 });
 ```
 
-#### 使用場景
+#### Use Cases
 
-**場景 1: 新 Agent 快速啟動**
+**Scenario 1: Fast Bootstrap for New Agents**
 
 ```typescript
-// 1. 新 agent 缺少經驗數據
+// 1. New agent lacks experience data
 const newAgentPatterns = await learner.getLearnedPatterns('new-code-reviewer');
-console.log(`新 agent 的 patterns: ${newAgentPatterns.length}`); // 0
+console.log(`New agent's patterns: ${newAgentPatterns.length}`); // 0
 
-// 2. 從經驗豐富的 agent 轉移知識
+// 2. Transfer knowledge from experienced agent
 const transferred = await transferManager.findTransferablePatterns(
   'senior-code-reviewer',  // 300+ patterns
   'new-code-reviewer',
@@ -989,37 +989,37 @@ const transferred = await transferManager.findTransferablePatterns(
   }
 );
 
-console.log(`轉移了 ${transferred.length} 個 patterns`); // 例如: 45
+console.log(`Transferred ${transferred.length} patterns`); // e.g., 45
 
-// 3. 新 agent 立即具備基礎能力
-// 信心度會自動降低 10%，隨著使用逐步提升
+// 3. New agent immediately gains baseline capabilities
+// Confidence automatically reduced by 10%, improves gradually with usage
 ```
 
-**場景 2: 跨領域知識遷移**
+**Scenario 2: Cross-Domain Knowledge Migration**
 
 ```typescript
-// 安全審查 agent 的經驗可以部分遷移到代碼審查
+// Security auditor's experience can be partially migrated to code reviewer
 const crossDomainTransfer = await transferManager.findTransferablePatterns(
   'security-auditor',
   'code-reviewer',
   {
     agent_type: 'code-reviewer',
-    task_type: 'security_audit',  // 相關任務類型
+    task_type: 'security_audit',  // Related task type
     complexity: 'high',
   }
 );
 
-// 只會轉移高相似度的 patterns（例如: 複雜度處理、超時設定）
-// task_type 不完全匹配時，相似度評分會降低
+// Only transfers high-similarity patterns (e.g., complexity handling, timeout settings)
+// When task_type doesn't fully match, similarity score decreases
 ```
 
 ---
 
 ### 🧪 A/B Testing Framework
 
-科學驗證 agent 配置變更的效果，基於統計顯著性做決策。
+Scientifically validate agent configuration change effects, making decisions based on statistical significance.
 
-#### 架構
+#### Architecture
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -1039,49 +1039,49 @@ const crossDomainTransfer = await transferManager.findTransferablePatterns(
 └──────────────────────────────────────────────┘
 ```
 
-#### 核心組件
+#### Core Components
 
 **1. StatisticalAnalyzer**
 
-提供統計分析方法：
+Provides statistical analysis methods:
 
 ```typescript
 import { StatisticalAnalyzer } from './evolution';
 
 const analyzer = new StatisticalAnalyzer();
 
-// Welch's t-test (不假設方差相等)
+// Welch's t-test (doesn't assume equal variance)
 const tTest = analyzer.welchTTest(
   [0.85, 0.82, 0.88, 0.90, 0.87],  // control group
   [0.92, 0.94, 0.91, 0.95, 0.93]   // treatment group
 );
 
 console.log(`
-  t 統計量: ${tTest.tStatistic.toFixed(3)}
+  t-statistic: ${tTest.tStatistic.toFixed(3)}
   p-value: ${tTest.pValue.toFixed(4)}
-  自由度: ${tTest.degreesOfFreedom.toFixed(1)}
-  結果: ${tTest.pValue < 0.05 ? '統計顯著' : '無顯著差異'}
+  Degrees of freedom: ${tTest.degreesOfFreedom.toFixed(1)}
+  Result: ${tTest.pValue < 0.05 ? 'Statistically significant' : 'No significant difference'}
 `);
 
 // Effect size (Cohen's d)
 const effectSize = analyzer.calculateEffectSize(controlGroup, treatmentGroup);
-console.log(`效應大小: ${effectSize.toFixed(3)}`);
+console.log(`Effect size: ${effectSize.toFixed(3)}`);
 
 // Confidence interval
 const ci = analyzer.calculateConfidenceInterval(data, 0.95);
-console.log(`95% 信賴區間: [${ci[0].toFixed(3)}, ${ci[1].toFixed(3)}]`);
+console.log(`95% Confidence interval: [${ci[0].toFixed(3)}, ${ci[1].toFixed(3)}]`);
 ```
 
 **2. ABTestManager**
 
-管理 A/B 測試實驗：
+Manages A/B testing experiments:
 
 ```typescript
 import { ABTestManager } from './evolution';
 
 const abtest = new ABTestManager();
 
-// 創建實驗
+// Create experiment
 const experiment = abtest.createExperiment(
   'prompt-optimization-test',
   'Test new prompt strategy',
@@ -1106,14 +1106,14 @@ const experiment = abtest.createExperiment(
   }
 );
 
-// 啟動實驗
+// Start experiment
 abtest.startExperiment(experiment.id);
 
-// 分配 variant (deterministic - 同一 agent 永遠得到相同 variant)
+// Assign variant (deterministic - same agent always gets same variant)
 const assignment = abtest.assignVariant(experiment.id, 'agent-123');
-console.log(`Agent 123 分配到: ${assignment.variantName}`);
+console.log(`Agent 123 assigned to: ${assignment.variantName}`);
 
-// 記錄指標
+// Record metrics
 abtest.addMetric(experiment.id, 'control', {
   quality_score: 0.85,
   duration: 12000,
@@ -1126,38 +1126,38 @@ abtest.addMetric(experiment.id, 'treatment', {
   cost: 0.06
 });
 
-// 分析結果 (樣本數足夠時)
+// Analyze results (when sample size is sufficient)
 const results = abtest.analyzeResults(experiment.id);
 
 console.log(`
-  實驗: ${results.experimentId}
-  贏家: ${results.winner || '無顯著差異'}
-  信心度: ${(results.confidence * 100).toFixed(1)}%
+  Experiment: ${results.experimentId}
+  Winner: ${results.winner || 'No significant difference'}
+  Confidence: ${(results.confidence * 100).toFixed(1)}%
   p-value: ${results.statisticalTests.pValue.toFixed(4)}
-  效應大小: ${results.statisticalTests.effectSize.toFixed(3)}
-  建議: ${results.recommendation}
+  Effect size: ${results.statisticalTests.effectSize.toFixed(3)}
+  Recommendation: ${results.recommendation}
 `);
 
-// Variant 統計
+// Variant statistics
 Object.entries(results.variantStats).forEach(([name, stats]) => {
   console.log(`
     ${name}:
-      樣本數: ${stats.sampleSize}
-      平均值: ${stats.mean.toFixed(3)}
-      標準差: ${stats.stdDev.toFixed(3)}
-      信賴區間: [${stats.confidenceInterval[0].toFixed(3)}, ${stats.confidenceInterval[1].toFixed(3)}]
+      Sample size: ${stats.sampleSize}
+      Mean: ${stats.mean.toFixed(3)}
+      Std dev: ${stats.stdDev.toFixed(3)}
+      Confidence interval: [${stats.confidenceInterval[0].toFixed(3)}, ${stats.confidenceInterval[1].toFixed(3)}]
   `);
 });
 ```
 
-#### 使用場景
+#### Use Cases
 
-**場景 1: 驗證 Prompt 優化效果**
+**Scenario 1: Validate Prompt Optimization Effects**
 
 ```typescript
-// 問題: 不確定新的 prompt 策略是否真的更好
+// Problem: Uncertain whether new prompt strategy is actually better
 
-// 1. 創建 A/B 測試
+// 1. Create A/B test
 const promptTest = abtest.createExperiment(
   'prompt-strategy-test',
   'Quality-focused vs Efficient prompt',
@@ -1172,33 +1172,33 @@ const promptTest = abtest.createExperiment(
 
 abtest.startExperiment(promptTest.id);
 
-// 2. 執行 100 次，50/50 分配
+// 2. Execute 100 times with 50/50 allocation
 for (let i = 0; i < 100; i++) {
   const assignment = abtest.assignVariant(promptTest.id, `agent-${i}`);
   const config = promptTest.variants.find(v => v.name === assignment.variantName).config;
 
-  // 執行 agent 並記錄結果
+  // Execute agent and record results
   const result = await executeAgent(config);
   abtest.addMetric(promptTest.id, assignment.variantName, {
     quality_score: result.quality
   });
 }
 
-// 3. 分析結果
+// 3. Analyze results
 const results = abtest.analyzeResults(promptTest.id);
 
 if (results.winner === 'quality' && results.statisticalTests.pValue < 0.05) {
-  console.log('✓ 統計顯著: quality-focused 策略顯著提升品質');
-  console.log(`  提升幅度: ${results.statisticalTests.effectSize.toFixed(2)} 標準差`);
+  console.log('✓ Statistically significant: quality-focused strategy significantly improves quality');
+  console.log(`  Improvement: ${results.statisticalTests.effectSize.toFixed(2)} standard deviations`);
 } else {
-  console.log('✗ 無顯著差異，維持現有策略');
+  console.log('✗ No significant difference, maintain current strategy');
 }
 ```
 
-**場景 2: Model 選擇驗證**
+**Scenario 2: Model Selection Validation**
 
 ```typescript
-// 測試: Sonnet vs Haiku 在簡單任務上的效果
+// Test: Sonnet vs Haiku for simple tasks
 
 const modelTest = abtest.createExperiment(
   'model-selection-test',
@@ -1215,25 +1215,25 @@ const modelTest = abtest.createExperiment(
   }
 );
 
-// ... 執行測試 ...
+// ... execute tests ...
 
 const results = abtest.analyzeResults(modelTest.id);
 
-// 多指標決策
+// Multi-metric decision
 const sonnetStats = results.variantStats.sonnet;
 const haikuStats = results.variantStats.haiku;
 
 const qualityDiff = sonnetStats.mean - haikuStats.mean;
-const costRatio = haikuStats.mean / sonnetStats.mean;  // 假設 cost 也在 metrics
+const costRatio = haikuStats.mean / sonnetStats.mean;  // Assuming cost is also in metrics
 
 if (Math.abs(qualityDiff) < 0.05 && costRatio < 0.5) {
-  console.log('✓ Haiku 品質相近但成本低 50%，建議切換');
+  console.log('✓ Haiku has similar quality but 50% lower cost, recommend switching');
 }
 ```
 
 ---
 
-### 📊 Phase 3 完整工作流程
+### 📊 Phase 3 Complete Workflow
 
 ```typescript
 import {
@@ -1245,7 +1245,7 @@ import {
 } from './evolution';
 
 // ========================================
-// 1. 初始化系統
+// 1. Initialize System
 // ========================================
 const tracker = new PerformanceTracker();
 const learner = new LearningManager(tracker);
@@ -1254,7 +1254,7 @@ const transferManager = new KnowledgeTransferManager(learner, transferChecker);
 const abtest = new ABTestManager();
 
 // ========================================
-// 2. 新 Agent 從經驗 Agent 學習
+// 2. New Agent Learns from Experienced Agent
 // ========================================
 const transferred = await transferManager.findTransferablePatterns(
   'experienced-agent',
@@ -1263,10 +1263,10 @@ const transferred = await transferManager.findTransferablePatterns(
   { minConfidence: 0.7, minObservations: 10 }
 );
 
-console.log(`✓ 轉移了 ${transferred.length} 個 patterns 給新 agent`);
+console.log(`✓ Transferred ${transferred.length} patterns to new agent`);
 
 // ========================================
-// 3. A/B 測試驗證配置變更
+// 3. A/B Test to Validate Configuration Changes
 // ========================================
 const experiment = abtest.createExperiment(
   'config-test',
@@ -1282,7 +1282,7 @@ const experiment = abtest.createExperiment(
 abtest.startExperiment(experiment.id);
 
 // ========================================
-// 4. 執行測試並收集數據
+// 4. Execute Tests and Collect Data
 // ========================================
 for (let i = 0; i < 100; i++) {
   const assignment = abtest.assignVariant(experiment.id, `agent-${i}`);
@@ -1296,59 +1296,59 @@ for (let i = 0; i < 100; i++) {
 }
 
 // ========================================
-// 5. 分析結果並做決策
+// 5. Analyze Results and Make Decisions
 // ========================================
 const results = abtest.analyzeResults(experiment.id);
 
 if (results.winner && results.statisticalTests.pValue < 0.05) {
-  console.log(`✓ 統計顯著: ${results.winner} 勝出`);
+  console.log(`✓ Statistically significant: ${results.winner} wins`);
   console.log(`  p-value: ${results.statisticalTests.pValue.toFixed(4)}`);
-  console.log(`  效應大小: ${results.statisticalTests.effectSize.toFixed(3)}`);
-  console.log(`  建議: ${results.recommendation}`);
+  console.log(`  Effect size: ${results.statisticalTests.effectSize.toFixed(3)}`);
+  console.log(`  Recommendation: ${results.recommendation}`);
 } else {
-  console.log('✗ 無顯著差異，維持現狀');
+  console.log('✗ No significant difference, maintain status quo');
 }
 ```
 
 ---
 
-### 🎯 Phase 3 效益
+### 🎯 Phase 3 Benefits
 
 **Cross-Agent Knowledge Transfer:**
-- ⏱️ 新 agent 啟動時間: 從數週降至數天
-- 📈 初始性能: 提升 30-50%（基於轉移的 patterns）
-- 🔄 知識複用: 避免重複學習相同經驗
+- ⏱️ New agent startup time: Reduced from weeks to days
+- 📈 Initial performance: Improved 30-50% (based on transferred patterns)
+- 🔄 Knowledge reuse: Avoid repeatedly learning the same experiences
 
 **A/B Testing Framework:**
-- 🔬 科學決策: 基於統計顯著性而非直覺
-- 📊 量化改進: 精確測量配置變更效果
-- ⚠️ 風險控制: 50/50 分流降低全面部署風險
+- 🔬 Scientific decisions: Based on statistical significance, not intuition
+- 📊 Quantified improvement: Precisely measure configuration change effects
+- ⚠️ Risk control: 50/50 split reduces full deployment risk
 
-**整體改進:**
-- 成本優化: 10-30% (基於 A/B 測試驗證的配置)
-- 品質提升: 5-15% (跨 agent 最佳實踐共享)
-- 開發效率: 40-60% (新 agent 快速啟動)
+**Overall Improvement:**
+- Cost optimization: 10-30% (based on A/B tested configurations)
+- Quality improvement: 5-15% (cross-agent best practice sharing)
+- Development efficiency: 40-60% (fast new agent bootstrap)
 
 ---
 
 ## 📊 Phase 4: Evolution Dashboard & Monitoring
 
-Phase 4 引入統一的監控儀表板，提供所有 agents 的演化進度、學習狀態和性能趨勢的即時可視化。
+Phase 4 introduces a unified monitoring dashboard providing real-time visualization of evolution progress, learning status, and performance trends for all agents.
 
-### 核心組件
+### Core Components
 
 #### 4. EvolutionMonitor
 
-**職責**: 統一監控所有 agents 的演化狀態，提供儀表板和進度追蹤
+**Responsibilities**: Unified monitoring of evolution state for all agents, providing dashboard and progress tracking
 
-**功能**:
-- 聚合所有 agents 的演化統計
-- 提供儀表板摘要 (總代理數、總模式數、平均成功率)
-- 追蹤個別 agent 的學習進度
-- 識別表現最佳和改進最快的 agents
-- 格式化美觀的終端輸出
+**Features**:
+- Aggregate evolution statistics for all agents
+- Provide dashboard summary (total agents, total patterns, average success rate)
+- Track individual agent learning progress
+- Identify best-performing and fastest-improving agents
+- Format beautiful terminal output
 
-**使用範例**:
+**Usage Example**:
 ```typescript
 import { EvolutionMonitor } from './evolution';
 import { Router } from './orchestrator';
@@ -1360,7 +1360,7 @@ const monitor = new EvolutionMonitor(
   router.getAdaptationEngine()
 );
 
-// 獲取儀表板摘要
+// Get dashboard summary
 const summary = monitor.getDashboardSummary();
 console.log(`
 📊 Evolution Dashboard Summary
@@ -1377,7 +1377,7 @@ ${summary.topImprovingAgents.map(a =>
 ).join('\n')}
 `);
 
-// 查看特定 agent 的統計
+// View specific agent statistics
 const agentStats = monitor.getAgentStats('code-reviewer');
 console.log(`
 Agent: ${agentStats.agentId}
@@ -1387,7 +1387,7 @@ Applied Adaptations: ${agentStats.appliedAdaptations}
 Success Rate Improvement: +${(agentStats.successRateImprovement * 100).toFixed(1)}%
 `);
 
-// 獲取所有 agents 的學習進度
+// Get learning progress for all agents
 const progress = monitor.getLearningProgress();
 progress.forEach(p => {
   if (p.totalExecutions > 0) {
@@ -1402,55 +1402,55 @@ ${p.agentId}:
   }
 });
 
-// 格式化完整儀表板 (終端友好格式)
+// Format complete dashboard (terminal-friendly format)
 const dashboard = monitor.formatDashboard();
 console.log(dashboard);
 ```
 
-**關鍵 API**:
-- `getDashboardSummary()` - 獲取總覽統計
-- `getAgentStats(agentId)` - 獲取特定 agent 統計
-- `getLearningProgress()` - 獲取所有 agents 的學習進度
-- `formatDashboard()` - 格式化美觀的終端輸出
+**Key API**:
+- `getDashboardSummary()` - Get overview statistics
+- `getAgentStats(agentId)` - Get specific agent statistics
+- `getLearningProgress()` - Get learning progress for all agents
+- `formatDashboard()` - Format beautiful terminal output
 
-**Dashboard 介面定義**:
+**Dashboard Interface Definitions**:
 ```typescript
 interface DashboardSummary {
-  totalAgents: number;              // 總 agent 數量
-  agentsWithPatterns: number;       // 有 patterns 的 agent 數量
-  totalPatterns: number;            // 總 pattern 數量
-  totalExecutions: number;          // 總執行次數
-  averageSuccessRate: number;       // 平均成功率
+  totalAgents: number;              // Total number of agents
+  agentsWithPatterns: number;       // Number of agents with patterns
+  totalPatterns: number;            // Total number of patterns
+  totalExecutions: number;          // Total executions
+  averageSuccessRate: number;       // Average success rate
   topImprovingAgents: Array<{
     agentId: string;
-    improvement: number;            // 成功率改進幅度
+    improvement: number;            // Success rate improvement magnitude
   }>;
 }
 
 interface AgentLearningProgress {
   agentId: string;
-  totalExecutions: number;          // 執行次數
-  learnedPatterns: number;          // 學到的 patterns
-  appliedAdaptations: number;       // 應用的 adaptations
-  successRateImprovement: number;   // 成功率改進
-  lastLearningDate: Date;           // 最後學習時間
+  totalExecutions: number;          // Number of executions
+  learnedPatterns: number;          // Learned patterns
+  appliedAdaptations: number;       // Applied adaptations
+  successRateImprovement: number;   // Success rate improvement
+  lastLearningDate: Date;           // Last learning time
 }
 ```
 
 ---
 
-### MCP Server 整合
+### MCP Server Integration
 
-Evolution dashboard 已整合到 MCP server，可透過 Claude Code 直接查看：
+Evolution dashboard is integrated into the MCP server and can be viewed directly through Claude Code:
 
 **evolution_dashboard Tool**:
 ```typescript
-// Claude Code 中使用
+// Use in Claude Code
 mcp__smart_agents__evolution_dashboard({ format: 'summary' })
 mcp__smart_agents__evolution_dashboard({ format: 'detailed' })
 ```
 
-**Tool 定義**:
+**Tool Definition**:
 ```typescript
 {
   name: 'evolution_dashboard',
@@ -1468,18 +1468,18 @@ mcp__smart_agents__evolution_dashboard({ format: 'detailed' })
 }
 ```
 
-**輸出格式**:
+**Output Formats**:
 
-- **Summary Format**: 精簡版儀表板，顯示總覽統計和 top 5 改進最快的 agents
-- **Detailed Format**: 完整版儀表板，包含所有 agents 的詳細學習進度
+- **Summary Format**: Compact dashboard showing overview statistics and top 5 fastest-improving agents
+- **Detailed Format**: Complete dashboard with detailed learning progress for all agents
 
 ---
 
 ## 🧪 Phase 5: Testing & Validation Infrastructure
 
-Phase 5 建立完整的測試和驗證基礎設施，確保演化系統的可靠性、性能和向後兼容性。
+Phase 5 establishes a complete testing and validation infrastructure to ensure the evolution system's reliability, performance, and backward compatibility.
 
-### 測試套件架構
+### Test Suite Architecture
 
 ```
 tests/
@@ -1503,13 +1503,13 @@ experiments/
 └── self-improvement-demo.ts             ← Phase 5: Self-Improvement
 ```
 
-### 1. 端對端整合測試 (E2E)
+### 1. End-to-End Integration Tests (E2E)
 
-**檔案**: `tests/integration/evolution-e2e.test.ts`
+**File**: `tests/integration/evolution-e2e.test.ts`
 
-**目的**: 測試完整工作流程，從 task routing 到 dashboard 的整個演化系統
+**Purpose**: Test complete workflow from task routing to dashboard across the entire evolution system
 
-**測試場景**:
+**Test Scenarios**:
 ```typescript
 describe('Evolution System E2E Integration', () => {
   it('should route task and track performance', async () => {
@@ -1547,7 +1547,7 @@ describe('Evolution System E2E Integration', () => {
 });
 ```
 
-**覆蓋範圍**:
+**Coverage**:
 - Task routing → Performance tracking
 - Evolution configuration integration
 - Dashboard summary generation
@@ -1559,13 +1559,13 @@ describe('Evolution System E2E Integration', () => {
 
 ---
 
-### 2. 性能基準測試 (Performance Benchmarks)
+### 2. Performance Benchmarks
 
-**檔案**: `tests/benchmarks/evolution-performance.bench.ts`
+**File**: `tests/benchmarks/evolution-performance.bench.ts`
 
-**目的**: 確保演化系統的性能開銷在可接受範圍內，防止性能退化
+**Purpose**: Ensure evolution system performance overhead is within acceptable range, prevent performance degradation
 
-**基準測試項目**:
+**Benchmark Items**:
 ```typescript
 describe('Evolution System Performance Benchmarks', () => {
   // Task routing performance
@@ -1604,7 +1604,7 @@ describe('Evolution System Performance Benchmarks', () => {
 });
 ```
 
-**性能目標**:
+**Performance Targets**:
 ```typescript
 /**
  * Performance Targets:
@@ -1638,22 +1638,22 @@ describe('Evolution System Performance Benchmarks', () => {
  */
 ```
 
-**運行方式**:
+**How to Run**:
 ```bash
 npx vitest bench tests/benchmarks/evolution-performance.bench.ts
 ```
 
 ---
 
-### 3. 回歸測試套件 (Regression Tests)
+### 3. Regression Test Suite
 
-**檔案**: `tests/regression/evolution-regression.test.ts`
+**File**: `tests/regression/evolution-regression.test.ts`
 
-**目的**: 確保演化系統變更不會破壞現有功能，維持向後兼容性
+**Purpose**: Ensure evolution system changes don't break existing functionality, maintain backward compatibility
 
-**測試項目**:
+**Test Items**:
 
-**3.1 API 向後兼容性**
+**3.1 API Backward Compatibility**
 ```typescript
 describe('API Backward Compatibility', () => {
   it('should maintain Router.routeTask() signature', async () => {
@@ -1683,7 +1683,7 @@ describe('API Backward Compatibility', () => {
 });
 ```
 
-**3.2 Evolution Configuration 穩定性**
+**3.2 Evolution Configuration Stability**
 ```typescript
 describe('Evolution Configuration Stability', () => {
   it('should maintain all 13 agent configurations', () => {
@@ -1713,7 +1713,7 @@ describe('Evolution Configuration Stability', () => {
 });
 ```
 
-**3.3 性能回歸防護**
+**3.3 Performance Regression Protection**
 ```typescript
 describe('Performance Regression Prevention', () => {
   it('should route tasks within performance threshold', async () => {
@@ -1727,7 +1727,7 @@ describe('Performance Regression Prevention', () => {
 });
 ```
 
-**3.4 數據完整性**
+**3.4 Data Integrity**
 ```typescript
 describe('Data Integrity', () => {
   it('should preserve task data through routing', async () => {
@@ -1742,13 +1742,13 @@ describe('Data Integrity', () => {
 
 ---
 
-### 4. 用戶驗收測試 (User Acceptance Test)
+### 4. User Acceptance Test (UAT)
 
-**檔案**: `scripts/user-acceptance-test.ts`
+**File**: `scripts/user-acceptance-test.ts`
 
-**目的**: 從用戶角度模擬真實工作流程，驗證 UX 和系統可用性
+**Purpose**: Simulate real workflows from user perspective, validate UX and system usability
 
-**測試場景**:
+**Test Scenarios**:
 ```typescript
 class UserAcceptanceTest {
   async runAllTests(): Promise<void> {
@@ -1774,7 +1774,7 @@ console.log(`System: ${result.message}`);
 
 **Scenario 2: Smart Agent Selection**
 ```typescript
-// 測試不同任務類型是否選擇合適的 agent
+// Test whether different task types select appropriate agents
 const testCases = [
   { description: 'Debug login error', expectedCategory: 'development' },
   { description: 'Research best practices', expectedCategory: 'research' },
@@ -1802,7 +1802,7 @@ console.log('User: "Execute same task 3 times to test learning"');
 // Execute same task 3 times, verify consistent agent selection
 ```
 
-**成功標準**:
+**Success Criteria**:
 ```typescript
 private printFinalResults(): void {
   const passRate = (this.passed / total) * 100;
@@ -1816,20 +1816,20 @@ private printFinalResults(): void {
 }
 ```
 
-**運行方式**:
+**How to Run**:
 ```bash
 npx tsx scripts/user-acceptance-test.ts
 ```
 
 ---
 
-### 5. 自我改進實驗 (Self-Improvement Experiment)
+### 5. Self-Improvement Experiment
 
-**檔案**: `experiments/self-improvement-demo.ts`
+**File**: `experiments/self-improvement-demo.ts`
 
-**目的**: 演示演化系統的學習能力，展示 3 輪執行中的性能改進
+**Purpose**: Demonstrate evolution system's learning capability, showing performance improvement across 3 execution rounds
 
-**實驗設計**:
+**Experiment Design**:
 ```typescript
 class SelfImprovementExperiment {
   async runExperiment(): Promise<void> {
@@ -1878,21 +1878,21 @@ Round 3 (Improved):
 }
 ```
 
-**運行方式**:
+**How to Run**:
 ```bash
 npx tsx experiments/self-improvement-demo.ts
 ```
 
-**預期輸出**:
-- Round 1: 無 patterns，baseline 性能
-- Round 2: 開始學習 patterns，性能開始改進
-- Round 3: 應用學到的 patterns，顯著改進
+**Expected Output**:
+- Round 1: No patterns, baseline performance
+- Round 2: Start learning patterns, performance begins to improve
+- Round 3: Apply learned patterns, significant improvement
 
 ---
 
-### 測試覆蓋率目標
+### Test Coverage Goals
 
-| 測試類型 | 目標覆蓋率 | 檔案 |
+| Test Type | Coverage Goal | Files |
 |---------|-----------|------|
 | Unit Tests | ≥ 85% | `tests/evolution/*.test.ts` |
 | Integration Tests | ≥ 80% | `tests/integration/*.test.ts` |
@@ -1902,9 +1902,9 @@ npx tsx experiments/self-improvement-demo.ts
 
 ---
 
-### 持續集成 (CI)
+### Continuous Integration (CI)
 
-**建議的 CI Pipeline**:
+**Recommended CI Pipeline**:
 ```yaml
 # .gitlab-ci.yml or .github/workflows/evolution-tests.yml
 
@@ -1918,7 +1918,7 @@ evolution-tests:
     - npm run benchmark:evolution  # Performance benchmarks
 ```
 
-**品質門檻**:
+**Quality Gates**:
 - ✅ All tests pass (100%)
 - ✅ Unit test coverage ≥ 85%
 - ✅ No performance regressions (< 10% slowdown)
@@ -1928,17 +1928,17 @@ evolution-tests:
 
 ## 🔌 Integration with Claude Code Hooks
 
-演化系統透過 Claude Code Hooks 實現無縫整合，在每個 session 中自動收集數據、學習模式、提供建議。
+The evolution system achieves seamless integration through Claude Code Hooks, automatically collecting data, learning patterns, and providing recommendations in every session.
 
-### 架構整合
+### Architecture Integration
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                   Claude Code Session                       │
 │                                                             │
-│  SessionStart → PostToolUse (每個工具執行) → Stop          │
+│  SessionStart → PostToolUse (each tool execution) → Stop   │
 │       ↓               ↓                           ↓         │
-│  顯示建議        收集數據/偵測模式          分析 & 學習      │
+│  Show recommendations  Collect data/Detect patterns  Analyze & Learn  │
 └────────┬──────────────┬────────────────────────┬────────────┘
          │              │                        │
          │              │                        │
@@ -1958,13 +1958,13 @@ evolution-tests:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Hooks 與 Evolution 的交互流程
+### Hooks and Evolution Interaction Flow
 
 #### 1. SessionStart Hook
 
-**職責**: 顯示上次 session 的演化建議
+**Responsibilities**: Display evolution recommendations from last session
 
-**整合點**:
+**Integration Point**:
 ```typescript
 // SessionStart hook reads recommendations.json
 const recommendations = readRecommendations();
@@ -1980,26 +1980,26 @@ recommendations.detectedPatterns.forEach(pattern => {
 });
 ```
 
-**範例輸出**:
+**Example Output**:
 ```
-📚 根據上次工作模式，建議載入以下 skills：
-  🔴 devops-git-workflows (上次 session：8 次 Git 操作)
-  🔴 testing-guide (上次 session：修改了 5 個測試檔案)
+📚 Based on last work patterns, recommend loading the following skills:
+  🔴 devops-git-workflows (Last session: 8 Git operations)
+  🔴 testing-guide (Last session: modified 5 test files)
 
-✅ 偵測到的良好模式：
-  - 12 次正確地先 Read 再 Edit
-  - Git commit 前執行測試
+✅ Detected good patterns:
+  - 12 times correctly Read before Edit
+  - Execute tests before Git commit
 
-⚠️ 注意事項：
-  - 2 個工具執行時間超過 5 秒
-  - Token 配額使用 85%
+⚠️ Warnings:
+  - 2 tool executions exceeded 5 seconds
+  - Token quota usage: 85%
 ```
 
 #### 2. PostToolUse Hook
 
-**職責**: 靜默收集數據，偵測模式和異常
+**Responsibilities**: Silently collect data, detect patterns and anomalies
 
-**整合點**:
+**Integration Point**:
 ```typescript
 // PostToolUse hook receives tool execution data via stdin
 const toolData = await readStdin();
@@ -2023,23 +2023,23 @@ updateRecommendations(patterns, anomalies);
 // });
 ```
 
-**偵測的模式**:
-- `READ_BEFORE_EDIT`: 符合最佳實踐
-- `GIT_WORKFLOW`: Git 操作頻繁 → 建議載入 devops-git-workflows
-- `FRONTEND_WORK`: 前端檔案修改 → 建議載入 frontend-design
-- `INTENSIVE_SEARCH`: 多次搜尋 → 建議使用 @smart-router 分析
+**Detected Patterns**:
+- `READ_BEFORE_EDIT`: Follows best practices
+- `GIT_WORKFLOW`: Frequent Git operations → recommend loading devops-git-workflows
+- `FRONTEND_WORK`: Frontend file modifications → recommend loading frontend-design
+- `INTENSIVE_SEARCH`: Multiple searches → recommend using @smart-router analysis
 
-**偵測的異常**:
-- `SLOW_EXECUTION`: 工具執行 > 5s
-- `HIGH_TOKEN_USAGE`: 單次工具 > 10K tokens
-- `EXECUTION_FAILURE`: 工具執行失敗
-- `QUOTA_WARNING`: Token 配額 > 80%
+**Detected Anomalies**:
+- `SLOW_EXECUTION`: Tool execution > 5s
+- `HIGH_TOKEN_USAGE`: Single tool > 10K tokens
+- `EXECUTION_FAILURE`: Tool execution failed
+- `QUOTA_WARNING`: Token quota > 80%
 
 #### 3. Stop Hook
 
-**職責**: 分析 session patterns，生成演化建議，整合 Evolution Dashboard
+**Responsibilities**: Analyze session patterns, generate evolution recommendations, integrate Evolution Dashboard
 
-**整合點**:
+**Integration Point**:
 ```typescript
 // Stop hook analyzes session patterns
 const sessionState = loadSessionState();
@@ -2055,7 +2055,7 @@ saveRecommendations(recommendations);
 // console.log(dashboard);
 ```
 
-**當前實作**:
+**Current Implementation**:
 ```typescript
 function saveRecommendations(patterns, sessionState) {
   const recommendations = {
@@ -2068,7 +2068,7 @@ function saveRecommendations(patterns, sessionState) {
   if (patterns.gitOperations >= 5) {
     recommendations.recommendedSkills.push({
       name: 'devops-git-workflows',
-      reason: `上次 session：${patterns.gitOperations} 次 Git 操作`,
+      reason: `Last session: ${patterns.gitOperations} Git operations`,
       priority: 'high'
     });
   }
@@ -2076,7 +2076,7 @@ function saveRecommendations(patterns, sessionState) {
   if (patterns.frontendWork >= 3) {
     recommendations.recommendedSkills.push({
       name: 'frontend-design',
-      reason: `上次 session：修改了 ${patterns.frontendWork} 個前端檔案`,
+      reason: `Last session: modified ${patterns.frontendWork} frontend files`,
       priority: 'high'
     });
   }
@@ -2084,15 +2084,15 @@ function saveRecommendations(patterns, sessionState) {
   // Add good patterns
   if (patterns.readBeforeEdit > 0) {
     recommendations.detectedPatterns.push({
-      description: `${patterns.readBeforeEdit} 次正確地先 Read 再 Edit`,
-      suggestion: '繼續保持 READ_BEFORE_EDIT 最佳實踐'
+      description: `${patterns.readBeforeEdit} times correctly Read before Edit`,
+      suggestion: 'Continue maintaining READ_BEFORE_EDIT best practice'
     });
   }
 
   // Add warnings
   if (patterns.editWithoutRead > 0) {
     recommendations.warnings.push(
-      `${patterns.editWithoutRead} 次未先 Read 就 Edit（建議改進）`
+      `${patterns.editWithoutRead} times Edit without Read (recommend improvement)`
     );
   }
 
@@ -2100,7 +2100,7 @@ function saveRecommendations(patterns, sessionState) {
 }
 ```
 
-**未來整合** (Evolution Dashboard):
+**Future Integration** (Evolution Dashboard):
 ```typescript
 // Future integration with EvolutionMonitor
 async function displayEvolutionDashboard() {
@@ -2129,7 +2129,7 @@ ${summary.topImprovingAgents.map(a =>
 }
 ```
 
-### State Files 整合
+### State Files Integration
 
 **Hooks State Files** → **Evolution System Data Flow**:
 
@@ -2175,45 +2175,45 @@ ${summary.topImprovingAgents.map(a =>
 └─────────────────────────────────────┘
 ```
 
-### 整合模式
+### Integration Patterns
 
-#### Pattern 1: Skill Recommendation (當前實作)
+#### Pattern 1: Skill Recommendation (Current Implementation)
 
-**流程**:
+**Flow**:
 ```
-1. PostToolUse 偵測 Git 操作模式
-2. Stop hook 分析：8 次 Git 操作
-3. 生成建議：devops-git-workflows skill
-4. 保存到 recommendations.json
-5. 下次 SessionStart 顯示建議
-6. 用戶手動載入 skill
-```
-
-**優勢**:
-- ✅ 簡單直接，不需要複雜整合
-- ✅ 基於實際使用模式推薦
-- ✅ 用戶保持完全控制
-
-#### Pattern 2: Evolution Data Sync (未來整合)
-
-**流程**:
-```
-1. PostToolUse 收集工具執行數據
-2. 自動同步到 PerformanceTracker
-3. LearningManager 分析模式
-4. AdaptationEngine 應用改進
-5. Stop hook 顯示 Evolution Dashboard
-6. 用戶看到跨 session 學習進度
+1. PostToolUse detects Git operation patterns
+2. Stop hook analyzes: 8 Git operations
+3. Generate recommendation: devops-git-workflows skill
+4. Save to recommendations.json
+5. Next SessionStart displays recommendation
+6. User manually loads skill
 ```
 
-**優勢**:
-- ✅ 自動學習和改進
-- ✅ 跨 session 知識累積
-- ✅ 量化演化效果
+**Advantages**:
+- ✅ Simple and direct, no complex integration required
+- ✅ Recommendations based on actual usage patterns
+- ✅ User maintains full control
 
-### 實作範例
+#### Pattern 2: Evolution Data Sync (Future Integration)
 
-#### 範例 1: Hooks 偵測到 Git 工作流程
+**Flow**:
+```
+1. PostToolUse collects tool execution data
+2. Automatically sync to PerformanceTracker
+3. LearningManager analyzes patterns
+4. AdaptationEngine applies improvements
+5. Stop hook displays Evolution Dashboard
+6. User sees cross-session learning progress
+```
+
+**Advantages**:
+- ✅ Automatic learning and improvement
+- ✅ Cross-session knowledge accumulation
+- ✅ Quantified evolution effects
+
+### Implementation Examples
+
+#### Example 1: Hooks Detect Git Workflow
 
 ```typescript
 // PostToolUse hook detects Git pattern
@@ -2231,16 +2231,16 @@ const patterns = detectPatterns(toolData);
 if (gitOperationCount >= 5) {
   recommendations.recommendedSkills.push({
     name: 'devops-git-workflows',
-    reason: `上次 session：${gitOperationCount} 次 Git 操作`,
+    reason: `Last session: ${gitOperationCount} Git operations`,
     priority: 'high'
   });
 }
 
 // Next SessionStart displays recommendation
-console.log('🔴 devops-git-workflows (上次 session：8 次 Git 操作)');
+console.log('🔴 devops-git-workflows (Last session: 8 Git operations)');
 ```
 
-#### 範例 2: Hooks 偵測到 READ_BEFORE_EDIT 違規
+#### Example 2: Hooks Detect READ_BEFORE_EDIT Violation
 
 ```typescript
 // PostToolUse hook detects Edit without Read
@@ -2264,122 +2264,122 @@ if (recentReads.length === 0) {
 
   // Stop hook adds to warnings
   recommendations.warnings.push(
-    '1 次未先 Read 就 Edit（建議改進）'
+    '1 time Edit without Read (recommend improvement)'
   );
 }
 ```
 
-### 未來路線圖
+### Future Roadmap
 
 #### Phase 1: Enhanced Pattern Detection (Q1 2025)
 
-- [ ] 更多模式類型（API 修改、測試撰寫、文檔更新）
-- [ ] 信心度評分（pattern 可靠性）
-- [ ] Pattern 生命週期管理（過時 pattern 清理）
+- [ ] More pattern types (API modifications, test writing, documentation updates)
+- [ ] Confidence scoring (pattern reliability)
+- [ ] Pattern lifecycle management (outdated pattern cleanup)
 
 #### Phase 2: Evolution System Integration (Q2 2025)
 
-- [ ] PostToolUse → PerformanceTracker 自動同步
-- [ ] Stop hook 顯示 Evolution Dashboard
-- [ ] 跨 session 學習進度追蹤
-- [ ] Agent 性能趨勢分析
+- [ ] PostToolUse → PerformanceTracker automatic sync
+- [ ] Stop hook displays Evolution Dashboard
+- [ ] Cross-session learning progress tracking
+- [ ] Agent performance trend analysis
 
 #### Phase 3: Smart Recommendations (Q3 2025)
 
-- [ ] 基於 LearningManager 的智能推薦
-- [ ] A/B 測試驗證推薦效果
-- [ ] 自動調整推薦閾值
+- [ ] Intelligent recommendations based on LearningManager
+- [ ] A/B testing to validate recommendation effectiveness
+- [ ] Automatic recommendation threshold adjustment
 - [ ] Cross-agent knowledge transfer
 
 #### Phase 4: Autonomous Adaptation (Q4 2025)
 
-- [ ] AdaptationEngine 自動優化工作流程
-- [ ] 自動 prompt optimization
-- [ ] 自動 model selection
-- [ ] 自動 timeout adjustment
+- [ ] AdaptationEngine automatically optimizes workflows
+- [ ] Automatic prompt optimization
+- [ ] Automatic model selection
+- [ ] Automatic timeout adjustment
 
-### 最佳實踐
+### Best Practices
 
-#### 1. Hooks 設計原則
+#### 1. Hooks Design Principles
 
-- **非侵入性**: Hooks 不應中斷主要工作流程
-- **靜默觀察**: PostToolUse 不輸出 console，保持清晰
-- **漸進式**: 先簡單模式偵測，再逐步整合 Evolution system
-- **用戶控制**: 所有建議都需用戶手動確認
+- **Non-intrusive**: Hooks should not interrupt main workflow
+- **Silent observation**: PostToolUse doesn't output to console, stays clean
+- **Progressive**: Start with simple pattern detection, gradually integrate Evolution system
+- **User control**: All recommendations require manual user confirmation
 
-#### 2. 數據收集原則
+#### 2. Data Collection Principles
 
-- **Privacy First**: 不記錄敏感資訊（tool arguments, results）
-- **Minimal Overhead**: 數據收集 < 10ms per tool call
-- **Data Retention**: 保留最近 1000 筆記錄，定期清理
-- **Graceful Degradation**: 錯誤不影響主流程
+- **Privacy First**: Don't record sensitive information (tool arguments, results)
+- **Minimal Overhead**: Data collection < 10ms per tool call
+- **Data Retention**: Keep recent 1000 records, periodic cleanup
+- **Graceful Degradation**: Errors don't affect main workflow
 
-#### 3. 推薦生成原則
+#### 3. Recommendation Generation Principles
 
-- **有證據支持**: 至少 3-5 次相同模式才推薦
-- **優先級明確**: Critical > High > Medium
-- **可解釋性**: 清楚說明推薦原因
-- **可操作性**: 提供具體的 skill 載入指令
+- **Evidence-based**: Recommend only after 3-5 instances of same pattern
+- **Clear priority**: Critical > High > Medium
+- **Explainability**: Clearly explain recommendation reasons
+- **Actionable**: Provide specific skill loading commands
 
-### 參考資源
+### Reference Resources
 
-- **Hooks 實作指南**: `/docs/architecture/HOOKS_IMPLEMENTATION_GUIDE.md`
+- **Hooks Implementation Guide**: `/docs/architecture/HOOKS_IMPLEMENTATION_GUIDE.md`
 - **Hooks README**: `~/.claude/hooks/README.md`
 - **Smart-Router Skill**: `~/.claude/skills/smart-router/skill.md`
-- **Evolution Dashboard**: 本文檔 Phase 4
-- **MCP 整合指南**: `/docs/MCP_INTEGRATION.md` (取代已棄用的 hooks 計畫)
+- **Evolution Dashboard**: This document Phase 4
+- **MCP Integration Guide**: `/docs/MCP_INTEGRATION.md` (replaces deprecated hooks plan)
 
 ---
 
-## 🔮 未來發展
+## 🔮 Future Development
 
-### 計劃中的功能
+### Planned Features
 
-1. **Federated Learning** (Phase 3 進行中)
-   - 分散式模型訓練
-   - 隱私保護的知識聚合
-   - 多 agent 協作學習
+1. **Federated Learning** (Phase 3 in progress)
+   - Distributed model training
+   - Privacy-preserving knowledge aggregation
+   - Multi-agent collaborative learning
 
-2. **Multi-Objective Optimization** (Phase 2 進行中)
-   - 同時優化成本、品質、速度
-   - Pareto frontier 分析
-   - 多目標決策支持
+2. **Multi-Objective Optimization** (Phase 2 in progress)
+   - Simultaneously optimize cost, quality, speed
+   - Pareto frontier analysis
+   - Multi-objective decision support
 
 3. **Reinforcement Learning**
-   - 更先進的學習算法
-   - 自動調整 learning rate
-   - 動態策略優化
+   - Advanced learning algorithms
+   - Automatic learning rate adjustment
+   - Dynamic strategy optimization
 
 4. **Pattern Visualization**
-   - Web UI 顯示 patterns
-   - 互動式 pattern 管理
-   - 視覺化 A/B 測試結果
+   - Web UI for displaying patterns
+   - Interactive pattern management
+   - Visualize A/B test results
 
-5. **Real-time Dashboard** (Phase 4 擴展)
-   - WebSocket 即時更新
-   - 圖表化趨勢顯示
-   - 告警與異常檢測
+5. **Real-time Dashboard** (Phase 4 expansion)
+   - WebSocket real-time updates
+   - Chart-based trend visualization
+   - Alerts and anomaly detection
 
-6. **Hooks-Evolution Deep Integration** (新增)
-   - PostToolUse 自動同步到 PerformanceTracker
-   - Stop hook 顯示完整 Evolution Dashboard
-   - SessionStart 基於 Evolution 數據的智能推薦
-   - 跨 session 自動學習和改進
-
----
-
-## 🤝 貢獻
-
-歡迎提交 PR 改進 Self-Evolving Agent System！
-
-請遵循：
-1. 所有新功能必須有測試覆蓋
-2. 更新相關文檔
-3. 保持與現有架構一致
+6. **Hooks-Evolution Deep Integration** (new)
+   - PostToolUse automatically syncs to PerformanceTracker
+   - Stop hook displays complete Evolution Dashboard
+   - SessionStart intelligent recommendations based on Evolution data
+   - Cross-session automatic learning and improvement
 
 ---
 
-**文檔版本**: V2.1
-**最後更新**: 2025-12-28
-**作者**: Smart Agents Team
-**Phase 4 & 5 新增**: EvolutionMonitor, evolution_dashboard MCP tool, 完整測試基礎設施
+## 🤝 Contributing
+
+Welcome to submit PRs to improve the Self-Evolving Agent System!
+
+Please follow:
+1. All new features must have test coverage
+2. Update relevant documentation
+3. Maintain consistency with existing architecture
+
+---
+
+**Documentation Version**: V2.1
+**Last Updated**: 2025-12-28
+**Author**: Smart Agents Team
+**Phase 4 & 5 Additions**: EvolutionMonitor, evolution_dashboard MCP tool, complete testing infrastructure

@@ -1,13 +1,13 @@
-# 🚀 Claude Code Agent 團隊增強指南
+# 🚀 Claude Code Agent Team Enhancement Guide
 
-## 基於 awesome-llm-apps 的實戰增強方案
+## Practical Enhancement Plan Based on awesome-llm-apps
 
 ---
 
-## 📊 當前能力評估 vs 目標
+## 📊 Current Capability Assessment vs Goals
 
-| 能力維度 | 當前 | 目標 | 優先級 |
-|---------|------|------|--------|
+| Capability Dimension | Current | Target | Priority |
+|---------------------|---------|--------|----------|
 | **Voice/Multimodal** | 10/100 | 75/100 | 🔴 P0 |
 | **RAG & Memory** | 55/100 | 85/100 | 🔴 P0 |
 | **Agent Orchestration** | 60/100 | 90/100 | 🟡 P1 |
@@ -17,17 +17,17 @@
 
 ---
 
-## 🎯 Phase 1: 立即可用的 Skills（本週完成）
+## 🎯 Phase 1: Immediately Usable Skills (Complete This Week)
 
 ### 1. Voice Intelligence Skill
 
-**從 awesome-llm-apps 學習**：
-- `ai_agent_tutorials/ai_voice_assistant/` - Whisper + TTS 整合
-- `speech_analysis_agents/meeting-assistant/` - 會議記錄與摘要
+**Learning from awesome-llm-apps**:
+- `ai_agent_tutorials/ai_voice_assistant/` - Whisper + TTS integration
+- `speech_analysis_agents/meeting-assistant/` - Meeting notes and summaries
 
-**實作策略**：
+**Implementation Strategy**:
 ```typescript
-// 創建新 skill: ~/.claude/skills/voice-intelligence/
+// Create new skill: ~/.claude/skills/voice-intelligence/
 
 interface VoiceSkillConfig {
   whisperModel: 'whisper-1';
@@ -37,17 +37,17 @@ interface VoiceSkillConfig {
 }
 
 class VoiceIntelligenceSkill {
-  // 1. 語音轉文字（會議記錄）
+  // 1. Speech-to-Text (meeting transcription)
   async transcribeMeeting(audioPath: string): Promise<{
     transcript: string;
     summary: string;
     actionItems: string[];
   }>;
 
-  // 2. 文字轉語音（報告朗讀）
+  // 2. Text-to-Speech (report narration)
   async synthesizeReport(text: string): Promise<Buffer>;
 
-  // 3. 語音問答（語音輸入 → AI 回答 → 語音輸出）
+  // 3. Voice Q&A (voice input → AI answer → voice output)
   async voiceQA(questionAudio: string): Promise<{
     answer: string;
     audioResponse: Buffer;
@@ -55,60 +55,60 @@ class VoiceIntelligenceSkill {
 }
 ```
 
-**MacBook Pro 優化**：
-- ✅ 使用 OpenAI API（雲端處理，0 本地記憶體）
-- ✅ 串流處理音訊（不一次載入全部）
-- ✅ 成本：Whisper $0.006/分鐘，TTS $0.015/1K 字元
+**MacBook Pro Optimization**:
+- ✅ Use OpenAI API (cloud processing, 0 local memory)
+- ✅ Stream audio processing (don't load all at once)
+- ✅ Cost: Whisper $0.006/min, TTS $0.015/1K chars
 
-**整合方式**：
+**Integration Method**:
 ```bash
-# 創建 skill 資料夾
+# Create skill folder
 mkdir -p ~/.claude/skills/voice-intelligence
 cd ~/.claude/skills/voice-intelligence
 
-# 安裝依賴
+# Install dependencies
 npm init -y
 npm install openai@^4.70.4 dotenv@^16.4.7
 
-# 創建 skill.md（Claude Code 會自動載入）
+# Create skill.md (Claude Code will auto-load)
 ```
 
 ---
 
 ### 2. Advanced RAG Skill
 
-**從 awesome-llm-apps 學習**：
-- `rag_apps/rag_chatbot/` - 基礎 RAG 實作
-- `advanced_rag/adaptive_rag/` - 自適應檢索策略
-- `advanced_rag/corrective_rag/` - 自我修正機制
+**Learning from awesome-llm-apps**:
+- `rag_apps/rag_chatbot/` - Basic RAG implementation
+- `advanced_rag/adaptive_rag/` - Adaptive retrieval strategy
+- `advanced_rag/corrective_rag/` - Self-correction mechanism
 
-**實作策略**：
+**Implementation Strategy**:
 ```typescript
-// 創建新 skill: ~/.claude/skills/advanced-rag/
+// Create new skill: ~/.claude/skills/advanced-rag/
 
 class AdaptiveRAGSkill {
-  // 1. 智能文檔索引（自動分塊優化）
+  // 1. Intelligent document indexing (auto chunk optimization)
   async indexDocuments(docs: string[], options?: {
-    chunkSize?: number;      // 自動計算最佳分塊大小
-    overlapRatio?: number;   // 重疊比例
+    chunkSize?: number;      // Auto-calculate optimal chunk size
+    overlapRatio?: number;   // Overlap ratio
     metadata?: Record<string, any>;
   }): Promise<void>;
 
-  // 2. 自適應檢索（根據查詢複雜度調整策略）
+  // 2. Adaptive search (adjust strategy based on query complexity)
   async adaptiveSearch(query: string): Promise<{
     results: SearchResult[];
     strategy: 'simple' | 'hybrid' | 'multi-hop';
     confidence: number;
   }>;
 
-  // 3. 自我修正（檢測並修正錯誤答案）
+  // 3. Self-correction (detect and correct wrong answers)
   async correctiveRAG(query: string, context: string[]): Promise<{
     answer: string;
     corrected: boolean;
     reasoning: string;
   }>;
 
-  // 4. 多跳推理（處理複雜問題）
+  // 4. Multi-hop reasoning (handle complex questions)
   async multiHopReasoning(query: string): Promise<{
     steps: ReasoningStep[];
     finalAnswer: string;
@@ -116,22 +116,22 @@ class AdaptiveRAGSkill {
 }
 ```
 
-**MacBook Pro 優化**：
-- ✅ Vectra 本地向量資料庫（零依賴，< 50MB 記憶體）
-- ✅ text-embedding-3-small（512 維，$0.02/1M tokens）
-- ✅ 批次處理（避免記憶體峰值）
-- ✅ 向量快取（重複查詢不重新計算）
+**MacBook Pro Optimization**:
+- ✅ Vectra local vector database (zero dependencies, < 50MB memory)
+- ✅ text-embedding-3-small (512 dimensions, $0.02/1M tokens)
+- ✅ Batch processing (avoid memory spikes)
+- ✅ Vector caching (don't recompute for repeated queries)
 
-**整合方式**：
+**Integration Method**:
 ```bash
-# 創建 skill（無需 Docker）
+# Create skill (no Docker needed)
 mkdir -p ~/.claude/skills/advanced-rag
 cd ~/.claude/skills/advanced-rag
 npm init -y
 npm install vectra openai@^4.70.4
 ```
 
-**Skill 定義**（`skill.md`）：
+**Skill Definition** (`skill.md`):
 ```markdown
 # Advanced RAG Skill
 
@@ -154,38 +154,38 @@ Assistant: [Uses multi-hop reasoning to trace connections]
 
 ### 3. Agent Orchestration Skill
 
-**從 awesome-llm-apps 學習**：
-- `ai_agent_tutorials/langgraph_agent/` - 工作流程編排
-- `ai_agent_tutorials/crew_ai_agents/` - 多 agent 協作
-- `ai_agent_tutorials/autogen_agents/` - 自主任務分解
+**Learning from awesome-llm-apps**:
+- `ai_agent_tutorials/langgraph_agent/` - Workflow orchestration
+- `ai_agent_tutorials/crew_ai_agents/` - Multi-agent collaboration
+- `ai_agent_tutorials/autogen_agents/` - Autonomous task decomposition
 
-**實作策略**：
+**Implementation Strategy**:
 ```typescript
-// 創建新 skill: ~/.claude/skills/task-orchestrator/
+// Create new skill: ~/.claude/skills/task-orchestrator/
 
 class TaskOrchestratorSkill {
-  // 1. 智能任務分解
+  // 1. Intelligent task decomposition
   async decomposeTask(task: string): Promise<{
     subtasks: SubTask[];
     dependencies: DependencyGraph;
     estimatedTime: number;
   }>;
 
-  // 2. 並行執行規劃
+  // 2. Parallel execution planning
   async planParallelExecution(subtasks: SubTask[]): Promise<{
     batches: SubTask[][];
     totalTime: number;
     memoryRequired: number;
   }>;
 
-  // 3. 動態路由（基於系統資源）
+  // 3. Dynamic routing (based on system resources)
   async routeTask(task: SubTask): Promise<{
     agent: 'sonnet' | 'opus' | 'haiku';
     reasoning: string;
     estimatedCost: number;
   }>;
 
-  // 4. 進度追蹤
+  // 4. Progress tracking
   async trackProgress(taskId: string): Promise<{
     completed: number;
     total: number;
@@ -195,32 +195,32 @@ class TaskOrchestratorSkill {
 }
 ```
 
-**MacBook Pro 優化**：
-- ✅ 記憶體感知路由（< 80% 使用率時才並行）
-- ✅ 成本感知決策（Haiku vs Sonnet vs Opus）
-- ✅ 失敗重試機制（避免浪費 token）
+**MacBook Pro Optimization**:
+- ✅ Memory-aware routing (only parallelize when < 80% utilization)
+- ✅ Cost-aware decisions (Haiku vs Sonnet vs Opus)
+- ✅ Failure retry mechanism (avoid wasting tokens)
 
 ---
 
-## 🎯 Phase 2: MCP Server 整合（2 週內完成）
+## 🎯 Phase 2: MCP Server Integration (Complete in 2 Weeks)
 
 ### 1. Voice MCP Server
 
-**參考實作**：awesome-llm-apps 的 `speech_analysis_agents/`
+**Reference Implementation**: awesome-llm-apps' `speech_analysis_agents/`
 
-**創建新 MCP Server**：
+**Create New MCP Server**:
 ```bash
-# 使用 MCP Builder skill
+# Use MCP Builder skill
 claude skill invoke mcp-builder
 
-# 或手動創建
+# Or create manually
 mkdir -p ~/Developer/mcp-servers/voice-intelligence
 cd ~/Developer/mcp-servers/voice-intelligence
 npm init -y
 npm install @modelcontextprotocol/sdk openai
 ```
 
-**Server 定義**：
+**Server Definition**:
 ```typescript
 // src/index.ts
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -239,7 +239,7 @@ const server = new Server({
 server.setRequestHandler('tools/call', async (request) => {
   if (request.params.name === 'transcribe_audio') {
     const { audioPath, language } = request.params.arguments;
-    // 使用 OpenAI Whisper API
+    // Use OpenAI Whisper API
     const transcript = await transcribeWithWhisper(audioPath, language);
     return { content: [{ type: 'text', text: transcript }] };
   }
@@ -255,7 +255,7 @@ const transport = new StdioServerTransport();
 await server.connect(transport);
 ```
 
-**Claude Code 配置**（`~/.claude/config.json`）：
+**Claude Code Configuration** (`~/.claude/config.json`):
 ```json
 {
   "mcpServers": {
@@ -274,14 +274,14 @@ await server.connect(transport);
 
 ### 2. Knowledge Graph MCP Server
 
-**參考實作**：awesome-llm-apps 的 `knowledge_graph_agents/`
+**Reference Implementation**: awesome-llm-apps' `knowledge_graph_agents/`
 
-**為什麼需要**：
-- 目前 MCP Memory 只支援鍵值儲存
-- Knowledge Graph 可以建立實體之間的關係
-- 更適合複雜的專案依賴分析
+**Why It's Needed**:
+- Current MCP Memory only supports key-value storage
+- Knowledge Graph can build relationships between entities
+- Better suited for complex project dependency analysis
 
-**創建方式**：
+**Creation Method**:
 ```bash
 mkdir -p ~/Developer/mcp-servers/knowledge-graph
 cd ~/Developer/mcp-servers/knowledge-graph
@@ -289,38 +289,38 @@ npm init -y
 npm install @modelcontextprotocol/sdk neo4j-driver
 ```
 
-**Tools 定義**：
+**Tools Definition**:
 - `create_entity(name, type, properties)`
 - `create_relationship(from, to, type)`
 - `query_graph(cypher_query)`
 - `find_path(from, to, max_depth)`
 - `analyze_dependencies(entity_name)`
 
-**使用場景**：
+**Usage Scenario**:
 ```
-User: "分析修改 user.service.ts 的影響範圍"
+User: "Analyze the impact scope of modifying user.service.ts"
 
 Claude:
-[使用 knowledge-graph tool]
-1. 查找 user.service.ts 的所有依賴
-2. 建立依賴圖：
+[Using knowledge-graph tool]
+1. Find all dependencies of user.service.ts
+2. Build dependency graph:
    user.service.ts
    → auth.controller.ts
    → api/routes/auth.ts
    → frontend/stores/auth.ts
 
-3. 識別影響：需要同步更新 4 個檔案
+3. Identify impact: Need to synchronously update 4 files
 ```
 
 ---
 
-## 🎯 Phase 3: 工作流程自動化（1 個月內完成）
+## 🎯 Phase 3: Workflow Automation (Complete in 1 Month)
 
-### 1. 自動化代碼審查流程
+### 1. Automated Code Review Workflow
 
-**從 awesome-llm-apps 學習**：`code_analysis_agents/code_reviewer/`
+**Learning from awesome-llm-apps**: `code_analysis_agents/code_reviewer/`
 
-**創建 Skill**：
+**Create Skill**:
 ```bash
 mkdir -p ~/.claude/skills/auto-code-review
 ```
@@ -356,33 +356,33 @@ chmod +x .git/hooks/pre-commit
 
 ---
 
-### 2. 智能文檔生成
+### 2. Intelligent Documentation Generation
 
-**從 awesome-llm-apps 學習**：`writing_agents/technical_writer/`
+**Learning from awesome-llm-apps**: `writing_agents/technical_writer/`
 
-**創建 Skill**：
+**Create Skill**:
 ```typescript
 class AutoDocGeneratorSkill {
-  // 1. API 文檔自動生成
+  // 1. API documentation auto-generation
   async generateAPIDoc(sourceFiles: string[]): Promise<void>;
 
-  // 2. README 自動更新
+  // 2. README auto-update
   async updateREADME(projectPath: string): Promise<void>;
 
-  // 3. Changelog 生成（基於 Git commits）
+  // 3. Changelog generation (based on Git commits)
   async generateChangelog(fromTag: string, toTag: string): Promise<void>;
 
-  // 4. 架構圖生成（Mermaid）
+  // 4. Architecture diagram generation (Mermaid)
   async generateArchitectureDiagram(codebase: string): Promise<string>;
 }
 ```
 
-**整合方式**：
+**Integration Method**:
 ```bash
 # Git post-commit hook
 cat > .git/hooks/post-commit << 'EOF'
 #!/bin/bash
-# 每 10 次 commit 自動更新文檔
+# Auto-update documentation every 10 commits
 COMMIT_COUNT=$(git rev-list --count HEAD)
 if [ $((COMMIT_COUNT % 10)) -eq 0 ]; then
   claude skill invoke auto-doc-generator
@@ -392,48 +392,48 @@ EOF
 
 ---
 
-## 📋 實作優先順序與時間表
+## 📋 Implementation Priority and Timeline
 
-### Week 1: Voice Intelligence（最大能力缺口）
-- [ ] Day 1-2: 創建 voice-intelligence skill
-- [ ] Day 3-4: 測試 Whisper + TTS 整合
-- [ ] Day 5: 創建使用範例和文檔
-- [ ] Day 6-7: 優化成本和效能
+### Week 1: Voice Intelligence (Largest Capability Gap)
+- [ ] Day 1-2: Create voice-intelligence skill
+- [ ] Day 3-4: Test Whisper + TTS integration
+- [ ] Day 5: Create usage examples and documentation
+- [ ] Day 6-7: Optimize cost and performance
 
-**成功指標**：
-- 能夠語音輸入問題並獲得語音回答
-- 會議錄音自動轉文字並生成摘要
-- 成本 < $5/月（假設每日 10 分鐘使用）
+**Success Metrics**:
+- Ability to input questions via voice and receive voice answers
+- Meeting recordings automatically transcribed and summarized
+- Cost < $5/month (assuming 10 minutes daily usage)
 
-### Week 2: Advanced RAG（高 ROI）
-- [ ] Day 1-2: 設置 Vectra 本地向量資料庫
-- [ ] Day 3-4: 創建 advanced-rag skill
-- [ ] Day 5: 實作自適應檢索策略
-- [ ] Day 6-7: 測試多跳推理功能
+### Week 2: Advanced RAG (High ROI)
+- [ ] Day 1-2: Setup Vectra local vector database
+- [ ] Day 3-4: Create advanced-rag skill
+- [ ] Day 5: Implement adaptive retrieval strategy
+- [ ] Day 6-7: Test multi-hop reasoning functionality
 
-**成功指標**：
-- 能夠索引 1000+ 頁文檔
-- 查詢響應時間 < 2 秒
-- 答案準確率 > 85%
+**Success Metrics**:
+- Ability to index 1000+ pages of documents
+- Query response time < 2 seconds
+- Answer accuracy > 85%
 
 ### Week 3-4: Agent Orchestration
-- [ ] 創建 task-orchestrator skill
-- [ ] 實作記憶體感知路由
-- [ ] 整合成本追蹤
-- [ ] 建立自動化測試
+- [ ] Create task-orchestrator skill
+- [ ] Implement memory-aware routing
+- [ ] Integrate cost tracking
+- [ ] Establish automated testing
 
-**成功指標**：
-- 能夠自動分解複雜任務
-- 並行執行節省 40%+ 時間
-- 記憶體使用 < 8GB（含所有 agents）
+**Success Metrics**:
+- Ability to automatically decompose complex tasks
+- Parallel execution saves 40%+ time
+- Memory usage < 8GB (including all agents)
 
 ---
 
-## 🔧 立即行動清單
+## 🔧 Immediate Action List
 
-### 今天就可以做的事
+### What You Can Do Today
 
-1. **創建 Voice Intelligence Skill 骨架**
+1. **Create Voice Intelligence Skill Skeleton**
 ```bash
 mkdir -p ~/.claude/skills/voice-intelligence
 cd ~/.claude/skills/voice-intelligence
@@ -441,21 +441,21 @@ cd ~/.claude/skills/voice-intelligence
 cat > skill.md << 'EOF'
 # Voice Intelligence Skill
 
-語音處理專家，提供語音轉文字、文字轉語音、語音問答功能。
+Voice processing expert, providing speech-to-text, text-to-speech, and voice Q&A functionality.
 
-## 能力
-- 會議記錄（Whisper）
-- 報告朗讀（TTS）
-- 語音問答（端到端）
+## Capabilities
+- Meeting transcription (Whisper)
+- Report narration (TTS)
+- Voice Q&A (end-to-end)
 
-## 使用時機
-- 用戶提供音訊檔案
-- 需要生成語音輸出
-- 會議記錄和摘要
+## When to Use
+- User provides audio files
+- Need to generate voice output
+- Meeting transcription and summarization
 
-## 成本
-- Whisper: $0.006/分鐘
-- TTS: $0.015/1K 字元
+## Cost
+- Whisper: $0.006/minute
+- TTS: $0.015/1K characters
 EOF
 
 cat > package.json << 'EOF'
@@ -473,42 +473,42 @@ EOF
 npm install
 ```
 
-2. **設置 Vectra 向量資料庫（用於 RAG）**
+2. **Setup Vectra Vector Database (for RAG)**
 ```bash
-# Vectra 是純 Node.js 實作，無需 Docker
-# 會在首次使用時自動創建 data/vectorstore/ 目錄
-npm install vectra  # 安裝依賴即可
+# Vectra is pure Node.js implementation, no Docker needed
+# Will automatically create data/vectorstore/ directory on first use
+npm install vectra  # Just install the dependency
 ```
 
-3. **創建能力追蹤文檔**
+3. **Create Capability Tracking Document**
 ```bash
 cat > ~/Developer/Projects/smart-agents/docs/CAPABILITY_TRACKING.md << 'EOF'
-# Agent 能力追蹤
+# Agent Capability Tracking
 
-## 本週目標
-- [ ] Voice Intelligence skill 完成
-- [ ] Vectra 向量資料庫設置完成
-- [ ] 第一個語音測試案例
+## This Week's Goals
+- [ ] Voice Intelligence skill completed
+- [ ] Vectra vector database setup completed
+- [ ] First voice test case
 
-## 下週目標
-- [ ] Advanced RAG skill 完成
-- [ ] 文檔索引功能測試
-- [ ] 成本追蹤儀表板
+## Next Week's Goals
+- [ ] Advanced RAG skill completed
+- [ ] Document indexing functionality tested
+- [ ] Cost tracking dashboard
 
-## 每日檢查
-- 記憶體使用 < 8GB？
-- 成本 < 預算？
-- 所有測試通過？
+## Daily Checks
+- Memory usage < 8GB?
+- Cost < budget?
+- All tests passing?
 EOF
 ```
 
 ---
 
-## 🎓 學習資源
+## 🎓 Learning Resources
 
-### awesome-llm-apps 重點學習路徑
+### awesome-llm-apps Focus Learning Path
 
-1. **Voice & Speech**（優先）
+1. **Voice & Speech** (Priority)
    - `ai_agent_tutorials/ai_voice_assistant/`
    - `speech_analysis_agents/meeting-assistant/`
 
@@ -527,29 +527,29 @@ EOF
 
 ---
 
-## 💰 成本控制策略
+## 💰 Cost Control Strategy
 
-### 每月預算分配（$50）
+### Monthly Budget Allocation ($50)
 
-| 服務 | 預算 | 用途 |
-|------|------|------|
-| Claude Sonnet | $25 | 日常開發 |
-| Claude Opus | $10 | 複雜任務 |
-| Whisper | $5 | 語音轉文字 |
-| TTS | $3 | 文字轉語音 |
-| Embeddings | $2 | RAG 向量化 |
-| Buffer | $5 | 應急使用 |
+| Service | Budget | Purpose |
+|---------|--------|---------|
+| Claude Sonnet | $25 | Daily development |
+| Claude Opus | $10 | Complex tasks |
+| Whisper | $5 | Speech-to-text |
+| TTS | $3 | Text-to-speech |
+| Embeddings | $2 | RAG vectorization |
+| Buffer | $5 | Emergency use |
 
-### 自動化成本監控
+### Automated Cost Monitoring
 
 ```typescript
-// 整合到 Claude Code
+// Integrate into Claude Code
 const costMonitor = {
   async checkBudget() {
     const used = await getCostThisMonth();
     if (used > 40) {  // 80% threshold
-      console.warn('⚠️ 成本警告：已使用 $', used);
-      // 自動切換到 Haiku
+      console.warn('⚠️ Cost warning: Used $', used);
+      // Automatically switch to Haiku
       switchToHaikuMode();
     }
   }
@@ -558,43 +558,43 @@ const costMonitor = {
 
 ---
 
-## ✅ 驗證清單
+## ✅ Verification Checklist
 
-完成增強後，你的 Claude Code 應該能夠：
+After completing enhancements, your Claude Code should be able to:
 
 ### Voice & Multimodal
-- [ ] 處理音訊輸入（會議、訪談）
-- [ ] 生成語音輸出（報告朗讀）
-- [ ] 語音問答（端到端）
-- [ ] 多語言支援（中英日韓）
+- [ ] Process audio input (meetings, interviews)
+- [ ] Generate voice output (report narration)
+- [ ] Voice Q&A (end-to-end)
+- [ ] Multi-language support (Chinese, English, Japanese, Korean)
 
 ### RAG & Memory
-- [ ] 索引大型文檔集合（1000+ 頁）
-- [ ] 自適應檢索策略
-- [ ] 多跳推理（複雜問題）
-- [ ] 知識圖譜（實體關係）
+- [ ] Index large document collections (1000+ pages)
+- [ ] Adaptive retrieval strategy
+- [ ] Multi-hop reasoning (complex questions)
+- [ ] Knowledge graph (entity relationships)
 
 ### Agent Orchestration
-- [ ] 智能任務分解
-- [ ] 並行執行規劃
-- [ ] 記憶體感知路由
-- [ ] 成本優化決策
+- [ ] Intelligent task decomposition
+- [ ] Parallel execution planning
+- [ ] Memory-aware routing
+- [ ] Cost optimization decisions
 
 ### Automation
-- [ ] 自動代碼審查
-- [ ] 智能文檔生成
-- [ ] Git hooks 整合
-- [ ] CI/CD 自動化
+- [ ] Automated code review
+- [ ] Intelligent documentation generation
+- [ ] Git hooks integration
+- [ ] CI/CD automation
 
 ---
 
-## 🚀 下一步
+## 🚀 Next Steps
 
-完成本指南後，你的 Claude Code agent 團隊將具備：
-- **75/100** Voice & Multimodal 能力（從 10/100）
-- **85/100** RAG & Memory 能力（從 55/100）
-- **90/100** Agent Orchestration 能力（從 60/100）
+After completing this guide, your Claude Code agent team will have:
+- **75/100** Voice & Multimodal capability (from 10/100)
+- **85/100** RAG & Memory capability (from 55/100)
+- **90/100** Agent Orchestration capability (from 60/100)
 
-**總體能力提升：從 61.7/100 → 82.5/100**
+**Overall capability improvement: from 61.7/100 → 82.5/100**
 
-現在，讓我們開始實作第一個 skill！ 🎯
+Now, let's start implementing the first skill! 🎯

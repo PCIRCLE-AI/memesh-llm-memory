@@ -77,7 +77,7 @@ main();
 function readRecommendations() {
   // Check if recommendations file exists
   if (!fs.existsSync(RECOMMENDATIONS_FILE)) {
-    console.log('📋 第一次使用，歡迎！\n');
+    console.log('📋 First time using, welcome!\n');
     return null;
   }
 
@@ -93,7 +93,7 @@ function readRecommendations() {
 function displayRecommendations(recommendations) {
   if (!recommendations) return;
 
-  console.log('📚 根據上次工作模式，建議載入以下 skills：');
+  console.log('📚 Based on last session patterns, recommended skills to load:');
 
   // Display recommended skills
   if (recommendations.recommendedSkills && recommendations.recommendedSkills.length > 0) {
@@ -106,7 +106,7 @@ function displayRecommendations(recommendations) {
 
   // Display detected patterns
   if (recommendations.detectedPatterns && recommendations.detectedPatterns.length > 0) {
-    console.log('✅ 偵測到的良好模式：');
+    console.log('✅ Detected good patterns:');
     recommendations.detectedPatterns.forEach(pattern => {
       console.log(`  - ${pattern.description}`);
     });
@@ -115,14 +115,14 @@ function displayRecommendations(recommendations) {
 
   // Display warnings
   if (recommendations.warnings && recommendations.warnings.length > 0) {
-    console.log('⚠️ 注意事項：');
+    console.log('⚠️ Attention:');
     recommendations.warnings.forEach(warning => {
       console.log(`  - ${warning}`);
     });
     console.log('');
   }
 
-  console.log('✅ Session 已初始化，開始工作吧！\n');
+  console.log('✅ Session initialized, let\'s start working!\n');
 }
 ```
 
@@ -461,10 +461,10 @@ function updateRecommendations(patterns, anomalies) {
 
 function getPatternSuggestion(patternType) {
   const suggestions = {
-    'READ_BEFORE_EDIT': '繼續保持 READ_BEFORE_EDIT 最佳實踐',
-    'GIT_WORKFLOW': '考慮載入 devops-git-workflows skill',
-    'FRONTEND_WORK': '考慮載入 frontend-design skill',
-    'INTENSIVE_SEARCH': '探索代碼時考慮使用 @smart-router 進行分析'
+    'READ_BEFORE_EDIT': 'Continue maintaining READ_BEFORE_EDIT best practice',
+    'GIT_WORKFLOW': 'Consider loading devops-git-workflows skill',
+    'FRONTEND_WORK': 'Consider loading frontend-design skill',
+    'INTENSIVE_SEARCH': 'Consider using @smart-router for analysis when exploring code'
   };
   return suggestions[patternType] || '';
 }
@@ -494,7 +494,7 @@ Analyze session patterns, generate recommendations, save state, and clean up.
 ```javascript
 async function main() {
   try {
-    console.log('\n📊 正在分析 session...\n');
+    console.log('\n📊 Analyzing session...\n');
 
     // 1. Load session state
     const sessionState = loadSessionState();
@@ -520,7 +520,7 @@ async function main() {
     // 8. Cleanup background processes
     cleanupProcesses();
 
-    console.log('\n✅ Session 已結束。下次見！\n');
+    console.log('\n✅ Session ended. See you next time!\n');
 
   } catch (error) {
     console.error('⚠️ Stop hook encountered an error (non-blocking):', error.message);
@@ -619,7 +619,7 @@ function saveRecommendations(patterns, sessionState) {
   if (patterns.gitOperations >= 5) {
     recommendations.recommendedSkills.push({
       name: 'devops-git-workflows',
-      reason: `上次 session：${patterns.gitOperations} 次 Git 操作`,
+      reason: `Last session: ${patterns.gitOperations} Git operations`,
       priority: 'high'
     });
   }
@@ -627,7 +627,7 @@ function saveRecommendations(patterns, sessionState) {
   if (patterns.frontendWork >= 3) {
     recommendations.recommendedSkills.push({
       name: 'frontend-design',
-      reason: `上次 session：修改了 ${patterns.frontendWork} 個前端檔案`,
+      reason: `Last session: modified ${patterns.frontendWork} frontend files`,
       priority: 'high'
     });
   }
@@ -635,8 +635,8 @@ function saveRecommendations(patterns, sessionState) {
   // Add detected good patterns
   if (patterns.readBeforeEdit > 0) {
     recommendations.detectedPatterns.push({
-      description: `${patterns.readBeforeEdit} 次正確地先 Read 再 Edit`,
-      suggestion: '繼續保持 READ_BEFORE_EDIT 最佳實踐',
+      description: `${patterns.readBeforeEdit} times correctly Read before Edit`,
+      suggestion: 'Continue maintaining READ_BEFORE_EDIT best practice',
       timestamp: new Date().toISOString()
     });
   }
@@ -644,19 +644,19 @@ function saveRecommendations(patterns, sessionState) {
   // Add warnings
   if (patterns.editWithoutRead > 0) {
     recommendations.warnings.push(
-      `${patterns.editWithoutRead} 次未先 Read 就 Edit（建議改進）`
+      `${patterns.editWithoutRead} times Edit without Read first (recommended to improve)`
     );
   }
 
   if (patterns.slowTools.length > 0) {
     recommendations.warnings.push(
-      `${patterns.slowTools.length} 個工具執行時間超過 5 秒`
+      `${patterns.slowTools.length} tools took more than 5 seconds to execute`
     );
   }
 
   if (patterns.failedTools.length > 0) {
     recommendations.warnings.push(
-      `${patterns.failedTools.length} 個工具執行失敗`
+      `${patterns.failedTools.length} tools failed execution`
     );
   }
 
@@ -771,25 +771,25 @@ interface DetectedPattern {
   "recommendedSkills": [
     {
       "name": "devops-git-workflows",
-      "reason": "上次 session：8 次 Git 操作",
+      "reason": "Last session: 8 Git operations",
       "priority": "high"
     },
     {
       "name": "frontend-design",
-      "reason": "上次 session：修改了 5 個前端檔案",
+      "reason": "Last session: modified 5 frontend files",
       "priority": "high"
     }
   ],
   "detectedPatterns": [
     {
-      "description": "12 次正確地先 Read 再 Edit",
-      "suggestion": "繼續保持 READ_BEFORE_EDIT 最佳實踐",
+      "description": "12 times correctly Read before Edit",
+      "suggestion": "Continue maintaining READ_BEFORE_EDIT best practice",
       "timestamp": "2025-12-30T11:00:00.000Z"
     }
   ],
   "warnings": [
-    "2 個工具執行時間超過 5 秒",
-    "Token 配額使用 85%"
+    "2 tools took more than 5 seconds to execute",
+    "Token quota usage 85%"
   ],
   "lastUpdated": "2025-12-30T11:00:00.000Z"
 }
@@ -850,19 +850,19 @@ cat > ~/.claude/state/recommendations.json << 'EOF'
   "recommendedSkills": [
     {
       "name": "devops-git-workflows",
-      "reason": "上次執行 8 次 Git 操作",
+      "reason": "Last execution: 8 Git operations",
       "priority": "high"
     }
   ],
   "detectedPatterns": [
     {
-      "description": "多次 Read before Edit - 正確行為",
-      "suggestion": "繼續保持",
+      "description": "Multiple Read before Edit - correct behavior",
+      "suggestion": "Continue maintaining",
       "timestamp": "2025-12-30T10:00:00Z"
     }
   ],
   "warnings": [
-    "2 個工具執行時間超過 5 秒"
+    "2 tools took more than 5 seconds to execute"
   ],
   "lastUpdated": "2025-12-30T10:00:00Z"
 }
@@ -926,7 +926,7 @@ rm -rf ~/.claude/state/*.json
 
 # 2. Start session
 node ~/.claude/hooks/session-start.js
-# Should display: "📋 第一次使用，歡迎！"
+# Should display: "📋 First time using, welcome!"
 
 # 3. Simulate tool executions
 echo '{"toolName":"Read","duration":100,"success":true,"tokensUsed":2000,"arguments":{"file_path":"/test.ts"}}' | \
@@ -1069,7 +1069,7 @@ if (toolData.arguments?.file_path) {
 if (patterns.apiEndpointWork >= 3) {
   recommendations.recommendedSkills.push({
     name: 'system-thinking-examples',
-    reason: `上次 session：修改了 ${patterns.apiEndpointWork} 個 API 端點`,
+    reason: `Last session: modified ${patterns.apiEndpointWork} API endpoints`,
     priority: 'high'
   });
 }
@@ -1123,7 +1123,7 @@ sessionState.toolCalls.forEach(call => {
 if (testFileModifications >= 2) {
   recommendations.recommendedSkills.push({
     name: 'testing-guide',
-    reason: `上次 session：修改了 ${testFileModifications} 個測試檔案`,
+    reason: `Last session: modified ${testFileModifications} test files`,
     priority: 'medium'
   });
 }

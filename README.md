@@ -32,330 +32,168 @@ Smart Agents is a prompt enhancement system for Claude Code that:
 
 ## 🚀 Quick Start
 
-```bash
-# Automated setup (recommended for new users)
-./scripts/setup.sh
+**Just tell Claude Code**:
 
-# Manual setup
-npm install
-cp .env.example .env
-# Edit .env with your API keys
-npm run build
-npm test
+```
+"Install smart-agents MCP from https://github.com/kevintseng/smart-agents"
 ```
 
-The setup script will:
-- ✅ Check Node.js version (18+ required)
-- ✅ Install dependencies automatically
-- ✅ Create .env file from template
-- ✅ Run tests to verify installation
-- ✅ Build the project
+That's it! Claude Code will:
+- ✅ Clone and setup everything automatically
+- ✅ Guide you through configuration (RAG features, API keys)
+- ✅ Configure MCP server integration
+- ✅ Verify installation
 
-**Setup time:** < 15 minutes
-
-**New user?** Follow our [15-Minute Quick Start Guide](docs/guides/QUICK_START.md) →
+**Setup time:** 2-5 minutes
 
 ---
 
 ## 📋 Prerequisites
 
-- **Node.js** >= 18.0.0
-- **npm** >= 9.0.0
-- Git
-- (Optional) OpenAI API key for RAG functionality
-- (Optional) Anthropic API key for orchestrator
+- **Claude Code** (handles everything for you)
+- **Node.js** >= 18.0.0 (Claude Code will check)
+- (Optional) OpenAI API key for RAG features
 
 ---
 
-## 📦 Installation
+## 🎯 What You Can Do
 
-```bash
-# Clone the repository
-git clone https://github.com/kevintseng/smart-agents.git
-cd smart-agents
+**Everything through natural conversation with Claude Code:**
 
-# Install dependencies
-npm install
-
-# Build the project
-npm run build
-
-# Run tests
-npm test
 ```
+"Enable RAG features with my OpenAI key"
+"Modify the code-reviewer to focus on security"
+"Create a custom agent for API documentation"
+"Show me the system architecture"
+"Why isn't the RAG agent working?"
+```
+
+**No manual setup, no file editing, no complex configuration - just ask!**
 
 ---
 
-## ⚙️ Environment Setup
+## 💡 Philosophy
 
-### Required: API Keys
+**"Just Ask Claude Code"**
 
-Create a `.env` file in the project root:
+Everything in Smart Agents is designed for Claude Code to handle:
+- Installation and setup
+- Configuration and customization
+- Creating new agents and skills
+- Debugging and troubleshooting
+- Documentation and learning
 
-```env
-# For Orchestrator (optional)
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
-
-# For RAG Agent (optional)
-OPENAI_API_KEY=your_openai_api_key_here
-```
-
-See `.env.example` for all available configuration options.
-
-### MCP Server Setup (for Claude Code Integration)
-
-Smart-Agents can be used as an MCP server with Claude Code. See [MCP Integration Guide](./docs/MCP_INTEGRATION.md) for step-by-step setup.
+**You focus on what you want. Claude Code handles how to do it.**
 
 ---
 
-## 🎯 Usage
+## 📖 Learn More
 
-Smart-Agents can be used in **three ways**:
+- **[Architecture Overview](docs/architecture/OVERVIEW.md)** - How Smart Agents works
+- **[Agent Reference](docs/AGENT_REFERENCE.md)** - All 13 agents explained
+- **[Claude Code Installation Guide](docs/guides/CLAUDE_CODE_INSTALLATION.md)** - Detailed setup guide
 
-### 1. As an MCP Server (for Claude Code)
-
-```bash
-# Start the MCP server
-npm run mcp
-```
-
-Then configure Claude Code to connect to the server (see MCP Integration docs).
-
-### 2. As a Running Service (Orchestrator)
-
-```bash
-# Start the orchestrator service
-npm run orchestrator
-
-# Or run specific agents
-npm run rag         # RAG agent
-npm run dashboard   # Evolution dashboard
-```
-
-### 3. As a Library (Import Agents)
-
-```typescript
-import { TestWriterAgent, DevOpsEngineerAgent, DevelopmentButler } from 'smart-agents';
-import { MCPToolInterface } from 'smart-agents';
-
-const mcp = new MCPToolInterface();
-
-// Generate tests automatically
-const testWriter = new TestWriterAgent(mcp);
-await testWriter.writeTestFile('src/utils.ts');
-
-// Setup CI/CD
-const devops = new DevOpsEngineerAgent(mcp);
-await devops.generateCIConfig({
-  platform: 'github-actions',
-  testCommand: 'npm test',
-  buildCommand: 'npm run build'
-});
-
-// Use Development Butler
-const butler = new DevelopmentButler(mcp);
-await butler.analyzeCodeChanges({
-  files: ['src/app.ts'],
-  type: 'modification',
-  hasTests: true
-});
-```
+**Or just ask Claude Code**: "Explain how Smart Agents works"
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ System Overview
 
-📊 **See [Architecture Diagram](docs/diagrams/architecture.md) for visual overview.**
+**Claude Code** → **Smart-Agents MCP Server** → **13 Specialized Agents**
 
-### High-Level Overview
+Smart Agents routes your requests to the right agent:
+- **5 Real Agents**: RAG, Evolution, Knowledge Graph, Butler, Test Writer
+- **7 Enhanced Agents**: Code Reviewer, Debugger, Refactorer, API Designer, etc.
+- **1 Optional Agent**: Knowledge Synthesis
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      Claude Code                            │
-│                  (via MCP Protocol)                         │
-└───────────────────────────┬─────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│               Smart-Agents MCP Server                       │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │ Orchestrator (Router)                                │  │
-│  │  - Task Analyzer                                     │  │
-│  │  - Agent Router                                      │  │
-│  │  - Cost Tracker                                      │  │
-│  │  - Resource Pool                                     │  │
-│  └──────────────────────────────────────────────────────┘  │
-└───────────────────────────┬─────────────────────────────────┘
-                            │
-        ┌───────────────────┼───────────────────┐
-        │                   │                   │
-        ▼                   ▼                   ▼
-┌──────────────┐  ┌──────────────┐  ┌──────────────────┐
-│ RAG System   │  │ Development  │  │ Knowledge        │
-│ - Embeddings │  │ Agents       │  │ System           │
-│ - VectorDB   │  │ - Butler     │  │ - Graph          │
-│ - Retrieval  │  │ - TestWriter │  │ - Memory         │
-│ - Reranking  │  │ - DevOps     │  │ - Evolution      │
-└──────────────┘  └──────────────┘  └──────────────────┘
-```
+📊 **Want details?** Ask Claude Code: "Show me the Smart Agents architecture"
 
-See [Architecture Documentation](./ARCHITECTURE.md) for detailed system design.
+Or see: [Architecture Diagram](docs/diagrams/architecture.md)
 
 ---
 
-## 🤖 Available Agents
+## 🤖 The 13 Agents
 
-### Core Agents (Implemented)
+**Development**: Code review, testing, development automation
+**Operations**: DevOps, security auditing
+**Engineering**: Data engineering, ML engineering
+**Analysis**: Architecture analysis, RAG search
+**Creative**: UI design
+**Management**: Project and product management
+**Business**: Marketing strategy
 
-| Agent | Description | Usage |
-|-------|-------------|-------|
-| **RAG Agent** | Vector-based retrieval and semantic search | `npm run rag` |
-| **Development Butler** | Event-driven development automation | Library import |
-| **Test Writer** | Automated test generation | Library import |
-| **DevOps Engineer** | CI/CD configuration and automation | Library import |
+**Want to know more?** Ask Claude Code: "Explain the code-reviewer agent"
 
-### Agent Categories (via Orchestrator)
-
-The orchestrator can route to agents in these categories:
-- **Development** (3 agents): development-butler, test-writer, code-reviewer
-- **Operations** (2 agents): devops-engineer, security-auditor
-- **Management** (2 agents): project-manager, product-manager
-- **Engineering** (2 agents): data-engineer, ml-engineer
-- **Analysis** (2 agents): architecture-agent, rag-agent
-- **Creative** (1 agent): ui-designer
-- **Business** (1 agent): marketing-strategist
-
-**Total**: 13 agents (5 real implementations, 7 enhanced prompts, 1 optional feature)
+Or see: [Agent Reference](docs/AGENT_REFERENCE.md)
 
 ---
 
 ## 🧪 Testing
 
-```bash
-# Run all tests
-npm test
-
-# Run tests with coverage
-npm test:coverage
-
-# Run E2E tests (with resource monitoring)
-npm run test:e2e:safe
-
-# Run specific test suites
-npm test -- tests/orchestrator/orchestrator.test.ts
-npm test -- tests/agents/rag/rag.test.ts
+**Ask Claude Code to run tests**:
+```
+"Run all tests"
+"Run tests with coverage"
+"Run E2E tests safely"
 ```
 
-⚠️ **Important**: Always use `:safe` versions of E2E tests to prevent system resource exhaustion.
+**Or manually**:
+```bash
+npm test                 # All tests
+npm test:coverage        # With coverage
+npm run test:e2e:safe    # E2E (safe mode)
+```
 
 ---
 
-## 🔧 Development
+## 🔧 For Developers
 
-### Available Commands
-
-```bash
-# Development
-npm run dev              # Watch mode
-npm run build            # Build TypeScript
-npm start                # Start production build
-npm run typecheck        # Type checking
-
-# Services
-npm run orchestrator     # Start orchestrator
-npm run rag              # Start RAG agent
-npm run rag:demo         # RAG demo mode
-npm run rag:watch        # RAG watch mode (auto-index files)
-npm run dashboard        # Evolution dashboard
-npm run mcp              # Start MCP server
-
-# CLI Tools
-npm run cred             # Credential management
-
-# Testing
-npm test                 # Unit tests
-npm run test:coverage    # Test coverage report
-npm run test:e2e:safe    # E2E tests (safe mode)
-npm run test:e2e:collaboration:safe    # Collaboration E2E tests (safe)
-npm run test:e2e:security:safe         # Security E2E tests (safe)
-
-# Code Quality
-npm run lint             # ESLint
-npm run format           # Prettier
-
-# Demos
-npm run demo:architecture    # Architecture demo
-npm run demo:dashboard       # Dashboard demo
+**Want to contribute?** Ask Claude Code:
+```
+"Show me the project structure"
+"How do I add a new agent?"
+"Run the development server"
 ```
 
-### Project Structure
-
-```
-smart-agents/
-├── src/
-│   ├── orchestrator/        # Task routing and orchestration
-│   │   ├── index.ts
-│   │   ├── AgentRouter.ts
-│   │   ├── TaskAnalyzer.ts
-│   │   └── CostTracker.ts
-│   ├── agents/              # Agent implementations
-│   │   ├── rag/            # RAG agent system
-│   │   ├── DevelopmentButler.ts
-│   │   ├── TestWriterAgent.ts
-│   │   └── DevOpsEngineerAgent.ts
-│   ├── core/                # Core infrastructure
-│   │   ├── AgentRegistry.ts
-│   │   ├── MCPToolInterface.ts
-│   │   └── CheckpointDetector.ts
-│   ├── knowledge-graph/     # Knowledge management
-│   ├── evolution/           # Self-learning system
-│   └── index.ts             # Main entry & exports
-├── tests/                   # Test suites
-│   ├── unit/
-│   ├── integration/
-│   └── e2e/
-└── docs/                    # Documentation
-    ├── architecture/
-    ├── guides/
-    └── plans/
-```
+**Or see**: [Contributing Guide](CONTRIBUTING.md)
 
 ---
 
 ## 📚 Documentation
 
-### User Documentation
-- **[User Guide](./docs/USER_GUIDE.md)** - Complete usage guide
-- **[Setup Guide](./docs/guides/SETUP_GUIDE.md)** - Detailed setup instructions
-- **[Troubleshooting](./docs/TROUBLESHOOTING.md)** - Common issues and solutions
+**Key Docs** (or ask Claude Code to explain):
+- [Architecture Overview](docs/architecture/OVERVIEW.md)
+- [Agent Reference](docs/AGENT_REFERENCE.md)
+- [Claude Code Installation](docs/guides/CLAUDE_CODE_INSTALLATION.md)
 
-### Technical Documentation
-- **[Architecture](./ARCHITECTURE.md)** - System architecture and design
-- **[MCP Integration](./docs/MCP_INTEGRATION.md)** - Claude Code integration
-- **[RAG Deployment](./docs/guides/RAG_DEPLOYMENT.md)** - RAG agent setup
-- **[Testing Best Practices](./docs/guides/E2E_TESTING_BEST_PRACTICES.md)** - Testing guidelines
-
-### API Documentation
-- **[Agent Reference](./docs/AGENT_REFERENCE.md)** - All agents documented
-- **[API Reference](./docs/api/API_REFERENCE.md)** - API documentation
-- **[Models Reference](./docs/api/MODELS.md)** - Data models
+**Everything else?** Just ask Claude Code!
 
 ---
 
-## 🔒 Security
+## 🤝 Contributing
 
-- API keys are loaded from `.env` (never commit)
-- `.gitignore` configured to exclude sensitive files
-- See `.env.example` for secure configuration examples
+**Want to contribute?** Ask Claude Code:
+```
+"How do I contribute to Smart Agents?"
+"Show me the contributing guidelines"
+```
+
+Or see: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
-## 🚀 Performance
+## 📞 Need Help?
 
-- **Resource Monitoring**: Built-in CPU/memory tracking
-- **Cost Tracking**: Per-agent and total cost monitoring
-- **Optimization**: Intelligent agent routing based on task complexity
-- **Evolution System**: Continuous performance improvement through self-learning
+**Ask Claude Code**:
+```
+"Why isn't Smart Agents working?"
+"How do I debug this issue?"
+"Show me troubleshooting steps"
+```
+
+**Or**:
+- [GitHub Issues](https://github.com/kevintseng/smart-agents/issues)
+- [Discussions](https://github.com/kevintseng/smart-agents/discussions)
 
 ---
 
@@ -365,31 +203,9 @@ MIT © 2025
 
 ---
 
-## 🙏 Acknowledgments
+## 🙏 Built With
 
-- Built for [Claude Code](https://claude.com/claude-code)
-- Powered by [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)
-- Uses [Anthropic Claude](https://anthropic.com) API
-- Integrates [OpenAI](https://openai.com) embeddings for RAG
-- Vector storage with [ChromaDB](https://www.trychroma.com/)
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
----
-
-## 📞 Support
-
-- 📖 Check the [User Guide](./docs/USER_GUIDE.md) first
-- 🔍 Search [existing issues](https://github.com/kevintseng/smart-agents/issues)
-- 💬 Ask in [Discussions](https://github.com/kevintseng/smart-agents/discussions)
-- 🐛 Report bugs via [Issues](https://github.com/kevintseng/smart-agents/issues/new)
+- [Claude Code](https://claude.com/claude-code)
+- [Model Context Protocol](https://modelcontextprotocol.io/)
+- [Anthropic Claude API](https://anthropic.com)
+- [OpenAI Embeddings](https://openai.com)

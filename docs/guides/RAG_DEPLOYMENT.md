@@ -1,119 +1,119 @@
-# RAG Agent 部署指南
+# RAG Agent Deployment Guide
 
-本文檔說明如何部署 Advanced RAG Agent（使用 Vectra 本地向量資料庫）。
+This document explains how to deploy the Advanced RAG Agent (using Vectra local vector database).
 
-## 目錄
+## Table of Contents
 
-- [系統需求](#系統需求)
-- [本地開發部署](#本地開發部署)
-- [生產環境部署](#生產環境部署)
-- [效能調優](#效能調優)
-- [監控與維護](#監控與維護)
-- [故障排除](#故障排除)
+- [System Requirements](#system-requirements)
+- [Local Development Deployment](#local-development-deployment)
+- [Production Environment Deployment](#production-environment-deployment)
+- [Performance Tuning](#performance-tuning)
+- [Monitoring and Maintenance](#monitoring-and-maintenance)
+- [Troubleshooting](#troubleshooting)
 
-## 系統需求
+## System Requirements
 
-### 最低需求
+### Minimum Requirements
 
-- **CPU**: 2 核心
+- **CPU**: 2 cores
 - **RAM**: 4 GB
-- **硬碟**: 10 GB 可用空間
+- **Storage**: 10 GB available space
 - **Node.js**: >= 18.0.0
 
-### 推薦配置
+### Recommended Configuration
 
-- **CPU**: 4+ 核心
+- **CPU**: 4+ cores
 - **RAM**: 8+ GB
-- **硬碟**: 50+ GB SSD（用於向量資料存儲）
-- **網路**: 穩定的網路連接（OpenAI API）
+- **Storage**: 50+ GB SSD (for vector data storage)
+- **Network**: Stable network connection (OpenAI API)
 
-### 軟體依賴
+### Software Dependencies
 
 ```bash
-# Node.js 和 npm
+# Node.js and npm
 node --version  # >= 18.0.0
 npm --version   # >= 9.0.0
 ```
 
-**就這樣！** Vectra 是純 Node.js 實現，無需 Docker、Python 或其他依賴。
+**That's it!** Vectra is a pure Node.js implementation, no Docker, Python, or other dependencies needed.
 
-## 本地開發部署
+## Local Development Deployment
 
-### 1. 環境設置
+### 1. Environment Setup
 
 ```bash
-# 克隆專案
+# Clone project
 cd /Users/ktseng/Developer/Projects/smart-agents
 
-# 安裝依賴
+# Install dependencies
 npm install
 
-# 配置環境變數
+# Configure environment variables
 cp .env.example .env
 ```
 
-### 2. 配置 OpenAI API Key
+### 2. Configure OpenAI API Key
 
-RAG Agent 使用 OpenAI Embeddings API（穩定可靠）
+RAG Agent uses OpenAI Embeddings API (stable and reliable)
 
-#### 方式 1：環境變數預先設定
+#### Method 1: Pre-configure Environment Variables
 
 ```bash
 cp .env.example .env
 ```
 
-編輯 `.env` 文件：
+Edit the `.env` file:
 
 ```env
 # OpenAI Embeddings API
 OPENAI_API_KEY=sk-xxxxx
-OPENAI_EMBEDDING_MODEL=text-embedding-3-small  # 可選，預設值
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small  # Optional, default value
 ```
 
-**成本參考**：
+**Cost Reference**:
 - text-embedding-3-small: $0.02 / 1M tokens (~62,500 pages of text)
-- text-embedding-3-large: $0.13 / 1M tokens (更高品質)
+- text-embedding-3-large: $0.13 / 1M tokens (higher quality)
 
-#### 方式 2：使用時互動式設定
+#### Method 2: Interactive Setup on First Use
 
-如果沒有預先設定 API key，第一次使用時會提示輸入：
+If the API key is not pre-configured, you'll be prompted to enter it on first use:
 
 ```typescript
 const rag = new RAGAgent();
 await rag.initialize();
 
-// 系統會顯示 RAG 功能說明並提示輸入 API key
+// The system will display RAG feature description and prompt for API key
 ```
 
-#### 方式 3：程式碼中啟用
+#### Method 3: Enable in Code
 
 ```typescript
 const rag = new RAGAgent();
-await rag.initialize(); // RAG 功能 disabled
+await rag.initialize(); // RAG feature disabled
 
-// 稍後啟用
-await rag.enableRAG('sk-xxxxx'); // 提供 API key
-// 或
-await rag.enableRAG(); // 互動式提示
+// Enable later
+await rag.enableRAG('sk-xxxxx'); // Provide API key
+// or
+await rag.enableRAG(); // Interactive prompt
 ```
 
-### 3. 運行 RAG Agent
+### 3. Run RAG Agent
 
 ```bash
-# 執行 demo（會自動創建 data/vectorstore/ 目錄）
+# Run demo (will automatically create data/vectorstore/ directory)
 npm run rag
 
-# 或直接執行
+# Or run directly
 tsx src/agents/rag/demo.ts
 ```
 
-向量資料會自動存儲在 `data/vectorstore/` 目錄，無需手動創建。
+Vector data will be automatically stored in the `data/vectorstore/` directory, no manual creation needed.
 
-### 3a. 使用檔案投放功能（可選）
+### 3a. Using File Drop Feature (Optional)
 
-**檔案投放功能** 讓您輕鬆建立知識庫，只需將檔案投放到指定資料夾，RAG Agent 會自動索引。
+**File Drop Feature** allows you to easily build a knowledge base by simply dropping files into a designated folder, and RAG Agent will automatically index them.
 
-#### 📂 檔案投放資料夾位置（平台友好）
+#### 📂 File Drop Folder Location (Platform Friendly)
 
 ```bash
 # macOS / Linux
@@ -123,73 +123,73 @@ tsx src/agents/rag/demo.ts
 %USERPROFILE%\Documents\smart-agents-knowledge\
 ```
 
-**為什麼使用 Documents 資料夾？**
-- ✅ 用戶熟悉的位置（跨平台標準）
-- ✅ 容易存取和管理
-- ✅ 不與專案代碼混在一起
-- ✅ 可以跨專案共用知識庫
+**Why use the Documents folder?**
+- ✅ Familiar location for users (cross-platform standard)
+- ✅ Easy to access and manage
+- ✅ Doesn't mix with project code
+- ✅ Can share knowledge base across projects
 
-#### 啟動 File Watcher
+#### Start File Watcher
 
 ```bash
-# 啟動 File Watcher（自動創建資料夾）
+# Start File Watcher (automatically creates folder)
 npm run rag:watch
 
-# 輸出範例：
+# Example output:
 📁 File Watcher Started
-📂 Watching directory: /Users/你的用戶名/Documents/smart-agents-knowledge
+📂 Watching directory: /Users/your-username/Documents/smart-agents-knowledge
 📄 Supported extensions: .md, .txt, .json, .pdf, .docx
-⏱️  Polling interval: 5000ms (每 5 秒掃描一次)
+⏱️  Polling interval: 5000ms (scan every 5 seconds)
 
 💡 Tip: Drop your files into this folder and they will be automatically indexed!
 
 📡 File Watcher is running... (Press Ctrl+C to stop)
 ```
 
-#### 使用流程
+#### Usage Workflow
 
-1. **啟動 File Watcher**：
+1. **Start File Watcher**:
    ```bash
    npm run rag:watch
    ```
 
-2. **投放檔案**：
-   - 將您的文檔、筆記、代碼文件投放到 `~/Documents/smart-agents-knowledge/`
-   - 支援格式：`.md`, `.txt`, `.json`, `.pdf`, `.docx`
+2. **Drop Files**:
+   - Drop your documents, notes, code files into `~/Documents/smart-agents-knowledge/`
+   - Supported formats: `.md`, `.txt`, `.json`, `.pdf`, `.docx`
 
-3. **自動索引**：
-   - File Watcher 每 5 秒掃描一次資料夾
-   - 自動檢測並索引新檔案
-   - 顯示索引進度和統計
+3. **Automatic Indexing**:
+   - File Watcher scans the folder every 5 seconds
+   - Automatically detects and indexes new files
+   - Displays indexing progress and statistics
 
-4. **立即可用**：
-   - 所有 13 個 agents 立即可以搜尋這些知識
-   - 使用語義搜尋找到最相關的資訊
+4. **Immediately Available**:
+   - All 13 agents can immediately search this knowledge
+   - Uses semantic search to find the most relevant information
 
-#### 支援的檔案格式
+#### Supported File Formats
 
-| 格式 | 副檔名 | 說明 |
-|------|--------|------|
-| Markdown | `.md` | 筆記、文檔 |
-| 文字檔 | `.txt` | 純文字內容 |
-| JSON | `.json` | 結構化資料 |
-| PDF | `.pdf` | PDF 文檔（需額外處理）|
-| Word | `.docx` | Word 文檔（需額外處理）|
+| Format | Extension | Description |
+|--------|-----------|-------------|
+| Markdown | `.md` | Notes, documents |
+| Text files | `.txt` | Plain text content |
+| JSON | `.json` | Structured data |
+| PDF | `.pdf` | PDF documents (requires additional processing)|
+| Word | `.docx` | Word documents (requires additional processing)|
 
-**注意**：PDF 和 .docx 檔案需要額外的文字提取處理，建議使用 Markdown 或純文字格式以獲得最佳效果。
+**Note**: PDF and .docx files require additional text extraction processing. For best results, use Markdown or plain text formats.
 
-#### 實例：建立專案知識庫
+#### Example: Build Project Knowledge Base
 
 ```bash
-# 1. 啟動 File Watcher
+# 1. Start File Watcher
 npm run rag:watch
 
-# 2. 在另一個終端，投放檔案到資料夾
+# 2. In another terminal, drop files into the folder
 cp ~/Downloads/project-docs/*.md ~/Documents/smart-agents-knowledge/
 cp ~/Downloads/api-specs/*.json ~/Documents/smart-agents-knowledge/
 
-# 3. File Watcher 會自動索引
-# 輸出：
+# 3. File Watcher will automatically index
+# Output:
 🆕 Found 5 new file(s):
    - api-v1-spec.json
    - database-schema.md
@@ -207,12 +207,12 @@ cp ~/Downloads/api-specs/*.json ~/Documents/smart-agents-knowledge/
 
 ✨ Successfully indexed 5 file(s)
 
-# 4. 所有 agents 現在都可以搜尋這些知識
+# 4. All agents can now search this knowledge
 ```
 
-#### 進階配置（可選）
+#### Advanced Configuration (Optional)
 
-如果需要自訂監控行為，可以直接使用 `FileWatcher` API：
+If you need to customize monitoring behavior, you can directly use the `FileWatcher` API:
 
 ```typescript
 import { RAGAgent } from './agents/rag/index.js';
@@ -222,10 +222,10 @@ const rag = new RAGAgent();
 await rag.initialize();
 
 const watcher = new FileWatcher(rag, {
-  watchDir: '/custom/path/to/watch',           // 自訂監控資料夾
-  supportedExtensions: ['.md', '.txt'],        // 自訂支援格式
-  batchSize: 20,                               // 批次大小
-  pollingInterval: 10000,                      // 掃描間隔（毫秒）
+  watchDir: '/custom/path/to/watch',           // Custom monitoring folder
+  supportedExtensions: ['.md', '.txt'],        // Custom supported formats
+  batchSize: 20,                               // Batch size
+  pollingInterval: 10000,                      // Scan interval (milliseconds)
   onIndexed: (files) => {
     console.log(`Indexed ${files.length} files`);
   },
@@ -237,84 +237,84 @@ const watcher = new FileWatcher(rag, {
 await watcher.start();
 ```
 
-### 4. 執行測試
+### 4. Run Tests
 
 ```bash
-# 執行所有測試
+# Run all tests
 npm test
 
-# 執行 RAG 測試
+# Run RAG tests
 npm test -- src/agents/rag/rag.test.ts
 
-# 生成覆蓋率報告
+# Generate coverage report
 npm run test:coverage
 ```
 
-## 生產環境部署
+## Production Environment Deployment
 
-### 1. 安全配置
+### 1. Security Configuration
 
-#### API Key 管理
+#### API Key Management
 
 ```bash
-# 使用環境變數（不要寫入 .env 文件）
+# Use environment variables (don't write to .env file)
 export OPENAI_API_KEY=sk-xxxxx
 
-# 或使用 secrets management
+# Or use secrets management
 # - AWS Secrets Manager
 # - HashiCorp Vault
 # - Kubernetes Secrets
 ```
 
-#### 檔案系統權限
+#### File System Permissions
 
 ```bash
-# 確保應用程序有權限寫入資料目錄
+# Ensure application has permission to write to data directory
 mkdir -p data/vectorstore
 chmod 750 data/vectorstore
 
-# 設置適當的擁有者
+# Set appropriate owner
 chown -R app_user:app_group data/
 ```
 
-### 2. 資料持久化
+### 2. Data Persistence
 
-#### 備份策略
+#### Backup Strategy
 
 ```bash
-# 定期備份向量資料（簡單的 tar 即可）
+# Regular backup of vector data (simple tar is sufficient)
 tar -czf backups/vectorstore-$(date +%Y%m%d).tar.gz data/vectorstore/
 
-# 恢復資料
+# Restore data
 tar -xzf backups/vectorstore-YYYYMMDD.tar.gz
 ```
 
-#### 版本控制
+#### Version Control
 
 ```bash
-# .gitignore 應包含（已配置）
+# .gitignore should include (already configured)
 data/vectorstore/
 ```
 
-### 3. Process Manager 配置
+### 3. Process Manager Configuration
 
-#### 使用 PM2
+#### Using PM2
 
 ```bash
-# 安裝 PM2
+# Install PM2
 npm install -g pm2
 
-# 啟動應用
+# Start application
 pm2 start npm --name "rag-agent" -- run rag
 
-# 保存配置
+# Save configuration
 pm2 save
 
-# 設置開機啟動
+# Setup startup on boot
 pm2 startup
 ```
 
-#### PM2 ecosystem 配置
+#### PM2 Ecosystem Configuration
 
 ```javascript
 // ecosystem.config.js
@@ -335,9 +335,9 @@ module.exports = {
 };
 ```
 
-### 4. 監控設置
+### 4. Monitoring Setup
 
-#### 健康檢查
+#### Health Check
 
 ```typescript
 // health-check.ts
@@ -348,7 +348,7 @@ async function healthCheck() {
   await rag.initialize();
 
   const stats = await rag.getStats();
-  const isHealthy = stats.totalDocuments >= 0; // 基本檢查
+  const isHealthy = stats.totalDocuments >= 0; // Basic check
 
   await rag.close();
   return isHealthy;
@@ -360,20 +360,20 @@ healthCheck()
 ```
 
 ```bash
-# Cron 健康檢查（每小時）
+# Cron health check (hourly)
 0 * * * * cd /path/to/smart-agents && tsx health-check.ts || alert
 ```
 
-#### 日誌管理
+#### Log Management
 
 ```bash
-# 應用日誌
+# Application logs
 tail -f logs/rag-agent.log
 
-# 錯誤日誌
+# Error logs
 grep "ERROR" logs/rag-agent.log | tail -20
 
-# 日誌輪轉（使用 logrotate）
+# Log rotation (using logrotate)
 cat > /etc/logrotate.d/rag-agent <<EOF
 /path/to/smart-agents/logs/*.log {
   daily
@@ -386,61 +386,61 @@ cat > /etc/logrotate.d/rag-agent <<EOF
 EOF
 ```
 
-## 效能調優
+## Performance Tuning
 
-### 1. Embedding 批次處理
+### 1. Embedding Batch Processing
 
 ```typescript
-// ✅ 推薦：大批次
+// ✅ Recommended: Large batches
 await rag.indexDocuments(docs, {
   batchSize: 100,
   maxConcurrent: 5,
 });
 
-// ❌ 避免：小批次
+// ❌ Avoid: Small batches
 await rag.indexDocuments(docs, {
   batchSize: 10,
   maxConcurrent: 1,
 });
 ```
 
-### 2. 檔案系統優化
+### 2. File System Optimization
 
 ```bash
-# 使用 SSD 存儲向量資料
-# 確保 data/vectorstore/ 在快速存儲裝置上
+# Use SSD for vector data storage
+# Ensure data/vectorstore/ is on fast storage device
 
-# 檢查磁碟 I/O 性能
+# Check disk I/O performance
 sudo iotop
 
-# 優化檔案系統（ext4）
+# Optimize file system (ext4)
 sudo tune2fs -O dir_index /dev/sdX
 ```
 
-### 3. 快取策略
+### 3. Caching Strategy
 
 ```typescript
-// 啟用 reranker 快取
+// Enable reranker cache
 const results = await rag.searchWithRerank(query, {
   rerankAlgorithm: 'reciprocal-rank',
-  useCache: true,  // 預設啟用
+  useCache: true,  // Enabled by default
 });
 ```
 
-### 4. 成本優化
+### 4. Cost Optimization
 
 ```typescript
-// 使用 small 模型（適合大部分場景）
+// Use small model (suitable for most scenarios)
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small  // $0.02/1M tokens
 
-// 僅在需要高精度時使用 large 模型
+// Only use large model when high precision is needed
 OPENAI_EMBEDDING_MODEL=text-embedding-3-large  // $0.13/1M tokens
 ```
 
-### 5. 記憶體管理
+### 5. Memory Management
 
 ```typescript
-// 對於大量文檔，使用流式處理
+// For large document sets, use streaming
 async function indexLargeDataset(docs: DocumentInput[]) {
   const chunkSize = 1000;
 
@@ -453,59 +453,59 @@ async function indexLargeDataset(docs: DocumentInput[]) {
 
     console.log(`Indexed ${i + chunk.length}/${docs.length} documents`);
 
-    // 釋放記憶體
+    // Release memory
     if (global.gc) global.gc();
   }
 }
 ```
 
-## 監控與維護
+## Monitoring and Maintenance
 
-### 1. 成本監控
+### 1. Cost Monitoring
 
 ```typescript
-// 定期檢查成本
+// Regular cost checking
 const stats = await rag.getStats();
 console.log(`Current cost: $${stats.embeddingStats.totalCost.toFixed(4)}`);
 
-// 設置成本警報
+// Setup cost alerts
 const MONTHLY_BUDGET_USD = 50;
 if (stats.embeddingStats.totalCost > MONTHLY_BUDGET_USD * 0.8) {
   console.warn('⚠️ 80% of monthly budget reached!');
-  // 發送警報（email, Slack, etc.）
+  // Send alert (email, Slack, etc.)
 }
 ```
 
-### 2. 效能監控
+### 2. Performance Monitoring
 
 ```typescript
-// 追蹤搜尋延遲
+// Track search latency
 const startTime = Date.now();
 const results = await rag.search(query);
 const latency = Date.now() - startTime;
 
 console.log(`Search latency: ${latency}ms`);
 
-// 記錄到監控系統（Prometheus, DataDog, etc.）
+// Log to monitoring system (Prometheus, DataDog, etc.)
 ```
 
-### 3. 定期維護
+### 3. Regular Maintenance
 
 ```bash
-# 每週備份
+# Weekly backup
 0 0 * * 0 /path/to/backup-vectorstore.sh
 
-# 每月清理舊資料（如需要）
+# Monthly cleanup of old data (if needed)
 0 0 1 * * /path/to/cleanup-old-data.sh
 
-# 每日健康檢查
+# Daily health check
 0 */6 * * * tsx /path/to/health-check.ts || alert
 ```
 
-### 4. 資料完整性檢查
+### 4. Data Integrity Check
 
 ```typescript
-// 定期檢查向量資料完整性
+// Regularly check vector data integrity
 import { LocalIndex } from 'vectra';
 
 async function checkIntegrity() {
@@ -521,203 +521,203 @@ async function checkIntegrity() {
 }
 ```
 
-## 故障排除
+## Troubleshooting
 
-### 問題 1: 向量資料庫初始化失敗
+### Issue 1: Vector Database Initialization Failed
 
-**症狀**: `VectorStore initialization failed`
+**Symptoms**: `VectorStore initialization failed`
 
-**解決方案**:
+**Solutions**:
 
 ```bash
-# 1. 檢查目錄權限
+# 1. Check directory permissions
 ls -la data/vectorstore/
 
-# 2. 確保目錄存在且可寫
+# 2. Ensure directory exists and is writable
 mkdir -p data/vectorstore
 chmod 750 data/vectorstore
 
-# 3. 檢查磁碟空間
+# 3. Check disk space
 df -h
 
-# 4. 如果資料損毀，刪除並重建
+# 4. If data is corrupted, delete and rebuild
 rm -rf data/vectorstore/
-# 重新運行應用，會自動創建新 index
+# Rerun application, it will automatically create new index
 ```
 
-### 問題 2: Embedding API 速率限制
+### Issue 2: Embedding API Rate Limit
 
-**症狀**: `Rate limit exceeded`
+**Symptoms**: `Rate limit exceeded`
 
-**解決方案**:
+**Solutions**:
 
 ```typescript
-// 減少並發請求
+// Reduce concurrent requests
 await rag.indexDocuments(docs, {
-  batchSize: 50,     // 從 100 減少到 50
-  maxConcurrent: 2,  // 從 5 減少到 2
+  batchSize: 50,     // Reduced from 100 to 50
+  maxConcurrent: 2,  // Reduced from 5 to 2
 });
 
-// 添加重試邏輯
+// Add retry logic
 async function indexWithRetry(docs, maxRetries = 3) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await rag.indexDocuments(docs);
     } catch (error) {
       if (i === maxRetries - 1) throw error;
-      await sleep(2000 * (i + 1)); // 指數退避
+      await sleep(2000 * (i + 1)); // Exponential backoff
     }
   }
 }
 ```
 
-### 問題 3: 記憶體不足
+### Issue 3: Out of Memory
 
-**症狀**: `JavaScript heap out of memory`
+**Symptoms**: `JavaScript heap out of memory`
 
-**解決方案**:
+**Solutions**:
 
 ```bash
-# 增加 Node.js 記憶體限制
+# Increase Node.js memory limit
 NODE_OPTIONS="--max-old-space-size=4096" npm run rag
 ```
 
 ```typescript
-// 減少批次大小
+// Reduce batch size
 await rag.indexDocuments(docs, {
-  batchSize: 20,  // 減少記憶體使用
+  batchSize: 20,  // Reduce memory usage
 });
 
-// 使用流式處理大量文檔
-// 見「效能調優 -> 記憶體管理」章節
+// Use streaming for large document sets
+// See "Performance Tuning -> Memory Management" section
 ```
 
-### 問題 4: 搜尋結果不準確
+### Issue 4: Inaccurate Search Results
 
-**症狀**: 搜尋結果相關性差
+**Symptoms**: Poor search result relevance
 
-**解決方案**:
+**Solutions**:
 
 ```typescript
-// 1. 使用 hybrid search
+// 1. Use hybrid search
 const results = await rag.hybridSearch(query, {
   semanticWeight: 0.7,
   keywordWeight: 0.3,
 });
 
-// 2. 調整 topK 和重排序
+// 2. Adjust topK and reranking
 const results = await rag.searchWithRerank(query, {
-  topK: 20,  // 先獲取更多結果
+  topK: 20,  // Get more results first
   rerankAlgorithm: 'reciprocal-rank',
 });
 
-// 3. 升級到 large 模型
+// 3. Upgrade to large model
 OPENAI_EMBEDDING_MODEL=text-embedding-3-large
 ```
 
-### 問題 5: 磁碟空間不足
+### Issue 5: Insufficient Disk Space
 
-**症狀**: `ENOSPC: no space left on device`
+**Symptoms**: `ENOSPC: no space left on device`
 
-**解決方案**:
+**Solutions**:
 
 ```bash
-# 檢查磁碟使用
+# Check disk usage
 du -sh data/vectorstore/
 
-# 清理舊的向量資料（謹慎！）
+# Clean old vector data (caution!)
 await rag.clearAll();
 
-# 或刪除特定文檔
-const oldDocIds = [...];  // 獲取舊文檔 ID
+# Or delete specific documents
+const oldDocIds = [...];  // Get old document IDs
 await rag.deleteDocuments(oldDocIds);
 
-# 壓縮資料目錄（備份）
+# Compress data directory (backup)
 tar -czf vectorstore-backup.tar.gz data/vectorstore/
 ```
 
-### 問題 6: 檔案權限錯誤
+### Issue 6: File Permission Error
 
-**症狀**: `EACCES: permission denied`
+**Symptoms**: `EACCES: permission denied`
 
-**解決方案**:
+**Solutions**:
 
 ```bash
-# 修正擁有者
+# Fix owner
 chown -R $USER:$USER data/vectorstore/
 
-# 修正權限
+# Fix permissions
 chmod -R 750 data/vectorstore/
 ```
 
-## 部署檢查清單
+## Deployment Checklist
 
-完整的 RAG Agent 部署流程：
+Complete RAG Agent deployment workflow:
 
-- [ ] ✅ 環境準備（Node.js >= 18）
-- [ ] ✅ 安裝依賴（`npm install`）
-- [ ] ✅ 配置 OpenAI API Key
-- [ ] ✅ 設置資料目錄權限
-- [ ] ✅ 執行測試驗證（`npm test`）
-- [ ] ✅ 配置 Process Manager（PM2）
-- [ ] ✅ 設置備份腳本
-- [ ] ✅ 配置監控和警報
-- [ ] ✅ 設置日誌輪轉
-- [ ] ✅ 執行健康檢查
+- [ ] ✅ Environment preparation (Node.js >= 18)
+- [ ] ✅ Install dependencies (`npm install`)
+- [ ] ✅ Configure OpenAI API Key
+- [ ] ✅ Set data directory permissions
+- [ ] ✅ Run test verification (`npm test`)
+- [ ] ✅ Configure Process Manager (PM2)
+- [ ] ✅ Setup backup scripts
+- [ ] ✅ Configure monitoring and alerts
+- [ ] ✅ Setup log rotation
+- [ ] ✅ Execute health checks
 
-## 技術架構說明
+## Technical Architecture
 
-### Vectra 向量資料庫
+### Vectra Vector Database
 
-Smart-Agents RAG 使用 Vectra 作為向量資料庫：
+Smart-Agents RAG uses Vectra as the vector database:
 
-| 特性 | 說明 |
-|------|------|
-| **部署** | 零配置，npm install 即可 |
-| **依賴** | 純 Node.js，零額外依賴 |
-| **資料存儲** | 本地檔案（data/vectorstore/） |
-| **備份** | 簡單 tar 壓縮即可 |
-| **性能** | < 100ms (本地檔案存取) |
-| **維護** | 零維護成本 |
-| **基礎設施成本** | $0 |
+| Feature | Description |
+|---------|-------------|
+| **Deployment** | Zero configuration, just npm install |
+| **Dependencies** | Pure Node.js, zero additional dependencies |
+| **Data Storage** | Local files (data/vectorstore/) |
+| **Backup** | Simple tar compression |
+| **Performance** | < 100ms (local file access) |
+| **Maintenance** | Zero maintenance cost |
+| **Infrastructure Cost** | $0 |
 
-**選擇 Vectra 的原因**：簡單、快速、零維護成本。
+**Why choose Vectra**: Simple, fast, zero maintenance cost.
 
 ### OpenAI Embeddings API
 
-使用 OpenAI Embeddings API 的優勢：
+Advantages of using OpenAI Embeddings API:
 
-- ✅ **穩定可靠** - 官方維護的 API，穩定性高
-- ✅ **簡單整合** - 官方 SDK 支援完善
-- ✅ **高品質** - text-embedding-3-small/large 模型品質優秀
-- ✅ **成本實惠** - $0.02 / 1M tokens，約 62,500 頁文本
-- ✅ **無需維護** - 雲端服務，無需自行部署
+- ✅ **Stable and Reliable** - Officially maintained API, high stability
+- ✅ **Simple Integration** - Official SDK with complete support
+- ✅ **High Quality** - text-embedding-3-small/large models excellent quality
+- ✅ **Cost-Effective** - $0.02 / 1M tokens, approximately 62,500 pages of text
+- ✅ **No Maintenance** - Cloud service, no self-deployment needed
 
-## 生產環境建議
+## Production Environment Recommendations
 
-### 小型部署（< 100K 文檔）
-- 使用單機 Vectra 部署
-- PM2 管理進程
-- 定期備份到 S3/NAS
+### Small Deployment (< 100K documents)
+- Use single-machine Vectra deployment
+- PM2 process management
+- Regular backups to S3/NAS
 
-### 中型部署（100K - 1M 文檔）
-- 使用 SSD 存儲
-- 增加 Node.js 記憶體限制
-- 實施分片策略（多個 Vectra index）
+### Medium Deployment (100K - 1M documents)
+- Use SSD storage
+- Increase Node.js memory limits
+- Implement sharding strategy (multiple Vectra indexes)
 
-### 大型部署（> 1M 文檔）
-- 考慮分散式向量資料庫（Qdrant, Weaviate）
-- 實施快取層（Redis）
-- 使用 CDN 加速查詢
+### Large Deployment (> 1M documents)
+- Consider distributed vector databases (Qdrant, Weaviate)
+- Implement caching layer (Redis)
+- Use CDN for query acceleration
 
-## 總結
+## Summary
 
-Vectra 部署的優勢：
+Vectra deployment advantages:
 
-✅ **零配置** - npm install 即可開始
-✅ **零維護** - 無需管理 Docker 容器
-✅ **快速** - 本地檔案存取，< 100ms 延遲
-✅ **簡單備份** - tar 壓縮即可
-✅ **低成本** - 無額外基礎設施成本
+✅ **Zero Configuration** - npm install and you're ready
+✅ **Zero Maintenance** - No Docker container management
+✅ **Fast** - Local file access, < 100ms latency
+✅ **Simple Backup** - tar compression is all you need
+✅ **Low Cost** - No additional infrastructure costs
 
-如有問題，請參考 [故障排除](#故障排除) 章節或提交 Issue。
+If you have questions, refer to the [Troubleshooting](#troubleshooting) section or submit an Issue.

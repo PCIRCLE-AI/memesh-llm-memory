@@ -17,11 +17,11 @@ describe('AgentRegistry - Agent Classification', () => {
 
       // According to the plan:
       // Real Implementations: 5 (development-butler, test-writer, devops-engineer, project-manager, data-engineer)
-      // Enhanced Prompts: 7 (architecture-agent, code-reviewer, security-auditor, ui-designer, marketing-strategist, product-manager, ml-engineer)
+      // Enhanced Prompts: 12 (architecture-agent, code-reviewer, security-auditor, ui-designer, marketing-strategist, product-manager, ml-engineer, debugger, refactorer, api-designer, research-agent, data-analyst)
       // Optional: 1 (rag-agent)
 
       expect(realImplementations).toHaveLength(5);
-      expect(enhancedPrompts).toHaveLength(7);
+      expect(enhancedPrompts).toHaveLength(12);
       expect(optionalAgents).toHaveLength(1);
     });
 
@@ -40,6 +40,7 @@ describe('AgentRegistry - Agent Classification', () => {
       const enhancedPrompts = registry.getEnhancedPrompts();
       const enhancedNames = enhancedPrompts.map(a => a.name);
 
+      // Original 7 agents
       expect(enhancedNames).toContain('architecture-agent');
       expect(enhancedNames).toContain('code-reviewer');
       expect(enhancedNames).toContain('security-auditor');
@@ -47,6 +48,13 @@ describe('AgentRegistry - Agent Classification', () => {
       expect(enhancedNames).toContain('marketing-strategist');
       expect(enhancedNames).toContain('product-manager');
       expect(enhancedNames).toContain('ml-engineer');
+
+      // New 5 agents
+      expect(enhancedNames).toContain('debugger');
+      expect(enhancedNames).toContain('refactorer');
+      expect(enhancedNames).toContain('api-designer');
+      expect(enhancedNames).toContain('research-agent');
+      expect(enhancedNames).toContain('data-analyst');
     });
 
     it('should return correct agent for optional features', () => {
@@ -99,10 +107,43 @@ describe('AgentRegistry - Agent Classification', () => {
   });
 
   describe('getAllAgents should return all agents', () => {
-    it('should return total of 13 agents (5 real + 7 enhanced + 1 optional)', () => {
+    it('should return total of 18 agents (5 real + 12 enhanced + 1 optional)', () => {
       const allAgents = registry.getAllAgents();
 
-      expect(allAgents).toHaveLength(13);
+      expect(allAgents).toHaveLength(18);
+    });
+  });
+
+  describe('Missing Enhanced Prompt Agents', () => {
+    it('should include all 5 missing Enhanced Prompt agents', () => {
+      const enhancedPrompts = registry.getEnhancedPrompts();
+      const enhancedNames = enhancedPrompts.map(a => a.name);
+
+      // The 5 missing agents from the plan
+      expect(enhancedNames).toContain('debugger');
+      expect(enhancedNames).toContain('refactorer');
+      expect(enhancedNames).toContain('api-designer');
+      expect(enhancedNames).toContain('research-agent');
+      expect(enhancedNames).toContain('data-analyst');
+    });
+
+    it('should have correct classification for missing agents', () => {
+      const debuggerAgent = registry.getAgent('debugger');
+      const refactorer = registry.getAgent('refactorer');
+      const apiDesigner = registry.getAgent('api-designer');
+      const researchAgent = registry.getAgent('research-agent');
+      const dataAnalyst = registry.getAgent('data-analyst');
+
+      expect(debuggerAgent?.classification).toBe(AgentClassification.ENHANCED_PROMPT);
+      expect(refactorer?.classification).toBe(AgentClassification.ENHANCED_PROMPT);
+      expect(apiDesigner?.classification).toBe(AgentClassification.ENHANCED_PROMPT);
+      expect(researchAgent?.classification).toBe(AgentClassification.ENHANCED_PROMPT);
+      expect(dataAnalyst?.classification).toBe(AgentClassification.ENHANCED_PROMPT);
+    });
+
+    it('should update total enhanced prompts count to 12', () => {
+      const enhancedPrompts = registry.getEnhancedPrompts();
+      expect(enhancedPrompts).toHaveLength(12); // 7 existing + 5 new = 12
     });
   });
 });

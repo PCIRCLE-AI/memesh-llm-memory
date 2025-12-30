@@ -131,31 +131,6 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 
 ---
 
-## ✨ Key Benefits
-
-### 🎯 For Developers
-
-- **Faster Development**: Right agent for each task = better solutions faster
-- **Cost Optimization**: Track and optimize token usage across all interactions
-- **Quality Assurance**: Specialized agents apply domain best practices automatically
-- **Learning Curve**: No need to craft perfect prompts - agents optimize for you
-
-### 📊 For Teams
-
-- **Consistency**: All team members benefit from same agent expertise
-- **Visibility**: Track cost and performance across projects
-- **Extensibility**: Easy to add custom agents for specific workflows
-- **Integration**: Works seamlessly with existing Claude Code setup
-
-### 🧠 For AI Enthusiasts
-
-- **Evolution System**: Agents learn from successful patterns and improve over time
-- **Knowledge Graph**: Build and query structured knowledge about your projects
-- **RAG Integration**: Semantic search over project documentation and code
-- **MCP Architecture**: Modern, extensible protocol for AI tool integration
-
----
-
 ## 🎪 The 13 Specialized Agents
 
 ### Real Implementation Agents (5)

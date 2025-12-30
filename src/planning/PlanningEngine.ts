@@ -7,6 +7,20 @@ import type { AgentRegistry } from '../orchestrator/AgentRegistry.js';
 export type TaskPriority = 'critical' | 'high' | 'medium' | 'low';
 
 /**
+ * Implementation phase for internal task generation
+ */
+interface Phase {
+  description: string;
+  priority?: TaskPriority;
+  dependencies?: string[];
+  files?: {
+    create?: string[];
+    modify?: string[];
+    test?: string[];
+  };
+}
+
+/**
  * Single task in plan
  */
 export interface PlanTask {
@@ -56,6 +70,20 @@ export class PlanningEngine {
    * Generate complete implementation plan
    */
   generatePlan(request: PlanRequest): ImplementationPlan {
+    // Validate input
+    if (!request.featureDescription?.trim()) {
+      throw new Error('featureDescription is required and cannot be empty');
+    }
+
+    if (request.featureDescription.length > 1000) {
+      throw new Error('featureDescription exceeds maximum length of 1000 characters');
+    }
+
+    // Validate requirements array
+    if (request.requirements && !Array.isArray(request.requirements)) {
+      throw new Error('requirements must be an array');
+    }
+
     const tasks = this.generateTasks(request);
     const totalTime = this.estimateTotalTime(tasks);
 
@@ -99,7 +127,7 @@ export class PlanningEngine {
   /**
    * Generate 5-step TDD workflow for task
    */
-  private generateTDDSteps(phase: any): string[] {
+  private generateTDDSteps(phase: Phase): string[] {
     return [
       `Write test for ${phase.description}`,
       `Run test to verify it fails`,
@@ -112,7 +140,7 @@ export class PlanningEngine {
   /**
    * Assign appropriate agent based on task characteristics
    */
-  private assignAgent(phase: any): string | undefined {
+  private assignAgent(phase: Phase): string | undefined {
     const agents = this.agentRegistry.getAllAgents();
 
     // Simple keyword matching (will be enhanced with LearningManager)
@@ -136,9 +164,9 @@ export class PlanningEngine {
   /**
    * Identify implementation phases from requirements
    */
-  private identifyPhases(request: PlanRequest): any[] {
+  private identifyPhases(request: PlanRequest): Phase[] {
     // Simplified phase identification
-    const phases = [];
+    const phases: Phase[] = [];
 
     if (request.requirements) {
       // Each requirement gets broken down into multiple sub-tasks
@@ -146,14 +174,14 @@ export class PlanningEngine {
         // Sub-task 1: Setup/Preparation
         phases.push({
           description: `Setup for ${req}`,
-          priority: 'high',
+          priority: 'high' as TaskPriority,
           files: {},
         });
 
         // Sub-task 2: Core implementation
         phases.push({
           description: req,
-          priority: 'high',
+          priority: 'high' as TaskPriority,
           files: {},
         });
       }
@@ -161,7 +189,7 @@ export class PlanningEngine {
       // Default single phase
       phases.push({
         description: request.featureDescription,
-        priority: 'high',
+        priority: 'high' as TaskPriority,
         files: {},
       });
     }

@@ -39,4 +39,35 @@ describe('SessionTokenTracker', () => {
       expect.objectContaining({ level: 'critical', threshold: 90 })
     );
   });
+
+  it('should prevent duplicate threshold warnings', () => {
+    tracker.recordUsage({ inputTokens: 160000, outputTokens: 0 }); // 80%
+    const warnings1 = tracker.checkThresholds();
+    expect(warnings1.length).toBeGreaterThan(0);
+    expect(warnings1[0].threshold).toBe(80);
+
+    tracker.recordUsage({ inputTokens: 1000, outputTokens: 0 }); // Still > 80%
+    const warnings2 = tracker.checkThresholds();
+    expect(warnings2.length).toBe(0); // No duplicate warning
+  });
+
+  it('should record usage history with timestamps', () => {
+    tracker.recordUsage({ inputTokens: 1000, outputTokens: 500 });
+    tracker.recordUsage({ inputTokens: 2000, outputTokens: 1000 });
+
+    const stats = tracker.getStats();
+    expect(stats.interactionCount).toBe(2);
+  });
+
+  it('should provide usage statistics', () => {
+    tracker.recordUsage({ inputTokens: 100000, outputTokens: 0 });
+
+    const stats = tracker.getStats();
+    expect(stats.totalTokens).toBe(100000);
+    expect(stats.tokenLimit).toBe(200000);
+    expect(stats.usagePercentage).toBe(50);
+    expect(stats.tokensRemaining).toBe(100000);
+    expect(stats.interactionCount).toBe(1);
+    expect(stats.triggeredThresholds).toEqual([]);
+  });
 });

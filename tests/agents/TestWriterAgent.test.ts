@@ -36,10 +36,22 @@ describe('TestWriterAgent', () => {
 
     expect(analysis.functions).toHaveLength(1);
     expect(analysis.functions[0].name).toBe('divide');
+
+    // New AST-based implementation generates intelligent edge cases based on parameter types
     expect(analysis.testCases).toContainEqual({
       function: 'divide',
-      case: 'edge-case-zero-division',
-      expected: 'throw error'
+      case: 'normal-case',
+      expected: 'return value'
+    });
+    expect(analysis.testCases).toContainEqual({
+      function: 'divide',
+      case: 'edge-case-zero',
+      expected: 'handle zero'
+    });
+    expect(analysis.testCases).toContainEqual({
+      function: 'divide',
+      case: 'edge-case-negative',
+      expected: 'handle negative'
     });
   });
 });

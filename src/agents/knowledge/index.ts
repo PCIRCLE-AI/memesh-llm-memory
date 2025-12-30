@@ -228,46 +228,83 @@ export class KnowledgeAgent {
   // ========================================
 
   /**
-   * Find similar tasks from knowledge graph (STUB)
-   * TODO: Implement using knowledge graph similarity search
+   * Find similar entities using simple similarity matching
    */
   async findSimilar(description: string, type?: string): Promise<SimilarTask[]> {
-    // Stub: return empty array
-    console.warn('findSimilar is a stub method - use searchNodes instead');
-    return [];
+    this.ensureInitialized();
+
+    const allEntities = await this.graph.getAllEntities();
+    const filtered = type
+      ? allEntities.filter(e => e.entityType === type)
+      : allEntities;
+
+    // Calculate simple similarity based on common words
+    const descWords = new Set(description.toLowerCase().split(/\s+/));
+    const results: SimilarTask[] = [];
+
+    for (const entity of filtered) {
+      const entityText = [
+        entity.name,
+        ...entity.observations
+      ].join(' ').toLowerCase();
+
+      const entityWords = new Set(entityText.split(/\s+/));
+      const commonWords = new Set([...descWords].filter(w => entityWords.has(w)));
+      const similarity = commonWords.size / Math.max(descWords.size, entityWords.size);
+
+      if (similarity > 0.1) { // Only include if at least 10% similar
+        results.push({
+          name: entity.name,
+          similarity,
+          metadata: entity.metadata
+        });
+      }
+    }
+
+    return results.sort((a, b) => b.similarity - a.similarity).slice(0, 10);
   }
 
   /**
-   * Get decision history (STUB)
-   * TODO: Implement using knowledge graph entities with type 'decision'
+   * Get decision history from knowledge graph
    */
   async getDecisions(): Promise<Decision[]> {
-    // Stub: return empty array
-    console.warn('getDecisions is a stub method - use searchNodes with entityType="decision" instead');
-    return [];
+    this.ensureInitialized();
+
+    const decisions = await this.searchNodes('', { entityType: 'decision' });
+    return decisions.map(entity => ({
+      id: entity.id,
+      description: entity.name,
+      outcome: entity.observations.find(o => o.includes('outcome:'))?.replace('outcome:', '').trim() || '',
+      timestamp: entity.created
+    }));
   }
 
   /**
-   * Get lessons learned (STUB)
-   * TODO: Implement using knowledge graph entities with type 'lesson_learned'
+   * Get lessons learned from knowledge graph
    */
   async getLessonsLearned(): Promise<LessonLearned[]> {
-    // Stub: return empty array
-    console.warn('getLessonsLearned is a stub method - use searchNodes with entityType="lesson_learned" instead');
-    return [];
+    this.ensureInitialized();
+
+    const lessons = await this.searchNodes('', { entityType: 'lesson_learned' });
+    return lessons.map(entity => ({
+      id: entity.id,
+      lesson: entity.name,
+      context: entity.observations.join(' | '),
+      timestamp: entity.created
+    }));
   }
 
   /**
-   * Get knowledge statistics (STUB)
-   * TODO: Implement using knowledge graph stats
+   * Get knowledge statistics from graph
    */
   async getStats(): Promise<KnowledgeStats> {
-    // Stub: return zero stats
-    console.warn('getStats is a stub method - use readGraph().stats instead');
+    this.ensureInitialized();
+
+    const graphStats = await this.graph.getStats();
     return {
-      totalTasks: 0,
-      totalDecisions: 0,
-      totalLessons: 0,
+      totalTasks: graphStats.entityTypeBreakdown['task'] || 0,
+      totalDecisions: graphStats.entityTypeBreakdown['decision'] || 0,
+      totalLessons: graphStats.entityTypeBreakdown['lesson_learned'] || 0
     };
   }
 

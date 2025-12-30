@@ -302,21 +302,21 @@ export class Orchestrator {
     const executing: Promise<void>[] = [];
 
     for (const task of tasks) {
+      // Create promise that removes itself from pool when complete
       const promise = this.executeTask(task).then(result => {
         results.push(result);
+        // Remove this promise from executing array
+        const index = executing.indexOf(promise);
+        if (index > -1) {
+          executing.splice(index, 1);
+        }
       });
 
       executing.push(promise);
 
       if (executing.length >= maxConcurrent) {
-        // 等待其中一個完成
+        // Wait for at least one to complete (it will remove itself)
         await Promise.race(executing);
-        // 移除已完成的
-        const stillExecuting = executing.filter(p =>
-          Promise.race([p, Promise.resolve('done')]).then(v => v !== 'done')
-        );
-        executing.length = 0;
-        executing.push(...stillExecuting);
       }
     }
 

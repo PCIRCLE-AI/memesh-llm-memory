@@ -42,6 +42,9 @@ import { getRAGAgent } from '../agents/rag/index.js';
 import { FileWatcher } from '../agents/rag/FileWatcher.js';
 import { SkillManager } from '../skills/index.js';
 import { UninstallManager } from '../management/index.js';
+import { DevelopmentButler } from '../agents/DevelopmentButler.js';
+import { CheckpointDetector } from '../core/CheckpointDetector.js';
+import { MCPToolInterface } from '../core/MCPToolInterface.js';
 import { z } from 'zod';
 import {
   TaskInputSchema,
@@ -75,6 +78,9 @@ class SmartAgentsMCPServer {
   private fileWatcher?: FileWatcher;
   private skillManager: SkillManager;
   private uninstallManager: UninstallManager;
+  private developmentButler: DevelopmentButler;
+  private checkpointDetector: CheckpointDetector;
+  private toolInterface: MCPToolInterface;
 
   constructor() {
     this.server = new Server(
@@ -107,6 +113,15 @@ class SmartAgentsMCPServer {
       this.router.getPerformanceTracker(),
       this.router.getLearningManager(),
       this.router.getAdaptationEngine()
+    );
+
+    // Initialize DevelopmentButler components
+    this.checkpointDetector = new CheckpointDetector();
+    this.toolInterface = new MCPToolInterface();
+    this.developmentButler = new DevelopmentButler(
+      this.checkpointDetector,
+      this.toolInterface,
+      this.router.getLearningManager()
     );
 
     this.setupHandlers();
@@ -219,6 +234,83 @@ class SmartAgentsMCPServer {
       };
 
       // ========================================
+      // Workflow Guidance Tools
+      // ========================================
+
+      // get-workflow-guidance - Get intelligent workflow recommendations
+      const getWorkflowGuidanceTool = {
+        name: 'get-workflow-guidance',
+        description: '🔄 Smart-Agents: Get intelligent workflow recommendations based on current development context',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            phase: {
+              type: 'string',
+              enum: ['idle', 'code-written', 'test-complete', 'commit-ready', 'committed'],
+              description: 'Current workflow phase',
+            },
+            filesChanged: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'List of files that were changed',
+            },
+            testsPassing: {
+              type: 'boolean',
+              description: 'Whether tests are passing',
+            },
+          },
+          required: ['phase'],
+        },
+      };
+
+      // get-session-health - Check session health
+      const getSessionHealthTool = {
+        name: 'get-session-health',
+        description: '💊 Smart-Agents: Check session health including token usage and quality metrics',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {},
+        },
+      };
+
+      // reload-context - Reload CLAUDE.md context
+      const reloadContextTool = {
+        name: 'reload-context',
+        description: '🔄 Smart-Agents: Reload CLAUDE.md context to refresh session',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            reason: {
+              type: 'string',
+              enum: ['token-threshold', 'quality-degradation', 'manual', 'context-staleness'],
+              description: 'Reason for reload',
+            },
+          },
+          required: ['reason'],
+        },
+      };
+
+      // record-token-usage - Record token usage for monitoring
+      const recordTokenUsageTool = {
+        name: 'record-token-usage',
+        description: '📊 Smart-Agents: Record token usage for session monitoring',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            inputTokens: {
+              type: 'number',
+              description: 'Number of input tokens',
+            },
+            outputTokens: {
+              type: 'number',
+              description: 'Number of output tokens',
+            },
+          },
+          required: ['inputTokens', 'outputTokens'],
+        },
+      };
+
+      // ========================================
       // Backward compatibility (old names)
       // ========================================
 
@@ -266,6 +358,11 @@ class SmartAgentsMCPServer {
           saAgentsTool,
           saSkillsTool,
           saUninstallTool,
+          // Workflow guidance tools
+          getWorkflowGuidanceTool,
+          getSessionHealthTool,
+          reloadContextTool,
+          recordTokenUsageTool,
           // Legacy tools (backward compatibility)
           smartRouterTool,
           evolutionDashboardTool,
@@ -317,6 +414,23 @@ class SmartAgentsMCPServer {
       // Handle sa_uninstall (new tool)
       if (toolName === 'sa_uninstall') {
         return await this.handleUninstall(args);
+      }
+
+      // Handle workflow guidance tools
+      if (toolName === 'get-workflow-guidance') {
+        return await this.handleGetWorkflowGuidance(args);
+      }
+
+      if (toolName === 'get-session-health') {
+        return await this.handleGetSessionHealth(args);
+      }
+
+      if (toolName === 'reload-context') {
+        return await this.handleReloadContext(args);
+      }
+
+      if (toolName === 'record-token-usage') {
+        return await this.handleRecordTokenUsage(args);
       }
 
       // Handle smart_route_task (legacy name - backward compatibility)
@@ -885,6 +999,136 @@ class SmartAgentsMCPServer {
           {
             type: 'text',
             text: `❌ Uninstall failed: ${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle get-workflow-guidance tool
+   */
+  private async handleGetWorkflowGuidance(
+    args: unknown
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      const data = args as Record<string, unknown>;
+      const result = await this.developmentButler.processCheckpoint(
+        data.phase as string,
+        data
+      );
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: result.formattedRequest,
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Workflow guidance failed: ${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle get-session-health tool
+   */
+  private async handleGetSessionHealth(
+    args: unknown
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      const health = this.developmentButler.getContextMonitor().checkSessionHealth();
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(health, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Session health check failed: ${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle reload-context tool
+   */
+  private async handleReloadContext(
+    args: unknown
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      const data = args as Record<string, unknown>;
+      const requestId = `manual_${Date.now()}`;
+      const result = await this.developmentButler.executeContextReload(requestId);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Context reload failed: ${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle record-token-usage tool
+   */
+  private async handleRecordTokenUsage(
+    args: unknown
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      const data = args as Record<string, unknown>;
+      this.developmentButler.getTokenTracker().recordUsage({
+        inputTokens: data.inputTokens as number,
+        outputTokens: data.outputTokens as number,
+      });
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({ success: true }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Token usage recording failed: ${errorMessage}`,
           },
         ],
       };

@@ -21,7 +21,7 @@ Smart Agents is a prompt enhancement system for Claude Code that:
 
 - **13 Specialized Agents**:
   - 5 real implementations (RAG, Evolution, Knowledge Graph, Butler, Test Writer)
-  - 8 prompt-enhanced templates (Code Reviewer, Debugger, Refactorer, API Designer, Research, Architecture, Data Analyst, Knowledge)
+  - 7 enhanced prompts, 1 optional feature (Code Reviewer, Debugger, Refactorer, API Designer, Research, Architecture, Data Analyst, Knowledge)
 - **Intelligent Routing**: Capability-based routing to the right agent for each task
 - **Prompt Enhancement Mode**: Returns enhanced prompts instead of making direct API calls
 - **Cost Tracking**: Monitor token usage and costs across agent interactions

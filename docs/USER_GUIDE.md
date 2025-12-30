@@ -62,7 +62,7 @@ Smart-Agents is a **prompt enhancement system** for Claude Code with three main 
 
 1. **Intelligent Router**: Analyzes tasks and routes to the best agent (via optimized prompts)
 2. **RAG System**: Vector-based retrieval augmented generation for knowledge queries
-3. **13 Specialized Agents**: 5 real implementations + 8 prompt-enhanced agents
+3. **13 Specialized Agents**: 5 real implementations + 7 enhanced prompts + 1 optional
 
 **What it is**: A routing and prompt optimization layer for Claude Code
 **What it isn't**: An autonomous multi-agent AI system (agents are prompt templates + routing logic)
@@ -234,7 +234,7 @@ When using the orchestrator, tasks can be routed to agents in these categories:
 **Implementation Types**:
 - **5 Real Implementations**: RAG Agent, Evolution System, Knowledge Graph, Development Butler, Test Writer
   - These have actual code execution capabilities (vector search, performance tracking, test generation, etc.)
-- **8 Prompt-Enhanced Agents**: Code Reviewer, Debugger, Refactorer, API Designer, Research Agent, Architecture Agent, Data Analyst, Knowledge Agent
+- **7 Enhanced Prompts + 1 Optional**: Code Reviewer, Debugger, Refactorer, API Designer, Research Agent, Architecture Agent, Data Analyst, Knowledge Agent
   - These use specialized prompts + routing logic (not separate autonomous implementations)
 
 ---

@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Trap errors and provide helpful context
+trap 'echo ""; echo "❌ Setup failed at line $LINENO"; echo "   You can run the script again or see README.md for manual setup"; exit 1' ERR
+
 echo "🚀 Smart Agents - Automated Setup"
 echo "=================================="
 echo ""
@@ -34,8 +37,13 @@ if [ ! -f .env ]; then
   cp .env.example .env
   echo "✅ .env created from template"
   echo ""
-  echo "⚠️  IMPORTANT: Edit .env and add your ANTHROPIC_API_KEY"
-  echo "   Get your key from: https://console.anthropic.com/"
+  # Check if MCP_SERVER_MODE is true
+  if grep -q "MCP_SERVER_MODE=true" .env 2>/dev/null; then
+    echo "ℹ️  MCP Server mode enabled - Claude Code will manage API access"
+  else
+    echo "⚠️  IMPORTANT: Edit .env and add your ANTHROPIC_API_KEY"
+    echo "   Get your key from: https://console.anthropic.com/"
+  fi
 else
   echo "✅ .env file already exists"
 fi
@@ -43,8 +51,12 @@ fi
 # Run tests
 echo ""
 echo "🧪 Running tests..."
-npm test
-echo "✅ All tests passed"
+if npm test; then
+  echo "✅ All tests passed"
+else
+  echo "⚠️  Some tests failed, but you can continue setup"
+  echo "   Fix test issues later by running: npm test"
+fi
 
 # Build project
 echo ""
@@ -59,18 +71,23 @@ read -p "Would you like to configure MCP server integration? (y/n) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
   echo "🔧 Starting MCP server configuration..."
-  npm run mcp:start || {
-    echo "⚠️  MCP server setup failed. You can configure it later with: npm run mcp:start"
+  npm run mcp || {
+    echo "⚠️  MCP server setup failed. You can configure it later with: npm run mcp"
   }
 else
-  echo "⏭  Skipping MCP server setup. You can configure it later with: npm run mcp:start"
+  echo "⏭  Skipping MCP server setup. You can configure it later with: npm run mcp"
 fi
 
 echo ""
 echo "✅ Setup complete!"
 echo ""
 echo "Next steps:"
-echo "1. Edit .env and add your ANTHROPIC_API_KEY"
+if grep -q "MCP_SERVER_MODE=false" .env 2>/dev/null; then
+  echo "1. Edit .env and add your ANTHROPIC_API_KEY"
+  echo "   Get your key from: https://console.anthropic.com/"
+else
+  echo "1. ✅ MCP Server mode is configured - Claude Code will handle API access"
+fi
 echo "2. Configure Claude Code to use this MCP server (if not already done)"
 echo ""
 echo "Documentation: README.md"

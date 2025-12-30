@@ -6,6 +6,7 @@
 import { Orchestrator } from './orchestrator/index.js';
 import { appConfig } from './config/index.js';
 import { logger } from './utils/logger.js';
+import { AgentRegistry } from './core/AgentRegistry.js';
 
 async function main() {
   logger.info('🤖 Smart Agents starting...');
@@ -22,12 +23,30 @@ async function main() {
   logger.info(`💰 Monthly Spend: $${status.costStats.monthlySpend.toFixed(4)} ($${status.costStats.remainingBudget.toFixed(2)} remaining)`);
   logger.info(`📊 ${status.recommendation}`);
 
+  // List available agents dynamically from registry
+  const registry = new AgentRegistry();
+  const realAgents = registry.getRealImplementations();
+  const enhancedAgents = registry.getEnhancedPrompts();
+  const optionalAgents = registry.getOptionalAgents();
+
   logger.info('\n✅ Smart Agents ready!');
   logger.info('\n📋 Available Agents:');
-  logger.info('   - Voice AI (Whisper STT + TTS)');
-  logger.info('   - RAG Agent (Vectra + Semantic Search)');
-  logger.info('   - Code Agent (Code generation and review)');
-  logger.info('   - Research Agent (Web search and analysis)');
+
+  logger.info(`\n  Real Implementation Agents (${realAgents.length}):`);
+  realAgents.forEach(agent => {
+    logger.info(`   - ${agent.name}: ${agent.description}`);
+  });
+
+  logger.info(`\n  Enhanced Prompt Agents (${enhancedAgents.length}):`);
+  enhancedAgents.forEach(agent => {
+    logger.info(`   - ${agent.name}: ${agent.description}`);
+  });
+
+  logger.info(`\n  Optional Agents (${optionalAgents.length}):`);
+  optionalAgents.forEach(agent => {
+    logger.info(`   - ${agent.name}: ${agent.description}`);
+  });
+
   logger.info('\n💡 Use Orchestrator to route tasks intelligently\n');
 
   // Future enhancements tracked in TECH_DEBT.md:

@@ -138,27 +138,57 @@ export class PlanningEngine {
   }
 
   /**
-   * Assign appropriate agent based on task characteristics
+   * Assign appropriate agent based on task characteristics and registry
    */
-  private assignAgent(phase: Phase): string | undefined {
+  private assignAgent(phase: any): string | undefined {
     const agents = this.agentRegistry.getAllAgents();
+    const description = phase.description.toLowerCase();
 
-    // Simple keyword matching (will be enhanced with LearningManager)
-    if (phase.description.toLowerCase().includes('security')) {
-      const securityAgent = agents.find((a) =>
-        a.capabilities?.includes('security-audit')
-      );
-      return securityAgent?.id;
+    // Define capability keywords for each task type
+    const capabilityKeywords: Record<string, string[]> = {
+      'code-review': ['review', 'quality', 'best practices', 'validation'],
+      'security-audit': ['security', 'authentication', 'authorization'],
+      'performance': ['optimize', 'performance', 'bottleneck', 'cache'],
+      'frontend': ['ui', 'component', 'frontend', 'react', 'interface'],
+      'backend': ['api', 'backend', 'server', 'endpoint'],
+      'database': ['database', 'migration', 'schema', 'query'],
+      'test': ['test', 'coverage', 'e2e', 'unit'],
+      'test-generation': ['test', 'coverage', 'e2e', 'unit'],
+      'test-execution': ['test', 'coverage', 'e2e', 'unit'],
+      'debugging': ['debug', 'fix', 'issue', 'bug'],
+    };
+
+    // Score each agent based on capability match
+    const scores = agents.map((agent) => {
+      let score = 0;
+      const capabilities = agent.capabilities || [];
+
+      for (const capability of capabilities) {
+        const keywords = capabilityKeywords[capability] || [];
+        for (const keyword of keywords) {
+          if (description.includes(keyword)) {
+            // Give higher weight to 'review' keyword for code-review tasks
+            if (capability === 'code-review' && keyword === 'review') {
+              score += 2;
+            } else {
+              score += 1;
+            }
+          }
+        }
+      }
+
+      return { agent, score };
+    });
+
+    // Sort by score descending
+    scores.sort((a, b) => b.score - a.score);
+
+    // Return highest scoring agent (if score > 0)
+    if (scores[0].score > 0) {
+      return scores[0].agent.name;
     }
 
-    if (phase.description.toLowerCase().includes('test')) {
-      const testAgent = agents.find((a) =>
-        a.capabilities?.includes('test-generation')
-      );
-      return testAgent?.id;
-    }
-
-    return undefined; // Let router decide
+    return undefined; // No strong match, let router decide
   }
 
   /**

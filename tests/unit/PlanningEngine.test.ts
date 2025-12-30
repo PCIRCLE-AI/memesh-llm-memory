@@ -10,8 +10,20 @@ describe('PlanningEngine', () => {
   beforeEach(() => {
     mockAgentRegistry = {
       getAllAgents: vi.fn().mockReturnValue([
-        { id: 'code-reviewer', capabilities: ['code-review', 'security-audit'] },
-        { id: 'test-automator', capabilities: ['test-generation', 'test-execution'] },
+        {
+          name: 'code-reviewer',
+          description: 'Code review expert',
+          category: 'development',
+          classification: 'enhanced-prompt',
+          capabilities: ['code-review', 'security-audit']
+        },
+        {
+          name: 'test-automator',
+          description: 'Test automation expert',
+          category: 'development',
+          classification: 'enhanced-prompt',
+          capabilities: ['test-generation', 'test-execution']
+        },
       ]),
       getAgentById: vi.fn(),
     } as unknown as AgentRegistry;

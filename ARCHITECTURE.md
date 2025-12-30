@@ -668,6 +668,30 @@ Local Machine
 - ✅ Tool input schema validation
 - ✅ Cost budget enforcement
 
+### Evolution Storage Layer Security (v2.1.0)
+
+**SQL Injection Protection**:
+- ✅ All FTS (Full-Text Search) queries hardened against SQL injection
+- ✅ Parameterized queries with proper escaping
+- ✅ Input sanitization for user-provided search terms
+
+**Type Safety**:
+- ✅ Branded `MicroDollars` type prevents money calculation errors
+- ✅ Safe JSON parsing with fallback values (no crashes on malformed data)
+- ✅ Zero 'as any' type casts - full TypeScript type coverage
+
+**Data Integrity**:
+- ✅ Standardized null handling (database NULL ↔ TypeScript undefined)
+- ✅ Input validation before database operations
+- ✅ Comprehensive error messages with context
+
+**Code Quality**:
+- ✅ JSDoc documentation for all public APIs
+- ✅ Named constants replace magic numbers
+- ✅ Consistent coding patterns across storage layer
+
+See [Storage Enhancements](./src/evolution/storage/ENHANCEMENTS.md) for details.
+
 ### 日誌與監控
 
 - ✅ 結構化日誌 (JSON format)

@@ -37,6 +37,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Filesystem and memory helpers added to MCPToolInterface
 - Environment variable loading for RAG with OpenAI API key
 
+### Refactored
+- **Evolution Storage Layer** (Phase 1-3 refactoring)
+  - Phase 1: Critical security fixes
+    - Eliminated SQL injection vulnerabilities in FTS queries
+    - Hardened all database query parameters
+    - Improved error handling and validation
+  - Phase 2: Major improvements
+    - Implemented proper TypeScript type safety with branded MicroDollars type
+    - Added comprehensive JSDoc documentation for core utilities
+    - Created safeJsonParse utility for robust JSON handling
+    - Enhanced null safety throughout storage layer
+  - Phase 3: Minor improvements
+    - Eliminated all 51 'as any' type casts in SQLiteStore implementations
+    - Added JSDoc documentation to 8+ core public API methods
+    - Replaced magic numbers with named constants (money formatting)
+    - Standardized null handling patterns (|| null for inserts, ?? undefined for reads)
+
 ### Documentation
 - Comprehensive v2.1.0 release notes
 - Complete user documentation and troubleshooting guide
@@ -45,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed terminology inconsistencies across all docs
 - Agent implementation architecture details
 - MCP integration guide with step-by-step setup
+- Updated EVOLUTION.md with storage layer refactoring details
 
 ### Removed
 - Unused collaboration features

@@ -2,7 +2,7 @@
 
 > **透過智能路由、提示優化和性能追蹤，將 Claude Code 轉變為專業的 AI 開發團隊。**
 
-[![License: Non-Commercial](https://img.shields.io/badge/License-Non--Commercial-red.svg)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/kevintseng/smart-agents/releases)
 [![Node.js >= 18.0.0](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![Claude Code MCP](https://img.shields.io/badge/Claude_Code-MCP_Server-purple.svg)](https://modelcontextprotocol.io/)
@@ -411,11 +411,19 @@ smart-agents/
 
 ## 📝 授權
 
-**僅供非商業使用** © 2025
+**GNU Affero 通用公共授權條款 v3.0**
 
-本專案僅授權非商業使用。詳見 [LICENSE](LICENSE)。
+本專案採用 GNU AGPL v3 授權。完整條款詳見 [LICENSE](LICENSE)。
 
-未經明確許可，禁止商業使用、重新分發或為商業目的進行修改。
+主要條款：
+- ✅ 自由使用、修改和分發
+- ✅ 允許商業使用
+- ✅ 必須公開原始碼
+- ✅ **網路使用 = 分發**（即使作為 SaaS 使用也必須分享原始碼）
+- ✅ 衍生作品必須使用 AGPL v3
+- ✅ 必須記錄變更
+
+**為何使用 AGPL？** 由於 Smart Agents 是可作為服務運行的 MCP 伺服器，AGPL 確保即使透過網路使用也必須分享原始碼。
 
 ---
 

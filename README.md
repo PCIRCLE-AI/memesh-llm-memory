@@ -139,9 +139,9 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 |-------|---------|--------------|
 | **RAG Agent** *(Optional - requires OpenAI API key)* | Semantic search & retrieval | Vector search, document indexing, context-aware responses |
 | **Knowledge Graph Agent** | Structured knowledge management | Entity relationships, graph queries, knowledge synthesis |
-| **Test Writer Agent** | Automated test generation | TDD workflows, coverage analysis, test scenarios |
+| **Test Writer Agent** | Automated test generation | TDD workflows, coverage analysis, test scenarios, vitest integration |
 | **Development Butler Agent** | Event-driven automation | Checkpoint detection, workflow integration, hook system |
-| **DevOps Engineer Agent** | CI/CD & deployment | Infrastructure automation, deployment workflows, monitoring |
+| **DevOps Engineer Agent** | CI/CD & deployment | Infrastructure automation, GitHub Actions/GitLab CI, deployment analysis |
 
 ### Enhanced Prompt Agents (12)
 

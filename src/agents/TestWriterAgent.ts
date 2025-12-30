@@ -1,5 +1,6 @@
 import { MCPToolInterface } from '../core/MCPToolInterface.js';
 import { generateTestFile } from './templates/test-templates.js';
+import * as ts from 'typescript';
 
 export interface FunctionInfo {
   name: string;
@@ -25,37 +26,106 @@ export class TestWriterAgent {
     const functions: FunctionInfo[] = [];
     const testCases: TestCase[] = [];
 
-    // Simple regex-based parsing (in production, use TypeScript AST parser)
-    const functionRegex = /export\s+function\s+(\w+)\s*\(([^)]*)\)\s*:\s*(\w+)/g;
-    let match;
+    // Use TypeScript AST parser for accurate code analysis
+    const sourceFile = ts.createSourceFile(
+      'temp.ts',
+      sourceCode,
+      ts.ScriptTarget.Latest,
+      true
+    );
 
-    while ((match = functionRegex.exec(sourceCode)) !== null) {
-      const [, name, params, returnType] = match;
+    // Visit all nodes and extract functions
+    const visit = (node: ts.Node) => {
+      if (ts.isFunctionDeclaration(node) && node.name) {
+        const functionInfo = this.extractFunctionInfo(node, sourceFile);
+        functions.push(functionInfo);
 
-      functions.push({
-        name,
-        parameters: params.split(',').map(p => p.trim()).filter(p => p),
-        returnType
-      });
+        // Generate intelligent test cases based on types
+        testCases.push(...this.generateIntelligentTestCases(functionInfo));
+      }
 
-      // Basic test case generation
-      testCases.push({
-        function: name,
-        case: 'normal-case',
-        expected: 'return value'
-      });
+      ts.forEachChild(node, visit);
+    };
 
-      // Detect edge cases
-      if (sourceCode.includes('throw') && sourceCode.includes(name)) {
-        testCases.push({
-          function: name,
-          case: 'edge-case-zero-division',
-          expected: 'throw error'
+    visit(sourceFile);
+
+    return { functions, testCases };
+  }
+
+  private extractFunctionInfo(node: ts.FunctionDeclaration, sourceFile: ts.SourceFile): FunctionInfo {
+    const name = node.name?.text || 'anonymous';
+    const parameters = node.parameters.map(param => {
+      const paramName = (param.name as ts.Identifier).text;
+      const paramType = param.type ? param.type.getText(sourceFile) : 'any';
+      return `${paramName}: ${paramType}`;
+    });
+    const returnType = node.type ? node.type.getText(sourceFile) : 'unknown';
+
+    return { name, parameters, returnType };
+  }
+
+  private generateIntelligentTestCases(func: FunctionInfo): TestCase[] {
+    const cases: TestCase[] = [];
+    const typesFound = new Set<string>();
+
+    // Always add normal case
+    cases.push({
+      function: func.name,
+      case: 'normal-case',
+      expected: 'return value'
+    });
+
+    // Add edge cases based on parameter types (avoid duplicates)
+    for (const param of func.parameters) {
+      if (param.includes('number') && !typesFound.has('number')) {
+        typesFound.add('number');
+        cases.push({
+          function: func.name,
+          case: 'edge-case-zero',
+          expected: 'handle zero'
+        });
+        cases.push({
+          function: func.name,
+          case: 'edge-case-negative',
+          expected: 'handle negative'
+        });
+      }
+      if (param.includes('string') && !typesFound.has('string')) {
+        typesFound.add('string');
+        cases.push({
+          function: func.name,
+          case: 'edge-case-empty-string',
+          expected: 'handle empty string'
+        });
+      }
+      if ((param.includes('[]') || param.includes('Array')) && !typesFound.has('array')) {
+        typesFound.add('array');
+        cases.push({
+          function: func.name,
+          case: 'edge-case-empty-array',
+          expected: 'handle empty array'
+        });
+      }
+      if ((param.includes('null') || param.includes('undefined')) && !typesFound.has('nullable')) {
+        typesFound.add('nullable');
+        cases.push({
+          function: func.name,
+          case: 'edge-case-null-undefined',
+          expected: 'handle null/undefined'
         });
       }
     }
 
-    return { functions, testCases };
+    // Add error case if return type is never
+    if (func.returnType === 'never') {
+      cases.push({
+        function: func.name,
+        case: 'edge-case-throws',
+        expected: 'throw error'
+      });
+    }
+
+    return cases;
   }
 
   async generateTests(filePath: string, sourceCode: string): Promise<string> {

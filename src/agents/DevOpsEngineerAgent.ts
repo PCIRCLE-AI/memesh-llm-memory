@@ -22,17 +22,60 @@ export class DevOpsEngineerAgent {
     return generateCIConfig(options);
   }
 
-  async analyzeDeploymentReadiness(): Promise<DeploymentAnalysis> {
+  private async runTests(testCommand: string = 'npm test'): Promise<boolean> {
+    try {
+      const result = await this.mcp.bash({
+        command: testCommand,
+        timeout: 300000 // 5 minutes
+      });
+      return result.exitCode === 0;
+    } catch (error) {
+      console.error('Test execution failed:', error);
+      return false;
+    }
+  }
+
+  private async runBuild(buildCommand: string = 'npm run build'): Promise<boolean> {
+    try {
+      const result = await this.mcp.bash({
+        command: buildCommand,
+        timeout: 600000 // 10 minutes
+      });
+      return result.exitCode === 0;
+    } catch (error) {
+      console.error('Build execution failed:', error);
+      return false;
+    }
+  }
+
+  private async checkGitStatus(): Promise<boolean> {
+    try {
+      const result = await this.mcp.bash({
+        command: 'git status --porcelain',
+        timeout: 5000
+      });
+      // Empty output means no uncommitted changes
+      return result.stdout.trim() === '';
+    } catch (error) {
+      console.error('Git status check failed:', error);
+      return false;
+    }
+  }
+
+  async analyzeDeploymentReadiness(options?: {
+    testCommand?: string;
+    buildCommand?: string;
+  }): Promise<DeploymentAnalysis> {
     const blockers: string[] = [];
 
-    // Check tests (mock for now - will use actual test runner)
-    const testsPass = true; // TODO: Run actual tests
+    // Run actual tests
+    const testsPass = await this.runTests(options?.testCommand);
 
-    // Check build (mock for now)
-    const buildSuccessful = true; // TODO: Run actual build
+    // Run actual build
+    const buildSuccessful = await this.runBuild(options?.buildCommand);
 
-    // Check git status (mock for now)
-    const noUncommittedChanges = true; // TODO: Check actual git status
+    // Check actual git status
+    const noUncommittedChanges = await this.checkGitStatus();
 
     if (!testsPass) blockers.push('Tests failing');
     if (!buildSuccessful) blockers.push('Build failing');

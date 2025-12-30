@@ -24,8 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Permission-based UX**: Enhanced security and user control in integration
 
 ### Changed
-- **Agent Count**: Reduced from 22 to 14 agents for better maintainability
-  - 5 real implementations, 8 enhanced prompts, 1 optional feature
+- **Agent Count**: Reduced from 22 to 13 agents for better maintainability
+  - 5 real implementations, 7 enhanced prompts, 1 optional feature
   - New categorization: Development (3), Operations (2), Management (2), Engineering (2), Analysis (2), Creative (1), Business (1)
 - **Test Coverage**: 447 passing tests (unit, integration, E2E, regression)
 - **Architecture Simplification**: Removed unused features and simplified to Claude + OpenAI only
@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - MCP server verification check improvements
-- Agent count test expectations updated to match V2.1 reality (13 → 14 agents)
+- Agent count test expectations updated to match V2.1 reality (13 agents)
 - Filesystem and memory helpers added to MCPToolInterface
 - Environment variable loading for RAG with OpenAI API key
 - **Test Suite Fixes** (2025-12-30):

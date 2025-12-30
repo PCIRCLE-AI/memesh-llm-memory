@@ -66,21 +66,43 @@ export interface WorkflowGuidance {
  * Analyzes workflow state and generates intelligent recommendations
  */
 export class WorkflowGuidanceEngine {
+  // Constants for pattern filtering
+  private static readonly MIN_PATTERN_CONFIDENCE = 0.7;
+  private static readonly MIN_OBSERVATION_COUNT = 5;
+
   constructor(private learningManager: LearningManager) {}
 
   /**
    * Analyze workflow context and generate recommendations
    */
   analyzeWorkflow(context: WorkflowContext): WorkflowGuidance {
+    // Input validation
+    if (!context) {
+      throw new Error('WorkflowContext is required');
+    }
+
+    const validPhases: WorkflowPhase[] = [
+      'idle',
+      'code-written',
+      'test-complete',
+      'commit-ready',
+      'committed',
+    ];
+    if (!validPhases.includes(context.phase)) {
+      throw new Error(`Invalid workflow phase: ${context.phase}`);
+    }
     const recommendations: WorkflowRecommendation[] = [];
     const reasoning: string[] = [];
     let learnedFromPatterns = false;
 
     // Check learned patterns from LearningManager
-    const patterns = this.learningManager.getPatterns();
+    // Use 'workflow-guidance' as the agent ID for workflow-level patterns
+    const patterns = this.learningManager.getPatterns('workflow-guidance');
     if (patterns.length > 0) {
       const relevantPatterns = patterns.filter(
-        (p) => p.successRate > 0.7 && p.observationCount >= 5
+        (p) =>
+          p.confidence > WorkflowGuidanceEngine.MIN_PATTERN_CONFIDENCE &&
+          p.observationCount >= WorkflowGuidanceEngine.MIN_OBSERVATION_COUNT
       );
 
       if (relevantPatterns.length > 0) {
@@ -88,32 +110,26 @@ export class WorkflowGuidanceEngine {
         reasoning.push(
           `Applied ${relevantPatterns.length} learned pattern(s) from past successes`
         );
-
-        // Extract recommendations from patterns
-        for (const pattern of relevantPatterns) {
-          for (const action of pattern.actions) {
-            if (action === 'fix-tests' && !context.testsPassing) {
-              recommendations.push({
-                action: 'fix-tests',
-                priority: 'high',
-                description: 'Fix failing tests',
-                reasoning: `Based on learned pattern: fix tests (${(pattern.successRate * 100).toFixed(0)}% success rate)`,
-              });
-            }
-          }
-        }
+        // Patterns inform confidence calculation, not direct recommendations
       }
     }
 
     // Phase-based recommendations
     if (context.phase === 'code-written') {
-      if (!context.testsPassing) {
+      // testsPassing === undefined means tests not run yet
+      // testsPassing === false means tests ran but failed
+      if (
+        context.testsPassing === undefined ||
+        context.testsPassing === false
+      ) {
         recommendations.push({
           action: 'run-tests',
           priority: 'high',
           description: 'Run tests to verify code changes',
           reasoning:
-            'Code has been written but tests have not been verified',
+            context.testsPassing === undefined
+              ? 'Code has been written but tests have not been run'
+              : 'Tests were run but are failing',
           estimatedTime: '1-2 minutes',
         });
         reasoning.push('Tests should be run after code changes');
@@ -133,7 +149,8 @@ export class WorkflowGuidanceEngine {
         reasoning.push('Code review recommended after tests pass');
       }
 
-      if (!context.testsPassing) {
+      // testsPassing === false means tests ran but failed
+      if (context.testsPassing === false) {
         recommendations.push({
           action: 'fix-tests',
           priority: 'high',
@@ -170,9 +187,9 @@ export class WorkflowGuidanceEngine {
   ): number {
     let confidence = 0.5; // Base confidence
 
-    // Increase confidence if learned from patterns
+    // Increase confidence if learned from high-quality patterns
     if (learnedFromPatterns) {
-      confidence += 0.2;
+      confidence += 0.3; // Increased from 0.2
     }
 
     // Increase confidence if context is clear
@@ -182,6 +199,11 @@ export class WorkflowGuidanceEngine {
 
     // Increase confidence if multiple signals align
     if (context.filesChanged && context.filesChanged.length > 0) {
+      confidence += 0.1;
+    }
+
+    // Increase confidence if test status is known (not undefined)
+    if (context.testsPassing !== undefined) {
       confidence += 0.1;
     }
 

@@ -31,8 +31,8 @@ describe('PlanningEngine', () => {
     engine = new PlanningEngine(mockAgentRegistry);
   });
 
-  it('should generate bite-sized tasks from feature description', () => {
-    const plan = engine.generatePlan({
+  it('should generate bite-sized tasks from feature description', async () => {
+    const plan = await engine.generatePlan({
       featureDescription: 'Add user authentication with JWT',
       requirements: ['API endpoints', 'password hashing', 'token validation'],
     });
@@ -42,8 +42,8 @@ describe('PlanningEngine', () => {
     expect(plan.tasks[0].estimatedDuration).toBe('2-5 minutes');
   });
 
-  it('should assign appropriate agents to tasks', () => {
-    const plan = engine.generatePlan({
+  it('should assign appropriate agents to tasks', async () => {
+    const plan = await engine.generatePlan({
       featureDescription: 'Add user authentication',
       requirements: ['security review', 'test coverage'],
     });
@@ -59,8 +59,8 @@ describe('PlanningEngine', () => {
     expect(testTask?.suggestedAgent).toBe('test-automator');
   });
 
-  it('should follow TDD structure for each task', () => {
-    const plan = engine.generatePlan({
+  it('should follow TDD structure for each task', async () => {
+    const plan = await engine.generatePlan({
       featureDescription: 'Add user login endpoint',
     });
 
@@ -75,51 +75,51 @@ describe('PlanningEngine', () => {
 
   // Edge case tests for input validation
   describe('Input Validation', () => {
-    it('should throw error when featureDescription is empty', () => {
-      expect(() => {
-        engine.generatePlan({
+    it('should throw error when featureDescription is empty', async () => {
+      await expect(async () => {
+        await engine.generatePlan({
           featureDescription: '',
         });
-      }).toThrow('featureDescription is required and cannot be empty');
+      }).rejects.toThrow('featureDescription is required and cannot be empty');
     });
 
-    it('should throw error when featureDescription is only whitespace', () => {
-      expect(() => {
-        engine.generatePlan({
+    it('should throw error when featureDescription is only whitespace', async () => {
+      await expect(async () => {
+        await engine.generatePlan({
           featureDescription: '   ',
         });
-      }).toThrow('featureDescription is required and cannot be empty');
+      }).rejects.toThrow('featureDescription is required and cannot be empty');
     });
 
-    it('should throw error when featureDescription is undefined', () => {
-      expect(() => {
-        engine.generatePlan({
+    it('should throw error when featureDescription is undefined', async () => {
+      await expect(async () => {
+        await engine.generatePlan({
           featureDescription: undefined as any,
         });
-      }).toThrow('featureDescription is required and cannot be empty');
+      }).rejects.toThrow('featureDescription is required and cannot be empty');
     });
 
-    it('should throw error when featureDescription exceeds maximum length', () => {
+    it('should throw error when featureDescription exceeds maximum length', async () => {
       const longDescription = 'a'.repeat(1001);
-      expect(() => {
-        engine.generatePlan({
+      await expect(async () => {
+        await engine.generatePlan({
           featureDescription: longDescription,
         });
-      }).toThrow('featureDescription exceeds maximum length of 1000 characters');
+      }).rejects.toThrow('featureDescription exceeds maximum length of 1000 characters');
     });
 
-    it('should throw error when requirements is not an array', () => {
-      expect(() => {
-        engine.generatePlan({
+    it('should throw error when requirements is not an array', async () => {
+      await expect(async () => {
+        await engine.generatePlan({
           featureDescription: 'Valid description',
           requirements: 'not an array' as any,
         });
-      }).toThrow('requirements must be an array');
+      }).rejects.toThrow('requirements must be an array');
     });
 
-    it('should accept valid featureDescription at maximum length', () => {
+    it('should accept valid featureDescription at maximum length', async () => {
       const maxDescription = 'a'.repeat(1000);
-      const plan = engine.generatePlan({
+      const plan = await engine.generatePlan({
         featureDescription: maxDescription,
       });
       expect(plan.tasks).toBeDefined();

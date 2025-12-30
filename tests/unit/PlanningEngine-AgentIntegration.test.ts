@@ -12,8 +12,8 @@ describe('PlanningEngine - AgentRegistry Integration', () => {
     engine = new PlanningEngine(agentRegistry);
   });
 
-  it('should assign real agents from registry', () => {
-    const plan = engine.generatePlan({
+  it('should assign real agents from registry', async () => {
+    const plan = await engine.generatePlan({
       featureDescription: 'Add API security layer',
       requirements: ['authentication', 'rate limiting', 'input validation'],
     });
@@ -29,8 +29,8 @@ describe('PlanningEngine - AgentRegistry Integration', () => {
     expect(validationTask?.suggestedAgent).toBe('code-reviewer');
   });
 
-  it('should respect agent capabilities when assigning', () => {
-    const plan = engine.generatePlan({
+  it('should respect agent capabilities when assigning', async () => {
+    const plan = await engine.generatePlan({
       featureDescription: 'Full-stack feature with UI and API',
       requirements: ['frontend component', 'backend API', 'database migration'],
     });
@@ -51,8 +51,8 @@ describe('PlanningEngine - AgentRegistry Integration', () => {
     expect(dbTask?.suggestedAgent).toBe('database-administrator');
   });
 
-  it('should prioritize agents with highest capability match', () => {
-    const plan = engine.generatePlan({
+  it('should prioritize agents with highest capability match', async () => {
+    const plan = await engine.generatePlan({
       featureDescription: 'Optimize application performance',
       requirements: ['profile bottlenecks', 'optimize algorithms', 'cache strategy'],
     });

@@ -60,4 +60,57 @@ describe('PlanningEngine', () => {
     expect(task.steps[3]).toContain('Verify');
     expect(task.steps[4]).toContain('Commit');
   });
+
+  // Edge case tests for input validation
+  describe('Input Validation', () => {
+    it('should throw error when featureDescription is empty', () => {
+      expect(() => {
+        engine.generatePlan({
+          featureDescription: '',
+        });
+      }).toThrow('featureDescription is required and cannot be empty');
+    });
+
+    it('should throw error when featureDescription is only whitespace', () => {
+      expect(() => {
+        engine.generatePlan({
+          featureDescription: '   ',
+        });
+      }).toThrow('featureDescription is required and cannot be empty');
+    });
+
+    it('should throw error when featureDescription is undefined', () => {
+      expect(() => {
+        engine.generatePlan({
+          featureDescription: undefined as any,
+        });
+      }).toThrow('featureDescription is required and cannot be empty');
+    });
+
+    it('should throw error when featureDescription exceeds maximum length', () => {
+      const longDescription = 'a'.repeat(1001);
+      expect(() => {
+        engine.generatePlan({
+          featureDescription: longDescription,
+        });
+      }).toThrow('featureDescription exceeds maximum length of 1000 characters');
+    });
+
+    it('should throw error when requirements is not an array', () => {
+      expect(() => {
+        engine.generatePlan({
+          featureDescription: 'Valid description',
+          requirements: 'not an array' as any,
+        });
+      }).toThrow('requirements must be an array');
+    });
+
+    it('should accept valid featureDescription at maximum length', () => {
+      const maxDescription = 'a'.repeat(1000);
+      const plan = engine.generatePlan({
+        featureDescription: maxDescription,
+      });
+      expect(plan.tasks).toBeDefined();
+    });
+  });
 });

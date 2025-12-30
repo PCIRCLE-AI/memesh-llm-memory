@@ -22,7 +22,7 @@ describe('Full Workflow Integration Test', () => {
   it('should complete full development workflow', async () => {
     // Step 1: Verify agent registry setup
     expect(registry.getRealImplementations()).toHaveLength(5);
-    expect(registry.getEnhancedPrompts()).toHaveLength(12);
+    expect(registry.getEnhancedPrompts()).toHaveLength(17); // Updated for new planning agents
     expect(registry.getOptionalAgents()).toHaveLength(1);
 
     // Step 2: Verify butler initialization

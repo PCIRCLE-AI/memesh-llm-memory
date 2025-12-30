@@ -143,7 +143,7 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 | **Development Butler Agent** | Event-driven automation | Checkpoint detection, workflow integration, hook system |
 | **DevOps Engineer Agent** | CI/CD & deployment | Infrastructure automation, deployment workflows, monitoring |
 
-### Enhanced Prompt Agents (7)
+### Enhanced Prompt Agents (12)
 
 | Agent | Domain | Optimization Focus |
 |-------|--------|-------------------|
@@ -151,9 +151,14 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 | **Debugger** | Issue resolution | Root cause analysis, systematic debugging |
 | **Refactorer** | Code improvement | Design patterns, maintainability, simplification |
 | **API Designer** | API development | REST/GraphQL design, documentation |
-| **Research Agent** | Technical investigation | Deep research, competitive analysis |
 | **Architecture Agent** | System design | Scalability, patterns, trade-offs |
+| **Research Agent** | Technical investigation | Deep research, competitive analysis |
 | **Data Analyst** | Data insights | Statistical analysis, visualization |
+| **Security Auditor** | Security & compliance | Vulnerability assessment, security auditing |
+| **UI Designer** | UI/UX design | User experience, interface design |
+| **Marketing Strategist** | Marketing strategy | Brand positioning, growth hacking |
+| **Product Manager** | Product strategy | User research, feature prioritization |
+| **ML Engineer** | Machine learning | Model training, ML pipeline engineering |
 
 ### Optional Features (1)
 

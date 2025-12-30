@@ -52,6 +52,8 @@ export class ClaudeMdReloader {
   private reloadHistory: ReloadRecord[] = [];
   private lastReloadTime: Date | null = null;
   private cooldownMs: number;
+  private isRecording = false;
+  private pendingRecords: ReloadRecord[] = [];
 
   constructor(cooldownMs: number = 5 * 60 * 1000) {
     // CRITICAL ISSUE 1: Validate constructor input
@@ -88,7 +90,7 @@ export class ClaudeMdReloader {
   /**
    * Record a reload event
    *
-   * NOTE: Not thread-safe. Caller must ensure serial access in concurrent environments.
+   * Thread-safe: Uses mutex to prevent race conditions in concurrent environments.
    */
   recordReload(record: ReloadRecord): void {
     // CRITICAL ISSUE 2: Validate required fields
@@ -96,6 +98,33 @@ export class ClaudeMdReloader {
       throw new Error('reason and triggeredBy are required');
     }
 
+    // Mutex pattern: Queue record if already processing
+    if (this.isRecording) {
+      this.pendingRecords.push(record);
+      return;
+    }
+
+    // Acquire mutex
+    this.isRecording = true;
+    try {
+      // Process current record
+      this.processRecordUnsafe(record);
+
+      // Process all pending records in order
+      while (this.pendingRecords.length > 0) {
+        const pending = this.pendingRecords.shift()!;
+        this.processRecordUnsafe(pending);
+      }
+    } finally {
+      // Release mutex
+      this.isRecording = false;
+    }
+  }
+
+  /**
+   * Internal method to process a single record (not thread-safe, must hold mutex)
+   */
+  private processRecordUnsafe(record: ReloadRecord): void {
     const completeRecord = {
       ...record,
       timestamp: record.timestamp || new Date(),

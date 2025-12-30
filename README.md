@@ -204,6 +204,76 @@ Workflow Checkpoint Detected → Analyze Phase → Generate Recommendations → 
 - ✨ Smart recommendations for next steps
 - 🧠 Learns from successful workflow patterns
 
+### Smart-Planning System
+
+**Intelligent implementation planning that absorbs and enhances Superpowers `writing-plans` skill:**
+
+#### Key Features
+
+**1. Agent-Aware Task Breakdown**
+- Analyzes feature requirements and assigns appropriate agents
+- Maps task types to agent capabilities automatically
+- Example: Security reviews → Security Auditor, API design → API Designer
+
+**2. Learned Pattern Application**
+- Retrieves successful patterns from Evolution System
+- Filters by success rate (≥75%) and observation count (≥5)
+- Enhances task descriptions with proven best practices
+- Adjusts priorities based on critical patterns
+
+**3. Bite-Sized Task Generation**
+- Breaks features into 2-5 minute incremental tasks
+- Each task is independently testable
+- Automatic dependency identification
+- Phase assignment (backend → frontend → testing)
+
+**4. TDD-First Structure**
+- Every task follows 5-step TDD workflow:
+  1. Write failing test
+  2. Run test to verify it fails
+  3. Implement minimal code to pass
+  4. Run test to verify it passes
+  5. Commit with semantic message
+
+#### Usage via MCP Tool
+
+**Generate Plan:**
+```typescript
+// Via MCP tool
+const plan = await callTool('generate-smart-plan', {
+  featureDescription: 'Add user authentication with JWT',
+  requirements: ['API endpoints', 'password hashing', 'token validation'],
+  constraints: {
+    projectType: 'backend-api',
+    techStack: ['Node.js', 'Express', 'JWT'],
+    complexity: 'medium',
+  },
+});
+```
+
+**Plan Output:**
+- Title, goal, architecture overview
+- Tech stack recommendations
+- Bite-sized tasks (2-5 min each)
+- Agent assignments based on capabilities
+- Dependencies and execution order
+- TDD steps for each task
+- File operations (create/modify/test)
+
+#### Integration with Evolution System
+
+**Smart-Planning learns from:**
+- Previous successful implementations
+- Failed approaches and anti-patterns
+- Team coding preferences
+- Domain-specific best practices
+
+**Continuous Improvement:**
+- Each completed plan feeds back to LearningManager
+- Success patterns are reinforced
+- Failed patterns are avoided
+- Recommendations improve over time
+
 ### Evolution System
 
 The Evolution System is **not an agent** - it's the infrastructure that makes the agent system learn and improve over time.

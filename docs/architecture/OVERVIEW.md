@@ -305,6 +305,97 @@ Provide intelligent, context-aware recommendations during development workflows,
 
 ---
 
+## Smart-Planning System
+
+### Purpose
+
+Generate intelligent implementation plans that combine agent-aware task breakdown, learned patterns from past successes, and TDD-first development workflow.
+
+### Components
+
+**PlanningEngine** (`src/planning/PlanningEngine.ts`)
+- Generates implementation plans from feature descriptions
+- Integrates with AgentRegistry for agent-aware task breakdown
+- Applies learned patterns from LearningManager
+- Creates plans with TDD structure (test → fail → implement → pass → commit)
+
+**TaskDecomposer** (`src/planning/TaskDecomposer.ts`)
+- Breaks features into bite-sized tasks (2-5 minutes each)
+- Identifies dependencies between tasks
+- Assigns phases (backend, frontend, testing, documentation)
+- Ensures each task is independently testable with TDD workflow
+
+**AgentRegistry Integration**
+- Maps task types to appropriate agents based on capabilities
+- Security tasks → Security Auditor
+- Testing tasks → Test Automator
+- Review tasks → Code Reviewer
+- API tasks → API Designer
+- Frontend tasks → Frontend Developer / UI Designer
+
+**LearningManager Integration**
+- Retrieves learned patterns from past successful plans
+- Filters patterns by success rate (≥75%), observations (≥5), domain relevance
+- Enhances task descriptions with best practices
+- Adjusts priorities based on critical patterns
+- Adds proven actions to TDD steps
+
+### Integration
+
+**MCP Tool Exposure**:
+- `generate-smart-plan` - Generate implementation plan
+- Input: featureDescription, requirements, constraints
+- Output: Complete plan with tasks, agents, TDD steps, dependencies
+
+**Workflow**:
+```
+Feature Description → PlanningEngine → TaskDecomposer → Agent Assignment →
+Pattern Enhancement → TDD Structure → Complete Plan
+```
+
+### Example Plan Output
+
+```markdown
+# Feature: Add User Authentication Implementation Plan
+
+**Goal:** Implement secure JWT-based user authentication
+
+**Architecture:** Token-based authentication with bcrypt password hashing
+
+**Tech Stack:** Node.js, JWT, bcrypt, Express
+
+**Tasks:**
+
+1. **Implement JWT token generation** (2-5 minutes, Priority: high)
+   - Suggested Agent: backend-developer
+   - TDD Steps:
+     1. Write test for token generation
+     2. Run test (expect fail)
+     3. Implement token generation
+     4. Run test (expect pass)
+     5. Commit token logic
+   - Files: Create `src/auth/jwt.ts`, Test `tests/unit/jwt.test.ts`
+   - Dependencies: None
+
+2. **Implement token validation** (2-5 minutes, Priority: high)
+   - Suggested Agent: backend-developer
+   - TDD Steps: [5-step TDD workflow]
+   - Files: Modify `src/auth/jwt.ts`, Test `tests/unit/jwt.test.ts`
+   - Dependencies: task-1
+
+[Additional tasks...]
+```
+
+### Benefits
+
+- 🎯 **Agent-Aware**: Automatically assigns tasks to appropriate agents
+- 🧠 **Learning**: Applies successful patterns from past implementations
+- ⚡ **Bite-Sized**: Breaks features into 2-5 minute tasks
+- ✅ **TDD-First**: Every task follows 5-step TDD workflow
+- 🔗 **Dependencies**: Automatic dependency identification and ordering
+
+---
+
 ## Agent Registry
 
 ### Purpose

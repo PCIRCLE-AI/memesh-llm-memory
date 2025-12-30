@@ -3,7 +3,9 @@
 **Version**: 2.2.0
 **Last Updated**: 2025-12-31
 
-This document provides comprehensive API and usage documentation for all 20 agents in the Smart Agents system.
+This document provides comprehensive API and usage documentation for all 23 agents in the Smart Agents system.
+
+> **Note**: Smart Agents includes 5 real TypeScript implementations, 17 enhanced prompt templates, and 1 optional feature. Enhanced prompt agents optimize Claude's responses with domain-specific expertise and best practices.
 
 ---
 

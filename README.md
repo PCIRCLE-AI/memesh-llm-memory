@@ -47,7 +47,7 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 
 **What It Is:**
 - Prompt enhancement layer for Claude Code
-- MCP server with 20 specialized agents
+- MCP server with 23 specialized agents (5 real implementations + 17 enhanced prompts + 1 optional)
 - Intelligent task routing system
 - Cost & performance tracking tool
 
@@ -58,7 +58,7 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 - 🚀 **DevOps Engineer Agent** - CI/CD automation for GitHub Actions and GitLab CI
 - 📊 **Enhanced Test Coverage** - 571+ tests passing (was 447)
 - 📚 **Comprehensive Documentation** - New User Guide, Agent Reference, and Troubleshooting Guide
-- ✅ **Production Ready** - Quality score 4.2/5, zero critical vulnerabilities
+- ⚠️ **Beta Release** - Phase 1 critical fixes completed, Phase 2-4 improvements in progress (see [Known Limitations](docs/KNOWN_LIMITATIONS.md))
 
 ---
 
@@ -83,7 +83,7 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 │                            │                                    │
 │                            ▼                                    │
 │              ┌─────────────────────────┐                       │
-│              │  20 Specialized Agents  │                       │
+│              │  23 Specialized Agents  │                       │
 │              └─────────────────────────┘                       │
 └─────────────────────────────────────────────────────────────────┘
                             │
@@ -145,7 +145,9 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 
 ---
 
-## 🎪 The 20 Specialized Agents
+## 🎪 The 23 Specialized Agents
+
+> **Agent Types:** Smart Agents includes 5 real TypeScript implementations, 17 enhanced prompt templates that optimize Claude's responses with domain expertise, and 1 optional feature requiring external dependencies.
 
 ### Real Implementation Agents (5)
 
@@ -157,10 +159,14 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 | **Development Butler Agent** | Event-driven automation | Checkpoint detection, workflow integration, hook system |
 | **DevOps Engineer Agent** | CI/CD & deployment | Infrastructure automation, GitHub Actions/GitLab CI, deployment analysis |
 
-### Enhanced Prompt Agents (12)
+### Enhanced Prompt Agents (17)
 
 | Agent | Domain | Optimization Focus |
 |-------|--------|-------------------|
+| **Frontend Developer** | Frontend development | React/Vue/Angular, UI components, responsive design |
+| **Backend Developer** | Backend development | API development, server-side logic, microservices |
+| **Database Administrator** | Database management | Schema design, query optimization, performance tuning |
+| **Performance Engineer** | Performance optimization | Bottleneck analysis, caching strategies, load optimization |
 | **Code Reviewer** | Code quality | Security, performance, best practices |
 | **Debugger** | Issue resolution | Root cause analysis, systematic debugging |
 | **Refactorer** | Code improvement | Design patterns, maintainability, simplification |
@@ -173,6 +179,7 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 | **Marketing Strategist** | Marketing strategy | Brand positioning, growth hacking |
 | **Product Manager** | Product strategy | User research, feature prioritization |
 | **ML Engineer** | Machine learning | Model training, ML pipeline engineering |
+| **Test Automator** | Test automation | Automated testing, test framework setup, E2E testing |
 
 ### Optional Features (1)
 
@@ -379,7 +386,7 @@ Everything through natural conversation:
 ### Quick Links
 
 - **[User Guide](docs/USER_GUIDE.md)** ✨ - Complete user guide for v2.2
-- **[Agent Reference](docs/AGENT_REFERENCE.md)** ✨ - Detailed API documentation for all 20 agents
+- **[Agent Reference](docs/AGENT_REFERENCE.md)** ✨ - Detailed API documentation for all 23 agents
 - **[Troubleshooting](docs/TROUBLESHOOTING.md)** ✨ - Common issues and solutions
 - **[Installation Guide](docs/guides/CLAUDE_CODE_INSTALLATION.md)** - Detailed setup instructions
 - **[Architecture Overview](docs/architecture/OVERVIEW.md)** - System design and components

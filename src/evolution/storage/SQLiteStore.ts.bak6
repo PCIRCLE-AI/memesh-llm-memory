@@ -31,7 +31,6 @@ import type {
   Execution,
   Span,
   Pattern,
-  PatternData,
   Adaptation,
   EvolutionStats,
   Reward,
@@ -342,13 +341,6 @@ export class SQLiteStore implements EvolutionStore {
   // Task Management
   // ========================================================================
 
-  /**
-   * Create a new task
-   *
-   * @param input - Task input data
-   * @param metadata - Optional task metadata
-   * @returns Created task with generated ID and timestamps
-   */
   async createTask(
     input: Record<string, any>,
     metadata?: Record<string, any>
@@ -377,12 +369,6 @@ export class SQLiteStore implements EvolutionStore {
     return task;
   }
 
-  /**
-   * Retrieve a task by ID
-   *
-   * @param taskId - Task ID to retrieve
-   * @returns Task if found, null otherwise
-   */
   async getTask(taskId: string): Promise<Task | null> {
     const stmt = this.db.prepare(`
       SELECT * FROM tasks WHERE id = ?
@@ -554,11 +540,6 @@ export class SQLiteStore implements EvolutionStore {
   // Span Tracking (Core of Evolution System)
   // ========================================================================
 
-  /**
-   * Record a single span to the database
-   *
-   * @param span - Span to record
-   */
   async recordSpan(span: Span): Promise<void> {
     // Validate span before inserting
     validateSpan(span);
@@ -593,11 +574,6 @@ export class SQLiteStore implements EvolutionStore {
     );
   }
 
-  /**
-   * Record multiple spans in a single transaction
-   *
-   * @param spans - Array of spans to record
-   */
   async recordSpanBatch(spans: Span[]): Promise<void> {
     const insertMany = this.db.transaction((spans: Span[]) => {
       for (const span of spans) {
@@ -608,12 +584,6 @@ export class SQLiteStore implements EvolutionStore {
     insertMany(spans);
   }
 
-  /**
-   * Query spans with flexible filtering
-   *
-   * @param query - Span query filters
-   * @returns Array of matching spans
-   */
   async querySpans(query: SpanQuery): Promise<Span[]> {
     let sql = 'SELECT * FROM spans WHERE 1=1';
     const params: any[] = [];
@@ -778,11 +748,6 @@ export class SQLiteStore implements EvolutionStore {
   // Reward Management
   // ========================================================================
 
-  /**
-   * Record reward/feedback for an operation
-   *
-   * @param reward - Reward to record
-   */
   async recordReward(reward: Reward): Promise<void> {
     // Validate reward before inserting
     validateReward(reward);
@@ -866,11 +831,6 @@ export class SQLiteStore implements EvolutionStore {
   // Pattern Management
   // ========================================================================
 
-  /**
-   * Store or update a learned pattern
-   *
-   * @param pattern - Pattern to store
-   */
   async storePattern(pattern: Pattern): Promise<void> {
     // Validate pattern before inserting
     validatePattern(pattern);
@@ -907,12 +867,6 @@ export class SQLiteStore implements EvolutionStore {
     return this.rowToPattern(row);
   }
 
-  /**
-   * Query patterns with flexible filtering
-   *
-   * @param query - Pattern query filters
-   * @returns Array of matching patterns
-   */
   async queryPatterns(query: PatternQuery): Promise<Pattern[]> {
     let sql = 'SELECT * FROM patterns WHERE 1=1';
     const params: any[] = [];
@@ -1078,7 +1032,7 @@ export class SQLiteStore implements EvolutionStore {
           SUM(CASE WHEN outcome_status = 'success' THEN 1 ELSE 0 END) as successes
         FROM adaptations
         WHERE pattern_id = ?
-      `).get(row.id) as { total: number; successes: number } | undefined;
+      `).get(row.id) as any;
 
       if (adaptationStats && adaptationStats.total > 0) {
         success_rate = adaptationStats.successes / adaptationStats.total;
@@ -1099,7 +1053,7 @@ export class SQLiteStore implements EvolutionStore {
         SELECT AVG(duration_ms) as avg_duration
         FROM spans
         WHERE json_extract(attributes, '$.pattern.id') = ?
-      `).get(row.id) as { avg_duration: number | null } | undefined;
+      `).get(row.id) as any;
 
       if (spanStats && spanStats.avg_duration !== null) {
         avg_execution_time = spanStats.avg_duration;
@@ -1123,9 +1077,9 @@ export class SQLiteStore implements EvolutionStore {
       avg_execution_time,
       last_seen: row.last_observed,
       context: {
-        agent_type: row.applies_to_agent_type ?? undefined,
-        task_type: row.applies_to_task_type ?? undefined,
-        complexity: row.complexity ?? undefined,
+        agent_type: row.applies_to_agent_type || undefined,
+        task_type: row.applies_to_task_type || undefined,
+        complexity: row.complexity || undefined,
         config_keys: config_keys,
         metadata: metadata,
       },
@@ -1209,11 +1163,6 @@ export class SQLiteStore implements EvolutionStore {
   // Adaptation Management
   // ========================================================================
 
-  /**
-   * Store an adaptation (applied pattern change)
-   *
-   * @param adaptation - Adaptation to store
-   */
   async storeAdaptation(adaptation: Adaptation): Promise<void> {
     // Validate adaptation before inserting
     validateAdaptation(adaptation);
@@ -1356,7 +1305,7 @@ export class SQLiteStore implements EvolutionStore {
       agentId,
       timeRange.start.toISOString(),
       timeRange.end.toISOString()
-    ) as EvolutionStatsRow | undefined;
+    ) as any;
 
     if (row) {
       return this.rowToEvolutionStats(row);
@@ -1394,7 +1343,7 @@ export class SQLiteStore implements EvolutionStore {
     const rows = stmt.all(
       timeRange.start.toISOString(),
       timeRange.end.toISOString()
-    ) as EvolutionStatsRow[];
+    ) as any[];
 
     return rows.map((row) => this.rowToEvolutionStats(row));
   }
@@ -1437,18 +1386,18 @@ export class SQLiteStore implements EvolutionStore {
       skillName,
       timeRange.start.getTime(),
       timeRange.end.getTime()
-    ) as { total_uses: number; successful_uses: number; failed_uses: number; avg_duration_ms: number } | undefined;
+    ) as any;
 
-    const total = row?.total_uses || 0;
-    const successful = row?.successful_uses || 0;
+    const total = row.total_uses || 0;
+    const successful = row.successful_uses || 0;
 
     return {
       skill_name: skillName,
       total_uses: total,
       successful_uses: successful,
-      failed_uses: row?.failed_uses || 0,
+      failed_uses: row.failed_uses || 0,
       success_rate: total > 0 ? successful / total : 0,
-      avg_duration_ms: row?.avg_duration_ms || 0,
+      avg_duration_ms: row.avg_duration_ms || 0,
       avg_user_satisfaction: 0, // Would need to query from rewards
       trend_7d: 'stable',
       trend_30d: 'stable',
@@ -1480,7 +1429,7 @@ export class SQLiteStore implements EvolutionStore {
     const rows = stmt.all(
       timeRange.start.getTime(),
       timeRange.end.getTime()
-    ) as { skill_name: string; total_uses: number; successful_uses: number; failed_uses: number; avg_duration_ms: number }[];
+    ) as any[];
 
     // Map rows to SkillPerformance objects
     return rows.map((row) => {
@@ -1649,12 +1598,7 @@ export class SQLiteStore implements EvolutionStore {
       type: row.type as Pattern['type'],
       confidence: row.confidence,
       occurrences: row.occurrences,
-      pattern_data: safeJsonParse<PatternData>(row.pattern_data, {
-        conditions: {},
-        recommendations: {},
-        expected_improvement: {},
-        evidence: { sample_size: 0 },
-      }),
+      pattern_data: safeJsonParse(row.pattern_data, {} as any),
       source_span_ids: safeJsonParse(row.source_span_ids, []),
       applies_to_agent_type: row.applies_to_agent_type ?? undefined,
       applies_to_task_type: row.applies_to_task_type ?? undefined,

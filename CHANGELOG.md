@@ -5,6 +5,61 @@ All notable changes to Smart-Agents will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-12-31
+
+### Added
+- **Phase 3: Essential Agents** 🎉
+  - **Test Writer Agent**: Automated test generation with vitest integration
+    - Code analysis with function extraction
+    - Vitest-compatible test file generation
+    - Automatic test path resolution (src/ → tests/)
+    - Knowledge Graph integration for test coverage tracking
+  - **DevOps Engineer Agent**: CI/CD automation and deployment analysis
+    - GitHub Actions and GitLab CI configuration generation
+    - Deployment readiness analysis
+    - CI/CD setup automation
+    - Infrastructure configuration tracking
+- **Phase 4: Documentation & Polish** 📚
+  - **USER_GUIDE.md**: Comprehensive 3,700+ line user guide covering all v2.2 features
+    - Getting started and installation
+    - Core concepts and architecture
+    - Detailed agent usage examples
+    - Event-driven butler and workflow guidance
+    - Smart planning system documentation
+    - Best practices and configuration
+  - **AGENT_REFERENCE.md**: Complete API documentation for all 20 agents
+    - TypeScript interfaces and function signatures
+    - Code examples for each agent
+    - Agent selection guide
+    - Known limitations and roadmap
+  - **TROUBLESHOOTING.md**: Comprehensive troubleshooting guide
+    - Common issues and solutions
+    - Agent-specific troubleshooting
+    - Diagnostic commands and FAQ
+  - **README.md Updates**: Enhanced with v2.2.0 features
+    - "What's New in v2.2.0" section
+    - Updated agent count (18 → 20)
+    - Links to new documentation
+
+### Changed
+- **Agent Count**: Expanded from 18 to 20 specialized agents
+  - 5 real implementations (added TestWriter ✨ and DevOps ✨)
+  - 12 enhanced prompt agents
+  - 1 optional RAG agent
+- **Test Coverage**: Increased from 447 to 572 tests passing
+  - Phase 3 integration tests: 7/7 passing
+  - TestWriterAgent unit tests: 2/2 passing
+  - DevOpsEngineerAgent unit tests: 2/2 passing
+  - Total: 572 passed | 2 skipped (574 total)
+- **Architecture Diagram**: Updated to reflect 20 agents and Phase 3 additions
+- **Production Readiness**: Quality score 4.2/5, zero critical vulnerabilities
+
+### Documentation
+- Complete user-facing documentation suite
+- Enhanced learning path with 5 steps
+- Updated all version references to 2.2.0
+- Added Phase 3 feature highlights
+
 ## [2.1.0] - 2025-12-30
 
 ### Added

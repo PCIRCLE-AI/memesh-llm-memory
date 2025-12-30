@@ -165,6 +165,8 @@ await butler.analyzeCodeChanges({
 
 ## 🏗️ Architecture
 
+📊 **See [Architecture Diagram](docs/diagrams/architecture.md) for visual overview.**
+
 ### High-Level Overview
 
 ```

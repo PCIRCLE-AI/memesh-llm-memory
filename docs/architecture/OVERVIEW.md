@@ -13,10 +13,11 @@
 3. [MCP Server Layer](#mcp-server-layer)
 4. [Router & Orchestration](#router--orchestration)
 5. [Evolution System](#evolution-system)
-6. [Agent Registry](#agent-registry)
-7. [Event-Driven Capabilities](#event-driven-capabilities)
-8. [Data Flow Patterns](#data-flow-patterns)
-9. [Testing Strategy](#testing-strategy)
+6. [Workflow Guidance System](#workflow-guidance-system)
+7. [Agent Registry](#agent-registry)
+8. [Event-Driven Capabilities](#event-driven-capabilities)
+9. [Data Flow Patterns](#data-flow-patterns)
+10. [Testing Strategy](#testing-strategy)
 
 ---
 
@@ -116,6 +117,10 @@ Expose Smart Agents functionality to Claude Code via Model Context Protocol.
 5. `evolution_dashboard` - View learning progress
 6. `skill_list` - List available skills
 7. `skill_bundle` - Bundle skills into workflows
+8. `get-workflow-guidance` - Get workflow recommendations
+9. `get-session-health` - Check session health
+10. `reload-context` - Refresh CLAUDE.md context
+11. `record-token-usage` - Track token consumption
 
 ### File Watching (RAG)
 
@@ -213,6 +218,90 @@ Enable agents to learn from execution and continuously optimize.
 - Agents with learning progress
 - Top performing agents
 - Learned patterns summary
+
+---
+
+## Workflow Guidance System
+
+### Purpose
+
+Provide intelligent, context-aware recommendations during development workflows, helping maintain code quality and preventing session degradation.
+
+### Components
+
+**SessionTokenTracker** (`src/core/SessionTokenTracker.ts`)
+- Tracks token usage with warning (80%) and critical (90%) thresholds
+- Real-time monitoring of input/output token consumption
+- Automatic alerts when approaching budget limits
+- Integration with budget management system
+
+**WorkflowGuidanceEngine** (`src/core/WorkflowGuidanceEngine.ts`)
+- Generates intelligent recommendations based on workflow phase
+- Context-aware suggestions for development checkpoints
+- Priority-based action recommendations (high/medium/low)
+- Confidence scoring for each recommendation
+- Estimated time for completion
+
+**SessionContextMonitor** (`src/core/SessionContextMonitor.ts`)
+- Multi-signal health monitoring combining token usage and quality metrics
+- Session status tracking (healthy/warning/critical)
+- Warning aggregation and prioritization
+- Recommendation synthesis from multiple signals
+
+**ClaudeMdReloader** (`src/mcp/ClaudeMdReloader.ts`)
+- Handles CLAUDE.md context refresh via MCP resources/updated
+- Cooldown protection (5 minutes between reloads)
+- Automatic reload at 90% token threshold
+- State management for reload operations
+
+### Integration
+
+**DevelopmentButler Orchestration**:
+- Detects workflow checkpoints automatically
+- Coordinates between WorkflowGuidanceEngine and SessionContextMonitor
+- Triggers CLAUDE.md reload when critical
+- Provides unified interface for workflow automation
+
+**MCP Tools Exposed**:
+1. `get-workflow-guidance` - Get recommendations for current workflow phase
+2. `get-session-health` - Check token usage and session quality
+3. `reload-context` - Refresh CLAUDE.md context
+4. `record-token-usage` - Track token consumption
+
+### Workflow Phases
+
+1. **idle** - No active work
+2. **code-written** - Code changes made
+   - Recommendations: Run tests, review changes, check for breaking changes
+3. **test-complete** - Tests run and passed
+   - Recommendations: Review coverage, commit changes
+4. **commit-ready** - Ready to commit
+   - Recommendations: Review commit message, run final checks
+5. **committed** - Changes committed
+   - Recommendations: Push changes, update documentation
+
+### Session Health Monitoring
+
+**Thresholds**:
+
+| Status | Token % | Action |
+|--------|---------|--------|
+| healthy | < 80% | Continue normally |
+| warning | 80-90% | Consider reload soon |
+| critical | ≥ 90% | Reload recommended |
+
+**Automatic Actions**:
+- 80% threshold: Warning notification
+- 90% threshold: Automatic CLAUDE.md reload (if enabled)
+- Cooldown protection: 5 minutes between reloads
+
+### Benefits
+
+- ✨ **Context-Aware**: Recommendations adapt to current workflow phase
+- 🎯 **Proactive**: Prevents session degradation before it happens
+- 📊 **Transparent**: Clear visibility into token usage and session health
+- 🔄 **Automated**: CLAUDE.md reload happens automatically when needed
+- 🧠 **Learning**: WorkflowGuidanceEngine improves recommendations over time
 
 ---
 

@@ -42,10 +42,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Links to new documentation
 
 ### Changed
-- **Agent Count**: Expanded from 18 to 20 specialized agents
-  - 5 real implementations (added TestWriter ✨ and DevOps ✨)
-  - 12 enhanced prompt agents
-  - 1 optional RAG agent
+- **Agent Count**: Corrected documentation to reflect actual 23 agents (was incorrectly stated as 20)
+  - 5 real implementations (DevelopmentButler, TestWriter, DevOps, KnowledgeGraph, RAG)
+  - 17 enhanced prompt agents (was 12, added Frontend/Backend/Database/Performance/TestAutomator)
+  - 1 optional feature (RAG agent - requires OpenAI API)
+  - **Documentation Fix**: README now accurately lists all 23 agents registered in AgentRegistry
 - **Test Coverage**: Increased from 447 to 572 tests passing
   - Phase 3 integration tests: 7/7 passing
   - TestWriterAgent unit tests: 2/2 passing

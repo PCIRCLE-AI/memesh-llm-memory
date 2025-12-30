@@ -29,6 +29,18 @@ export interface ThresholdWarning {
 }
 
 /**
+ * Session statistics result
+ */
+export interface SessionStats {
+  totalTokens: number;
+  tokenLimit: number;
+  usagePercentage: number;
+  tokensRemaining: number;
+  interactionCount: number;
+  triggeredThresholds: number[];
+}
+
+/**
  * SessionTokenTracker configuration
  */
 export interface SessionTokenTrackerConfig {
@@ -47,6 +59,9 @@ export class SessionTokenTracker {
   private triggeredThresholds: Set<number> = new Set();
 
   constructor(config: SessionTokenTrackerConfig) {
+    if (config.tokenLimit <= 0) {
+      throw new Error('Token limit must be positive');
+    }
     this.tokenLimit = config.tokenLimit;
     this.thresholds = config.thresholds || [
       { percentage: 80, level: 'warning' },
@@ -58,6 +73,9 @@ export class SessionTokenTracker {
    * Record token usage from an interaction
    */
   recordUsage(usage: TokenUsage): void {
+    if (usage.inputTokens < 0 || usage.outputTokens < 0) {
+      throw new Error('Token counts must be non-negative');
+    }
     const total = usage.inputTokens + usage.outputTokens;
     this.totalTokens += total;
     this.usageHistory.push({
@@ -110,7 +128,7 @@ export class SessionTokenTracker {
   /**
    * Get usage statistics
    */
-  getStats() {
+  getStats(): SessionStats {
     return {
       totalTokens: this.totalTokens,
       tokenLimit: this.tokenLimit,

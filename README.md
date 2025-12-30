@@ -47,9 +47,18 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 
 **What It Is:**
 - Prompt enhancement layer for Claude Code
-- MCP server with 18 specialized agents
+- MCP server with 20 specialized agents
 - Intelligent task routing system
 - Cost & performance tracking tool
+
+### ✨ What's New in v2.2.0
+
+**Phase 3: Essential Agents (Dec 2025)**
+- 🧪 **Test Writer Agent** - Automated test generation with vitest integration
+- 🚀 **DevOps Engineer Agent** - CI/CD automation for GitHub Actions and GitLab CI
+- 📊 **Enhanced Test Coverage** - 571+ tests passing (was 447)
+- 📚 **Comprehensive Documentation** - New User Guide, Agent Reference, and Troubleshooting Guide
+- ✅ **Production Ready** - Quality score 4.2/5, zero critical vulnerabilities
 
 ---
 
@@ -74,7 +83,7 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 │                            │                                    │
 │                            ▼                                    │
 │              ┌─────────────────────────┐                       │
-│              │  18 Specialized Agents  │                       │
+│              │  20 Specialized Agents  │                       │
 │              └─────────────────────────┘                       │
 └─────────────────────────────────────────────────────────────────┘
                             │
@@ -84,15 +93,20 @@ Smart Agents adds an intelligent layer between you and Claude Code:
         ▼                                         ▼
 ┌──────────────────┐                   ┌──────────────────┐
 │   Real Agents    │                   │ Enhanced Prompts │
-│  (5 implements)  │                   │  (7 templates)   │
+│  (5 implements)  │                   │ (12 templates)   │
 ├──────────────────┤                   ├──────────────────┤
 │ • RAG Agent      │                   │ • Code Reviewer  │
-│ • Evolution Sys  │                   │ • Debugger       │
-│ • Knowledge Graph│                   │ • Refactorer     │
+│ • Knowledge Graph│                   │ • Debugger       │
+│ • Test Writer    │                   │ • Refactorer     │
 │ • Dev Butler     │                   │ • API Designer   │
-│ • Test Writer    │                   │ • Research       │
-└──────────────────┘                   │ • Architecture   │
+│ • DevOps Engineer│                   │ • Architecture   │
+└──────────────────┘                   │ • Research       │
                                        │ • Data Analyst   │
+                                       │ • Security       │
+                                       │ • UI Designer    │
+                                       │ • Marketing      │
+                                       │ • Product Mgr    │
+                                       │ • ML Engineer    │
                                        └──────────────────┘
 ```
 
@@ -131,7 +145,7 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 
 ---
 
-## 🎪 The 18 Specialized Agents
+## 🎪 The 20 Specialized Agents
 
 ### Real Implementation Agents (5)
 
@@ -364,17 +378,20 @@ Everything through natural conversation:
 
 ### Quick Links
 
+- **[User Guide](docs/USER_GUIDE.md)** ✨ - Complete user guide for v2.2
+- **[Agent Reference](docs/AGENT_REFERENCE.md)** ✨ - Detailed API documentation for all 20 agents
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** ✨ - Common issues and solutions
 - **[Installation Guide](docs/guides/CLAUDE_CODE_INSTALLATION.md)** - Detailed setup instructions
 - **[Architecture Overview](docs/architecture/OVERVIEW.md)** - System design and components
-- **[Agent Reference](docs/AGENT_REFERENCE.md)** - All agents explained
 - **[API Documentation](docs/API.md)** - MCP tool interface
 
 ### Learning Path
 
-1. **Start Here**: [Quick Start](#-quick-start)
+1. **Start Here**: [Quick Start](#-quick-start) or [User Guide](docs/USER_GUIDE.md)
 2. **Understand**: [Architecture Overview](#-how-smart-agents-works)
 3. **Explore**: [Agent Reference](docs/AGENT_REFERENCE.md)
 4. **Deep Dive**: [Architecture Documentation](docs/architecture/OVERVIEW.md)
+5. **Troubleshoot**: [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
 
 **Or ask Claude Code:** "Explain how Smart Agents works"
 
@@ -385,10 +402,11 @@ Everything through natural conversation:
 ### Test Coverage
 
 ```
-✅ 447/447 tests passing (100%)
+✅ 571+ tests passing (100%)
 ✅ Unit tests for core logic
 ✅ Integration tests for MCP interface
 ✅ E2E tests for agent workflows
+✅ Phase 3 integration tests (11/11 passing)
 ✅ Regression tests for evolution system
 ```
 

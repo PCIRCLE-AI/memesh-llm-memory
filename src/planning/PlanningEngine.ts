@@ -285,7 +285,10 @@ export class PlanningEngine {
       // Filter relevant patterns based on request context
       return this.filterRelevantPatterns(allPatterns, request);
     } catch (error) {
-      // Silently return empty array if patterns can't be retrieved
+      // Log error for observability (Priority 1 fix)
+      console.error('[PlanningEngine] Failed to retrieve learned patterns:', error);
+      // TODO: Add telemetry event when telemetry service is available
+      // this.telemetry?.recordEvent('pattern_retrieval_error', { error: error.message });
       return [];
     }
   }

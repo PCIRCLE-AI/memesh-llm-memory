@@ -17,6 +17,12 @@ import Database from 'better-sqlite3';
 import { v4 as uuid } from 'uuid';
 import { SimpleDatabaseFactory } from '../../config/simple-config.js';
 import type { EvolutionStore } from './EvolutionStore';
+import {
+  validateSpan,
+  validatePattern,
+  validateAdaptation,
+  validateReward,
+} from './validation';
 import type {
   Task,
   Execution,
@@ -55,6 +61,17 @@ export class SQLiteStore implements EvolutionStore {
   private db: Database.Database;
   private options: Required<SQLiteStoreOptions>;
 
+  // SQL injection protection - whitelist for sort columns
+  private static readonly ALLOWED_SORT_COLUMNS = [
+    'start_time', 'duration_ms', 'status_code', 'name', 'kind',
+    'end_time', 'span_id', 'trace_id', 'task_id', 'execution_id'
+  ];
+  private static readonly ALLOWED_PATTERN_SORT_COLUMNS = [
+    'confidence', 'occurrences', 'last_observed', 'created_at',
+    'updated_at', 'first_observed', 'type', 'id'
+  ];
+  private static readonly ALLOWED_SORT_ORDERS = ['ASC', 'DESC'];
+
   constructor(options: SQLiteStoreOptions = {}) {
     this.options = {
       dbPath: options.dbPath || ':memory:',
@@ -79,6 +96,22 @@ export class SQLiteStore implements EvolutionStore {
 
   async close(): Promise<void> {
     this.db.close();
+  }
+
+  // ========================================================================
+  // Security Utilities
+  // ========================================================================
+
+  /**
+   * Escape special characters in LIKE patterns to prevent SQL injection
+   */
+  private escapeLikePattern(pattern: string): string {
+    return pattern
+      .replace(/\\/g, '\\\\')  // Backslash must be first
+      .replace(/%/g, '\\%')
+      .replace(/_/g, '\\_')
+      .replace(/'/g, "''")      // SQL escape for single quote
+      .replace(/"/g, '""');     // SQL escape for double quote
   }
 
   // ========================================================================
@@ -496,6 +529,9 @@ export class SQLiteStore implements EvolutionStore {
   // ========================================================================
 
   async recordSpan(span: Span): Promise<void> {
+    // Validate span before inserting
+    validateSpan(span);
+
     const stmt = this.db.prepare(`
       INSERT INTO spans (
         span_id, trace_id, parent_span_id, task_id, execution_id,
@@ -588,11 +624,19 @@ export class SQLiteStore implements EvolutionStore {
       params.push(query.end_time_lte);
     }
 
-    // Sorting
+    // Sorting - SQL injection protection
     if (query.sort_by) {
+      if (!SQLiteStore.ALLOWED_SORT_COLUMNS.includes(query.sort_by)) {
+        throw new Error(`Invalid sort column: ${query.sort_by}. Allowed: ${SQLiteStore.ALLOWED_SORT_COLUMNS.join(', ')}`);
+      }
       sql += ` ORDER BY ${query.sort_by}`;
+
       if (query.sort_order) {
-        sql += ` ${query.sort_order.toUpperCase()}`;
+        const upperOrder = query.sort_order.toUpperCase();
+        if (!SQLiteStore.ALLOWED_SORT_ORDERS.includes(upperOrder)) {
+          throw new Error(`Invalid sort order: ${query.sort_order}. Allowed: ASC, DESC`);
+        }
+        sql += ` ${upperOrder}`;
       }
     } else {
       sql += ' ORDER BY start_time DESC';
@@ -649,7 +693,8 @@ export class SQLiteStore implements EvolutionStore {
       SELECT * FROM spans WHERE links IS NOT NULL AND links LIKE ?
     `);
 
-    const rows = stmt.all(`%"span_id":"${spanId}"%`) as any[];
+    const escapedSpanId = this.escapeLikePattern(spanId);
+    const rows = stmt.all(`%"span_id":"${escapedSpanId}"%`) as any[];
     return rows.map((row) => this.rowToSpan(row));
   }
 
@@ -657,7 +702,7 @@ export class SQLiteStore implements EvolutionStore {
     if (mode === 'any') {
       // Match any tag
       const conditions = tags.map(() => 'tags LIKE ?').join(' OR ');
-      const params = tags.map((tag) => `%"${tag}"%`);
+      const params = tags.map((tag) => `%"${this.escapeLikePattern(tag)}"%`);
 
       const stmt = this.db.prepare(`
         SELECT * FROM spans WHERE tags IS NOT NULL AND (${conditions})
@@ -668,7 +713,7 @@ export class SQLiteStore implements EvolutionStore {
     } else {
       // Match all tags
       const conditions = tags.map(() => 'tags LIKE ?').join(' AND ');
-      const params = tags.map((tag) => `%"${tag}"%`);
+      const params = tags.map((tag) => `%"${this.escapeLikePattern(tag)}"%`);
 
       const stmt = this.db.prepare(`
         SELECT * FROM spans WHERE tags IS NOT NULL AND ${conditions}
@@ -684,6 +729,9 @@ export class SQLiteStore implements EvolutionStore {
   // ========================================================================
 
   async recordReward(reward: Reward): Promise<void> {
+    // Validate reward before inserting
+    validateReward(reward);
+
     const stmt = this.db.prepare(`
       INSERT INTO rewards (
         id, operation_span_id, value, dimensions, feedback, feedback_type,
@@ -764,6 +812,9 @@ export class SQLiteStore implements EvolutionStore {
   // ========================================================================
 
   async storePattern(pattern: Pattern): Promise<void> {
+    // Validate pattern before inserting
+    validatePattern(pattern);
+
     const stmt = this.db.prepare(`
       INSERT INTO patterns (
         id, type, confidence, occurrences, pattern_data, source_span_ids,
@@ -850,11 +901,19 @@ export class SQLiteStore implements EvolutionStore {
       params.push(query.observed_before.toISOString());
     }
 
-    // Sorting
+    // Sorting - SQL injection protection
     if (query.sort_by) {
+      if (!SQLiteStore.ALLOWED_PATTERN_SORT_COLUMNS.includes(query.sort_by)) {
+        throw new Error(`Invalid sort column: ${query.sort_by}. Allowed: ${SQLiteStore.ALLOWED_PATTERN_SORT_COLUMNS.join(', ')}`);
+      }
       sql += ` ORDER BY ${query.sort_by}`;
+
       if (query.sort_order) {
-        sql += ` ${query.sort_order.toUpperCase()}`;
+        const upperOrder = query.sort_order.toUpperCase();
+        if (!SQLiteStore.ALLOWED_SORT_ORDERS.includes(upperOrder)) {
+          throw new Error(`Invalid sort order: ${query.sort_order}. Allowed: ASC, DESC`);
+        }
+        sql += ` ${upperOrder}`;
       }
     }
 
@@ -953,6 +1012,9 @@ export class SQLiteStore implements EvolutionStore {
   // ========================================================================
 
   async storeAdaptation(adaptation: Adaptation): Promise<void> {
+    // Validate adaptation before inserting
+    validateAdaptation(adaptation);
+
     const stmt = this.db.prepare(`
       INSERT INTO adaptations (
         id, pattern_id, type, before_config, after_config,

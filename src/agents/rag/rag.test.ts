@@ -390,3 +390,338 @@ describe('RAGAgent (Integration)', () => {
     expect(stats).toHaveProperty('collectionInfo');
   });
 });
+
+describe('Error Scenarios - EmbeddingProvider', () => {
+  it('should handle empty text embedding', async () => {
+    const provider = EmbeddingProviderFactory.createSync();
+
+    // Current implementation may throw or return empty embedding
+    // TODO: Standardize empty text handling
+    await expect(
+      provider!.createEmbedding('')
+    ).resolves.toBeDefined();
+  });
+
+  it('should handle extremely long text', async () => {
+    const provider = EmbeddingProviderFactory.createSync();
+    const longText = 'word '.repeat(10000); // Very long text (>8192 tokens)
+
+    // OpenAI API rejects texts longer than 8192 tokens
+    await expect(
+      provider!.createEmbedding(longText)
+    ).rejects.toThrow();
+  }, 60000); // Longer timeout for API call
+
+  it('should handle batch embedding with empty texts', async () => {
+    const provider = EmbeddingProviderFactory.createSync();
+    const texts = ['', '', ''];
+
+    // OpenAI API rejects empty inputs
+    await expect(
+      provider!.createEmbeddings(texts)
+    ).rejects.toThrow();
+  });
+});
+
+describe('Error Scenarios - VectorStore', () => {
+  let vectorStore: VectorStore;
+
+  beforeAll(async () => {
+    vectorStore = new VectorStore();
+    await vectorStore.initialize();
+  });
+
+  afterAll(async () => {
+    await vectorStore.close();
+  });
+
+  beforeEach(async () => {
+    await vectorStore.clear();
+  });
+
+  it('should handle adding document with invalid embedding dimensions', async () => {
+    const doc = {
+      content: 'Test document',
+      metadata: { source: 'test.md' } as DocumentMetadata,
+      embedding: new Array(100).fill(0.1), // Wrong dimensions (should be 1536)
+    };
+
+    // VectorStore returns undefined for invalid dimensions
+    const result = await vectorStore.addDocument(doc);
+    expect(result).toBeUndefined();
+  });
+
+  it('should handle adding document with null content', async () => {
+    const doc = {
+      content: null as any,
+      metadata: { source: 'test.md' } as DocumentMetadata,
+      embedding: new Array(1536).fill(0.1),
+    };
+
+    // VectorStore returns undefined for null content
+    const result = await vectorStore.addDocument(doc);
+    expect(result).toBeUndefined();
+  });
+
+  it('should handle adding document with undefined embedding', async () => {
+    const doc = {
+      content: 'Test document',
+      metadata: { source: 'test.md' } as DocumentMetadata,
+      embedding: undefined as any,
+    };
+
+    // Should reject
+    await expect(
+      vectorStore.addDocument(doc)
+    ).rejects.toThrow();
+  });
+
+  it('should handle searching with invalid embedding dimensions', async () => {
+    const queryEmbedding = new Array(100).fill(0.5); // Wrong dimensions
+
+    // VectorStore returns empty results for invalid dimensions
+    const results = await vectorStore.searchWithEmbedding(queryEmbedding, { topK: 5 });
+    expect(results).toBeDefined();
+    expect(Array.isArray(results)).toBe(true);
+  });
+
+  it('should handle deleting non-existent documents', async () => {
+    // Should not throw, just report not found
+    await expect(
+      vectorStore.delete(['non-existent-1', 'non-existent-2'])
+    ).resolves.not.toThrow();
+  });
+
+  it('should handle concurrent document additions', async () => {
+    const docs = Array.from({ length: 10 }, (_, i) => ({
+      content: `Document ${i}`,
+      metadata: { source: `doc${i}.md` } as DocumentMetadata,
+      embedding: new Array(1536).fill(0.1 * (i + 1)),
+    }));
+
+    // Add documents concurrently
+    const operations = docs.map((doc) => vectorStore.addDocument(doc));
+    await Promise.all(operations);
+
+    const count = await vectorStore.count();
+    expect(count).toBe(10);
+  });
+
+  it('should handle empty batch addition', async () => {
+    await vectorStore.addDocuments([]);
+    const count = await vectorStore.count();
+    expect(count).toBe(0);
+  });
+
+  it('should handle search with topK larger than collection', async () => {
+    const doc = {
+      content: 'Single document',
+      metadata: { source: 'test.md' } as DocumentMetadata,
+      embedding: new Array(1536).fill(0.1),
+    };
+
+    await vectorStore.addDocument(doc);
+
+    const queryEmbedding = new Array(1536).fill(0.1);
+    const results = await vectorStore.searchWithEmbedding(queryEmbedding, { topK: 100 });
+
+    // Should return only available documents
+    expect(results.length).toBe(1);
+  });
+});
+
+describe('Error Scenarios - Reranker', () => {
+  let reranker: Reranker;
+
+  beforeAll(() => {
+    reranker = new Reranker();
+  });
+
+  it('should handle reranking empty results', () => {
+    const reranked = reranker.rerank([], 'test query', {
+      algorithm: 'reciprocal-rank',
+      useCache: false,
+    });
+
+    expect(reranked).toEqual([]);
+  });
+
+  it('should handle reranking with null query', () => {
+    const results = [
+      {
+        id: '1',
+        content: 'Test content',
+        metadata: { source: 'test.md' } as DocumentMetadata,
+        score: 0.9,
+        distance: 0.1,
+      },
+    ];
+
+    // Reranker throws TypeError for null query
+    expect(() => {
+      reranker.rerank(results, null as any, {
+        algorithm: 'reciprocal-rank',
+        useCache: false,
+      });
+    }).toThrow(TypeError);
+  });
+
+  it('should handle invalid algorithm', () => {
+    const results = [
+      {
+        id: '1',
+        content: 'Test content',
+        metadata: { source: 'test.md' } as DocumentMetadata,
+        score: 0.9,
+        distance: 0.1,
+      },
+    ];
+
+    // Should fallback to default algorithm or throw
+    const reranked = reranker.rerank(results, 'test query', {
+      algorithm: 'invalid-algorithm' as any,
+      useCache: false,
+    });
+
+    expect(reranked).toBeDefined();
+  });
+
+  it('should handle extremely large result sets', () => {
+    const largeResults = Array.from({ length: 10000 }, (_, i) => ({
+      id: `${i}`,
+      content: `Content ${i}`,
+      metadata: { source: `doc${i}.md` } as DocumentMetadata,
+      score: 1 - i / 10000,
+      distance: i / 10000,
+    }));
+
+    // Should handle without crashing or excessive memory
+    const reranked = reranker.rerank(largeResults, 'test query', {
+      algorithm: 'reciprocal-rank',
+      useCache: false,
+    });
+
+    expect(reranked.length).toBe(largeResults.length);
+  });
+
+  it('should handle keyword boost with empty keywords', () => {
+    const results = [
+      {
+        id: '1',
+        content: 'Test content',
+        metadata: { source: 'test.md' } as DocumentMetadata,
+        score: 0.9,
+        distance: 0.1,
+      },
+    ];
+
+    const boosted = reranker.keywordBoost(results, []);
+
+    // Should return results unchanged
+    expect(boosted).toEqual(results);
+  });
+});
+
+describe('Error Scenarios - RAGAgent', () => {
+  let rag: RAGAgent;
+
+  beforeAll(async () => {
+    rag = new RAGAgent();
+    await rag.initialize();
+  });
+
+  afterAll(async () => {
+    await rag.close();
+  });
+
+  beforeEach(async () => {
+    await rag.clearAll();
+  });
+
+  it('should handle indexing empty document', async () => {
+    // RAGAgent accepts empty documents (current behavior)
+    // TODO: Consider rejecting empty documents in future
+    await expect(
+      rag.indexDocument('', { source: 'empty.md' } as DocumentMetadata)
+    ).resolves.not.toThrow();
+  }, 30000);
+
+  it('should handle indexing with null metadata', async () => {
+    // RAGAgent may throw error for null metadata
+    await expect(
+      rag.indexDocument('Test content', null as any)
+    ).rejects.toThrow();
+  }, 30000);
+
+  it('should handle searching before documents indexed', async () => {
+    const results = await rag.search('test query', { topK: 5 });
+
+    // Should return empty results
+    expect(results).toEqual([]);
+  }, 30000);
+
+  it('should handle hybrid search with invalid weights', async () => {
+    await rag.indexDocument('Test content', { source: 'test.md' } as DocumentMetadata);
+
+    // Invalid weights (should sum to 1.0 or be normalized)
+    const results = await rag.hybridSearch('test', {
+      topK: 5,
+      semanticWeight: 0.5,
+      keywordWeight: 0.3, // Sum is 0.8, not 1.0
+    });
+
+    // Should handle gracefully (normalize or throw)
+    expect(results).toBeDefined();
+  }, 30000);
+
+  it('should handle concurrent indexing operations', async () => {
+    const docs = Array.from({ length: 5 }, (_, i) => ({
+      content: `Document ${i}`,
+      metadata: { source: `doc${i}.md` } as DocumentMetadata,
+    }));
+
+    // Index concurrently
+    const operations = docs.map((doc) =>
+      rag.indexDocument(doc.content, doc.metadata)
+    );
+    await Promise.all(operations);
+
+    const stats = await rag.getStats();
+    expect(stats.documentCount).toBe(5);
+  }, 60000);
+
+  it('should handle batch indexing with mixed valid and invalid documents', async () => {
+    const docs = [
+      { content: 'Valid document 1', metadata: { source: 'valid1.md' } as DocumentMetadata },
+      { content: '', metadata: { source: 'empty.md' } as DocumentMetadata }, // Invalid: empty
+      { content: 'Valid document 2', metadata: { source: 'valid2.md' } as DocumentMetadata },
+      { content: null as any, metadata: { source: 'null.md' } as DocumentMetadata }, // Invalid: null
+    ];
+
+    // Should skip invalid or throw
+    await expect(
+      rag.indexDocuments(docs, { batchSize: 2 })
+    ).rejects.toThrow();
+  }, 60000);
+
+  it('should handle extremely long query text', async () => {
+    await rag.indexDocument('Test content', { source: 'test.md' } as DocumentMetadata);
+
+    const longQuery = 'query '.repeat(10000); // >8192 tokens
+
+    // OpenAI API rejects queries longer than 8192 tokens
+    await expect(
+      rag.search(longQuery, { topK: 5 })
+    ).rejects.toThrow();
+  }, 60000);
+
+  it('should handle search with topK=0', async () => {
+    await rag.indexDocument('Test content', { source: 'test.md' } as DocumentMetadata);
+
+    const results = await rag.search('test', { topK: 0 });
+
+    // May return empty results or handle topK=0 as default
+    expect(results).toBeDefined();
+    expect(Array.isArray(results)).toBe(true);
+  }, 30000);
+});

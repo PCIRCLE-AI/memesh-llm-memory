@@ -30,6 +30,31 @@ Smart Agents is a prompt enhancement system for Claude Code that:
 
 ---
 
+## 🚀 Quick Start
+
+```bash
+# Automated setup (recommended for new users)
+./scripts/setup.sh
+
+# Manual setup
+npm install
+cp .env.example .env
+# Edit .env with your API keys
+npm run build
+npm test
+```
+
+The setup script will:
+- ✅ Check Node.js version (18+ required)
+- ✅ Install dependencies automatically
+- ✅ Create .env file from template
+- ✅ Run tests to verify installation
+- ✅ Build the project
+
+**Setup time:** < 15 minutes
+
+---
+
 ## 📋 Prerequisites
 
 - **Node.js** >= 18.0.0

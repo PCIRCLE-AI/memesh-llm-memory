@@ -165,7 +165,7 @@ class SmartAgentsMCPServer {
       // sa_dashboard - Evolution system dashboard
       const saDashboardTool = {
         name: 'sa_dashboard',
-        description: '📊 Smart-Agents: View evolution system dashboard showing agent learning progress, discovered patterns, and performance improvements across all 22 agents.',
+        description: '📊 Smart-Agents: View evolution system dashboard showing agent learning progress, discovered patterns, and performance improvements. Tracks 22 agent evolution configurations (18 currently available + 4 planned).',
         inputSchema: dashboardInputSchema,
       };
 

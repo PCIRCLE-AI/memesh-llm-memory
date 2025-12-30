@@ -36,7 +36,7 @@ export class Router {
       this.performanceTracker
     );
 
-    // Configure all 22 agents for evolution
+    // Configure evolution for 22 agent types (18 currently available + 4 planned)
     this.configureAgentEvolution();
   }
 

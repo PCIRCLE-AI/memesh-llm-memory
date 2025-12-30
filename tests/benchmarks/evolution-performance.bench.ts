@@ -151,7 +151,7 @@ describe('Evolution System Performance Benchmarks', () => {
       monitor.getDashboardSummary();
     });
 
-    bench('get learning progress (all 22 agents)', () => {
+    bench('get learning progress (all 22 evolution configs)', () => {
       monitor.getLearningProgress();
     });
 

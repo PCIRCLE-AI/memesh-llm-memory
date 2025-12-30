@@ -47,7 +47,7 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 
 **What It Is:**
 - Prompt enhancement layer for Claude Code
-- MCP server with 13 specialized agents
+- MCP server with 18 specialized agents
 - Intelligent task routing system
 - Cost & performance tracking tool
 
@@ -74,7 +74,7 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 │                            │                                    │
 │                            ▼                                    │
 │              ┌─────────────────────────┐                       │
-│              │  13 Specialized Agents  │                       │
+│              │  18 Specialized Agents  │                       │
 │              └─────────────────────────┘                       │
 └─────────────────────────────────────────────────────────────────┘
                             │
@@ -131,7 +131,7 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 
 ---
 
-## 🎪 The 13 Specialized Agents
+## 🎪 The 18 Specialized Agents
 
 ### Real Implementation Agents (5)
 
@@ -165,6 +165,46 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 | Feature | Purpose | Requirement |
 |---------|---------|-------------|
 | **Knowledge Synthesis** | Cross-agent learning | Enable with feature flag |
+
+---
+
+## 🏗️ System Infrastructure
+
+While agents are the user-facing components, Smart Agents also includes powerful infrastructure that operates behind the scenes:
+
+### Evolution System
+
+The Evolution System is **not an agent** - it's the infrastructure that makes the agent system learn and improve over time.
+
+**Components:**
+
+- **PerformanceTracker** (`src/evolution/PerformanceTracker.ts`)
+  - Tracks cost, duration, and quality metrics for every agent interaction
+  - SQLite-based storage with automatic cleanup (WAL mode)
+  - Provides historical data for learning and optimization
+
+- **LearningManager** (`src/evolution/LearningManager.ts`)
+  - Analyzes patterns from successful and failed interactions
+  - Identifies which agents work best for which tasks
+  - Suggests routing improvements based on historical data
+
+- **AdaptationEngine** (`src/evolution/AdaptationEngine.ts`)
+  - Automatically adjusts agent selection based on performance
+  - Implements cost-aware routing (prefer cheaper models when appropriate)
+  - Learns from user feedback and corrections
+
+**How It Works:**
+```
+User Request → Agent Executes → Metrics Collected → Patterns Learned → Routing Improved
+```
+
+**Benefits:**
+- 📊 Automatic performance tracking (no manual logging)
+- 🧠 Learns from every interaction
+- 💰 Cost optimization over time
+- 🎯 Smarter agent routing
+
+**Storage:** All evolution data is stored in `~/.claude/evolution.db` (SQLite with WAL mode)
 
 ---
 

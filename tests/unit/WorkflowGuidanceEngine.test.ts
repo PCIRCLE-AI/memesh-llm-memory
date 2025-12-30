@@ -64,16 +64,27 @@ describe('WorkflowGuidanceEngine', () => {
   });
 
   it('should integrate with LearningManager patterns', () => {
-    // Mock successful pattern from past
+    // Mock successful pattern from past with correct structure
     vi.spyOn(mockLearningManager, 'getPatterns').mockReturnValue([
       {
-        agentId: 'test-automator',
-        patternType: 'success',
-        conditions: ['tests-failing'],
-        actions: ['fix-tests', 'run-again'],
-        successRate: 0.9,
+        type: 'success',
+        agentId: 'workflow-guidance',
+        taskType: 'workflow-analysis',
+        description: 'Successful workflow pattern',
+        conditions: {
+          context: { phase: 'test-complete' },
+          taskComplexity: 'medium',
+        },
+        action: {
+          type: 'adjust_prompt',
+          parameters: { priority: 'high' },
+        },
+        confidence: 0.9,
         observationCount: 10,
+        successCount: 9,
+        successRate: 0.9,
         lastObserved: new Date(),
+        metadata: {},
       },
     ]);
 
@@ -84,10 +95,44 @@ describe('WorkflowGuidanceEngine', () => {
 
     const guidance = engine.analyzeWorkflow(context);
 
-    expect(guidance.recommendations).toContainEqual(
-      expect.objectContaining({
-        reasoning: expect.stringContaining('learned pattern'),
-      })
+    expect(guidance.learnedFromPatterns).toBe(true);
+    expect(guidance.reasoning).toContainEqual(
+      expect.stringContaining('learned pattern')
     );
+  });
+
+  it('should throw error for null context', () => {
+    expect(() => engine.analyzeWorkflow(null as any)).toThrow(
+      'WorkflowContext is required'
+    );
+  });
+
+  it('should throw error for invalid phase', () => {
+    const context = {
+      phase: 'invalid-phase' as any,
+    };
+    expect(() => engine.analyzeWorkflow(context)).toThrow(
+      'Invalid workflow phase'
+    );
+  });
+
+  it('should distinguish between tests not run vs tests failed', () => {
+    // Tests not run (undefined)
+    const contextNotRun = {
+      phase: 'code-written' as const,
+      testsPassing: undefined,
+    };
+    const guidanceNotRun = engine.analyzeWorkflow(contextNotRun);
+    expect(guidanceNotRun.recommendations[0].reasoning).toContain(
+      'not been run'
+    );
+
+    // Tests failed (false)
+    const contextFailed = {
+      phase: 'code-written' as const,
+      testsPassing: false,
+    };
+    const guidanceFailed = engine.analyzeWorkflow(contextFailed);
+    expect(guidanceFailed.recommendations[0].reasoning).toContain('failing');
   });
 });

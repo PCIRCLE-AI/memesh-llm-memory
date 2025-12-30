@@ -2,7 +2,7 @@
 
 > **Transform Claude Code into a specialized AI development team with intelligent routing, prompt optimization, and performance tracking.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Non-Commercial](https://img.shields.io/badge/License-Non--Commercial-red.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/kevintseng/smart-agents/releases)
 [![Node.js >= 18.0.0](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![Claude Code MCP](https://img.shields.io/badge/Claude_Code-MCP_Server-purple.svg)](https://modelcontextprotocol.io/)
@@ -45,16 +45,11 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 
 **Think of it as:** Giving Claude Code a team of specialists (code reviewer, architect, debugger, etc.) and a good memory - so you can focus on creating instead of prompt engineering.
 
-### What It Is vs. What It Isn't
-
-| ✅ What It **IS**                          | ❌ What It **ISN'T**                    |
-|--------------------------------------------|------------------------------------------|
-| Prompt enhancement layer for Claude Code   | Autonomous multi-agent AI system         |
-| MCP server with 13 specialized agents      | Replacement for Claude Code              |
-| Intelligent task routing system            | Standalone application                   |
-| Cost & performance tracking tool           | Cloud-based service requiring API keys*  |
-
-*Only OpenAI API key needed for optional RAG features
+**What It Is:**
+- Prompt enhancement layer for Claude Code
+- MCP server with 13 specialized agents
+- Intelligent task routing system
+- Cost & performance tracking tool
 
 ---
 
@@ -117,6 +112,23 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 6. Learning & Adaptation (improve future routing)
 ```
 
+### Tech Stack
+
+**Core Technologies:**
+- **Node.js** (>= 18.0.0) - Runtime environment
+- **TypeScript** - Type-safe development
+- **Model Context Protocol (MCP)** - Claude Code integration
+- **SQLite** (with WAL mode) - Performance tracking & evolution storage
+- **Vectra** - Vector database for knowledge graph
+
+**Optional Dependencies:**
+- **OpenAI API** - Embeddings for RAG semantic search (requires API key)
+
+**Development Tools:**
+- **Vitest** - Testing framework
+- **ESLint** - Code quality
+- **Prettier** - Code formatting
+
 ---
 
 ## ✨ Key Benefits
@@ -150,7 +162,7 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 
 | Agent | Purpose | Key Features |
 |-------|---------|--------------|
-| **RAG Agent** | Semantic search & retrieval | Vector search, document indexing, context-aware responses |
+| **RAG Agent** *(Optional - requires OpenAI API key)* | Semantic search & retrieval | Vector search, document indexing, context-aware responses |
 | **Evolution System** | Performance optimization | Pattern learning, adaptive routing, cost optimization |
 | **Knowledge Graph** | Structured knowledge management | Entity relationships, query language, knowledge synthesis |
 | **Development Butler** | Event-driven automation | Checkpoint detection, workflow integration, hook system |
@@ -399,7 +411,11 @@ Ask Claude Code: "How do I contribute to Smart Agents?"
 
 ## 📝 License
 
-MIT License © 2025 - See [LICENSE](LICENSE) for details
+**Non-Commercial Use Only** © 2025
+
+This project is licensed for non-commercial use only. See [LICENSE](LICENSE) for details.
+
+Commercial use, redistribution, or modification for commercial purposes is prohibited without explicit permission.
 
 ---
 

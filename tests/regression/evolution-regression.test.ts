@@ -14,6 +14,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { Router } from '../../src/orchestrator/router.js';
 import { Task } from '../../src/orchestrator/types.js';
 import { AgentEvolutionConfig, getAllAgentConfigs } from '../../src/evolution/AgentEvolutionConfig.js';
+import { toDollars } from '../../src/utils/money.js';
 
 describe('Evolution System Regression Tests', () => {
   let router: Router;
@@ -227,8 +228,10 @@ describe('Evolution System Regression Tests', () => {
       const result = await router.routeTask(task);
 
       // Cost should be positive and reasonable
-      expect(result.routing.estimatedCost).toBeGreaterThan(0);
-      expect(result.routing.estimatedCost).toBeLessThan(1.0);
+      // estimatedCost is in MicroDollars (μUSD), convert to dollars for comparison
+      const costInDollars = toDollars(result.routing.estimatedCost);
+      expect(costInDollars).toBeGreaterThan(0);
+      expect(costInDollars).toBeLessThan(1.0);
     });
   });
 

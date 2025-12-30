@@ -17,6 +17,7 @@
 import os from 'os';
 import { TaskAnalysis, RoutingDecision, AgentType, SystemResources, TaskCapability, Task } from './types.js';
 import { PromptEnhancer } from '../core/PromptEnhancer.js';
+import { toDollars } from '../utils/money.js';
 
 export class AgentRouter {
   private promptEnhancer: PromptEnhancer;
@@ -248,7 +249,7 @@ export class AgentRouter {
     reasons.push(`Selected ${selectedAgent} based on task capabilities and ${analysis.complexity} complexity`);
     reasons.push(`Available memory: ${resources.availableMemoryMB}MB`);
     reasons.push(`Memory usage: ${resources.memoryUsagePercent}%`);
-    reasons.push(`Estimated cost: $${analysis.estimatedCost.toFixed(6)}`);
+    reasons.push(`Estimated cost: $${toDollars(analysis.estimatedCost).toFixed(6)}`);
 
     // Agent 專業說明
     const agentDescriptions: Record<AgentType, string> = {

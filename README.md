@@ -1,21 +1,30 @@
-# Smart-Agents
+# Smart Agents - Claude Code Prompt Enhancement System
 
-**Intelligent AI Agent Ecosystem with MCP Server Integration**
+**Enhance your Claude Code workflow with intelligent prompt optimization and specialized agent routing.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/kevintseng/smart-agents/releases)
 [![Node.js >= 18.0.0](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 
-## 🚀 What is Smart-Agents?
+## 🚀 What is Smart Agents?
 
-Smart-Agents is a comprehensive AI agent orchestration platform that provides:
+Smart Agents is a prompt enhancement system for Claude Code that:
+- Routes tasks to specialized agents based on capabilities
+- Optimizes prompts with domain expertise and best practices
+- Tracks costs and performance across agent interactions
+- Learns and adapts from successful patterns
 
-✅ **MCP Server Integration** - Seamlessly integrates with Claude Code via Model Context Protocol
-✅ **Intelligent Orchestrator** - Routes tasks to the most appropriate agent based on complexity and requirements
-✅ **RAG Agent System** - Vector-based retrieval augmented generation with ChromaDB and OpenAI embeddings
-✅ **Development Automation** - Butler, TestWriter, and DevOps agents for automated development workflows
-✅ **Cost Optimization** - Built-in cost tracking and resource management
-✅ **Evolution System** - Self-learning capabilities that improve performance over time
+**What it is:** A prompt enhancement layer for Claude Code
+**What it isn't:** An autonomous multi-agent AI system (agents are prompt templates + routing logic)
+
+## 🎯 Key Features
+
+- **13 Specialized Agents**: 5 real implementations (RAG, Evolution, Knowledge Graph, Butler, Test Writer) + 8 prompt-enhanced templates (Code Reviewer, Debugger, Refactorer, API Designer, Research, Architecture, Data Analyst, Knowledge)
+- **Intelligent Routing**: Capability-based routing to the right agent for each task
+- **Prompt Enhancement Mode**: Returns enhanced prompts instead of making direct API calls
+- **Cost Tracking**: Monitor token usage and costs across agent interactions
+- **Evolution System**: Learn from successful patterns and adapt over time
+- **MCP Integration**: Seamless integration with Claude Code via Model Context Protocol
 
 ---
 

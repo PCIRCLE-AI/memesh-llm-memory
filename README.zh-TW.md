@@ -386,9 +386,7 @@ smart-agents/
 
 ---
 
-## 🇹🇼 Crafted in Taiwan | 台灣製造
-
-**Where innovation meets tradition**
+🇹🇼 **Crafted in Taiwan | 台灣製造** - Where innovation meets tradition
 
 ---
 

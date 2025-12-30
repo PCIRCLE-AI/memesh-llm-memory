@@ -187,10 +187,10 @@ Claude Code 會處理一切：
 透過自然對話完成所有操作：
 
 ```
-✅ "使用我的 OpenAI 金鑰啟用 RAG 功能"
-✅ "修改代碼審查器以專注於安全性"
-✅ "為 API 文件創建自定義代理"
-✅ "顯示系統架構"
+✅ "使用我的 OpenAI 金鑰啟用 smart-agents RAG 功能"
+✅ "用 smart-agents 修改代碼審查器以專注於安全性"
+✅ "用 smart-agents 為 API 文件創建自定義代理"
+✅ "顯示 smart-agents 系統架構"
 ✅ "為什麼 RAG 代理無法運作？"
 ```
 

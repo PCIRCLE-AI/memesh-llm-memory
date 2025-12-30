@@ -35,8 +35,7 @@ Non-blocking asynchronous task execution design:
 ### [DATA_FLOW.md](./DATA_FLOW.md) (Planned)
 Detailed data flow patterns:
 - Request/response cycles
-- Multi-model orchestration flows
-- Failover decision trees
+- Agent orchestration flows
 - Error propagation
 - State management
 
@@ -57,37 +56,35 @@ Detailed data flow patterns:
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
 │ Layer 4: Skills Coordination Layer                          │
-│ Multi-model agent orchestration                             │
+│ Domain-expert agent orchestration                           │
 └───────────────────────────┬─────────────────────────────────┘
                             │
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ Layer 3: Smart Router (Quota-Aware)                         │
-│ Complexity analysis + Provider selection                    │
+│ Layer 3: Agent Router & Task Analyzer                       │
+│ Intelligent task routing to domain experts                  │
 └───────────────────────────┬─────────────────────────────────┘
                             │
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ Layer 2: Quota Manager                                      │
-│ Real-time quota tracking + Failover triggers                │
+│ Layer 2: Prompt Enhancement & Evolution System              │
+│ Domain-expert prompts + Learning from outcomes              │
 └───────────────────────────┬─────────────────────────────────┘
                             │
-                ┌───────────┴───────────┐
-                │                       │
-                ↓                       ↓
-        ┌──────────────┐        ┌──────────────┐
-        │ Ollama       │        │ Cloud Models │
-        │ (local)      │        │ Claude/Grok  │
-        └──────────────┘        └──────────────┘
+                            ↓
+                    ┌──────────────┐
+                    │ Claude API   │
+                    │ Sonnet 4.5   │
+                    └──────────────┘
 ```
 
 ### Core Design Principles
 
-1. **Quota-Aware Routing** - Never hit quota limits unexpectedly
-2. **Graceful Degradation** - Always provide a working solution
-3. **Cost Optimization** - Prefer cheaper models when sufficient
-4. **Transparency** - Users see routing decisions
-5. **Extensibility** - Easy to add new providers
+1. **Simplicity First** - Claude-only architecture eliminates multi-provider complexity
+2. **Domain Expertise** - Route tasks to specialized agents with domain knowledge
+3. **Continuous Learning** - Evolution system optimizes routing over time
+4. **Transparency** - Users see which agent handled their task
+5. **Extensibility** - Easy to add new domain expert agents
 
 ---
 
@@ -99,4 +96,4 @@ Detailed data flow patterns:
 
 ---
 
-**Last Updated**: 2025-12-26
+**Last Updated**: 2025-12-31

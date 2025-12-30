@@ -36,6 +36,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Agent count test expectations updated to match V2.1 reality (13 → 14 agents)
 - Filesystem and memory helpers added to MCPToolInterface
 - Environment variable loading for RAG with OpenAI API key
+- **Test Suite Fixes** (2025-12-30):
+  - Fixed MCPToolInterface test to correctly validate v2.1.0 behavior (prompt enhancement mode)
+  - Fixed evolution-regression cost tracking test: Added MicroDollars to dollars conversion using `toDollars()` utility
+  - Fixed AgentRouter MicroDollars formatting bug: Properly convert μUSD to dollars before display
+  - Root cause: Type confusion between MicroDollars (integer μUSD) and dollars (float)
+  - Prevention: Always use `toDollars()` utility from `src/utils/money.ts` for display/comparison
+  - Test suite now passing: 447/447 tests (100% pass rate)
 
 ### Refactored
 - **Evolution Storage Layer** (Phase 1-3 refactoring)

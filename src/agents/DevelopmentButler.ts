@@ -7,6 +7,9 @@
 
 import { CheckpointDetector } from '../core/CheckpointDetector.js';
 import { MCPToolInterface } from '../core/MCPToolInterface.js';
+import { WorkflowGuidanceEngine, WorkflowContext, WorkflowGuidance, WorkflowPhase } from '../core/WorkflowGuidanceEngine.js';
+import { FeedbackCollector } from '../evolution/FeedbackCollector.js';
+import type { LearningManager } from '../evolution/LearningManager.js';
 
 /**
  * Code analysis result
@@ -102,12 +105,25 @@ export class DevelopmentButler {
     phase: 'idle',
   };
 
+  // Workflow guidance integration
+  private guidanceEngine?: WorkflowGuidanceEngine;
+  private feedbackCollector?: FeedbackCollector;
+  private activeRequests: Map<string, WorkflowGuidance> = new Map();
+
   constructor(
     checkpointDetector: CheckpointDetector,
-    toolInterface: MCPToolInterface
+    toolInterface: MCPToolInterface,
+    learningManager?: LearningManager
   ) {
     this.checkpointDetector = checkpointDetector;
     this.toolInterface = toolInterface;
+
+    // Initialize workflow guidance if learning manager provided
+    if (learningManager) {
+      this.guidanceEngine = new WorkflowGuidanceEngine(learningManager);
+      this.feedbackCollector = new FeedbackCollector(learningManager);
+    }
+
     this.initialize();
   }
 
@@ -333,5 +349,150 @@ export class DevelopmentButler {
    */
   getWorkflowState(): WorkflowState {
     return { ...this.workflowState };
+  }
+
+  /**
+   * Process checkpoint and provide workflow guidance
+   *
+   * @param checkpointName - Name of the checkpoint
+   * @param data - Checkpoint data
+   * @returns Workflow guidance with formatted request
+   */
+  async processCheckpoint(
+    checkpointName: string,
+    data: Record<string, unknown>
+  ): Promise<{
+    guidance: WorkflowGuidance;
+    formattedRequest: string;
+    requestId: string;
+  }> {
+    if (!this.guidanceEngine) {
+      throw new Error('Workflow guidance not initialized. Provide LearningManager to constructor.');
+    }
+
+    // Build workflow context from checkpoint data
+    const context: WorkflowContext = {
+      phase: checkpointName as WorkflowPhase,
+      filesChanged: data.filesChanged as string[] | undefined,
+      testsPassing: data.testsPassing as boolean | undefined,
+      reviewed: data.reviewed as boolean | undefined,
+    };
+
+    // Get workflow guidance
+    const guidance = this.guidanceEngine.analyzeWorkflow(context);
+
+    // Format as non-blocking confirmation request
+    const topRecommendation = guidance.recommendations[0];
+    const alternatives = guidance.recommendations.slice(1, 4);
+
+    const formattedRequest = this.formatWorkflowGuidanceRequest(
+      topRecommendation,
+      alternatives,
+      guidance.confidence,
+      guidance.reasoning
+    );
+
+    // Track active request
+    const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    this.activeRequests.set(requestId, guidance);
+
+    return {
+      guidance,
+      formattedRequest,
+      requestId,
+    };
+  }
+
+  /**
+   * Format workflow guidance as user-friendly request
+   */
+  private formatWorkflowGuidanceRequest(
+    topRecommendation: WorkflowGuidance['recommendations'][0],
+    alternatives: WorkflowGuidance['recommendations'],
+    confidence: number,
+    reasoning: string[]
+  ): string {
+    const lines: string[] = [];
+
+    // Header
+    lines.push('═══════════════════════════════════════════════════');
+    lines.push('🔄 Workflow Guidance');
+    lines.push('═══════════════════════════════════════════════════');
+    lines.push('');
+
+    // Top recommendation
+    const confidencePercent = Math.round(confidence * 100);
+    lines.push(`✨ Recommended Action: ${topRecommendation.action} (${confidencePercent}% confidence)`);
+    lines.push(`   Priority: ${topRecommendation.priority}`);
+    lines.push('');
+
+    // Description
+    lines.push(`📝 ${topRecommendation.description}`);
+    lines.push('');
+
+    // Reasoning
+    lines.push('💡 Reasoning:');
+    reasoning.forEach((reason) => {
+      if (reason && reason.trim()) {
+        lines.push(`   • ${reason}`);
+      }
+    });
+    lines.push(`   • ${topRecommendation.reasoning}`);
+    lines.push('');
+
+    // Estimated time
+    if (topRecommendation.estimatedTime) {
+      lines.push(`⏱️  Estimated time: ${topRecommendation.estimatedTime}`);
+      lines.push('');
+    }
+
+    // Alternatives
+    if (alternatives.length > 0) {
+      lines.push('🔄 Alternative Actions:');
+      alternatives.forEach((alt, index) => {
+        lines.push(`   ${index + 1}. ${alt.action} (${alt.priority} priority) - ${alt.description}`);
+      });
+      lines.push('');
+    }
+
+    lines.push('═══════════════════════════════════════════════════');
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Record user response to workflow guidance
+   *
+   * @param requestId - Request identifier
+   * @param response - User's response
+   */
+  async recordUserResponse(
+    requestId: string,
+    response: {
+      accepted: boolean;
+      wasOverridden: boolean;
+      selectedAction?: string;
+    }
+  ): Promise<void> {
+    const guidance = this.activeRequests.get(requestId);
+    if (!guidance) {
+      throw new Error(`Request ${requestId} not found in active requests`);
+    }
+
+    if (!this.feedbackCollector) {
+      throw new Error('Feedback collector not initialized');
+    }
+
+    // Record feedback for learning
+    await this.feedbackCollector.recordRoutingApproval({
+      taskId: requestId,
+      recommendedAgent: guidance.recommendations[0].action as any, // Cast to AgentType for compatibility
+      selectedAgent: (response.selectedAction || guidance.recommendations[0].action) as any,
+      wasOverridden: response.wasOverridden,
+      confidence: guidance.confidence,
+    });
+
+    // Clean up
+    this.activeRequests.delete(requestId);
   }
 }

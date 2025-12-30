@@ -12,10 +12,12 @@ describe('BackgroundExecutor', () => {
   let monitor: ResourceMonitor;
 
   beforeEach(() => {
-    // Use high thresholds for test environment
+    // Use realistic thresholds for test environment
+    // Note: Production deployments use ResourceMonitor defaults (8GB)
+    // Test environments need higher limits due to OS + IDE + browser overhead
     monitor = new ResourceMonitor(6, {
-      maxCPU: 90,
-      maxMemory: 32768, // 32GB - sufficient for test environment
+      maxCPU: 70,
+      maxMemory: 16384, // 16GB - realistic test/development machine limit
     });
     executor = new BackgroundExecutor(monitor);
   });
@@ -320,8 +322,8 @@ describe('BackgroundExecutor', () => {
     it('should process high priority tasks first', async () => {
       // Create executor with limited concurrency to force queueing
       const limitedMonitor = new ResourceMonitor(1, {
-        maxCPU: 90,
-        maxMemory: 32768,
+        maxCPU: 70,
+        maxMemory: 16384, // 16GB - realistic test/development machine limit
       });
       const limitedExecutor = new BackgroundExecutor(limitedMonitor);
 

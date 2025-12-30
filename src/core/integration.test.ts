@@ -13,10 +13,10 @@ describe('Background Execution System Integration', () => {
   let executor: BackgroundExecutor;
 
   beforeEach(() => {
-    // Use high thresholds for test environment
+    // Use realistic thresholds for production-like testing
     monitor = new ResourceMonitor(6, {
-      maxCPU: 90,
-      maxMemory: 32768, // 32GB - sufficient for test environment
+      maxCPU: 70,
+      maxMemory: 16384, // 16GB - realistic test/development machine limit
     });
     executor = new BackgroundExecutor(monitor);
   });
@@ -105,8 +105,8 @@ describe('Background Execution System Integration', () => {
     it('should respect resource limits', async () => {
       // Create monitor with strict limits
       const strictMonitor = new ResourceMonitor(2, {
-        maxCPU: 90,
-        maxMemory: 32768, // High enough for test environment
+        maxCPU: 70,
+        maxMemory: 16384, // 16GB - realistic test/development machine limit
       });
       const strictExecutor = new BackgroundExecutor(strictMonitor);
 
@@ -220,8 +220,8 @@ describe('Background Execution System Integration', () => {
     it('should enforce max concurrent limit', async () => {
       // Create monitor with low limit
       const limitedMonitor = new ResourceMonitor(3, {
-        maxCPU: 90,
-        maxMemory: 32768,
+        maxCPU: 70,
+        maxMemory: 16384, // 16GB - realistic test/development machine limit
       });
       const limitedExecutor = new BackgroundExecutor(limitedMonitor);
 
@@ -255,8 +255,8 @@ describe('Background Execution System Integration', () => {
     it('should handle resource threshold exceeded scenario', async () => {
       // This test simulates what happens when resources are exceeded
       const resourceMonitor = new ResourceMonitor(1, {
-        maxCPU: 90,
-        maxMemory: 32768,
+        maxCPU: 70,
+        maxMemory: 16384, // 16GB - realistic test/development machine limit
       }); // Only 1 concurrent task allowed
       const testExecutor = new BackgroundExecutor(resourceMonitor);
 
@@ -302,8 +302,8 @@ describe('Background Execution System Integration', () => {
     it('should cancel a queued task', async () => {
       // Fill up the queue
       const limitedMonitor = new ResourceMonitor(1, {
-        maxCPU: 90,
-        maxMemory: 32768,
+        maxCPU: 70,
+        maxMemory: 16384, // 16GB - realistic test/development machine limit
       });
       const limitedExecutor = new BackgroundExecutor(limitedMonitor);
 

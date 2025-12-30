@@ -33,7 +33,7 @@ describe('BackgroundExecutor UI Integration', () => {
     const config: ExecutionConfig = {
       mode: 'background',
       priority: 'medium',
-      resourceLimits: { maxCPU: 100, maxMemory: 32768, maxDuration: 60 },
+      resourceLimits: { maxCPU: 100, maxMemory: 16384, maxDuration: 60 },
     };
 
     const task = {
@@ -61,7 +61,7 @@ describe('BackgroundExecutor UI Integration', () => {
     const config: ExecutionConfig = {
       mode: 'background',
       priority: 'high',
-      resourceLimits: { maxCPU: 100, maxMemory: 32768, maxDuration: 60 },
+      resourceLimits: { maxCPU: 100, maxMemory: 16384, maxDuration: 60 },
     };
 
     const task = {
@@ -88,7 +88,7 @@ describe('BackgroundExecutor UI Integration', () => {
     const config: ExecutionConfig = {
       mode: 'background',
       priority: 'low',
-      resourceLimits: { maxCPU: 100, maxMemory: 32768, maxDuration: 60 },
+      resourceLimits: { maxCPU: 100, maxMemory: 16384, maxDuration: 60 },
     };
 
     const task = {

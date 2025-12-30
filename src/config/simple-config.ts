@@ -68,43 +68,43 @@ export class SimpleConfig {
   }
 
   /**
-   * 是否為開發環境
+   * Check if in development environment
    */
   static get isDevelopment(): boolean {
     return this.NODE_ENV === 'development';
   }
 
   /**
-   * 是否為生產環境
+   * Check if in production environment
    */
   static get isProduction(): boolean {
     return this.NODE_ENV === 'production';
   }
 
   /**
-   * 是否為測試環境
+   * Check if in test environment
    */
   static get isTest(): boolean {
     return this.NODE_ENV === 'test';
   }
 
   /**
-   * 驗證必要配置是否存在
-   * @returns 缺失的配置項目清單
+   * Validate required configuration exists
+   * @returns List of missing configuration items
    */
   static validateRequired(): string[] {
     const missing: string[] = [];
 
-    // VECTRA_INDEX_PATH 和 DATABASE_PATH 有預設值，不檢查
-    // OPENAI_API_KEY 是可選的，不檢查
+    // VECTRA_INDEX_PATH and DATABASE_PATH have default values, no validation needed
+    // OPENAI_API_KEY is optional, no validation needed
 
-    // 目前沒有絕對必要的配置（MCP server 模式下）
+    // Currently no absolutely required configuration (under MCP server mode)
     return missing;
   }
 
   /**
-   * 取得所有配置（用於除錯）
-   * 注意：不包含敏感資訊（API keys 會被遮罩）
+   * Get all configuration (for debugging)
+   * Note: Excludes sensitive information (API keys are masked)
    */
   static getAll(): Record<string, string | boolean> {
     return {
@@ -122,8 +122,8 @@ export class SimpleConfig {
 }
 
 /**
- * 簡化的 DatabaseFactory 替代品
- * 取代原本複雜的 credentials/DatabaseFactory
+ * Simplified DatabaseFactory replacement
+ * Replaces original complex credentials/DatabaseFactory
  */
 import Database from 'better-sqlite3';
 
@@ -134,10 +134,10 @@ export class SimpleDatabaseFactory {
   private static instances: Map<string, Database.Database> = new Map();
 
   /**
-   * 創建資料庫連接（內部使用）
-   * @param path 資料庫檔案路徑
-   * @param isTest 是否為測試資料庫
-   * @returns Database 實例
+   * Create database connection (internal use)
+   * @param path Database file path
+   * @param isTest Whether this is a test database
+   * @returns Database instance
    */
   private static createDatabase(path: string, isTest: boolean = false): Database.Database {
     try {
@@ -145,19 +145,19 @@ export class SimpleDatabaseFactory {
         verbose: SimpleConfig.isDevelopment ? console.log : undefined,
       });
 
-      // 設定 busy timeout（5 秒）
+      // Set busy timeout (5 seconds)
       db.pragma('busy_timeout = 5000');
 
-      // 啟用 WAL mode 提升性能（測試環境除外）
+      // Enable WAL mode for better performance (except test environment)
       if (!isTest) {
         db.pragma('journal_mode = WAL');
-        // 增加 cache size 提升查詢性能（10MB）
+        // Increase cache size for better query performance (10MB)
         db.pragma('cache_size = -10000');
-        // 啟用 memory-mapped I/O（128MB）
+        // Enable memory-mapped I/O (128MB)
         db.pragma('mmap_size = 134217728');
       }
 
-      // 啟用外鍵約束
+      // Enable foreign key constraints
       db.pragma('foreign_keys = ON');
 
       return db;
@@ -168,9 +168,9 @@ export class SimpleDatabaseFactory {
   }
 
   /**
-   * 取得資料庫實例（Singleton pattern）
-   * @param path 資料庫檔案路徑（可選，預設使用 SimpleConfig）
-   * @returns Database 實例
+   * Get database instance (Singleton pattern)
+   * @param path Database file path (optional, defaults to SimpleConfig)
+   * @returns Database instance
    */
   static getInstance(path?: string): Database.Database {
     const dbPath = path || SimpleConfig.DATABASE_PATH;
@@ -199,15 +199,15 @@ export class SimpleDatabaseFactory {
   }
 
   /**
-   * 創建測試資料庫（記憶體模式）
-   * @returns Database 實例
+   * Create test database (in-memory mode)
+   * @returns Database instance
    */
   static createTestDatabase(): Database.Database {
     return this.createDatabase(':memory:', true);
   }
 
   /**
-   * 關閉所有資料庫連接
+   * Close all database connections
    */
   static closeAll(): void {
     for (const [path, db] of this.instances.entries()) {
@@ -221,8 +221,8 @@ export class SimpleDatabaseFactory {
   }
 
   /**
-   * 關閉特定資料庫連接
-   * @param path 資料庫檔案路徑
+   * Close specific database connection
+   * @param path Database file path
    */
   static close(path?: string): void {
     const dbPath = path || SimpleConfig.DATABASE_PATH;

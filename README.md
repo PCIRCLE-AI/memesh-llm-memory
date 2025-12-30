@@ -187,10 +187,10 @@ Claude Code will handle everything:
 Everything through natural conversation:
 
 ```
-✅ "Enable RAG features with my OpenAI key"
-✅ "Modify the code-reviewer to focus on security"
-✅ "Create a custom agent for API documentation"
-✅ "Show me the system architecture"
+✅ "Enable smart-agents RAG features with my OpenAI key"
+✅ "Use smart-agents to modify the code-reviewer to focus on security"
+✅ "Use smart-agents to create a custom agent for API documentation"
+✅ "Show me the smart-agents system architecture"
 ✅ "Why isn't the RAG agent working?"
 ```
 

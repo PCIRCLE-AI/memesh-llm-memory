@@ -38,6 +38,15 @@ import type {
   TimeRange,
   SkillPerformance,
   SkillRecommendation,
+  TaskRow,
+  ExecutionRow,
+  SpanRow,
+  PatternRow,
+  AdaptationRow,
+  RewardRow,
+  EvolutionStatsRow,
+  ContextualPatternRow,
+  SQLParam,
 } from './types';
 
 export interface SQLiteStoreOptions {
@@ -372,7 +381,7 @@ export class SQLiteStore implements EvolutionStore {
 
   async updateTask(taskId: string, updates: Partial<Task>): Promise<void> {
     const fields: string[] = [];
-    const values: any[] = [];
+    const values: SQLParam[] = [];
 
     if (updates.status) {
       fields.push('status = ?');
@@ -484,7 +493,7 @@ export class SQLiteStore implements EvolutionStore {
     updates: Partial<Execution>
   ): Promise<void> {
     const fields: string[] = [];
-    const values: any[] = [];
+    const values: SQLParam[] = [];
 
     if (updates.status) {
       fields.push('status = ?');
@@ -1081,7 +1090,7 @@ export class SQLiteStore implements EvolutionStore {
     updates: Partial<Pattern>
   ): Promise<void> {
     const fields: string[] = [];
-    const values: any[] = [];
+    const values: SQLParam[] = [];
 
     if (updates.confidence !== undefined) {
       fields.push('confidence = ?');
@@ -1507,13 +1516,13 @@ export class SQLiteStore implements EvolutionStore {
   // Helper Methods (Row to Model conversion)
   // ========================================================================
 
-  private rowToTask(row: any): Task {
+  private rowToTask(row: TaskRow): Task {
     return {
       id: row.id,
       input: JSON.parse(row.input),
-      task_type: row.task_type,
-      origin: row.origin,
-      status: row.status,
+      task_type: row.task_type ?? undefined,
+      origin: row.origin ?? undefined,
+      status: row.status as Task['status'],
       created_at: new Date(row.created_at),
       started_at: row.started_at ? new Date(row.started_at) : undefined,
       completed_at: row.completed_at ? new Date(row.completed_at) : undefined,
@@ -1521,37 +1530,37 @@ export class SQLiteStore implements EvolutionStore {
     };
   }
 
-  private rowToExecution(row: any): Execution {
+  private rowToExecution(row: ExecutionRow): Execution {
     return {
       id: row.id,
       task_id: row.task_id,
       attempt_number: row.attempt_number,
-      agent_id: row.agent_id,
-      agent_type: row.agent_type,
-      status: row.status,
+      agent_id: row.agent_id ?? undefined,
+      agent_type: row.agent_type ?? undefined,
+      status: row.status as Execution['status'],
       started_at: new Date(row.started_at),
       completed_at: row.completed_at ? new Date(row.completed_at) : undefined,
       result: row.result ? JSON.parse(row.result) : undefined,
-      error: row.error,
+      error: row.error ?? undefined,
       metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
     };
   }
 
-  protected rowToSpan(row: any): Span {
+  protected rowToSpan(row: SpanRow): Span {
     return {
       trace_id: row.trace_id,
       span_id: row.span_id,
-      parent_span_id: row.parent_span_id,
+      parent_span_id: row.parent_span_id ?? undefined,
       task_id: row.task_id,
       execution_id: row.execution_id,
       name: row.name,
-      kind: row.kind,
+      kind: row.kind as Span['kind'],
       start_time: row.start_time,
-      end_time: row.end_time,
-      duration_ms: row.duration_ms,
+      end_time: row.end_time ?? undefined,
+      duration_ms: row.duration_ms ?? undefined,
       status: {
-        code: row.status_code,
-        message: row.status_message,
+        code: row.status_code as Span['status']['code'],
+        message: row.status_message ?? undefined,
       },
       attributes: JSON.parse(row.attributes),
       resource: JSON.parse(row.resource),
@@ -1561,17 +1570,17 @@ export class SQLiteStore implements EvolutionStore {
     };
   }
 
-  private rowToPattern(row: any): Pattern {
+  private rowToPattern(row: PatternRow): Pattern {
     return {
       id: row.id,
-      type: row.type,
+      type: row.type as Pattern['type'],
       confidence: row.confidence,
       occurrences: row.occurrences,
       pattern_data: JSON.parse(row.pattern_data),
       source_span_ids: JSON.parse(row.source_span_ids),
-      applies_to_agent_type: row.applies_to_agent_type,
-      applies_to_task_type: row.applies_to_task_type,
-      applies_to_skill: row.applies_to_skill,
+      applies_to_agent_type: row.applies_to_agent_type ?? undefined,
+      applies_to_task_type: row.applies_to_task_type ?? undefined,
+      applies_to_skill: row.applies_to_skill ?? undefined,
       first_observed: new Date(row.first_observed),
       last_observed: new Date(row.last_observed),
       is_active: row.is_active === 1,
@@ -1580,16 +1589,16 @@ export class SQLiteStore implements EvolutionStore {
     };
   }
 
-  private rowToAdaptation(row: any): Adaptation {
+  private rowToAdaptation(row: AdaptationRow): Adaptation {
     return {
       id: row.id,
       pattern_id: row.pattern_id,
-      type: row.type,
+      type: row.type as Adaptation['type'],
       before_config: JSON.parse(row.before_config),
       after_config: JSON.parse(row.after_config),
-      applied_to_agent_id: row.applied_to_agent_id,
-      applied_to_task_type: row.applied_to_task_type,
-      applied_to_skill: row.applied_to_skill,
+      applied_to_agent_id: row.applied_to_agent_id ?? undefined,
+      applied_to_task_type: row.applied_to_task_type ?? undefined,
+      applied_to_skill: row.applied_to_skill ?? undefined,
       applied_at: new Date(row.applied_at),
       success_count: row.success_count,
       failure_count: row.failure_count,
@@ -1598,34 +1607,34 @@ export class SQLiteStore implements EvolutionStore {
       deactivated_at: row.deactivated_at
         ? new Date(row.deactivated_at)
         : undefined,
-      deactivation_reason: row.deactivation_reason,
+      deactivation_reason: row.deactivation_reason ?? undefined,
       created_at: new Date(row.created_at),
       updated_at: new Date(row.updated_at),
     };
   }
 
-  private rowToReward(row: any): Reward {
+  private rowToReward(row: RewardRow): Reward {
     return {
       id: row.id,
       operation_span_id: row.operation_span_id,
       value: row.value,
       dimensions: row.dimensions ? JSON.parse(row.dimensions) : undefined,
-      feedback: row.feedback,
-      feedback_type: row.feedback_type,
-      provided_by: row.provided_by,
+      feedback: row.feedback ?? undefined,
+      feedback_type: row.feedback_type as Reward['feedback_type'],
+      provided_by: row.provided_by ?? undefined,
       provided_at: new Date(row.provided_at),
       metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
     };
   }
 
-  private rowToEvolutionStats(row: any): EvolutionStats {
+  private rowToEvolutionStats(row: EvolutionStatsRow): EvolutionStats {
     return {
       id: row.id,
-      agent_id: row.agent_id,
-      skill_name: row.skill_name,
+      agent_id: row.agent_id ?? undefined,
+      skill_name: row.skill_name ?? undefined,
       period_start: new Date(row.period_start),
       period_end: new Date(row.period_end),
-      period_type: row.period_type,
+      period_type: row.period_type as EvolutionStats['period_type'],
       total_executions: row.total_executions,
       successful_executions: row.successful_executions,
       failed_executions: row.failed_executions,
@@ -1637,8 +1646,8 @@ export class SQLiteStore implements EvolutionStore {
       adaptations_applied: row.adaptations_applied,
       improvement_rate: row.improvement_rate,
       skills_used: row.skills_used ? JSON.parse(row.skills_used) : undefined,
-      most_successful_skill: row.most_successful_skill,
-      avg_skill_satisfaction: row.avg_skill_satisfaction,
+      most_successful_skill: row.most_successful_skill ?? undefined,
+      avg_skill_satisfaction: row.avg_skill_satisfaction ?? undefined,
       created_at: new Date(row.created_at),
       updated_at: new Date(row.updated_at),
     };

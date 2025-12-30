@@ -30,6 +30,7 @@ import type {
   TimeRange,
   SkillPerformance,
   SkillRecommendation,
+  SQLParam,
 } from './types';
 
 export interface SQLiteStoreOptions {
@@ -336,7 +337,7 @@ export class SQLiteStore implements EvolutionStore {
 
   async updateTask(taskId: string, updates: Partial<Task>): Promise<void> {
     const fields: string[] = [];
-    const values: any[] = [];
+    const values: SQLParam[] = [];
 
     if (updates.status) {
       fields.push('status = ?');
@@ -448,7 +449,7 @@ export class SQLiteStore implements EvolutionStore {
     updates: Partial<Execution>
   ): Promise<void> {
     const fields: string[] = [];
-    const values: any[] = [];
+    const values: SQLParam[] = [];
 
     if (updates.status) {
       fields.push('status = ?');
@@ -879,7 +880,7 @@ export class SQLiteStore implements EvolutionStore {
     updates: Partial<Pattern>
   ): Promise<void> {
     const fields: string[] = [];
-    const values: any[] = [];
+    const values: SQLParam[] = [];
 
     if (updates.confidence !== undefined) {
       fields.push('confidence = ?');

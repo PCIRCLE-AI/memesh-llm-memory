@@ -563,6 +563,154 @@ export interface SkillRecommendation {
 }
 
 // ============================================================================
+// Database Row Types (SQLite raw data before transformation)
+// ============================================================================
+
+/**
+ * Raw database row types - what better-sqlite3 returns
+ * These represent the actual database schema columns
+ */
+
+export interface TaskRow {
+  id: string;
+  input: string;  // JSON stringified
+  task_type: string | null;
+  origin: string | null;
+  status: string;
+  created_at: string;  // ISO date string
+  started_at: string | null;
+  completed_at: string | null;
+  metadata: string | null;  // JSON stringified
+}
+
+export interface ExecutionRow {
+  id: string;
+  task_id: string;
+  attempt_number: number;
+  agent_id: string | null;
+  agent_type: string | null;
+  status: string;
+  started_at: string;  // ISO date string
+  completed_at: string | null;
+  result: string | null;  // JSON stringified
+  error: string | null;
+  metadata: string | null;  // JSON stringified
+}
+
+export interface SpanRow {
+  trace_id: string;
+  span_id: string;
+  parent_span_id: string | null;
+  task_id: string;
+  execution_id: string;
+  name: string;
+  kind: string;
+  start_time: number;
+  end_time: number | null;
+  duration_ms: number | null;
+  status_code: string;
+  status_message: string | null;
+  attributes: string;  // JSON stringified
+  resource: string;    // JSON stringified
+  links: string | null;  // JSON stringified
+  tags: string | null;   // JSON stringified
+  events: string | null; // JSON stringified
+}
+
+export interface PatternRow {
+  id: string;
+  type: string;
+  confidence: number;
+  occurrences: number;
+  pattern_data: string;  // JSON stringified
+  source_span_ids: string;  // JSON stringified
+  applies_to_agent_type: string | null;
+  applies_to_task_type: string | null;
+  applies_to_skill: string | null;
+  first_observed: string;  // ISO date string
+  last_observed: string;
+  is_active: number;  // SQLite boolean (0 or 1)
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdaptationRow {
+  id: string;
+  pattern_id: string;
+  type: string;
+  before_config: string;  // JSON stringified
+  after_config: string;
+  applied_to_agent_id: string | null;
+  applied_to_task_type: string | null;
+  applied_to_skill: string | null;
+  applied_at: string;  // ISO date string
+  success_count: number;
+  failure_count: number;
+  avg_improvement: number;
+  is_active: number;  // SQLite boolean
+  deactivated_at: string | null;
+  deactivation_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RewardRow {
+  id: string;
+  operation_span_id: string;
+  value: number;
+  dimensions: string | null;  // JSON stringified
+  feedback: string | null;
+  feedback_type: string | null;
+  provided_by: string | null;
+  provided_at: string;  // ISO date string
+  metadata: string | null;  // JSON stringified
+}
+
+export interface EvolutionStatsRow {
+  id: string;
+  agent_id: string | null;
+  skill_name: string | null;
+  period_start: string;  // ISO date string
+  period_end: string;
+  period_type: string;
+  total_executions: number;
+  successful_executions: number;
+  failed_executions: number;
+  success_rate: number;
+  avg_duration_ms: number;
+  avg_cost: number;
+  avg_quality_score: number;
+  patterns_discovered: number;
+  adaptations_applied: number;
+  improvement_rate: number;
+  skills_used: string | null;  // JSON stringified
+  most_successful_skill: string | null;
+  avg_skill_satisfaction: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContextualPatternRow {
+  id: string;
+  pattern_id: string;
+  context_hash: string;
+  context_data: string;  // JSON stringified
+  confidence: number;
+  occurrences: number;
+  success_rate: number;
+  avg_quality_score: number | null;
+  last_observed: string;  // ISO date string
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * SQL Parameter Type - for database query parameters
+ * SQLite supports: NULL, INTEGER, REAL, TEXT, BLOB
+ */
+export type SQLParam = string | number | null | Buffer;
+
+// ============================================================================
 // Re-exports from main evolution types (Phase 2+)
 // ============================================================================
 

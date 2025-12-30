@@ -2,7 +2,7 @@
 
 > **Transform Claude Code into a specialized AI development team with intelligent routing, prompt optimization, and performance tracking.**
 
-[![License: Non-Commercial](https://img.shields.io/badge/License-Non--Commercial-red.svg)](LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/kevintseng/smart-agents/releases)
 [![Node.js >= 18.0.0](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![Claude Code MCP](https://img.shields.io/badge/Claude_Code-MCP_Server-purple.svg)](https://modelcontextprotocol.io/)
@@ -411,11 +411,19 @@ Ask Claude Code: "How do I contribute to Smart Agents?"
 
 ## 📝 License
 
-**Non-Commercial Use Only** © 2025
+**GNU Affero General Public License v3.0**
 
-This project is licensed for non-commercial use only. See [LICENSE](LICENSE) for details.
+This project is licensed under the GNU AGPL v3. See [LICENSE](LICENSE) for full terms.
 
-Commercial use, redistribution, or modification for commercial purposes is prohibited without explicit permission.
+Key terms:
+- ✅ Free to use, modify, and distribute
+- ✅ Commercial use allowed
+- ✅ Must disclose source code
+- ✅ **Network use = distribution** (must share source even for SaaS)
+- ✅ Derivative works must use AGPL v3
+- ✅ Changes must be documented
+
+**Why AGPL?** Since Smart Agents is an MCP server that can run as a service, AGPL ensures source code sharing even when used over a network.
 
 ---
 

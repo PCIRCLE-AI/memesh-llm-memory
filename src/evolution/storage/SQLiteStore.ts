@@ -342,6 +342,13 @@ export class SQLiteStore implements EvolutionStore {
   // Task Management
   // ========================================================================
 
+  /**
+   * Create a new task
+   *
+   * @param input - Task input data
+   * @param metadata - Optional task metadata
+   * @returns Created task with generated ID and timestamps
+   */
   async createTask(
     input: Record<string, any>,
     metadata?: Record<string, any>
@@ -370,6 +377,12 @@ export class SQLiteStore implements EvolutionStore {
     return task;
   }
 
+  /**
+   * Retrieve a task by ID
+   *
+   * @param taskId - Task ID to retrieve
+   * @returns Task if found, null otherwise
+   */
   async getTask(taskId: string): Promise<Task | null> {
     const stmt = this.db.prepare(`
       SELECT * FROM tasks WHERE id = ?
@@ -541,6 +554,11 @@ export class SQLiteStore implements EvolutionStore {
   // Span Tracking (Core of Evolution System)
   // ========================================================================
 
+  /**
+   * Record a single span to the database
+   *
+   * @param span - Span to record
+   */
   async recordSpan(span: Span): Promise<void> {
     // Validate span before inserting
     validateSpan(span);
@@ -575,6 +593,11 @@ export class SQLiteStore implements EvolutionStore {
     );
   }
 
+  /**
+   * Record multiple spans in a single transaction
+   *
+   * @param spans - Array of spans to record
+   */
   async recordSpanBatch(spans: Span[]): Promise<void> {
     const insertMany = this.db.transaction((spans: Span[]) => {
       for (const span of spans) {
@@ -585,6 +608,12 @@ export class SQLiteStore implements EvolutionStore {
     insertMany(spans);
   }
 
+  /**
+   * Query spans with flexible filtering
+   *
+   * @param query - Span query filters
+   * @returns Array of matching spans
+   */
   async querySpans(query: SpanQuery): Promise<Span[]> {
     let sql = 'SELECT * FROM spans WHERE 1=1';
     const params: any[] = [];
@@ -749,6 +778,11 @@ export class SQLiteStore implements EvolutionStore {
   // Reward Management
   // ========================================================================
 
+  /**
+   * Record reward/feedback for an operation
+   *
+   * @param reward - Reward to record
+   */
   async recordReward(reward: Reward): Promise<void> {
     // Validate reward before inserting
     validateReward(reward);
@@ -832,6 +866,11 @@ export class SQLiteStore implements EvolutionStore {
   // Pattern Management
   // ========================================================================
 
+  /**
+   * Store or update a learned pattern
+   *
+   * @param pattern - Pattern to store
+   */
   async storePattern(pattern: Pattern): Promise<void> {
     // Validate pattern before inserting
     validatePattern(pattern);
@@ -868,6 +907,12 @@ export class SQLiteStore implements EvolutionStore {
     return this.rowToPattern(row);
   }
 
+  /**
+   * Query patterns with flexible filtering
+   *
+   * @param query - Pattern query filters
+   * @returns Array of matching patterns
+   */
   async queryPatterns(query: PatternQuery): Promise<Pattern[]> {
     let sql = 'SELECT * FROM patterns WHERE 1=1';
     const params: any[] = [];
@@ -1164,6 +1209,11 @@ export class SQLiteStore implements EvolutionStore {
   // Adaptation Management
   // ========================================================================
 
+  /**
+   * Store an adaptation (applied pattern change)
+   *
+   * @param adaptation - Adaptation to store
+   */
   async storeAdaptation(adaptation: Adaptation): Promise<void> {
     // Validate adaptation before inserting
     validateAdaptation(adaptation);

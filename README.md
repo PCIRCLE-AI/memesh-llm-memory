@@ -53,6 +53,8 @@ The setup script will:
 
 **Setup time:** < 15 minutes
 
+**New user?** Follow our [15-Minute Quick Start Guide](docs/guides/QUICK_START.md) →
+
 ---
 
 ## 📋 Prerequisites

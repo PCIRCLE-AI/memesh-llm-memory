@@ -24,6 +24,7 @@ import {
   validateAdaptation,
   validateReward,
 } from './validation';
+import { safeJsonParse } from '../../utils/json.js';
 import type { EvolutionStore } from './EvolutionStore';
 import type {
   Task,
@@ -1018,9 +1019,9 @@ export class SQLiteStore implements EvolutionStore {
    * Convert database row to ContextualPattern (Phase 2)
    */
   private rowToContextualPattern(row: any): import('./types.js').ContextualPattern {
-    const pattern_data = row.pattern_data ? JSON.parse(row.pattern_data) : {};
-    const config_keys = row.config_keys ? JSON.parse(row.config_keys) : undefined;
-    const metadata = row.context_metadata ? JSON.parse(row.context_metadata) : undefined;
+    const pattern_data = safeJsonParse<Record<string, any>>(row.pattern_data, {});
+    const config_keys = safeJsonParse(row.config_keys, undefined);
+    const metadata = safeJsonParse(row.context_metadata, undefined);
 
     // Calculate success_rate from adaptations
     let success_rate = 0;
@@ -1519,14 +1520,14 @@ export class SQLiteStore implements EvolutionStore {
   private rowToTask(row: TaskRow): Task {
     return {
       id: row.id,
-      input: JSON.parse(row.input),
+      input: safeJsonParse(row.input, {}),
       task_type: row.task_type ?? undefined,
       origin: row.origin ?? undefined,
       status: row.status as Task['status'],
       created_at: new Date(row.created_at),
       started_at: row.started_at ? new Date(row.started_at) : undefined,
       completed_at: row.completed_at ? new Date(row.completed_at) : undefined,
-      metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+      metadata: safeJsonParse(row.metadata, undefined),
     };
   }
 
@@ -1540,9 +1541,9 @@ export class SQLiteStore implements EvolutionStore {
       status: row.status as Execution['status'],
       started_at: new Date(row.started_at),
       completed_at: row.completed_at ? new Date(row.completed_at) : undefined,
-      result: row.result ? JSON.parse(row.result) : undefined,
+      result: safeJsonParse(row.result, undefined),
       error: row.error ?? undefined,
-      metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+      metadata: safeJsonParse(row.metadata, undefined),
     };
   }
 
@@ -1562,11 +1563,11 @@ export class SQLiteStore implements EvolutionStore {
         code: row.status_code as Span['status']['code'],
         message: row.status_message ?? undefined,
       },
-      attributes: JSON.parse(row.attributes),
-      resource: JSON.parse(row.resource),
-      links: row.links ? JSON.parse(row.links) : undefined,
-      tags: row.tags ? JSON.parse(row.tags) : undefined,
-      events: row.events ? JSON.parse(row.events) : undefined,
+      attributes: safeJsonParse(row.attributes, {}),
+      resource: safeJsonParse(row.resource, { 'task.id': '', 'execution.id': '', 'execution.attempt': 0 }),
+      links: safeJsonParse(row.links, undefined),
+      tags: safeJsonParse(row.tags, undefined),
+      events: safeJsonParse(row.events, undefined),
     };
   }
 
@@ -1576,8 +1577,8 @@ export class SQLiteStore implements EvolutionStore {
       type: row.type as Pattern['type'],
       confidence: row.confidence,
       occurrences: row.occurrences,
-      pattern_data: JSON.parse(row.pattern_data),
-      source_span_ids: JSON.parse(row.source_span_ids),
+      pattern_data: safeJsonParse(row.pattern_data, {} as any),
+      source_span_ids: safeJsonParse(row.source_span_ids, []),
       applies_to_agent_type: row.applies_to_agent_type ?? undefined,
       applies_to_task_type: row.applies_to_task_type ?? undefined,
       applies_to_skill: row.applies_to_skill ?? undefined,
@@ -1594,8 +1595,8 @@ export class SQLiteStore implements EvolutionStore {
       id: row.id,
       pattern_id: row.pattern_id,
       type: row.type as Adaptation['type'],
-      before_config: JSON.parse(row.before_config),
-      after_config: JSON.parse(row.after_config),
+      before_config: safeJsonParse(row.before_config, {}),
+      after_config: safeJsonParse(row.after_config, {}),
       applied_to_agent_id: row.applied_to_agent_id ?? undefined,
       applied_to_task_type: row.applied_to_task_type ?? undefined,
       applied_to_skill: row.applied_to_skill ?? undefined,
@@ -1618,12 +1619,12 @@ export class SQLiteStore implements EvolutionStore {
       id: row.id,
       operation_span_id: row.operation_span_id,
       value: row.value,
-      dimensions: row.dimensions ? JSON.parse(row.dimensions) : undefined,
+      dimensions: safeJsonParse(row.dimensions, undefined),
       feedback: row.feedback ?? undefined,
       feedback_type: row.feedback_type as Reward['feedback_type'],
       provided_by: row.provided_by ?? undefined,
       provided_at: new Date(row.provided_at),
-      metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+      metadata: safeJsonParse(row.metadata, undefined),
     };
   }
 
@@ -1645,7 +1646,7 @@ export class SQLiteStore implements EvolutionStore {
       patterns_discovered: row.patterns_discovered,
       adaptations_applied: row.adaptations_applied,
       improvement_rate: row.improvement_rate,
-      skills_used: row.skills_used ? JSON.parse(row.skills_used) : undefined,
+      skills_used: safeJsonParse(row.skills_used, undefined),
       most_successful_skill: row.most_successful_skill ?? undefined,
       avg_skill_satisfaction: row.avg_skill_satisfaction ?? undefined,
       created_at: new Date(row.created_at),

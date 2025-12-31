@@ -43,7 +43,7 @@ const envSchema = z.object({
 
   // Orchestrator Configuration
   ORCHESTRATOR_MODE: z.enum(['local', 'distributed']).default('local'),
-  ORCHESTRATOR_MAX_MEMORY_MB: z.string().default('2048'),
+  ORCHESTRATOR_MAX_MEMORY_MB: z.string().default('6144'), // Updated to 6GB (2025-12-31: conservative)
 });
 
 /**

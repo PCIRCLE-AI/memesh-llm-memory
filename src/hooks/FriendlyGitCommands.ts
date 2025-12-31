@@ -255,7 +255,7 @@ export class FriendlyGitCommands {
   async createLocalBackup(): Promise<string> {
     const backupDir = path.join(
       os.homedir(),
-      '.smart-agents-backups',
+      '.claude-code-buddy-backups',
       path.basename(process.cwd())
     );
 

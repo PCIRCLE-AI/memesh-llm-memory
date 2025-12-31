@@ -10,7 +10,7 @@ import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { NotFoundError } from '../errors/index.js';
 import { SimpleDatabaseFactory } from '../config/simple-config.js';
-import type { Entity, Relation, SearchQuery, RelationTrace } from './types.js';
+import type { Entity, Relation, SearchQuery, RelationTrace, EntityType, RelationType } from './types.js';
 import type { SQLParams } from '../evolution/storage/types.js';
 
 export class KnowledgeGraph {
@@ -250,7 +250,7 @@ export class KnowledgeGraph {
       return {
         id: r.id,
         name: r.name,
-        type: r.type,
+        type: r.type as EntityType,
         observations: r.observations ? r.observations.split('|||') : [],
         tags: r.tags ? r.tags.split(',').filter(Boolean) : [],
         metadata: r.metadata ? JSON.parse(r.metadata) : {},
@@ -303,7 +303,7 @@ export class KnowledgeGraph {
         return {
           from: r.from_name,
           to: r.to_name,
-          relationType: r.relation_type,
+          relationType: r.relation_type as RelationType,
           metadata: r.metadata ? JSON.parse(r.metadata) : {}
         };
       }),

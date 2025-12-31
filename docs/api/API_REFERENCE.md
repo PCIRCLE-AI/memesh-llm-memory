@@ -1,14 +1,14 @@
-# Smart Agents MCP Server - API Reference
+# Claude Code Buddy MCP Server - API Reference
 
 **Version**: 2.1.0
 **Last Updated**: 2025-12-31
-**Author**: Smart Agents Team
+**Author**: Claude Code Buddy Team
 
 ---
 
 ## Overview
 
-Smart Agents is a **Claude-only** AI agent system built on the Model Context Protocol (MCP). The system provides intelligent agent routing, prompt enhancement, and evolution-based learning without multi-provider complexity.
+Claude Code Buddy is a **Claude-only** AI agent system built on the Model Context Protocol (MCP). The system provides intelligent agent routing, prompt enhancement, and evolution-based learning without multi-provider complexity.
 
 **Architecture**: Claude Sonnet 4.5 → MCP Server → Agent Router → Domain Experts
 
@@ -50,7 +50,7 @@ For detailed API documentation, refer to the actual implementation:
 
 ## MCP Tools
 
-Smart Agents exposes the following tools via MCP:
+Claude Code Buddy exposes the following tools via MCP:
 
 ### `analyze-task`
 Analyzes a task and routes it to the appropriate domain expert agent.
@@ -86,7 +86,7 @@ Lists all available domain expert agents.
 
 ## Agent Types
 
-Smart Agents includes 13 domain expert agents:
+Claude Code Buddy includes 13 domain expert agents:
 
 | Agent ID | Domain | Specialty |
 |----------|--------|-----------|
@@ -119,14 +119,14 @@ ENABLE_LEARNING=true
 STORAGE_PATH=./data/evolution
 
 # MCP Server (optional)
-MCP_SERVER_NAME=smart-agents
+MCP_SERVER_NAME=claude-code-buddy
 MCP_SERVER_VERSION=2.1.0
 ```
 
 ### Configuration Files
 
 - **Claude Code Config**: `~/.config/claude/claude_desktop_config.json`
-  - Registers Smart Agents MCP server
+  - Registers Claude Code Buddy MCP server
   - Configures MCP connection settings
 
 ---
@@ -239,7 +239,7 @@ The evolution system automatically:
 - Learns routing patterns over time
 - Optimizes future agent selection
 
-Data stored in SQLite database at `data/evolution/smart-agents.db`.
+Data stored in SQLite database at `data/evolution/claude-code-buddy.db`.
 
 ---
 
@@ -247,7 +247,7 @@ Data stored in SQLite database at `data/evolution/smart-agents.db`.
 
 ### Removed Features (v2.1.0)
 
-Smart Agents has simplified to a **Claude-only** architecture. The following multi-provider features have been removed:
+Claude Code Buddy has simplified to a **Claude-only** architecture. The following multi-provider features have been removed:
 
 - ❌ Ollama integration
 - ❌ Multi-provider routing

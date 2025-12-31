@@ -75,6 +75,26 @@ export interface ErrorEvent {
 }
 
 /**
+ * Agent Start Event
+ * Emitted when an agent task starts
+ */
+export interface AgentStartEvent {
+  agentId: string;
+  agentType: string;
+  taskDescription: string;
+}
+
+/**
+ * Agent Complete Event
+ * Emitted when an agent task completes
+ */
+export interface AgentCompleteEvent {
+  agentId: string;
+  agentType: string;
+  duration: number; // milliseconds
+}
+
+/**
  * Attribution Entry
  * Records success/error events for later GitHub issue generation
  */

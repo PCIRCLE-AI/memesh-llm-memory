@@ -93,6 +93,105 @@ export class MCPToolInterface {
     createEntities: async (opts: Record<string, unknown>): Promise<void> => {
       await this.invokeTool('memory', 'createEntities', opts);
     },
+
+    /**
+     * Search nodes in knowledge graph
+     * @param query - Search query (entity name, type, or pattern)
+     * @returns Promise<unknown[]> Search results
+     */
+    searchNodes: async (query: string): Promise<unknown[]> => {
+      const result = await this.invokeTool('memory', 'searchNodes', { query });
+      if (result.success && result.data && Array.isArray(result.data)) {
+        return result.data;
+      }
+      return [];
+    },
+  };
+
+  /**
+   * Playwright helper methods
+   * Provides convenient access to Playwright MCP tool operations for browser automation
+   */
+  public playwright = {
+    /**
+     * Navigate to a URL
+     * @param url - URL to navigate to
+     * @returns Promise<void>
+     */
+    navigate: async (url: string): Promise<void> => {
+      await this.invokeTool('playwright', 'navigate', { url });
+    },
+
+    /**
+     * Take an accessibility snapshot of the current page
+     * @returns Promise<unknown> Page snapshot
+     */
+    snapshot: async (): Promise<unknown> => {
+      const result = await this.invokeTool('playwright', 'snapshot', {});
+      return result.data || {};
+    },
+
+    /**
+     * Click an element on the page
+     * @param opts - Click options {element, ref}
+     * @returns Promise<void>
+     */
+    click: async (opts: { element: string; ref: string }): Promise<void> => {
+      await this.invokeTool('playwright', 'click', opts);
+    },
+
+    /**
+     * Type text into an element
+     * @param opts - Type options {element, ref, text, submit?}
+     * @returns Promise<void>
+     */
+    type: async (opts: {
+      element: string;
+      ref: string;
+      text: string;
+      submit?: boolean;
+    }): Promise<void> => {
+      await this.invokeTool('playwright', 'type', opts);
+    },
+
+    /**
+     * Wait for a condition
+     * @param opts - Wait options {text?, time?}
+     * @returns Promise<void>
+     */
+    waitFor: async (opts: { text?: string; time?: number }): Promise<void> => {
+      await this.invokeTool('playwright', 'waitFor', opts);
+    },
+
+    /**
+     * Take a screenshot
+     * @param opts - Screenshot options {filename?, fullPage?}
+     * @returns Promise<void>
+     */
+    takeScreenshot: async (opts: {
+      filename?: string;
+      fullPage?: boolean;
+    }): Promise<void> => {
+      await this.invokeTool('playwright', 'takeScreenshot', opts);
+    },
+
+    /**
+     * Evaluate JavaScript expression on page
+     * @param opts - Evaluate options {function}
+     * @returns Promise<unknown> Evaluation result
+     */
+    evaluate: async (opts: { function: string }): Promise<unknown> => {
+      const result = await this.invokeTool('playwright', 'evaluate', opts);
+      return result.data || null;
+    },
+
+    /**
+     * Close the browser
+     * @returns Promise<void>
+     */
+    close: async (): Promise<void> => {
+      await this.invokeTool('playwright', 'close', {});
+    },
   };
 
   /**

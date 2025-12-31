@@ -184,7 +184,7 @@ export class SpanTracker {
 
     // Default resource attributes
     this.resource = {
-      'service.name': options.serviceName || 'smart-agents',
+      'service.name': options.serviceName || 'claude-code-buddy',
       'service.version': options.serviceVersion || '1.0.0',
       'deployment.environment': options.environment || 'dev',
     } as ResourceAttributes;
@@ -215,8 +215,8 @@ export class SpanTracker {
     if (!this.currentTask) {
       throw new StateError(
         'No active task. Call startTask() first.',
-        'not_initialized',
         {
+          state: 'not_initialized',
           component: 'SpanTracker',
           method: 'startExecution',
           requiredState: 'active task',
@@ -245,8 +245,8 @@ export class SpanTracker {
     if (!this.currentExecution) {
       throw new StateError(
         'No active execution.',
-        'invalid_state',
         {
+          state: 'invalid_state',
           component: 'SpanTracker',
           method: 'endExecution',
           requiredState: 'active execution',
@@ -274,8 +274,8 @@ export class SpanTracker {
     if (!this.currentTask) {
       throw new StateError(
         'No active task.',
-        'invalid_state',
         {
+          state: 'invalid_state',
           component: 'SpanTracker',
           method: 'endTask',
           requiredState: 'active task',
@@ -414,8 +414,8 @@ export function getGlobalTracker(): SpanTracker {
   if (!globalTracker) {
     throw new StateError(
       'Global tracker not initialized. Call setGlobalTracker() first.',
-      'not_initialized',
       {
+        state: 'not_initialized',
         component: 'SpanTracker',
         method: 'getGlobalTracker',
         requiredState: 'initialized global tracker',

@@ -683,7 +683,7 @@ export class SQLiteStore implements EvolutionStore {
     }
 
     const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as TaskRow[];
+    const rows = stmt.all(...params) as SpanRow[];
 
     return rows.map((row) => this.rowToSpan(row));
   }
@@ -737,7 +737,7 @@ export class SQLiteStore implements EvolutionStore {
         SELECT * FROM spans WHERE tags IS NOT NULL AND (${conditions})
       `);
 
-      const rows = stmt.all(...params) as TaskRow[];
+      const rows = stmt.all(...params) as SpanRow[];
       return rows.map((row) => this.rowToSpan(row));
     } else {
       // Match all tags
@@ -748,7 +748,7 @@ export class SQLiteStore implements EvolutionStore {
         SELECT * FROM spans WHERE tags IS NOT NULL AND ${conditions}
       `);
 
-      const rows = stmt.all(...params) as TaskRow[];
+      const rows = stmt.all(...params) as SpanRow[];
       return rows.map((row) => this.rowToSpan(row));
     }
   }
@@ -831,7 +831,7 @@ export class SQLiteStore implements EvolutionStore {
     sql += ' ORDER BY provided_at DESC';
 
     const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as TaskRow[];
+    const rows = stmt.all(...params) as RewardRow[];
 
     return rows.map((row) => this.rowToReward(row));
   }
@@ -1133,7 +1133,7 @@ export class SQLiteStore implements EvolutionStore {
     sql += ' ORDER BY applied_at DESC';
 
     const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as TaskRow[];
+    const rows = stmt.all(...params) as AdaptationRow[];
 
     return rows.map((row) => this.rowToAdaptation(row));
   }
@@ -1413,7 +1413,7 @@ export class SQLiteStore implements EvolutionStore {
       input: safeJsonParse(row.input, {}),
       task_type: row.task_type,
       origin: row.origin,
-      status: row.status,
+      status: row.status as 'pending' | 'running' | 'completed' | 'failed',
       created_at: new Date(row.created_at),
       started_at: row.started_at ? new Date(row.started_at) : undefined,
       completed_at: row.completed_at ? new Date(row.completed_at) : undefined,
@@ -1428,7 +1428,7 @@ export class SQLiteStore implements EvolutionStore {
       attempt_number: row.attempt_number,
       agent_id: row.agent_id,
       agent_type: row.agent_type,
-      status: row.status,
+      status: row.status as 'running' | 'completed' | 'failed',
       started_at: new Date(row.started_at),
       completed_at: row.completed_at ? new Date(row.completed_at) : undefined,
       result: safeJsonParse(row.result, undefined),
@@ -1445,12 +1445,12 @@ export class SQLiteStore implements EvolutionStore {
       task_id: row.task_id,
       execution_id: row.execution_id,
       name: row.name,
-      kind: row.kind,
+      kind: row.kind as 'internal' | 'client' | 'server' | 'producer' | 'consumer',
       start_time: row.start_time,
       end_time: row.end_time,
       duration_ms: row.duration_ms,
       status: {
-        code: row.status_code,
+        code: row.status_code as 'OK' | 'ERROR' | 'UNSET',
         message: row.status_message,
       },
       attributes: safeJsonParse(row.attributes, {}),
@@ -1489,7 +1489,7 @@ export class SQLiteStore implements EvolutionStore {
     return {
       id: row.id,
       pattern_id: row.pattern_id,
-      type: row.type,
+      type: row.type as 'config' | 'prompt' | 'strategy' | 'resource' | 'skill',
       before_config: safeJsonParse(row.before_config, {}),
       after_config: safeJsonParse(row.after_config, {}),
       applied_to_agent_id: row.applied_to_agent_id,
@@ -1516,7 +1516,7 @@ export class SQLiteStore implements EvolutionStore {
       value: row.value,
       dimensions: safeJsonParse(row.dimensions, undefined),
       feedback: row.feedback,
-      feedback_type: row.feedback_type,
+      feedback_type: row.feedback_type as 'user' | 'automated' | 'expert' | undefined,
       provided_by: row.provided_by,
       provided_at: new Date(row.provided_at),
       metadata: safeJsonParse(row.metadata, undefined),
@@ -1530,7 +1530,7 @@ export class SQLiteStore implements EvolutionStore {
       skill_name: row.skill_name,
       period_start: new Date(row.period_start),
       period_end: new Date(row.period_end),
-      period_type: row.period_type,
+      period_type: row.period_type as 'hourly' | 'daily' | 'weekly' | 'monthly',
       total_executions: row.total_executions,
       successful_executions: row.successful_executions,
       failed_executions: row.failed_executions,

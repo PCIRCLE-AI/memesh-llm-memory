@@ -1,7 +1,7 @@
 /**
  * Agent Registry
  *
- * Centralized registry for all available agents in the smart-agents system.
+ * Centralized registry for all available agents in the claude-code-buddy system.
  * Provides dynamic agent discovery and metadata management.
  */
 

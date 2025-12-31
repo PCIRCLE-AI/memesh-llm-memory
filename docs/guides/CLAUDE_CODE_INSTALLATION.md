@@ -1,6 +1,6 @@
 # Claude Code Installation Guide
 
-**Just tell Claude Code**: "Install smart-agents MCP from https://github.com/kevintseng/smart-agents"
+**Just tell Claude Code**: "Install claude-code-buddy MCP from https://github.com/PCIRCLE-AI/claude-code-buddy"
 
 That's it! Claude Code handles everything automatically.
 
@@ -27,7 +27,7 @@ Claude Code will:
 **Restart Claude Code**, then you can:
 
 ```
-"List available smart-agents tools"
+"List available Claude Code Buddy tools"
 "Enable RAG features with my OpenAI key"
 "Modify code-reviewer to focus on security"
 "Create a custom agent for API documentation"
@@ -42,9 +42,9 @@ Claude Code will:
 
 ```
 "Why isn't the RAG agent working?"
-"Claude Code can't find smart-agents MCP server"
-"Show me smart-agents logs"
-"Verify smart-agents installation"
+"Claude Code can't find claude-code-buddy MCP server"
+"Show me claude-code-buddy logs"
+"Verify claude-code-buddy installation"
 ```
 
 Claude Code will diagnose and fix the issue.

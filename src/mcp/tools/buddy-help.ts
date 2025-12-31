@@ -33,11 +33,12 @@ export async function executeBuddyHelp(
     const helpText = BuddyCommands.getHelp(input.command);
 
     const formattedResponse = formatter.format({
-      success: true,
-      message: input.command
-        ? `📖 Help for: buddy ${input.command}`
-        : '📖 Claude Code Buddy Help',
-      data: {
+      agentType: 'buddy-help',
+      taskDescription: input.command
+        ? `Help for command: ${input.command}`
+        : 'Show all commands',
+      status: 'success',
+      results: {
         help: helpText,
         command: input.command,
       },
@@ -52,12 +53,15 @@ export async function executeBuddyHelp(
       ],
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error fetching help';
+    const errorObj = error instanceof Error ? error : new Error(String(error));
 
     const formattedError = formatter.format({
-      success: false,
-      message: `❌ Failed to fetch help`,
-      error: errorMessage,
+      agentType: 'buddy-help',
+      taskDescription: input.command
+        ? `Help for command: ${input.command}`
+        : 'Show all commands',
+      status: 'error',
+      error: errorObj,
     });
 
     return {

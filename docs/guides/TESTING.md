@@ -1,4 +1,4 @@
-# Smart Agents - Testing Guide
+# Claude Code Buddy - Testing Guide
 
 ## 🧪 Testing Framework
 

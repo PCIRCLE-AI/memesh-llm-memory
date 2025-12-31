@@ -53,9 +53,9 @@ export interface BootstrapFile {
 }
 
 /**
- * Validation error
+ * Pattern validation error
  */
-export interface ValidationError {
+export interface PatternValidationError {
   patternId: string;
   field: string;
   message: string;
@@ -262,8 +262,8 @@ export class EvolutionBootstrap {
   /**
    * Validate bootstrap patterns
    */
-  private validatePatterns(patterns: BootstrapPattern[]): ValidationError[] {
-    const errors: ValidationError[] = [];
+  private validatePatterns(patterns: BootstrapPattern[]): PatternValidationError[] {
+    const errors: PatternValidationError[] = [];
 
     // Get valid agent types for error messages
     const validAgentTypes = this.agentRegistry.getAllAgentTypes();

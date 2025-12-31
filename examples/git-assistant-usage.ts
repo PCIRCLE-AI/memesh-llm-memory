@@ -1,7 +1,7 @@
 /**
  * Git Assistant Usage Examples
  *
- * Demonstrates how to use Git Assistant in smart-agents
+ * Demonstrates how to use Git Assistant in claude-code-buddy
  */
 
 import { MCPToolInterface } from '../src/core/MCPToolInterface';
@@ -334,7 +334,7 @@ async function example10_helpSystem() {
 async function runAllExamples() {
   console.log('\n');
   console.log('╔═══════════════════════════════════════════════════════════╗');
-  console.log('║  Git Assistant Usage Examples for Smart-Agents           ║');
+  console.log('║  Git Assistant Usage Examples for Claude Code Buddy      ║');
   console.log('╚═══════════════════════════════════════════════════════════╝');
   console.log('\n');
 

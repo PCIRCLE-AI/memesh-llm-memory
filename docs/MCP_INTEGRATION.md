@@ -1,15 +1,15 @@
-# Smart-Agents MCP Server Integration Guide
+# Claude Code Buddy (CCB) MCP Server Integration Guide
 
-**Quick start guide for integrating Smart-Agents with Claude Code via Model Context Protocol (MCP).**
+**Quick start guide for integrating Claude Code Buddy with Claude Code via Model Context Protocol (MCP).**
 
 ---
 
 ## 🚀 Quick Setup (5 minutes)
 
-### Step 1: Build Smart-Agents
+### Step 1: Build Claude Code Buddy
 
 ```bash
-cd /path/to/smart-agents
+cd /path/to/claude-code-buddy
 npm install
 npm run build
 
@@ -19,16 +19,16 @@ npm run build
 
 ### Step 2: Configure Claude Code
 
-Add Smart-Agents MCP server to your Claude Code configuration:
+Add Claude Code Buddy MCP server to your Claude Code configuration:
 
 **Location**: `~/.claude/config.json`
 
 ```json
 {
   "mcpServers": {
-    "smart-agents": {
+    "claude-code-buddy": {
       "command": "node",
-      "args": ["/absolute/path/to/smart-agents/dist/mcp/server.js"],
+      "args": ["/absolute/path/to/claude-code-buddy/dist/mcp/server.js"],
       "env": {
         "ANTHROPIC_API_KEY": "your_api_key_here"
       }
@@ -37,7 +37,7 @@ Add Smart-Agents MCP server to your Claude Code configuration:
 }
 ```
 
-**Important**: Replace `/absolute/path/to/smart-agents` with your actual installation path.
+**Important**: Replace `/absolute/path/to/claude-code-buddy` with your actual installation path.
 
 ### Step 3: Restart Claude Code
 
@@ -51,7 +51,7 @@ Add Smart-Agents MCP server to your Claude Code configuration:
 In Claude Code, check available tools:
 
 ```
-Tools available from smart-agents MCP server:
+Tools available from claude-code-buddy MCP server:
 ✓ smart_route_task
 ✓ development_butler
 ✓ test_writer
@@ -125,7 +125,7 @@ Tools available from smart-agents MCP server:
 
 ### Environment Variables
 
-Create `.env` in smart-agents root directory:
+Create `.env` in claude-code-buddy root directory:
 
 ```env
 # Required for orchestrator
@@ -192,7 +192,7 @@ Claude Code uses: security_auditor
 
 **Check logs**:
 ```bash
-tail -f ~/.claude/logs/smart-agents.log
+tail -f ~/.claude/logs/claude-code-buddy.log
 ```
 
 **Common issues**:
@@ -205,10 +205,10 @@ tail -f ~/.claude/logs/smart-agents.log
 **Verify server connection**:
 ```bash
 # Check if server process is running
-ps aux | grep "smart-agents"
+ps aux | grep "claude-code-buddy"
 
 # Test server manually
-node /path/to/smart-agents/dist/mcp/server.js
+node /path/to/claude-code-buddy/dist/mcp/server.js
 ```
 
 ### Performance Issues
@@ -222,7 +222,7 @@ LOG_LEVEL=error  # Only log errors
 ```json
 {
   "mcpServers": {
-    "smart-agents": {
+    "claude-code-buddy": {
       "env": {
         "ENABLE_RAG": "false",
         "ENABLE_EVOLUTION": "false"
@@ -265,7 +265,7 @@ npm run verify:agents
 
 ### Agent Performance
 
-Smart-Agents includes built-in performance tracking:
+Claude Code Buddy includes built-in performance tracking:
 
 ```bash
 # View agent performance dashboard
@@ -289,10 +289,10 @@ npm run evolution:report
 
 ---
 
-## 🔄 Updating Smart-Agents
+## 🔄 Updating Claude Code Buddy
 
 ```bash
-cd /path/to/smart-agents
+cd /path/to/claude-code-buddy
 
 # Pull latest changes
 git pull origin main
@@ -309,7 +309,7 @@ npm run build
 
 ## 🆘 Support
 
-**Issues**: [GitHub Issues](https://github.com/your-username/smart-agents/issues)
+**Issues**: [GitHub Issues](https://github.com/PCIRCLE-AI/claude-code-buddy/issues)
 
 **Documentation**:
 - [User Guide](./USER_GUIDE.md)
@@ -348,12 +348,12 @@ After setup, verify:
 - [ ] `npm run build` completes successfully
 - [ ] `~/.claude/config.json` has correct absolute path
 - [ ] `.env` file contains valid API keys
-- [ ] Claude Code shows smart-agents tools available
+- [ ] Claude Code shows claude-code-buddy tools available
 - [ ] `smart_route_task` tool works when invoked
-- [ ] Logs show no errors: `tail ~/.claude/logs/smart-agents.log`
+- [ ] Logs show no errors: `tail ~/.claude/logs/claude-code-buddy.log`
 
 ---
 
-**Ready to use! Smart-Agents MCP server is now integrated with Claude Code.**
+**Ready to use! Claude Code Buddy MCP server is now integrated with Claude Code.**
 
 For advanced features and customization, see [User Guide](./USER_GUIDE.md).

@@ -69,7 +69,7 @@ git checkout main
 git merge new-feature
 ```
 
-## 🎨 Smart-Agents 本地工作流程
+## 🎨 Claude Code Buddy 本地工作流程
 
 ### 方案 A: 純本地（無 GitHub）
 
@@ -78,7 +78,7 @@ git merge new-feature
 ├── .git/                    # 本地 Git 儲存庫
 ├── src/                     # 原始碼
 ├── docs/                    # 文檔
-└── .smart-agents/          # Smart-agents 配置
+└── .claude-code-buddy/          # Smart-agents 配置
     ├── knowledge-graph/    # 本地知識圖譜
     ├── workflows/          # 本地工作流
     └── backups/            # 本地備份
@@ -104,7 +104,7 @@ git merge new-feature
 ├── .git/                    # 本地 Git
 ├── src/
 ├── docs/
-└── .smart-agents/
+└── .claude-code-buddy/
     └── config.json
         {
           "git": {
@@ -144,9 +144,9 @@ git merge new-feature
 ```bash
 # Smart-agents 可以自動執行
 #!/bin/bash
-# .smart-agents/scripts/local-backup.sh
+# .claude-code-buddy/scripts/local-backup.sh
 
-BACKUP_DIR="$HOME/.smart-agents-backups/$(basename $(pwd))"
+BACKUP_DIR="$HOME/.claude-code-buddy-backups/$(basename $(pwd))"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 # 創建備份目錄
@@ -206,7 +206,7 @@ show-changes
 # → Smart-agents 顯示與上一版本的差異（可視化）
 ```
 
-### Smart-Agents CLI 包裝
+### Claude Code Buddy CLI 包裝
 
 ```typescript
 // src/cli/friendly-git-commands.ts
@@ -275,7 +275,7 @@ export class FriendlyGitCommands {
   private async createLocalBackup(): Promise<void> {
     const backupDir = path.join(
       os.homedir(),
-      '.smart-agents-backups',
+      '.claude-code-buddy-backups',
       path.basename(process.cwd())
     );
 
@@ -329,7 +329,7 @@ export class FriendlyGitCommands {
 對於完全不想用命令列的用戶：
 
 ```
-Smart-Agents GUI (Electron App)
+Claude Code Buddy GUI (Electron App)
 
 ┌─────────────────────────────────────────┐
 │  📁 My Project                          │
@@ -367,7 +367,7 @@ Smart-Agents GUI (Electron App)
     "autoCommit": false,
     "autoBackup": true,
     "backupInterval": "daily",
-    "backupLocation": "~/.smart-agents-backups",
+    "backupLocation": "~/.claude-code-buddy-backups",
     "github": {
       "enabled": false
     }
@@ -499,7 +499,7 @@ go-back-to "昨天的版本"
 
 ```bash
 # 1. 定期自動備份（Smart-agents 自動執行）
-0 */4 * * * ~/.smart-agents/scripts/local-backup.sh
+0 */4 * * * ~/.claude-code-buddy/scripts/local-backup.sh
 
 # 2. 外接硬碟備份（每週）
 rsync -av ~/Projects /Volumes/Backup/

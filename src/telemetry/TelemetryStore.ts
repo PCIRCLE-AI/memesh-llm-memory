@@ -26,7 +26,7 @@ export class TelemetryStore {
 
   constructor(options: TelemetryStoreOptions = {}) {
     this.storagePath = options.storagePath ||
-      path.join(os.homedir(), '.smart-agents', 'telemetry');
+      path.join(os.homedir(), '.claude-code-buddy', 'telemetry');
   }
 
   async initialize(): Promise<void> {

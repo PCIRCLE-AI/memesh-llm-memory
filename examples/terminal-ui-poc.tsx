@@ -59,7 +59,7 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
 
 const Header: React.FC = () => (
   <Box borderStyle="round" borderColor="cyan" paddingX={2} marginBottom={1}>
-    <Text bold>🤖 Smart Agents Dashboard</Text>
+    <Text bold>🤖 Claude Code Buddy Dashboard</Text>
   </Box>
 );
 

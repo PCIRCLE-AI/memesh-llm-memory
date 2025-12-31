@@ -68,7 +68,7 @@ export class GitAssistantHook {
   constructor(mcp: MCPToolInterface, configPath?: string) {
     this.mcp = mcp;
     this.friendlyCommands = new FriendlyGitCommands(mcp);
-    this.configPath = configPath || path.join(process.env.HOME || '', '.smart-agents', 'git-assistant-config.json');
+    this.configPath = configPath || path.join(process.env.HOME || '', '.claude-code-buddy', 'git-assistant-config.json');
 
     // Initialize with default config (will load from file if exists)
     this.config = this.getDefaultConfig();
@@ -97,7 +97,7 @@ export class GitAssistantHook {
       localBackup: {
         enabled: true,
         interval: 'daily',
-        location: path.join(process.env.HOME || '', '.smart-agents-backups'),
+        location: path.join(process.env.HOME || '', '.claude-code-buddy-backups'),
       },
       github: {
         enabled: false, // Will auto-enable when token provided

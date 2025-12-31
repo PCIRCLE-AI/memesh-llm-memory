@@ -41,7 +41,7 @@ async function simulateTaskProgress(
  * Main demo function
  */
 async function main() {
-  console.log('🤖 Smart-Agents Terminal UI Dashboard Demo\n');
+  console.log('🤖 Claude Code Buddy Terminal UI Dashboard Demo\n');
   console.log('Starting dashboard with simulated agent tasks...\n');
 
   // Setup core components

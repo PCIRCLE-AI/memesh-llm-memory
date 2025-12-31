@@ -95,6 +95,44 @@ docs/archive/**
 !docs/archive/README.md
 docs/plans/**
 !docs/plans/README.md
+docs/ideas/**
+docs/brainstorming/**
+docs/meetings/**
+docs/notes/**
+docs/wip/**
+docs/drafts/**
+
+# Development artifacts - DO NOT PUSH
+*.plan.md
+*.planning.md
+*.ideas.md
+*.brainstorm.md
+*.notes.md
+*.wip.md
+*.draft.md
+*.scratch.md
+*.personal.md
+*-planning.md
+*-ideas.md
+*-notes.md
+
+# Test reports and analysis
+test-reports/
+reports/
+*.report.md
+*.test-report.md
+benchmarks/
+performance-reports/
+
+# Meeting notes and personal docs
+meetings/
+notes/
+personal/
+.notes/
+scratch/
+brainstorming/
+ideas/
+wip/
 
 # Experimental code (cleaned up - do not recreate)
 experiments/

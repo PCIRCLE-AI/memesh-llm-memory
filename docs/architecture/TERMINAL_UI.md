@@ -1,6 +1,6 @@
 # Terminal UI Architecture
 
-Visual guide to the recommended architecture for smart-agents dashboard.
+Visual guide to the recommended architecture for claude-code-buddy dashboard.
 
 ---
 
@@ -8,7 +8,7 @@ Visual guide to the recommended architecture for smart-agents dashboard.
 
 ```
 ┌───────────────────────────────────────────────────────────┐
-│                    Smart Agents System                     │
+│                    Claude Code Buddy System                     │
 └───────────────────────────────────────────────────────────┘
                            │
                            │
@@ -167,7 +167,7 @@ Orchestrator                  EventBus                 Dashboard
 <Dashboard>
   │
   ├─> <Header>
-  │     └─> Smart Agents Dashboard
+  │     └─> Claude Code Buddy Dashboard
   │
   ├─> <StatisticsPanel>
   │     ├─> Total tasks
@@ -445,7 +445,7 @@ Example:
 ## File Structure Example
 
 ```
-smart-agents/
+claude-code-buddy/
 ├── src/
 │   ├── orchestrator/
 │   │   ├── index.ts                 # Entry point + Dashboard init

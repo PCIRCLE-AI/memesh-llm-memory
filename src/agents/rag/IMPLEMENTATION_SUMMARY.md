@@ -379,7 +379,7 @@ OPENAI_API_KEY=sk-xxxxx
 
 **實作完成日期**: 2025-12-24
 **實作者**: Claude Sonnet 4.5
-**專案**: Smart Agents - Advanced RAG Agent
+**專案**: Claude Code Buddy - Advanced RAG Agent
 
 ## 🎉 Ready for Production!
 

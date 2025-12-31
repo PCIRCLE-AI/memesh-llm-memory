@@ -1,4 +1,4 @@
-# Smart-Agents Best Practices
+# Claude Code Buddy Best Practices
 
 **Version**: 0.1.0
 
@@ -507,9 +507,9 @@ sa_skills                  # List available skills
 
 ### Documentation
 
-- Full Guide: `@smart-agents://usage-guide`
-- Quick Lookup: `@smart-agents://quick-reference`
-- Real Examples: `@smart-agents://examples`
+- Full Guide: `@claude-code-buddy://usage-guide`
+- Quick Lookup: `@claude-code-buddy://quick-reference`
+- Real Examples: `@claude-code-buddy://examples`
 
 ---
 
@@ -523,4 +523,4 @@ sa_skills                  # List available skills
 6. **Experiment**: Try different agent combinations
 7. **Learn**: Study successful patterns in evolution dashboard
 
-**Remember**: Smart-Agents gets smarter the more you use it. Every task helps the system learn your preferences and improve routing accuracy!
+**Remember**: Claude Code Buddy gets smarter the more you use it. Every task helps the system learn your preferences and improve routing accuracy!

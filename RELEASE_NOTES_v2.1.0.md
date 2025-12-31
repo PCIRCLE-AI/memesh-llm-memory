@@ -1,14 +1,15 @@
-# Smart-Agents v2.1.0 Release Notes
+# Claude Code Buddy (CCB) v2.1.0 Release Notes
 
 **Release Date**: December 30, 2025
 **Status**: Production Ready ✅
 **Type**: Major Release
+**Rebrand**: From Claude Code Buddy to Claude Code Buddy
 
 ---
 
 ## 🎉 What's New
 
-Smart-Agents v2.1.0 is a production-ready Prompt Enhancement System with MCP server integration for Claude Code.
+Claude Code Buddy v2.1.0 is a production-ready Prompt Enhancement System with MCP server integration for Claude Code.
 
 ### Key Features
 
@@ -63,8 +64,8 @@ Smart-Agents v2.1.0 is a production-ready Prompt Enhancement System with MCP ser
 ### Installation (5 minutes)
 
 ```bash
-git clone https://github.com/kevintseng/smart-agents.git
-cd smart-agents
+git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
+cd claude-code-buddy
 npm install && npm run build
 ./scripts/verify-mcp-setup.sh
 ```
@@ -75,9 +76,9 @@ npm install && npm run build
 ```json
 {
   "mcpServers": {
-    "smart-agents": {
+    "claude-code-buddy": {
       "command": "node",
-      "args": ["/path/to/smart-agents/dist/mcp/server.js"]
+      "args": ["/path/to/claude-code-buddy/dist/mcp/server.js"]
     }
   }
 }
@@ -100,6 +101,8 @@ User: "Write tests for my auth module"
 → Routes to: test_writer agent
 → Returns: Enhanced prompt with test generation strategy
 ```
+
+**Note**: This feature has been rebranded from Claude Code Buddy to Claude Code Buddy (CCB)
 
 ### Development Automation
 
@@ -149,7 +152,7 @@ Build: Successful
 ```
 Claude Code (MCP Client)
     ↓
-Smart-Agents MCP Server (stdio transport)
+Claude Code Buddy MCP Server (stdio transport)
     ↓
 Task Router → Task Analyzer → Agent Router
     ↓
@@ -261,8 +264,8 @@ We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guideline
 
 ---
 
-**Smart-Agents v2.1.0** - Production-ready AI agent orchestration for Claude Code
+**Claude Code Buddy v2.1.0** - Production-ready AI agent orchestration for Claude Code
 
-🔗 **GitHub**: https://github.com/kevintseng/smart-agents
+🔗 **GitHub**: https://github.com/PCIRCLE-AI/claude-code-buddy
 📖 **Documentation**: [docs/](./docs/)
-💬 **Issues**: [GitHub Issues](https://github.com/kevintseng/smart-agents/issues)
+💬 **Issues**: [GitHub Issues](https://github.com/PCIRCLE-AI/claude-code-buddy/issues)

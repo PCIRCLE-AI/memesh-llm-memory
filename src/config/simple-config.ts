@@ -9,8 +9,8 @@
  * Environment Variables:
  * - CLAUDE_MODEL: Claude AI model name (default: claude-sonnet-4-5-20250929)
  * - OPENAI_API_KEY: OpenAI API Key (for RAG, optional)
- * - VECTRA_INDEX_PATH: Vectra vector index path (default: ~/.smart-agents/vectra)
- * - DATABASE_PATH: SQLite database path (default: ~/.smart-agents/database.db)
+ * - VECTRA_INDEX_PATH: Vectra vector index path (default: ~/.claude-code-buddy/vectra)
+ * - DATABASE_PATH: SQLite database path (default: ~/.claude-code-buddy/database.db)
  * - NODE_ENV: Environment (development/production/test)
  * - LOG_LEVEL: Log level (debug/info/warn/error, default: info)
  */
@@ -39,14 +39,14 @@ export class SimpleConfig {
    * Vectra Index Path (Knowledge graph vector index path)
    */
   static get VECTRA_INDEX_PATH(): string {
-    return process.env.VECTRA_INDEX_PATH || `${process.env.HOME}/.smart-agents/vectra`;
+    return process.env.VECTRA_INDEX_PATH || `${process.env.HOME}/.claude-code-buddy/vectra`;
   }
 
   /**
    * Database Path (SQLite database path)
    */
   static get DATABASE_PATH(): string {
-    return process.env.DATABASE_PATH || `${process.env.HOME}/.smart-agents/database.db`;
+    return process.env.DATABASE_PATH || `${process.env.HOME}/.claude-code-buddy/database.db`;
   }
 
   /**

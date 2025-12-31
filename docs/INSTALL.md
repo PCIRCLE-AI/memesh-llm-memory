@@ -1,14 +1,14 @@
-# Smart-Agents - Installation Guide
+# Claude Code Buddy (CCB) - Installation Guide
 
 ## Prerequisites
 
-Before installing Smart-Agents, ensure you have:
+Before installing Claude Code Buddy, ensure you have:
 
 - **Node.js** 18+ ([download](https://nodejs.org))
 - **npm** 8+ (comes with Node.js)
 - **Claude Code** installed and configured with your subscription
 
-**Note:** No API keys needed - Smart-Agents uses your existing Claude Code subscription through MCP integration.
+**Note:** No API keys needed - Claude Code Buddy uses your existing Claude Code subscription through MCP integration.
 
 ## Installation Methods
 
@@ -17,8 +17,8 @@ Before installing Smart-Agents, ensure you have:
 **For Claude Code users - automated setup:**
 
 ```bash
-git clone https://github.com/yourusername/smart-agents.git
-cd smart-agents
+git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
+cd claude-code-buddy
 ./scripts/install.sh
 ```
 
@@ -31,8 +31,8 @@ The script handles everything: dependencies, build, API keys, MCP configuration.
 #### 1. Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/smart-agents.git
-cd smart-agents
+git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
+cd claude-code-buddy
 ```
 
 #### 2. Install Dependencies
@@ -47,7 +47,7 @@ npm install
 cp .env.example .env
 ```
 
-The `.env` file contains optional configuration settings. API keys are not required since Smart-Agents uses Claude Code's subscription.
+The `.env` file contains optional configuration settings. API keys are not required since Claude Code Buddy uses Claude Code's subscription.
 
 #### 4. Build Project
 
@@ -57,14 +57,14 @@ npm run build
 
 #### 5. Configure MCP
 
-Add Smart-Agents to `~/.claude/config.json`:
+Add Claude Code Buddy to `~/.claude/config.json`:
 
 ```json
 {
   "mcpServers": {
-    "smart-agents": {
+    "claude-code-buddy": {
       "command": "node",
-      "args": ["/absolute/path/to/smart-agents/dist/mcp/server.js"],
+      "args": ["/absolute/path/to/claude-code-buddy/dist/mcp/server.js"],
       "env": {
         "NODE_ENV": "production"
       }
@@ -98,23 +98,23 @@ Restart Claude Code to load the new MCP server.
 **Once published to npm:**
 
 ```bash
-npm install -g smart-agents
-smart-agents install  # Auto-configure MCP
+npm install -g claude-code-buddy
+claude-code-buddy install  # Auto-configure MCP
 ```
 
 ## Verification
 
 ### Check MCP Integration
 
-In Claude Code, the smart-agents MCP server should be available and ready to use.
+In Claude Code, the claude-code-buddy MCP server should be available and ready to use.
 
 ### Test Basic Commands
 
-Try using smart-agents in Claude Code to verify it's working correctly.
+Try using Claude Code Buddy in Claude Code to verify it's working correctly.
 
 ### Check API Connection
 
-Verify that Smart-Agents can successfully make API calls to Anthropic.
+Verify that Claude Code Buddy can successfully make API calls to Anthropic.
 
 ## Troubleshooting
 
@@ -123,7 +123,7 @@ Verify that Smart-Agents can successfully make API calls to Anthropic.
 **Cause:** MCP server not configured or Claude Code not restarted.
 
 **Fix:**
-1. Check `~/.claude/config.json` has smart-agents entry
+1. Check `~/.claude/config.json` has claude-code-buddy entry
 2. Restart Claude Code
 3. Verify MCP server is running
 
@@ -161,12 +161,12 @@ node dist/mcp/server.js 2>&1 | tee mcp-debug.log
 - Build errors: `npm run build`
 - Port conflict: Change port in `.env`
 
-## Updating Smart-Agents
+## Updating Claude Code Buddy
 
 ### Update to Latest Version
 
 ```bash
-cd smart-agents
+cd claude-code-buddy
 git pull origin main
 npm install
 npm run build
@@ -175,14 +175,14 @@ npm run build
 
 ## Uninstallation
 
-### Remove Smart-Agents
+### Remove Claude Code Buddy
 
 ```bash
 # 1. Remove from MCP config
-# Edit ~/.claude/config.json and remove "smart-agents" entry
+# Edit ~/.claude/config.json and remove "claude-code-buddy" entry
 
 # 2. Remove project directory
-rm -rf /path/to/smart-agents
+rm -rf /path/to/claude-code-buddy
 
 # 3. Restart Claude Code
 ```
@@ -197,5 +197,5 @@ rm -rf /path/to/smart-agents
 
 Having installation issues?
 
-- **GitHub Issues:** [Report a bug](https://github.com/yourusername/smart-agents/issues)
-- **Discussions:** [Ask a question](https://github.com/yourusername/smart-agents/discussions)
+- **GitHub Issues:** [Report a bug](https://github.com/PCIRCLE-AI/claude-code-buddy/issues)
+- **Discussions:** [Ask a question](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)

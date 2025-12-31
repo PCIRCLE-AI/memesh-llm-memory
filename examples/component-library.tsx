@@ -3,7 +3,7 @@
 /**
  * Terminal UI Component Library Reference
  *
- * Demonstrates all common UI patterns for smart-agents dashboard
+ * Demonstrates all common UI patterns for claude-code-buddy dashboard
  *
  * Run: npx tsx examples/component-library.tsx
  */
@@ -426,7 +426,7 @@ const SpinnerTypes: React.FC = () => (
 const ComponentLibrary: React.FC = () => (
   <Box flexDirection="column" padding={1}>
     <Box borderStyle="double" borderColor="cyan" paddingX={2} marginBottom={1}>
-      <Text bold>🎨 Smart Agents Terminal UI Component Library</Text>
+      <Text bold>🎨 Claude Code Buddy Terminal UI Component Library</Text>
     </Box>
 
     <StatusIndicators />

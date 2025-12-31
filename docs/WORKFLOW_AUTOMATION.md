@@ -1,6 +1,6 @@
 # Workflow Automation Integration
 
-Smart Agents 整合了兩個強大的工作流程自動化平台：
+Claude Code Buddy 整合了兩個強大的工作流程自動化平台：
 
 - **Google Opal** - AI 驅動的自然語言工作流程創建
 - **n8n** - 企業級工作流程自動化平台（300+ 整合）
@@ -444,7 +444,7 @@ const n8nAgent = new N8nWorkflowAgent(mcp, {
 - [Google Opal 文檔](https://developers.google.com/opal)
 - [n8n API 文檔](https://docs.n8n.io/api/)
 - [Playwright MCP 文檔](https://github.com/microsoft/playwright)
-- [Smart Agents 架構](./ARCHITECTURE.md)
+- [Claude Code Buddy 架構](./ARCHITECTURE.md)
 
 ## 🔮 未來改進
 

@@ -299,6 +299,16 @@ export interface PatternContext {
   task_type?: string;
 
   /**
+   * Project type (e.g., 'web-app', 'api-service', 'library')
+   */
+  project_type?: string;
+
+  /**
+   * Domain (e.g., 'e-commerce', 'healthcare', 'finance')
+   */
+  domain?: string;
+
+  /**
    * Task complexity level
    */
   complexity?: 'low' | 'medium' | 'high';
@@ -307,6 +317,11 @@ export interface PatternContext {
    * Configuration keys used in this context
    */
   config_keys?: string[];
+
+  /**
+   * Actions or strategies (e.g., 'security-first', 'schema-before-API')
+   */
+  actions?: string[];
 
   /**
    * Additional metadata

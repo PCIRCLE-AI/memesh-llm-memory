@@ -88,7 +88,7 @@ CCB：[搜尋你的程式碼庫，找到實際的身份驗證檔案，展示模�
 ```
 
 **Drop Inbox 魔法：**
-- 將檔案放入 `~/Documents/smart-agents-knowledge/`
+- 將檔案放入 `~/Documents/claude-code-buddy-knowledge/`
 - CCB 每 5 秒自動索引
 - 支援：.md、.txt、.json、.pdf、.docx
 - 不需要命令 - 只要放入即可！

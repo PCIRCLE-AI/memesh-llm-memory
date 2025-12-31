@@ -1,5 +1,5 @@
 /**
- * Smart-Agents MCP Server
+ * Claude Code Buddy MCP Server
  *
  * Features:
  * - Exposes 12 specialized agents as MCP tools
@@ -237,47 +237,47 @@ class ClaudeCodeBuddyMCPServer {
       // sa_task - Main task routing tool
       const saTaskTool = {
         name: 'sa_task',
-        description: '🤖 Smart-Agents: Execute a task with autonomous agent routing. Analyzes your task, selects the best of 22 specialized agents, and returns an optimized execution plan.',
+        description: '🤖 Claude Code Buddy: Execute a task with autonomous agent routing. Analyzes your task, selects the best of 22 specialized agents, and returns an optimized execution plan.',
         inputSchema: taskInputSchema,
       };
 
       // sa_dashboard - Evolution system dashboard
       const saDashboardTool = {
         name: 'sa_dashboard',
-        description: '📊 Smart-Agents: View evolution system dashboard showing agent learning progress, discovered patterns, and performance improvements. Tracks 22 agent evolution configurations (18 currently available + 4 planned).',
+        description: '📊 Claude Code Buddy: View evolution system dashboard showing agent learning progress, discovered patterns, and performance improvements. Tracks 22 agent evolution configurations (18 currently available + 4 planned).',
         inputSchema: dashboardInputSchema,
       };
 
       // sa_agents - List all available agents
       const saAgentsTool = {
         name: 'sa_agents',
-        description: '📋 Smart-Agents: List all 22 specialized agents with their capabilities and specializations.',
+        description: '📋 Claude Code Buddy: List all 22 specialized agents with their capabilities and specializations.',
         inputSchema: {
           type: 'object' as const,
           properties: {},
         },
       };
 
-      // sa_skills - List and manage smart-agents skills
+      // sa_skills - List and manage claude-code-buddy skills
       const saSkillsTool = {
         name: 'sa_skills',
-        description: '🎓 Smart-Agents: List all skills, differentiate sa: prefixed skills from user skills.',
+        description: '🎓 Claude Code Buddy: List all skills, differentiate sa: prefixed skills from user skills.',
         inputSchema: {
           type: 'object' as const,
           properties: {
             filter: {
               type: 'string',
-              description: 'Filter skills: "all" (default), "smart-agents" (sa: prefix only), "user" (user skills only)',
-              enum: ['all', 'smart-agents', 'user'],
+              description: 'Filter skills: "all" (default), "claude-code-buddy" (sa: prefix only), "user" (user skills only)',
+              enum: ['all', 'claude-code-buddy', 'user'],
             },
           },
         },
       };
 
-      // sa_uninstall - Uninstall smart-agents
+      // sa_uninstall - Uninstall claude-code-buddy
       const saUninstallTool = {
         name: 'sa_uninstall',
-        description: '🗑️ Smart-Agents: Uninstall smart-agents and clean up files with control over data retention.',
+        description: '🗑️ Claude Code Buddy: Uninstall Claude Code Buddy and clean up files with control over data retention.',
         inputSchema: {
           type: 'object' as const,
           properties: {
@@ -287,7 +287,7 @@ class ClaudeCodeBuddyMCPServer {
             },
             keepConfig: {
               type: 'boolean',
-              description: 'Keep configuration files (~/.smart-agents/). Default: false',
+              description: 'Keep configuration files (~/.claude-code-buddy/). Default: false',
             },
             dryRun: {
               type: 'boolean',
@@ -377,7 +377,7 @@ class ClaudeCodeBuddyMCPServer {
       // get-workflow-guidance - Get intelligent workflow recommendations
       const getWorkflowGuidanceTool = {
         name: 'get-workflow-guidance',
-        description: '🔄 Smart-Agents: Get intelligent workflow recommendations based on current development context',
+        description: '🔄 Claude Code Buddy: Get intelligent workflow recommendations based on current development context',
         inputSchema: {
           type: 'object' as const,
           properties: {
@@ -403,7 +403,7 @@ class ClaudeCodeBuddyMCPServer {
       // get-session-health - Check session health
       const getSessionHealthTool = {
         name: 'get-session-health',
-        description: '💊 Smart-Agents: Check session health including token usage and quality metrics',
+        description: '💊 Claude Code Buddy: Check session health including token usage and quality metrics',
         inputSchema: {
           type: 'object' as const,
           properties: {},
@@ -413,7 +413,7 @@ class ClaudeCodeBuddyMCPServer {
       // reload-context - Reload CLAUDE.md context
       const reloadContextTool = {
         name: 'reload-context',
-        description: '🔄 Smart-Agents: Reload CLAUDE.md context to refresh session',
+        description: '🔄 Claude Code Buddy: Reload CLAUDE.md context to refresh session',
         inputSchema: {
           type: 'object' as const,
           properties: {
@@ -430,7 +430,7 @@ class ClaudeCodeBuddyMCPServer {
       // record-token-usage - Record token usage for monitoring
       const recordTokenUsageTool = {
         name: 'record-token-usage',
-        description: '📊 Smart-Agents: Record token usage for session monitoring',
+        description: '📊 Claude Code Buddy: Record token usage for session monitoring',
         inputSchema: {
           type: 'object' as const,
           properties: {
@@ -454,7 +454,7 @@ class ClaudeCodeBuddyMCPServer {
       // generate-smart-plan - Generate implementation plans
       const generateSmartPlanTool = {
         name: 'generate-smart-plan',
-        description: '📋 Smart-Agents: Generate intelligent implementation plan with agent-aware task breakdown and TDD structure. Creates bite-sized tasks (2-5 min each) with learning-enhanced recommendations.',
+        description: '📋 Claude Code Buddy: Generate intelligent implementation plan with agent-aware task breakdown and TDD structure. Creates bite-sized tasks (2-5 min each) with learning-enhanced recommendations.',
         inputSchema: {
           type: 'object' as const,
           properties: {
@@ -706,7 +706,7 @@ class ClaudeCodeBuddyMCPServer {
         throw new ValidationError(
           'Invalid request parameters',
           {
-            component: 'SmartAgentsMCPServer',
+            component: 'ClaudeCodeBuddyMCPServer',
             method: 'call_tool',
             providedParams: params,
             requiredFields: ['name (string)', 'arguments (object)'],
@@ -841,7 +841,7 @@ class ClaudeCodeBuddyMCPServer {
           throw new ValidationError(
             formatValidationError(error),
             {
-              component: 'SmartAgentsMCPServer',
+              component: 'ClaudeCodeBuddyMCPServer',
               method: 'call_tool',
               schema: 'TaskInputSchema',
               providedArgs: args,
@@ -862,7 +862,7 @@ class ClaudeCodeBuddyMCPServer {
             `Unknown agent: ${agentName}`,
             'agent',
             agentName,
-            { availableAgents: this.agentRegistry.getAllAgentNames() }
+            { availableAgents: this.agentRegistry.getAllAgents().map(a => a.name) }
           );
         }
 
@@ -969,7 +969,7 @@ class ClaudeCodeBuddyMCPServer {
         throw new ValidationError(
           formatValidationError(error),
           {
-            component: 'SmartAgentsMCPServer',
+            component: 'ClaudeCodeBuddyMCPServer',
             method: 'handleSmartRouting',
             schema: 'TaskInputSchema',
             providedArgs: args,
@@ -1102,7 +1102,7 @@ class ClaudeCodeBuddyMCPServer {
           throw new ValidationError(
             formatValidationError(error),
             {
-              component: 'SmartAgentsMCPServer',
+              component: 'ClaudeCodeBuddyMCPServer',
               method: 'handleEvolutionDashboard',
               schema: 'DashboardInputSchema',
               providedArgs: args,
@@ -1177,7 +1177,7 @@ class ClaudeCodeBuddyMCPServer {
           throw new ValidationError(
             formatValidationError(error),
             {
-              component: 'SmartAgentsMCPServer',
+              component: 'ClaudeCodeBuddyMCPServer',
               method: 'handleListAgents',
               schema: 'ListAgentsInputSchema',
               providedArgs: args,
@@ -1210,7 +1210,7 @@ class ClaudeCodeBuddyMCPServer {
       };
 
       // Build formatted output
-      let output = '📋 Smart-Agents: All Available Agents\n';
+      let output = '📋 Claude Code Buddy: All Available Agents\n';
       output += '━'.repeat(60) + '\n\n';
       output += `Total: ${allAgents.length} specialized agents across ${categories.size} categories\n\n`;
 
@@ -1278,7 +1278,7 @@ class ClaudeCodeBuddyMCPServer {
           throw new ValidationError(
             formatValidationError(error),
             {
-              component: 'SmartAgentsMCPServer',
+              component: 'ClaudeCodeBuddyMCPServer',
               method: 'handleListSkills',
               schema: 'ListSkillsInputSchema',
               providedArgs: args,
@@ -1295,9 +1295,9 @@ class ClaudeCodeBuddyMCPServer {
       let title: string;
 
       switch (filter) {
-        case 'smart-agents':
+        case 'claude-code-buddy':
           skills = await this.skillManager.listSmartAgentsSkills();
-          title = '🎓 Smart-Agents Skills (sa: prefix)';
+          title = '🎓 Claude Code Buddy Skills (sa: prefix)';
           break;
         case 'user':
           skills = await this.skillManager.listUserSkills();
@@ -1317,8 +1317,8 @@ class ClaudeCodeBuddyMCPServer {
 
       if (skills.length === 0) {
         output += '  No skills found.\n\n';
-        if (filter === 'smart-agents') {
-          output += '💡 Smart-Agents can generate skills automatically.\n';
+        if (filter === 'claude-code-buddy') {
+          output += '💡 Claude Code Buddy can generate skills automatically.\n';
           output += '   Skills will appear here once generated.\n';
         }
       } else {
@@ -1330,7 +1330,7 @@ class ClaudeCodeBuddyMCPServer {
 
         if (filter === 'all') {
           if (saSkills.length > 0) {
-            output += '🎓 Smart-Agents Skills:\n';
+            output += '🎓 Claude Code Buddy Skills:\n';
             output += '─'.repeat(60) + '\n';
             saSkills.forEach(skill => {
               output += `  • ${skill}\n`;
@@ -1357,10 +1357,10 @@ class ClaudeCodeBuddyMCPServer {
       output += '━'.repeat(60) + '\n';
       output += '\n💡 Usage:\n';
       output += '  • sa_skills - List all skills\n';
-      output += '  • sa_skills --filter smart-agents - List only sa: skills\n';
+      output += '  • sa_skills --filter claude-code-buddy - List only sa: skills\n';
       output += '  • sa_skills --filter user - List only user skills\n';
       output += '\n📚 Skill Naming Convention:\n';
-      output += '  • sa:<name> - Smart-Agents generated skills\n';
+      output += '  • sa:<name> - Claude Code Buddy generated skills\n';
       output += '  • <name> - User-installed skills\n';
 
       return {
@@ -1400,7 +1400,7 @@ class ClaudeCodeBuddyMCPServer {
           throw new ValidationError(
             formatValidationError(error),
             {
-              component: 'SmartAgentsMCPServer',
+              component: 'ClaudeCodeBuddyMCPServer',
               method: 'handleUninstallAgent',
               schema: 'UninstallInputSchema',
               providedArgs: args,
@@ -1459,7 +1459,7 @@ class ClaudeCodeBuddyMCPServer {
           throw new ValidationError(
             formatValidationError(error),
             {
-              component: 'SmartAgentsMCPServer',
+              component: 'ClaudeCodeBuddyMCPServer',
               method: 'handleWorkflowGuidance',
               schema: 'WorkflowGuidanceInputSchema',
               providedArgs: args,
@@ -1572,7 +1572,7 @@ class ClaudeCodeBuddyMCPServer {
           throw new ValidationError(
             formatValidationError(error),
             {
-              component: 'SmartAgentsMCPServer',
+              component: 'ClaudeCodeBuddyMCPServer',
               method: 'handleRecordTokenUsage',
               schema: 'RecordTokenUsageInputSchema',
               providedArgs: args,
@@ -1623,7 +1623,7 @@ class ClaudeCodeBuddyMCPServer {
           throw new ValidationError(
             formatValidationError(error),
             {
-              component: 'SmartAgentsMCPServer',
+              component: 'ClaudeCodeBuddyMCPServer',
               method: 'handleGenerateSmartPlan',
               schema: 'GenerateSmartPlanInputSchema',
               providedArgs: args,
@@ -1716,7 +1716,7 @@ class ClaudeCodeBuddyMCPServer {
           throw new ValidationError(
             formatValidationError(error),
             {
-              component: 'SmartAgentsMCPServer',
+              component: 'ClaudeCodeBuddyMCPServer',
               method: 'handleGitSaveWork',
               schema: 'GitSaveWorkInputSchema',
               providedArgs: args,
@@ -1764,7 +1764,7 @@ class ClaudeCodeBuddyMCPServer {
           throw new ValidationError(
             formatValidationError(error),
             {
-              component: 'SmartAgentsMCPServer',
+              component: 'ClaudeCodeBuddyMCPServer',
               method: 'handleGitListVersions',
               schema: 'GitListVersionsInputSchema',
               providedArgs: args,
@@ -1842,7 +1842,7 @@ class ClaudeCodeBuddyMCPServer {
           throw new ValidationError(
             formatValidationError(error),
             {
-              component: 'SmartAgentsMCPServer',
+              component: 'ClaudeCodeBuddyMCPServer',
               method: 'handleGitShowChanges',
               schema: 'GitShowChangesInputSchema',
               providedArgs: args,
@@ -1890,7 +1890,7 @@ class ClaudeCodeBuddyMCPServer {
           throw new ValidationError(
             formatValidationError(error),
             {
-              component: 'SmartAgentsMCPServer',
+              component: 'ClaudeCodeBuddyMCPServer',
               method: 'handleGitGoBack',
               schema: 'GitGoBackInputSchema',
               providedArgs: args,
@@ -1968,7 +1968,7 @@ class ClaudeCodeBuddyMCPServer {
           throw new ValidationError(
             formatValidationError(error),
             {
-              component: 'SmartAgentsMCPServer',
+              component: 'ClaudeCodeBuddyMCPServer',
               method: 'handleGitSetup',
               schema: 'GitSetupInputSchema',
               providedArgs: args,
@@ -2050,7 +2050,7 @@ class ClaudeCodeBuddyMCPServer {
           throw new ValidationError(
             formatValidationError(error),
             {
-              component: 'SmartAgentsMCPServer',
+              component: 'ClaudeCodeBuddyMCPServer',
               method: 'handleRecallMemory',
               schema: 'RecallMemoryInputSchema',
               providedArgs: args,
@@ -2125,25 +2125,25 @@ class ClaudeCodeBuddyMCPServer {
     this.server.setRequestHandler(ListResourcesRequestSchema, async () => ({
       resources: [
         {
-          uri: 'smart-agents://usage-guide',
-          name: 'Smart-Agents Complete Usage Guide',
+          uri: 'claude-code-buddy://usage-guide',
+          name: 'Claude Code Buddy Complete Usage Guide',
           mimeType: 'text/markdown',
           description: 'Comprehensive guide to all 13 specialized agents with examples and best practices',
         },
         {
-          uri: 'smart-agents://quick-reference',
+          uri: 'claude-code-buddy://quick-reference',
           name: 'Agents Quick Reference',
           mimeType: 'text/markdown',
           description: 'Quick lookup table for all agents, keywords, and common workflows',
         },
         {
-          uri: 'smart-agents://examples',
+          uri: 'claude-code-buddy://examples',
           name: 'Real-world Examples',
           mimeType: 'text/markdown',
           description: 'Complete project workflows and single-task examples demonstrating agent usage',
         },
         {
-          uri: 'smart-agents://best-practices',
+          uri: 'claude-code-buddy://best-practices',
           name: 'Best Practices Guide',
           mimeType: 'text/markdown',
           description: 'Tips, guidelines, and best practices for effective agent utilization',
@@ -2157,10 +2157,10 @@ class ClaudeCodeBuddyMCPServer {
 
       // Map URIs to file names
       const resourceFiles: Record<string, string> = {
-        'smart-agents://usage-guide': 'usage-guide.md',
-        'smart-agents://quick-reference': 'quick-reference.md',
-        'smart-agents://examples': 'examples.md',
-        'smart-agents://best-practices': 'best-practices.md',
+        'claude-code-buddy://usage-guide': 'usage-guide.md',
+        'claude-code-buddy://quick-reference': 'quick-reference.md',
+        'claude-code-buddy://examples': 'examples.md',
+        'claude-code-buddy://best-practices': 'best-practices.md',
       };
 
       const fileName = resourceFiles[uri];
@@ -2191,8 +2191,8 @@ class ClaudeCodeBuddyMCPServer {
         const errorMessage = error instanceof Error ? error.message : String(error);
         throw new OperationError(
           `Failed to read resource ${uri}: ${errorMessage}`,
-          'readResource',
           {
+            operation: 'readResource',
             uri,
             filePath,
             originalError: errorMessage,
@@ -2337,7 +2337,7 @@ class ClaudeCodeBuddyMCPServer {
    * This method checks if RAG functionality is enabled (by checking OPENAI_API_KEY)
    * and automatically starts the FileWatcher to monitor the watch directory for new files.
    *
-   * Files dropped into ~/Documents/smart-agents-knowledge/ will be automatically indexed.
+   * Files dropped into ~/Documents/claude-code-buddy-knowledge/ will be automatically indexed.
    */
   private async startFileWatcherIfEnabled(): Promise<void> {
     try {

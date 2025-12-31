@@ -34,9 +34,10 @@ export async function executeBuddyDo(
     });
 
     const formattedResponse = formatter.format({
-      success: true,
-      message: `✅ Task executed via Claude Code Buddy`,
-      data: result,
+      agentType: 'buddy-do',
+      taskDescription: input.task,
+      status: 'success',
+      results: result,
     });
 
     return {
@@ -48,13 +49,14 @@ export async function executeBuddyDo(
       ],
     };
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : 'Unknown error during task execution';
+    const errorObj =
+      error instanceof Error ? error : new Error(String(error));
 
     const formattedError = formatter.format({
-      success: false,
-      message: `❌ Task execution failed`,
-      error: errorMessage,
+      agentType: 'buddy-do',
+      taskDescription: input.task,
+      status: 'error',
+      error: errorObj,
     });
 
     return {

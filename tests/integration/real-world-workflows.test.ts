@@ -335,7 +335,7 @@ export function safeDivide(a: number, b: number): number | null {
       // 2. Add documents to index
       await agent.indexDocuments([
         {
-          content: 'Smart Agents is a multi-agent system built with Claude Code.',
+          content: 'Claude Code Buddy is a multi-agent system built with Claude Code.',
           metadata: { source: 'readme.md', section: 'overview' },
         },
         {

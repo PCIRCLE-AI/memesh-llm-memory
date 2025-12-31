@@ -61,8 +61,8 @@ export class VectorStore {
       logger.error('Failed to initialize VectorStore', { error });
       throw new OperationError(
         `VectorStore initialization failed: ${error}`,
-        'initialize',
         {
+          operation: 'initialize',
           dataPath: this.dataPath,
           embeddingModel: this.config.embeddingModel,
           originalError: error instanceof Error ? error.message : String(error),
@@ -172,8 +172,8 @@ export class VectorStore {
     this.ensureInitialized();
     throw new OperationError(
       'Use searchWithEmbedding() instead. This method is deprecated - generate query embedding first.',
-      'search',
       {
+        operation: 'search',
         component: 'VectorStore',
         deprecatedMethod: 'search',
         recommendedMethod: 'searchWithEmbedding',

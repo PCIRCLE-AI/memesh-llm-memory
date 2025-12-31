@@ -1,10 +1,10 @@
 {
   "$schema": "https://claude.ai/schemas/config.json",
   "mcpServers": {
-    "smart-agents": {
+    "claude-code-buddy": {
       "command": "node",
       "args": [
-        "/absolute/path/to/smart-agents/dist/mcp/server.js"
+        "/absolute/path/to/claude-code-buddy/dist/mcp/server.js"
       ],
       "env": {
         "ANTHROPIC_API_KEY": "your_anthropic_api_key_here",
@@ -13,7 +13,7 @@
         "ENABLE_RAG": "false",
         "ENABLE_EVOLUTION": "true"
       },
-      "description": "Smart-Agents MCP server for intelligent task routing and development automation"
+      "description": "Claude Code Buddy MCP server for intelligent task routing and development automation"
     }
   }
 }

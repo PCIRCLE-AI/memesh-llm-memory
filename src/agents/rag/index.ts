@@ -290,7 +290,11 @@ export class RAGAgent {
   async getStats(): Promise<{
     documentCount: number;
     embeddingStats: EmbeddingStats;
-    collectionInfo: unknown;
+    collectionInfo: {
+      name: string;
+      count: number;
+      metadata: Record<string, any>;
+    };
   }> {
     this.ensureInitialized();
     this.ensureRAGEnabled();

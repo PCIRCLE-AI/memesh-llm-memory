@@ -173,5 +173,5 @@ When implementing E2E tests:
 - [Vitest Documentation](https://vitest.dev/)
 - [Express Testing Guide](https://expressjs.com/en/guide/testing.html)
 - [Supertest](https://github.com/visionmedia/supertest) - HTTP assertion library
-- [Smart Agents Architecture](../../docs/ARCHITECTURE.md)
+- [Claude Code Buddy Architecture](../../docs/ARCHITECTURE.md)
 - [Existing E2E Test](../integration/evolution-e2e.test.ts)

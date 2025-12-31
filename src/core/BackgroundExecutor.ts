@@ -22,6 +22,18 @@ import { UIEventBus } from '../ui/UIEventBus.js';
 import { AttributionManager } from '../ui/AttributionManager.js';
 import { ValidationError, NotFoundError, StateError } from '../errors/index.js';
 
+/**
+ * Expected structure for task data
+ */
+interface TaskData {
+  description?: string;
+  execute?: (context: {
+    updateProgress: (progress: number, stage?: string) => void;
+    isCancelled: () => boolean;
+  }) => Promise<unknown>;
+  [key: string]: unknown;
+}
+
 interface WorkerHandle {
   promise: Promise<any>;
   cancel: () => void;
@@ -184,10 +196,11 @@ export class BackgroundExecutor {
 
         // Emit UIEventBus progress event if available
         if (this.eventBus) {
+          const taskData = currentTask.task as TaskData;
           this.eventBus.emitProgress({
             agentId: taskId,
             agentType: 'background-executor',
-            taskDescription: currentTask.task.description || 'Background task',
+            taskDescription: taskData.description || 'Background task',
             progress: Math.max(0, Math.min(1, progress)),
             currentStage: stage,
             startTime: currentTask.startTime,
@@ -259,8 +272,9 @@ export class BackgroundExecutor {
     }
 
     // If task has an execute method
-    if (task && typeof task.execute === 'function') {
-      const result = await task.execute({
+    const taskData = task as TaskData;
+    if (task && typeof taskData.execute === 'function') {
+      const result = await taskData.execute({
         updateProgress,
         isCancelled,
       });
@@ -497,9 +511,10 @@ export class BackgroundExecutor {
     // Emit success attribution if AttributionManager available
     if (this.attributionManager) {
       const timeSaved = this.estimateTimeSaved(task);
+      const taskData = task.task as TaskData;
       this.attributionManager.recordSuccess(
         [taskId],
-        task.task.description || 'Background task completed',
+        taskData.description || 'Background task completed',
         { timeSaved }
       );
     }
@@ -528,9 +543,10 @@ export class BackgroundExecutor {
 
     // Emit error attribution if AttributionManager available
     if (this.attributionManager) {
+      const taskData = task.task as TaskData;
       this.attributionManager.recordError(
         [taskId],
-        task.task.description || 'Background task failed',
+        taskData.description || 'Background task failed',
         error,
         false // Don't suggest GitHub issue for manual failures
       );

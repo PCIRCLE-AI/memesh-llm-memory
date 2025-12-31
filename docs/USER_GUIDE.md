@@ -1,4 +1,4 @@
-# Smart Agents v2.2 User Guide
+# Claude Code Buddy (CCB) v2.2 User Guide
 
 **Version**: 2.2.0
 **Last Updated**: 2025-12-31
@@ -32,7 +32,7 @@
 
 **Option 1: Quick Install via Claude Code**
 ```
-"Install smart-agents MCP from https://github.com/kevintseng/smart-agents"
+"Install claude-code-buddy MCP from https://github.com/PCIRCLE-AI/claude-code-buddy"
 ```
 
 Claude Code will handle everything automatically:
@@ -45,8 +45,8 @@ Claude Code will handle everything automatically:
 **Option 2: Manual Installation**
 ```bash
 # Clone repository
-git clone https://github.com/kevintseng/smart-agents
-cd smart-agents
+git clone https://github.com/PCIRCLE-AI/claude-code-buddy
+cd claude-code-buddy
 
 # Install dependencies
 npm install
@@ -58,9 +58,9 @@ npm run build
 # Add to ~/.claude/config.json:
 {
   "mcpServers": {
-    "smart-agents": {
+    "claude-code-buddy": {
       "command": "node",
-      "args": ["/path/to/smart-agents/dist/mcp/server.js"]
+      "args": ["/path/to/claude-code-buddy/dist/mcp/server.js"]
     }
   }
 }
@@ -71,7 +71,7 @@ npm run build
 **1. Verify Installation**
 ```
 # In Claude Code, test MCP server
-"Show me the smart-agents system status"
+"Show me the Claude Code Buddy system status"
 ```
 
 **2. Use Your First Agent**
@@ -96,12 +96,12 @@ npm run build
 
 ### Three-Layer Architecture
 
-Smart Agents uses a three-layer architecture for intelligence and automation:
+Claude Code Buddy uses a three-layer architecture for intelligence and automation:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │           Layer 1: MCP Server Interface                         │
-│  (Communication between Claude Code and Smart Agents)           │
+│  (Communication between Claude Code and Claude Code Buddy)      │
 └───────────────────────────┬─────────────────────────────────────┘
                             │
 ┌───────────────────────────▼─────────────────────────────────────┐
@@ -121,7 +121,7 @@ Smart Agents uses a three-layer architecture for intelligence and automation:
 
 ### Workflow Phases
 
-Smart Agents tracks your development workflow through 5 phases:
+Claude Code Buddy tracks your development workflow through 5 phases:
 
 1. **idle** - No active work, ready for new task
 2. **code-written** - Code implementation complete, tests needed
@@ -881,7 +881,7 @@ RESTful API with stateless JWT authentication. Password hashing using bcrypt. To
 
 **Required**:
 ```bash
-# None - Smart Agents works out of the box
+# None - Claude Code Buddy works out of the box
 ```
 
 **Optional**:
@@ -899,9 +899,9 @@ EVOLUTION_DB_PATH=/path/to/evolution.db
 ```json
 {
   "mcpServers": {
-    "smart-agents": {
+    "claude-code-buddy": {
       "command": "node",
-      "args": ["/path/to/smart-agents/dist/mcp/server.js"],
+      "args": ["/path/to/claude-code-buddy/dist/mcp/server.js"],
       "env": {
         "OPENAI_API_KEY": "your-api-key-here"
       }
@@ -958,10 +958,10 @@ export const workflowConfig = {
 **Issue: MCP server not responding**
 ```
 Solution:
-1. Check if smart-agents server is running
+1. Check if claude-code-buddy server is running
 2. Verify config.json path is correct
 3. Restart Claude Code
-4. Check logs: cat ~/.claude/logs/smart-agents.log
+4. Check logs: cat ~/.claude/logs/claude-code-buddy.log
 ```
 
 **Issue: Test Writer Agent not generating tests**
@@ -1012,8 +1012,8 @@ For more issues, see [TROUBLESHOOTING.md](./TROUBLESHOOTING.md).
 
 ---
 
-**Happy coding with Smart Agents! 🚀**
+**Happy coding with Claude Code Buddy! 🚀**
 
 **Version**: 2.2.0
-**Documentation**: https://github.com/kevintseng/smart-agents
-**Issues**: https://github.com/kevintseng/smart-agents/issues
+**Documentation**: https://github.com/PCIRCLE-AI/claude-code-buddy
+**Issues**: https://github.com/PCIRCLE-AI/claude-code-buddy/issues

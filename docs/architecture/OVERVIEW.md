@@ -1,4 +1,4 @@
-# Smart Agents - System Architecture
+# Claude Code Buddy - System Architecture
 
 **Version**: 3.2.0 (Project Memory System Integration)
 **Last Updated**: 2025-12-31
@@ -98,7 +98,7 @@
 
 ### Purpose
 
-Expose Smart Agents functionality to Claude Code via Model Context Protocol.
+Expose Claude Code Buddy functionality to Claude Code via Model Context Protocol.
 
 ### Implementation (`src/mcp/server.ts`)
 
@@ -126,7 +126,7 @@ Expose Smart Agents functionality to Claude Code via Model Context Protocol.
 
 ### File Watching (RAG)
 
-Automatically indexes files dropped into `~/Documents/smart-agents-knowledge/`:
+Automatically indexes files dropped into `~/Documents/claude-code-buddy-knowledge/`:
 - Supported formats: .md, .txt, .json, .pdf, .docx
 - Polling interval: 5 seconds
 - Auto-start when RAG is configured

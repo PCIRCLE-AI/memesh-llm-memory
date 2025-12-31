@@ -482,7 +482,7 @@ npm install vectra  # Just install the dependency
 
 3. **Create Capability Tracking Document**
 ```bash
-cat > ~/Developer/Projects/smart-agents/docs/CAPABILITY_TRACKING.md << 'EOF'
+cat > ~/Developer/Projects/claude-code-buddy/docs/CAPABILITY_TRACKING.md << 'EOF'
 # Agent Capability Tracking
 
 ## This Week's Goals

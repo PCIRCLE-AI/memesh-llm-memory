@@ -273,7 +273,8 @@ export class TaskDecomposer {
     id: string,
     description: string,
     phase: string,
-    steps: string[]
+    steps: string[],
+    dependencies: string[] = []
   ): DecomposedTask {
     return {
       id,
@@ -281,7 +282,7 @@ export class TaskDecomposer {
       estimatedDuration: '2-5 minutes',
       testable: true,
       steps,
-      dependencies: [],
+      dependencies,
       phase
     };
   }

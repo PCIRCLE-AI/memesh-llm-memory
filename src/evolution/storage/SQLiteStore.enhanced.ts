@@ -29,6 +29,8 @@ import type {
   TimeRange,
   SkillPerformance,
   SkillRecommendation,
+  SQLParams,
+  SpanRow,
 } from './types';
 
 // ============================================================================
@@ -437,8 +439,8 @@ export class EnhancedSQLiteStore extends SQLiteStore {
     if (this.enhancedOptions.dbPath === ':memory:') {
       throw new OperationError(
         'Cannot backup in-memory database',
-        'backup',
         {
+          operation: 'backup',
           component: 'SQLiteStore',
           method: 'backup',
           reason: 'in-memory databases cannot be backed up',
@@ -717,7 +719,8 @@ export class EnhancedSQLiteStore extends SQLiteStore {
             estimated_duration_ms: row.avg_duration || 0,
             estimated_quality_score: row.avg_quality || 0,
         },
-      }));
+      };
+    });
     });
   }
 

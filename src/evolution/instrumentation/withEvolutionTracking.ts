@@ -108,12 +108,14 @@ export function withEvolutionTracking<T extends (...args: unknown[]) => Promise<
 
       // Emit telemetry (if enabled)
       if (telemetry) {
+        // Type assertion for result to access optional cost property
+        const typedResult = result as { cost?: number } | undefined;
         await telemetry.recordEvent({
           event: 'agent_execution',
           agent_type: fn.name || 'unknown',
           success: true,
           duration_ms: duration,
-          cost: result?.cost,
+          cost: typedResult?.cost,
           // NO: actual data, code, prompts
         });
       }
@@ -142,12 +144,14 @@ export function withEvolutionTracking<T extends (...args: unknown[]) => Promise<
 
       // Emit error telemetry (sanitized)
       if (telemetry) {
+        // Type guard for error object
+        const typedError = error instanceof Error ? error : new Error(String(error));
         await telemetry.recordEvent({
           event: 'error',
-          error_type: error.constructor.name,
-          error_category: categorizeError(error),
+          error_type: typedError.constructor.name,
+          error_category: categorizeError(typedError),
           component: `agents/${fn.name || 'unknown'}`,
-          stack_trace_hash: error.stack ? hashStackTrace(error.stack) : undefined,
+          stack_trace_hash: typedError.stack ? hashStackTrace(typedError.stack) : undefined,
           // NO: actual error message, stack trace
         });
       }
@@ -282,7 +286,7 @@ export function withEvolutionTrackingForAgent<T extends Record<string, any>>(
             // Type-safe property access
             const targetObj = target as Record<string, unknown>;
             const attrs: SpanAttributes = {
-              'agent.id': targetObj.id,
+              'agent.id': targetObj.id as string | undefined,
               'agent.type': target.constructor.name,
             };
 
@@ -303,14 +307,15 @@ export function withEvolutionTrackingForAgent<T extends Record<string, any>>(
 
             // Extract common result fields
             if (output && typeof output === 'object') {
+              const typedOutput = output as Record<string, unknown>;
               if ('qualityScore' in output) {
-                attrs['execution.quality_score'] = output.qualityScore;
+                attrs['execution.quality_score'] = typedOutput.qualityScore as number;
               }
               if ('cost' in output) {
-                attrs['execution.cost'] = output.cost;
+                attrs['execution.cost'] = typedOutput.cost as number;
               }
               if ('duration' in output) {
-                attrs['execution.duration_ms'] = output.duration;
+                attrs['execution.duration_ms'] = typedOutput.duration as number;
               }
             }
 
@@ -330,12 +335,12 @@ export function withEvolutionTrackingForAgent<T extends Record<string, any>>(
 /**
  * Wrap a class constructor with evolution tracking
  */
-export function trackClass<T extends { new (...args: unknown[]): unknown }>(
+export function trackClass<T extends new (...args: any[]) => any>(
   constructor: T,
   options: TrackingOptions = {}
 ): T {
   return class extends constructor {
-    constructor(...args: unknown[]) {
+    constructor(...args: any[]) {
       super(...args);
 
       // Wrap all methods

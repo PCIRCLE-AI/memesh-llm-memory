@@ -123,7 +123,7 @@ const transcription = await voiceAgent.transcribe({
 **Usage Example**:
 ```typescript
 const audio = await voiceAgent.synthesize({
-  text: "Hello, welcome to Smart Agents!",
+  text: "Hello, welcome to Claude Code Buddy!",
   voice: "alloy",
   quality: "standard"
 });
@@ -252,7 +252,7 @@ await orchestrator.route({ task: "Classification", complexity: "complex" }); // 
 
 ## Monitoring and Alerts
 
-Smart Agents automatically tracks costs:
+Claude Code Buddy automatically tracks costs:
 
 ```typescript
 // Check current costs

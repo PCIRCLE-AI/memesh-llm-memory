@@ -1,5 +1,5 @@
 /**
- * Smart Agents - Main Entry Point
+ * Claude Code Buddy - Main Entry Point
  * Intelligent AI Agent Ecosystem
  */
 
@@ -9,7 +9,7 @@ import { logger } from './utils/logger.js';
 import { AgentRegistry } from './core/AgentRegistry.js';
 
 async function main() {
-  logger.info('🤖 Smart Agents starting...');
+  logger.info('🤖 Claude Code Buddy starting...');
   logger.info(`Mode: ${appConfig.orchestrator.mode}`);
   logger.info(`Claude Model: ${appConfig.claude.models.sonnet}`);
 
@@ -29,7 +29,7 @@ async function main() {
   const enhancedAgents = registry.getEnhancedPrompts();
   const optionalAgents = registry.getOptionalAgents();
 
-  logger.info('\n✅ Smart Agents ready!');
+  logger.info('\n✅ Claude Code Buddy ready!');
   logger.info('\n📋 Available Agents:');
 
   logger.info(`\n  Real Implementation Agents (${realAgents.length}):`);
@@ -58,7 +58,7 @@ async function main() {
 
 // Run
 main().catch((error) => {
-  logger.error('Failed to start Smart Agents:', error);
+  logger.error('Failed to start Claude Code Buddy:', error);
   process.exit(1);
 });
 

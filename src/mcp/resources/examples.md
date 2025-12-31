@@ -1,4 +1,4 @@
-# Smart-Agents Real-World Examples
+# Claude Code Buddy Real-World Examples
 
 **Version**: 0.1.0
 
@@ -401,6 +401,6 @@ Then graduate to full workflows as you get comfortable!
 ---
 
 **More Resources**:
-- Complete Guide: `@smart-agents://usage-guide`
-- Quick Reference: `@smart-agents://quick-reference`
-- Best Practices: `@smart-agents://best-practices`
+- Complete Guide: `@claude-code-buddy://usage-guide`
+- Quick Reference: `@claude-code-buddy://quick-reference`
+- Best Practices: `@claude-code-buddy://best-practices`

@@ -106,8 +106,8 @@ export const ListSkillsInputSchema = z.object({
     .string()
     .max(MAX_FILTER_STRING_LENGTH, 'Filter string too long')
     .refine(
-      (val) => val === 'all' || val === 'smart-agents' || val === 'user',
-      'Filter must be "all", "smart-agents", or "user"'
+      (val) => val === 'all' || val === 'claude-code-buddy' || val === 'user',
+      'Filter must be "all", "claude-code-buddy", or "user"'
     )
     .optional()
     .default('all'),

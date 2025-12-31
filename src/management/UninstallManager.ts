@@ -1,7 +1,7 @@
 /**
  * Uninstall Manager
  *
- * Handles clean uninstallation of smart-agents with user control over data retention.
+ * Handles clean uninstallation of Claude Code Buddy with user control over data retention.
  * Provides detailed reporting of removed, kept, and failed items.
  */
 
@@ -33,7 +33,7 @@ export interface UninstallReport {
 /**
  * Uninstall Manager Class
  *
- * Manages the uninstallation process for smart-agents.
+ * Manages the uninstallation process for Claude Code Buddy.
  */
 export class UninstallManager {
   private skillManager: SkillManager;
@@ -44,7 +44,7 @@ export class UninstallManager {
     this.skillManager = skillManager || new SkillManager();
 
     // Default directories
-    this.smartAgentsDir = path.join(os.homedir(), '.smart-agents');
+    this.smartAgentsDir = path.join(os.homedir(), '.claude-code-buddy');
     this.dataDir = path.join(this.smartAgentsDir, 'data');
   }
 
@@ -65,7 +65,7 @@ export class UninstallManager {
     const actionVerb = options.dryRun ? 'Would remove' : 'Removed';
     const keepVerb = options.dryRun ? 'Would keep' : 'Kept';
 
-    // 1. Remove smart-agents skills (sa:* prefix)
+    // 1. Remove Claude Code Buddy skills (sa:* prefix)
     try {
       const skills = await this.skillManager.listSmartAgentsSkills();
 
@@ -76,10 +76,10 @@ export class UninstallManager {
           }
         }
         report.removed.push(
-          `${actionVerb} ${skills.length} smart-agents skill${skills.length === 1 ? '' : 's'}: ${skills.join(', ')}`
+          `${actionVerb} ${skills.length} Claude Code Buddy skill${skills.length === 1 ? '' : 's'}: ${skills.join(', ')}`
         );
       } else {
-        report.removed.push('No smart-agents skills found');
+        report.removed.push('No Claude Code Buddy skills found');
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -128,10 +128,10 @@ export class UninstallManager {
             } else {
               // Remove entire directory including data
               await fs.rm(this.smartAgentsDir, { recursive: true, force: true });
-              report.removed.push(`${actionVerb} configuration directory (~/.smart-agents/)`);
+              report.removed.push(`${actionVerb} configuration directory (~/.claude-code-buddy/)`);
             }
           } else {
-            report.removed.push(`${actionVerb} configuration directory (~/.smart-agents/)`);
+            report.removed.push(`${actionVerb} configuration directory (~/.claude-code-buddy/)`);
           }
         } else {
           report.removed.push('Configuration directory not found (already clean)');
@@ -141,7 +141,7 @@ export class UninstallManager {
         report.errors.push(`Configuration: ${errorMessage}`);
       }
     } else {
-      report.kept.push(`${keepVerb} configuration files (~/.smart-agents/)`);
+      report.kept.push(`${keepVerb} configuration files (~/.claude-code-buddy/)`);
     }
 
     // 3. Clean data files (optional)
@@ -209,8 +209,8 @@ export class UninstallManager {
     const boxTop = '╔' + '═'.repeat(62) + '╗';
     const boxBottom = '╚' + '═'.repeat(62) + '╝';
     const title = report.dryRun
-      ? '  🔍  Smart-Agents Uninstallation Preview (Dry Run)'
-      : '  🗑️  Smart-Agents Uninstallation Report';
+      ? '  🔍  Claude Code Buddy Uninstallation Preview (Dry Run)'
+      : '  🗑️  Claude Code Buddy Uninstallation Report';
 
     let output = boxTop + '\n';
     output += '║' + title.padEnd(62) + '║\n';
@@ -257,8 +257,8 @@ export class UninstallManager {
     if (report.dryRun) {
       output += '💡 To actually uninstall, run without --dry-run flag\n';
     } else {
-      output += '💡 To reinstall: Add smart-agents MCP server again\n';
-      output += '💡 Project repository: https://github.com/your-org/smart-agents\n';
+      output += '💡 To reinstall: Add claude-code-buddy MCP server again\n';
+      output += '💡 Project repository: https://github.com/PCIRCLE-AI/claude-code-buddy\n';
     }
 
     return output;

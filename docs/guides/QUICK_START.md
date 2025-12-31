@@ -1,6 +1,6 @@
 # Quick Start Guide (15 Minutes)
 
-Get started with Smart Agents in 15 minutes - from zero to your first enhanced Claude Code query.
+Get started with Claude Code Buddy in 15 minutes - from zero to your first enhanced Claude Code query.
 
 ## 📋 Prerequisites
 
@@ -22,8 +22,8 @@ Clone the repository and run the automated setup script:
 
 ```bash
 # Clone repository
-git clone https://github.com/kevintseng/smart-agents.git
-cd smart-agents
+git clone https://github.com/kevintseng/claude-code-buddy.git
+cd claude-code-buddy
 
 # Run automated setup
 ./scripts/setup.sh
@@ -39,7 +39,7 @@ cd smart-agents
 
 **Expected output:**
 ```
-🚀 Smart Agents - Automated Setup
+🚀 Claude Code Buddy - Automated Setup
 ==================================
 
 ✅ Node.js version: v18.x.x
@@ -89,7 +89,7 @@ LOG_LEVEL=info
 
 ### Step 3: Configure Claude Code (5 minutes)
 
-Add Smart Agents as an MCP server to Claude Code:
+Add Claude Code Buddy as an MCP server to Claude Code:
 
 #### macOS / Linux
 
@@ -110,9 +110,9 @@ notepad %USERPROFILE%\.claude\config.json
 ```json
 {
   "mcpServers": {
-    "smart-agents": {
+    "claude-code-buddy": {
       "command": "node",
-      "args": ["/absolute/path/to/smart-agents/dist/mcp/server.js"],
+      "args": ["/absolute/path/to/claude-code-buddy/dist/mcp/server.js"],
       "env": {
         "NODE_ENV": "production"
       }
@@ -121,11 +121,11 @@ notepad %USERPROFILE%\.claude\config.json
 }
 ```
 
-> **Important:** Replace `/absolute/path/to/smart-agents/` with your actual installation path.
+> **Important:** Replace `/absolute/path/to/claude-code-buddy/` with your actual installation path.
 >
 > To find your path:
 > ```bash
-> # In the smart-agents directory
+> # In the claude-code-buddy directory
 > pwd
 > # Use the output in your config.json
 > ```
@@ -136,7 +136,7 @@ notepad %USERPROFILE%\.claude\config.json
 
 ### Step 4: Verify Connection (1 minute)
 
-Test that Claude Code can connect to Smart Agents:
+Test that Claude Code can connect to Claude Code Buddy:
 
 ```bash
 # In Claude Code, run:
@@ -146,7 +146,7 @@ claude mcp list
 **Expected output:**
 ```
 Connected MCP Servers:
-✅ smart-agents (13 agents available)
+✅ claude-code-buddy (13 agents available)
    - Code Reviewer, Debugger, Refactorer
    - API Designer, RAG Agent, Evolution Agent
    - Knowledge Graph, Butler, Test Writer
@@ -157,16 +157,16 @@ Connected MCP Servers:
 
 ### Step 5: Test Agent Integration (2 minutes)
 
-Verify Smart Agents is working by checking available capabilities:
+Verify Claude Code Buddy is working by checking available capabilities:
 
 ```bash
 # In Claude Code
-"List available Smart Agents capabilities"
+"List available Claude Code Buddy capabilities"
 ```
 
 **Expected response:**
 ```
-Smart Agents provides 13 specialized capabilities:
+Claude Code Buddy provides 13 specialized capabilities:
 
 1. Code Review (code-reviewer) - Security, performance, best practices
 2. Debugging (debugger) - Systematic error diagnosis
@@ -207,7 +207,7 @@ function login(username, password) {
 ```
 
 **What happens:**
-1. Smart Agents detects "code review" capability needed
+1. Claude Code Buddy detects "code review" capability needed
 2. Routes to Code Reviewer agent
 3. Enhances prompt with security best practices checklist
 4. Claude Code receives enhanced prompt with context
@@ -228,7 +228,7 @@ Search documentation using vector embeddings:
 ```
 
 **What happens:**
-1. Smart Agents routes to RAG Agent (real implementation)
+1. Claude Code Buddy routes to RAG Agent (real implementation)
 2. RAG Agent performs vector search across indexed documentation
 3. Retrieves top-3 most relevant documentation chunks
 4. Claude Code receives context-enriched results
@@ -256,7 +256,7 @@ Now that you're up and running, explore more:
 
 ### "MCP server not found"
 
-**Symptom:** Claude Code can't connect to Smart Agents
+**Symptom:** Claude Code can't connect to Claude Code Buddy
 
 **Solutions:**
 1. Verify `config.json` path is correct:
@@ -268,7 +268,7 @@ Now that you're up and running, explore more:
 2. Ensure absolute path is used:
    ```bash
    # Get absolute path
-   cd /path/to/smart-agents
+   cd /path/to/claude-code-buddy
    pwd
    # Use this path in config.json
    ```
@@ -420,7 +420,7 @@ Now that you're up and running, explore more:
 2. **Verify vector index exists:**
    ```bash
    # Check default location
-   ls -la ~/.smart-agents/vectra/
+   ls -la ~/.claude-code-buddy/vectra/
    # Or custom path from .env
    ```
 
@@ -447,11 +447,11 @@ If you're still stuck after trying the troubleshooting steps:
    - [MCP_INTEGRATION.md](../MCP_INTEGRATION.md) - Integration details
 
 2. **🐛 Report Issues:**
-   - [GitHub Issues](https://github.com/kevintseng/smart-agents/issues)
+   - [GitHub Issues](https://github.com/kevintseng/claude-code-buddy/issues)
    - Include: OS, Node.js version, error messages, steps to reproduce
 
 3. **💬 Discussions:**
-   - [GitHub Discussions](https://github.com/kevintseng/smart-agents/discussions)
+   - [GitHub Discussions](https://github.com/kevintseng/claude-code-buddy/discussions)
    - Ask questions, share tips, request features
 
 4. **📝 Logs:**
@@ -474,7 +474,7 @@ If you're still stuck after trying the troubleshooting steps:
 
 ## 🎉 What's Next?
 
-You've successfully set up Smart Agents! Here are recommended next steps:
+You've successfully set up Claude Code Buddy! Here are recommended next steps:
 
 1. **Try Different Agents:**
    - Code review with security focus
@@ -497,4 +497,4 @@ You've successfully set up Smart Agents! Here are recommended next steps:
    - Configure logging and metrics
    - Set up custom routing rules
 
-**Happy coding with Smart Agents! 🚀**
+**Happy coding with Claude Code Buddy! 🚀**

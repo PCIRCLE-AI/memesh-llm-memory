@@ -12,7 +12,7 @@ CHECK_INTERVAL=5
 LOG_FILE="./test-resource-monitor.log"
 
 # E2E Mutex Lock
-E2E_LOCK="/tmp/smart-agents-e2e.lock"
+E2E_LOCK="/tmp/claude-code-buddy-e2e.lock"
 MAX_WAIT_TIME=300  # 5 minutes maximum wait time
 
 # Colors

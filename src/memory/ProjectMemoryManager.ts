@@ -70,4 +70,24 @@ export class ProjectMemoryManager {
 
     return sorted;
   }
+
+  /**
+   * Search project memories by query string
+   *
+   * @param query - Search query (matches entity names)
+   * @param limit - Maximum number of results (default: 10)
+   * @returns Array of matching entities
+   *
+   * @example
+   * ```typescript
+   * const results = await manager.search('authentication', 5);
+   * console.log(`Found ${results.length} results`);
+   * ```
+   */
+  async search(query: string, limit: number = 10): Promise<Entity[]> {
+    return this.knowledgeGraph.searchEntities({
+      namePattern: query,
+      limit,
+    });
+  }
 }

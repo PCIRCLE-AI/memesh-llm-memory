@@ -641,6 +641,9 @@ export interface PatternRow {
   first_observed: string;  // ISO date string
   last_observed: string;
   is_active: number;  // SQLite boolean (0 or 1)
+  complexity: number | null;
+  config_keys: string | null;  // JSON stringified
+  context_metadata: string | null;  // JSON stringified
   created_at: string;
   updated_at: string;
 }
@@ -714,12 +717,6 @@ export interface ContextualPatternRow {
   created_at: string;
   updated_at: string;
 }
-
-/**
- * SQL Parameter Type - for database query parameters
- * SQLite supports: NULL, INTEGER, REAL, TEXT, BLOB
- */
-export type SQLParam = string | number | null | Buffer;
 
 // ============================================================================
 // Re-exports from main evolution types (Phase 2+)

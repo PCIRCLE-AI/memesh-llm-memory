@@ -103,8 +103,8 @@ export class EmbeddingService {
       logger.error('Failed to create embedding', { error });
       throw new OperationError(
         `Embedding creation failed: ${error}`,
-        'createEmbedding',
         {
+          operation: 'createEmbedding',
           model: this.model,
           textLength: text.length,
           originalError: error instanceof Error ? error.message : String(error),
@@ -151,8 +151,8 @@ export class EmbeddingService {
         logger.error('Failed to create embeddings batch', { error });
         throw new OperationError(
           `Batch embedding creation failed: ${error}`,
-          'createEmbeddingsBatch',
           {
+            operation: 'createEmbeddingsBatch',
             model: this.model,
             batchSize: batch.length,
             totalTexts: texts.length,

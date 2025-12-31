@@ -7,6 +7,8 @@
 
 import { CheckpointDetector } from './CheckpointDetector.js';
 import { DevelopmentButler } from '../agents/DevelopmentButler.js';
+import { ProjectAutoTracker } from '../memory/ProjectAutoTracker.js';
+import type { MCPToolInterface } from './MCPToolInterface.js';
 
 /**
  * Tool use data from Claude Code hooks
@@ -47,6 +49,7 @@ export class HookIntegration {
   private detector: CheckpointDetector;
   private butler: DevelopmentButler;
   private triggerCallbacks: Array<(context: CheckpointContext) => void> = [];
+  private projectMemory?: ProjectAutoTracker;
 
   constructor(
     checkpointDetector: CheckpointDetector,
@@ -54,6 +57,14 @@ export class HookIntegration {
   ) {
     this.detector = checkpointDetector;
     this.butler = developmentButler;
+  }
+
+  /**
+   * Initialize project memory tracking
+   * Call this after construction to enable automatic memory recording
+   */
+  initializeProjectMemory(mcp: MCPToolInterface): void {
+    this.projectMemory = new ProjectAutoTracker(mcp);
   }
 
   /**
@@ -140,6 +151,51 @@ export class HookIntegration {
       for (const callback of this.triggerCallbacks) {
         callback(context);
       }
+
+      // Record to project memory if initialized
+      if (this.projectMemory) {
+        await this.recordToProjectMemory(checkpoint, toolData);
+      }
+    }
+
+    // Track tokens if available
+    if (this.projectMemory && toolData.tokensUsed) {
+      const tokenHook = this.projectMemory.createTokenHook();
+      await tokenHook(toolData.tokensUsed);
+    }
+  }
+
+  /**
+   * Record checkpoint events to project memory
+   */
+  private async recordToProjectMemory(
+    checkpoint: Checkpoint,
+    toolData: ToolUseData
+  ): Promise<void> {
+    if (!this.projectMemory) return;
+
+    // Record code changes
+    if (checkpoint.name === 'code-written' && checkpoint.data.files) {
+      const fileChangeHook = this.projectMemory.createFileChangeHook();
+      const files = checkpoint.data.files as string[];
+      const type = checkpoint.data.type as string;
+      await fileChangeHook(files, `Code ${type}`);
+    }
+
+    // Record test results
+    if (checkpoint.name === 'test-complete') {
+      const testResultHook = this.projectMemory.createTestResultHook();
+      const { total, passed, failed } = checkpoint.data as {
+        total: number;
+        passed: number;
+        failed: number;
+      };
+      await testResultHook({
+        total,
+        passed,
+        failed,
+        failures: [], // TODO: Extract from test output
+      });
     }
   }
 

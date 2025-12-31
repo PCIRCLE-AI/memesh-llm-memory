@@ -129,4 +129,34 @@ export class ProjectAutoTracker {
       }],
     });
   }
+
+  /**
+   * Create a hook function for file change events
+   * Returns a function that can be registered with HookIntegration
+   */
+  createFileChangeHook(): (files: string[], description: string) => Promise<void> {
+    return async (files: string[], description: string) => {
+      await this.recordCodeChange(files, description);
+    };
+  }
+
+  /**
+   * Create a hook function for test result events
+   * Returns a function that can be registered with HookIntegration
+   */
+  createTestResultHook(): (result: TestResult) => Promise<void> {
+    return async (result: TestResult) => {
+      await this.recordTestResult(result);
+    };
+  }
+
+  /**
+   * Create a hook function for token tracking events
+   * Returns a function that can be registered with SessionTokenTracker
+   */
+  createTokenHook(): (count: number) => Promise<void> {
+    return async (count: number) => {
+      await this.addTokens(count);
+    };
+  }
 }

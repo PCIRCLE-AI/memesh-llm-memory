@@ -96,22 +96,22 @@ CCB 記住：
 - 你已經建構的內容
 ```
 
-### 📊 成本與性能追蹤
+### 📊 Session 健康與性能追蹤
 
 ```bash
 buddy stats week
 
-總 API 呼叫：1,245
-總 Token：2.4M
-估計成本：$8.75
+總 Agent 呼叫：1,245
+總 Token 使用：2.4M（在 Claude Code session 限制內）
 成功率：94.2%
+Session 健康：健康（65% token 使用率）
 
 每個 agent 的細分：
 code-reviewer：234 次呼叫，85% 成功
 debugger：123 次呼叫，92% 成功
 ```
 
-**準確了解你的 token 去向。設定預算限制。優化成本。**
+**監控你的 Claude Code session 健康狀態。追蹤 token 使用以防止上下文溢出。優化品質。**
 
 ### 🤝 使用者友善的命令
 
@@ -327,20 +327,20 @@ npm run dashboard
 **問：我需要是開發者才能使用嗎？**
 答：如果你能使用 Claude Code，你就能使用 CCB。它是為了讓 Claude 更容易使用，而不是更難。
 
-**問：這會增加我的 API 成本嗎？**
-答：不會 - CCB 內建預算限制，實際上透過更智能的 token 使用幫助降低成本。
+**問：這會在 Claude Code 之外產生額外費用嗎？**
+答：不會 - CCB 使用你現有的 Claude Code 訂閱。它幫助在你的 session 限制內優化 token 使用，而不是 API 成本。
 
 **問：這與單純使用 Claude Code 有什麼不同？**
 答：Claude Code 對所有任務一視同仁。CCB 增加了任務特定的專業知識、記憶和學習。
 
 **問：我的程式碼是私有的嗎？**
-答：是的。除了 Claude API 呼叫（你已經在做的）外，所有內容都在本地執行。
+答：是的。所有內容都透過你的 Claude Code 訂閱在本地執行。可選的 RAG 功能僅使用 OpenAI API 進行嵌入向量處理。
 
 **問：如果我不喜歡怎麼辦？**
 答：從你的 MCP 設定中移除它。沒有鎖定，沒有供應商依賴。
 
 **問：這要多少錢？**
-答：CCB 是免費且開源的（AGPL-3.0）。你只需為 Claude API 使用付費。
+答：CCB 是免費且開源的（AGPL-3.0）。與你現有的 Claude Code 訂閱一起使用。可選的 RAG 功能需要 OpenAI API 金鑰。
 
 **問：我可以自訂 agent 嗎？**
 答：當然！提示範本在 `src/core/PromptEnhancer.ts`。演化設定在 `src/evolution/AgentEvolutionConfig.ts`。
@@ -358,7 +358,8 @@ npm run dashboard
 ## 致謝
 
 - 使用 [Model Context Protocol (MCP)](https://github.com/anthropics/mcp) 建構
-- 由 [Claude API](https://www.anthropic.com/claude) 提供支援
+- 與 [Claude Code](https://claude.com/claude-code) 配合使用
+- 可選的 [OpenAI Embeddings](https://openai.com) 用於 RAG 功能
 - 受 Claude Code 社群啟發
 - 感謝所有貢獻者和早期測試者
 

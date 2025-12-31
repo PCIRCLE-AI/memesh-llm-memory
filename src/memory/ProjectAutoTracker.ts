@@ -31,4 +31,27 @@ export class ProjectAutoTracker {
   getCurrentTokenCount(): number {
     return this.currentTokenCount;
   }
+
+  /**
+   * Record a code change event to Knowledge Graph
+   * @param files - List of file paths that were modified
+   * @param description - Human-readable description of the change
+   */
+  async recordCodeChange(files: string[], description: string): Promise<void> {
+    const timestamp = new Date().toISOString();
+    const dateStr = timestamp.split('T')[0]; // YYYY-MM-DD
+
+    await this.mcp.memory.createEntities({
+      entities: [{
+        name: `Code Change ${dateStr} ${Date.now()}`,
+        entityType: 'code_change',
+        observations: [
+          `Files modified: ${files.length}`,
+          ...files.map(f => `  - ${f}`),
+          `Description: ${description}`,
+          `Timestamp: ${timestamp}`,
+        ],
+      }],
+    });
+  }
 }

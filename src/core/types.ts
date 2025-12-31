@@ -63,7 +63,7 @@ export interface ExecutionConfig {
     /**
      * Called when task completes successfully
      */
-    onComplete?: (result: any) => void;
+    onComplete?: (result: unknown) => void;
 
     /**
      * Called if task fails
@@ -201,8 +201,9 @@ export interface BackgroundTask {
 
   /**
    * Original task description/data
+   * Using unknown for type safety - callers must validate before use
    */
-  task: any;
+  task: unknown;
 
   /**
    * Execution configuration
@@ -226,8 +227,9 @@ export interface BackgroundTask {
 
   /**
    * Result (if completed)
+   * Using unknown for type safety - callers must validate before use
    */
-  result?: any;
+  result?: unknown;
 
   /**
    * Error (if failed)

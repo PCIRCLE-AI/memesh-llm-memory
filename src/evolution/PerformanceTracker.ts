@@ -5,18 +5,35 @@
  */
 
 import { logger } from '../utils/logger.js';
+import { MinHeap } from '../utils/MinHeap.js';
 import type { PerformanceMetrics, EvolutionStats } from './types.js';
 import { v4 as uuidv4 } from 'uuid';
+
+/**
+ * Heap entry for tracking oldest metrics across agents
+ */
+interface HeapEntry {
+  agentId: string;
+  timestamp: Date;
+}
 
 export class PerformanceTracker {
   private metrics: Map<string, PerformanceMetrics[]> = new Map(); // agentId -> metrics[]
   private maxMetricsPerAgent: number = 1000;
   private maxTotalMetrics: number = 10000; // Global limit across all agents
   private totalMetricsCount: number = 0;
+  // Min-heap for O(log N) eviction of oldest metrics
+  private evictionHeap: MinHeap<HeapEntry>;
 
   constructor(config?: { maxMetricsPerAgent?: number; maxTotalMetrics?: number }) {
     this.maxMetricsPerAgent = config?.maxMetricsPerAgent || 1000;
     this.maxTotalMetrics = config?.maxTotalMetrics || 10000;
+
+    // Initialize min-heap with timestamp comparison (oldest first)
+    this.evictionHeap = new MinHeap<HeapEntry>((a, b) => {
+      return a.timestamp.getTime() - b.timestamp.getTime();
+    });
+
     logger.info('Performance tracker initialized', {
       maxMetricsPerAgent: this.maxMetricsPerAgent,
       maxTotalMetrics: this.maxTotalMetrics,
@@ -66,16 +83,28 @@ export class PerformanceTracker {
     }
 
     const agentMetrics = this.metrics.get(metrics.agentId)!;
+    const isFirstMetricForAgent = agentMetrics.length === 0;
     agentMetrics.push(fullMetrics);
     this.totalMetricsCount++;
+
+    // Add to heap if this is the first metric for this agent
+    // (heap tracks the oldest metric per agent)
+    if (isFirstMetricForAgent) {
+      this.evictionHeap.push({
+        agentId: metrics.agentId,
+        timestamp: fullMetrics.timestamp,
+      });
+    }
 
     // Enforce per-agent limit
     if (agentMetrics.length > this.maxMetricsPerAgent) {
       agentMetrics.shift();
       this.totalMetricsCount--;
+      // Update heap with new oldest metric for this agent
+      this.updateHeapForAgent(metrics.agentId);
     }
 
-    // Enforce global limit (LRU eviction across all agents)
+    // Enforce global limit (O(log N) eviction using min-heap)
     this.enforceGlobalLimit();
 
     logger.debug('Performance tracked', {
@@ -94,52 +123,103 @@ export class PerformanceTracker {
   /**
    * Enforce global memory limit by evicting oldest metrics
    *
-   * Uses LRU (Least Recently Used) eviction strategy:
-   * 1. Scan all agents to find the one with the oldest metric (first in array)
-   * 2. Remove that oldest metric (oldest across all agents)
-   * 3. Repeat until total count is within limit
+   * Uses LRU (Least Recently Used) eviction strategy with O(log N) min-heap:
+   * 1. Extract min from heap to find agent with oldest metric - O(log N)
+   * 2. Remove that oldest metric from agent's array - O(1)
+   * 3. Update heap with next oldest metric for that agent - O(log N)
+   * 4. Repeat until total count is within limit
    *
    * This ensures fair eviction across agents - no single agent monopolizes memory.
+   * Time Complexity: O(log N) per eviction, where N = number of agents
    */
   private enforceGlobalLimit(): void {
     while (this.totalMetricsCount > this.maxTotalMetrics) {
-      // Find agent with oldest metric by comparing first (oldest) metric in each agent's array
-      let oldestAgentId: string | null = null;
-      let oldestTimestamp: Date | null = null;
+      const oldest = this.evictionHeap.pop();
 
-      for (const [agentId, agentMetrics] of this.metrics.entries()) {
-        if (agentMetrics.length > 0) {
-          const firstMetric = agentMetrics[0]; // First = oldest (metrics appended to end)
-          if (!oldestTimestamp || firstMetric.timestamp < oldestTimestamp) {
-            oldestTimestamp = firstMetric.timestamp;
-            oldestAgentId = agentId;
-          }
-        }
-      }
-
-      // Remove oldest metric (shift from front of array)
-      if (oldestAgentId) {
-        const agentMetrics = this.metrics.get(oldestAgentId)!;
-        agentMetrics.shift(); // Remove first (oldest) element
-        this.totalMetricsCount--;
-
-        // Clean up empty agent entries to free memory
-        if (agentMetrics.length === 0) {
-          this.metrics.delete(oldestAgentId);
-        }
-
-        logger.debug('Evicted oldest metric due to global limit', {
-          agentId: oldestAgentId,
-          totalMetrics: this.totalMetricsCount,
-          maxTotalMetrics: this.maxTotalMetrics,
-        });
-      } else {
-        // Should never happen (totalMetricsCount > 0 but no metrics found)
-        // Break to prevent infinite loop
-        logger.error('Unable to enforce global limit: no metrics found');
+      if (!oldest) {
+        // Should never happen (totalMetricsCount > 0 but heap empty)
+        logger.error('Unable to enforce global limit: heap is empty');
         break;
       }
+
+      const agentMetrics = this.metrics.get(oldest.agentId);
+      if (!agentMetrics || agentMetrics.length === 0) {
+        // Stale heap entry (agent was cleared), skip and continue
+        continue;
+      }
+
+      // Verify heap entry matches actual oldest metric (defensive check)
+      const actualOldest = agentMetrics[0];
+      if (actualOldest.timestamp.getTime() !== oldest.timestamp.getTime()) {
+        // Heap is out of sync, rebuild it
+        logger.warn('Heap out of sync, rebuilding', {
+          agentId: oldest.agentId,
+          heapTimestamp: oldest.timestamp,
+          actualTimestamp: actualOldest.timestamp,
+        });
+        this.rebuildHeap();
+        continue;
+      }
+
+      // Remove oldest metric from agent's array
+      agentMetrics.shift();
+      this.totalMetricsCount--;
+
+      // Update heap with next oldest metric for this agent, or remove if empty
+      if (agentMetrics.length === 0) {
+        this.metrics.delete(oldest.agentId);
+      } else {
+        // Push updated oldest metric for this agent back into heap
+        this.evictionHeap.push({
+          agentId: oldest.agentId,
+          timestamp: agentMetrics[0].timestamp,
+        });
+      }
+
+      logger.debug('Evicted oldest metric due to global limit', {
+        agentId: oldest.agentId,
+        timestamp: oldest.timestamp,
+        totalMetrics: this.totalMetricsCount,
+        maxTotalMetrics: this.maxTotalMetrics,
+      });
     }
+  }
+
+  /**
+   * Update heap entry for an agent after removing its oldest metric
+   *
+   * Called when per-agent limit is enforced (shift() removes oldest)
+   *
+   * @param agentId - Agent whose heap entry needs updating
+   */
+  private updateHeapForAgent(agentId: string): void {
+    // Rebuild heap to reflect new oldest metrics
+    // TODO: Optimize by tracking heap indices for O(log N) update
+    this.rebuildHeap();
+  }
+
+  /**
+   * Rebuild the eviction heap from current metrics
+   *
+   * Time Complexity: O(N log N) where N = number of agents
+   * Called when heap becomes out of sync with actual metrics
+   */
+  private rebuildHeap(): void {
+    this.evictionHeap.clear();
+
+    for (const [agentId, agentMetrics] of this.metrics.entries()) {
+      if (agentMetrics.length > 0) {
+        this.evictionHeap.push({
+          agentId,
+          timestamp: agentMetrics[0].timestamp,
+        });
+      }
+    }
+
+    logger.debug('Eviction heap rebuilt', {
+      heapSize: this.evictionHeap.size,
+      totalAgents: this.metrics.size,
+    });
   }
 
   /**
@@ -405,6 +485,11 @@ export class PerformanceTracker {
     if (agentMetrics) {
       this.totalMetricsCount -= agentMetrics.length;
       this.metrics.delete(agentId);
+
+      // Rebuild heap to remove this agent's entry
+      // TODO: Optimize by tracking heap indices for direct removal
+      this.rebuildHeap();
+
       logger.info('Metrics cleared', {
         agentId,
         clearedCount: agentMetrics.length,

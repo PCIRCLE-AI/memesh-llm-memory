@@ -4,152 +4,76 @@
  * Similar to VectorStore in RAGAgent - provides low-level storage operations
  */
 
-export interface Entity {
-  name: string;
-  entityType: string;
-  observations: string[];
-  metadata?: Record<string, unknown>;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { Entity, Relation, SearchOptions } from './types';
+import { KnowledgeGraphStore } from './storage/KnowledgeGraphStore.js';
+import { logger } from '../../utils/logger.js';
 
-export interface Relation {
-  from: string;
-  to: string;
-  relationType: string;
-  metadata?: Record<string, unknown>;
-  createdAt: Date;
-}
-
-export interface SearchOptions {
-  entityType?: string;
-  limit?: number;
-  offset?: number;
-}
+// Re-export types for backward compatibility
+export { Entity, Relation, SearchOptions };
 
 export class KnowledgeGraph {
-  private entities: Map<string, Entity>;
-  private relations: Map<string, Relation[]>;
-  private initialized: boolean;
+  private store: KnowledgeGraphStore;
+  private initialized = false;
 
-  constructor() {
-    this.entities = new Map();
-    this.relations = new Map();
-    this.initialized = false;
+  constructor(dbPath?: string) {
+    this.store = new KnowledgeGraphStore(dbPath);
   }
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
-    // TODO: Load from persistent storage if needed
-    // For now, in-memory storage is sufficient
+    // Initialize persistent storage
+    await this.store.initialize();
 
     this.initialized = true;
+    logger.info('Knowledge Graph initialized with persistent storage');
   }
 
   // Entity operations
-  async createEntity(entity: Omit<Entity, 'createdAt' | 'updatedAt'>): Promise<Entity> {
-    const now = new Date();
-    const fullEntity: Entity = {
-      ...entity,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    this.entities.set(entity.name, fullEntity);
-    return fullEntity;
+  async createEntity(entity: Entity): Promise<void> {
+    this.ensureInitialized();
+    await this.store.createEntity(entity);
   }
 
-  async getEntity(name: string): Promise<Entity | undefined> {
-    return this.entities.get(name);
+  async getEntity(name: string): Promise<Entity | null> {
+    this.ensureInitialized();
+    return await this.store.getEntity(name);
   }
 
-  async updateEntity(name: string, updates: Partial<Omit<Entity, 'name' | 'createdAt' | 'updatedAt'>>): Promise<Entity | undefined> {
-    const entity = this.entities.get(name);
-    if (!entity) return undefined;
-
-    const updated: Entity = {
-      ...entity,
-      ...updates,
-      updatedAt: new Date(),
-    };
-
-    this.entities.set(name, updated);
-    return updated;
+  async updateEntity(entity: Entity): Promise<void> {
+    this.ensureInitialized();
+    await this.store.updateEntity(entity);
   }
 
-  async deleteEntity(name: string): Promise<boolean> {
-    const deleted = this.entities.delete(name);
-    if (deleted) {
-      // Also delete all relations involving this entity
-      this.relations.delete(name);
-      for (const [key, relations] of this.relations.entries()) {
-        this.relations.set(
-          key,
-          relations.filter((r) => r.to !== name)
-        );
-      }
-    }
-    return deleted;
+  async deleteEntity(name: string): Promise<void> {
+    this.ensureInitialized();
+    await this.store.deleteEntity(name);
   }
 
   async searchEntities(query: string, options: SearchOptions = {}): Promise<Entity[]> {
-    const results: Entity[] = [];
-
-    for (const entity of this.entities.values()) {
-      // Simple string matching for now
-      const matchesQuery =
-        entity.name.toLowerCase().includes(query.toLowerCase()) ||
-        entity.entityType.toLowerCase().includes(query.toLowerCase()) ||
-        entity.observations.some((obs) => obs.toLowerCase().includes(query.toLowerCase()));
-
-      const matchesType = !options.entityType || entity.entityType === options.entityType;
-
-      if (matchesQuery && matchesType) {
-        results.push(entity);
-      }
-    }
-
-    // Apply pagination
-    const offset = options.offset || 0;
-    const limit = options.limit || 100;
-    return results.slice(offset, offset + limit);
+    this.ensureInitialized();
+    return await this.store.searchEntities(query, options);
   }
 
   async getAllEntities(): Promise<Entity[]> {
-    return Array.from(this.entities.values());
+    this.ensureInitialized();
+    return await this.store.getAllEntities();
   }
 
   // Relation operations
-  async createRelation(relation: Omit<Relation, 'createdAt'>): Promise<Relation> {
-    const fullRelation: Relation = {
-      ...relation,
-      createdAt: new Date(),
-    };
-
-    const relations = this.relations.get(relation.from) || [];
-    relations.push(fullRelation);
-    this.relations.set(relation.from, relations);
-
-    return fullRelation;
+  async createRelation(relation: Relation): Promise<void> {
+    this.ensureInitialized();
+    await this.store.createRelation(relation);
   }
 
   async getRelations(entityName: string): Promise<Relation[]> {
-    return this.relations.get(entityName) || [];
+    this.ensureInitialized();
+    return await this.store.getRelations(entityName);
   }
 
-  async deleteRelation(from: string, to: string, relationType: string): Promise<boolean> {
-    const relations = this.relations.get(from);
-    if (!relations) return false;
-
-    const filtered = relations.filter(
-      (r) => !(r.to === to && r.relationType === relationType)
-    );
-
-    if (filtered.length === relations.length) return false;
-
-    this.relations.set(from, filtered);
-    return true;
+  async deleteRelation(from: string, to: string, relationType: string): Promise<void> {
+    this.ensureInitialized();
+    await this.store.deleteRelation(from, to, relationType);
   }
 
   // Graph operations
@@ -182,21 +106,46 @@ export class KnowledgeGraph {
     totalRelations: number;
     entityTypeBreakdown: Record<string, number>;
   }> {
+    this.ensureInitialized();
+
+    const entities = await this.store.getAllEntities();
     const entityTypeBreakdown: Record<string, number> = {};
 
-    for (const entity of this.entities.values()) {
+    for (const entity of entities) {
       entityTypeBreakdown[entity.entityType] = (entityTypeBreakdown[entity.entityType] || 0) + 1;
     }
 
+    // Get total relations by querying each entity
     let totalRelations = 0;
-    for (const relations of this.relations.values()) {
-      totalRelations += relations.length;
+    const countedRelations = new Set<string>();
+
+    for (const entity of entities) {
+      const relations = await this.store.getRelations(entity.name);
+      for (const rel of relations) {
+        // Create unique key to avoid double-counting
+        const relKey = `${rel.from}:${rel.to}:${rel.relationType}`;
+        if (!countedRelations.has(relKey)) {
+          countedRelations.add(relKey);
+          totalRelations++;
+        }
+      }
     }
 
     return {
-      totalEntities: this.entities.size,
+      totalEntities: entities.length,
       totalRelations,
       entityTypeBreakdown,
     };
+  }
+
+  async close(): Promise<void> {
+    await this.store.close();
+    this.initialized = false;
+  }
+
+  private ensureInitialized(): void {
+    if (!this.initialized) {
+      throw new Error('Knowledge Graph not initialized. Call initialize() first.');
+    }
   }
 }

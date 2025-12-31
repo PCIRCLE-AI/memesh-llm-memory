@@ -154,3 +154,6 @@ temp-*.js
 tmp-*.ts
 tmp-*.jspackage.json.backup
 logs/*.log
+data/*.db
+data/*.db-shm
+data/*.db-wal

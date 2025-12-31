@@ -1,7 +1,7 @@
 {
-  "name": "smart-agents",
-  "version": "2.2.0",
-  "description": "Claude Code Prompt Enhancement System - Domain-expert prompt optimization with intelligent routing, performance tracking, and cost management",
+  "name": "claude-code-buddy",
+  "version": "2.0.0",
+  "description": "Your friendly AI companion for Claude Code - smart routing, prompt enhancement, and project memory",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
@@ -28,16 +28,24 @@
     "mcp": "node dist/mcp/server.js"
   },
   "keywords": [
-    "ai",
-    "agents",
     "claude",
-    "openai",
-    "orchestrator",
-    "rag",
-    "mcp"
+    "claude-code",
+    "mcp",
+    "ai-assistant",
+    "code-buddy",
+    "prompt-enhancement",
+    "smart-routing"
   ],
   "author": "Your Name",
   "license": "AGPL-3.0",
+  "homepage": "https://github.com/yourusername/claude-code-buddy",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/claude-code-buddy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/claude-code-buddy/issues"
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.1",
     "@modelcontextprotocol/sdk": "^1.25.1",

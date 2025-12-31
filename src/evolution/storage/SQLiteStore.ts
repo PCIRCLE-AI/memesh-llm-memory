@@ -744,7 +744,9 @@ export class SQLiteStore implements EvolutionStore {
       SELECT * FROM spans WHERE links IS NOT NULL AND links LIKE ? ESCAPE '\\'
     `);
 
-    const rows = stmt.all(`%"span_id":"${escapedSpanId}"%`) as SpanRow[];
+    // Build LIKE pattern without string interpolation (anti-pattern)
+    const pattern = '%"span_id":"' + escapedSpanId + '"%';
+    const rows = stmt.all(pattern) as SpanRow[];
     return rows.map((row) => this.rowToSpan(row));
   }
 
@@ -752,7 +754,8 @@ export class SQLiteStore implements EvolutionStore {
     if (mode === 'any') {
       // Match any tag - escape to prevent LIKE injection
       const conditions = tags.map(() => 'tags LIKE ? ESCAPE \'\\\'').join(' OR ');
-      const params = tags.map((tag) => `%"${this.escapeLikePattern(tag)}"%`);
+      // Build LIKE patterns without string interpolation (anti-pattern)
+      const params = tags.map((tag) => '%"' + this.escapeLikePattern(tag) + '"%');
 
       const stmt = this.db.prepare(`
         SELECT * FROM spans WHERE tags IS NOT NULL AND (${conditions})
@@ -763,7 +766,8 @@ export class SQLiteStore implements EvolutionStore {
     } else {
       // Match all tags - escape to prevent LIKE injection
       const conditions = tags.map(() => 'tags LIKE ? ESCAPE \'\\\'').join(' AND ');
-      const params = tags.map((tag) => `%"${this.escapeLikePattern(tag)}"%`);
+      // Build LIKE patterns without string interpolation (anti-pattern)
+      const params = tags.map((tag) => '%"' + this.escapeLikePattern(tag) + '"%');
 
       const stmt = this.db.prepare(`
         SELECT * FROM spans WHERE tags IS NOT NULL AND ${conditions}

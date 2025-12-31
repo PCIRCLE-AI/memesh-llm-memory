@@ -28,6 +28,50 @@ describe('ProjectAutoTracker', () => {
     });
   });
 
+  describe('Token-Based Snapshots', () => {
+    it('should increment token count', () => {
+      tracker.addTokens(1000);
+      expect(tracker.getCurrentTokenCount()).toBe(1000);
+
+      tracker.addTokens(500);
+      expect(tracker.getCurrentTokenCount()).toBe(1500);
+    });
+
+    it('should trigger snapshot when threshold reached', async () => {
+      // Add tokens to reach threshold (10,000)
+      await tracker.addTokens(10000);
+
+      expect(mockMCP.memory.createEntities).toHaveBeenCalledWith({
+        entities: [{
+          name: expect.stringContaining('Project Snapshot'),
+          entityType: 'project_snapshot',
+          observations: expect.arrayContaining([
+            expect.stringContaining('Token count: 10000'),
+            expect.stringContaining('Snapshot reason: Token threshold reached'),
+          ]),
+        }],
+      });
+    });
+
+    it('should reset token count after snapshot', async () => {
+      await tracker.addTokens(10000);
+      expect(tracker.getCurrentTokenCount()).toBe(0); // Reset after snapshot
+    });
+
+    it('should not trigger snapshot below threshold', async () => {
+      await tracker.addTokens(5000);
+      expect(mockMCP.memory.createEntities).not.toHaveBeenCalled();
+      expect(tracker.getCurrentTokenCount()).toBe(5000);
+    });
+
+    it('should handle multiple snapshots correctly', async () => {
+      await tracker.addTokens(10000); // First snapshot
+      await tracker.addTokens(10000); // Second snapshot
+
+      expect(mockMCP.memory.createEntities).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe('Event-Driven Recording', () => {
     describe('Code Changes', () => {
       it('should record code change event to Knowledge Graph', async () => {

@@ -72,5 +72,64 @@ describe('ProjectAutoTracker', () => {
         });
       });
     });
+
+    describe('Test Results', () => {
+      it('should record passing test results', async () => {
+        await tracker.recordTestResult({
+          passed: 15,
+          failed: 0,
+          total: 15,
+          failures: [],
+        });
+
+        expect(mockMCP.memory.createEntities).toHaveBeenCalledWith({
+          entities: [{
+            name: expect.stringContaining('Test Result'),
+            entityType: 'test_result',
+            observations: expect.arrayContaining([
+              'Status: PASS',
+              'Tests passed: 15/15',
+              expect.stringContaining('Timestamp:'),
+            ]),
+          }],
+        });
+      });
+
+      it('should record failing test results with failure details', async () => {
+        await tracker.recordTestResult({
+          passed: 10,
+          failed: 2,
+          total: 12,
+          failures: [
+            'UserService.test.ts: should create user - Expected 201, got 500',
+            'AuthService.test.ts: should validate token - Token expired',
+          ],
+        });
+
+        const call = (mockMCP.memory.createEntities as any).mock.calls[0][0];
+        const observations = call.entities[0].observations;
+
+        expect(observations).toContain('Status: FAIL');
+        expect(observations).toContain('Tests passed: 10/12');
+        expect(observations).toContain('Tests failed: 2');
+        expect(observations).toEqual(
+          expect.arrayContaining([
+            expect.stringContaining('UserService.test.ts'),
+            expect.stringContaining('AuthService.test.ts'),
+          ])
+        );
+      });
+
+      it('should handle zero tests gracefully', async () => {
+        await tracker.recordTestResult({
+          passed: 0,
+          failed: 0,
+          total: 0,
+          failures: [],
+        });
+
+        expect(mockMCP.memory.createEntities).toHaveBeenCalled();
+      });
+    });
   });
 });

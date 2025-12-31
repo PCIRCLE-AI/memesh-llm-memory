@@ -9,6 +9,16 @@
 
 import type { MCPToolInterface } from '../core/MCPToolInterface.js';
 
+/**
+ * Test result data structure
+ */
+export interface TestResult {
+  passed: number;
+  failed: number;
+  total: number;
+  failures: string[];
+}
+
 export class ProjectAutoTracker {
   private mcp: MCPToolInterface;
   private snapshotThreshold: number = 10000; // 10k tokens
@@ -51,6 +61,37 @@ export class ProjectAutoTracker {
           `Description: ${description}`,
           `Timestamp: ${timestamp}`,
         ],
+      }],
+    });
+  }
+
+  /**
+   * Record test execution results to Knowledge Graph
+   * @param result - Test execution summary
+   */
+  async recordTestResult(result: TestResult): Promise<void> {
+    const timestamp = new Date().toISOString();
+    const dateStr = timestamp.split('T')[0]; // YYYY-MM-DD
+    const status = result.failed === 0 ? 'PASS' : 'FAIL';
+
+    const observations: string[] = [
+      `Status: ${status}`,
+      `Tests passed: ${result.passed}/${result.total}`,
+    ];
+
+    if (result.failed > 0) {
+      observations.push(`Tests failed: ${result.failed}`);
+      observations.push('Failures:');
+      observations.push(...result.failures.map(f => `  - ${f}`));
+    }
+
+    observations.push(`Timestamp: ${timestamp}`);
+
+    await this.mcp.memory.createEntities({
+      entities: [{
+        name: `Test Result ${status} ${dateStr} ${Date.now()}`,
+        entityType: 'test_result',
+        observations,
       }],
     });
   }

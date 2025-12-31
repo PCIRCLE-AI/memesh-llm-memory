@@ -1,801 +1,380 @@
 # Claude Code Buddy (CCB)
 
-> Your friendly AI companion for Claude Code - making development smarter, not harder.
+> **Make Claude Code remember your project, learn from your feedback, and give you expert-level responses without expert-level prompts.**
 
-**Honest upfront**: This is a **smart routing + prompt enhancement system** that makes Claude Code work better for your projects. Not a collection of separate AI agents - it's an intelligent copilot for your copilot.
-
-## ⚡ Quick Install for Claude Code
-
-**For Claude Code users - 2 minute setup:**
-
-1. **Clone this repository:**
-   ```bash
-   git clone https://github.com/yourusername/claude-code-buddy.git
-   cd claude-code-buddy
-   ```
-
-2. **Run interactive installation:**
-   ```bash
-   ./scripts/install.sh
-   ```
-
-The script will:
-- ✓ Check prerequisites (Node.js 18+, npm)
-- ✓ Install dependencies
-- ✓ Build the project
-- ✓ Auto-configure Claude Code MCP integration
-- ✓ Test and verify installation
-
-**No API keys needed** - Uses your existing Claude Code subscription.
-
-**After installation:**
-- Restart Claude Code
-- Use buddy commands in any project (e.g., `buddy do`, `buddy stats`, `buddy remember`)
-
-**Need help?** See [Installation Guide](docs/INSTALL.md) for detailed instructions.
+Claude Code Buddy is an MCP server that adds intelligence, memory, and task routing to Claude Code - turning it from a powerful assistant into a project-aware AI teammate.
 
 ---
 
-## The Problem with Plain Claude Code
+## The Problem
 
-If you've been using Claude Code to build projects, you've probably hit these frustrations:
+You're using Claude Code to build your project, but you keep hitting the same frustrations:
 
-1. **Context Gets Lost** 🤯
-   - You're debugging backend, then switch to frontend, Claude forgets what you were doing
-   - Have to re-explain the same architecture decisions every session
-   - "Wait, didn't we already fix this bug last week?"
+- **"Didn't we already discuss this?"** - Claude forgets context between sessions
+- **"Why am I explaining this again?"** - Every conversation starts from zero
+- **"This answer is too generic"** - Same response whether you're debugging, reviewing code, or designing UI
+- **"Let me write this 50-line prompt... again"** - Repetitive instructions for common tasks
 
-2. **Repetitive Prompts** 😴
-   - Typing "write unit tests for..." for the 50th time
-   - Same boilerplate instructions again and again
-   - Wish Claude would just "know" your project style
+**You end up being Claude's memory and project manager instead of focusing on building.**
 
-3. **No Memory Between Sessions** 🧠❌
-   - Claude can't remember your previous sessions
-   - Repeats the same mistakes you've already corrected
-   - Can't learn from past successes or failures
+---
 
-4. **One-Size-Fits-All Responses** 👔
-   - Same approach for "debug this bug" and "design this UI"
-   - No specialized expertise for different tasks
-   - You have to manually guide every conversation
+## The Solution
 
-5. **Manual Decision Making** 🤔
-   - Should I use RAG for this? Knowledge graph? Just basic context?
-   - Which approach works best for this specific problem?
-   - Constant mental overhead
+Claude Code Buddy sits between you and Claude Code, adding three superpowers:
 
-## What Claude Code Buddy (CCB) Actually Is
+### 1. 🧠 **Project Memory**
+CCB remembers your architecture decisions, coding patterns, and past solutions. Ask "Why did we choose PostgreSQL?" and get the actual decision rationale - not a generic comparison.
 
-**CCB is an MCP server that sits between you and Claude Code.**
+### 2. 🎯 **Smart Task Routing**
+Your request gets analyzed and routed to the right "expert mode" - code review tasks get code review expertise, debugging gets systematic debugging methodology, frontend gets UI/UX best practices.
 
-Think of it as an intelligent layer that:
-- 🧠 **Analyzes** your task requirements
-- 🎯 **Routes** to the right "expert mode" (agent type)
-- ✨ **Enhances** prompts with specialized context
-- 📊 **Learns** from feedback to get better over time
-- 💾 **Remembers** your project decisions and patterns
+### 3. 📈 **Learns From Feedback**
+Thumbs up/down after each response trains the system. It learns which approaches work for your project and adapts over time.
 
-### The Architecture (Honest Explanation)
+**Result:** Expert responses without expert prompts. Context that persists. An AI that gets smarter the more you use it.
 
+---
+
+## See It In Action
+
+**Without CCB:**
 ```
-You ask Claude Code to do something
-    ↓
-Claude Code Buddy (CCB) MCP Server analyzes the task
-    ↓
-Router selects the best "agent type" (expert mode)
-    ↓
-Prompt Enhancer generates specialized, optimized prompt
-    ↓
-Claude Code executes with your API subscription
-    ↓
-Feedback is collected for learning
+You: "Optimize this database query"
+Claude: [Generic advice about indexes and query structure]
 ```
 
-**What we actually have:**
-
-- **8 Real Agent Implementations** (actual separate code modules):
-  1. **RAG Agent** - Retrieval-Augmented Generation for searching your codebase
-  2. **Knowledge Graph** - Stores and retrieves project architecture decisions
-  3. **Development Butler** - Workflow coordination and checkpoint detection
-  4. **Test Writer** - Generates comprehensive test suites
-  5. **DevOps Engineer** - CI/CD and deployment automation
-  6. **Workflow Orchestrator** - Multi-step task coordination
-  7. **N8n Integration** - Workflow automation integration
-  8. **Opal Automation** - Security and access automation
-
-- **30+ Agent Types via Prompt Enhancement** (specialized prompt templates):
-  - code-reviewer, debugger, refactorer, api-designer, db-optimizer
-  - frontend-specialist, backend-specialist, frontend-developer, backend-developer
-  - research-agent, architecture-agent, data-analyst, performance-profiler
-  - security-auditor, technical-writer, ui-designer, migration-assistant
-  - project-manager, product-manager, data-engineer, ml-engineer
-  - marketing-strategist, general-agent (fallback)
-  - ...and more
-
-**The Difference:**
-- **Real implementations** = Full-featured modules with their own logic, storage, and APIs
-- **Prompt-enhanced types** = Specialized prompts optimized for specific tasks
-- Both work together seamlessly - you don't need to know the difference
-
-## What Smart-Agents Solves (Real Benefits)
-
-### 1. Smart Task Routing 🎯
-
-**Before:**
+**With CCB:**
 ```
-You: "I need to optimize this database query"
-Claude: [gives generic optimization advice]
+You: "Optimize this database query"
+
+CCB analyzes: Database optimization task
+CCB routes to: db-optimizer agent type
+CCB enhances prompt with: DB best practices, indexing strategies, profiling techniques
+
+Claude: [Specific optimization for YOUR database setup, with actual query examples
+         and performance benchmarks based on your schema]
 ```
 
-**With Smart-Agents:**
+**The difference:** CCB knows your stack, remembers your schema, and delivers targeted expertise.
+
+---
+
+## Key Features
+
+### ✨ Automatic Expertise Routing
+
+30+ specialized agent types for different tasks:
+- **code-reviewer** - Security checks, quality standards, anti-patterns
+- **debugger** - Systematic debugging, error pattern recognition
+- **frontend-specialist** - UI/UX, accessibility, responsive design
+- **backend-specialist** - API design, database optimization, security
+- **api-designer**, **db-optimizer**, **refactorer**, **test-writer**... and more
+
+**You don't choose the agent - CCB picks the right one for your task automatically.**
+
+### 💾 Three Types of Memory
+
+**RAG (Retrieval-Augmented Generation)**
 ```
-Smart-Agents:
-  → Detects it's a database optimization task
-  → Routes to db-optimizer agent type
-  → Enhances prompt with DB best practices context
-  → Claude responds with specific, expert-level DB optimization
-```
-
-### 2. Automatic Context Enhancement ✨
-
-Each agent type comes with pre-loaded expertise:
-
-- **code-reviewer**: Code quality standards, common anti-patterns, security checks
-- **debugger**: Systematic debugging methodologies, error pattern recognition
-- **frontend-specialist**: UI/UX best practices, accessibility guidelines, responsive design
-- **backend-specialist**: API design patterns, database optimization, security practices
-
-**You get expert-level responses without writing expert-level prompts.**
-
-### 3. Project Memory Systems 💾
-
-Smart-Agents provides **three types of memory**:
-
-**RAG (Retrieval-Augmented Generation)**:
-- Searches your actual codebase for relevant context
-- "Show me how authentication is implemented" → finds the exact files and patterns
-- No more "let me read this file... and this file... and this file..."
-
-**Knowledge Graph**:
-- Stores architectural decisions, component relationships, past solutions
-- "Why did we choose PostgreSQL over MongoDB?" → recalls the decision rationale
-- Builds a living map of your project's evolution
-
-**Project Memory**:
-- Remembers coding standards, naming conventions, project-specific patterns
-- Learns your preferences over time
-- Maintains context across sessions
-
-### 4. Evolution & Learning 📈
-
-The system **actively learns from your feedback**:
-
-```typescript
-// Performance Tracker monitors every task
-- Success rate per agent type
-- Token usage efficiency
-- Response quality scores
-
-// Learning Manager adapts strategies
-- Which prompts work best for your project?
-- Which agent types handle which tasks most effectively?
-- How to reduce token usage while maintaining quality?
-
-// Adaptation Engine applies improvements
-- Automatically refines prompts based on feedback
-- Adjusts routing decisions based on past performance
-- Optimizes for your specific use case
+You: "Show me how authentication works in this project"
+CCB: [Searches your codebase, finds actual auth files, shows you the patterns]
 ```
 
-**Translation:** It gets smarter the more you use it. Not by magic, but by systematic feedback loops.
+**Knowledge Graph**
+```
+You: "Why did we choose this architecture?"
+CCB: [Recalls the decision, the alternatives considered, and the tradeoffs]
+```
 
-### 5. Cost & Performance Tracking 💰
+**Project Context**
+```
+CCB remembers:
+- Your coding standards
+- Naming conventions
+- Project-specific patterns
+- What you've already built
+```
+
+### 📊 Session Health & Performance Tracking
 
 ```bash
-# See your API usage
-npm run dashboard
+buddy stats week
 
-# Outputs:
-Total API Calls: 1,245
-Total Tokens: 2.4M
-Estimated Cost: $8.75
+Total Agent Calls: 1,245
+Total Tokens Used: 2.4M (within Claude Code session limits)
 Success Rate: 94.2%
-Average Response Time: 3.2s
+Session Health: Healthy (65% token usage)
 
-# Per-agent breakdown
+Per-agent breakdown:
 code-reviewer: 234 calls, 85% success
 debugger: 123 calls, 92% success
-...
 ```
 
-**No surprises on your API bill.** Know exactly where your tokens are going.
+**Monitor your Claude Code session health. Track token usage to prevent context overflow. Optimize for quality.**
 
-### 6. Development Workflow Tools 🛠️
+### 🤝 User-Friendly Commands
 
-**Git Integration**:
 ```bash
-# Friendly Git commands (for beginners)
-save-work "Added login feature"
-list-versions
-go-back-to "yesterday"
-show-changes
+# Natural language commands that just work
+buddy do setup authentication
+buddy do optimize this database query
+buddy stats week
+buddy remember how we implemented login
+buddy help
 ```
 
-**Planning Engine**:
-- Breaks down complex tasks into steps
-- Generates execution plans
-- Coordinates multi-step workflows
+**Aliases work too:** `help-with`, `execute`, `recall`, `dashboard` - pick what feels natural.
 
-**Checkpoint Detection**:
-- Automatically detects when you've completed major milestones
-- Suggests documentation updates
-- Prompts for testing and code review
+---
 
-## Honest Limitations 🚫
-
-**What Claude Code Buddy (CCB) CANNOT do:**
-
-1. ❌ **It's not magic** - Still needs clear requirements from you
-2. ❌ **Not a replacement for learning** - You still need to understand what you're building
-3. ❌ **Not a replacement for Claude Code** - It enhances Claude Code, doesn't replace it
-4. ❌ **Can't fix bad architecture** - Garbage in, garbage out still applies
-5. ❌ **Limited by Claude's capabilities** - Can't make Claude do things it fundamentally can't
-6. ❌ **Requires setup** - Not a one-click install (yet)
-7. ❌ **Early stage** - This is v1.0, expect rough edges
-
-**What Claude Code Buddy (CCB) DOES do well:**
-
-1. ✅ **Makes Claude Code more context-aware** for your project
-2. ✅ **Reduces repetitive prompt writing** through task routing
-3. ✅ **Provides better memory** between sessions
-4. ✅ **Specialized expertise** via prompt enhancement
-5. ✅ **Learns from your feedback** to improve over time
-6. ✅ **Tracks costs and performance** so you stay in budget
-7. ✅ **Coordinates complex workflows** that span multiple steps
-
-## Quick Start (For Beginners)
+## Quick Start (2 Minutes)
 
 ### Prerequisites
-
-- **Node.js 18+** installed ([download](https://nodejs.org/))
-- **Claude Code** installed and configured with your subscription ([install guide](https://claude.com/claude-code))
+- Node.js 18+ ([download](https://nodejs.org/))
+- Claude Code installed ([get it here](https://claude.com/claude-code))
 
 ### Installation
 
-**Quickest way:** Use the [Quick Install script](#-quick-install-for-claude-code) above (recommended for Claude Code users).
+```bash
+# 1. Clone the repository
+git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
+cd claude-code-buddy
 
-The interactive installation script handles everything automatically:
-- Dependencies installation
-- Project build
-- Claude Code MCP integration
-- Testing and verification
+# 2. Run the interactive installer (it handles everything)
+./scripts/install.sh
+```
 
-**Note:** No API keys needed - Claude Code Buddy uses your existing Claude Code subscription through MCP.
+The installer will:
+- ✓ Install dependencies
+- ✓ Build the project
+- ✓ Configure Claude Code MCP integration
+- ✓ Test the setup
 
-**Manual installation:** See [Installation Guide](docs/INSTALL.md) for step-by-step manual setup.
+**No API keys needed** - uses your existing Claude Code subscription.
 
-**For developers:** See [Contributing Guide](docs/CONTRIBUTING.md) for development setup.
+### Start Using It
 
-### 4. Test it in Claude Code
-
-Open Claude Code and try:
+Restart Claude Code, then try:
 
 ```
 "Analyze my codebase architecture"
 "Generate tests for auth.ts"
+"Review this code for security issues"
 "Optimize this database query"
-"Review this pull request"
 ```
 
-Claude Code Buddy will automatically:
-- Analyze the task type
-- Route to the appropriate agent
-- Enhance the prompt with relevant context
-- Return an expert-level response
+CCB automatically routes tasks to the right agent and enhances prompts with relevant context.
 
-## How to Use Effectively
+---
 
-### Buddy Commands Reference
+## How It Works
 
-Claude Code Buddy provides friendly, natural language commands:
-
-**Core Commands:**
-```bash
-buddy do <task>          # Execute any task with smart routing
-buddy stats [period]     # View performance dashboard (day/week/month/all)
-buddy remember <query>   # Recall project memory and past decisions
-buddy help [command]     # Get help for all commands or a specific one
+```
+Your Request
+    ↓
+CCB analyzes the task
+    ↓
+Routes to best agent type (e.g., code-reviewer, debugger)
+    ↓
+Enhances prompt with specialized context
+    ↓
+Claude Code executes with your subscription
+    ↓
+You provide feedback (👍/👎)
+    ↓
+CCB learns and improves
 ```
 
-**Examples:**
-```bash
-buddy do setup authentication
-buddy do optimize this database query
-buddy stats week
-buddy remember how we implemented the login feature
-buddy help do
+**Under the hood:**
+- **8 real agent implementations** with their own logic and storage (RAG, Knowledge Graph, Test Writer, DevOps Engineer, etc.)
+- **30+ agent types** via specialized prompt templates
+- **Evolution system** that learns from your feedback and adapts over time
+
+**Technical deep dive:** See [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
+---
+
+## What CCB Does Well ✅
+
+- **Makes Claude Code context-aware** for your specific project
+- **Reduces repetitive prompting** through intelligent task routing
+- **Remembers between sessions** with persistent memory systems
+- **Provides specialized expertise** without you writing expert prompts
+- **Learns from your feedback** to improve over time
+- **Tracks costs and performance** so you stay in budget
+- **Coordinates complex workflows** across multiple steps
+
+## Honest Limitations ⚠️
+
+- **Not magic** - Still needs clear requirements from you
+- **Not a replacement for learning** - You should understand what you're building
+- **Enhances Claude Code, doesn't replace it** - Works alongside your existing setup
+- **Requires setup** - 2-minute install, not one-click (yet)
+- **Early stage (v2.0)** - Expect rough edges, but actively improving
+- **Limited by Claude's capabilities** - Can't make Claude do impossible things
+
+**Philosophy:** We're honest about what works and what doesn't. If something doesn't work for you, let us know - that feedback makes it better for everyone.
+
+---
+
+## Use Cases
+
+### Code Review
+```
+"Review this PR for security vulnerabilities and code quality"
+→ Routes to code-reviewer
+→ Gets security checklist + quality standards
+→ Returns detailed review with specific recommendations
 ```
 
-**Command Aliases:**
-- `buddy help-with` → `buddy do`
-- `buddy execute` → `buddy do`
-- `buddy recall` → `buddy remember`
-- `buddy dashboard` → `buddy stats`
-
-**Pro tip**: Commands are forgiving - aliases work the same way!
-
-### For Different Task Types
-
-**Code Review:**
+### Debugging
 ```
-"Review this code for security vulnerabilities and best practices"
-→ Routes to code-reviewer agent
-→ Gets security checklist + quality standards context
+"This function crashes with undefined, help debug"
+→ Routes to debugger
+→ Gets systematic debugging methodology
+→ Walks through root cause analysis step-by-step
 ```
 
-**Debugging:**
+### Frontend Design
 ```
-"This function crashes with undefined error, help debug"
-→ Routes to debugger agent
-→ Gets systematic debugging methodology + error pattern recognition
-```
-
-**Frontend Design:**
-```
-"Design a responsive dashboard layout with dark mode"
+"Design a responsive dashboard with dark mode"
 → Routes to frontend-specialist
-→ Gets UI/UX patterns + accessibility guidelines + responsive design best practices
+→ Gets UI/UX patterns + accessibility guidelines
+→ Returns complete design with responsive breakpoints
 ```
 
-**Database Optimization:**
+### Database Optimization
 ```
-"Optimize this Prisma query that's taking 2 seconds"
+"This Prisma query takes 2 seconds, optimize it"
 → Routes to db-optimizer
-→ Gets query optimization patterns + indexing strategies + profiling techniques
+→ Gets query optimization patterns + indexing strategies
+→ Returns optimized query with performance benchmarks
 ```
 
-### Providing Feedback
-
-The system learns from your feedback:
-
-```bash
-# After a task completes
-✅ Mark as successful (thumbs up)
-❌ Mark as failure (thumbs down)
-💬 Provide specific feedback
-
-# This feedback is used to:
-- Improve routing decisions
-- Refine prompt enhancement
-- Adapt to your coding style
-- Optimize for your project patterns
-```
-
-## Architecture Deep Dive (For Curious Minds)
-
-### Component Overview
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                     MCP Server                          │
-│  (Integrates with Claude Code via Model Context        │
-│   Protocol)                                             │
-└────────────────┬────────────────────────────────────────┘
-                 │
-      ┌──────────▼──────────┐
-      │   Router            │
-      │  - Task Analysis    │
-      │  - Agent Selection  │
-      │  - Cost Estimation  │
-      └──────────┬──────────┘
-                 │
-      ┌──────────▼──────────┐
-      │  Agent Router       │
-      │  - Capability Match │
-      │  - Resource Check   │
-      │  - Fallback Logic   │
-      └──────────┬──────────┘
-                 │
-      ┌──────────▼──────────┐
-      │  Prompt Enhancer    │
-      │  - Template Loading │
-      │  - Context Injection│
-      │  - Optimization     │
-      └──────────┬──────────┘
-                 │
-      ┌──────────▼──────────┐
-      │  Claude Code        │
-      │  (Your API)         │
-      └──────────┬──────────┘
-                 │
-      ┌──────────▼──────────┐
-      │  Feedback Loop      │
-      │  - Performance Log  │
-      │  - Learning Update  │
-      │  - Adaptation Apply │
-      └─────────────────────┘
-```
-
-### Real Agent Implementations
-
-These have full-featured modules with their own logic:
-
-**1. RAG Agent** (`src/agents/rag/`)
-- **What it does**: Searches your codebase using vector embeddings
-- **How it works**:
-  - Indexes your code files into vector database (Vectra)
-  - Retrieves relevant code snippets for queries
-  - Re-ranks results for accuracy
-- **Use case**: "Show me how authentication works" → finds auth-related files
-
-**2. Knowledge Graph** (`src/agents/knowledge/`)
-- **What it does**: Stores structured knowledge about your project
-- **How it works**:
-  - SQLite-based graph database
-  - Stores entities (components, decisions, patterns) and relationships
-  - Queries via semantic search
-- **Use case**: "Why did we choose this architecture?" → recalls decision rationale
-
-**3. Development Butler** (`src/agents/DevelopmentButler.ts`)
-- **What it does**: Coordinates development workflow
-- **How it works**:
-  - Detects checkpoints (completed features, milestones)
-  - Suggests next steps (tests, docs, code review)
-  - Maintains development state
-- **Use case**: Automatic workflow guidance throughout feature development
-
-**4. Test Writer** (`src/agents/TestWriterAgent.ts`)
-- **What it does**: Generates comprehensive test suites
-- **How it works**:
-  - Analyzes code structure and dependencies
-  - Generates unit tests, integration tests, E2E tests
-  - Uses CI/CD templates for test configuration
-- **Use case**: "Generate tests for this module" → creates full test coverage
-
-**5. DevOps Engineer** (`src/agents/DevOpsEngineerAgent.ts`)
-- **What it does**: CI/CD and deployment automation
-- **How it works**:
-  - GitLab CI pipeline generation
-  - Docker container configuration
-  - Deployment script creation
-- **Use case**: "Set up CI/CD pipeline" → generates complete pipeline config
-
-### Evolution System Components
-
-**Performance Tracker** (`src/evolution/PerformanceTracker.ts`)
-```typescript
-// Tracks every task execution
-{
-  agentId: 'code-reviewer',
-  taskId: 'abc123',
-  duration: 3200,        // milliseconds
-  tokensUsed: 8500,
-  success: true,
-  userRating: 4.5        // 0-5 scale
-}
-```
-
-**Learning Manager** (`src/evolution/LearningManager.ts`)
-```typescript
-// Learns patterns from historical data
-{
-  patternType: 'database-optimization',
-  successRate: 0.92,     // 92% success
-  avgTokens: 6500,
-  preferredPromptTemplate: 'db-optimizer-v2',
-  learningWeight: 0.75   // confidence level
-}
-```
-
-**Adaptation Engine** (`src/evolution/AdaptationEngine.ts`)
-```typescript
-// Applies learned improvements
-- Refines prompt templates based on feedback
-- Adjusts routing decisions for edge cases
-- Optimizes token usage patterns
-- A/B tests new strategies
-```
+---
 
 ## Advanced Features
 
-### Custom Skills
+- **Custom Skills** - Write your own agent behaviors in TypeScript
+- **Multi-step Planning** - Break down complex tasks into executable plans
+- **Workflow Coordination** - Automatic checkpoint detection and next-step suggestions
+- **Git Integration** - Beginner-friendly Git commands (`save-work`, `list-versions`, `go-back-to`)
+- **N8n & Opal Integration** - Connect to workflow automation and access management
+- **Dashboard** - Real-time metrics, cost tracking, performance monitoring
 
-Create your own agent behaviors:
+**Explore:** See [docs/](docs/) for detailed guides on each feature.
 
-```typescript
-// src/skills/my-custom-skill.ts
-export const myCustomSkill = {
-  name: 'my-custom-skill',
-  description: 'Does something specific to my project',
+---
 
-  async execute(task: Task): Promise<AgentResponse> {
-    // Your custom logic here
-    return {
-      success: true,
-      message: 'Custom skill executed!',
-      data: { /* results */ }
-    };
-  }
-};
-```
+## Community & Support
 
-Register in `src/skills/index.ts` and it becomes available to the router.
+- **Documentation**: [docs/](docs/) folder + this README
+- **Issues**: [GitHub Issues](https://github.com/PCIRCLE-AI/claude-code-buddy/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
+- **Contributing**: [CONTRIBUTING.md](docs/CONTRIBUTING.md)
 
-### Integration with N8n and Opal
+**Questions?** Open an issue or start a discussion - we're here to help.
 
-**N8n Workflow Integration** (`src/agents/N8nWorkflowAgent.ts`):
-- Trigger N8n workflows from code
-- Automate deployment, testing, notifications
-- Integrate with external services
-
-**Opal Access Automation** (`src/agents/OpalAutomationAgent.ts`):
-- Manage security access requests
-- Automate permission workflows
-- Integrate with your access control systems
-
-### Git Integration (Beginner-Friendly)
-
-```bash
-# User-friendly Git commands
-save-work "Completed login feature"
-list-versions
-go-back-to "yesterday"
-show-changes
-backup-now
-```
-
-Powered by `src/hooks/FriendlyGitCommands.ts` - wraps complex Git commands in simple, intuitive operations.
-
-## Configuration
-
-### Environment Variables
-
-```bash
-# Required
-ANTHROPIC_API_KEY=sk-ant-your-key-here
-CLAUDE_MODEL=claude-sonnet-4-5-20250929
-
-# Optional (for RAG)
-OPENAI_API_KEY=sk-your-openai-key
-OPENAI_EMBEDDING_MODEL=text-embedding-3-small
-
-# Quota Limits
-CLAUDE_DAILY_LIMIT=150          # requests per day
-CLAUDE_MONTHLY_LIMIT=4500       # requests per month
-
-# Cost Control
-MONTHLY_BUDGET_USD=50           # your monthly budget
-COST_ALERT_THRESHOLD=0.8        # alert at 80% budget
-
-# Logging
-LOG_LEVEL=info
-ENABLE_METRICS=true
-METRICS_PORT=9090
-
-# Orchestrator
-ORCHESTRATOR_MODE=local         # or 'distributed'
-ORCHESTRATOR_MAX_MEMORY_MB=6144 # 6GB limit
-```
-
-### Agent Evolution Config
-
-```typescript
-// src/evolution/AgentEvolutionConfig.ts
-
-// Each agent type has tunable parameters:
-{
-  agentId: 'code-reviewer',
-  category: 'development',
-  confidenceThreshold: 0.75,     // min confidence to use this agent
-  minObservationsForAdaptation: 15,  // min data points before adapting
-  learningWeights: {
-    successRate: 0.4,            // 40% weight to success rate
-    userFeedback: 0.35,          // 35% weight to user ratings
-    performanceMetrics: 0.25     // 25% weight to speed/efficiency
-  }
-}
-```
-
-Adjust these to tune how aggressively the system adapts to your feedback.
-
-## Troubleshooting
-
-### Common Issues
-
-**1. "Module not found" errors**
-```bash
-# Rebuild the project
-npm run build
-```
-
-**2. "ANTHROPIC_API_KEY not set"**
-```bash
-# Check your .env file exists
-ls -la .env
-
-# Verify the key is set
-cat .env | grep ANTHROPIC_API_KEY
-```
-
-**3. "MCP server not responding"**
-```bash
-# Check Claude Code MCP settings
-cat ~/.claude/config.json
-
-# Restart Claude Code
-# Verify the path in config.json matches your smart-agents location
-```
-
-**4. "Out of memory" errors**
-```bash
-# Reduce max memory in .env
-ORCHESTRATOR_MAX_MEMORY_MB=4096  # reduce from 6144 to 4096
-
-# Or close other applications to free up RAM
-```
-
-**5. RAG agent not finding files**
-```bash
-# Re-index your codebase
-npm run rag:index
-
-# Check RAG configuration
-cat .env | grep OPENAI
-```
-
-### Debug Mode
-
-Enable detailed logging:
-
-```bash
-# In .env
-LOG_LEVEL=debug
-ENABLE_METRICS=true
-
-# Run in debug mode
-npm run dev
-```
-
-Check logs in `~/.smart-agents/logs/`
+---
 
 ## Development
 
-### Project Structure
-
-```
-smart-agents/
-├── src/
-│   ├── agents/           # 8 real agent implementations
-│   │   ├── rag/         # RAG agent (vector search)
-│   │   ├── knowledge/   # Knowledge Graph agent
-│   │   ├── DevelopmentButler.ts
-│   │   ├── TestWriterAgent.ts
-│   │   ├── DevOpsEngineerAgent.ts
-│   │   └── ...
-│   ├── core/            # Core infrastructure
-│   │   ├── AgentRegistry.ts    # Agent definitions
-│   │   ├── PromptEnhancer.ts   # Prompt enhancement
-│   │   └── MCPToolInterface.ts # MCP integration
-│   ├── orchestrator/    # Task routing logic
-│   │   ├── router.ts           # Main router
-│   │   ├── AgentRouter.ts      # Agent selection
-│   │   └── TaskAnalyzer.ts     # Task analysis
-│   ├── evolution/       # Learning & adaptation
-│   │   ├── PerformanceTracker.ts
-│   │   ├── LearningManager.ts
-│   │   └── AdaptationEngine.ts
-│   ├── mcp/            # MCP server implementation
-│   │   └── server.ts
-│   ├── skills/         # Custom skills system
-│   ├── planning/       # Multi-step planning
-│   ├── hooks/          # Git and workflow hooks
-│   └── errors/         # Error handling
-├── dist/               # Compiled JavaScript
-├── tests/              # Test suites (713 tests)
-├── docs/               # Documentation
-├── .env.example        # Example environment file
-└── package.json
-```
-
-### Running Tests
-
 ```bash
-# Run all tests
+# Run tests (722 tests covering core functionality)
 npm test
 
-# Run specific test suite
-npm test -- src/agents/rag/
+# Development mode with auto-reload
+npm run dev
 
-# Watch mode
-npm test -- --watch
+# Build for production
+npm run build
 
-# Coverage report
-npm test -- --coverage
+# View performance dashboard
+npm run dashboard
 ```
 
-### Contributing
+**Contributing:** We welcome contributions! See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
 
-We welcome contributions! Please:
+**Project Structure:** See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for a deep dive.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-See `CONTRIBUTING.md` for detailed guidelines.
+---
 
 ## Roadmap
 
-### v1.1 (Next Release)
-- [ ] Web UI for dashboard and config
-- [ ] One-click installation script
-- [ ] More pre-built skills
-- [ ] Better error messages for beginners
-- [ ] Video tutorials
+### v2.1 (Next Release - Q1 2026)
+- Web UI for configuration and monitoring
+- One-click installer for Windows/Mac/Linux
+- Video tutorials and interactive docs
+- More pre-built skills for common workflows
 
-### v1.2 (Future)
-- [ ] Cloud-hosted option (no local setup)
-- [ ] Team collaboration features
-- [ ] Advanced cost optimization
-- [ ] More integration options (GitHub Actions, Jenkins, etc.)
-- [ ] Mobile app for monitoring
+### v2.5 (Q2 2026)
+- Cloud-hosted option (no local setup)
+- Team collaboration features
+- Advanced cost optimization algorithms
+- Integration marketplace (GitHub Actions, Jenkins, etc.)
 
-### v2.0 (Vision)
-- [ ] Multi-model support (Claude + GPT-4 + local models)
-- [ ] Visual workflow builder
-- [ ] Marketplace for community skills
-- [ ] Enterprise features (SSO, audit logs, compliance)
+### v3.0 (Vision - Q3 2026)
+- Multi-model support (Claude + GPT + local models)
+- Visual workflow builder
+- Community skills marketplace
+- Enterprise features (SSO, audit logs, compliance)
+
+---
 
 ## FAQ
 
-**Q: Do I need to be a software engineer to use this?**
-A: No! If you can use Claude Code, you can use Smart-Agents. It's designed to make Claude Code easier, not harder.
+**Q: Do I need to be a developer to use this?**
+A: If you can use Claude Code, you can use CCB. It's designed to make Claude easier, not harder.
 
-**Q: Will this make my API bills explode?**
-A: No. Smart-Agents has built-in cost tracking and budget limits. It actually helps reduce costs by optimizing token usage.
+**Q: Does this cost extra on top of Claude Code?**
+A: No - CCB uses your existing Claude Code subscription. It helps optimize token usage within your session limits, not API costs.
 
 **Q: How is this different from just using Claude Code?**
-A: Claude Code is great, but it treats every task the same. Smart-Agents adds task routing, memory, and learning - making Claude more context-aware for your specific project.
-
-**Q: Can I use this with my existing Claude Code setup?**
-A: Yes! Smart-Agents runs as an MCP server alongside Claude Code. Your existing workflows continue working.
+A: Claude Code treats every task the same. CCB adds task-specific expertise, memory, and learning.
 
 **Q: Is my code private?**
-A: Yes. Everything runs locally on your machine (except the Claude API calls you're already making). Your code never leaves your computer.
+A: Yes. Everything runs locally through your Claude Code subscription. Optional RAG feature uses OpenAI API for embeddings only.
 
 **Q: What if I don't like it?**
-A: Just remove it from your MCP config. No lock-in, no vendor dependency.
+A: Remove it from your MCP config. No lock-in, no vendor dependency.
 
 **Q: How much does it cost?**
-A: Smart-Agents is free and open-source. You only pay for Claude API usage (same as using Claude Code directly).
+A: CCB is free and open-source (AGPL-3.0). Works with your existing Claude Code subscription. Optional RAG feature requires OpenAI API key.
 
 **Q: Can I customize the agents?**
-A: Yes! The prompt templates are in `src/core/PromptEnhancer.ts`. The evolution config is in `src/evolution/AgentEvolutionConfig.ts`. Customize to your heart's content.
+A: Absolutely! Prompt templates are in `src/core/PromptEnhancer.ts`. Evolution config in `src/evolution/AgentEvolutionConfig.ts`.
 
-## Support
-
-- **Documentation**: This README + docs in `docs/`
-- **Issues**: [GitHub Issues](https://github.com/yourusername/smart-agents/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/smart-agents/discussions)
-- **Discord**: [Join our community](https://discord.gg/smart-agents) (coming soon)
+---
 
 ## License
 
-AGPL-3.0 License - see [LICENSE](LICENSE) file for details.
+**AGPL-3.0 License** - see [LICENSE](LICENSE) file for details.
 
-This project is licensed under the GNU Affero General Public License v3.0. This means if you modify and deploy this as a network service, you must make the modified source code available to users.
+This is free and open-source software. If you modify and deploy this as a network service, you must make the source code available to users.
+
+---
 
 ## Acknowledgments
 
 - Built with [Model Context Protocol (MCP)](https://github.com/anthropics/mcp)
-- Powered by [Claude API](https://www.anthropic.com/claude)
-- Inspired by the amazing Claude Code community
-- Special thanks to early testers and contributors
+- Works with [Claude Code](https://claude.com/claude-code)
+- Optional [OpenAI Embeddings](https://openai.com) for RAG feature
+- Inspired by the Claude Code community
+- Thanks to all contributors and early testers
 
 ---
 
-**Built with ❤️ for Claude Code users who want their AI copilot to be smarter, not louder.**
+<div align="center">
 
-**Remember: This is v1.0. We're honest about limitations and actively improving. Your feedback makes this better for everyone.**
+**Built with ❤️ by developers, for developers.**
+
+**Make Claude Code smarter, not louder.**
+
+[Get Started](#quick-start-2-minutes) • [Documentation](docs/) • [Report Issue](https://github.com/PCIRCLE-AI/claude-code-buddy/issues) • [Join Discussion](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
+
+---
+
+⭐ **Star this repo if CCB makes your development life easier!**
+
+</div>

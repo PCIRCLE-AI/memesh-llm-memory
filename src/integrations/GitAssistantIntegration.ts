@@ -95,8 +95,8 @@ export class GitAssistantIntegration {
    * User-facing commands (callable by Claude Code)
    */
 
-  async saveWork(description: string): Promise<void> {
-    await this.friendlyCommands.saveWork(description);
+  async saveWork(description: string, autoBackup: boolean = true): Promise<void> {
+    await this.friendlyCommands.saveWork(description, autoBackup);
   }
 
   async listVersions(limit?: number): Promise<any[]> {

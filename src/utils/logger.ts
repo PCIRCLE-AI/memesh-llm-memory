@@ -18,31 +18,31 @@ class Logger {
     return levels.indexOf(level) >= levels.indexOf(this.level);
   }
 
-  private formatMessage(level: LogLevel, message: string, ...args: any[]): string {
+  private formatMessage(level: LogLevel, message: string, ...args: unknown[]): string {
     const timestamp = new Date().toISOString();
     const prefix = `[${timestamp}] [${level.toUpperCase()}]`;
     return `${prefix} ${message} ${args.length > 0 ? JSON.stringify(args) : ''}`;
   }
 
-  debug(message: string, ...args: any[]) {
+  debug(message: string, ...args: unknown[]) {
     if (this.shouldLog('debug')) {
       console.debug(this.formatMessage('debug', message, ...args));
     }
   }
 
-  info(message: string, ...args: any[]) {
+  info(message: string, ...args: unknown[]) {
     if (this.shouldLog('info')) {
       console.info(this.formatMessage('info', message, ...args));
     }
   }
 
-  warn(message: string, ...args: any[]) {
+  warn(message: string, ...args: unknown[]) {
     if (this.shouldLog('warn')) {
       console.warn(this.formatMessage('warn', message, ...args));
     }
   }
 
-  error(message: string, ...args: any[]) {
+  error(message: string, ...args: unknown[]) {
     if (this.shouldLog('error')) {
       console.error(this.formatMessage('error', message, ...args));
     }

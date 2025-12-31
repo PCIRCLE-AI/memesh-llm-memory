@@ -213,10 +213,14 @@ export class WorkflowOrchestrator {
     try {
       const results = await this.mcp.memory.searchNodes('opal_workflow');
 
-      return results.map((node: any) => ({
-        url: node.observations.find((obs: string) => obs.startsWith('URL:'))?.split('URL: ')[1] || '',
-        description: node.observations.find((obs: string) => obs.startsWith('Description:'))?.split('Description: ')[1] || ''
-      }));
+      return results.map((nodeData: unknown) => {
+        // Type assertion for memory node structure
+        const node = nodeData as { observations: string[] };
+        return {
+          url: node.observations.find((obs: string) => obs.startsWith('URL:'))?.split('URL: ')[1] || '',
+          description: node.observations.find((obs: string) => obs.startsWith('Description:'))?.split('Description: ')[1] || ''
+        };
+      });
     } catch (error) {
       console.error('Failed to retrieve Opal workflows from memory:', error);
       return [];

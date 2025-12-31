@@ -1370,7 +1370,7 @@ export class SQLiteStore implements EvolutionStore {
   // Helper Methods (Row to Model conversion)
   // ========================================================================
 
-  private rowToTask(row: any): Task {
+  private rowToTask(row: TaskRow): Task {
     return {
       id: row.id,
       input: safeJsonParse(row.input, {}),
@@ -1384,7 +1384,7 @@ export class SQLiteStore implements EvolutionStore {
     };
   }
 
-  private rowToExecution(row: any): Execution {
+  private rowToExecution(row: ExecutionRow): Execution {
     return {
       id: row.id,
       task_id: row.task_id,
@@ -1400,7 +1400,7 @@ export class SQLiteStore implements EvolutionStore {
     };
   }
 
-  private rowToSpan(row: any): Span {
+  private rowToSpan(row: SpanRow): Span {
     return {
       trace_id: row.trace_id,
       span_id: row.span_id,
@@ -1448,7 +1448,7 @@ export class SQLiteStore implements EvolutionStore {
     };
   }
 
-  private rowToAdaptation(row: any): Adaptation {
+  private rowToAdaptation(row: AdaptationRow): Adaptation {
     return {
       id: row.id,
       pattern_id: row.pattern_id,
@@ -1472,7 +1472,7 @@ export class SQLiteStore implements EvolutionStore {
     };
   }
 
-  private rowToReward(row: any): Reward {
+  private rowToReward(row: RewardRow): Reward {
     return {
       id: row.id,
       operation_span_id: row.operation_span_id,
@@ -1486,7 +1486,7 @@ export class SQLiteStore implements EvolutionStore {
     };
   }
 
-  private rowToEvolutionStats(row: any): EvolutionStats {
+  private rowToEvolutionStats(row: EvolutionStatsRow): EvolutionStats {
     return {
       id: row.id,
       agent_id: row.agent_id,

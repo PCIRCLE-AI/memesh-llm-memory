@@ -15,7 +15,7 @@ import type { MCPToolInterface } from './MCPToolInterface.js';
  */
 export interface ToolUseData {
   toolName: string;
-  arguments?: any;
+  arguments?: unknown;
   success: boolean;
   duration?: number;
   tokensUsed?: number;

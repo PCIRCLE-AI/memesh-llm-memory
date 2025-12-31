@@ -31,12 +31,12 @@ export interface TrackingOptions {
   /**
    * Extract custom attributes from input
    */
-  extractAttributes?: (input: any) => SpanAttributes;
+  extractAttributes?: (input: unknown) => SpanAttributes;
 
   /**
    * Extract custom attributes from output
    */
-  extractOutputAttributes?: (output: any) => SpanAttributes;
+  extractOutputAttributes?: (output: unknown) => SpanAttributes;
 
   /**
    * Span name override
@@ -52,14 +52,14 @@ export interface TrackingOptions {
 /**
  * Wrap any function with evolution tracking
  */
-export function withEvolutionTracking<T extends (...args: any[]) => Promise<any>>(
+export function withEvolutionTracking<T extends (...args: unknown[]) => Promise<unknown>>(
   fn: T,
   options: TrackingOptions = {}
 ): T {
   const tracker = options.tracker || getGlobalTracker();
   const telemetry = options.telemetryCollector;
 
-  return (async (...args: any[]) => {
+  return (async (...args: unknown[]) => {
     // Sample rate check
     if (options.sampleRate && Math.random() > options.sampleRate) {
       // Skip tracking
@@ -265,7 +265,7 @@ export function withEvolutionTrackingForAgent<T extends Record<string, any>>(
       // Defensive type check before wrapping
       // Even though we checked typeof original === 'function' above,
       // we add additional runtime safety checks
-      const originalFunc = original as any;
+      const originalFunc = original as Function;
       if (typeof originalFunc !== 'function' || typeof originalFunc.bind !== 'function') {
         console.warn(
           `withEvolutionTrackingForAgent: Skipping non-function property ${String(prop)}`
@@ -279,14 +279,16 @@ export function withEvolutionTrackingForAgent<T extends Record<string, any>>(
           ...options,
           spanName: options.spanName || `${target.constructor.name}.${String(prop)}`,
           extractAttributes: (input) => {
+            // Type-safe property access
+            const targetObj = target as Record<string, unknown>;
             const attrs: SpanAttributes = {
-              'agent.id': (target as any).id,
+              'agent.id': targetObj.id,
               'agent.type': target.constructor.name,
             };
 
             // Get agent config if available
-            if ((target as any).config) {
-              attrs['agent.config'] = JSON.stringify((target as any).config);
+            if (targetObj.config) {
+              attrs['agent.config'] = JSON.stringify(targetObj.config);
             }
 
             // Custom attribute extraction
@@ -328,12 +330,12 @@ export function withEvolutionTrackingForAgent<T extends Record<string, any>>(
 /**
  * Wrap a class constructor with evolution tracking
  */
-export function trackClass<T extends { new (...args: any[]): any }>(
+export function trackClass<T extends { new (...args: unknown[]): unknown }>(
   constructor: T,
   options: TrackingOptions = {}
 ): T {
   return class extends constructor {
-    constructor(...args: any[]) {
+    constructor(...args: unknown[]) {
       super(...args);
 
       // Wrap all methods
@@ -347,13 +349,15 @@ export function trackClass<T extends { new (...args: any[]): any }>(
         // Skip private methods
         if (methodName.startsWith('_')) continue;
 
-        const method = (this as any)[methodName];
+        // Type-safe property access
+        const instance = this as Record<string, unknown>;
+        const method = instance[methodName];
 
         // Only wrap functions
         if (typeof method !== 'function') continue;
 
         // Wrap method
-        (this as any)[methodName] = withEvolutionTracking(
+        instance[methodName] = withEvolutionTracking(
           method.bind(this),
           {
             ...options,
@@ -368,18 +372,21 @@ export function trackClass<T extends { new (...args: any[]): any }>(
 /**
  * Helper: Extract task type from input
  */
-export function extractTaskType(input: any): string | undefined {
+export function extractTaskType(input: unknown): string | undefined {
   if (!input || typeof input !== 'object') {
     return undefined;
   }
 
+  // Type guard for object with potential properties
+  const obj = input as Record<string, unknown>;
+
   // Common task type fields
-  if (input.taskType) return input.taskType;
-  if (input.task_type) return input.task_type;
-  if (input.type) return input.type;
+  if (typeof obj.taskType === 'string') return obj.taskType;
+  if (typeof obj.task_type === 'string') return obj.task_type;
+  if (typeof obj.type === 'string') return obj.type;
 
   // Infer from action
-  if (input.action) return `${input.action}_task`;
+  if (typeof obj.action === 'string') return `${obj.action}_task`;
 
   return undefined;
 }
@@ -387,14 +394,17 @@ export function extractTaskType(input: any): string | undefined {
 /**
  * Helper: Extract skill name from input
  */
-export function extractSkillName(input: any): string | undefined {
+export function extractSkillName(input: unknown): string | undefined {
   if (!input || typeof input !== 'object') {
     return undefined;
   }
 
-  if (input.skillName) return input.skillName;
-  if (input.skill_name) return input.skill_name;
-  if (input.skill) return input.skill;
+  // Type guard for object with potential properties
+  const obj = input as Record<string, unknown>;
+
+  if (typeof obj.skillName === 'string') return obj.skillName;
+  if (typeof obj.skill_name === 'string') return obj.skill_name;
+  if (typeof obj.skill === 'string') return obj.skill;
 
   return undefined;
 }
@@ -402,8 +412,8 @@ export function extractSkillName(input: any): string | undefined {
 /**
  * Create attribute extractor that includes task and skill info
  */
-export function createStandardAttributeExtractor(): (input: any) => SpanAttributes {
-  return (input: any) => {
+export function createStandardAttributeExtractor(): (input: unknown) => SpanAttributes {
+  return (input: unknown) => {
     const attrs: SpanAttributes = {};
 
     const taskType = extractTaskType(input);

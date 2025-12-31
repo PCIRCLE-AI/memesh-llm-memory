@@ -513,11 +513,21 @@ export class EnhancedSQLiteStore extends SQLiteStore {
   ): Promise<SkillPerformance> {
     return this.trackPerformance('getSkillPerformance', () => {
       // Use cached data if available and fresh
-      const cached = this.db
+      const cachedRow = this.db
         .prepare('SELECT * FROM skills_performance_cache WHERE skill_name = ?')
-        .get(skillName) as any;
+        .get(skillName) as unknown;
 
-      if (cached) {
+      if (cachedRow) {
+        // Type assertion after runtime validation via database query
+        const cached = cachedRow as {
+          total_uses: number;
+          successful_uses: number;
+          failed_uses: number;
+          success_rate: number;
+          avg_duration_ms: number;
+          avg_user_satisfaction: number | null;
+        };
+
         // Calculate trends from historical data
         const trend7d = this.calculateSkillTrend(skillName, 7);
         const trend30d = this.calculateSkillTrend(skillName, 30);
@@ -541,7 +551,7 @@ export class EnhancedSQLiteStore extends SQLiteStore {
       }
 
       // Fallback: query directly from spans
-      const row = this.db.prepare(`
+      const queryRow = this.db.prepare(`
         SELECT
           COUNT(*) as total_uses,
           SUM(CASE WHEN status_code = 'OK' THEN 1 ELSE 0 END) as successful_uses,
@@ -550,7 +560,15 @@ export class EnhancedSQLiteStore extends SQLiteStore {
         FROM spans
         WHERE json_extract(attributes, '$.skill.name') = ?
           AND start_time >= ? AND start_time <= ?
-      `).get(skillName, timeRange.start.getTime(), timeRange.end.getTime()) as any;
+      `).get(skillName, timeRange.start.getTime(), timeRange.end.getTime()) as unknown;
+
+      // Type assertion after runtime validation via database query
+      const row = queryRow as {
+        total_uses: number;
+        successful_uses: number | null;
+        failed_uses: number | null;
+        avg_duration_ms: number | null;
+      };
 
       const total = row.total_uses || 0;
       const successful = row.successful_uses || 0;
@@ -664,21 +682,30 @@ export class EnhancedSQLiteStore extends SQLiteStore {
       `;
       params.push(topN);
 
-      const rows = this.db.prepare(query).all(...params) as any[];
+      const rows = this.db.prepare(query).all(...params) as unknown[];
 
-      return rows.map((row) => ({
-        skill_name: row.skill_name,
-        confidence: Math.min(row.success_rate, row.total_uses / 10), // Higher confidence with more data
-        reason: `Successfully used ${row.total_uses} times for ${filters.taskType} tasks with ${(row.success_rate * 100).toFixed(1)}% success rate`,
-        evidence: {
-          similar_tasks_count: row.total_uses,
-          avg_success_rate: row.success_rate,
-          avg_user_satisfaction: 0, // Would need rewards data
-        },
-        expected_outcome: {
-          success_probability: row.success_rate,
-          estimated_duration_ms: row.avg_duration || 0,
-          estimated_quality_score: row.avg_quality || 0,
+      return rows.map((rowData) => {
+        // Type assertion after runtime validation via database query
+        const row = rowData as {
+          skill_name: string;
+          total_uses: number;
+          success_rate: number;
+          avg_duration: number | null;
+          avg_quality: number | null;
+        };
+        return {
+          skill_name: row.skill_name,
+          confidence: Math.min(row.success_rate, row.total_uses / 10), // Higher confidence with more data
+          reason: `Successfully used ${row.total_uses} times for ${filters.taskType} tasks with ${(row.success_rate * 100).toFixed(1)}% success rate`,
+          evidence: {
+            similar_tasks_count: row.total_uses,
+            avg_success_rate: row.success_rate,
+            avg_user_satisfaction: 0, // Would need rewards data
+          },
+          expected_outcome: {
+            success_probability: row.success_rate,
+            estimated_duration_ms: row.avg_duration || 0,
+            estimated_quality_score: row.avg_quality || 0,
         },
       }));
     });
@@ -698,8 +725,9 @@ export class EnhancedSQLiteStore extends SQLiteStore {
         LIMIT ?
       `);
 
-      const rows = stmt.all(query, limit) as any[];
-      return rows.map((row) => this.rowToSpan(row));
+      const rows = stmt.all(query, limit) as unknown[];
+      // Type assertion safe because rowToSpan performs proper conversion from SpanRow
+      return rows.map((row) => this.rowToSpan(row as SpanRow));
     });
   }
 

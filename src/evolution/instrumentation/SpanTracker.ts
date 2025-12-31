@@ -83,7 +83,7 @@ export class ActiveSpan {
   /**
    * Set a single attribute
    */
-  setAttribute(key: string, value: any): void {
+  setAttribute(key: string, value: unknown): void {
     if (!this.span.attributes) {
       this.span.attributes = {};
     }

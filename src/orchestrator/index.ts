@@ -440,7 +440,7 @@ export class Orchestrator {
           mode: 'background',
         };
         const taskId = await this.backgroundExecutor.executeTask(
-          async (context: any) => this.executeTask(task),
+          async (context: unknown) => this.executeTask(task),
           backgroundConfig
         );
         return { taskId };

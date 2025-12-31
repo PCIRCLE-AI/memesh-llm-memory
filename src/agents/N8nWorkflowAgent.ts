@@ -204,7 +204,7 @@ export class N8nWorkflowAgent {
   /**
    * 執行工作流
    */
-  async executeWorkflow(workflowId: string, data?: any): Promise<any> {
+  async executeWorkflow(workflowId: string, data?: unknown): Promise<unknown> {
     try {
       const payload = data ? JSON.stringify({ data }) : '{}';
 

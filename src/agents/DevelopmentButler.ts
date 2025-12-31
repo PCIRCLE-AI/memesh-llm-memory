@@ -563,7 +563,7 @@ ${formattedRequest}
    */
   async executeContextReload(requestId: string): Promise<{
     success: boolean;
-    resourceUpdate?: any;
+    resourceUpdate?: unknown;
     error?: string;
   }> {
     // Check cooldown

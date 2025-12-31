@@ -1,5 +1,7 @@
 // src/core/SessionTokenTracker.ts
 
+import { ValidationError } from '../errors/index.js';
+
 /**
  * Token usage record for a single interaction
  */
@@ -60,7 +62,10 @@ export class SessionTokenTracker {
 
   constructor(config: SessionTokenTrackerConfig) {
     if (config.tokenLimit <= 0) {
-      throw new Error('Token limit must be positive');
+      throw new ValidationError('Token limit must be positive', {
+        providedValue: config.tokenLimit,
+        expectedCondition: 'positive number (> 0)',
+      });
     }
     this.tokenLimit = config.tokenLimit;
     this.thresholds = config.thresholds || [
@@ -74,7 +79,11 @@ export class SessionTokenTracker {
    */
   recordUsage(usage: TokenUsage): void {
     if (usage.inputTokens < 0 || usage.outputTokens < 0) {
-      throw new Error('Token counts must be non-negative');
+      throw new ValidationError('Token counts must be non-negative', {
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+        expectedCondition: 'non-negative numbers (>= 0)',
+      });
     }
     const total = usage.inputTokens + usage.outputTokens;
     this.totalTokens += total;

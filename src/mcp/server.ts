@@ -20,6 +20,7 @@ dotenv.config();
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { ValidationError, NotFoundError, OperationError } from '../errors/index.js';
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -601,7 +602,15 @@ class SmartAgentsMCPServer {
         !params.arguments ||
         typeof params.arguments !== 'object'
       ) {
-        throw new Error('Invalid request parameters');
+        throw new ValidationError(
+          'Invalid request parameters',
+          {
+            component: 'SmartAgentsMCPServer',
+            method: 'call_tool',
+            providedParams: params,
+            requiredFields: ['name (string)', 'arguments (object)'],
+          }
+        );
       }
 
       const toolName = params.name;
@@ -711,7 +720,15 @@ class SmartAgentsMCPServer {
         validatedInput = TaskInputSchema.parse(args);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          throw new Error(formatValidationError(error));
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'SmartAgentsMCPServer',
+              method: 'call_tool',
+              schema: 'TaskInputSchema',
+              providedArgs: args,
+            }
+          );
         }
         throw error;
       }
@@ -723,7 +740,12 @@ class SmartAgentsMCPServer {
       try {
         // Validate agent name
         if (!this.isValidAgent(agentName)) {
-          throw new Error(`Unknown agent: ${agentName}`);
+          throw new NotFoundError(
+            `Unknown agent: ${agentName}`,
+            'agent',
+            agentName,
+            { availableAgents: this.agentRegistry.getAllAgentNames() }
+          );
         }
 
         // Create task
@@ -826,7 +848,15 @@ class SmartAgentsMCPServer {
       validatedInput = TaskInputSchema.parse(args);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        throw new Error(formatValidationError(error));
+        throw new ValidationError(
+          formatValidationError(error),
+          {
+            component: 'SmartAgentsMCPServer',
+            method: 'handleSmartRouting',
+            schema: 'TaskInputSchema',
+            providedArgs: args,
+          }
+        );
       }
       throw error;
     }
@@ -951,7 +981,15 @@ class SmartAgentsMCPServer {
         validatedInput = DashboardInputSchema.parse(args);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          throw new Error(formatValidationError(error));
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'SmartAgentsMCPServer',
+              method: 'handleEvolutionDashboard',
+              schema: 'DashboardInputSchema',
+              providedArgs: args,
+            }
+          );
         }
         throw error;
       }
@@ -1018,7 +1056,15 @@ class SmartAgentsMCPServer {
         ListAgentsInputSchema.parse(args);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          throw new Error(formatValidationError(error));
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'SmartAgentsMCPServer',
+              method: 'handleListAgents',
+              schema: 'ListAgentsInputSchema',
+              providedArgs: args,
+            }
+          );
         }
         throw error;
       }
@@ -1111,7 +1157,15 @@ class SmartAgentsMCPServer {
         validatedInput = ListSkillsInputSchema.parse(args);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          throw new Error(formatValidationError(error));
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'SmartAgentsMCPServer',
+              method: 'handleListSkills',
+              schema: 'ListSkillsInputSchema',
+              providedArgs: args,
+            }
+          );
         }
         throw error;
       }
@@ -1225,7 +1279,15 @@ class SmartAgentsMCPServer {
         validatedInput = UninstallInputSchema.parse(args);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          throw new Error(formatValidationError(error));
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'SmartAgentsMCPServer',
+              method: 'handleUninstallAgent',
+              schema: 'UninstallInputSchema',
+              providedArgs: args,
+            }
+          );
         }
         throw error;
       }
@@ -1276,7 +1338,15 @@ class SmartAgentsMCPServer {
         validatedInput = WorkflowGuidanceInputSchema.parse(args);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          throw new Error(formatValidationError(error));
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'SmartAgentsMCPServer',
+              method: 'handleWorkflowGuidance',
+              schema: 'WorkflowGuidanceInputSchema',
+              providedArgs: args,
+            }
+          );
         }
         throw error;
       }
@@ -1381,7 +1451,15 @@ class SmartAgentsMCPServer {
         validatedInput = RecordTokenUsageInputSchema.parse(args);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          throw new Error(formatValidationError(error));
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'SmartAgentsMCPServer',
+              method: 'handleRecordTokenUsage',
+              schema: 'RecordTokenUsageInputSchema',
+              providedArgs: args,
+            }
+          );
         }
         throw error;
       }
@@ -1424,7 +1502,15 @@ class SmartAgentsMCPServer {
         validatedInput = GenerateSmartPlanInputSchema.parse(args);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          throw new Error(formatValidationError(error));
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'SmartAgentsMCPServer',
+              method: 'handleGenerateSmartPlan',
+              schema: 'GenerateSmartPlanInputSchema',
+              providedArgs: args,
+            }
+          );
         }
         throw error;
       }
@@ -1509,7 +1595,15 @@ class SmartAgentsMCPServer {
         validatedInput = GitSaveWorkInputSchema.parse(args);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          throw new Error(formatValidationError(error));
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'SmartAgentsMCPServer',
+              method: 'handleGitSaveWork',
+              schema: 'GitSaveWorkInputSchema',
+              providedArgs: args,
+            }
+          );
         }
         throw error;
       }
@@ -1549,7 +1643,15 @@ class SmartAgentsMCPServer {
         validatedInput = GitListVersionsInputSchema.parse(args);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          throw new Error(formatValidationError(error));
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'SmartAgentsMCPServer',
+              method: 'handleGitListVersions',
+              schema: 'GitListVersionsInputSchema',
+              providedArgs: args,
+            }
+          );
         }
         throw error;
       }
@@ -1619,7 +1721,15 @@ class SmartAgentsMCPServer {
         validatedInput = GitShowChangesInputSchema.parse(args);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          throw new Error(formatValidationError(error));
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'SmartAgentsMCPServer',
+              method: 'handleGitShowChanges',
+              schema: 'GitShowChangesInputSchema',
+              providedArgs: args,
+            }
+          );
         }
         throw error;
       }
@@ -1659,7 +1769,15 @@ class SmartAgentsMCPServer {
         validatedInput = GitGoBackInputSchema.parse(args);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          throw new Error(formatValidationError(error));
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'SmartAgentsMCPServer',
+              method: 'handleGitGoBack',
+              schema: 'GitGoBackInputSchema',
+              providedArgs: args,
+            }
+          );
         }
         throw error;
       }
@@ -1729,7 +1847,15 @@ class SmartAgentsMCPServer {
         validatedInput = GitSetupInputSchema.parse(args);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          throw new Error(formatValidationError(error));
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'SmartAgentsMCPServer',
+              method: 'handleGitSetup',
+              schema: 'GitSetupInputSchema',
+              providedArgs: args,
+            }
+          );
         }
         throw error;
       }
@@ -1803,7 +1929,15 @@ class SmartAgentsMCPServer {
         validatedInput = RecallMemoryInputSchema.parse(args);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          throw new Error(formatValidationError(error));
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'SmartAgentsMCPServer',
+              method: 'handleRecallMemory',
+              schema: 'RecallMemoryInputSchema',
+              providedArgs: args,
+            }
+          );
         }
         throw error;
       }
@@ -1913,7 +2047,12 @@ class SmartAgentsMCPServer {
 
       const fileName = resourceFiles[uri];
       if (!fileName) {
-        throw new Error(`Unknown resource: ${uri}`);
+        throw new NotFoundError(
+          `Unknown resource: ${uri}`,
+          'resource',
+          uri,
+          { availableResources: Object.keys(resourceFiles) }
+        );
       }
 
       const filePath = path.join(resourcesDir, fileName);
@@ -1932,7 +2071,15 @@ class SmartAgentsMCPServer {
         };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        throw new Error(`Failed to read resource ${uri}: ${errorMessage}`);
+        throw new OperationError(
+          `Failed to read resource ${uri}: ${errorMessage}`,
+          'readResource',
+          {
+            uri,
+            filePath,
+            originalError: errorMessage,
+          }
+        );
       }
     });
   }

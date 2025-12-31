@@ -18,6 +18,7 @@ import { v4 as uuid } from 'uuid';
 import { logger } from '../../utils/logger.js';
 import { SimpleDatabaseFactory } from '../../config/simple-config.js';
 import { MigrationManager } from './migrations/MigrationManager';
+import { ValidationError } from '../../errors/index.js';
 import {
   validateSpan,
   validatePattern,
@@ -676,14 +677,32 @@ export class SQLiteStore implements EvolutionStore {
 
     if (query.sort_by) {
       if (!ALLOWED_SORT_COLUMNS.includes(query.sort_by)) {
-        throw new Error(`Invalid sort column: ${query.sort_by}. Allowed: ${ALLOWED_SORT_COLUMNS.join(', ')}`);
+        throw new ValidationError(
+          `Invalid sort column: ${query.sort_by}. Allowed: ${ALLOWED_SORT_COLUMNS.join(', ')}`,
+          {
+            component: 'SQLiteStore',
+            method: 'querySpans',
+            providedValue: query.sort_by,
+            allowedValues: ALLOWED_SORT_COLUMNS,
+            constraint: 'sort_by must be one of allowed columns',
+          }
+        );
       }
       sql += ` ORDER BY ${query.sort_by}`;
 
       if (query.sort_order) {
         const upperOrder = query.sort_order.toUpperCase();
         if (!ALLOWED_SORT_ORDERS.includes(upperOrder)) {
-          throw new Error(`Invalid sort order: ${query.sort_order}. Allowed: ASC, DESC`);
+          throw new ValidationError(
+            `Invalid sort order: ${query.sort_order}. Allowed: ASC, DESC`,
+            {
+              component: 'SQLiteStore',
+              method: 'querySpans',
+              providedValue: query.sort_order,
+              allowedValues: ALLOWED_SORT_ORDERS,
+              constraint: 'sort_order must be ASC or DESC',
+            }
+          );
         }
         sql += ` ${upperOrder}`;
       }

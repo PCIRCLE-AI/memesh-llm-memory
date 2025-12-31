@@ -13,6 +13,7 @@ import type {
   RAGConfig,
   DocumentMetadata,
 } from './types.js';
+import { StateError, ValidationError, OperationError } from '../../errors/index.js';
 
 export class VectorStore {
   private index: LocalIndex | null = null;
@@ -58,7 +59,15 @@ export class VectorStore {
       console.log('VectorStore initialized successfully (local file storage)');
     } catch (error) {
       logger.error('Failed to initialize VectorStore', { error });
-      throw new Error(`VectorStore initialization failed: ${error}`);
+      throw new OperationError(
+        `VectorStore initialization failed: ${error}`,
+        'initialize',
+        {
+          dataPath: this.dataPath,
+          embeddingModel: this.config.embeddingModel,
+          originalError: error instanceof Error ? error.message : String(error),
+        }
+      );
     }
   }
 
@@ -67,7 +76,15 @@ export class VectorStore {
    */
   private ensureInitialized(): void {
     if (!this.isInitialized || !this.index) {
-      throw new Error('VectorStore not initialized. Call initialize() first.');
+      throw new StateError(
+        'VectorStore not initialized. Call initialize() first.',
+        {
+          component: 'VectorStore',
+          operation: 'ensureInitialized',
+          isInitialized: this.isInitialized,
+          hasIndex: this.index !== null,
+        }
+      );
     }
   }
 
@@ -78,7 +95,15 @@ export class VectorStore {
     this.ensureInitialized();
 
     if (!doc.embedding) {
-      throw new Error('Document must have embedding');
+      throw new ValidationError(
+        'Document must have embedding before adding to vector store',
+        {
+          hasContent: !!doc.content,
+          hasMetadata: !!doc.metadata,
+          hasEmbedding: false,
+          expectedEmbeddingDimension: this.config.embeddingDimension,
+        }
+      );
     }
 
     const id = doc.id || this.generateId();
@@ -106,7 +131,15 @@ export class VectorStore {
     // 驗證所有文檔都有 embedding
     const missingEmbeddings = docs.filter((doc) => !doc.embedding);
     if (missingEmbeddings.length > 0) {
-      throw new Error(`${missingEmbeddings.length} documents missing embeddings`);
+      throw new ValidationError(
+        `${missingEmbeddings.length} documents missing embeddings`,
+        {
+          totalDocuments: docs.length,
+          missingEmbeddingsCount: missingEmbeddings.length,
+          validDocumentsCount: docs.length - missingEmbeddings.length,
+          expectedEmbeddingDimension: this.config.embeddingDimension,
+        }
+      );
     }
 
     // 分批處理
@@ -137,7 +170,15 @@ export class VectorStore {
    */
   async search(_options: SearchOptions): Promise<SearchResult[]> {
     this.ensureInitialized();
-    throw new Error('Use searchWithEmbedding() instead. Generate query embedding first.');
+    throw new OperationError(
+      'Use searchWithEmbedding() instead. This method is deprecated - generate query embedding first.',
+      'search',
+      {
+        component: 'VectorStore',
+        deprecatedMethod: 'search',
+        recommendedMethod: 'searchWithEmbedding',
+      }
+    );
   }
 
   /**

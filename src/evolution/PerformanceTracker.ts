@@ -8,6 +8,7 @@ import { logger } from '../utils/logger.js';
 import { MinHeap } from '../utils/MinHeap.js';
 import type { PerformanceMetrics, EvolutionStats } from './types.js';
 import { v4 as uuidv4 } from 'uuid';
+import { ValidationError } from '../errors/index.js';
 
 /**
  * Heap entry for tracking oldest metrics across agents
@@ -53,22 +54,52 @@ export class PerformanceTracker {
   track(metrics: Omit<PerformanceMetrics, 'executionId' | 'timestamp'>): PerformanceMetrics {
     // Validate required fields
     if (!metrics.agentId || typeof metrics.agentId !== 'string' || metrics.agentId.trim() === '') {
-      throw new Error('agentId must be a non-empty string');
+      throw new ValidationError('agentId must be a non-empty string', {
+        component: 'PerformanceTracker',
+        method: 'recordMetric',
+        providedValue: metrics.agentId,
+        constraint: 'non-empty string',
+      });
     }
     if (!metrics.taskType || typeof metrics.taskType !== 'string' || metrics.taskType.trim() === '') {
-      throw new Error('taskType must be a non-empty string');
+      throw new ValidationError('taskType must be a non-empty string', {
+        component: 'PerformanceTracker',
+        method: 'recordMetric',
+        providedValue: metrics.taskType,
+        constraint: 'non-empty string',
+      });
     }
     if (typeof metrics.durationMs !== 'number' || metrics.durationMs < 0) {
-      throw new Error('durationMs must be a non-negative number');
+      throw new ValidationError('durationMs must be a non-negative number', {
+        component: 'PerformanceTracker',
+        method: 'recordMetric',
+        providedValue: metrics.durationMs,
+        constraint: 'durationMs >= 0',
+      });
     }
     if (typeof metrics.cost !== 'number' || metrics.cost < 0) {
-      throw new Error('cost must be a non-negative number');
+      throw new ValidationError('cost must be a non-negative number', {
+        component: 'PerformanceTracker',
+        method: 'recordMetric',
+        providedValue: metrics.cost,
+        constraint: 'cost >= 0',
+      });
     }
     if (typeof metrics.qualityScore !== 'number' || metrics.qualityScore < 0 || metrics.qualityScore > 1) {
-      throw new Error('qualityScore must be a number between 0 and 1');
+      throw new ValidationError('qualityScore must be a number between 0 and 1', {
+        component: 'PerformanceTracker',
+        method: 'recordMetric',
+        providedValue: metrics.qualityScore,
+        constraint: '0 <= qualityScore <= 1',
+      });
     }
     if (typeof metrics.success !== 'boolean') {
-      throw new Error('success must be a boolean');
+      throw new ValidationError('success must be a boolean', {
+        component: 'PerformanceTracker',
+        method: 'recordMetric',
+        providedValue: metrics.success,
+        constraint: 'boolean type',
+      });
     }
 
     const fullMetrics: PerformanceMetrics = {
@@ -236,10 +267,20 @@ export class PerformanceTracker {
     limit?: number;
   }): PerformanceMetrics[] {
     if (!agentId || typeof agentId !== 'string' || agentId.trim() === '') {
-      throw new Error('agentId must be a non-empty string');
+      throw new ValidationError('agentId must be a non-empty string', {
+        component: 'PerformanceTracker',
+        method: 'getMetrics',
+        providedValue: agentId,
+        constraint: 'non-empty string',
+      });
     }
     if (filter?.limit !== undefined && (typeof filter.limit !== 'number' || filter.limit <= 0)) {
-      throw new Error('filter.limit must be a positive number');
+      throw new ValidationError('filter.limit must be a positive number', {
+        component: 'PerformanceTracker',
+        method: 'getMetrics',
+        providedValue: filter.limit,
+        constraint: 'limit > 0',
+      });
     }
 
     let metrics = this.metrics.get(agentId) || [];
@@ -274,10 +315,20 @@ export class PerformanceTracker {
    */
   getEvolutionStats(agentId: string, recentWindowMs: number = 7 * 24 * 60 * 60 * 1000): EvolutionStats {
     if (!agentId || typeof agentId !== 'string' || agentId.trim() === '') {
-      throw new Error('agentId must be a non-empty string');
+      throw new ValidationError('agentId must be a non-empty string', {
+        component: 'PerformanceTracker',
+        method: 'getEvolutionStats',
+        providedValue: agentId,
+        constraint: 'non-empty string',
+      });
     }
     if (typeof recentWindowMs !== 'number' || recentWindowMs <= 0) {
-      throw new Error('recentWindowMs must be a positive number');
+      throw new ValidationError('recentWindowMs must be a positive number', {
+        component: 'PerformanceTracker',
+        method: 'getEvolutionStats',
+        providedValue: recentWindowMs,
+        constraint: 'recentWindowMs > 0',
+      });
     }
 
     const allMetrics = this.metrics.get(agentId) || [];
@@ -368,10 +419,20 @@ export class PerformanceTracker {
     sampleSize: number;
   } {
     if (!agentId || typeof agentId !== 'string' || agentId.trim() === '') {
-      throw new Error('agentId must be a non-empty string');
+      throw new ValidationError('agentId must be a non-empty string', {
+        component: 'PerformanceTracker',
+        method: 'compareTaskPerformance',
+        providedValue: agentId,
+        constraint: 'non-empty string',
+      });
     }
     if (!taskType || typeof taskType !== 'string' || taskType.trim() === '') {
-      throw new Error('taskType must be a non-empty string');
+      throw new ValidationError('taskType must be a non-empty string', {
+        component: 'PerformanceTracker',
+        method: 'compareTaskPerformance',
+        providedValue: taskType,
+        constraint: 'non-empty string',
+      });
     }
 
     const metrics = this.getMetrics(agentId, { taskType });
@@ -415,10 +476,20 @@ export class PerformanceTracker {
     message: string;
   } {
     if (!agentId || typeof agentId !== 'string' || agentId.trim() === '') {
-      throw new Error('agentId must be a non-empty string');
+      throw new ValidationError('agentId must be a non-empty string', {
+        component: 'PerformanceTracker',
+        method: 'predictOptimalStrategy',
+        providedValue: agentId,
+        constraint: 'non-empty string',
+      });
     }
     if (!metric || typeof metric !== 'object') {
-      throw new Error('metric must be a valid PerformanceMetrics object');
+      throw new ValidationError('metric must be a valid PerformanceMetrics object', {
+        component: 'PerformanceTracker',
+        method: 'predictOptimalStrategy',
+        providedValue: metric,
+        constraint: 'valid PerformanceMetrics object',
+      });
     }
 
     const avg = this.getAveragePerformance(agentId, metric.taskType);
@@ -478,7 +549,12 @@ export class PerformanceTracker {
    */
   clearMetrics(agentId: string): void {
     if (!agentId || typeof agentId !== 'string' || agentId.trim() === '') {
-      throw new Error('agentId must be a non-empty string');
+      throw new ValidationError('agentId must be a non-empty string', {
+        component: 'PerformanceTracker',
+        method: 'clearMetrics',
+        providedValue: agentId,
+        constraint: 'non-empty string',
+      });
     }
 
     const agentMetrics = this.metrics.get(agentId);

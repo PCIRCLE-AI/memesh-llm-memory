@@ -6,6 +6,8 @@
  * violations of immutable configuration principle.
  */
 
+import { ValidationError } from '../errors/index.js';
+
 export class SecureKeyStore {
   private static keys = new Map<string, string>();
 
@@ -16,7 +18,16 @@ export class SecureKeyStore {
    */
   static set(provider: string, key: string): void {
     if (!provider || !key) {
-      throw new Error('Provider and key must be non-empty strings');
+      throw new ValidationError(
+        'Provider and key must be non-empty strings',
+        {
+          component: 'SecureKeyStore',
+          method: 'set',
+          providedProvider: provider,
+          providedKey: key ? '[REDACTED]' : undefined,
+          constraint: 'both provider and key must be non-empty strings',
+        }
+      );
     }
     this.keys.set(provider.toLowerCase(), key);
   }

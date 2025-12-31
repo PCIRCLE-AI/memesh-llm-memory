@@ -1,5 +1,6 @@
 // src/core/WorkflowGuidanceEngine.ts
 import type { LearningManager } from '../evolution/LearningManager.js';
+import { StateError, ValidationError } from '../errors/index.js';
 
 /**
  * Workflow phase enum
@@ -78,7 +79,10 @@ export class WorkflowGuidanceEngine {
   analyzeWorkflow(context: WorkflowContext): WorkflowGuidance {
     // Input validation
     if (!context) {
-      throw new Error('WorkflowContext is required');
+      throw new StateError('WorkflowContext is required', {
+        component: 'WorkflowGuidanceEngine',
+        method: 'analyzeWorkflow',
+      });
     }
 
     const validPhases: WorkflowPhase[] = [
@@ -89,7 +93,10 @@ export class WorkflowGuidanceEngine {
       'committed',
     ];
     if (!validPhases.includes(context.phase)) {
-      throw new Error(`Invalid workflow phase: ${context.phase}`);
+      throw new ValidationError(`Invalid workflow phase: ${context.phase}`, {
+        providedPhase: context.phase,
+        validPhases,
+      });
     }
     const recommendations: WorkflowRecommendation[] = [];
     const reasoning: string[] = [];

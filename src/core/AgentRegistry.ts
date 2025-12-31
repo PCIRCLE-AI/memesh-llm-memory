@@ -7,6 +7,7 @@
 
 import { AgentType } from '../orchestrator/types.js';
 import { AgentClassification } from '../types/AgentClassification.js';
+import { ValidationError } from '../errors/index.js';
 
 /**
  * Agent metadata for MCP tool registration
@@ -82,7 +83,10 @@ export class AgentRegistry {
    */
   getAgent(name: AgentType): AgentMetadata | undefined {
     if (!name || typeof name !== 'string' || name.trim() === '') {
-      throw new Error('Agent name must be a non-empty string');
+      throw new ValidationError('Agent name must be a non-empty string', {
+        providedValue: name,
+        expectedType: 'non-empty string',
+      });
     }
     return this.agents.get(name);
   }
@@ -96,7 +100,10 @@ export class AgentRegistry {
    */
   getAgentsByCategory(category: string): AgentMetadata[] {
     if (!category || typeof category !== 'string' || category.trim() === '') {
-      throw new Error('Category must be a non-empty string');
+      throw new ValidationError('Category must be a non-empty string', {
+        providedValue: category,
+        expectedType: 'non-empty string',
+      });
     }
     return this.getAllAgents().filter(agent => agent.category === category);
   }
@@ -110,7 +117,10 @@ export class AgentRegistry {
    */
   hasAgent(name: AgentType): boolean {
     if (!name || typeof name !== 'string' || name.trim() === '') {
-      throw new Error('Agent name must be a non-empty string');
+      throw new ValidationError('Agent name must be a non-empty string', {
+        providedValue: name,
+        expectedType: 'non-empty string',
+      });
     }
     return this.agents.has(name);
   }

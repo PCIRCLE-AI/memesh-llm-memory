@@ -6,6 +6,7 @@ import OpenAI from 'openai';
 import { appConfig } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 import type { CostTracker } from './types.js';
+import { ConfigurationError, OperationError, ValidationError } from '../../errors/index.js';
 
 /**
  * Embedding 價格表 (per 1K tokens)
@@ -67,9 +68,14 @@ export class EmbeddingService {
     }
 
     if (!this.client) {
-      throw new Error(
+      throw new ConfigurationError(
         'OpenAI API key not provided. Embedding service is unavailable. ' +
-        'Please set OPENAI_API_KEY environment variable if you need embedding features.'
+        'Please set OPENAI_API_KEY environment variable if you need embedding features.',
+        {
+          configKey: 'OPENAI_API_KEY',
+          provider: 'OpenAI',
+          service: 'EmbeddingService',
+        }
       );
     }
     return this.client;
@@ -95,7 +101,15 @@ export class EmbeddingService {
       return response.data[0].embedding;
     } catch (error) {
       logger.error('Failed to create embedding', { error });
-      throw new Error(`Embedding creation failed: ${error}`);
+      throw new OperationError(
+        `Embedding creation failed: ${error}`,
+        'createEmbedding',
+        {
+          model: this.model,
+          textLength: text.length,
+          originalError: error instanceof Error ? error.message : String(error),
+        }
+      );
     }
   }
 
@@ -135,7 +149,16 @@ export class EmbeddingService {
         allEmbeddings.push(...embeddings);
       } catch (error) {
         logger.error('Failed to create embeddings batch', { error });
-        throw new Error(`Batch embedding creation failed: ${error}`);
+        throw new OperationError(
+          `Batch embedding creation failed: ${error}`,
+          'createEmbeddingsBatch',
+          {
+            model: this.model,
+            batchSize: batch.length,
+            totalTexts: texts.length,
+            originalError: error instanceof Error ? error.message : String(error),
+          }
+        );
       }
     }
 
@@ -147,7 +170,14 @@ export class EmbeddingService {
    */
   cosineSimilarity(a: number[], b: number[]): number {
     if (a.length !== b.length) {
-      throw new Error('Embedding dimensions must match');
+      throw new ValidationError(
+        'Embedding dimensions must match for cosine similarity calculation',
+        {
+          dimensionA: a.length,
+          dimensionB: b.length,
+          expectedDimension: this.getModelDimension(),
+        }
+      );
     }
 
     let dotProduct = 0;

@@ -7,6 +7,7 @@
 
 import { KnowledgeGraphSQLite } from './KnowledgeGraphSQLite.js';
 import { Entity, Relation, SearchOptions } from './KnowledgeGraph.js';
+import { StateError } from '../../errors/index.js';
 
 export class KnowledgeAgent {
   private graph: KnowledgeGraphSQLite;
@@ -215,7 +216,11 @@ export class KnowledgeAgent {
    */
   private ensureInitialized(): void {
     if (!this.isInitialized) {
-      throw new Error('Knowledge Agent not initialized. Call initialize() first.');
+      throw new StateError('Knowledge Agent not initialized. Call initialize() first.', {
+        component: 'KnowledgeAgent',
+        operation: 'ensureInitialized',
+        dbPath: this.dbPath,
+      });
     }
   }
 

@@ -14,6 +14,7 @@ import { MCPToolInterface } from '../core/MCPToolInterface';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as os from 'os';
+import { NotFoundError } from '../errors/index.js';
 
 export interface VersionInfo {
   number: number;
@@ -149,7 +150,18 @@ export class FriendlyGitCommands {
         if (versions[number - 1]) {
           commitHash = versions[number - 1].hash;
         } else {
-          throw new Error(`找不到第 ${number} 個版本`);
+          throw new NotFoundError(
+            `找不到第 ${number} 個版本`,
+            'gitVersion',
+            String(number),
+            {
+              component: 'FriendlyGitCommands',
+              method: 'resolveIdentifier',
+              requestedVersion: number,
+              availableVersions: versions.length,
+              action: 'use a version number between 1 and ' + versions.length,
+            }
+          );
         }
       }
       // Try relative time
@@ -406,7 +418,17 @@ export class FriendlyGitCommands {
 
     const hash = result.stdout.trim();
     if (!hash) {
-      throw new Error(`找不到符合時間條件的版本: ${timeSpec}`);
+      throw new NotFoundError(
+        `找不到符合時間條件的版本: ${timeSpec}`,
+        'gitCommit',
+        timeSpec,
+        {
+          component: 'FriendlyGitCommands',
+          method: 'findCommitByTime',
+          timeSpec: timeSpec,
+          action: 'try a different time specification or check git log',
+        }
+      );
     }
 
     return hash.substring(0, 8);

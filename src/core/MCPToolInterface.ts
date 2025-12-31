@@ -5,6 +5,8 @@
  * Handles tool registration, invocation, and dependency checking.
  */
 
+import { NotFoundError, OperationError } from '../errors/index.js';
+
 /**
  * Tool metadata structure
  */
@@ -198,7 +200,12 @@ export class MCPToolInterface {
   ): Promise<ToolInvocationResult> {
     // Check if tool is registered
     if (!this.isToolRegistered(toolName)) {
-      throw new Error(`Tool "${toolName}" is not registered`);
+      throw new NotFoundError(
+        `Tool "${toolName}" is not registered`,
+        'tool',
+        toolName,
+        { method, params }
+      );
     }
 
     // Get tool metadata
@@ -206,8 +213,11 @@ export class MCPToolInterface {
 
     // Check if method is available
     if (!metadata?.methods.includes(method)) {
-      throw new Error(
-        `Method "${method}" not available for tool "${toolName}"`
+      throw new NotFoundError(
+        `Method "${method}" not available for tool "${toolName}"`,
+        'method',
+        method,
+        { toolName, availableMethods: metadata?.methods || [] }
       );
     }
 
@@ -221,14 +231,21 @@ export class MCPToolInterface {
     //
     // Current workaround: Agents using MCPToolInterface should handle this error
     // and use alternative methods (direct API calls, fallback mechanisms)
-    throw new Error(
+    throw new OperationError(
       `MCP tool invocation not yet implemented (v2.1.0 limitation).\n` +
       `Tool: ${toolName}, Method: ${method}\n\n` +
       `This is a known limitation of the current MCP Server Pattern.\n` +
       `In v2.1.0, agents work via prompt enhancement instead of direct tool calls.\n\n` +
       `For implementation guidance, see:\n` +
       `- https://github.com/modelcontextprotocol/specification\n` +
-      `- docs/architecture/MCP_TOOL_INVOCATION.md`
+      `- docs/architecture/MCP_TOOL_INVOCATION.md`,
+      {
+        toolName,
+        method,
+        params,
+        version: 'v2.1.0',
+        limitation: 'MCP_TOOL_INVOCATION_NOT_IMPLEMENTED'
+      }
     );
   }
 

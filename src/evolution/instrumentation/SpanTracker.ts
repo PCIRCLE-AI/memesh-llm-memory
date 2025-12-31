@@ -17,6 +17,7 @@ import type {
   Task,
   Execution,
 } from '../storage/types';
+import { StateError } from '../../errors/index.js';
 
 export interface SpanContext {
   traceId: string;
@@ -212,7 +213,17 @@ export class SpanTracker {
    */
   async startExecution(metadata?: Record<string, any>): Promise<Execution> {
     if (!this.currentTask) {
-      throw new Error('No active task. Call startTask() first.');
+      throw new StateError(
+        'No active task. Call startTask() first.',
+        'not_initialized',
+        {
+          component: 'SpanTracker',
+          method: 'startExecution',
+          requiredState: 'active task',
+          currentState: 'no task',
+          action: 'call startTask() before startExecution()',
+        }
+      );
     }
 
     this.currentExecution = await this.store.createExecution(
@@ -232,7 +243,17 @@ export class SpanTracker {
    */
   async endExecution(result?: Record<string, any>, error?: string): Promise<void> {
     if (!this.currentExecution) {
-      throw new Error('No active execution.');
+      throw new StateError(
+        'No active execution.',
+        'invalid_state',
+        {
+          component: 'SpanTracker',
+          method: 'endExecution',
+          requiredState: 'active execution',
+          currentState: 'no execution',
+          action: 'call startExecution() before endExecution()',
+        }
+      );
     }
 
     await this.store.updateExecution(this.currentExecution.id, {
@@ -251,7 +272,17 @@ export class SpanTracker {
    */
   async endTask(status: 'completed' | 'failed'): Promise<void> {
     if (!this.currentTask) {
-      throw new Error('No active task.');
+      throw new StateError(
+        'No active task.',
+        'invalid_state',
+        {
+          component: 'SpanTracker',
+          method: 'endTask',
+          requiredState: 'active task',
+          currentState: 'no task',
+          action: 'call startTask() before endTask()',
+        }
+      );
     }
 
     // End all active spans (cleanup orphaned spans)
@@ -381,8 +412,16 @@ export function setGlobalTracker(tracker: SpanTracker): void {
 
 export function getGlobalTracker(): SpanTracker {
   if (!globalTracker) {
-    throw new Error(
-      'Global tracker not initialized. Call setGlobalTracker() first.'
+    throw new StateError(
+      'Global tracker not initialized. Call setGlobalTracker() first.',
+      'not_initialized',
+      {
+        component: 'SpanTracker',
+        method: 'getGlobalTracker',
+        requiredState: 'initialized global tracker',
+        currentState: 'uninitialized',
+        action: 'call setGlobalTracker() before getGlobalTracker()',
+      }
     );
   }
   return globalTracker;

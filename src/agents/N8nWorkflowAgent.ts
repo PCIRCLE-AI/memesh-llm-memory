@@ -6,6 +6,7 @@
  */
 
 import { MCPToolInterface } from '../core/MCPToolInterface.js';
+import { ExternalServiceError } from '../errors/index.js';
 
 export interface N8nWorkflow {
   id?: string;
@@ -66,7 +67,16 @@ export class N8nWorkflowAgent {
       });
 
       if (response.exitCode !== 0) {
-        throw new Error(`n8n API request failed: ${response.stderr}`);
+        throw new ExternalServiceError(
+          `n8n API request failed: ${response.stderr}`,
+          'n8n',
+          {
+            endpoint: `${this.N8N_BASE_URL}/workflows`,
+            method: 'POST',
+            exitCode: response.exitCode,
+            stderr: response.stderr,
+          }
+        );
       }
 
       const result = JSON.parse(response.stdout);
@@ -113,7 +123,17 @@ export class N8nWorkflowAgent {
       });
 
       if (response.exitCode !== 0) {
-        throw new Error(`Failed to get workflow: ${response.stderr}`);
+        throw new ExternalServiceError(
+          `Failed to get workflow: ${response.stderr}`,
+          'n8n',
+          {
+            endpoint: `${this.N8N_BASE_URL}/workflows/${workflowId}`,
+            method: 'GET',
+            workflowId,
+            exitCode: response.exitCode,
+            stderr: response.stderr,
+          }
+        );
       }
 
       const result = JSON.parse(response.stdout);
@@ -137,7 +157,16 @@ export class N8nWorkflowAgent {
       });
 
       if (response.exitCode !== 0) {
-        throw new Error(`Failed to list workflows: ${response.stderr}`);
+        throw new ExternalServiceError(
+          `Failed to list workflows: ${response.stderr}`,
+          'n8n',
+          {
+            endpoint: `${this.N8N_BASE_URL}/workflows`,
+            method: 'GET',
+            exitCode: response.exitCode,
+            stderr: response.stderr,
+          }
+        );
       }
 
       const result = JSON.parse(response.stdout);
@@ -166,7 +195,17 @@ export class N8nWorkflowAgent {
       });
 
       if (response.exitCode !== 0) {
-        throw new Error(`Failed to update workflow: ${response.stderr}`);
+        throw new ExternalServiceError(
+          `Failed to update workflow: ${response.stderr}`,
+          'n8n',
+          {
+            endpoint: `${this.N8N_BASE_URL}/workflows/${workflowId}`,
+            method: 'PATCH',
+            workflowId,
+            exitCode: response.exitCode,
+            stderr: response.stderr,
+          }
+        );
       }
 
       return {
@@ -217,7 +256,17 @@ export class N8nWorkflowAgent {
       });
 
       if (response.exitCode !== 0) {
-        throw new Error(`Workflow execution failed: ${response.stderr}`);
+        throw new ExternalServiceError(
+          `Workflow execution failed: ${response.stderr}`,
+          'n8n',
+          {
+            endpoint: `${this.N8N_BASE_URL}/workflows/${workflowId}/execute`,
+            method: 'POST',
+            workflowId,
+            exitCode: response.exitCode,
+            stderr: response.stderr,
+          }
+        );
       }
 
       const result = JSON.parse(response.stdout);

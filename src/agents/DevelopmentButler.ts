@@ -14,6 +14,7 @@ import { SessionTokenTracker } from '../core/SessionTokenTracker.js';
 import { SessionContextMonitor } from '../core/SessionContextMonitor.js';
 import { ClaudeMdReloader } from '../mcp/ClaudeMdReloader.js';
 import type { SessionHealth } from '../core/SessionContextMonitor.js';
+import { StateError, NotFoundError } from '../errors/index.js';
 
 /**
  * Code analysis result
@@ -396,7 +397,11 @@ export class DevelopmentButler {
     sessionHealth: SessionHealth;
   }> {
     if (!this.guidanceEngine) {
-      throw new Error('Workflow guidance not initialized. Provide LearningManager to constructor.');
+      throw new StateError('Workflow guidance not initialized. Provide LearningManager to constructor.', {
+        component: 'DevelopmentButler',
+        method: 'processCheckpoint',
+        requiredDependency: 'LearningManager',
+      });
     }
 
     // Build workflow context from checkpoint data
@@ -535,11 +540,20 @@ ${formattedRequest}
   ): Promise<void> {
     const guidance = this.activeRequests.get(requestId);
     if (!guidance) {
-      throw new Error(`Request ${requestId} not found in active requests`);
+      throw new NotFoundError(
+        `Request ${requestId} not found in active requests`,
+        'request',
+        requestId,
+        { activeRequestsCount: this.activeRequests.size }
+      );
     }
 
     if (!this.feedbackCollector) {
-      throw new Error('Feedback collector not initialized');
+      throw new StateError('Feedback collector not initialized', {
+        component: 'DevelopmentButler',
+        method: 'recordUserResponse',
+        requiredDependency: 'FeedbackCollector (via LearningManager)',
+      });
     }
 
     // Record feedback for learning

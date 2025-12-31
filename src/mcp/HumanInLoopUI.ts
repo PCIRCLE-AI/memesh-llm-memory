@@ -6,6 +6,7 @@
  */
 
 import { AgentType } from '../orchestrator/types.js';
+import { ValidationError } from '../errors/index.js';
 
 /**
  * Alternative agent option
@@ -55,10 +56,26 @@ export class HumanInLoopUI {
   formatConfirmationRequest(request: ConfirmationRequest): string {
     // Validate required fields
     if (!request.taskDescription || !request.taskDescription.trim()) {
-      throw new Error('Invalid confirmation request: taskDescription is required');
+      throw new ValidationError(
+        'Invalid confirmation request: taskDescription is required',
+        {
+          component: 'HumanInLoopUI',
+          method: 'formatConfirmationRequest',
+          providedValue: request.taskDescription,
+          requiredField: 'taskDescription',
+        }
+      );
     }
     if (!request.recommendedAgent) {
-      throw new Error('Invalid confirmation request: recommendedAgent is required');
+      throw new ValidationError(
+        'Invalid confirmation request: recommendedAgent is required',
+        {
+          component: 'HumanInLoopUI',
+          method: 'formatConfirmationRequest',
+          providedValue: request.recommendedAgent,
+          requiredField: 'recommendedAgent',
+        }
+      );
     }
 
     // Safe defaults for optional arrays

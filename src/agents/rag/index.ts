@@ -14,6 +14,7 @@ import type {
   EmbeddingStats,
   DocumentMetadata,
 } from './types.js';
+import { StateError, ConfigurationError } from '../../errors/index.js';
 
 export class RAGAgent {
   private vectorStore: VectorStore;
@@ -75,7 +76,14 @@ export class RAGAgent {
     // 檢查健康狀態
     const isHealthy = await this.vectorStore.healthCheck();
     if (!isHealthy) {
-      throw new Error('Vector store health check failed');
+      throw new StateError(
+        'Vector store health check failed during RAG Agent initialization',
+        {
+          component: 'RAGAgent',
+          operation: 'initialize',
+          vectorStoreStatus: 'unhealthy',
+        }
+      );
     }
 
     this.isInitialized = true;
@@ -339,7 +347,14 @@ export class RAGAgent {
    */
   private ensureInitialized(): void {
     if (!this.isInitialized) {
-      throw new Error('RAG Agent not initialized. Call initialize() first.');
+      throw new StateError(
+        'RAG Agent not initialized. Call initialize() first.',
+        {
+          component: 'RAGAgent',
+          operation: 'ensureInitialized',
+          isInitialized: false,
+        }
+      );
     }
   }
 
@@ -348,10 +363,16 @@ export class RAGAgent {
    */
   private ensureRAGEnabled(): void {
     if (this.embeddings === null) {
-      throw new Error(
+      throw new ConfigurationError(
         'RAG features are not enabled. Please provide OpenAI API key.\n' +
         'Use enableRAG() method or set OPENAI_API_KEY environment variable.\n' +
-        'Get your API key at: https://platform.openai.com/api-keys'
+        'Get your API key at: https://platform.openai.com/api-keys',
+        {
+          configKey: 'OPENAI_API_KEY',
+          provider: 'OpenAI',
+          component: 'RAGAgent',
+          apiKeyUrl: 'https://platform.openai.com/api-keys',
+        }
       );
     }
   }

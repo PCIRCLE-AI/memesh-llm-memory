@@ -1,3 +1,5 @@
+import { ValidationError } from '../../errors/index.js';
+
 export const githubActionsTemplate = `name: CI/CD Pipeline
 
 on:
@@ -44,5 +46,12 @@ export function generateCIConfig(options: {
       .replace('{{buildCommand}}', buildCommand);
   }
 
-  throw new Error(`Unsupported CI platform: ${platform}`);
+  throw new ValidationError(
+    `Unsupported CI platform: ${platform}`,
+    {
+      providedPlatform: platform,
+      allowedPlatforms: ['github-actions', 'gitlab-ci'],
+      function: 'generateCIConfig',
+    }
+  );
 }

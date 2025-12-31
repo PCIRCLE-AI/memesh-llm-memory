@@ -10,6 +10,7 @@
  */
 
 import type { AgentType } from '../orchestrator/types.js';
+import { NotFoundError } from '../errors/index.js';
 
 /**
  * Agent category for grouping similar agents
@@ -392,7 +393,14 @@ export function getAgentEvolutionConfig(agentId: AgentType): AgentEvolutionConfi
   const config = AGENT_CONFIGS.get(agentId);
 
   if (!config) {
-    throw new Error(`No evolution config found for agent: ${agentId}`);
+    throw new NotFoundError(
+      `No evolution config found for agent: ${agentId}`,
+      'agentEvolutionConfig',
+      agentId,
+      {
+        availableAgents: Array.from(AGENT_CONFIGS.keys()),
+      }
+    );
   }
 
   return config;

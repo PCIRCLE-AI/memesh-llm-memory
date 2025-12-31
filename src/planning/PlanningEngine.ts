@@ -2,6 +2,7 @@
 import type { AgentRegistry } from '../orchestrator/AgentRegistry.js';
 import type { LearningManager } from '../evolution/LearningManager.js';
 import type { ContextualPattern } from '../evolution/types.js';
+import { ValidationError } from '../errors/index.js';
 
 /**
  * Task priority levels
@@ -77,16 +78,25 @@ export class PlanningEngine {
   async generatePlan(request: PlanRequest): Promise<ImplementationPlan> {
     // Validate input
     if (!request.featureDescription?.trim()) {
-      throw new Error('featureDescription is required and cannot be empty');
+      throw new ValidationError('featureDescription is required and cannot be empty', {
+        providedValue: request.featureDescription,
+        expectedType: 'non-empty string',
+      });
     }
 
     if (request.featureDescription.length > 1000) {
-      throw new Error('featureDescription exceeds maximum length of 1000 characters');
+      throw new ValidationError('featureDescription exceeds maximum length of 1000 characters', {
+        providedLength: request.featureDescription.length,
+        maxLength: 1000,
+      });
     }
 
     // Validate requirements array
     if (request.requirements && !Array.isArray(request.requirements)) {
-      throw new Error('requirements must be an array');
+      throw new ValidationError('requirements must be an array', {
+        providedType: typeof request.requirements,
+        expectedType: 'array',
+      });
     }
 
     const tasks = await this.generateTasks(request);

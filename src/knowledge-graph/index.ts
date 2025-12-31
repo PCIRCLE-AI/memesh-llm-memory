@@ -10,6 +10,7 @@ import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { SimpleDatabaseFactory } from '../config/simple-config.js';
 import type { Entity, Relation, SearchQuery, RelationTrace } from './types.js';
+import type { SQLParams } from '../evolution/storage/types.js';
 
 export class KnowledgeGraph {
   private db: Database.Database;
@@ -192,7 +193,7 @@ export class KnowledgeGraph {
       WHERE 1=1
     `;
 
-    const params: any[] = [];
+    const params: SQLParams = [];
 
     if (query.type) {
       sql += ' AND e.type = ?';
@@ -222,17 +223,29 @@ export class KnowledgeGraph {
     }
 
     const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as any[];
+    const rows = stmt.all(...params) as unknown[];
 
-    return rows.map(row => ({
-      id: row.id,
-      name: row.name,
-      type: row.type,
-      observations: row.observations ? row.observations.split('|||') : [],
-      tags: row.tags ? row.tags.split(',').filter(Boolean) : [],
-      metadata: row.metadata ? JSON.parse(row.metadata) : {},
-      createdAt: new Date(row.created_at)
-    }));
+    return rows.map(row => {
+      // Type assertion after runtime validation via database query
+      const r = row as {
+        id: number;
+        name: string;
+        type: string;
+        observations: string | null;
+        tags: string | null;
+        metadata: string | null;
+        created_at: string;
+      };
+      return {
+        id: r.id,
+        name: r.name,
+        type: r.type,
+        observations: r.observations ? r.observations.split('|||') : [],
+        tags: r.tags ? r.tags.split(',').filter(Boolean) : [],
+        metadata: r.metadata ? JSON.parse(r.metadata) : {},
+        createdAt: new Date(r.created_at)
+      };
+    });
   }
 
   /**
@@ -264,16 +277,25 @@ export class KnowledgeGraph {
       JOIN entities e1 ON r.from_entity_id = e1.id
       JOIN entities e2 ON r.to_entity_id = e2.id
       WHERE r.from_entity_id = ? OR r.to_entity_id = ?
-    `).all(entity.id, entity.id) as any[];
+    `).all(entity.id, entity.id) as unknown[];
 
     return {
       entity: entityName,
-      relations: relations.map(r => ({
-        from: r.from_name,
-        to: r.to_name,
-        relationType: r.relation_type,
-        metadata: r.metadata ? JSON.parse(r.metadata) : {}
-      })),
+      relations: relations.map(row => {
+        // Type assertion after runtime validation via database query
+        const r = row as {
+          from_name: string;
+          to_name: string;
+          relation_type: string;
+          metadata: string | null;
+        };
+        return {
+          from: r.from_name,
+          to: r.to_name,
+          relationType: r.relation_type,
+          metadata: r.metadata ? JSON.parse(r.metadata) : {}
+        };
+      }),
       depth
     };
   }

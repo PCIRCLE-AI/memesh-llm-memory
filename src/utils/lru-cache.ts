@@ -24,7 +24,7 @@ interface CacheEntry<V> {
   accessCount: number;
 }
 
-export class LRUCache<V = any> {
+export class LRUCache<V = unknown> {
   private cache: Map<string, CacheEntry<V>>;
   private accessOrder: string[];
   private maxSize: number;

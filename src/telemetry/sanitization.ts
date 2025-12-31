@@ -124,7 +124,7 @@ export function hashValue(value: string): string {
  * - Truncates long strings
  * - Handles circular references, null/undefined, and errors gracefully
  */
-export function sanitizeEvent(event: any, visited = new WeakSet(), depth = 0): any {
+export function sanitizeEvent(event: unknown, visited = new WeakSet(), depth = 0): unknown {
   try {
     // Prevent stack overflow from deeply nested objects
     const MAX_DEPTH = 50;
@@ -167,7 +167,7 @@ export function sanitizeEvent(event: any, visited = new WeakSet(), depth = 0): a
     }
 
     // Create sanitized copy
-    const sanitized: any = {};
+    const sanitized: Record<string, unknown> = {};
 
     // Process all enumerable properties
     for (const key in event) {

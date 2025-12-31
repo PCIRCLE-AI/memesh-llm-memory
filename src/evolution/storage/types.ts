@@ -175,7 +175,7 @@ export interface SpanAttributes {
   'config.snapshot'?: string;  // JSON serialized agent config
 
   // Custom attributes (flexible for future needs)
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -197,7 +197,7 @@ export interface ResourceAttributes {
   'deployment.environment'?: 'dev' | 'staging' | 'production';
 
   // Custom
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**

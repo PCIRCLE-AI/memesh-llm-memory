@@ -73,7 +73,7 @@ function isRetryableError(
 
     // Axios errors
     if ('response' in error && error.response && typeof error.response === 'object') {
-      const response = error.response as any;
+      const response = error.response as { status?: number };
       if (response.status && retryableStatusCodes.includes(response.status)) {
         return true;
       }

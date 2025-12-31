@@ -9,6 +9,7 @@ import Database from 'better-sqlite3';
 import { SimpleDatabaseFactory } from '../../config/simple-config.js';
 import { safeJsonParse } from '../../utils/json.js';
 import type { Entity, Relation, SearchOptions } from './KnowledgeGraph.js';
+import type { SQLParams } from '../../evolution/storage/types.js';
 
 export interface KnowledgeGraphOptions {
   /**
@@ -237,7 +238,7 @@ export class KnowledgeGraphSQLite {
     if (!entity) return undefined;
 
     const fields: string[] = [];
-    const values: any[] = [];
+    const values: SQLParams = [];
 
     if (updates.entityType !== undefined) {
       fields.push('entity_type = ?');
@@ -304,7 +305,7 @@ export class KnowledgeGraphSQLite {
       LEFT JOIN observations o ON e.name = o.entity_name
       WHERE 1=1
     `;
-    const params: any[] = [];
+    const params: SQLParams = [];
 
     // Search in name, entity_type, or observations
     sql += ` AND (

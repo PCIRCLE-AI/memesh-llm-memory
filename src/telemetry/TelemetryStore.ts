@@ -12,6 +12,7 @@ import type {
   TelemetryConfig,
   EventFilters
 } from './types';
+import type { SQLParams } from '../evolution/storage/types.js';
 
 export interface TelemetryStoreOptions {
   storagePath?: string;
@@ -113,7 +114,7 @@ export class TelemetryStore {
 
   async getLocalEvents(filters?: EventFilters): Promise<TelemetryEvent[]> {
     let query = 'SELECT event_data FROM telemetry_events WHERE 1=1';
-    const params: any[] = [];
+    const params: SQLParams = [];
 
     if (filters?.event_type) {
       query += ' AND event_type = ?';

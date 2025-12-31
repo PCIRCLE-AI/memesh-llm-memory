@@ -256,7 +256,7 @@ export class GlobalResourcePool {
       max: number;
       slots: ResourceSlot[];
     };
-    systemResources?: any;
+    systemResources?: unknown;
   } {
     return {
       e2e: {

@@ -153,7 +153,7 @@ export class PlanningEngine {
   /**
    * Assign appropriate agent based on task characteristics and registry
    */
-  private assignAgent(phase: any): string | undefined {
+  private assignAgent(phase: { description: string }): string | undefined {
     const agents = this.agentRegistry.getAllAgents();
     const description = phase.description.toLowerCase();
 

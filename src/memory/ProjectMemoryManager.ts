@@ -45,7 +45,7 @@ export class ProjectMemoryManager {
   async recallRecentWork(options: RecallOptions = {}): Promise<Entity[]> {
     const {
       limit = 10,
-      types = ['feature', 'bug_fix', 'decision', 'refactoring'],
+      types = ['code_change', 'test_result', 'session_snapshot'],
     } = options;
 
     const results: Entity[] = [];

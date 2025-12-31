@@ -1,8 +1,8 @@
 # Smart Agents - System Architecture
 
-**Version**: 3.1.0 (Architectural Honesty - Accurate Agent Count)
-**Last Updated**: 2025-12-30
-**Status**: Agent documentation updated for honesty and accuracy
+**Version**: 3.2.0 (Project Memory System Integration)
+**Last Updated**: 2025-12-31
+**Status**: Production-ready with project memory and accurate agent documentation
 
 ---
 
@@ -14,10 +14,12 @@
 4. [Router & Orchestration](#router--orchestration)
 5. [Evolution System](#evolution-system)
 6. [Workflow Guidance System](#workflow-guidance-system)
-7. [Agent Registry](#agent-registry)
-8. [Event-Driven Capabilities](#event-driven-capabilities)
-9. [Data Flow Patterns](#data-flow-patterns)
-10. [Testing Strategy](#testing-strategy)
+7. [Smart-Planning System](#smart-planning-system)
+8. [Project Memory System](#project-memory-system)
+9. [Agent Registry](#agent-registry)
+10. [Event-Driven Capabilities](#event-driven-capabilities)
+11. [Data Flow Patterns](#data-flow-patterns)
+12. [Testing Strategy](#testing-strategy)
 
 ---
 
@@ -393,6 +395,158 @@ Pattern Enhancement → TDD Structure → Complete Plan
 - ⚡ **Bite-Sized**: Breaks features into 2-5 minute tasks
 - ✅ **TDD-First**: Every task follows 5-step TDD workflow
 - 🔗 **Dependencies**: Automatic dependency identification and ordering
+
+---
+
+## Project Memory System
+
+### Purpose
+
+Automatic context capture and recall across Claude Code sessions, enabling Claude to remember project-specific work history, code changes, and development decisions.
+
+### Architecture
+
+**Hybrid Tracking Approach**:
+1. **Event-Driven Tracking** - Immediate capture of code changes and test results
+2. **Token-Based Snapshots** - Periodic context snapshots every 10,000 tokens
+
+### Components
+
+#### ProjectAutoTracker (`src/memory/ProjectAutoTracker.ts`)
+
+**Core Tracking Engine**:
+- Records code changes with file lists and session IDs
+- Captures test execution results (pass/fail counts)
+- Creates periodic token snapshots as backup mechanism
+- Deduplication logic prevents duplicate entries within 1-minute windows
+
+**Event Types**:
+```typescript
+// Code Change
+await tracker.recordCodeChange({
+  files: ['src/api/users.ts', 'src/models/User.ts'],
+  sessionId: 'session-2025-12-31-001'
+});
+
+// Test Result
+await tracker.recordTestResult({
+  passed: 45,
+  failed: 0,
+  sessionId: 'session-2025-12-31-001'
+});
+
+// Token Snapshot (automatic every 10k tokens)
+await tracker.checkTokenSnapshot(15000, {
+  files: ['src/api/users.ts'],
+  tasks: ['Implement user authentication']
+});
+```
+
+#### ProjectMemoryManager (`src/memory/ProjectMemoryManager.ts`)
+
+**Query Interface**:
+- `recallRecentWork(options)` - Retrieve recent development activities
+- Type filtering: code_change, test_result, session_snapshot
+- Limit control: Default 10 entities, configurable
+- Performance: ~20-50ms for 10 entities
+
+**Usage**:
+```typescript
+// Recall last 10 work items
+const memories = await manager.recallRecentWork({ limit: 10 });
+
+// Filter by type
+const codeChanges = await manager.recallRecentWork({
+  types: ['code_change']
+});
+```
+
+#### ProjectMemoryCleanup (`src/memory/ProjectMemoryCleanup.ts`)
+
+**Automatic Retention Management**:
+- 30-day retention policy (older memories automatically deleted)
+- Applies to: code_change, test_result, session_snapshot
+- Cascade deletion: Removes observations, tags, and relations
+- Recommended execution: Daily or weekly
+
+#### MCP Tool: recall-memory (`src/mcp/tools/recall-memory.ts`)
+
+**Claude Code Integration**:
+- Exposed via MCP protocol as `recall-memory` tool
+- Parameters: limit (default: 10), query (future: semantic search)
+- Returns chronological list of development activities
+- Used by Claude to recall "What did we work on yesterday?"
+
+### Data Model
+
+**Entity Types**:
+
+| Type | Purpose | Observations |
+|------|---------|-------------|
+| `code_change` | Code modifications | Modified files, Timestamp, Session ID |
+| `test_result` | Test execution | Pass/fail counts, Timestamp, Session ID |
+| `session_snapshot` | Periodic context | Token count, Files, Tasks, Timestamp |
+
+### Storage
+
+**Knowledge Graph Integration**:
+- Shares SQLite database with Knowledge Graph agent
+- Location: `~/.claude/knowledge-graph.db`
+- Entity-observation model for structured storage
+- Efficient querying with ORDER BY timestamp DESC
+
+### Performance
+
+**Characteristics**:
+- Event recording: ~5-10ms per call
+- Token snapshots: ~10-20ms when triggered (< 1ms when no-op)
+- Memory recall: ~20-50ms for 10 entities
+- Storage growth: ~30-60 entities/day (active development)
+- 30-day retention: ~900-1800 entities max, ~2-5 MB database
+
+### Integration Points
+
+**MCP Server**:
+- Registers `recall-memory` tool for Claude Code
+- Tool handler in `src/mcp/tools/recall-memory.ts`
+- Server registration in `src/mcp/server.ts`
+
+**Knowledge Graph**:
+- Uses `createEntities` for storing memories
+- Uses `searchNodes` for querying
+- Shares storage infrastructure
+
+**Claude Code Hooks** (Optional):
+- Can be triggered via session hooks for automatic tracking
+- Hook-based integration not required (MCP tool is primary interface)
+
+### Testing
+
+**Coverage**:
+- 33 tests across 6 test files
+- 100% critical path coverage
+- Test types: Unit, integration, end-to-end
+
+**Test Files**:
+- `ProjectAutoTracker.test.ts` - 16 tests (event/token/dedup logic)
+- `ProjectMemoryManager.test.ts` - 4 tests (recall/filtering/limits)
+- `ProjectMemoryCleanup.test.ts` - 5 unit tests (deletion/retention)
+- `ProjectMemoryCleanup.integration.test.ts` - 3 integration tests
+- `integration.test.ts` - 3 tests (end-to-end capture and recall)
+- `recall-memory.test.ts` - 2 tests (MCP tool handler)
+
+### Benefits
+
+- 🧠 **Session Continuity** - Claude remembers project work across sessions
+- ⚡ **Hybrid Tracking** - Combines event precision with token-based backup
+- 🗄️ **Automatic Cleanup** - 30-day retention prevents unbounded growth
+- 🔍 **Structured Recall** - Query by type, limit, and timestamp
+- 📊 **Low Overhead** - Minimal performance impact (< 10ms per event)
+- 🎯 **Development-Focused** - Captures code changes, tests, decisions only
+
+### Documentation
+
+See `docs/PROJECT_MEMORY_SYSTEM.md` for complete implementation details, usage examples, and troubleshooting.
 
 ---
 

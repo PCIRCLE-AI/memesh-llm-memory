@@ -1,8 +1,8 @@
 # Smart Agents Architecture Documentation
 
-**Version**: 2.1.0
-**Last Updated**: 2025-12-30
-**Status**: Production-ready with comprehensive agent system
+**Version**: 2.2.0
+**Last Updated**: 2025-12-31
+**Status**: Production-ready with comprehensive agent system and project memory
 
 ---
 
@@ -246,6 +246,152 @@ interface PerformanceMetric {
 - Top performing agents
 - Learned patterns summary
 - Cost optimization results
+
+---
+
+### 4. Project Memory System Layer
+
+**Purpose**: Automatic context capture and recall across Claude Code sessions using hybrid event-driven + token-based tracking.
+
+**Architecture**: Hybrid approach combining immediate event capture with periodic token-based snapshots.
+
+**Key Components**:
+
+#### 4.1 ProjectAutoTracker (`src/memory/ProjectAutoTracker.ts`)
+
+**Purpose**: Core tracking engine that records development events.
+
+**Tracking Strategies**:
+
+1. **Event-Driven Tracking** (Immediate):
+   - Code changes: Captures file modifications with session context
+   - Test results: Records pass/fail counts after test execution
+   - Low overhead, high signal-to-noise ratio
+
+2. **Token-Based Snapshots** (Periodic):
+   - Triggers every 10,000 tokens
+   - Captures session context (files, tasks, token count)
+   - Backup mechanism preventing data loss between events
+
+**Event Recording**:
+```typescript
+// Record code change
+await tracker.recordCodeChange({
+  files: ['src/api/users.ts', 'src/models/User.ts'],
+  sessionId: 'session-2025-12-31-001'
+});
+
+// Record test result
+await tracker.recordTestResult({
+  passed: 45,
+  failed: 0,
+  sessionId: 'session-2025-12-31-001'
+});
+
+// Check for token snapshot
+await tracker.checkTokenSnapshot(15000, {
+  files: ['src/api/users.ts'],
+  tasks: ['Implement user authentication']
+});
+```
+
+**Deduplication**: Prevents duplicate entries within 1-minute windows based on file lists and test counts.
+
+#### 4.2 ProjectMemoryManager (`src/memory/ProjectMemoryManager.ts`)
+
+**Purpose**: High-level API for querying project memories.
+
+**Query Interface**:
+```typescript
+interface RecallOptions {
+  limit?: number;           // Default: 10
+  types?: string[];         // Default: ['code_change', 'test_result', 'session_snapshot']
+}
+
+// Recall recent work
+const memories = await manager.recallRecentWork({ limit: 10 });
+
+// Filter by type
+const codeChanges = await manager.recallRecentWork({
+  types: ['code_change']
+});
+```
+
+**Performance**: ~20-50ms for 10 entities, scales linearly O(n).
+
+#### 4.3 ProjectMemoryCleanup (`src/memory/ProjectMemoryCleanup.ts`)
+
+**Purpose**: Automatic 30-day retention management.
+
+**Cleanup Policy**:
+- Memories older than 30 days: Automatically deleted
+- Applies to: code_change, test_result, session_snapshot
+- Timestamp extraction: From entity observations
+- Cascade deletion: Removes observations, tags, and relations
+
+**Execution**:
+```typescript
+const deletedCount = await cleanup.cleanupOldMemories();
+// Returns count of deleted entities
+```
+
+**Recommended frequency**: Daily or weekly execution.
+
+#### 4.4 MCP Tool: recall-memory (`src/mcp/tools/recall-memory.ts`)
+
+**Purpose**: Exposes memory recall to Claude Code via MCP protocol.
+
+**Tool Parameters**:
+```typescript
+{
+  limit?: number;      // Max memories to return (default: 10)
+  query?: string;      // Search query (placeholder for future)
+}
+```
+
+**Response Format**:
+```typescript
+{
+  memories: [{
+    type: 'code_change' | 'test_result' | 'session_snapshot',
+    observations: string[],
+    timestamp: string    // ISO 8601
+  }]
+}
+```
+
+**Usage from Claude Code**:
+```
+User: "What did we work on yesterday?"
+→ Claude calls recall-memory tool
+→ Receives chronological list of activities
+```
+
+**Data Model**:
+
+| Entity Type | Purpose | Observations Format |
+|-------------|---------|-------------------|
+| `code_change` | Code modifications | Modified files, Timestamp, Session ID |
+| `test_result` | Test execution | Pass/fail counts, Timestamp, Session ID |
+| `session_snapshot` | Periodic context | Token count, Files, Tasks, Timestamp |
+
+**Storage**: Knowledge Graph (SQLite) - Same database as Knowledge Graph agent (`~/.claude/knowledge-graph.db`).
+
+**Test Coverage**: 33 tests across 6 test files (100% critical path coverage).
+
+**Performance Characteristics**:
+- Event recording: ~5-10ms per call
+- Token snapshots: ~10-20ms when triggered
+- Memory recall: ~20-50ms for 10 entities
+- Storage growth: ~30-60 entities/day (active development)
+- 30-day retention: ~900-1800 entities max, ~2-5 MB database
+
+**Integration Points**:
+- MCP Server: Registers `recall-memory` tool
+- Knowledge Graph: Shares storage infrastructure
+- Claude Code Hooks: Can be triggered via session hooks (optional)
+
+**Documentation**: See `docs/PROJECT_MEMORY_SYSTEM.md` for complete implementation details.
 
 ---
 

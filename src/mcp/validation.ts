@@ -89,6 +89,20 @@ export const DashboardInputSchema = z.object({
     )
     .optional()
     .default('summary'),
+  exportFormat: z
+    .enum(['json', 'csv', 'markdown'])
+    .optional(),
+  includeCharts: z
+    .boolean()
+    .optional()
+    .default(false),
+  chartHeight: z
+    .number()
+    .int('Chart height must be an integer')
+    .min(5, 'Chart height must be at least 5')
+    .max(20, 'Chart height must be at most 20')
+    .optional()
+    .default(8),
 });
 
 /**

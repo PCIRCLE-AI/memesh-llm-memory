@@ -1113,12 +1113,25 @@ class ClaudeCodeBuddyMCPServer {
       }
 
       const format = validatedInput.format;
+      const exportFormat = validatedInput.exportFormat;
+      const includeCharts = validatedInput.includeCharts;
+      const chartHeight = validatedInput.chartHeight;
 
       let dashboardText: string;
 
-      if (format === 'detailed') {
+      // If export format is specified, use export methods
+      if (exportFormat === 'json') {
+        dashboardText = this.evolutionMonitor.exportAsJSON();
+      } else if (exportFormat === 'csv') {
+        dashboardText = this.evolutionMonitor.exportAsCSV();
+      } else if (exportFormat === 'markdown') {
+        dashboardText = this.evolutionMonitor.exportAsMarkdown();
+      } else if (format === 'detailed') {
         // Detailed format: formatted dashboard + learning progress
-        dashboardText = this.evolutionMonitor.formatDashboard();
+        dashboardText = this.evolutionMonitor.formatDashboard({
+          includeCharts,
+          chartHeight,
+        });
 
         // Add detailed learning progress
         const progress = this.evolutionMonitor.getLearningProgress();
@@ -1136,8 +1149,11 @@ class ClaudeCodeBuddyMCPServer {
           });
         }
       } else {
-        // Summary format: use formatted dashboard
-        dashboardText = this.evolutionMonitor.formatDashboard();
+        // Summary format: use formatted dashboard with chart options
+        dashboardText = this.evolutionMonitor.formatDashboard({
+          includeCharts,
+          chartHeight,
+        });
       }
 
       return {

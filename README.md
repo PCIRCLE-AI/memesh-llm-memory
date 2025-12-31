@@ -64,22 +64,30 @@ Claude: [Specific optimization for YOUR database setup, with actual query exampl
 
 ### ✨ Automatic Expertise Routing
 
-30+ specialized agent types for different tasks:
+22 specialized agents for different tasks:
 - **code-reviewer** - Security checks, quality standards, anti-patterns
 - **debugger** - Systematic debugging, error pattern recognition
 - **frontend-specialist** - UI/UX, accessibility, responsive design
 - **backend-specialist** - API design, database optimization, security
 - **api-designer**, **db-optimizer**, **refactorer**, **test-writer**... and more
 
+**Types:** 6 real implementations + 16 enhanced prompts + 1 optional (RAG)
+
 **You don't choose the agent - CCB picks the right one for your task automatically.**
 
 ### 💾 Three Types of Memory
 
-**RAG (Retrieval-Augmented Generation)**
+**RAG (Retrieval-Augmented Generation) with Drop Inbox**
 ```
 You: "Show me how authentication works in this project"
 CCB: [Searches your codebase, finds actual auth files, shows you the patterns]
 ```
+
+**Drop Inbox Magic:**
+- Drop files into `~/Documents/smart-agents-knowledge/`
+- CCB automatically indexes them every 5 seconds
+- Supports: .md, .txt, .json, .pdf, .docx
+- No commands needed - just drop and done!
 
 **Knowledge Graph**
 ```
@@ -96,7 +104,7 @@ CCB remembers:
 - What you've already built
 ```
 
-### 📊 Session Health & Performance Tracking
+### 📊 Session Health & Crash Prevention
 
 ```bash
 buddy stats week
@@ -111,7 +119,7 @@ code-reviewer: 234 calls, 85% success
 debugger: 123 calls, 92% success
 ```
 
-**Monitor your Claude Code session health. Track token usage to prevent context overflow. Optimize for quality.**
+**Never lose work again.** CCB monitors your Claude Code session's 200K token limit and automatically reloads context at 90% to prevent crashes. Track token usage, get intelligent next-step recommendations, and optimize for quality.
 
 ### 🤝 User-Friendly Commands
 
@@ -125,6 +133,70 @@ buddy help
 ```
 
 **Aliases work too:** `help-with`, `execute`, `recall`, `dashboard` - pick what feels natural.
+
+### 💾 Beginner-Friendly Git Assistant
+
+**No Git commands needed.** Just tell CCB what you want in plain language:
+
+```bash
+# Save your work
+git-save-work "added login feature"
+
+# See your versions
+git-list-versions
+
+# Go back to a previous version
+git-go-back 3
+
+# Show what changed
+git-show-changes
+```
+
+**8 Git tools that speak human:**
+- `git-save-work` - Save with friendly commit message
+- `git-list-versions` - List recent versions
+- `git-status` - Current status in readable format
+- `git-show-changes` - See what changed
+- `git-go-back` - Time travel to previous versions
+- `git-create-backup` - Create local backup
+- `git-setup` - Setup Git for new projects
+- `git-help` - Show available commands
+
+**Perfect for:** Beginners who find Git intimidating, or anyone who wants simple version control.
+
+### 🔄 Intelligent Workflow Guidance
+
+**CCB knows what's next.** After you write code, it suggests running tests. After tests pass, it suggests code review. No manual thinking required.
+
+```
+You write code → CCB: "Code looks good! Run tests next?"
+Tests pass → CCB: "Tests green! Ready for code review?"
+Review done → CCB: "Review complete! Commit and push?"
+```
+
+**4 workflow tools:**
+- `get-workflow-guidance` - Get next-step recommendations
+- `get-session-health` - Check session health status
+- `reload-context` - Reload CLAUDE.md when needed
+- `record-token-usage` - Track token consumption
+
+**Benefits:** Never wonder "what should I do next?" - CCB guides you through the complete development flow.
+
+### 📋 Smart Implementation Planning
+
+**Break down complex features into bite-sized tasks.** CCB generates TDD-structured plans with agent-aware task breakdown.
+
+```
+You: "Plan implementation for user authentication"
+CCB: [Generates step-by-step plan with:
+  - Test-first approach
+  - 2-5 minute tasks
+  - Right agent for each task
+  - Clear success criteria]
+```
+
+**Planning tool:**
+- `generate-smart-plan` - Create intelligent implementation plans
 
 ---
 
@@ -187,9 +259,9 @@ CCB learns and improves
 ```
 
 **Under the hood:**
-- **8 real agent implementations** with their own logic and storage (RAG, Knowledge Graph, Test Writer, DevOps Engineer, etc.)
-- **30+ agent types** via specialized prompt templates
+- **22 total agents**: 6 real implementations (RAG, Knowledge Graph, Test Writer, DevOps Engineer, etc.) + 16 enhanced prompts + 1 optional
 - **Evolution system** that learns from your feedback and adapts over time
+- **Intelligent routing** automatically picks the best agent for your task
 
 **Technical deep dive:** See [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
@@ -199,10 +271,11 @@ CCB learns and improves
 
 - **Makes Claude Code context-aware** for your specific project
 - **Reduces repetitive prompting** through intelligent task routing
-- **Remembers between sessions** with persistent memory systems
+- **Remembers between sessions** with persistent memory systems (RAG + Knowledge Graph + Project Context)
 - **Provides specialized expertise** without you writing expert prompts
 - **Learns from your feedback** to improve over time
-- **Tracks costs and performance** so you stay in budget
+- **Prevents session crashes** by monitoring token usage and auto-reloading context
+- **Guides your workflow** with intelligent next-step recommendations
 - **Coordinates complex workflows** across multiple steps
 
 ## Honest Limitations ⚠️
@@ -260,8 +333,8 @@ CCB learns and improves
 - **Multi-step Planning** - Break down complex tasks into executable plans
 - **Workflow Coordination** - Automatic checkpoint detection and next-step suggestions
 - **Git Integration** - Beginner-friendly Git commands (`save-work`, `list-versions`, `go-back-to`)
-- **N8n & Opal Integration** - Connect to workflow automation and access management
-- **Dashboard** - Real-time metrics, cost tracking, performance monitoring
+- **N8n & Opal Integration** - Workflow automation (N8n REST API + Opal browser automation with natural language)
+- **Dashboard** - Real-time metrics, session health monitoring, performance tracking
 
 **Explore:** See [docs/](docs/) for detailed guides on each feature.
 

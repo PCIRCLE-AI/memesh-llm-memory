@@ -43,6 +43,19 @@ export class ProjectAutoTracker {
   }
 
   /**
+   * Add tokens to the current count and check for snapshot trigger
+   * @param count - Number of tokens to add
+   */
+  async addTokens(count: number): Promise<void> {
+    this.currentTokenCount += count;
+
+    if (this.currentTokenCount >= this.snapshotThreshold) {
+      await this.createSnapshot();
+      this.currentTokenCount = 0; // Reset after snapshot
+    }
+  }
+
+  /**
    * Record a code change event to Knowledge Graph
    * @param files - List of file paths that were modified
    * @param description - Human-readable description of the change
@@ -92,6 +105,27 @@ export class ProjectAutoTracker {
         name: `Test Result ${status} ${dateStr} ${Date.now()}`,
         entityType: 'test_result',
         observations,
+      }],
+    });
+  }
+
+  /**
+   * Create a project state snapshot in Knowledge Graph
+   */
+  private async createSnapshot(): Promise<void> {
+    const timestamp = new Date().toISOString();
+    const dateStr = timestamp.split('T')[0]; // YYYY-MM-DD
+
+    await this.mcp.memory.createEntities({
+      entities: [{
+        name: `Project Snapshot ${dateStr} ${Date.now()}`,
+        entityType: 'project_snapshot',
+        observations: [
+          `Token count: ${this.currentTokenCount}`,
+          `Snapshot threshold: ${this.snapshotThreshold}`,
+          'Snapshot reason: Token threshold reached',
+          `Timestamp: ${timestamp}`,
+        ],
       }],
     });
   }

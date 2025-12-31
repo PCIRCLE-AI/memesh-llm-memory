@@ -7,7 +7,7 @@ set -e
 
 # Configuration
 MAX_CPU_PERCENT=70
-MAX_MEMORY_MB=2048
+MAX_MEMORY_MB=6144  # Updated to 6GB (2025-12-31: conservative limit to prevent freeze)
 CHECK_INTERVAL=5
 LOG_FILE="./test-resource-monitor.log"
 

@@ -6,7 +6,7 @@ export default defineConfig({
     name: 'e2e',
 
     // Test file patterns
-    include: ['tests/e2e/**/*.spec.ts'],
+    include: ['tests/e2e/**/*.test.ts', 'tests/e2e/**/*.spec.ts'],
     exclude: ['node_modules', 'dist'],
 
     // Environment

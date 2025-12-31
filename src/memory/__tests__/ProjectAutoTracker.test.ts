@@ -176,4 +176,48 @@ describe('ProjectAutoTracker', () => {
       });
     });
   });
+
+  describe('Integration with HookIntegration', () => {
+    it('should provide hook for file changes', async () => {
+      const hook = tracker.createFileChangeHook();
+
+      await hook(['src/api/user.ts', 'src/models/User.ts'], 'Added authentication');
+
+      expect(mockMCP.memory.createEntities).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entities: expect.arrayContaining([
+            expect.objectContaining({
+              entityType: 'code_change',
+            }),
+          ]),
+        })
+      );
+    });
+
+    it('should provide hook for test results', async () => {
+      const hook = tracker.createTestResultHook();
+
+      await hook({ passed: 10, failed: 2, total: 12, failures: ['test error'] });
+
+      expect(mockMCP.memory.createEntities).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entities: expect.arrayContaining([
+            expect.objectContaining({
+              entityType: 'test_result',
+            }),
+          ]),
+        })
+      );
+    });
+
+    it('should provide hook for token tracking', async () => {
+      const hook = tracker.createTokenHook();
+
+      await hook(5000);
+      expect(tracker.getCurrentTokenCount()).toBe(5000);
+
+      await hook(5000); // Should trigger snapshot at 10k
+      expect(mockMCP.memory.createEntities).toHaveBeenCalled();
+    });
+  });
 });

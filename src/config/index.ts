@@ -4,6 +4,7 @@
 
 import { config } from 'dotenv';
 import { z } from 'zod';
+import { ConfigurationError } from '../errors/index.js';
 
 // 載入環境變數（覆蓋現有的環境變數）
 config({ override: true });
@@ -55,10 +56,18 @@ export const env = envSchema.parse(process.env);
  * Conditional validation: ANTHROPIC_API_KEY required when NOT in MCP server mode
  */
 if (!env.MCP_SERVER_MODE && !env.ANTHROPIC_API_KEY) {
-  throw new Error(
+  throw new ConfigurationError(
     'ANTHROPIC_API_KEY is required when not running in MCP server mode.\n' +
     'Either set ANTHROPIC_API_KEY in your .env file, or set MCP_SERVER_MODE=true\n' +
-    'Get your API key at: https://console.anthropic.com/settings/keys'
+    'Get your API key at: https://console.anthropic.com/settings/keys',
+    {
+      component: 'config',
+      method: 'initialization',
+      missingKey: 'ANTHROPIC_API_KEY',
+      mcpServerMode: env.MCP_SERVER_MODE,
+      solution: 'Set ANTHROPIC_API_KEY in .env file or enable MCP_SERVER_MODE',
+      documentationUrl: 'https://console.anthropic.com/settings/keys',
+    }
   );
 }
 

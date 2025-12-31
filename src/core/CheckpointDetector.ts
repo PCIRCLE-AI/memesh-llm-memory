@@ -5,6 +5,8 @@
  * when specific checkpoints are reached (e.g., tests complete, code written).
  */
 
+import { NotFoundError } from '../errors/index.js';
+
 /**
  * Callback function type for checkpoint handlers
  */
@@ -137,7 +139,11 @@ export class CheckpointDetector {
   ): Promise<CheckpointTriggerResult> {
     // Check if checkpoint is registered
     if (!this.isCheckpointRegistered(checkpointName)) {
-      throw new Error(`Checkpoint "${checkpointName}" is not registered`);
+      throw new NotFoundError(
+        `Checkpoint "${checkpointName}" is not registered`,
+        'checkpoint',
+        checkpointName
+      );
     }
 
     const entry = this.checkpoints.get(checkpointName)!;

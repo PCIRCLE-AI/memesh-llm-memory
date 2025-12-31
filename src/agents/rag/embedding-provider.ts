@@ -9,6 +9,7 @@ import { logger } from '../../utils/logger.js';
 import type { CostTracker } from './types.js';
 import * as readline from 'readline';
 import { SecureKeyStore } from '../../utils/SecureKeyStore.js';
+import { ConfigurationError } from '../../errors/index.js';
 
 /**
  * 統一的 Embedding Provider 接口
@@ -127,7 +128,15 @@ export class EmbeddingProviderFactory {
       ? 'OpenAI API key is required for RAG features. Please provide a valid API key.'
       : 'OpenAI API key not found. Please set OPENAI_API_KEY environment variable or pass apiKey parameter.';
 
-    throw new Error(errorMessage + '\n\nGet your API key at: https://platform.openai.com/api-keys');
+    throw new ConfigurationError(
+      errorMessage + '\n\nGet your API key at: https://platform.openai.com/api-keys',
+      {
+        configKey: 'OPENAI_API_KEY',
+        provider: 'OpenAI',
+        interactive: options.interactive,
+        apiKeyUrl: 'https://platform.openai.com/api-keys',
+      }
+    );
   }
 
   /**
@@ -152,9 +161,15 @@ export class EmbeddingProviderFactory {
       return null;
     }
 
-    throw new Error(
+    throw new ConfigurationError(
       'OpenAI API key not found. Please set OPENAI_API_KEY environment variable.\n' +
-      'Get your API key at: https://platform.openai.com/api-keys'
+      'Get your API key at: https://platform.openai.com/api-keys',
+      {
+        configKey: 'OPENAI_API_KEY',
+        provider: 'OpenAI',
+        method: 'createSync',
+        apiKeyUrl: 'https://platform.openai.com/api-keys',
+      }
     );
   }
 

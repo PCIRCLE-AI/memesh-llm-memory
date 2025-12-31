@@ -8,6 +8,7 @@ import type {
   ABTestResults,
   VariantStatistics,
 } from './types.js';
+import { ValidationError, NotFoundError } from '../errors/index.js';
 
 /**
  * Options for creating an A/B test experiment
@@ -69,12 +70,23 @@ export class ABTestManager {
   ): ABTestExperiment {
     // Validate inputs
     if (variants.length !== trafficSplit.length) {
-      throw new Error('Variants and traffic split must have same length');
+      throw new ValidationError('Variants and traffic split must have same length', {
+        component: 'ABTestManager',
+        method: 'createExperiment',
+        variantsLength: variants.length,
+        trafficSplitLength: trafficSplit.length,
+        constraint: 'variants.length === trafficSplit.length',
+      });
     }
 
     const sum = trafficSplit.reduce((acc, val) => acc + val, 0);
     if (Math.abs(sum - 1.0) > 0.001) {
-      throw new Error('Traffic split must sum to 1.0');
+      throw new ValidationError('Traffic split must sum to 1.0', {
+        component: 'ABTestManager',
+        method: 'createExperiment',
+        actualSum: sum,
+        constraint: 'sum(trafficSplit) === 1.0',
+      });
     }
 
     const experiment: ABTestExperiment = {
@@ -106,7 +118,12 @@ export class ABTestManager {
   startExperiment(experimentId: string): void {
     const experiment = this.experiments.get(experimentId);
     if (!experiment) {
-      throw new Error(`Experiment ${experimentId} not found`);
+      throw new NotFoundError(
+        `Experiment ${experimentId} not found`,
+        'experiment',
+        experimentId,
+        { availableExperiments: Array.from(this.experiments.keys()) }
+      );
     }
 
     experiment.status = 'running';
@@ -123,7 +140,12 @@ export class ABTestManager {
   assignVariant(experimentId: string, agentId: string): ABTestAssignment {
     const experiment = this.experiments.get(experimentId);
     if (!experiment) {
-      throw new Error(`Experiment ${experimentId} not found`);
+      throw new NotFoundError(
+        `Experiment ${experimentId} not found`,
+        'experiment',
+        experimentId,
+        { availableExperiments: Array.from(this.experiments.keys()) }
+      );
     }
 
     const assignments = this.assignments.get(experimentId)!;
@@ -213,12 +235,25 @@ export class ABTestManager {
   analyzeResults(experimentId: string): ABTestResults {
     const experiment = this.experiments.get(experimentId);
     if (!experiment) {
-      throw new Error(`Experiment ${experimentId} not found`);
+      throw new NotFoundError(
+        `Experiment ${experimentId} not found`,
+        'experiment',
+        experimentId,
+        { availableExperiments: Array.from(this.experiments.keys()) }
+      );
     }
 
     const experimentMetrics = this.metrics.get(experimentId);
     if (!experimentMetrics) {
-      throw new Error(`No metrics found for experiment ${experimentId}`);
+      throw new NotFoundError(
+        `No metrics found for experiment ${experimentId}`,
+        'experimentMetrics',
+        experimentId,
+        {
+          experiment: experimentId,
+          availableMetrics: Array.from(this.metrics.keys())
+        }
+      );
     }
 
     // Calculate variant statistics

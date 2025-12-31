@@ -34,6 +34,7 @@ import { join } from 'path';
 import { BackgroundExecutor } from '../core/BackgroundExecutor.js';
 import { ResourceMonitor } from '../core/ResourceMonitor.js';
 import { ExecutionConfig, Progress, BackgroundTask } from '../core/types.js';
+import { ValidationError } from '../errors/index.js';
 
 export class Orchestrator {
   private router: Router;
@@ -90,7 +91,17 @@ export class Orchestrator {
       const { analysis, routing, approved, message } = await this.router.routeTask(task);
 
       if (!approved) {
-        throw new Error(`Task execution blocked: ${message}`);
+        throw new ValidationError(
+          `Task execution blocked: ${message}`,
+          {
+            component: 'Orchestrator',
+            method: 'executeTask',
+            taskId: task.id,
+            taskDescription: task.description,
+            blockReason: message,
+            constraint: 'task must be approved by router',
+          }
+        );
       }
 
       console.log(`\n🎯 Executing task: ${task.id}`);

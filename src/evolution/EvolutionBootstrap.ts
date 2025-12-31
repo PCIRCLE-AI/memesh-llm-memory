@@ -16,6 +16,7 @@ import type { LearnedPattern } from './types.js';
 import type { LearningManager } from './LearningManager.js';
 import type { AgentRegistry } from '../core/AgentRegistry.js';
 import type { PerformanceTracker } from './PerformanceTracker.js';
+import { ValidationError } from '../errors/index.js';
 
 /**
  * Bootstrap pattern from JSON file
@@ -381,7 +382,16 @@ export class EvolutionBootstrap {
       // Defensive check: ensure sequence exists and has at least one element
       // (should be caught by validation, but extra safety)
       if (!pattern.sequence || pattern.sequence.length === 0) {
-        throw new Error(`Pattern ${pattern.id} has empty sequence`);
+        throw new ValidationError(
+          `Pattern ${pattern.id} has empty sequence`,
+          {
+            component: 'EvolutionBootstrap',
+            method: 'getDefaultPatterns',
+            patternId: pattern.id,
+            patternType: pattern.type,
+            constraint: 'sequence must have at least one agent',
+          }
+        );
       }
 
       return {
@@ -411,7 +421,16 @@ export class EvolutionBootstrap {
    */
   async importPatterns(learningManager: LearningManager): Promise<number> {
     if (!learningManager || typeof learningManager !== 'object') {
-      throw new Error('learningManager must be a valid LearningManager instance');
+      throw new ValidationError(
+        'learningManager must be a valid LearningManager instance',
+        {
+          component: 'EvolutionBootstrap',
+          method: 'importPatterns',
+          providedValue: learningManager,
+          providedType: typeof learningManager,
+          constraint: 'must be a valid LearningManager instance',
+        }
+      );
     }
 
     try {

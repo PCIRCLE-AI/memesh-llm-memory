@@ -8,6 +8,7 @@
 import Database from 'better-sqlite3';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
+import { NotFoundError } from '../errors/index.js';
 import { SimpleDatabaseFactory } from '../config/simple-config.js';
 import type { Entity, Relation, SearchQuery, RelationTrace } from './types.js';
 import type { SQLParams } from '../evolution/storage/types.js';
@@ -156,10 +157,20 @@ export class KnowledgeGraph {
     const toEntity = getEntityId.get(relation.to) as { id: number } | undefined;
 
     if (!fromEntity) {
-      throw new Error(`Entity not found: ${relation.from}`);
+      throw new NotFoundError(
+        `Entity not found: ${relation.from}`,
+        'entity',
+        relation.from,
+        { relationContext: 'from entity in relation creation' }
+      );
     }
     if (!toEntity) {
-      throw new Error(`Entity not found: ${relation.to}`);
+      throw new NotFoundError(
+        `Entity not found: ${relation.to}`,
+        'entity',
+        relation.to,
+        { relationContext: 'to entity in relation creation' }
+      );
     }
 
     const stmt = this.db.prepare(`

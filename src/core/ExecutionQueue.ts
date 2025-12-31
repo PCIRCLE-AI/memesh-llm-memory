@@ -10,6 +10,7 @@
 
 import { BackgroundTask, TaskPriority } from './types.js';
 import { logger } from '../utils/logger.js';
+import { ValidationError } from '../errors/index.js';
 
 export class ExecutionQueue {
   private queues: Map<TaskPriority, BackgroundTask[]>;
@@ -31,7 +32,10 @@ export class ExecutionQueue {
     const queue = this.queues.get(priority);
 
     if (!queue) {
-      throw new Error(`Invalid priority: ${priority}`);
+      throw new ValidationError(`Invalid priority: ${priority}`, {
+        providedPriority: priority,
+        validPriorities: this.priorityOrder,
+      });
     }
 
     queue.push(task);

@@ -1,3 +1,5 @@
+import { ValidationError } from '../errors/index.js';
+
 /**
  * Reload reason types
  */
@@ -58,7 +60,15 @@ export class ClaudeMdReloader {
   constructor(cooldownMs: number = 5 * 60 * 1000) {
     // CRITICAL ISSUE 1: Validate constructor input
     if (cooldownMs <= 0) {
-      throw new Error('cooldownMs must be positive');
+      throw new ValidationError(
+        'cooldownMs must be positive',
+        {
+          component: 'ClaudeMdReloader',
+          method: 'constructor',
+          providedValue: cooldownMs,
+          constraint: 'cooldownMs > 0',
+        }
+      );
     }
     this.cooldownMs = cooldownMs;
   }
@@ -95,7 +105,16 @@ export class ClaudeMdReloader {
   recordReload(record: ReloadRecord): void {
     // CRITICAL ISSUE 2: Validate required fields
     if (!record.reason || !record.triggeredBy) {
-      throw new Error('reason and triggeredBy are required');
+      throw new ValidationError(
+        'reason and triggeredBy are required',
+        {
+          component: 'ClaudeMdReloader',
+          method: 'recordReload',
+          providedReason: record.reason,
+          providedTriggeredBy: record.triggeredBy,
+          requiredFields: ['reason', 'triggeredBy'],
+        }
+      );
     }
 
     // Mutex pattern: Queue record if already processing

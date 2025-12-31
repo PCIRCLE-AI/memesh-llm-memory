@@ -15,6 +15,7 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 import { SimpleDatabaseFactory } from '../../config/simple-config.js';
 import { SQLiteStore } from './SQLiteStore.js';
+import { OperationError } from '../../errors/index.js';
 import type {
   Task,
   Execution,
@@ -434,7 +435,16 @@ export class EnhancedSQLiteStore extends SQLiteStore {
 
   async backup(): Promise<string> {
     if (this.enhancedOptions.dbPath === ':memory:') {
-      throw new Error('Cannot backup in-memory database');
+      throw new OperationError(
+        'Cannot backup in-memory database',
+        'backup',
+        {
+          component: 'SQLiteStore',
+          method: 'backup',
+          reason: 'in-memory databases cannot be backed up',
+          dbPath: this.enhancedOptions.dbPath,
+        }
+      );
     }
 
     const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];

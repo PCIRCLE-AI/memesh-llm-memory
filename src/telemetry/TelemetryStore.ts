@@ -13,6 +13,7 @@ import type {
   EventFilters
 } from './types';
 import type { SQLParams } from '../evolution/storage/types.js';
+import { NotFoundError } from '../errors/index.js';
 
 export interface TelemetryStoreOptions {
   storagePath?: string;
@@ -82,7 +83,16 @@ export class TelemetryStore {
   async getConfig(): Promise<TelemetryConfig> {
     const row = this.db.prepare('SELECT value FROM telemetry_config WHERE key = ?').get('config') as { value: string } | undefined;
     if (!row) {
-      throw new Error('Telemetry config not found');
+      throw new NotFoundError(
+        'Telemetry config not found',
+        'telemetryConfig',
+        'config',
+        {
+          component: 'TelemetryStore',
+          method: 'getConfig',
+          action: 'ensure database is initialized with default config',
+        }
+      );
     }
     return JSON.parse(row.value);
   }

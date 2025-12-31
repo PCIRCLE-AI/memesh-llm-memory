@@ -20,6 +20,7 @@ import {
 import { logger } from '../utils/logger.js';
 import { UIEventBus } from '../ui/UIEventBus.js';
 import { AttributionManager } from '../ui/AttributionManager.js';
+import { ValidationError, NotFoundError, StateError } from '../errors/index.js';
 
 interface WorkerHandle {
   promise: Promise<any>;
@@ -68,8 +69,14 @@ export class BackgroundExecutor {
        resourceCheck.reason?.includes('available'));
 
     if (!resourceCheck.canExecute && !canQueue) {
-      throw new Error(
-        `Cannot execute background task: ${resourceCheck.reason}. ${resourceCheck.suggestion}`
+      throw new ValidationError(
+        `Cannot execute background task: ${resourceCheck.reason}. ${resourceCheck.suggestion}`,
+        {
+          reason: resourceCheck.reason,
+          suggestion: resourceCheck.suggestion,
+          resources: resourceCheck.resources,
+          canQueue
+        }
       );
     }
 
@@ -331,7 +338,11 @@ export class BackgroundExecutor {
   async getProgress(taskId: string): Promise<Progress> {
     const task = this.tasks.get(taskId);
     if (!task) {
-      throw new Error(`Task ${taskId} not found`);
+      throw new NotFoundError(
+        `Task ${taskId} not found`,
+        'task',
+        taskId
+      );
     }
 
     return (
@@ -378,11 +389,23 @@ export class BackgroundExecutor {
     // Task not found in queue or active workers
     const task = this.tasks.get(taskId);
     if (!task) {
-      throw new Error(`Task ${taskId} not found`);
+      throw new NotFoundError(
+        `Task ${taskId} not found`,
+        'task',
+        taskId
+      );
     }
 
     if (task.status === 'completed' || task.status === 'failed' || task.status === 'cancelled') {
-      throw new Error(`Cannot cancel task ${taskId} - already ${task.status}`);
+      throw new StateError(
+        `Cannot cancel task ${taskId} - already ${task.status}`,
+        {
+          taskId,
+          currentStatus: task.status,
+          operation: 'cancel',
+          allowedStatuses: ['pending', 'running']
+        }
+      );
     }
   }
 
@@ -453,7 +476,11 @@ export class BackgroundExecutor {
   async completeTask(taskId: string, result: unknown): Promise<void> {
     const task = this.tasks.get(taskId);
     if (!task) {
-      throw new Error(`Task ${taskId} not found`);
+      throw new NotFoundError(
+        `Task ${taskId} not found`,
+        'task',
+        taskId
+      );
     }
 
     task.status = 'completed';
@@ -485,7 +512,11 @@ export class BackgroundExecutor {
   async failTask(taskId: string, error: Error): Promise<void> {
     const task = this.tasks.get(taskId);
     if (!task) {
-      throw new Error(`Task ${taskId} not found`);
+      throw new NotFoundError(
+        `Task ${taskId} not found`,
+        'task',
+        taskId
+      );
     }
 
     task.status = 'failed';

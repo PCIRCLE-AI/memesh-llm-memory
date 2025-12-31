@@ -1,6 +1,7 @@
 // src/core/SessionContextMonitor.ts
 import type { SessionTokenTracker } from './SessionTokenTracker.js';
 import type { ThresholdWarning } from './SessionTokenTracker.js';
+import { StateError, ValidationError } from '../errors/index.js';
 
 /**
  * Session health status
@@ -60,7 +61,10 @@ export class SessionContextMonitor {
 
   constructor(private tokenTracker: SessionTokenTracker) {
     if (!tokenTracker) {
-      throw new Error('SessionTokenTracker is required');
+      throw new StateError('SessionTokenTracker is required', {
+        component: 'SessionContextMonitor',
+        requiredDependency: 'SessionTokenTracker',
+      });
     }
   }
 
@@ -159,7 +163,11 @@ export class SessionContextMonitor {
    */
   recordQualityScore(score: number): void {
     if (!Number.isFinite(score) || score < 0 || score > 1) {
-      throw new Error('Quality score must be a finite number between 0 and 1');
+      throw new ValidationError('Quality score must be a finite number between 0 and 1', {
+        providedScore: score,
+        validRange: { min: 0, max: 1 },
+        mustBeFinite: true,
+      });
     }
 
     this.qualityHistory.push(score);

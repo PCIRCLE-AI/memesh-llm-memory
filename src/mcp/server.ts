@@ -60,6 +60,9 @@ import {
   type ValidatedListSkillsInput,
   type ValidatedUninstallInput,
 } from './validation.js';
+import { KnowledgeGraph } from '../knowledge-graph/index.js';
+import { ProjectMemoryManager } from '../memory/ProjectMemoryManager.js';
+import { recallMemoryTool } from './tools/recall-memory.js';
 
 // Agent Registry is now used instead of static AGENT_TOOLS array
 // See src/core/AgentRegistry.ts for agent definitions
@@ -85,6 +88,8 @@ class SmartAgentsMCPServer {
   private toolInterface: MCPToolInterface;
   private planningEngine: PlanningEngine;
   private gitAssistant: GitAssistantIntegration;
+  private knowledgeGraph: KnowledgeGraph;
+  private projectMemoryManager: ProjectMemoryManager;
 
   constructor() {
     this.server = new Server(
@@ -136,6 +141,10 @@ class SmartAgentsMCPServer {
 
     // Initialize Git Assistant
     this.gitAssistant = new GitAssistantIntegration(this.toolInterface);
+
+    // Initialize Project Memory System
+    this.knowledgeGraph = new KnowledgeGraph();
+    this.projectMemoryManager = new ProjectMemoryManager(this.knowledgeGraph);
 
     this.setupHandlers();
     this.setupResourceHandlers();
@@ -476,6 +485,17 @@ class SmartAgentsMCPServer {
       };
 
       // ========================================
+      // Project Memory Tools
+      // ========================================
+
+      // recall-memory - Recall project memory from previous sessions
+      const recallMemoryToolDef = {
+        name: recallMemoryTool.name,
+        description: recallMemoryTool.description,
+        inputSchema: recallMemoryTool.inputSchema,
+      };
+
+      // ========================================
       // Backward compatibility (old names)
       // ========================================
 
@@ -539,6 +559,8 @@ class SmartAgentsMCPServer {
           gitCreateBackupTool,
           gitSetupTool,
           gitHelpTool,
+          // Project Memory tools
+          recallMemoryToolDef,
           // Legacy tools (backward compatibility)
           smartRouterTool,
           evolutionDashboardTool,
@@ -645,6 +667,11 @@ class SmartAgentsMCPServer {
 
       if (toolName === 'git-help') {
         return await this.handleGitHelp(args);
+      }
+
+      // Handle recall-memory tool
+      if (toolName === 'recall-memory') {
+        return await this.handleRecallMemory(args);
       }
 
       // Handle smart_route_task (legacy name - backward compatibility)
@@ -1685,6 +1712,66 @@ class SmartAgentsMCPServer {
           {
             type: 'text',
             text: `❌ Failed to show help: ${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle recall-memory tool
+   */
+  private async handleRecallMemory(
+    args: unknown
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      const result = await recallMemoryTool.handler(
+        args as any,
+        this.projectMemoryManager
+      );
+
+      // Format the memories into readable text
+      let text = '📚 Project Memory Recall\n';
+      text += '━'.repeat(60) + '\n\n';
+
+      if (result.memories.length === 0) {
+        text += 'No memories found.\n\n';
+        text += '💡 Memories will be created as you work on the project.\n';
+      } else {
+        text += `Found ${result.memories.length} recent memories:\n\n`;
+
+        result.memories.forEach((memory, index) => {
+          text += `${index + 1}. ${memory.type}\n`;
+          if (memory.timestamp) {
+            text += `   Timestamp: ${memory.timestamp}\n`;
+          }
+          if (memory.observations && memory.observations.length > 0) {
+            text += '   Observations:\n';
+            memory.observations.forEach(obs => {
+              text += `   - ${obs}\n`;
+            });
+          }
+          text += '\n';
+        });
+      }
+
+      text += '━'.repeat(60) + '\n';
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text,
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Failed to recall memory: ${errorMessage}`,
           },
         ],
       };

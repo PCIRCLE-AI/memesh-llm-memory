@@ -1,5 +1,9 @@
 # Claude Code Buddy (CCB)
 
+**Languages:** [English](README.md) | [繁體中文](README.zh-TW.md)
+
+---
+
 > **Make Claude Code remember your project, learn from your feedback, and give you expert-level responses without expert-level prompts.**
 
 Claude Code Buddy is an MCP server that adds intelligence, memory, and task routing to Claude Code - turning it from a powerful assistant into a project-aware AI teammate.

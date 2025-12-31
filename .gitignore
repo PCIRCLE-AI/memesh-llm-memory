@@ -153,3 +153,4 @@ temp-*.ts
 temp-*.js
 tmp-*.ts
 tmp-*.jspackage.json.backup
+logs/*.log

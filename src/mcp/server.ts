@@ -48,6 +48,29 @@ import { CheckpointDetector } from '../core/CheckpointDetector.js';
 import { MCPToolInterface } from '../core/MCPToolInterface.js';
 import { PlanningEngine } from '../planning/PlanningEngine.js';
 import { GitAssistantIntegration } from '../integrations/GitAssistantIntegration.js';
+
+// Buddy Commands (user-friendly layer)
+import {
+  executeBuddyDo,
+  BuddyDoInputSchema,
+  type ValidatedBuddyDoInput,
+} from './tools/buddy-do.js';
+import {
+  executeBuddyStats,
+  BuddyStatsInputSchema,
+  type ValidatedBuddyStatsInput,
+} from './tools/buddy-stats.js';
+import {
+  executeBuddyRemember,
+  BuddyRememberInputSchema,
+  type ValidatedBuddyRememberInput,
+} from './tools/buddy-remember.js';
+import {
+  executeBuddyHelp,
+  BuddyHelpInputSchema,
+  type ValidatedBuddyHelpInput,
+} from './tools/buddy-help.js';
+
 import { z } from 'zod';
 import {
   TaskInputSchema,
@@ -269,6 +292,79 @@ class ClaudeCodeBuddyMCPServer {
             dryRun: {
               type: 'boolean',
               description: 'Preview what would be removed without actually removing. Default: false',
+            },
+          },
+        },
+      };
+
+      // ========================================
+      // Buddy Commands (User-Friendly Layer)
+      // ========================================
+
+      // buddy_do - Execute tasks with smart routing
+      const buddyDoTool = {
+        name: 'buddy_do',
+        description: '🤖 CCB: Execute a task with smart routing. Analyzes complexity and routes to Ollama (fast & free) or Claude (high quality).',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            task: {
+              type: 'string',
+              description: 'Task description to execute (e.g., "setup authentication", "fix login bug")',
+            },
+          },
+          required: ['task'],
+        },
+      };
+
+      // buddy_stats - Performance dashboard
+      const buddyStatsTool = {
+        name: 'buddy_stats',
+        description: '📊 CCB: View performance dashboard showing token usage, cost savings, and model routing decisions.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            period: {
+              type: 'string',
+              enum: ['day', 'week', 'month', 'all'],
+              description: 'Time period for statistics (default: "all")',
+            },
+          },
+        },
+      };
+
+      // buddy_remember - Recall project memory
+      const buddyRememberTool = {
+        name: 'buddy_remember',
+        description: '🧠 CCB: Recall project memory - past decisions, API design, bug fixes, and patterns.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            query: {
+              type: 'string',
+              description: 'What to remember/recall (e.g., "api design decisions", "authentication approach")',
+            },
+            limit: {
+              type: 'number',
+              description: 'Maximum number of memories to retrieve (1-50, default: 5)',
+              minimum: 1,
+              maximum: 50,
+            },
+          },
+          required: ['query'],
+        },
+      };
+
+      // buddy_help - Get help and documentation
+      const buddyHelpTool = {
+        name: 'buddy_help',
+        description: '📖 CCB: Get help for all buddy commands or a specific command.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            command: {
+              type: 'string',
+              description: 'Specific command to get help for (optional, e.g., "do", "stats", "remember")',
             },
           },
         },
@@ -562,6 +658,11 @@ class ClaudeCodeBuddyMCPServer {
           saAgentsTool,
           saSkillsTool,
           saUninstallTool,
+          // Buddy Commands (user-friendly layer)
+          buddyDoTool,
+          buddyStatsTool,
+          buddyRememberTool,
+          buddyHelpTool,
           // Workflow guidance tools
           getWorkflowGuidanceTool,
           getSessionHealthTool,
@@ -639,6 +740,23 @@ class ClaudeCodeBuddyMCPServer {
       // Handle sa_uninstall (new tool)
       if (toolName === 'sa_uninstall') {
         return await this.handleUninstall(args);
+      }
+
+      // Handle Buddy Commands (user-friendly layer)
+      if (toolName === 'buddy_do') {
+        return await this.handleBuddyDo(args);
+      }
+
+      if (toolName === 'buddy_stats') {
+        return await this.handleBuddyStats(args);
+      }
+
+      if (toolName === 'buddy_remember') {
+        return await this.handleBuddyRemember(args);
+      }
+
+      if (toolName === 'buddy_help') {
+        return await this.handleBuddyHelp(args);
       }
 
       // Handle workflow guidance tools
@@ -2082,6 +2200,118 @@ class ClaudeCodeBuddyMCPServer {
         );
       }
     });
+  }
+
+  /**
+   * Handle buddy_do command - Execute tasks with smart routing
+   */
+  private async handleBuddyDo(
+    args: unknown
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    // Validate input
+    let validatedInput: ValidatedBuddyDoInput;
+    try {
+      validatedInput = BuddyDoInputSchema.parse(args);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new ValidationError(
+          'Invalid buddy_do input',
+          {
+            component: 'ClaudeCodeBuddyMCPServer',
+            method: 'handleBuddyDo',
+            schema: 'BuddyDoInputSchema',
+            providedArgs: args,
+          }
+        );
+      }
+      throw error;
+    }
+
+    return await executeBuddyDo(validatedInput, this.router, this.formatter);
+  }
+
+  /**
+   * Handle buddy_stats command - Performance dashboard
+   */
+  private async handleBuddyStats(
+    args: unknown
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    // Validate input
+    let validatedInput: ValidatedBuddyStatsInput;
+    try {
+      validatedInput = BuddyStatsInputSchema.parse(args);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new ValidationError(
+          'Invalid buddy_stats input',
+          {
+            component: 'ClaudeCodeBuddyMCPServer',
+            method: 'handleBuddyStats',
+            schema: 'BuddyStatsInputSchema',
+            providedArgs: args,
+          }
+        );
+      }
+      throw error;
+    }
+
+    return await executeBuddyStats(validatedInput, this.formatter);
+  }
+
+  /**
+   * Handle buddy_remember command - Recall project memory
+   */
+  private async handleBuddyRemember(
+    args: unknown
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    // Validate input
+    let validatedInput: ValidatedBuddyRememberInput;
+    try {
+      validatedInput = BuddyRememberInputSchema.parse(args);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new ValidationError(
+          'Invalid buddy_remember input',
+          {
+            component: 'ClaudeCodeBuddyMCPServer',
+            method: 'handleBuddyRemember',
+            schema: 'BuddyRememberInputSchema',
+            providedArgs: args,
+          }
+        );
+      }
+      throw error;
+    }
+
+    return await executeBuddyRemember(validatedInput, this.projectMemoryManager, this.formatter);
+  }
+
+  /**
+   * Handle buddy_help command - Get help and documentation
+   */
+  private async handleBuddyHelp(
+    args: unknown
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    // Validate input
+    let validatedInput: ValidatedBuddyHelpInput;
+    try {
+      validatedInput = BuddyHelpInputSchema.parse(args);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new ValidationError(
+          'Invalid buddy_help input',
+          {
+            component: 'ClaudeCodeBuddyMCPServer',
+            method: 'handleBuddyHelp',
+            schema: 'BuddyHelpInputSchema',
+            providedArgs: args,
+          }
+        );
+      }
+      throw error;
+    }
+
+    return await executeBuddyHelp(validatedInput, this.formatter);
   }
 
   /**

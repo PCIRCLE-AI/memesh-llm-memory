@@ -764,7 +764,9 @@ A: Yes! The prompt templates are in `src/core/PromptEnhancer.ts`. The evolution 
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+AGPL-3.0 License - see [LICENSE](LICENSE) file for details.
+
+This project is licensed under the GNU Affero General Public License v3.0. This means if you modify and deploy this as a network service, you must make the modified source code available to users.
 
 ## Acknowledgments
 

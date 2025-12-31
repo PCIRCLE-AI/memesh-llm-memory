@@ -6,13 +6,13 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { SmartAgentsMCPServer } from '../../src/mcp/server.js';
+import { ClaudeCodeBuddyMCPServer } from '../../src/mcp/server.js';
 
 describe('MCP Server - Smart Planning Tools', () => {
-  let server: SmartAgentsMCPServer;
+  let server: ClaudeCodeBuddyMCPServer;
 
   beforeEach(() => {
-    server = new SmartAgentsMCPServer();
+    server = new ClaudeCodeBuddyMCPServer();
   });
 
   it('should expose generate-smart-plan tool', async () => {

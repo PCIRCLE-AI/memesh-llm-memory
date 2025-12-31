@@ -7,6 +7,7 @@
 
 import os from 'os';
 import { SystemResources, ResourceCheckResult, ExecutionConfig } from './types.js';
+import { ValidationError } from '../errors/index.js';
 
 export class ResourceMonitor {
   private activeBackgroundCount: number = 0;
@@ -161,7 +162,11 @@ export class ResourceMonitor {
    */
   setMaxCPU(percentage: number): void {
     if (percentage < 0 || percentage > 100) {
-      throw new Error('CPU percentage must be between 0 and 100');
+      throw new ValidationError('CPU percentage must be between 0 and 100', {
+        value: percentage,
+        min: 0,
+        max: 100,
+      });
     }
     this.thresholds.maxCPU = percentage;
   }
@@ -171,7 +176,10 @@ export class ResourceMonitor {
    */
   setMaxMemory(megabytes: number): void {
     if (megabytes < 0) {
-      throw new Error('Memory must be positive');
+      throw new ValidationError('Memory must be positive', {
+        value: megabytes,
+        min: 0,
+      });
     }
     this.thresholds.maxMemory = megabytes;
   }
@@ -181,7 +189,10 @@ export class ResourceMonitor {
    */
   setMaxBackgroundAgents(count: number): void {
     if (count < 1) {
-      throw new Error('Max background agents must be at least 1');
+      throw new ValidationError('Max background agents must be at least 1', {
+        value: count,
+        min: 1,
+      });
     }
     this.maxBackgroundAgents = count;
   }

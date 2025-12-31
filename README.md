@@ -1,6 +1,8 @@
-# Smart-Agents
+# Claude Code Buddy (CCB)
 
-> **Honest upfront**: This is NOT a collection of 23 separate AI agents. It's a **smart routing + prompt enhancement system** that makes Claude Code work better for your projects. Think of it as an intelligent copilot for your copilot.
+> Your friendly AI companion for Claude Code - making development smarter, not harder.
+
+**Honest upfront**: This is a **smart routing + prompt enhancement system** that makes Claude Code work better for your projects. Not a collection of separate AI agents - it's an intelligent copilot for your copilot.
 
 ## ⚡ Quick Install for Claude Code
 
@@ -8,8 +10,8 @@
 
 1. **Clone this repository:**
    ```bash
-   git clone https://github.com/yourusername/smart-agents.git
-   cd smart-agents
+   git clone https://github.com/yourusername/claude-code-buddy.git
+   cd claude-code-buddy
    ```
 
 2. **Run interactive installation:**
@@ -28,7 +30,7 @@ The script will:
 
 **After installation:**
 - Restart Claude Code
-- Use smart-agents commands in any project
+- Use buddy commands in any project (e.g., `buddy do`, `buddy stats`, `buddy remember`)
 
 **Need help?** See [Installation Guide](docs/INSTALL.md) for detailed instructions.
 
@@ -63,9 +65,9 @@ If you've been using Claude Code to build projects, you've probably hit these fr
    - Which approach works best for this specific problem?
    - Constant mental overhead
 
-## What Smart-Agents Actually Is
+## What Claude Code Buddy (CCB) Actually Is
 
-**Smart-Agents is an MCP server that sits between you and Claude Code.**
+**CCB is an MCP server that sits between you and Claude Code.**
 
 Think of it as an intelligent layer that:
 - 🧠 **Analyzes** your task requirements
@@ -79,7 +81,7 @@ Think of it as an intelligent layer that:
 ```
 You ask Claude Code to do something
     ↓
-Smart-Agents MCP Server analyzes the task
+Claude Code Buddy (CCB) MCP Server analyzes the task
     ↓
 Router selects the best "agent type" (expert mode)
     ↓
@@ -232,17 +234,17 @@ show-changes
 
 ## Honest Limitations 🚫
 
-**What Smart-Agents CANNOT do:**
+**What Claude Code Buddy (CCB) CANNOT do:**
 
 1. ❌ **It's not magic** - Still needs clear requirements from you
-2. ❌ **Doesn't replace Claude API** - You still need your own Anthropic API key
-3. ❌ **Not a replacement for learning** - You still need to understand what you're building
+2. ❌ **Not a replacement for learning** - You still need to understand what you're building
+3. ❌ **Not a replacement for Claude Code** - It enhances Claude Code, doesn't replace it
 4. ❌ **Can't fix bad architecture** - Garbage in, garbage out still applies
 5. ❌ **Limited by Claude's capabilities** - Can't make Claude do things it fundamentally can't
 6. ❌ **Requires setup** - Not a one-click install (yet)
 7. ❌ **Early stage** - This is v1.0, expect rough edges
 
-**What Smart-Agents DOES do well:**
+**What Claude Code Buddy (CCB) DOES do well:**
 
 1. ✅ **Makes Claude Code more context-aware** for your project
 2. ✅ **Reduces repetitive prompt writing** through task routing
@@ -269,7 +271,7 @@ The interactive installation script handles everything automatically:
 - Claude Code MCP integration
 - Testing and verification
 
-**Note:** No API keys needed - Smart-Agents uses your existing Claude Code subscription through MCP.
+**Note:** No API keys needed - Claude Code Buddy uses your existing Claude Code subscription through MCP.
 
 **Manual installation:** See [Installation Guide](docs/INSTALL.md) for step-by-step manual setup.
 
@@ -286,13 +288,42 @@ Open Claude Code and try:
 "Review this pull request"
 ```
 
-Smart-Agents will automatically:
+Claude Code Buddy will automatically:
 - Analyze the task type
 - Route to the appropriate agent
 - Enhance the prompt with relevant context
 - Return an expert-level response
 
 ## How to Use Effectively
+
+### Buddy Commands Reference
+
+Claude Code Buddy provides friendly, natural language commands:
+
+**Core Commands:**
+```bash
+buddy do <task>          # Execute any task with smart routing
+buddy stats [period]     # View performance dashboard (day/week/month/all)
+buddy remember <query>   # Recall project memory and past decisions
+buddy help [command]     # Get help for all commands or a specific one
+```
+
+**Examples:**
+```bash
+buddy do setup authentication
+buddy do optimize this database query
+buddy stats week
+buddy remember how we implemented the login feature
+buddy help do
+```
+
+**Command Aliases:**
+- `buddy help-with` → `buddy do`
+- `buddy execute` → `buddy do`
+- `buddy recall` → `buddy remember`
+- `buddy dashboard` → `buddy stats`
+
+**Pro tip**: Commands are forgiving - aliases work the same way!
 
 ### For Different Task Types
 

@@ -71,8 +71,14 @@ export class MetricsStore {
       loaded.startedAt = new Date(loaded.startedAt);
 
       this.currentSession = loaded;
-    } catch (error: any) {
-      if (error.code !== 'ENOENT') {
+    } catch (error: unknown) {
+      // Only ignore "file not found" errors
+      const isFileNotFound =
+        error instanceof Error &&
+        'code' in error &&
+        (error as { code?: string }).code === 'ENOENT';
+
+      if (!isFileNotFound) {
         throw error;
       }
       // File doesn't exist yet, use current session

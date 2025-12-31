@@ -119,11 +119,14 @@ export function withEvolutionTracking<T extends (...args: any[]) => Promise<any>
       }
 
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       const duration = Date.now() - startTime;
 
+      // Extract error details with type safety
+      const errorDetails = getErrorDetails(error);
+
       // Sanitize error message to remove sensitive data
-      const sanitizedMessage = sanitizeErrorMessage(error.message);
+      const sanitizedMessage = sanitizeErrorMessage(errorDetails.message);
 
       // Record failure
       span.setStatus({
@@ -133,7 +136,7 @@ export function withEvolutionTracking<T extends (...args: any[]) => Promise<any>
 
       span.setAttributes({
         'execution.success': false,
-        'error.type': error.constructor.name,
+        'error.type': errorDetails.typeName,
         'error.message': sanitizedMessage,
       });
 
@@ -161,6 +164,23 @@ function categorizeError(error: Error): string {
   if (error.name.includes('Timeout')) return 'timeout';
   if (error.name.includes('Type')) return 'runtime';
   return 'unknown';
+}
+
+/**
+ * Extract error details from unknown error type
+ * Type-safe helper for error handling
+ */
+function getErrorDetails(error: unknown): { message: string; typeName: string } {
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      typeName: error.constructor.name,
+    };
+  }
+  return {
+    message: String(error),
+    typeName: 'UnknownError',
+  };
 }
 
 /**

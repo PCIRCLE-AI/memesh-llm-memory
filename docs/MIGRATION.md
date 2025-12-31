@@ -1,15 +1,15 @@
-# Migration Guide: smart-agents → Claude Code Buddy (CCB)
+# Migration Guide: claude-code-buddy → Claude Code Buddy (CCB)
 
 ## Overview
 
-This guide helps you migrate from **smart-agents** to **Claude Code Buddy (CCB)** v2.0.
+This guide helps you migrate from **claude-code-buddy** to **Claude Code Buddy (CCB)** v2.0.
 
 **Simple rebrand** - Direct rename with no backward compatibility needed (solo user).
 
 ## What Changed
 
 ### Name & Branding
-- **Old Name:** smart-agents
+- **Old Name:** claude-code-buddy
 - **New Name:** Claude Code Buddy (CCB)
 - **Package Name:** `claude-code-buddy` (npm/GitHub)
 - **MCP Server Name:** `ccb` (in config.json)
@@ -49,8 +49,8 @@ The installer will:
 **If you want to keep your existing setup:**
 
 ```bash
-# 1. Navigate to your smart-agents directory
-cd /path/to/smart-agents
+# 1. Navigate to your claude-code-buddy directory
+cd /path/to/claude-code-buddy
 
 # 2. Pull latest changes
 git pull origin main
@@ -69,7 +69,7 @@ Then edit `~/.claude/config.json`:
 ```json
 {
   "mcpServers": {
-    "ccb": {  // Changed from "smart-agents"
+    "ccb": {  // Changed from "claude-code-buddy"
       "command": "node",
       "args": ["/absolute/path/to/claude-code-buddy/dist/mcp/server.js"],
       "env": {
@@ -84,7 +84,7 @@ Then edit `~/.claude/config.json`:
 
 **Your data stays in place:**
 
-- ✓ `~/.smart-agents/` directory continues to work
+- ✓ `~/.claude-code-buddy/` directory continues to work
 - ✓ All embeddings, memories, and cache preserved
 - ✓ Environment variables unchanged (`.env`)
 - ✓ MCP configuration compatible
@@ -95,7 +95,7 @@ If you want to rename your data directory for consistency:
 
 ```bash
 # Optional: Rename data directory
-mv ~/.smart-agents ~/.claude-code-buddy
+mv ~/.claude-code-buddy ~/.claude-code-buddy
 
 # Then update .env (if you use custom DATA_DIR)
 # DATA_DIR=~/.claude-code-buddy
@@ -116,7 +116,7 @@ ccb analyze "task complexity"
 
 ## Troubleshooting
 
-### Issue: "MCP server 'smart-agents' not found"
+### Issue: "MCP server 'claude-code-buddy' not found"
 
 **Solution:** Update `~/.claude/config.json` to use `"ccb"` as the server name.
 
@@ -135,7 +135,7 @@ ccb analyze "task complexity"
 
 **Solution:**
 1. Check `.env` file for `DATA_DIR` setting
-2. Verify directory exists: `ls ~/.smart-agents/` or `ls ~/.claude-code-buddy/`
+2. Verify directory exists: `ls ~/.claude-code-buddy/` or `ls ~/.claude-code-buddy/`
 3. Update DATA_DIR if you renamed the directory
 
 ### Issue: "API key required" error

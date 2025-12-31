@@ -3,7 +3,7 @@
 **Version**: 2.2.0
 **Last Updated**: 2025-12-31
 
-This guide helps you diagnose and resolve common issues with Smart Agents.
+This guide helps you diagnose and resolve common issues with Claude Code Buddy.
 
 ---
 
@@ -23,7 +23,7 @@ This guide helps you diagnose and resolve common issues with Smart Agents.
 ### Issue: MCP Server Not Responding
 
 **Symptoms**:
-- Claude Code cannot communicate with smart-agents
+- Claude Code cannot communicate with claude-code-buddy
 - MCP tools are unavailable
 - Error: "MCP server not found"
 
@@ -32,19 +32,19 @@ This guide helps you diagnose and resolve common issues with Smart Agents.
 1. **Check if server is configured**:
 ```bash
 # Check Claude Code config
-cat ~/.claude/config.json | grep smart-agents
+cat ~/.claude/config.json | grep claude-code-buddy
 ```
 
 2. **Verify installation**:
 ```bash
-cd /path/to/smart-agents
+cd /path/to/claude-code-buddy
 npm run build
 node dist/mcp/server.js --version
 ```
 
 3. **Check server logs**:
 ```bash
-cat ~/.claude/logs/smart-agents.log
+cat ~/.claude/logs/claude-code-buddy.log
 ```
 
 4. **Restart Claude Code**:
@@ -71,7 +71,7 @@ node --version  # Should be >= 18.0.0
 
 1. **Reinstall dependencies**:
 ```bash
-cd /path/to/smart-agents
+cd /path/to/claude-code-buddy
 rm -rf node_modules package-lock.json
 npm install
 ```
@@ -312,7 +312,7 @@ echo "OPENAI_API_KEY=sk-..." >> .env
 # Edit ~/.claude/config.json:
 {
   "mcpServers": {
-    "smart-agents": {
+    "claude-code-buddy": {
       "env": {
         "OPENAI_API_KEY": "sk-..."
       }
@@ -433,7 +433,7 @@ ls -la .git/hooks/
 2. **Restart MCP server**:
 ```bash
 # Kill existing server process
-ps aux | grep smart-agents
+ps aux | grep claude-code-buddy
 kill <PID>
 
 # Restart via Claude Code
@@ -447,7 +447,7 @@ cat ~/.claude/config.json
 
 4. **Verify required tools**:
 ```typescript
-// Required MCP tools for Smart Agents:
+// Required MCP tools for Claude Code Buddy:
 - filesystem (read, write, list)
 - memory (knowledge graph operations)
 - bash (command execution)
@@ -466,8 +466,8 @@ cat ~/.claude/config.json
 
 1. **Check error logs**:
 ```bash
-cat ~/.claude/logs/smart-agents.log
-tail -100 ~/.claude/logs/smart-agents.log
+cat ~/.claude/logs/claude-code-buddy.log
+tail -100 ~/.claude/logs/claude-code-buddy.log
 ```
 
 2. **Look for common crash causes**:
@@ -549,7 +549,7 @@ rm -rf ~/.claude/knowledge-graph/*
 ### Issue: High Memory Usage
 
 **Symptoms**:
-- Smart Agents consumes excessive memory
+- Claude Code Buddy consumes excessive memory
 - System slows down
 - Out of memory errors
 
@@ -558,7 +558,7 @@ rm -rf ~/.claude/knowledge-graph/*
 1. **Monitor memory usage**:
 ```bash
 # macOS
-ps aux | grep "smart-agents"
+ps aux | grep "claude-code-buddy"
 
 # Check total memory
 top -l 1 | grep PhysMem
@@ -680,21 +680,21 @@ docker run -v $(pwd):/app node:18 bash -c "cd /app && npm ci && npm test && npm 
 
 ### Search Existing Issues
 
-1. **GitHub Issues**: https://github.com/kevintseng/smart-agents/issues
+1. **GitHub Issues**: https://github.com/PCIRCLE-AI/claude-code-buddy/issues
 2. **Search by error message or symptom**
 3. **Check closed issues for solutions**
 
 ### Report a Bug
 
 **Before reporting, collect**:
-- Smart Agents version (`cat package.json | grep version`)
+- Claude Code Buddy version (`cat package.json | grep version`)
 - Node.js version (`node --version`)
 - Operating system
 - Error messages and stack traces
 - Steps to reproduce
 - Relevant log files
 
-**Create issue at**: https://github.com/kevintseng/smart-agents/issues/new
+**Create issue at**: https://github.com/PCIRCLE-AI/claude-code-buddy/issues/new
 
 **Include**:
 ```markdown
@@ -725,13 +725,13 @@ docker run -v $(pwd):/app node:18 bash -c "cd /app && npm ci && npm test && npm 
 
 **Logs**
 ```
-[Paste relevant logs from ~/.claude/logs/smart-agents.log]
+[Paste relevant logs from ~/.claude/logs/claude-code-buddy.log]
 ```
 ```
 
 ### Community Support
 
-1. **GitHub Discussions**: https://github.com/kevintseng/smart-agents/discussions
+1. **GitHub Discussions**: https://github.com/PCIRCLE-AI/claude-code-buddy/discussions
 2. **Ask questions and share solutions**
 3. **Connect with other users**
 
@@ -746,16 +746,16 @@ node --version
 npm --version
 pwd
 
-# Smart Agents status
-cd /path/to/smart-agents
+# Claude Code Buddy status
+cd /path/to/claude-code-buddy
 npm run build
 ls dist/mcp/server.js
 
 # MCP configuration
-cat ~/.claude/config.json | grep -A 10 smart-agents
+cat ~/.claude/config.json | grep -A 10 claude-code-buddy
 
 # Logs
-tail -50 ~/.claude/logs/smart-agents.log
+tail -50 ~/.claude/logs/claude-code-buddy.log
 
 # Test suite
 npm test
@@ -805,7 +805,7 @@ git log --oneline -5
 **Q: Do I need an OpenAI API key?**  
 A: Only if you want to use RAG features. All other agents work without it.
 
-**Q: How do I update Smart Agents?**  
+**Q: How do I update Claude Code Buddy?**  
 A: `git pull origin main && npm install && npm run build`
 
 **Q: Can I customize agent behavior?**  
@@ -822,4 +822,4 @@ A: Test Writer automates basic test generation. Manual testing needed for comple
 
 ---
 
-**Still need help?** Open an issue: https://github.com/kevintseng/smart-agents/issues
+**Still need help?** Open an issue: https://github.com/PCIRCLE-AI/claude-code-buddy/issues

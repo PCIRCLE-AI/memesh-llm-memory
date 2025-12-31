@@ -1,4 +1,4 @@
-# Smart Agents Architecture Diagram
+# Claude Code Buddy Architecture Diagram
 
 ## System Overview
 

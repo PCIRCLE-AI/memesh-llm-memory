@@ -1,5 +1,5 @@
 /**
- * Dashboard - Terminal UI Dashboard for Smart Agents
+ * Dashboard - Terminal UI Dashboard for Claude Code Buddy
  *
  * Central dashboard that coordinates UI updates, tracks active agents,
  * monitors resources, and displays session metrics in real-time.
@@ -140,9 +140,13 @@ export class Dashboard {
 
     // Emit metrics update event
     this.uiEventBus.emitMetricsUpdate({
-      resources,
-      agentCount: this.activeAgents.size,
-      sessionMetrics: this.sessionMetrics,
+      sessionStart: this.sessionMetrics.startedAt,
+      totalTasks: this.sessionMetrics.tasksCompleted + this.sessionMetrics.tasksFailed,
+      completedTasks: this.sessionMetrics.tasksCompleted,
+      failedTasks: this.sessionMetrics.tasksFailed,
+      agentUsageCount: this.sessionMetrics.agentUsageBreakdown,
+      estimatedTimeSaved: this.sessionMetrics.totalTimeSaved * 60, // convert minutes to seconds
+      tokensUsed: this.sessionMetrics.totalTokensUsed,
     });
   }
 

@@ -7,11 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0] - 2026-01-01
 
-### Major Rebrand: smart-agents → Claude Code Buddy (CCB)
+### Major Rebrand: claude-code-buddy → Claude Code Buddy (CCB)
 
 **Breaking Changes:**
-- Project renamed from "smart-agents" to "Claude Code Buddy (CCB)"
-- MCP server name changed: `smart-agents` → `claude-code-buddy`
+- Project renamed from "claude-code-buddy" to "Claude Code Buddy (CCB)"
+- MCP server name changed: `claude-code-buddy` → `claude-code-buddy`
 - Package name updated to reflect new branding
 
 **Note:** This is the initial public release, so while technically a "rebrand," there are no existing users to migrate.
@@ -62,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Core Infrastructure
 - **MCP Server Class:**
   - Class name: \`SmartAgentsMCPServer\` → \`ClaudeCodeBuddyMCPServer\`
-  - Server name in MCP registration: \`smart-agents\` → \`claude-code-buddy\`
+  - Server name in MCP registration: \`claude-code-buddy\` → \`claude-code-buddy\`
   - Server version: \`1.0.0\` → \`2.0.0\`
   - Console messages updated to reflect new branding
 
@@ -86,8 +86,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - \`CHANGELOG.md\` - Version history (this file)
 
 #### Installation
-- Repository URL: \`smart-agents.git\` → \`claude-code-buddy.git\`
-- Directory name: \`smart-agents/\` → \`claude-code-buddy/\`
+- Repository URL: \`claude-code-buddy.git\` → \`claude-code-buddy.git\`
+- Directory name: \`claude-code-buddy/\` → \`claude-code-buddy/\`
 - No API keys required - uses Claude Code subscription via MCP
 
 ### Technical Details
@@ -130,7 +130,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 2. Update local repository name:
    \`\`\`bash
    # Rename directory if desired
-   mv smart-agents claude-code-buddy
+   mv claude-code-buddy claude-code-buddy
    \`\`\`
 3. Reinstall dependencies:
    \`\`\`bash
@@ -140,7 +140,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 4. Update Claude Code MCP config:
    \`\`\`bash
    # Update ~/.claude/config.json
-   # Change "smart-agents" to "ccb" or "claude-code-buddy"
+   # Change "claude-code-buddy" to "ccb" or "claude-code-buddy"
    \`\`\`
 
 ### Commits

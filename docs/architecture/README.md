@@ -1,6 +1,6 @@
 # Architecture Documentation
 
-**Comprehensive system architecture and design documentation for Smart Agents.**
+**Comprehensive system architecture and design documentation for Claude Code Buddy.**
 
 ---
 
@@ -16,7 +16,7 @@ Complete five-layer architecture specification including:
 - Data flow patterns
 - Failover logic
 
-**When to read**: Understanding how Smart Agents works internally
+**When to read**: Understanding how Claude Code Buddy works internally
 
 ---
 
@@ -50,7 +50,7 @@ Detailed data flow patterns:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ Layer 5: User Interface                                     │
-│ Claude Code (existing) + Smart Agents MCP Server            │
+│ Claude Code (existing) + Claude Code Buddy MCP Server            │
 └───────────────────────────┬─────────────────────────────────┘
                             │
                             ↓

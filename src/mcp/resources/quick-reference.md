@@ -1,4 +1,4 @@
-# Smart-Agents Quick Reference
+# Claude Code Buddy Quick Reference
 
 **Version**: 0.1.0
 
@@ -10,7 +10,7 @@ sa_agents                          # List all agents
 sa_agents --category development   # Filter by category
 sa_dashboard                       # View evolution metrics
 sa_skills                          # List all skills
-sa_uninstall                       # Uninstall smart-agents
+sa_uninstall                       # Uninstall claude-code-buddy
 ```
 
 ## 📋 Agent Quick Lookup
@@ -146,12 +146,12 @@ sa_dashboard --metrics         # Success rates
 
 ```
 sa_skills                      # List all skills
-sa_skills --filter smart-agents  # Only sa: skills
+sa_skills --filter claude-code-buddy  # Only sa: skills
 sa_skills --filter user         # Only user skills
 ```
 
 **Naming Convention**:
-- `sa:<name>` → Smart-Agents generated
+- `sa:<name>` → Claude Code Buddy generated
 - `<name>` → User installed
 
 ## 🗑️ Uninstallation
@@ -165,9 +165,9 @@ sa_uninstall --dryRun true     # Preview only
 
 ## 📚 Full Documentation
 
-- **Complete Guide**: `@smart-agents://usage-guide`
-- **Examples**: `@smart-agents://examples`
-- **Best Practices**: `@smart-agents://best-practices`
+- **Complete Guide**: `@claude-code-buddy://usage-guide`
+- **Examples**: `@claude-code-buddy://examples`
+- **Best Practices**: `@claude-code-buddy://best-practices`
 
 ---
 

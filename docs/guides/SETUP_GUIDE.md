@@ -5,7 +5,7 @@
 ### 1. Install Dependencies
 
 ```bash
-cd /Users/ktseng/Developer/Projects/smart-agents
+cd /Users/ktseng/Developer/Projects/claude-code-buddy
 
 # Core UI framework
 npm install ink ink-spinner ink-table
@@ -128,7 +128,7 @@ const Dashboard: React.FC<DashboardProps> = ({ eventBus }) => {
   return (
     <Box flexDirection="column" padding={1}>
       <Box borderStyle="round" borderColor="cyan" paddingX={2}>
-        <Text bold>🤖 Smart Agents Dashboard</Text>
+        <Text bold>🤖 Claude Code Buddy Dashboard</Text>
       </Box>
 
       <Box marginTop={1} flexDirection="column">

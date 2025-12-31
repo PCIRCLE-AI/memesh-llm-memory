@@ -138,7 +138,7 @@ export class ProgressRenderer {
    * Render header section
    */
   private renderHeader(): string {
-    return '=== Smart Agents Dashboard ===';
+    return '=== Claude Code Buddy Dashboard ===';
   }
 
   /**

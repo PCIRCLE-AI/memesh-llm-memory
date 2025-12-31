@@ -2,12 +2,12 @@
 
 > ⚠️ **DEPRECATION NOTICE**
 > This hooks implementation has been **removed** as of 2025-12-30.
-> The Claude Code hooks system (`session-start.js`, `post-tool-use.js`, `stop.js`) is no longer part of smart-agents.
+> The Claude Code hooks system (`session-start.js`, `post-tool-use.js`, `stop.js`) is no longer part of claude-code-buddy.
 > This document is kept for historical reference only.
 
 ## Overview
 
-This document provides detailed technical implementation guidance for the Claude Code Hooks system that **was previously used** in the smart-agents project. This is a developer-focused guide for understanding the **deprecated** hooks system.
+This document provides detailed technical implementation guidance for the Claude Code Hooks system that **was previously used** in the claude-code-buddy project. This is a developer-focused guide for understanding the **deprecated** hooks system.
 
 ## Architecture
 
@@ -1223,7 +1223,7 @@ tail -f ~/.claude/state/hooks-debug.log
 
 ## References
 
-- **MCP Integration**: `/Users/ktseng/Developer/Projects/smart-agents/docs/MCP_INTEGRATION.md` (replaces hooks-based integration)
+- **MCP Integration**: `/Users/ktseng/Developer/Projects/claude-code-buddy/docs/MCP_INTEGRATION.md` (replaces hooks-based integration)
 - **Hooks README**: `~/.claude/hooks/README.md`
 - **Smart-Router Skill**: `~/.claude/skills/smart-router/skill.md`
 - **Smart-Orchestrator Skill**: `~/.claude/skills/smart-orchestrator/skill.md`

@@ -18,6 +18,8 @@ import {
   ProgressIndicator,
   SuccessEvent,
   ErrorEvent,
+  AgentStartEvent,
+  AgentCompleteEvent,
   AttributionMessage,
   MetricsSnapshot,
 } from './types.js';
@@ -129,28 +131,28 @@ export class UIEventBus {
   /**
    * Emit agent start event
    */
-  emitAgentStart(data: { agentId: string; agentType: string; taskDescription: string }): void {
+  emitAgentStart(data: AgentStartEvent): void {
     this.emit(UIEventType.AGENT_START, data);
   }
 
   /**
    * Subscribe to agent start events
    */
-  onAgentStart(handler: EventHandler): UnsubscribeFunction {
+  onAgentStart(handler: EventHandler<AgentStartEvent>): UnsubscribeFunction {
     return this.on(UIEventType.AGENT_START, handler);
   }
 
   /**
    * Emit agent complete event
    */
-  emitAgentComplete(data: { agentId: string; agentType: string; duration: number }): void {
+  emitAgentComplete(data: AgentCompleteEvent): void {
     this.emit(UIEventType.AGENT_COMPLETE, data);
   }
 
   /**
    * Subscribe to agent complete events
    */
-  onAgentComplete(handler: EventHandler): UnsubscribeFunction {
+  onAgentComplete(handler: EventHandler<AgentCompleteEvent>): UnsubscribeFunction {
     return this.on(UIEventType.AGENT_COMPLETE, handler);
   }
 

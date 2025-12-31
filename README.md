@@ -88,7 +88,7 @@ CCB: [Searches your codebase, finds actual auth files, shows you the patterns]
 ```
 
 **Drop Inbox Magic:**
-- Drop files into `~/Documents/smart-agents-knowledge/`
+- Drop files into `~/Documents/claude-code-buddy-knowledge/`
 - CCB automatically indexes them every 5 seconds
 - Supports: .md, .txt, .json, .pdf, .docx
 - No commands needed - just drop and done!
@@ -447,6 +447,9 @@ This is free and open-source software. If you modify and deploy this as a networ
 **Built with ❤️ by developers, for developers.**
 
 **Make Claude Code smarter, not louder.**
+
+🇹🇼 **Crafted in Taiwan** | 台灣製造
+_Where innovation meets tradition_
 
 [Get Started](#quick-start-2-minutes) • [Documentation](docs/) • [Report Issue](https://github.com/PCIRCLE-AI/claude-code-buddy/issues) • [Join Discussion](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
 

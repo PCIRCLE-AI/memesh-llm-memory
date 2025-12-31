@@ -1,4 +1,4 @@
-# 🚀 Smart Agents Setup Guide (V2.0 MCP Server Pattern)
+# 🚀 Claude Code Buddy Setup Guide (V2.0 MCP Server Pattern)
 
 ## V2.0 MCP Server Setup (Current Implementation)
 
@@ -6,8 +6,8 @@
 
 ```bash
 # Clone repository
-git clone <your-repo-url> smart-agents
-cd smart-agents
+git clone <your-repo-url> claude-code-buddy
+cd claude-code-buddy
 
 # Install Node.js dependencies
 npm install
@@ -21,15 +21,15 @@ npm run build
 
 ### Step 3: Configure Claude Code MCP Server
 
-Edit `~/.claude/mcp_settings.json` and add the smart-agents MCP server:
+Edit `~/.claude/mcp_settings.json` and add the claude-code-buddy MCP server:
 
 ```json
 {
   "mcpServers": {
-    "smart-agents": {
+    "claude-code-buddy": {
       "command": "npm",
       "args": ["run", "mcp"],
-      "cwd": "/path/to/smart-agents",
+      "cwd": "/path/to/claude-code-buddy",
       "env": {
         "NODE_ENV": "production"
       }
@@ -38,7 +38,7 @@ Edit `~/.claude/mcp_settings.json` and add the smart-agents MCP server:
 }
 ```
 
-**Important**: Replace `/path/to/smart-agents` with the actual project path.
+**Important**: Replace `/path/to/claude-code-buddy` with the actual project path.
 
 ### Step 4: (Optional) Configure RAG Agent
 
@@ -60,7 +60,7 @@ OPENAI_API_KEY=sk-your-key-here
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 
 # Vector DB path (optional)
-VECTRA_INDEX_PATH=~/.smart-agents/vectra
+VECTRA_INDEX_PATH=~/.claude-code-buddy/vectra
 ```
 
 **If not using RAG agent**, you can skip this step and don't even need a .env file.
@@ -74,7 +74,7 @@ Restart Claude Code, and the MCP server will start automatically.
 Test in Claude Code:
 
 ```
-Please use smart-agents' code-reviewer to review this code...
+Please use claude-code-buddy' code-reviewer to review this code...
 ```
 
 ---
@@ -98,7 +98,7 @@ Please use smart-agents' code-reviewer to review this code...
 3. Check Claude Code logs: `~/.claude/logs/`
 4. Try running manually: `npm run mcp`
 
-### Q: Cannot find smart-agents tools
+### Q: Cannot find claude-code-buddy tools
 
 **Solutions**:
 1. Confirm Claude Code has been restarted

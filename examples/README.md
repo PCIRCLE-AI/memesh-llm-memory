@@ -1,6 +1,6 @@
-# Smart-Agents Examples
+# Claude Code Buddy Examples
 
-Example scripts demonstrating smart-agents features.
+Example scripts demonstrating claude-code-buddy features.
 
 ## Terminal UI Dashboard Demo (Phase 3)
 
@@ -23,7 +23,7 @@ See: [dashboard-demo.ts](./dashboard-demo.ts)
 
 ## Legacy Terminal UI Examples & Documentation
 
-Complete technical assessment and implementation guide for building elegant terminal UIs in the smart-agents project.
+Complete technical assessment and implementation guide for building elegant terminal UIs in the claude-code-buddy project.
 
 ## Quick Links
 
@@ -43,7 +43,7 @@ Complete technical assessment and implementation guide for building elegant term
 ### 1. Install Dependencies
 
 ```bash
-cd /Users/ktseng/Developer/Projects/smart-agents
+cd /Users/ktseng/Developer/Projects/claude-code-buddy
 
 # Core framework + utilities
 npm install ink ink-spinner chalk ora boxen
@@ -101,7 +101,7 @@ npx tsx examples/terminal-ui-poc.tsx
 **What you'll see:**
 ```
 ╭──────────────────────────────────╮
-│ 🤖 Smart Agents Dashboard        │
+│ 🤖 Claude Code Buddy Dashboard        │
 ╰──────────────────────────────────╯
 
 Overall Progress:
@@ -180,7 +180,7 @@ npx tsx examples/component-library.tsx
 
 ## Recommendations
 
-### For Smart Agents Dashboard: Use Ink
+### For Claude Code Buddy Dashboard: Use Ink
 
 **Why?**
 - ✅ Modern React-based architecture

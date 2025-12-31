@@ -539,7 +539,7 @@ render(<Dashboard eventBus={eventBus} />);
 
 - **Docs:** https://github.com/vadimdemedes/ink
 - **Components:** https://github.com/vadimdemedes/ink#useful-components
-- **Examples:** `/Users/ktseng/Developer/Projects/smart-agents/examples/`
+- **Examples:** `/Users/ktseng/Developer/Projects/claude-code-buddy/examples/`
 
 ---
 

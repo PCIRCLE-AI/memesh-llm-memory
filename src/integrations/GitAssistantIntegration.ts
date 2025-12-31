@@ -1,7 +1,7 @@
 /**
- * Git Assistant Integration for Smart-Agents
+ * Git Assistant Integration for Claude Code Buddy
  *
- * Exposes Git Assistant functionality to Claude Code and other smart-agents.
+ * Exposes Git Assistant functionality to Claude Code and other Claude Code Buddy agents.
  * Provides hook points for automatic Git management.
  */
 
@@ -71,7 +71,7 @@ export class GitAssistantIntegration {
   }
 
   /**
-   * Handle file changes (called by smart-agents when files are modified)
+   * Handle file changes (called by Claude Code Buddy when files are modified)
    */
   async onFilesChanged(filePaths: string[]): Promise<void> {
     await this.gitAssistant.onFileChanged(filePaths);

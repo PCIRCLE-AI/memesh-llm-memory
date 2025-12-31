@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ProjectMemoryManager } from '../../agents/memory/ProjectMemoryManager.js';
+import type { ProjectMemoryManager } from '../../memory/ProjectMemoryManager.js';
 import type { ResponseFormatter } from '../../ui/ResponseFormatter.js';
 
 export const BuddyRememberInputSchema = z.object({
@@ -37,14 +37,16 @@ export async function executeBuddyRemember(
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
   try {
     // Search project memory
-    const memories = await projectMemory.recall(input.query, input.limit);
+    const memories = await projectMemory.search(input.query, input.limit);
 
     if (memories.length === 0) {
       const formattedResponse = formatter.format({
-        success: true,
-        message: `🤔 No memories found for: "${input.query}"`,
-        data: {
+        agentType: 'buddy-remember',
+        taskDescription: `Search project memory: ${input.query}`,
+        status: 'success',
+        results: {
           query: input.query,
+          count: 0,
           suggestions: [
             'Try a broader search term',
             'Check if memories were stored for this topic',
@@ -64,9 +66,10 @@ export async function executeBuddyRemember(
     }
 
     const formattedResponse = formatter.format({
-      success: true,
-      message: `🧠 Found ${memories.length} relevant memories for: "${input.query}"`,
-      data: {
+      agentType: 'buddy-remember',
+      taskDescription: `Search project memory: ${input.query}`,
+      status: 'success',
+      results: {
         query: input.query,
         memories: memories,
         count: memories.length,
@@ -82,13 +85,13 @@ export async function executeBuddyRemember(
       ],
     };
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : 'Unknown error retrieving memories';
+    const errorObj = error instanceof Error ? error : new Error(String(error));
 
     const formattedError = formatter.format({
-      success: false,
-      message: `❌ Failed to retrieve memories`,
-      error: errorMessage,
+      agentType: 'buddy-remember',
+      taskDescription: `Search project memory: ${input.query}`,
+      status: 'error',
+      error: errorObj,
     });
 
     return {

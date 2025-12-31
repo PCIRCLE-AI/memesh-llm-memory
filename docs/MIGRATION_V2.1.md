@@ -1,6 +1,6 @@
 # Migration Guide: v2.0 → v2.1
 
-This guide helps existing users migrate from Smart Agents v2.0 to v2.1.
+This guide helps existing users migrate from Claude Code Buddy v2.0 to v2.1.
 
 ## Breaking Changes
 
@@ -122,15 +122,15 @@ OPENAI_API_KEY=sk-proj-xxxxx
 - OpenAI API key still optional (RAG features only)
 
 ### MCP Server Config
-✅ **No changes to MCP server configuration**.
+⚠️ **Update MCP server configuration due to rebrand**.
 
-Your existing Claude Code config continues to work:
+Update your Claude Code config from Claude Code Buddy to Claude Code Buddy:
 ```json
 {
   "mcpServers": {
-    "smart-agents": {
+    "claude-code-buddy": {
       "command": "node",
-      "args": ["/absolute/path/to/smart-agents/dist/mcp/server.js"],
+      "args": ["/absolute/path/to/claude-code-buddy/dist/mcp/server.js"],
       "env": {
         "NODE_ENV": "production"
       }
@@ -139,7 +139,7 @@ Your existing Claude Code config continues to work:
 }
 ```
 
-The setup script can help you verify it's correct.
+The setup script can help you verify it's correct. Update the server name from `"claude-code-buddy"` to `"claude-code-buddy"` and the path accordingly.
 
 ### Agent Registry
 ⚠️ **Agent count changed from 22 to 13**.
@@ -171,10 +171,11 @@ git stash  # Save any local changes
 git tag my-v2.0-backup  # Create backup tag
 ```
 
-**2. Pull v2.1 changes**
+**2. Update repository source** (rebrand from Claude Code Buddy to Claude Code Buddy)
 ```bash
+git remote set-url origin https://github.com/PCIRCLE-AI/claude-code-buddy.git
 git fetch origin
-git checkout v2.1
+git checkout main  # or v2.1 if tagged
 npm install
 ```
 
@@ -185,8 +186,8 @@ npm install
 
 **Expected output**:
 ```
-🚀 Smart Agents - Automated Setup
-==================================
+🚀 Claude Code Buddy - Automated Setup
+======================================
 
 ✅ Node.js version: v18.x.x
 ✅ npm is installed
@@ -221,8 +222,8 @@ grep -r "22 agents\|14 agents" your-custom-code/
 Just follow the new [Quick Start Guide](guides/QUICK_START.md) - it's much faster now!
 
 ```bash
-git clone https://github.com/kevintseng/smart-agents.git
-cd smart-agents
+git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
+cd claude-code-buddy
 ./scripts/setup.sh
 ```
 
@@ -466,8 +467,8 @@ npm run test:e2e:safe
 
 Need help with migration?
 
-- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/kevintseng/smart-agents/issues)
-- 💬 **Questions**: [GitHub Discussions](https://github.com/kevintseng/smart-agents/discussions)
+- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/PCIRCLE-AI/claude-code-buddy/issues)
+- 💬 **Questions**: [GitHub Discussions](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
 - 📖 **Documentation**: [README](../README.md) | [Quick Start](guides/QUICK_START.md)
 - 🏗️ **Architecture**: [Overview](architecture/OVERVIEW.md)
 
@@ -486,7 +487,7 @@ We'd love to hear about your migration experience! Please share:
 - 💡 What could be improved
 - 🚀 New features you'd like to see
 
-[Create a Discussion](https://github.com/kevintseng/smart-agents/discussions/new)
+[Create a Discussion](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions/new)
 
 ## Migration Checklist
 

@@ -177,7 +177,7 @@ export class KnowledgeAgent {
    */
   async readGraph(): Promise<{
     entities: Entity[];
-    stats: Awaited<ReturnType<KnowledgeGraph['getStats']>>;
+    stats: Awaited<ReturnType<KnowledgeGraphSQLite['getStats']>>;
   }> {
     this.ensureInitialized();
 
@@ -283,10 +283,10 @@ export class KnowledgeAgent {
 
     const decisions = await this.searchNodes('', { entityType: 'decision' });
     return decisions.map(entity => ({
-      id: entity.id,
+      id: entity.name,
       description: entity.name,
       outcome: entity.observations.find(o => o.includes('outcome:'))?.replace('outcome:', '').trim() || '',
-      timestamp: entity.created
+      timestamp: entity.createdAt
     }));
   }
 
@@ -298,10 +298,10 @@ export class KnowledgeAgent {
 
     const lessons = await this.searchNodes('', { entityType: 'lesson_learned' });
     return lessons.map(entity => ({
-      id: entity.id,
+      id: entity.name,
       lesson: entity.name,
       context: entity.observations.join(' | '),
-      timestamp: entity.created
+      timestamp: entity.createdAt
     }));
   }
 

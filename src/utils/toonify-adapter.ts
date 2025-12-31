@@ -57,7 +57,7 @@ export interface OptimizationStats {
 }
 
 /**
- * Singleton ToonifyAdapter for consistent optimization across smart-agents
+ * Singleton ToonifyAdapter for consistent optimization across claude-code-buddy
  */
 export class ToonifyAdapter {
   private static instance: ToonifyAdapter | null = null;
@@ -79,7 +79,7 @@ export class ToonifyAdapter {
 
     // Initialize LRU cache with persistence
     const homeDir = process.env.HOME || process.env.USERPROFILE || '/tmp';
-    const cachePath = join(homeDir, '.smart-agents', 'cache', 'toonify-cache.json');
+    const cachePath = join(homeDir, '.claude-code-buddy', 'cache', 'toonify-cache.json');
 
     this.cache = new LRUCache<OptimizationResult>({
       maxSize: 1000,

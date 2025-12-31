@@ -1,4 +1,4 @@
-# Smart Agents Architecture Documentation
+# Claude Code Buddy (CCB) Architecture Documentation
 
 **Version**: 2.2.0
 **Last Updated**: 2025-12-31
@@ -23,9 +23,9 @@
 
 ## Overview
 
-### What is Smart Agents?
+### What is Claude Code Buddy (CCB)?
 
-Smart Agents is an **MCP (Model Context Protocol) server** that enhances Claude Code with intelligent prompt optimization, task routing, and performance tracking. It transforms Claude Code from a general-purpose AI assistant into a specialized development team with domain expertise.
+Claude Code Buddy (CCB) is an **MCP (Model Context Protocol) server** that enhances Claude Code with intelligent prompt optimization, task routing, and performance tracking. It transforms Claude Code from a general-purpose AI assistant into a specialized development team with domain expertise.
 
 ### Core Value Propositions
 
@@ -58,7 +58,7 @@ Smart Agents is an **MCP (Model Context Protocol) server** that enhances Claude 
                             │ MCP Protocol
                             ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Smart Agents MCP Server                      │
+│                Claude Code Buddy MCP Server (CCB)               │
 │                                                                 │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    │
 │  │ Task Analyzer│───▶│ Agent Router │───▶│Cost Tracker  │    │
@@ -114,7 +114,7 @@ Smart Agents is an **MCP (Model Context Protocol) server** that enhances Claude 
 
 ### 1. MCP Server Layer (`src/mcp/server.ts`)
 
-**Purpose**: Exposes Smart Agents functionality to Claude Code via Model Context Protocol.
+**Purpose**: Exposes Claude Code Buddy functionality to Claude Code via Model Context Protocol.
 
 **Key Responsibilities**:
 - Register MCP tools for Claude Code integration
@@ -399,7 +399,7 @@ User: "What did we work on yesterday?"
 
 ### Agent Classification
 
-Smart Agents has **18 available agents** organized into three types:
+Claude Code Buddy has **18 available agents** organized into three types:
 
 #### 1. Real Implementation Agents (5)
 
@@ -603,7 +603,7 @@ ENABLE_METRICS=true
 
 **Via Claude Code** (Recommended):
 ```
-"Install smart-agents MCP from https://github.com/kevintseng/smart-agents"
+"Install Claude Code Buddy MCP from https://github.com/PCIRCLE-AI/claude-code-buddy"
 ```
 
 Claude Code handles:
@@ -615,8 +615,8 @@ Claude Code handles:
 
 **Manual Installation**:
 ```bash
-git clone https://github.com/kevintseng/smart-agents
-cd smart-agents
+git clone https://github.com/PCIRCLE-AI/claude-code-buddy
+cd claude-code-buddy
 npm install
 npm run mcp
 ```
@@ -797,4 +797,4 @@ npm run bench
 
 **Architecture Status**: ✅ Production-ready, actively maintained
 
-**Questions?** Open an issue on [GitHub](https://github.com/kevintseng/smart-agents/issues)
+**Questions?** Open an issue on [GitHub](https://github.com/PCIRCLE-AI/claude-code-buddy/issues)

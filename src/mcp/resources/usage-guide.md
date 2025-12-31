@@ -1,11 +1,11 @@
-# Smart-Agents Complete Usage Guide
+# Claude Code Buddy Complete Usage Guide
 
 **Version**: 0.1.0
 **Last Updated**: 2025-12-29
 
 ## 📖 Overview
 
-Smart-Agents is an intelligent multi-agent system with 22 specialized agents designed to handle diverse software development tasks. The system automatically routes your tasks to the most appropriate agent based on task analysis and learned patterns.
+Claude Code Buddy is an intelligent multi-agent system with 22 specialized agents designed to handle diverse software development tasks. The system automatically routes your tasks to the most appropriate agent based on task analysis and learned patterns.
 
 ## 🎯 Quick Start
 
@@ -531,9 +531,9 @@ sa_agents --category analysis
 
 ## 📚 Additional Resources
 
-- Quick Reference: `@smart-agents://quick-reference`
-- Examples: `@smart-agents://examples`
-- Best Practices: `@smart-agents://best-practices`
+- Quick Reference: `@claude-code-buddy://quick-reference`
+- Examples: `@claude-code-buddy://examples`
+- Best Practices: `@claude-code-buddy://best-practices`
 
 ---
 

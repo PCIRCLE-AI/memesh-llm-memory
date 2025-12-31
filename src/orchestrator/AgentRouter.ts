@@ -160,6 +160,7 @@ export class AgentRouter {
     const agentCapabilities: Record<AgentType, TaskCapability[]> = {
       'code-reviewer': ['code-review'],
       'test-writer': ['testing'], // Code generation is implicit in testing
+      'test-automator': ['testing'],
       'debugger': ['debugging'],
       'refactorer': ['refactoring'], // Code generation is implicit in refactoring
       'api-designer': ['api-design'], // Code generation is implicit in API design
@@ -170,9 +171,13 @@ export class AgentRouter {
       'knowledge-agent': ['knowledge-query'],
       'db-optimizer': ['general'],
       'frontend-specialist': ['general'],
+      'frontend-developer': ['general'],
       'backend-specialist': ['general'],
+      'backend-developer': ['general'],
+      'database-administrator': ['general'],
       'development-butler': ['general'],
       'performance-profiler': ['general'],
+      'performance-engineer': ['general'],
       'devops-engineer': ['general'],
       'security-auditor': ['general'],
       'technical-writer': ['general'],
@@ -199,6 +204,7 @@ export class AgentRouter {
       // 開發類 Agent fallback
       'code-reviewer': 'general-agent',
       'test-writer': 'general-agent',
+      'test-automator': 'test-writer',
       'debugger': 'general-agent',
       'refactorer': 'general-agent',
       'api-designer': 'general-agent',
@@ -215,8 +221,12 @@ export class AgentRouter {
       'db-optimizer': 'general-agent',
       'development-butler': 'general-agent',
       'frontend-specialist': 'general-agent',
+      'frontend-developer': 'frontend-specialist',
       'backend-specialist': 'general-agent',
+      'backend-developer': 'backend-specialist',
+      'database-administrator': 'db-optimizer',
       'performance-profiler': 'general-agent',
+      'performance-engineer': 'performance-profiler',
       'devops-engineer': 'general-agent',
       'security-auditor': 'general-agent',
       'technical-writer': 'general-agent',
@@ -255,6 +265,7 @@ export class AgentRouter {
     const agentDescriptions: Record<AgentType, string> = {
       'code-reviewer': 'Specialized in code quality analysis and security review',
       'test-writer': 'Expert in test automation and TDD',
+      'test-automator': 'Automated test execution, CI/CD integration, test coverage analysis',
       'debugger': 'Specialized in root cause analysis and debugging',
       'refactorer': 'Expert in code refactoring and design patterns',
       'api-designer': 'Specialized in API design and RESTful principles',
@@ -266,8 +277,12 @@ export class AgentRouter {
       'db-optimizer': 'Database optimization, query tuning, index design specialist',
       'development-butler': 'Event-driven workflow automation, automates everything except coding/planning/reviewing',
       'frontend-specialist': 'Frontend development, React, Vue, modern web frameworks expert',
+      'frontend-developer': 'Full-stack frontend development, component libraries, state management',
       'backend-specialist': 'Backend development, API design, server architecture expert',
+      'backend-developer': 'Full-stack backend development, microservices, databases, caching',
+      'database-administrator': 'Database administration, schema design, performance tuning, backup and recovery',
       'performance-profiler': 'Performance profiling, optimization, bottleneck identification',
+      'performance-engineer': 'End-to-end performance engineering, scalability, load testing',
       'devops-engineer': 'DevOps, CI/CD, infrastructure automation, deployment expert',
       'security-auditor': 'Security auditing, vulnerability assessment, compliance expert',
       'technical-writer': 'Technical writing, documentation, user guides, API docs expert',

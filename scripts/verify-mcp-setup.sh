@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Smart-Agents MCP Server Setup Verification Script
+# Claude Code Buddy MCP Server Setup Verification Script
 # Checks if everything is properly configured before Claude Code integration
 
 set -e
 
-echo "🔍 Smart-Agents MCP Server Setup Verification"
+echo "🔍 Claude Code Buddy MCP Server Setup Verification"
 echo "=============================================="
 echo ""
 
@@ -106,7 +106,7 @@ if [ $ERRORS -eq 0 ] && [ $WARNINGS -eq 0 ]; then
     echo -e "${GREEN}✓ All checks passed!${NC}"
     echo ""
     echo "Next steps:"
-    echo "1. Add Smart-Agents to ~/.claude/config.json"
+    echo "1. Add Claude Code Buddy to ~/.claude/config.json"
     echo "   See: docs/MCP_INTEGRATION.md"
     echo "2. Restart Claude Code"
     echo "3. Verify tools appear in Claude Code"

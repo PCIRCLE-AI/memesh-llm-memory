@@ -69,8 +69,8 @@ export class N8nWorkflowAgent {
       if (response.exitCode !== 0) {
         throw new ExternalServiceError(
           `n8n API request failed: ${response.stderr}`,
-          'n8n',
           {
+            service: 'n8n',
             endpoint: `${this.N8N_BASE_URL}/workflows`,
             method: 'POST',
             exitCode: response.exitCode,
@@ -125,8 +125,8 @@ export class N8nWorkflowAgent {
       if (response.exitCode !== 0) {
         throw new ExternalServiceError(
           `Failed to get workflow: ${response.stderr}`,
-          'n8n',
           {
+            service: 'n8n',
             endpoint: `${this.N8N_BASE_URL}/workflows/${workflowId}`,
             method: 'GET',
             workflowId,
@@ -159,8 +159,8 @@ export class N8nWorkflowAgent {
       if (response.exitCode !== 0) {
         throw new ExternalServiceError(
           `Failed to list workflows: ${response.stderr}`,
-          'n8n',
           {
+            service: 'n8n',
             endpoint: `${this.N8N_BASE_URL}/workflows`,
             method: 'GET',
             exitCode: response.exitCode,
@@ -197,8 +197,8 @@ export class N8nWorkflowAgent {
       if (response.exitCode !== 0) {
         throw new ExternalServiceError(
           `Failed to update workflow: ${response.stderr}`,
-          'n8n',
           {
+            service: 'n8n',
             endpoint: `${this.N8N_BASE_URL}/workflows/${workflowId}`,
             method: 'PATCH',
             workflowId,
@@ -258,8 +258,8 @@ export class N8nWorkflowAgent {
       if (response.exitCode !== 0) {
         throw new ExternalServiceError(
           `Workflow execution failed: ${response.stderr}`,
-          'n8n',
           {
+            service: 'n8n',
             endpoint: `${this.N8N_BASE_URL}/workflows/${workflowId}/execute`,
             method: 'POST',
             workflowId,

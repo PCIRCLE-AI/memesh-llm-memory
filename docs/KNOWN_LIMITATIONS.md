@@ -3,7 +3,7 @@
 **Version**: 2.2.0
 **Last Updated**: 2025-12-31
 
-This document transparently documents known limitations, incomplete features, and areas for improvement in Smart Agents v2.2.0.
+This document transparently documents known limitations, incomplete features, and areas for improvement in Claude Code Buddy v2.2.0.
 
 ---
 
@@ -282,7 +282,7 @@ expect(result.testCases[0].case).toBe('edge-case-zero');
 
 If you encounter limitations not documented here:
 
-1. **GitHub Issues**: [Report new issues](https://github.com/kevintseng/smart-agents/issues)
+1. **GitHub Issues**: [Report new issues](https://github.com/kevintseng/claude-code-buddy/issues)
 2. **Provide Context**: Include version, use case, error messages
 3. **Expected vs. Actual**: Describe what you expected vs what happened
 

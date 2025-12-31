@@ -2,7 +2,7 @@
 
 ## 📋 Overview
 
-Successfully implemented a complete Agent Orchestrator system for the smart-agents project with intelligent task routing, cost tracking, and memory-aware scheduling optimized for MacBook Pro M2.
+Successfully implemented a complete Agent Orchestrator system for the claude-code-buddy project with intelligent task routing, cost tracking, and memory-aware scheduling optimized for MacBook Pro M2.
 
 ## ✅ Completed Components
 

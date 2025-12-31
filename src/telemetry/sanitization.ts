@@ -223,7 +223,7 @@ export function sanitizeEvent(event: unknown, visited = new WeakSet(), depth = 0
   } catch (error) {
     // Catastrophic error - return minimal safe object
     return {
-      event: event?.event || 'sanitization_failed',
+      event: (event as Record<string, unknown> | null | undefined)?.event || 'sanitization_failed',
       error: 'Failed to sanitize event',
     };
   }

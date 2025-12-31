@@ -4,13 +4,13 @@
 
 ## Overview
 
-The Self-Evolving Agent System in Smart Agents V2 enables AI agents to learn from execution experience, automatically identify successful patterns, and dynamically adjust behaviors to improve performance, quality, and cost-effectiveness.
+The Self-Evolving Agent System in Claude Code Buddy V2 enables AI agents to learn from execution experience, automatically identify successful patterns, and dynamically adjust behaviors to improve performance, quality, and cost-effectiveness.
 
 ### V2.0 MCP Server Pattern Explanation
 
 **How Evolution System Works in V2.0**:
 
-In the V2.0 MCP Server Pattern, smart-agents acts as an MCP server that generates enhanced prompts and returns them to Claude Code. The actual behavior of Evolution System features in V2.0 is as follows:
+In the V2.0 MCP Server Pattern, claude-code-buddy acts as an MCP server that generates enhanced prompts and returns them to Claude Code. The actual behavior of Evolution System features in V2.0 is as follows:
 
 1. **Prompt Optimization** ✅ Fully Supported
    - Evolution System can optimize and adjust prompts
@@ -1944,7 +1944,7 @@ The evolution system achieves seamless integration through Claude Code Hooks, au
          │              │                        │
          ▼              ▼                        ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              Smart-Agents Evolution System                  │
+│              Claude Code Buddy Evolution System                  │
 │                                                             │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
 │  │ Performance  │  │  Learning    │  │ Adaptation   │    │
@@ -2381,5 +2381,5 @@ Please follow:
 
 **Documentation Version**: V2.1
 **Last Updated**: 2025-12-28
-**Author**: Smart Agents Team
+**Author**: Claude Code Buddy Team
 **Phase 4 & 5 Additions**: EvolutionMonitor, evolution_dashboard MCP tool, complete testing infrastructure

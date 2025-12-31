@@ -1080,7 +1080,7 @@ export class SQLiteStore implements EvolutionStore {
     }
 
     const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as ContextualPatternRow[];
+    const rows = stmt.all(...params) as PatternRow[];
 
     return rows.map((row) => this.rowToContextualPattern(row));
   }
@@ -1088,7 +1088,7 @@ export class SQLiteStore implements EvolutionStore {
   /**
    * Convert database row to ContextualPattern (Phase 2)
    */
-  private rowToContextualPattern(row: ContextualPatternRow): import('./types.js').ContextualPattern {
+  private rowToContextualPattern(row: PatternRow): import('./types.js').ContextualPattern {
     const pattern_data = safeJsonParse<Record<string, any>>(row.pattern_data, {});
     const config_keys = safeJsonParse(row.config_keys, undefined);
     const metadata = safeJsonParse(row.context_metadata, undefined);
@@ -1139,7 +1139,7 @@ export class SQLiteStore implements EvolutionStore {
 
     return {
       id: row.id,
-      type: row.type,
+      type: row.type as 'success' | 'failure' | 'optimization' | 'anti-pattern',
       description: pattern_data.description || '',
       confidence: row.confidence,
       observations: row.occurrences,
@@ -1149,7 +1149,7 @@ export class SQLiteStore implements EvolutionStore {
       context: {
         agent_type: row.applies_to_agent_type ?? undefined,
         task_type: row.applies_to_task_type ?? undefined,
-        complexity: row.complexity ?? undefined,
+        complexity: row.complexity ? (row.complexity === 1 ? 'low' : row.complexity === 2 ? 'medium' : 'high') as 'low' | 'medium' | 'high' : undefined,
         config_keys: config_keys,
         metadata: metadata,
       },

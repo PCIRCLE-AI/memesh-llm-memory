@@ -8,7 +8,7 @@
 export interface BaseTelemetryEvent {
   anonymous_id: string;      // UUID, NO user identification
   timestamp: string;         // ISO 8601
-  sdk_version: string;       // smart-agents version
+  sdk_version: string;       // claude-code-buddy version
   node_version: string;      // Node.js version
   os_platform: string;       // 'darwin', 'linux', 'win32'
 }

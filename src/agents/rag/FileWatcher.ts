@@ -2,7 +2,7 @@
  * File Watcher for RAG Agent
  *
  * Monitors a designated folder for new files and automatically indexes them.
- * Uses platform-specific user-friendly locations like ~/Documents/smart-agents-knowledge/
+ * Uses platform-specific user-friendly locations like ~/Documents/claude-code-buddy-knowledge/
  */
 
 import * as fs from 'fs/promises';
@@ -72,8 +72,8 @@ export class FileWatcher {
    * Get platform-specific default watch directory
    *
    * @returns Path like:
-   * - macOS/Linux: ~/Documents/smart-agents-knowledge/
-   * - Windows: %USERPROFILE%\Documents\smart-agents-knowledge\
+   * - macOS/Linux: ~/Documents/claude-code-buddy-knowledge/
+   * - Windows: %USERPROFILE%\Documents\claude-code-buddy-knowledge\
    */
   private getDefaultWatchDir(): string {
     const homeDir = os.homedir();
@@ -83,10 +83,10 @@ export class FileWatcher {
 
     if (platform === 'win32') {
       // Windows
-      docsDir = path.join(homeDir, 'Documents', 'smart-agents-knowledge');
+      docsDir = path.join(homeDir, 'Documents', 'claude-code-buddy-knowledge');
     } else {
       // macOS, Linux, Unix
-      docsDir = path.join(homeDir, 'Documents', 'smart-agents-knowledge');
+      docsDir = path.join(homeDir, 'Documents', 'claude-code-buddy-knowledge');
     }
 
     return docsDir;

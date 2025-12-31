@@ -10,7 +10,7 @@ export class MetricsStore {
   private storePath: string;
   private currentSession: SessionMetrics;
 
-  constructor(storePath: string = '~/.smart-agents/metrics.json') {
+  constructor(storePath: string = '~/.claude-code-buddy/metrics.json') {
     // Expand home directory
     this.storePath = storePath.replace(/^~/, process.env.HOME || process.env.USERPROFILE || '');
 

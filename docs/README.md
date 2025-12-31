@@ -1,6 +1,6 @@
-# Smart Agents Documentation
+# Claude Code Buddy Documentation
 
-**Welcome to the Smart Agents documentation!**
+**Welcome to the Claude Code Buddy documentation!**
 
 This directory contains all user-facing project documentation organized by category for easy navigation.
 
@@ -25,7 +25,7 @@ Advanced multi-agent systems and self-learning capabilities.
 
 ### 🔌 [API Reference](./api/)
 
-API documentation for smart-agents MCP server.
+API documentation for claude-code-buddy MCP server.
 
 - **[API Reference](./api/API_REFERENCE.md)** - Complete API documentation
 - **[Model Configuration](./api/MODELS.md)** - AI model provider setup
@@ -38,7 +38,7 @@ Step-by-step guides for common tasks and best practices.
 - **[Testing Guide](./guides/TESTING.md)** - Testing strategies and best practices
 - **[E2E Testing Best Practices](./guides/E2E_TESTING_BEST_PRACTICES.md)** - End-to-end testing guide
 - **[RAG Deployment](./guides/RAG_DEPLOYMENT.md)** - RAG agent deployment guide
-- **[Claude Code Enhancement Guide](./guides/CLAUDE_CODE_ENHANCEMENT_GUIDE.md)** - Enhancing Claude Code with smart-agents
+- **[Claude Code Enhancement Guide](./guides/CLAUDE_CODE_ENHANCEMENT_GUIDE.md)** - Enhancing Claude Code with claude-code-buddy
 
 ### 📝 [Examples](./examples/)
 

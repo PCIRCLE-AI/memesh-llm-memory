@@ -232,7 +232,7 @@ export class ResponseFormatter {
    */
   private formatAttribution(): string {
     return chalk.gray('─'.repeat(60)) + '\n' +
-      chalk.gray('Powered by ') + chalk.bold.cyan('Smart-Agents') + chalk.gray(' | MCP Server');
+      chalk.gray('Powered by ') + chalk.bold.cyan('Claude Code Buddy') + chalk.gray(' | MCP Server');
   }
 
   /**

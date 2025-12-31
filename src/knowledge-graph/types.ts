@@ -1,7 +1,7 @@
 /**
  * Knowledge Graph Types
  *
- * Lightweight SQLite-based knowledge graph for smart-agents
+ * Lightweight SQLite-based knowledge graph for claude-code-buddy
  * No Docker required - standalone and portable
  */
 

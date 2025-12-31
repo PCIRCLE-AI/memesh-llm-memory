@@ -47,9 +47,10 @@ export async function executeBuddyStats(
     };
 
     const formattedResponse = formatter.format({
-      success: true,
-      message: `📊 Claude Code Buddy Performance Dashboard (${input.period})`,
-      data: stats,
+      agentType: 'buddy-stats',
+      taskDescription: `Show performance stats for period: ${input.period}`,
+      status: 'success',
+      results: stats,
     });
 
     return {
@@ -61,13 +62,13 @@ export async function executeBuddyStats(
       ],
     };
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : 'Unknown error fetching stats';
+    const errorObj = error instanceof Error ? error : new Error(String(error));
 
     const formattedError = formatter.format({
-      success: false,
-      message: `❌ Failed to fetch stats`,
-      error: errorMessage,
+      agentType: 'buddy-stats',
+      taskDescription: `Show performance stats for period: ${input.period}`,
+      status: 'error',
+      error: errorObj,
     });
 
     return {

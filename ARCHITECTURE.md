@@ -1,8 +1,8 @@
-# Smart-Agents System Architecture
+# Claude Code Buddy (CCB) System Architecture
 
 **Version**: V2.1 (MCP Server Pattern - Architectural Honesty)
 **Last Updated**: 2025-12-30
-**Author**: Smart Agents Team
+**Author**: Claude Code Buddy Team
 
 ---
 
@@ -20,7 +20,7 @@
 
 ## 系統概覽
 
-Smart-Agents 是一個智能 prompt enhancement 系統，透過 **MCP (Model Context Protocol)** 整合到 Claude Code，提供 13 個專業化的 agent routing 和 prompt 優化功能。
+Claude Code Buddy (CCB) 是一個智能 prompt enhancement 系統，透過 **MCP (Model Context Protocol)** 整合到 Claude Code，提供 13 個專業化的 agent routing 和 prompt 優化功能。
 
 **Agent 架構說明**:
 - **5 個完整實作**: RAG Agent、Evolution System、Knowledge Graph、Development Butler、Test Writer
@@ -48,11 +48,11 @@ Smart-Agents 是一個智能 prompt enhancement 系統，透過 **MCP (Model Con
                             │ MCP Protocol (stdio)
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│               Smart-Agents MCP Server                       │
+│            Claude Code Buddy MCP Server (CCB)             │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │ MCP Tools                                             │  │
 │  │ ┌────────────┐  ┌────────────┐  ┌────────────────┐  │  │
-│  │ │ smart_     │  │ evolution_ │  │ 13 agent       │  │  │
+│  │ │ ccb_       │  │ evolution_ │  │ 13 agent       │  │  │
 │  │ │ router     │  │ dashboard  │  │ tools          │  │  │
 │  │ └────────────┘  └────────────┘  └────────────────┘  │  │
 │  └──────────────────────────────────────────────────────┘  │
@@ -108,7 +108,7 @@ Smart-Agents 是一個智能 prompt enhancement 系統，透過 **MCP (Model Con
 ### 核心工作流程
 
 1. **User Request** → Claude Code
-2. **MCP Tool Call** → Smart-Agents MCP Server
+2. **MCP Tool Call** → Claude Code Buddy MCP Server (CCB)
 3. **Task Analysis** → TaskAnalyzer 分析任務複雜度、類型、所需能力
 4. **Agent Routing** → AgentRouter 基於能力路由到最合適的 agent
 5. **Prompt Enhancement** → PromptEnhancer 生成針對 agent 優化的 prompt
@@ -210,7 +210,7 @@ interface TaskAnalysis {
 
 **註**: 13 agents (5 個完整實作 + 8 個 prompt-enhanced agents)
 
-**重要說明**: Smart-Agents 不是多個獨立運行的 autonomous agents，而是一個 **prompt enhancement system**：
+**重要說明**: Claude Code Buddy 不是多個獨立運行的 autonomous agents，而是一個 **prompt enhancement system**：
 - Agent Registry 提供 13 個 agent 的 metadata (能力、專長、最佳實踐)
 - Router 根據 task 分析選擇最適合的 agent
 - PromptEnhancer 使用 agent metadata 生成優化的 prompt
@@ -258,7 +258,7 @@ interface RoutingDecision {
 
 **職責**: 估算 prompt 生成的理論成本
 
-> **V2.0 說明**: 在 MCP Server Pattern 中，smart-agents 只生成 enhanced prompts，不直接調用 API。實際的 API 調用由 Claude Code 使用用戶的 API subscription 執行。因此 CostTracker 提供的是**理論成本估算**，幫助用戶了解預期的 token 消耗。
+> **V2.0 說明**: 在 MCP Server Pattern 中，Claude Code Buddy (CCB) 只生成 enhanced prompts，不直接調用 API。實際的 API 調用由 Claude Code 使用用戶的 API subscription 執行。因此 CostTracker 提供的是**理論成本估算**，幫助用戶了解預期的 token 消耗。
 
 **功能**:
 - Token 使用量估算
@@ -415,10 +415,10 @@ estimatedCost = (promptTokens * INPUT_PRICE + completionTokens * OUTPUT_PRICE) /
 
 ### Available Tools
 
-**1. smart_router**:
+**1. ccb_router**:
 ```typescript
 {
-  name: 'smart_router',
+  name: 'ccb_router',
   description: 'Intelligent task routing to best agent with cost optimization',
   inputSchema: {
     task: {
@@ -462,7 +462,7 @@ estimatedCost = (promptTokens * INPUT_PRICE + completionTokens * OUTPUT_PRICE) /
 
 ### Integration with External MCP Servers
 
-Smart-Agents integrates with:
+Claude Code Buddy (CCB) integrates with:
 - **Memory MCP** - Knowledge graph for persistent memory
 - **Perplexity MCP** - Deep search capabilities
 - **Playwright MCP** - E2E testing automation
@@ -480,7 +480,7 @@ Smart-Agents integrates with:
    ↓
 2. Claude Code → MCP Server
    ↓
-3. smart_router tool invocation
+3. ccb_router tool invocation
    ↓
 4. Router.routeTask(task)
    │
@@ -638,7 +638,7 @@ private applyContextOptimization(
 Local Machine
 ├── Node.js 18+
 ├── Claude Code (作為 MCP client)
-├── smart-agents MCP Server
+├── Claude Code Buddy MCP Server (CCB)
 │   ├── Router (task analysis + agent selection)
 │   ├── 13 Agents (5 real + 8 prompt-enhanced)
 │   ├── Evolution System (self-learning)
@@ -684,7 +684,7 @@ Local Machine
 ### API Key 管理
 
 - ✅ 用戶在 Claude Code 中管理自己的 API keys
-- ✅ smart-agents MCP server 不需要 API keys
+- ✅ Claude Code Buddy MCP server 不需要 API keys
 - ✅ 不需要 `.env` file（除非使用 external MCP servers）
 - ✅ 本地執行，無 API key 洩漏風險
 
@@ -737,7 +737,7 @@ See [Storage Enhancements](./src/evolution/storage/ENHANCEMENTS.md) for details.
 
 **文檔版本**: V2.1 (MCP Server Pattern - Architectural Honesty)
 **最後更新**: 2025-12-30
-**維護者**: Smart Agents Team
+**維護者**: Claude Code Buddy Team
 
 **版本說明**:
 - **V2.1 (當前)**: 架構誠實化 - 明確說明 13 agents (5 real + 8 prompt-enhanced)，移除誤導性的 "22 agents" 和 "autonomous multi-agent" 聲明

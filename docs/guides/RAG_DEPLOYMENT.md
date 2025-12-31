@@ -43,7 +43,7 @@ npm --version   # >= 9.0.0
 
 ```bash
 # Clone project
-cd /Users/ktseng/Developer/Projects/smart-agents
+cd /Users/ktseng/Developer/Projects/claude-code-buddy
 
 # Install dependencies
 npm install
@@ -117,10 +117,10 @@ Vector data will be automatically stored in the `data/vectorstore/` directory, n
 
 ```bash
 # macOS / Linux
-~/Documents/smart-agents-knowledge/
+~/Documents/claude-code-buddy-knowledge/
 
 # Windows
-%USERPROFILE%\Documents\smart-agents-knowledge\
+%USERPROFILE%\Documents\claude-code-buddy-knowledge\
 ```
 
 **Why use the Documents folder?**
@@ -137,7 +137,7 @@ npm run rag:watch
 
 # Example output:
 📁 File Watcher Started
-📂 Watching directory: /Users/your-username/Documents/smart-agents-knowledge
+📂 Watching directory: /Users/your-username/Documents/claude-code-buddy-knowledge
 📄 Supported extensions: .md, .txt, .json, .pdf, .docx
 ⏱️  Polling interval: 5000ms (scan every 5 seconds)
 
@@ -154,7 +154,7 @@ npm run rag:watch
    ```
 
 2. **Drop Files**:
-   - Drop your documents, notes, code files into `~/Documents/smart-agents-knowledge/`
+   - Drop your documents, notes, code files into `~/Documents/claude-code-buddy-knowledge/`
    - Supported formats: `.md`, `.txt`, `.json`, `.pdf`, `.docx`
 
 3. **Automatic Indexing**:
@@ -185,8 +185,8 @@ npm run rag:watch
 npm run rag:watch
 
 # 2. In another terminal, drop files into the folder
-cp ~/Downloads/project-docs/*.md ~/Documents/smart-agents-knowledge/
-cp ~/Downloads/api-specs/*.json ~/Documents/smart-agents-knowledge/
+cp ~/Downloads/project-docs/*.md ~/Documents/claude-code-buddy-knowledge/
+cp ~/Downloads/api-specs/*.json ~/Documents/claude-code-buddy-knowledge/
 
 # 3. File Watcher will automatically index
 # Output:
@@ -361,7 +361,7 @@ healthCheck()
 
 ```bash
 # Cron health check (hourly)
-0 * * * * cd /path/to/smart-agents && tsx health-check.ts || alert
+0 * * * * cd /path/to/claude-code-buddy && tsx health-check.ts || alert
 ```
 
 #### Log Management
@@ -375,7 +375,7 @@ grep "ERROR" logs/rag-agent.log | tail -20
 
 # Log rotation (using logrotate)
 cat > /etc/logrotate.d/rag-agent <<EOF
-/path/to/smart-agents/logs/*.log {
+/path/to/claude-code-buddy/logs/*.log {
   daily
   rotate 7
   compress
@@ -669,7 +669,7 @@ Complete RAG Agent deployment workflow:
 
 ### Vectra Vector Database
 
-Smart-Agents RAG uses Vectra as the vector database:
+Claude Code Buddy RAG uses Vectra as the vector database:
 
 | Feature | Description |
 |---------|-------------|

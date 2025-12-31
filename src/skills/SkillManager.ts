@@ -1,12 +1,12 @@
 /**
  * Skill Manager
  *
- * Manages smart-agents generated skills with the sa: prefix convention.
+ * Manages claude-code-buddy generated skills with the sa: prefix convention.
  * Provides installation, listing, and filtering capabilities for skills.
  *
  * Naming Convention:
  * - User skills: <skill-name> (e.g., "frontend-design", "mcp-builder")
- * - Smart-Agents skills: sa:<skill-name> (e.g., "sa:code-review", "sa:test")
+ * - Claude Code Buddy skills: sa:<skill-name> (e.g., "sa:code-review", "sa:test")
  */
 
 import * as fs from 'fs/promises';
@@ -38,7 +38,7 @@ export interface SkillContent {
 /**
  * Skill Manager Class
  *
- * Centralized management for smart-agents skills with namespace isolation.
+ * Centralized management for claude-code-buddy skills with namespace isolation.
  */
 export class SkillManager {
   private readonly SKILL_PREFIX = 'sa:';
@@ -51,7 +51,7 @@ export class SkillManager {
   }
 
   /**
-   * Install a smart-agents skill with sa: prefix
+   * Install a claude-code-buddy skill with sa: prefix
    *
    * @param skillName - Name of the skill (without prefix)
    * @param content - Skill content (markdown format)
@@ -87,7 +87,7 @@ export class SkillManager {
   }
 
   /**
-   * List all skills (both user and smart-agents)
+   * List all skills (both user and claude-code-buddy)
    *
    * @returns Array of skill metadata
    */
@@ -138,9 +138,9 @@ export class SkillManager {
   }
 
   /**
-   * List only smart-agents generated skills (sa: prefix)
+   * List only claude-code-buddy generated skills (sa: prefix)
    *
-   * @returns Array of smart-agents skill names
+   * @returns Array of claude-code-buddy skill names
    */
   async listSmartAgentsSkills(): Promise<string[]> {
     const allSkills = await this.listAllSkills();
@@ -329,7 +329,7 @@ export class SkillManager {
   }
 
   /**
-   * Get smart-agents skill prefix
+   * Get claude-code-buddy skill prefix
    *
    * @returns The sa: prefix string
    */

@@ -1,5 +1,5 @@
 /**
- * Custom Error Classes for Smart Agents
+ * Custom Error Classes for Claude Code Buddy
  *
  * Provides a standardized error hierarchy for better error handling and debugging.
  * All custom errors extend BaseError which includes error codes and context.

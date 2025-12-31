@@ -1,14 +1,14 @@
-# Smart-Agents Quick Start Card
+# Claude Code Buddy Quick Start Card
 
-**30-second setup guide for Smart-Agents v2.1.0**
+**30-second setup guide for Claude Code Buddy v2.1.0**
 
 ---
 
 ## Installation
 
 ```bash
-git clone https://github.com/your-username/smart-agents.git
-cd smart-agents
+git clone https://github.com/your-username/claude-code-buddy.git
+cd claude-code-buddy
 npm install && npm run build
 ```
 
@@ -21,9 +21,9 @@ npm install && npm run build
 ```json
 {
   "mcpServers": {
-    "smart-agents": {
+    "claude-code-buddy": {
       "command": "node",
-      "args": ["/path/to/smart-agents/dist/mcp/server.js"]
+      "args": ["/path/to/claude-code-buddy/dist/mcp/server.js"]
     }
   }
 }

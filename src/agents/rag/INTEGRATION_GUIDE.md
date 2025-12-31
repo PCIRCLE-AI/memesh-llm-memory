@@ -1,6 +1,6 @@
 # RAG Agent 整合指南
 
-本指南說明如何將 RAG Agent 整合到 Smart Agents 生態系統中。
+本指南說明如何將 RAG Agent 整合到 Claude Code Buddy 生態系統中。
 
 ## 目錄
 
@@ -743,7 +743,7 @@ class RAGMonitor {
 
 ## 總結
 
-RAG Agent 可以與 Smart Agents 生態系統無縫整合：
+RAG Agent 可以與 Claude Code Buddy 生態系統無縫整合：
 
 1. ✅ **Agent Orchestrator**: 智能任務路由
 2. ✅ **MCP Memory**: 雙向知識同步

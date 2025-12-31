@@ -1,5 +1,5 @@
 /**
- * Smart-Agents Terminal UI System
+ * Claude Code Buddy Terminal UI System
  *
  * MCP Server Response Formatting for Beautiful Terminal Output
  *

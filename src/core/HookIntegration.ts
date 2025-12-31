@@ -23,6 +23,22 @@ export interface ToolUseData {
 }
 
 /**
+ * Expected arguments for Write/Edit tool
+ */
+interface FileToolArgs {
+  file_path: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Expected arguments for Bash tool
+ */
+interface BashToolArgs {
+  command: string;
+  [key: string]: unknown;
+}
+
+/**
  * Checkpoint detected from tool use
  */
 interface Checkpoint {
@@ -85,11 +101,12 @@ export class HookIntegration {
 
     // Detect code-written checkpoint (Write tool)
     if (toolName === 'Write') {
+      const fileArgs = args as FileToolArgs;
       return {
         name: 'code-written',
         data: {
-          files: [args.file_path],
-          hasTests: this.isTestFile(args.file_path),
+          files: [fileArgs.file_path],
+          hasTests: this.isTestFile(fileArgs.file_path),
           type: 'new-file',
         },
       };
@@ -97,33 +114,40 @@ export class HookIntegration {
 
     // Detect code-written checkpoint (Edit tool)
     if (toolName === 'Edit') {
+      const fileArgs = args as FileToolArgs;
       return {
         name: 'code-written',
         data: {
-          files: [args.file_path],
-          hasTests: this.isTestFile(args.file_path),
+          files: [fileArgs.file_path],
+          hasTests: this.isTestFile(fileArgs.file_path),
           type: 'modification',
         },
       };
     }
 
     // Detect test-complete checkpoint (Bash running tests)
-    if (toolName === 'Bash' && this.isTestCommand(args.command)) {
-      const testResults = this.parseTestOutput(toolData.output || '');
-      return {
-        name: 'test-complete',
-        data: testResults,
-      };
+    if (toolName === 'Bash') {
+      const bashArgs = args as BashToolArgs;
+      if (this.isTestCommand(bashArgs.command)) {
+        const testResults = this.parseTestOutput(toolData.output || '');
+        return {
+          name: 'test-complete',
+          data: testResults,
+        };
+      }
     }
 
     // Detect commit-ready checkpoint (git add)
-    if (toolName === 'Bash' && this.isGitAddCommand(args.command)) {
-      return {
-        name: 'commit-ready',
-        data: {
-          command: args.command,
-        },
-      };
+    if (toolName === 'Bash') {
+      const bashArgs = args as BashToolArgs;
+      if (this.isGitAddCommand(bashArgs.command)) {
+        return {
+          name: 'commit-ready',
+          data: {
+            command: bashArgs.command,
+          },
+        };
+      }
     }
 
     return null;

@@ -1,5 +1,5 @@
 // src/planning/PlanningEngine.ts
-import type { AgentRegistry } from '../orchestrator/AgentRegistry.js';
+import type { AgentRegistry } from '../core/AgentRegistry.js';
 import type { LearningManager } from '../evolution/LearningManager.js';
 import type { ContextualPattern } from '../evolution/types.js';
 import { ValidationError } from '../errors/index.js';
@@ -259,7 +259,7 @@ export class PlanningEngine {
   }
 
   private identifyTechStack(request: PlanRequest): string[] {
-    return ['TypeScript', 'Vitest', 'Smart Agents Infrastructure'];
+    return ['TypeScript', 'Vitest', 'Claude Code Buddy Infrastructure'];
   }
 
   private estimateTotalTime(tasks: PlanTask[]): string {

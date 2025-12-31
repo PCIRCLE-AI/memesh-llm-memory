@@ -67,7 +67,7 @@ describe('AttributionManager', () => {
     expect(suggestion.title).toContain('Error');
     expect(suggestion.body).toContain('API timeout');
     expect(suggestion.labels).toContain('bug');
-    expect(suggestion.labels).toContain('smart-agents');
+    expect(suggestion.labels).toContain('claude-code-buddy');
   });
 
   it('should sanitize sensitive data from issue body', () => {

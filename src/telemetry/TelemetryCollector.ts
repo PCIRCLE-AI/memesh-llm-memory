@@ -30,7 +30,7 @@ export class TelemetryCollector {
 
     // Add common fields
     const fullEvent: TelemetryEvent = {
-      ...sanitized,
+      ...(sanitized as Partial<TelemetryEvent>),
       anonymous_id: config.anonymous_id,
       timestamp: new Date().toISOString(),
       sdk_version: packageJson.version,

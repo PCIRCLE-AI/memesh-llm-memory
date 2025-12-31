@@ -4,7 +4,7 @@
 
 This guide helps you migrate from **smart-agents** to **Claude Code Buddy (CCB)** v2.0.
 
-**Good News:** This is a **non-breaking rebrand** - all your existing data, commands, and workflows continue to work.
+**Simple rebrand** - Direct rename with no backward compatibility needed (solo user).
 
 ## What Changed
 
@@ -80,26 +80,7 @@ Then edit `~/.claude/config.json`:
 }
 ```
 
-## Backward Compatibility
-
-### Commands (v2.0 - v2.5)
-
-**All old commands continue to work** with a friendly deprecation warning.
-
-| Old Command (smart-agents) | New Command (CCB) | Status |
-|---------------------------|-------------------|---------|
-| `smart-agents-route` | `ccb-route` | Both work ✅ |
-| `smart-agents-enhance` | `ccb-enhance` | Both work ✅ |
-| `smart-agents-memory` | `ccb-memory` | Both work ✅ |
-| `smart-agents-analyze` | `ccb-analyze` | Both work ✅ |
-
-**Example deprecation warning:**
-```
-⚠️ Warning: 'smart-agents-route' is deprecated. Please use 'ccb-route' instead.
-   Old commands will be removed in v3.0 (EOL: June 2026)
-```
-
-### Data & Configuration
+## Data & Configuration
 
 **Your data stays in place:**
 
@@ -120,60 +101,17 @@ mv ~/.smart-agents ~/.claude-code-buddy
 # DATA_DIR=~/.claude-code-buddy
 ```
 
-## Breaking Changes
+## What's New
 
-### v2.0 (Current Release)
+### Commands
 
-**None!** This is a non-breaking rebrand.
-
-All existing functionality, APIs, and data formats remain compatible.
-
-### Future Releases
-
-**v2.5 (Planned: March 2026)**
-- Old command names will show stronger deprecation warnings
-- New features will only use new command names
-
-**v3.0 (Planned: June 2026)**
-- Old command names will be removed (breaking change)
-- Automatic data migration to new directory structure
-- Updated configuration format
-
-## Command Reference
-
-### Quick Command Mapping
+New command structure is **friendlier and more memorable**:
 
 ```bash
-# Routing & Analysis
-smart-agents-route → ccb-route
-smart-agents-analyze → ccb-analyze
-
-# Prompt Enhancement
-smart-agents-enhance → ccb-enhance
-smart-agents-optimize → ccb-optimize
-
-# Memory & Context
-smart-agents-memory → ccb-memory
-smart-agents-recall → ccb-recall
-
-# Debugging & Tools
-smart-agents-debug → ccb-debug
-smart-agents-explain → ccb-explain
-```
-
-### Using New Commands
-
-The new commands are **friendlier and more memorable**:
-
-```bash
-# Instead of: smart-agents-route "complex query"
 ccb route "complex query"
-
-# Instead of: smart-agents-enhance "basic prompt"
 ccb enhance "basic prompt"
-
-# Instead of: smart-agents-memory store "important fact"
 ccb memory store "important fact"
+ccb analyze "task complexity"
 ```
 
 ## Troubleshooting
@@ -221,23 +159,6 @@ ccb memory store "important fact"
 - **GitHub Issues:** [Report a bug](https://github.com/yourusername/claude-code-buddy/issues)
 - **Discussions:** [Ask a question](https://github.com/yourusername/claude-code-buddy/discussions)
 - **Discord:** [Join community](https://discord.gg/ccb-community)
-
-## Deprecation Timeline
-
-```
-v2.0 (Jan 2026)    v2.5 (Mar 2026)    v3.0 (Jun 2026)
-     │                   │                  │
-     │                   │                  │
-     ▼                   ▼                  ▼
-Old commands       Stronger          Old commands
-work with          deprecation       removed
-warnings           warnings          (breaking)
-     │                   │                  │
-     └───────────────────┴──────────────────┘
-              6 months transition
-```
-
-**Recommendation:** Start using new command names now to prepare for v3.0.
 
 ## What's Next
 

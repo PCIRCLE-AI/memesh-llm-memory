@@ -1,432 +1,379 @@
-# Smart Agents - Claude Code 智能提示增強系統
+# Claude Code Buddy (CCB)
 
-> **透過智能路由、提示優化和性能追蹤，將 Claude Code 轉變為專業的 AI 開發團隊。**
+> **讓 Claude Code 記住你的專案、從你的回饋中學習，並提供專家級的回應，無需專家級的提示。**
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/kevintseng/smart-agents/releases)
-[![Node.js >= 18.0.0](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
-[![Claude Code MCP](https://img.shields.io/badge/Claude_Code-MCP_Server-purple.svg)](https://modelcontextprotocol.io/)
-
-[English](README.md) | [繁體中文](#)
+Claude Code Buddy 是一個 MCP 伺服器，為 Claude Code 增加智能、記憶和任務路由功能 - 將它從強大的助手轉變為具備專案意識的 AI 團隊成員。
 
 ---
 
-## 🎯 什麼是 Smart Agents？
+## 問題所在
 
-**Smart Agents** 是一個 **MCP (Model Context Protocol) 伺服器**，透過智能提示優化和任務路由，為 Claude Code 提供**專業化 AI Agent**能力。
+你使用 Claude Code 來建構專案，但不斷遇到相同的挫折：
 
-**簡單來說：** 它讓 Claude Code 更聰明：
-- 🎯 **路由** 你的任務到合適的專業 Agent
-- ✨ **優化** 提示詞，結合領域專業知識和最佳實踐
-- 📊 **追蹤** 成本和性能，自動化管理
-- 🧠 **學習** 從成功模式中持續進化
+- **「我們不是討論過這個嗎？」** - Claude 在不同 session 之間會忘記上下文
+- **「為什麼我要再解釋一次？」** - 每次對話都從零開始
+- **「這個答案太泛化了」** - 無論你是在除錯、審查程式碼還是設計 UI，回應都一樣
+- **「讓我再寫一次這 50 行提示...」** - 常見任務需要重複的指令
 
----
-
-## 💡 為什麼需要 Smart Agents？
-
-### 使用 Claude Code 時的挑戰
-
-當你用 Claude Code「Vibe Coding」時，可能會遇到：
-
-- 🤔 **同一套方法處理所有事** - 無論是除錯、設計 API 還是寫文檔，Claude 都用相同的通用知識，缺乏專業領域的深度
-- 💭 **不記得成功經驗** - Claude 不記得昨天哪個方案效果好，所以你要重複解釋相同的背景
-- 💰 **總是用最強火力** - 每個任務都用同一個強大（昂貴）的模型，就算是簡單問題也一樣
-- ✍️ **需要手動精雕細琢提示詞** - 複雜任務需要你寫出詳細的提示才能得到好結果
-
-### Smart Agents 如何解決這些問題
-
-Smart Agents 在你和 Claude Code 之間加入智能層：
-
-- 🎯 **自動提供專業知識** - 你的除錯請求自動獲得除錯專家知識，設計請求獲得架構模式，安全審查獲得安全最佳實踐
-- 🧠 **記住有效的方法** - 記住成功的解決方案，並在未來類似任務中自動應用
-- 💡 **智能成本控制** - 為簡單任務建議使用輕量模型，為複雜挑戰保留強大模型
-- ✨ **自動優化提示** - 將你的隨意請求轉換為包含領域知識和最佳實踐的優化提示
-
-**簡單比喻：** 就像給 Claude Code 配備一個專家團隊（代碼審查員、架構師、除錯專家等）和一個好記憶 - 讓你專注創作，而不是提示工程。
-
-**它是什麼：**
-- Claude Code 的提示增強層
-- 擁有 18 個專業 Agent的 MCP 伺服器
-- 智能任務路由系統
-- 成本與性能追蹤工具
+**結果你成了 Claude 的記憶和專案經理，而不是專注於建構。**
 
 ---
 
-## 🚀 Smart Agents 如何運作
+## 解決方案
 
-### 架構概覽
+Claude Code Buddy 位於你和 Claude Code 之間，增加三項超能力：
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Claude Code CLI                         │
-│                      (你的開發介面)                              │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-                            │ MCP 協議
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Smart Agents MCP 伺服器                       │
-│                                                                 │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    │
-│  │ 任務分析器   │───▶│ Agent 路由器 │───▶│ 成本追蹤器   │    │
-│  └──────────────┘    └──────────────┘    └──────────────┘    │
-│                            │                                    │
-│                            ▼                                    │
-│              ┌─────────────────────────┐                       │
-│              │   18 個專業 Agent         │                       │
-│              └─────────────────────────┘                       │
-└─────────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-        ┌────────────────────┴────────────────────┐
-        │                                         │
-        ▼                                         ▼
-┌──────────────────┐                   ┌──────────────────┐
-│   實作 Agent     │                   │   增強提示       │
-│  (5 個實作)      │                   │  (7 個模板)      │
-├──────────────────┤                   ├──────────────────┤
-│ • RAG Agent      │                   │ • 代碼審查       │
-│ • 演化系統       │                   │ • 除錯器         │
-│ • 知識圖譜       │                   │ • 重構器         │
-│ • 開發管家       │                   │ • API 設計師     │
-│ • 測試撰寫器     │                   │ • 研究員         │
-└──────────────────┘                   │ • 架構師         │
-                                       │ • 數據分析師     │
-                                       └──────────────────┘
-```
+### 1. 🧠 **專案記憶**
+CCB 記住你的架構決策、編碼模式和過去的解決方案。問「為什麼我們選擇 PostgreSQL？」，你會得到實際的決策理由 - 而不是泛泛的比較。
 
-### 請求流程
+### 2. 🎯 **智能任務路由**
+你的請求會被分析並路由到正確的「專家模式」 - 程式碼審查任務獲得程式碼審查專業知識，除錯獲得系統化除錯方法，前端獲得 UI/UX 最佳實踐。
 
-```
-1. 用戶請求
-   ↓
-2. 任務分析（複雜度、能力需求）
-   ↓
-3. Agent 選擇（路由到最適合的 Agent）
-   ↓
-4. 提示增強（優化領域專業知識）
-   ↓
-5. 性能追蹤（成本、時間、品質）
-   ↓
-6. 學習與適應（改進未來路由）
-```
+### 3. 📈 **從回饋中學習**
+每次回應後的按讚/按踩會訓練系統。它學習哪些方法適合你的專案並隨時間調整。
 
-### 技術堆疊
-
-**核心技術：**
-- **Node.js**（>= 18.0.0）- 執行環境
-- **TypeScript** - 型別安全開發
-- **Model Context Protocol (MCP)** - Claude Code 整合
-- **SQLite**（含 WAL 模式）- 性能追蹤與演化儲存
-- **Vectra** - 知識圖譜向量資料庫
-
-**可選依賴：**
-- **OpenAI API** - RAG 語義搜尋的嵌入向量（需要 API 金鑰）
-
-**開發工具：**
-- **Vitest** - 測試框架
-- **ESLint** - 代碼品質
-- **Prettier** - 代碼格式化
+**結果：** 專家級回應無需專家級提示。持續的上下文。越用越聰明的 AI。
 
 ---
 
-## 🎪 18 個專業 Agent
+## 實際運作
 
-### 實作Agent（5 個）
+**沒有 CCB：**
+```
+你：「優化這個資料庫查詢」
+Claude：[關於索引和查詢結構的泛化建議]
+```
 
-| Agent | 用途 | 主要功能 |
-|------|------|----------|
-| **RAG Agent** *（可選 - 需要 OpenAI API 金鑰）* | 語義搜尋與檢索 | 向量搜尋、文件索引、上下文感知回應 |
-| **知識圖譜Agent** | 結構化知識管理 | 實體關係、圖譜查詢、知識綜合 |
-| **測試撰寫器Agent** | 自動化測試生成 | TDD 工作流程、覆蓋率分析、測試場景 |
-| **開發管家Agent** | 事件驅動自動化 | 檢查點檢測、工作流程整合、掛鉤系統 |
-| **DevOps 工程師Agent** | CI/CD 與部署 | 基礎設施自動化、部署工作流程、監控 |
+**有了 CCB：**
+```
+你：「優化這個資料庫查詢」
 
-### 增強提示Agent（12 個）
+CCB 分析：資料庫優化任務
+CCB 路由到：db-optimizer agent 類型
+CCB 用以下內容增強提示：資料庫最佳實踐、索引策略、性能分析技術
 
-| Agent | 領域 | 優化重點 |
-|------|------|----------|
-| **代碼審查** | 代碼品質 | 安全性、性能、最佳實踐 |
-| **除錯器** | 問題解決 | 根本原因分析、系統化除錯 |
-| **重構器** | 代碼改進 | 設計模式、可維護性、簡化 |
-| **API 設計師** | API 開發 | REST/GraphQL 設計、文件 |
-| **架構Agent** | 系統設計 | 可擴展性、模式、權衡 |
-| **研究Agent** | 技術調查 | 深度研究、競爭分析 |
-| **數據分析師** | 數據洞察 | 統計分析、視覺化 |
-| **安全審計師** | 安全與合規 | 漏洞評估、安全審計 |
-| **UI 設計師** | UI/UX 設計 | 用戶體驗、介面設計 |
-| **行銷策略師** | 行銷策略 | 品牌定位、增長駭客 |
-| **產品經理** | 產品策略 | 用戶研究、功能優先級 |
-| **機器學習工程師** | 機器學習 | 模型訓練、ML 管道工程 |
+Claude：[針對你的資料庫設定的具體優化建議，包含實際查詢範例
+         和基於你的 schema 的性能基準測試]
+```
 
-### 可選功能（1 個）
-
-| 功能 | 用途 | 需求 |
-|------|------|------|
-| **知識綜合** | 跨Agent學習 | 使用功能標誌啟用 |
+**差異：** CCB 了解你的技術堆疊，記住你的 schema，並提供目標性的專業知識。
 
 ---
 
-## 🏗️ 系統基礎設施
+## 核心功能
 
-雖然Agent是面向用戶的組件，Smart Agents 還包含在幕後運作的強大基礎設施：
+### ✨ 自動專業知識路由
 
-### 工作流程指引與 Session 監控
+30+ 種專業 agent 類型應對不同任務：
+- **code-reviewer** - 安全檢查、品質標準、反模式
+- **debugger** - 系統化除錯、錯誤模式識別
+- **frontend-specialist** - UI/UX、無障礙性、響應式設計
+- **backend-specialist** - API 設計、資料庫優化、安全性
+- **api-designer**、**db-optimizer**、**refactorer**、**test-writer**... 等等
 
-**智能建議** - 基於開發檢查點的情境感知建議
-- **Token 使用追蹤** - 自動監控並提供閾值警報（80%/90%）
-- **Session 健康監控** - 結合 token 使用和 session 狀態的多訊號品質追蹤
-- **自動情境刷新** - Token 使用達臨界值時自動重載 CLAUDE.md
-- **工作流程階段檢測** - 識別當前開發階段（code-written、test-complete、commit-ready、committed）
+**你不需要選擇 agent - CCB 會自動為你的任務選擇正確的 agent。**
 
-**組件：**
-- **SessionTokenTracker** (`src/core/SessionTokenTracker.ts`) - 即時 token 監控
-- **WorkflowGuidanceEngine** (`src/core/WorkflowGuidanceEngine.ts`) - 階段感知建議
-- **SessionContextMonitor** (`src/core/SessionContextMonitor.ts`) - 健康狀態彙整
-- **ClaudeMdReloader** (`src/mcp/ClaudeMdReloader.ts`) - 基於 MCP 的情境刷新與冷卻保護
+### 💾 三種記憶類型
 
-**MCP 工具：**
-- `get-workflow-guidance` - 取得當前工作流程階段的建議
-- `get-session-health` - 檢查 token 使用和 session 品質
-- `reload-context` - 手動刷新 CLAUDE.md 情境
-- `record-token-usage` - 追蹤 token 消耗
-
-**運作方式：**
+**RAG（檢索增強生成）**
 ```
-檢測工作流程檢查點 → 分析階段 → 生成建議 → 監控健康 → 臨界時自動重載
+你：「顯示這個專案中的身份驗證如何運作」
+CCB：[搜尋你的程式碼庫，找到實際的身份驗證檔案，展示模式]
 ```
 
-**優勢：**
-- 🎯 在問題發生前預防 session 退化
-- 📊 Token 預算透明可視
-- 🔄 達 90% 閾值時自動重載 CLAUDE.md
-- ✨ 智能建議下一步行動
-- 🧠 從成功的工作流程模式中學習
-
-### 演化系統
-
-演化系統**不是一個Agent** - 它是使Agent系統隨時間學習和改進的基礎設施。
-
-**組件：**
-
-- **性能追蹤器** (`src/evolution/PerformanceTracker.ts`)
-  - 追蹤每次Agent互動的成本、時長和品質指標
-  - 基於 SQLite 的儲存，具備自動清理功能（WAL 模式）
-  - 提供歷史數據用於學習和優化
-
-- **學習管理器** (`src/evolution/LearningManager.ts`)
-  - 分析成功和失敗互動的模式
-  - 識別哪些Agent最適合哪些任務
-  - 根據歷史數據建議路由改進
-
-- **適應引擎** (`src/evolution/AdaptationEngine.ts`)
-  - 根據性能自動調整Agent選擇
-  - 實現成本感知路由（在適當時優先選擇更便宜的模型）
-  - 從用戶反饋和糾正中學習
-
-**運作方式：**
+**知識圖譜**
 ```
-用戶請求 → Agent執行 → 收集指標 → 學習模式 → 改進路由
+你：「為什麼我們選擇這個架構？」
+CCB：[回憶決策、考慮過的替代方案和權衡]
 ```
 
-**優勢：**
-- 📊 自動性能追蹤（無需手動記錄）
-- 🧠 從每次互動中學習
-- 💰 隨時間優化成本
-- 🎯 更智能的Agent路由
-
-**儲存：** 所有演化數據儲存於 `~/.claude/evolution.db`（SQLite WAL 模式）
-
----
-
-## 🚀 快速開始
-
-### 一鍵安裝
-
-**只需告訴 Claude Code：**
-
+**專案上下文**
 ```
-"Install smart-agents MCP from https://github.com/kevintseng/smart-agents"
+CCB 記住：
+- 你的編碼標準
+- 命名慣例
+- 專案特定模式
+- 你已經建構的內容
 ```
 
-Claude Code 會處理一切：
-- ✅ 複製儲存庫
-- ✅ 安裝依賴項
-- ✅ 配置 MCP 伺服器
-- ✅ 設置可選功能（RAG、API 金鑰）
-- ✅ 驗證安裝
-
-**安裝時間：** 2-5 分鐘
-
-### 安裝後
-
-透過自然對話完成所有操作：
-
-```
-✅ "使用我的 OpenAI 金鑰啟用 smart-agents RAG 功能"
-✅ "用 smart-agents 修改代碼審查器以專注於安全性"
-✅ "用 smart-agents 為 API 文件創建自定義Agent"
-✅ "顯示 smart-agents 系統架構"
-✅ "為什麼 RAG Agent無法運作？"
-```
-
-**無需手動配置、無需編輯文件 - 只需詢問！**
-
----
-
-## 📋 前置需求
-
-### 必需
-
-- **Claude Code**（最新版本）
-- **Node.js** >= 18.0.0
-- **npm** >= 9.0.0
-
-### 可選
-
-- **OpenAI API Key**（用於 RAG 功能）
-- **Git**（用於版本控制功能）
-
----
-
-## 📖 文件
-
-### 快速連結
-
-- **[安裝指南](docs/guides/CLAUDE_CODE_INSTALLATION.md)** - 詳細安裝說明
-- **[架構概覽](docs/architecture/OVERVIEW.md)** - 系統設計和組件
-- **[Agent參考](docs/AGENT_REFERENCE.md)** - 所有Agent說明
-- **[API 文件](docs/API.md)** - MCP 工具介面
-
-### 學習路徑
-
-1. **從這裡開始**：[快速開始](#-快速開始)
-2. **理解**：[架構概覽](#-smart-agents-如何運作)
-3. **探索**：[Agent參考](docs/AGENT_REFERENCE.md)
-4. **深入**：[架構文件](docs/architecture/OVERVIEW.md)
-
-**或詢問 Claude Code：** "解釋 Smart Agents 如何運作"
-
----
-
-## 🧪 測試與品質
-
-### 測試覆蓋率
-
-```
-✅ 447/447 測試通過（100%）
-✅ 核心邏輯單元測試
-✅ MCP 介面整合測試
-✅ Agent工作流程 E2E 測試
-✅ 演化系統回歸測試
-```
-
-### 執行測試
-
-**詢問 Claude Code：**
-```
-"執行所有測試"
-"執行測試並顯示覆蓋率"
-"安全執行 E2E 測試"
-```
-
-**或手動執行：**
-```bash
-npm test                    # 所有測試
-npm run test:coverage       # 含覆蓋率報告
-npm run test:e2e:safe       # E2E 測試（資源監控）
-```
-
----
-
-## 🔧 開發
-
-### 本地開發
+### 📊 成本與性能追蹤
 
 ```bash
-# 複製儲存庫
-git clone https://github.com/kevintseng/smart-agents
-cd smart-agents
+buddy stats week
 
-# 安裝依賴項
-npm install
+總 API 呼叫：1,245
+總 Token：2.4M
+估計成本：$8.75
+成功率：94.2%
 
-# 開發模式執行
+每個 agent 的細分：
+code-reviewer：234 次呼叫，85% 成功
+debugger：123 次呼叫，92% 成功
+```
+
+**準確了解你的 token 去向。設定預算限制。優化成本。**
+
+### 🤝 使用者友善的命令
+
+```bash
+# 自然語言命令，就是這麼簡單
+buddy do setup authentication
+buddy do optimize this database query
+buddy stats week
+buddy remember how we implemented login
+buddy help
+```
+
+**別名也可以用：** `help-with`、`execute`、`recall`、`dashboard` - 選擇你覺得自然的。
+
+---
+
+## 快速開始（2 分鐘）
+
+### 前置需求
+- Node.js 18+ ([下載](https://nodejs.org/))
+- Claude Code 已安裝 ([在這裡取得](https://claude.com/claude-code))
+
+### 安裝
+
+```bash
+# 1. 複製儲存庫
+git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
+cd claude-code-buddy
+
+# 2. 執行互動式安裝程式（它會處理所有事情）
+./scripts/install.sh
+```
+
+安裝程式會：
+- ✓ 安裝相依性
+- ✓ 建構專案
+- ✓ 設定 Claude Code MCP 整合
+- ✓ 測試設定
+
+**不需要 API 金鑰** - 使用你現有的 Claude Code 訂閱。
+
+### 開始使用
+
+重新啟動 Claude Code，然後嘗試：
+
+```
+「分析我的程式碼庫架構」
+「為 auth.ts 生成測試」
+「審查這段程式碼是否有安全問題」
+「優化這個資料庫查詢」
+```
+
+CCB 會自動將任務路由到正確的 agent，並用相關上下文增強提示。
+
+---
+
+## 運作原理
+
+```
+你的請求
+    ↓
+CCB 分析任務
+    ↓
+路由到最佳 agent 類型（例如 code-reviewer、debugger）
+    ↓
+用專業上下文增強提示
+    ↓
+Claude Code 用你的訂閱執行
+    ↓
+你提供回饋（👍/👎）
+    ↓
+CCB 學習並改進
+```
+
+**幕後：**
+- **8 個真實 agent 實作**，擁有各自的邏輯和儲存（RAG、知識圖譜、測試撰寫器、DevOps 工程師等）
+- **30+ agent 類型**透過專業提示範本
+- **演化系統**從你的回饋中學習並隨時間調整
+
+**技術深入探討：** 參見 [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
+---
+
+## CCB 擅長什麼 ✅
+
+- **使 Claude Code 具備專案意識**針對你的特定專案
+- **減少重複提示**透過智能任務路由
+- **在不同 session 之間記憶**使用持久記憶系統
+- **提供專業知識**無需你撰寫專家級提示
+- **從你的回饋中學習**隨時間改進
+- **追蹤成本和性能**讓你保持在預算內
+- **協調複雜工作流程**跨越多個步驟
+
+## 誠實的限制 ⚠️
+
+- **不是魔法** - 仍然需要你提供明確的需求
+- **不是學習的替代品** - 你應該了解你在建構什麼
+- **增強 Claude Code，不是取代它** - 與你現有的設定一起運作
+- **需要設定** - 2 分鐘安裝，不是一鍵完成（還沒有）
+- **早期階段（v2.0）** - 預期會有粗糙的地方，但正在積極改進
+- **受 Claude 能力限制** - 無法讓 Claude 做不可能的事
+
+**理念：** 我們對什麼有效、什麼無效保持誠實。如果某些東西對你不起作用，請告訴我們 - 這個回饋會讓所有人都受益。
+
+---
+
+## 使用案例
+
+### 程式碼審查
+```
+「審查這個 PR 是否有安全漏洞和程式碼品質問題」
+→ 路由到 code-reviewer
+→ 獲得安全檢查清單 + 品質標準
+→ 返回詳細審查，包含具體建議
+```
+
+### 除錯
+```
+「這個函式在 undefined 時崩潰，幫助除錯」
+→ 路由到 debugger
+→ 獲得系統化除錯方法
+→ 逐步進行根本原因分析
+```
+
+### 前端設計
+```
+「設計一個具有深色模式的響應式儀表板」
+→ 路由到 frontend-specialist
+→ 獲得 UI/UX 模式 + 無障礙性指南
+→ 返回完整設計，包含響應式斷點
+```
+
+### 資料庫優化
+```
+「這個 Prisma 查詢需要 2 秒，優化它」
+→ 路由到 db-optimizer
+→ 獲得查詢優化模式 + 索引策略
+→ 返回優化的查詢，包含性能基準測試
+```
+
+---
+
+## 進階功能
+
+- **自訂技能** - 用 TypeScript 撰寫你自己的 agent 行為
+- **多步驟規劃** - 將複雜任務分解為可執行的計劃
+- **工作流程協調** - 自動檢查點檢測和下一步建議
+- **Git 整合** - 初學者友善的 Git 命令（`save-work`、`list-versions`、`go-back-to`）
+- **N8n & Opal 整合** - 連接到工作流程自動化和存取管理
+- **儀表板** - 即時指標、成本追蹤、性能監控
+
+**探索：** 參見 [docs/](docs/) 了解每個功能的詳細指南。
+
+---
+
+## 社群與支援
+
+- **文件**：[docs/](docs/) 資料夾 + 這個 README
+- **問題**：[GitHub Issues](https://github.com/PCIRCLE-AI/claude-code-buddy/issues)
+- **討論**：[GitHub Discussions](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
+- **貢獻**：[CONTRIBUTING.md](docs/CONTRIBUTING.md)
+
+**有問題？** 開啟一個 issue 或開始討論 - 我們在這裡提供協助。
+
+---
+
+## 開發
+
+```bash
+# 執行測試（722 個測試涵蓋核心功能）
+npm test
+
+# 開發模式，自動重載
 npm run dev
 
-# 執行 MCP 伺服器
-npm run mcp
+# 為生產環境建構
+npm run build
+
+# 查看性能儀表板
+npm run dashboard
 ```
 
-### 專案結構
+**貢獻：** 我們歡迎貢獻！參見 [CONTRIBUTING.md](docs/CONTRIBUTING.md) 了解指南。
 
-```
-smart-agents/
-├── src/
-│   ├── agents/           # Agent實作
-│   ├── orchestrator/     # 路由與協調
-│   ├── evolution/        # 學習與適應
-│   ├── mcp/             # MCP 伺服器介面
-│   └── utils/           # 共用工具
-├── tests/               # 測試套件
-├── docs/                # 文件
-└── examples/            # 使用範例
-```
+**專案結構：** 參見 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) 深入了解。
 
 ---
 
+## 路線圖
 
-## 📊 性能與指標
+### v2.1（下一個版本 - 2026 Q1）
+- 用於設定和監控的網頁介面
+- Windows/Mac/Linux 的一鍵安裝程式
+- 影片教學和互動式文件
+- 更多常見工作流程的預建技能
 
-### 典型性能
+### v2.5（2026 Q2）
+- 雲端託管選項（無需本地設定）
+- 團隊協作功能
+- 進階成本優化演算法
+- 整合市集（GitHub Actions、Jenkins 等）
 
-- **任務分析**：< 100ms
-- **Agent路由**：< 50ms
-- **提示增強**：< 200ms
-- **演化學習**：背景執行，非阻塞
-
-### 資源使用
-
-- **記憶體**：~50MB（基礎）+ Agent特定
-- **儲存空間**：~10MB（資料庫）+ 向量索引
-- **網路**：僅 MCP 協議（除可選 RAG 外無外部 API）
-
----
-
-## 📞 支援與社群
-
-### 獲取幫助
-
-1. **詢問 Claude Code**："幫我排查 Smart Agents 問題"
-2. **GitHub Issues**：[回報錯誤或請求功能](https://github.com/kevintseng/smart-agents/issues)
-3. **討論區**：[提問與分享想法](https://github.com/kevintseng/smart-agents/discussions)
-
-### 保持更新
-
-- **GitHub**：[關注發布](https://github.com/kevintseng/smart-agents)
-- **變更日誌**：[CHANGELOG.md](CHANGELOG.md)
-- **發布**：[發布說明](https://github.com/kevintseng/smart-agents/releases)
+### v3.0（願景 - 2026 Q3）
+- 多模型支援（Claude + GPT + 本地模型）
+- 視覺化工作流程建構器
+- 社群技能市集
+- 企業功能（SSO、稽核日誌、合規性）
 
 ---
 
-## 📝 授權
+## 常見問題
 
-**GNU Affero 通用公共授權條款 v3.0**
+**問：我需要是開發者才能使用嗎？**
+答：如果你能使用 Claude Code，你就能使用 CCB。它是為了讓 Claude 更容易使用，而不是更難。
 
-本專案採用 GNU AGPL v3 授權。完整條款詳見 [LICENSE](LICENSE)。
+**問：這會增加我的 API 成本嗎？**
+答：不會 - CCB 內建預算限制，實際上透過更智能的 token 使用幫助降低成本。
+
+**問：這與單純使用 Claude Code 有什麼不同？**
+答：Claude Code 對所有任務一視同仁。CCB 增加了任務特定的專業知識、記憶和學習。
+
+**問：我的程式碼是私有的嗎？**
+答：是的。除了 Claude API 呼叫（你已經在做的）外，所有內容都在本地執行。
+
+**問：如果我不喜歡怎麼辦？**
+答：從你的 MCP 設定中移除它。沒有鎖定，沒有供應商依賴。
+
+**問：這要多少錢？**
+答：CCB 是免費且開源的（AGPL-3.0）。你只需為 Claude API 使用付費。
+
+**問：我可以自訂 agent 嗎？**
+答：當然！提示範本在 `src/core/PromptEnhancer.ts`。演化設定在 `src/evolution/AgentEvolutionConfig.ts`。
 
 ---
 
-🇹🇼 **Crafted in Taiwan | 台灣製造** - Where innovation meets tradition
+## 授權條款
+
+**AGPL-3.0 授權條款** - 詳見 [LICENSE](LICENSE) 檔案。
+
+這是免費且開源的軟體。如果你修改並將其部署為網路服務，你必須向使用者提供原始碼。
 
 ---
 
-## 🙏 致謝
+## 致謝
 
-使用以下技術構建：
-- [Claude Code](https://claude.com/claude-code) - AI 驅動的開發 CLI
-- [Model Context Protocol](https://modelcontextprotocol.io/) - 標準化 AI 工具整合
-- [Anthropic Claude API](https://anthropic.com) - LLM 能力
-- [OpenAI Embeddings](https://openai.com) - 語義搜尋（可選）
+- 使用 [Model Context Protocol (MCP)](https://github.com/anthropics/mcp) 建構
+- 由 [Claude API](https://www.anthropic.com/claude) 提供支援
+- 受 Claude Code 社群啟發
+- 感謝所有貢獻者和早期測試者
 
+---
+
+<div align="center">
+
+**由開發者為開發者建構，懷著 ❤️**
+
+**讓 Claude Code 更聰明，而不是更吵雜。**
+
+[開始使用](#快速開始2-分鐘) • [文件](docs/) • [回報問題](https://github.com/PCIRCLE-AI/claude-code-buddy/issues) • [加入討論](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
+
+---
+
+⭐ **如果 CCB 讓你的開發生活更輕鬆，請為這個儲存庫加星！**
+
+</div>

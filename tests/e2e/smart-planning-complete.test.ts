@@ -44,11 +44,11 @@ describe('Smart-Planning System - Complete E2E', () => {
         'Image validation and resizing',
         'Profile visibility settings',
       ],
-      constraints: {
-        projectType: 'fullstack-web-app',
-        techStack: ['React', 'Node.js', 'Express', 'MongoDB', 'AWS S3'],
-        complexity: 'medium',
-      },
+      constraints: [
+        'projectType: fullstack-web-app',
+        'techStack: React, Node.js, Express, MongoDB, AWS S3',
+        'complexity: medium',
+      ],
     });
 
     // Verify result structure
@@ -224,11 +224,11 @@ describe('Smart-Planning System - Complete E2E', () => {
         'Push notification service integration',
         'User notification preferences',
       ],
-      constraints: {
-        projectType: 'fullstack-web-app',
-        techStack: ['React', 'Node.js', 'WebSocket', 'PostgreSQL'],
-        complexity: 'high',
-      },
+      constraints: [
+        'projectType: fullstack-web-app',
+        'techStack: React, Node.js, WebSocket, PostgreSQL',
+        'complexity: high',
+      ],
     });
 
     const planText = result.content[0].text;

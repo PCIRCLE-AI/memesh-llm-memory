@@ -216,9 +216,17 @@ export function safeDivide(a: number, b: number): number | null {
   });
 
   describe('KnowledgeAgent Workflow', () => {
+    let agent: KnowledgeAgent;
+
+    afterAll(async () => {
+      if (agent) {
+        await agent.close();
+      }
+    });
+
     it('should complete knowledge graph construction workflow', async () => {
-      // 1. Initialize KnowledgeAgent
-      const agent = new KnowledgeAgent();
+      // 1. Initialize KnowledgeAgent with in-memory database
+      agent = new KnowledgeAgent(':memory:');
       await agent.initialize();
 
       // 2. Create entities representing a project architecture
@@ -260,10 +268,14 @@ export function safeDivide(a: number, b: number): number | null {
       const { entities, stats } = await agent.readGraph();
       expect(entities.length).toBeGreaterThanOrEqual(3);
       expect(stats.totalEntities).toBeGreaterThanOrEqual(3);
+
+      // Clean up this test's agent
+      await agent.close();
     });
 
     it('should track project evolution over time', async () => {
-      const agent = new KnowledgeAgent();
+      // Create new in-memory agent for this test
+      agent = new KnowledgeAgent(':memory:');
       await agent.initialize();
 
       // Simulate tracking a bug fix process
@@ -298,6 +310,9 @@ export function safeDivide(a: number, b: number): number | null {
 
       const connected = await agent.getConnectedEntities('Bug: Login Failure', 1);
       expect(connected).toContain('Decision: JWT Refresh');
+
+      // Clean up this test's agent
+      await agent.close();
     });
   });
 
@@ -420,8 +435,8 @@ export function safeDivide(a: number, b: number): number | null {
         expect(authDocs.length).toBeGreaterThan(0);
       }
 
-      // 2. Knowledge: Track decision
-      const knowledgeAgent = new KnowledgeAgent();
+      // 2. Knowledge: Track decision (using in-memory database)
+      const knowledgeAgent = new KnowledgeAgent(':memory:');
       await knowledgeAgent.initialize();
 
       await knowledgeAgent.createEntities([
@@ -459,6 +474,9 @@ export function validateToken(token: string): boolean {
       const decision = await knowledgeAgent.openNodes(['Decision: Implement JWT Auth']);
       expect(decision.length).toBe(1);
       expect(decision[0].observations.length).toBeGreaterThanOrEqual(3);
+
+      // Clean up
+      await knowledgeAgent.close();
     });
   });
 });

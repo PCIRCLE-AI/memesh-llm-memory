@@ -123,6 +123,77 @@ export const UninstallInputSchema = z.object({
 });
 
 /**
+ * Workflow guidance input schema for get-workflow-guidance
+ */
+export const WorkflowGuidanceInputSchema = z.object({
+  phase: z.string().min(1, 'Phase cannot be empty'),
+});
+
+/**
+ * Record token usage input schema for record-token-usage
+ */
+export const RecordTokenUsageInputSchema = z.object({
+  inputTokens: z.number().int().nonnegative('Input tokens must be non-negative'),
+  outputTokens: z.number().int().nonnegative('Output tokens must be non-negative'),
+});
+
+/**
+ * Generate smart plan input schema for generate-smart-plan
+ */
+export const GenerateSmartPlanInputSchema = z.object({
+  featureDescription: z
+    .string()
+    .min(1, 'Feature description cannot be empty')
+    .max(MAX_TASK_DESCRIPTION_LENGTH, `Feature description too long (max ${MAX_TASK_DESCRIPTION_LENGTH} characters)`),
+  requirements: z.array(z.string()).optional(),
+  constraints: z.array(z.string()).optional(),
+});
+
+/**
+ * Git save work input schema for git-save-work
+ */
+export const GitSaveWorkInputSchema = z.object({
+  description: z.string().min(1, 'Description cannot be empty'),
+  autoBackup: z.boolean().optional().default(true),
+});
+
+/**
+ * Git list versions input schema for git-list-versions
+ */
+export const GitListVersionsInputSchema = z.object({
+  limit: z.number().int().positive('Limit must be positive').max(100, 'Limit too large (max 100)').optional().default(10),
+});
+
+/**
+ * Git show changes input schema for git-show-changes
+ */
+export const GitShowChangesInputSchema = z.object({
+  compareWith: z.string().optional(),
+});
+
+/**
+ * Git go back input schema for git-go-back
+ */
+export const GitGoBackInputSchema = z.object({
+  identifier: z.string().min(1, 'Identifier cannot be empty'),
+});
+
+/**
+ * Git setup input schema for git-setup
+ */
+export const GitSetupInputSchema = z.object({
+  existingGit: z.boolean().optional(),
+});
+
+/**
+ * Recall memory input schema for recall-memory
+ */
+export const RecallMemoryInputSchema = z.object({
+  limit: z.number().int().positive('Limit must be positive').max(100, 'Limit too large (max 100)').optional().default(10),
+  query: z.string().max(1000, 'Query too long (max 1000 characters)').optional(),
+});
+
+/**
  * Type exports for validated inputs
  */
 export type ValidatedTaskInput = z.infer<typeof TaskInputSchema>;
@@ -130,6 +201,15 @@ export type ValidatedDashboardInput = z.infer<typeof DashboardInputSchema>;
 export type ValidatedListAgentsInput = z.infer<typeof ListAgentsInputSchema>;
 export type ValidatedListSkillsInput = z.infer<typeof ListSkillsInputSchema>;
 export type ValidatedUninstallInput = z.infer<typeof UninstallInputSchema>;
+export type ValidatedWorkflowGuidanceInput = z.infer<typeof WorkflowGuidanceInputSchema>;
+export type ValidatedRecordTokenUsageInput = z.infer<typeof RecordTokenUsageInputSchema>;
+export type ValidatedGenerateSmartPlanInput = z.infer<typeof GenerateSmartPlanInputSchema>;
+export type ValidatedGitSaveWorkInput = z.infer<typeof GitSaveWorkInputSchema>;
+export type ValidatedGitListVersionsInput = z.infer<typeof GitListVersionsInputSchema>;
+export type ValidatedGitShowChangesInput = z.infer<typeof GitShowChangesInputSchema>;
+export type ValidatedGitGoBackInput = z.infer<typeof GitGoBackInputSchema>;
+export type ValidatedGitSetupInput = z.infer<typeof GitSetupInputSchema>;
+export type ValidatedRecallMemoryInput = z.infer<typeof RecallMemoryInputSchema>;
 
 /**
  * Validation error formatter

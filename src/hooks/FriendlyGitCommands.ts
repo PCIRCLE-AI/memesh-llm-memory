@@ -80,8 +80,8 @@ export class FriendlyGitCommands {
         }],
       });
 
-    } catch (error: any) {
-      console.error('❌ 儲存失敗:', error.message);
+    } catch (error: unknown) {
+      console.error('❌ 儲存失敗:', this.getErrorMessage(error));
       throw error;
     }
   }
@@ -179,8 +179,8 @@ export class FriendlyGitCommands {
       console.log('   如果要繼續開發，請先儲存當前狀態：');
       console.log('   save-work "從這個版本繼續開發"');
 
-    } catch (error: any) {
-      console.error('❌ 無法回到該版本:', error.message);
+    } catch (error: unknown) {
+      console.error('❌ 無法回到該版本:', this.getErrorMessage(error));
       throw error;
     }
   }
@@ -271,8 +271,8 @@ export class FriendlyGitCommands {
 
       return backupPath;
 
-    } catch (error: any) {
-      console.error('❌ 備份失敗:', error.message);
+    } catch (error: unknown) {
+      console.error('❌ 備份失敗:', this.getErrorMessage(error));
       throw error;
     }
   }
@@ -376,8 +376,8 @@ export class FriendlyGitCommands {
       console.log('   status               - 查看目前狀態');
       console.log('');
 
-    } catch (error: any) {
-      console.error('❌ 初始化失敗:', error.message);
+    } catch (error: unknown) {
+      console.error('❌ 初始化失敗:', this.getErrorMessage(error));
       throw error;
     }
   }
@@ -386,6 +386,17 @@ export class FriendlyGitCommands {
 
   private escapeShellArg(arg: string): string {
     return arg.replace(/"/g, '\\"');
+  }
+
+  /**
+   * Get error message from unknown error type
+   * Type-safe helper for error handling
+   */
+  private getErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return String(error);
   }
 
   private async findCommitByTime(timeSpec: string): Promise<string> {

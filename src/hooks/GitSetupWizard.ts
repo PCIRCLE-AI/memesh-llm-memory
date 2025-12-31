@@ -145,9 +145,9 @@ export class GitSetupWizard {
         }],
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('');
-      console.error('❌ 設置過程發生錯誤:', error.message);
+      console.error('❌ 設置過程發生錯誤:', this.getErrorMessage(error));
       console.error('');
       console.error('請稍後再試，或手動執行：git init');
     }
@@ -399,5 +399,16 @@ export class GitSetupWizard {
     // For now, return default value
     console.log(`${prompt} ${defaultValue}`);
     return defaultValue;
+  }
+
+  /**
+   * Get error message from unknown error type
+   * Type-safe helper for error handling
+   */
+  private getErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return String(error);
   }
 }

@@ -89,7 +89,7 @@ import { recallMemoryTool } from './tools/recall-memory.js';
 /**
  * MCP Server Main Class
  */
-class SmartAgentsMCPServer {
+class ClaudeCodeBuddyMCPServer {
   private server: Server;
   private router: Router;
   private formatter: ResponseFormatter;
@@ -113,8 +113,8 @@ class SmartAgentsMCPServer {
   constructor() {
     this.server = new Server(
       {
-        name: 'smart-agents',
-        version: '1.0.0',
+        name: 'claude-code-buddy',
+        version: '2.0.0',
       },
       {
         capabilities: {
@@ -2092,7 +2092,7 @@ class SmartAgentsMCPServer {
     await this.server.connect(transport);
 
     // Server ready
-    console.error('Smart-Agents MCP Server started');
+    console.error('Claude Code Buddy MCP Server started');
     console.error(`Available agents: ${this.agentRegistry.getAgentCount()}`);
 
     // Auto-start FileWatcher if RAG is enabled
@@ -2148,7 +2148,7 @@ class SmartAgentsMCPServer {
  */
 async function main() {
   try {
-    const mcpServer = new SmartAgentsMCPServer();
+    const mcpServer = new ClaudeCodeBuddyMCPServer();
     await mcpServer.start();
   } catch (error) {
     console.error('Failed to start MCP server:', error);
@@ -2161,4 +2161,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 }
 
-export { SmartAgentsMCPServer };
+export { ClaudeCodeBuddyMCPServer };

@@ -649,7 +649,7 @@ export class EnhancedSQLiteStore extends SQLiteStore {
           AND json_extract(attributes, '$.skill.name') IS NOT NULL
       `;
 
-      const params: any[] = [filters.taskType];
+      const params: SQLParams = [filters.taskType];
 
       if (filters.agentType) {
         query += ' AND json_extract(attributes, "$.agent.type") = ?';

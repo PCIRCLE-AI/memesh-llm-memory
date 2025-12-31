@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { SmartAgentsMCPServer } from '../../src/mcp/server.js';
+import { ClaudeCodeBuddyMCPServer } from '../../src/mcp/server.js';
 import { DevelopmentButler } from '../../src/agents/DevelopmentButler.js';
 import { CheckpointDetector } from '../../src/core/CheckpointDetector.js';
 import { MCPToolInterface } from '../../src/core/MCPToolInterface.js';
@@ -95,7 +95,7 @@ describe('MCP Server - Workflow Guidance Tools', () => {
   });
 
   it('should have DevelopmentButler initialized in MCP server', () => {
-    const server = new SmartAgentsMCPServer();
+    const server = new ClaudeCodeBuddyMCPServer();
     expect(server).toBeDefined();
     // Server should have DevelopmentButler instance
     expect(server['developmentButler']).toBeDefined();

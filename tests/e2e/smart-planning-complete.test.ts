@@ -15,13 +15,13 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { SmartAgentsMCPServer } from '../../src/mcp/server.js';
+import { ClaudeCodeBuddyMCPServer } from '../../src/mcp/server.js';
 
 describe('Smart-Planning System - Complete E2E', () => {
-  let server: SmartAgentsMCPServer;
+  let server: ClaudeCodeBuddyMCPServer;
 
   beforeAll(() => {
-    server = new SmartAgentsMCPServer();
+    server = new ClaudeCodeBuddyMCPServer();
   });
 
   afterAll(() => {

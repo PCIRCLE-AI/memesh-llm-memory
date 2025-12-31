@@ -56,7 +56,7 @@ export interface SuccessEvent {
   agentId: string;
   agentType: string;
   taskDescription: string;
-  result: any;
+  result: unknown;
   duration: number; // milliseconds
   timestamp: Date;
 }
@@ -83,7 +83,7 @@ export interface AttributionEntry {
   agentType: string;
   taskDescription: string;
   timestamp: Date;
-  result?: any;
+  result?: unknown;
   error?: Error;
   sanitized?: boolean;
 }

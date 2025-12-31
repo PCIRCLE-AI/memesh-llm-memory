@@ -13,7 +13,7 @@
  * - Colorized output (if enabled)
  */
 
-import { DashboardState, DashboardConfig, AgentStatus, MetricsSnapshot } from './types.js';
+import { DashboardState, DashboardConfig, AgentStatus, MetricsSnapshot, AttributionEntry } from './types.js';
 
 type GetStateCallback = () => DashboardState;
 
@@ -209,7 +209,7 @@ export class ProgressRenderer {
   /**
    * Render attribution section
    */
-  private renderAttribution(events: any[]): string {
+  private renderAttribution(events: AttributionEntry[]): string {
     const lines: string[] = ['Recent Activity:'];
 
     events.slice(0, this.config.maxRecentEvents).forEach((event) => {

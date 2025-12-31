@@ -19,9 +19,10 @@ import {
   SuccessEvent,
   ErrorEvent,
   AttributionMessage,
+  MetricsSnapshot,
 } from './types.js';
 
-type EventHandler<T = any> = (data: T) => void;
+type EventHandler<T = unknown> = (data: T) => void;
 type UnsubscribeFunction = () => void;
 
 /**
@@ -56,7 +57,7 @@ export class UIEventBus {
    * If no listeners exist for 'error' events, emitting would normally throw.
    * We prevent this by checking for listeners first.
    */
-  emit(eventType: UIEventTypeValue, data: any): void {
+  emit(eventType: UIEventTypeValue, data: unknown): void {
     // Special handling for 'error' events - don't throw if no listeners
     if (eventType === 'error' && this.emitter.listenerCount('error') === 0) {
       // Silently ignore error events with no listeners
@@ -156,7 +157,7 @@ export class UIEventBus {
   /**
    * Emit metrics update event
    */
-  emitMetricsUpdate(data: any): void {
+  emitMetricsUpdate(data: MetricsSnapshot): void {
     this.emit(UIEventType.METRICS_UPDATE, data);
   }
 
@@ -197,7 +198,7 @@ export class UIEventBus {
     handler: EventHandler,
     eventType: UIEventTypeValue
   ): EventHandler {
-    return (data: any) => {
+    return (data: unknown) => {
       try {
         handler(data);
       } catch (error) {

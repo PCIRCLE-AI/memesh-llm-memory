@@ -46,6 +46,7 @@ import { DevelopmentButler } from '../agents/DevelopmentButler.js';
 import { CheckpointDetector } from '../core/CheckpointDetector.js';
 import { MCPToolInterface } from '../core/MCPToolInterface.js';
 import { PlanningEngine } from '../planning/PlanningEngine.js';
+import { GitAssistantIntegration } from '../integrations/GitAssistantIntegration.js';
 import { z } from 'zod';
 import {
   TaskInputSchema,
@@ -83,6 +84,7 @@ class SmartAgentsMCPServer {
   private checkpointDetector: CheckpointDetector;
   private toolInterface: MCPToolInterface;
   private planningEngine: PlanningEngine;
+  private gitAssistant: GitAssistantIntegration;
 
   constructor() {
     this.server = new Server(
@@ -131,6 +133,9 @@ class SmartAgentsMCPServer {
       this.agentRegistry,
       this.router.getLearningManager()
     );
+
+    // Initialize Git Assistant
+    this.gitAssistant = new GitAssistantIntegration(this.toolInterface);
 
     this.setupHandlers();
     this.setupResourceHandlers();
@@ -356,6 +361,121 @@ class SmartAgentsMCPServer {
       };
 
       // ========================================
+      // Git Assistant Tools
+      // ========================================
+
+      // git-save-work - Save current work with friendly commit
+      const gitSaveWorkTool = {
+        name: 'git-save-work',
+        description: '💾 Git Assistant: Save your work with a friendly commit message. Automatically stages changes and creates a commit.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            description: {
+              type: 'string',
+              description: 'Description of what you did (in plain language)',
+            },
+            autoBackup: {
+              type: 'boolean',
+              description: 'Create local backup before committing. Default: true',
+            },
+          },
+          required: ['description'],
+        },
+      };
+
+      // git-list-versions - List recent versions/commits
+      const gitListVersionsTool = {
+        name: 'git-list-versions',
+        description: '📚 Git Assistant: List recent versions (commits) with friendly format.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            limit: {
+              type: 'number',
+              description: 'Number of versions to show. Default: 10',
+            },
+          },
+        },
+      };
+
+      // git-status - Show current working tree status
+      const gitStatusTool = {
+        name: 'git-status',
+        description: '📊 Git Assistant: Show current status of your files in a friendly format.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {},
+        },
+      };
+
+      // git-show-changes - Show changes compared to a ref
+      const gitShowChangesTool = {
+        name: 'git-show-changes',
+        description: '🔍 Git Assistant: Show what changed compared to a specific version or branch.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            compareWith: {
+              type: 'string',
+              description: 'Version/branch to compare with. Default: HEAD',
+            },
+          },
+        },
+      };
+
+      // git-go-back - Go back to a previous version
+      const gitGoBackTool = {
+        name: 'git-go-back',
+        description: '⏪ Git Assistant: Go back to a previous version. Can use version number or commit hash.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            identifier: {
+              type: 'string',
+              description: 'Version number (e.g., "3") or commit hash to go back to',
+            },
+          },
+          required: ['identifier'],
+        },
+      };
+
+      // git-create-backup - Create local backup
+      const gitCreateBackupTool = {
+        name: 'git-create-backup',
+        description: '💼 Git Assistant: Create a local backup of your project.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {},
+        },
+      };
+
+      // git-setup - Setup Git for a new project
+      const gitSetupTool = {
+        name: 'git-setup',
+        description: '⚙️ Git Assistant: Setup Git for a new project with guided wizard.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            existingGit: {
+              type: 'boolean',
+              description: 'Whether project already has Git initialized. Default: false',
+            },
+          },
+        },
+      };
+
+      // git-help - Show Git Assistant help
+      const gitHelpTool = {
+        name: 'git-help',
+        description: '❓ Git Assistant: Show help and available commands.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {},
+        },
+      };
+
+      // ========================================
       // Backward compatibility (old names)
       // ========================================
 
@@ -410,6 +530,15 @@ class SmartAgentsMCPServer {
           recordTokenUsageTool,
           // Smart Planning tools (Phase 2)
           generateSmartPlanTool,
+          // Git Assistant tools
+          gitSaveWorkTool,
+          gitListVersionsTool,
+          gitStatusTool,
+          gitShowChangesTool,
+          gitGoBackTool,
+          gitCreateBackupTool,
+          gitSetupTool,
+          gitHelpTool,
           // Legacy tools (backward compatibility)
           smartRouterTool,
           evolutionDashboardTool,
@@ -483,6 +612,39 @@ class SmartAgentsMCPServer {
       // Handle generate-smart-plan (Phase 2)
       if (toolName === 'generate-smart-plan') {
         return await this.handleGenerateSmartPlan(args);
+      }
+
+      // Handle Git Assistant tools
+      if (toolName === 'git-save-work') {
+        return await this.handleGitSaveWork(args);
+      }
+
+      if (toolName === 'git-list-versions') {
+        return await this.handleGitListVersions(args);
+      }
+
+      if (toolName === 'git-status') {
+        return await this.handleGitStatus(args);
+      }
+
+      if (toolName === 'git-show-changes') {
+        return await this.handleGitShowChanges(args);
+      }
+
+      if (toolName === 'git-go-back') {
+        return await this.handleGitGoBack(args);
+      }
+
+      if (toolName === 'git-create-backup') {
+        return await this.handleGitCreateBackup(args);
+      }
+
+      if (toolName === 'git-setup') {
+        return await this.handleGitSetup(args);
+      }
+
+      if (toolName === 'git-help') {
+        return await this.handleGitHelp(args);
       }
 
       // Handle smart_route_task (legacy name - backward compatibility)
@@ -1263,6 +1425,266 @@ class SmartAgentsMCPServer {
           {
             type: 'text',
             text: `❌ Smart plan generation failed: ${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle git-save-work tool
+   */
+  private async handleGitSaveWork(
+    args: unknown
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      const data = args as Record<string, unknown>;
+      const description = data.description as string;
+      const autoBackup = data.autoBackup !== undefined ? (data.autoBackup as boolean) : true;
+
+      await this.gitAssistant.saveWork(description, autoBackup);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `✅ Work saved successfully with description: "${description}"`,
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Failed to save work: ${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle git-list-versions tool
+   */
+  private async handleGitListVersions(
+    args: unknown
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      const data = args as Record<string, unknown>;
+      const limit = data.limit ? (data.limit as number) : 10;
+
+      const versions = await this.gitAssistant.listVersions(limit);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(versions, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Failed to list versions: ${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle git-status tool
+   */
+  private async handleGitStatus(
+    _args: unknown
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      await this.gitAssistant.status();
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: '✅ Git status displayed',
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Failed to get status: ${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle git-show-changes tool
+   */
+  private async handleGitShowChanges(
+    args: unknown
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      const data = args as Record<string, unknown>;
+      const compareWith = data.compareWith as string | undefined;
+
+      const changes = await this.gitAssistant.showChanges(compareWith);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(changes, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Failed to show changes: ${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle git-go-back tool
+   */
+  private async handleGitGoBack(
+    args: unknown
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      const data = args as Record<string, unknown>;
+      const identifier = data.identifier as string;
+
+      await this.gitAssistant.goBackTo(identifier);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `✅ Successfully went back to version: ${identifier}`,
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Failed to go back: ${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle git-create-backup tool
+   */
+  private async handleGitCreateBackup(
+    _args: unknown
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      const backupPath = await this.gitAssistant.createBackup();
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `✅ Backup created at: ${backupPath}`,
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Failed to create backup: ${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle git-setup tool
+   */
+  private async handleGitSetup(
+    args: unknown
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      const data = args as Record<string, unknown>;
+      const existingGit = data.existingGit as boolean | undefined;
+
+      if (existingGit) {
+        await this.gitAssistant.configureExistingProject();
+      } else {
+        await this.gitAssistant.setupNewProject();
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: '✅ Git setup completed successfully',
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Git setup failed: ${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle git-help tool
+   */
+  private async handleGitHelp(
+    _args: unknown
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      await this.gitAssistant.showHelp();
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: '✅ Git Assistant help displayed',
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Failed to show help: ${errorMessage}`,
           },
         ],
       };

@@ -2,6 +2,38 @@
 
 > **Honest upfront**: This is NOT a collection of 23 separate AI agents. It's a **smart routing + prompt enhancement system** that makes Claude Code work better for your projects. Think of it as an intelligent copilot for your copilot.
 
+## ⚡ Quick Install for Claude Code
+
+**For Claude Code users - 2 minute setup:**
+
+1. **Clone this repository:**
+   ```bash
+   git clone https://github.com/yourusername/smart-agents.git
+   cd smart-agents
+   ```
+
+2. **Run interactive installation:**
+   ```bash
+   ./scripts/install.sh
+   ```
+
+The script will:
+- ✓ Check prerequisites (Node.js 18+, npm)
+- ✓ Install dependencies
+- ✓ Build the project
+- ✓ Auto-configure Claude Code MCP integration
+- ✓ Test and verify installation
+
+**No API keys needed** - Uses your existing Claude Code subscription.
+
+**After installation:**
+- Restart Claude Code
+- Use smart-agents commands in any project
+
+**Need help?** See [Installation Guide](docs/INSTALL.md) for detailed instructions.
+
+---
+
 ## The Problem with Plain Claude Code
 
 If you've been using Claude Code to build projects, you've probably hit these frustrations:
@@ -225,67 +257,23 @@ show-changes
 ### Prerequisites
 
 - **Node.js 18+** installed ([download](https://nodejs.org/))
-- **Anthropic API Key** ([get one here](https://console.anthropic.com/))
-- **Claude Code CLI** installed ([install guide](https://claude.com/claude-code))
+- **Claude Code** installed and configured with your subscription ([install guide](https://claude.com/claude-code))
 
-### 1. Installation
+### Installation
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/smart-agents.git
-cd smart-agents
+**Quickest way:** Use the [Quick Install script](#-quick-install-for-claude-code) above (recommended for Claude Code users).
 
-# Install dependencies
-npm install
+The interactive installation script handles everything automatically:
+- Dependencies installation
+- Project build
+- Claude Code MCP integration
+- Testing and verification
 
-# Copy example environment file
-cp .env.example .env
+**Note:** No API keys needed - Smart-Agents uses your existing Claude Code subscription through MCP.
 
-# Edit .env file - Add your Anthropic API key
-nano .env  # or use any text editor
-```
+**Manual installation:** See [Installation Guide](docs/INSTALL.md) for step-by-step manual setup.
 
-Your `.env` file should look like:
-```bash
-ANTHROPIC_API_KEY=sk-ant-your-key-here
-CLAUDE_MODEL=claude-sonnet-4-5-20250929
-
-# Optional: OpenAI for RAG embeddings
-OPENAI_API_KEY=sk-your-openai-key
-```
-
-### 2. Configure Claude Code to use Smart-Agents
-
-Add to your Claude Code MCP settings (`~/.claude/config.json`):
-
-```json
-{
-  "mcpServers": {
-    "smart-agents": {
-      "command": "node",
-      "args": ["/path/to/smart-agents/dist/mcp/server.js"],
-      "env": {
-        "NODE_ENV": "production"
-      }
-    }
-  }
-}
-```
-
-**Replace `/path/to/smart-agents` with your actual path.**
-
-### 3. Build and Start
-
-```bash
-# Build the project
-npm run build
-
-# Start the MCP server
-npm run mcp
-
-# Or run in development mode
-npm run dev
-```
+**For developers:** See [Contributing Guide](docs/CONTRIBUTING.md) for development setup.
 
 ### 4. Test it in Claude Code
 

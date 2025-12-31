@@ -13,8 +13,9 @@ config({ override: true });
  * 環境變數 Schema 驗證
  */
 const envSchema = z.object({
-  // MCP Server Mode (when true, ANTHROPIC_API_KEY is not required)
-  MCP_SERVER_MODE: z.string().transform(val => val === 'true').default('false'),
+  // MCP Server Mode (default: true - designed for Claude Code MCP integration)
+  // When true, ANTHROPIC_API_KEY is not required (Claude Code manages authentication)
+  MCP_SERVER_MODE: z.string().transform(val => val === 'true').default('true'),
 
   // Claude API (primary provider - optional in MCP server mode)
   ANTHROPIC_API_KEY: z.string().optional(),

@@ -52,8 +52,9 @@ export class BackgroundExecutor {
   /**
    * Execute a task in background
    * Returns taskId for tracking
+   * @param task - Task data (using unknown for type safety - validate before use)
    */
-  async executeTask(task: any, config: ExecutionConfig): Promise<string> {
+  async executeTask(task: unknown, config: ExecutionConfig): Promise<string> {
     // Check if resources are available (but only fail if it's a hard limit)
     const resourceCheck = this.resourceMonitor.canRunBackgroundTask(config);
 
@@ -231,11 +232,11 @@ export class BackgroundExecutor {
    * Internal task execution logic
    */
   private async executeTaskInternal(
-    task: any,
+    task: unknown,
     config: ExecutionConfig,
     updateProgress: (progress: number, stage?: string) => void,
     isCancelled: () => boolean
-  ): Promise<any> {
+  ): Promise<unknown> {
     // Update progress to show execution started
     updateProgress(0.1, 'executing');
 
@@ -267,7 +268,7 @@ export class BackgroundExecutor {
   /**
    * Handle task completion
    */
-  private handleTaskCompleted(taskId: string, result: any): void {
+  private handleTaskCompleted(taskId: string, result: unknown): void {
     const task = this.tasks.get(taskId);
     if (!task) {
       return;
@@ -449,7 +450,7 @@ export class BackgroundExecutor {
    * Manually complete a task with attribution
    * Used for UI integration testing and manual task completion
    */
-  async completeTask(taskId: string, result: any): Promise<void> {
+  async completeTask(taskId: string, result: unknown): Promise<void> {
     const task = this.tasks.get(taskId);
     if (!task) {
       throw new Error(`Task ${taskId} not found`);

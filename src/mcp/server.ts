@@ -54,11 +54,29 @@ import {
   ListAgentsInputSchema,
   ListSkillsInputSchema,
   UninstallInputSchema,
+  WorkflowGuidanceInputSchema,
+  RecordTokenUsageInputSchema,
+  GenerateSmartPlanInputSchema,
+  GitSaveWorkInputSchema,
+  GitListVersionsInputSchema,
+  GitShowChangesInputSchema,
+  GitGoBackInputSchema,
+  GitSetupInputSchema,
+  RecallMemoryInputSchema,
   formatValidationError,
   type ValidatedTaskInput,
   type ValidatedDashboardInput,
   type ValidatedListSkillsInput,
   type ValidatedUninstallInput,
+  type ValidatedWorkflowGuidanceInput,
+  type ValidatedRecordTokenUsageInput,
+  type ValidatedGenerateSmartPlanInput,
+  type ValidatedGitSaveWorkInput,
+  type ValidatedGitListVersionsInput,
+  type ValidatedGitShowChangesInput,
+  type ValidatedGitGoBackInput,
+  type ValidatedGitSetupInput,
+  type ValidatedRecallMemoryInput,
 } from './validation.js';
 import { KnowledgeGraph } from '../knowledge-graph/index.js';
 import { ProjectMemoryManager } from '../memory/ProjectMemoryManager.js';
@@ -1253,10 +1271,19 @@ class SmartAgentsMCPServer {
     args: unknown
   ): Promise<{ content: Array<{ type: string; text: string }> }> {
     try {
-      const data = args as Record<string, unknown>;
+      let validatedInput: ValidatedWorkflowGuidanceInput;
+      try {
+        validatedInput = WorkflowGuidanceInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new Error(formatValidationError(error));
+        }
+        throw error;
+      }
+
       const result = await this.developmentButler.processCheckpoint(
-        data.phase as string,
-        data
+        validatedInput.phase,
+        validatedInput
       );
 
       return {
@@ -1349,10 +1376,19 @@ class SmartAgentsMCPServer {
     args: unknown
   ): Promise<{ content: Array<{ type: string; text: string }> }> {
     try {
-      const data = args as Record<string, unknown>;
+      let validatedInput: ValidatedRecordTokenUsageInput;
+      try {
+        validatedInput = RecordTokenUsageInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new Error(formatValidationError(error));
+        }
+        throw error;
+      }
+
       this.developmentButler.getTokenTracker().recordUsage({
-        inputTokens: data.inputTokens as number,
-        outputTokens: data.outputTokens as number,
+        inputTokens: validatedInput.inputTokens,
+        outputTokens: validatedInput.outputTokens,
       });
 
       return {
@@ -1383,18 +1419,21 @@ class SmartAgentsMCPServer {
     args: unknown
   ): Promise<{ content: Array<{ type: string; text: string }> }> {
     try {
-      const data = args as Record<string, unknown>;
-
-      // Validate input
-      if (!data.featureDescription || typeof data.featureDescription !== 'string') {
-        throw new Error('featureDescription is required and must be a string');
+      let validatedInput: ValidatedGenerateSmartPlanInput;
+      try {
+        validatedInput = GenerateSmartPlanInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new Error(formatValidationError(error));
+        }
+        throw error;
       }
 
       // Generate plan using PlanningEngine
       const plan = await this.planningEngine.generatePlan({
-        featureDescription: data.featureDescription,
-        requirements: data.requirements as string[] | undefined,
-        constraints: data.constraints as string[] | undefined,
+        featureDescription: validatedInput.featureDescription,
+        requirements: validatedInput.requirements,
+        constraints: validatedInput.constraints,
       });
 
       // Format plan as text
@@ -1465,17 +1504,23 @@ class SmartAgentsMCPServer {
     args: unknown
   ): Promise<{ content: Array<{ type: string; text: string }> }> {
     try {
-      const data = args as Record<string, unknown>;
-      const description = data.description as string;
-      const autoBackup = data.autoBackup !== undefined ? (data.autoBackup as boolean) : true;
+      let validatedInput: ValidatedGitSaveWorkInput;
+      try {
+        validatedInput = GitSaveWorkInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new Error(formatValidationError(error));
+        }
+        throw error;
+      }
 
-      await this.gitAssistant.saveWork(description, autoBackup);
+      await this.gitAssistant.saveWork(validatedInput.description, validatedInput.autoBackup);
 
       return {
         content: [
           {
             type: 'text',
-            text: `✅ Work saved successfully with description: "${description}"`,
+            text: `✅ Work saved successfully with description: "${validatedInput.description}"`,
           },
         ],
       };
@@ -1499,10 +1544,17 @@ class SmartAgentsMCPServer {
     args: unknown
   ): Promise<{ content: Array<{ type: string; text: string }> }> {
     try {
-      const data = args as Record<string, unknown>;
-      const limit = data.limit ? (data.limit as number) : 10;
+      let validatedInput: ValidatedGitListVersionsInput;
+      try {
+        validatedInput = GitListVersionsInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new Error(formatValidationError(error));
+        }
+        throw error;
+      }
 
-      const versions = await this.gitAssistant.listVersions(limit);
+      const versions = await this.gitAssistant.listVersions(validatedInput.limit);
 
       return {
         content: [
@@ -1562,10 +1614,17 @@ class SmartAgentsMCPServer {
     args: unknown
   ): Promise<{ content: Array<{ type: string; text: string }> }> {
     try {
-      const data = args as Record<string, unknown>;
-      const compareWith = data.compareWith as string | undefined;
+      let validatedInput: ValidatedGitShowChangesInput;
+      try {
+        validatedInput = GitShowChangesInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new Error(formatValidationError(error));
+        }
+        throw error;
+      }
 
-      const changes = await this.gitAssistant.showChanges(compareWith);
+      const changes = await this.gitAssistant.showChanges(validatedInput.compareWith);
 
       return {
         content: [
@@ -1595,16 +1654,23 @@ class SmartAgentsMCPServer {
     args: unknown
   ): Promise<{ content: Array<{ type: string; text: string }> }> {
     try {
-      const data = args as Record<string, unknown>;
-      const identifier = data.identifier as string;
+      let validatedInput: ValidatedGitGoBackInput;
+      try {
+        validatedInput = GitGoBackInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new Error(formatValidationError(error));
+        }
+        throw error;
+      }
 
-      await this.gitAssistant.goBackTo(identifier);
+      await this.gitAssistant.goBackTo(validatedInput.identifier);
 
       return {
         content: [
           {
             type: 'text',
-            text: `✅ Successfully went back to version: ${identifier}`,
+            text: `✅ Successfully went back to version: ${validatedInput.identifier}`,
           },
         ],
       };
@@ -1658,10 +1724,17 @@ class SmartAgentsMCPServer {
     args: unknown
   ): Promise<{ content: Array<{ type: string; text: string }> }> {
     try {
-      const data = args as Record<string, unknown>;
-      const existingGit = data.existingGit as boolean | undefined;
+      let validatedInput: ValidatedGitSetupInput;
+      try {
+        validatedInput = GitSetupInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new Error(formatValidationError(error));
+        }
+        throw error;
+      }
 
-      if (existingGit) {
+      if (validatedInput.existingGit) {
         await this.gitAssistant.configureExistingProject();
       } else {
         await this.gitAssistant.setupNewProject();
@@ -1725,8 +1798,18 @@ class SmartAgentsMCPServer {
     args: unknown
   ): Promise<{ content: Array<{ type: string; text: string }> }> {
     try {
+      let validatedInput: ValidatedRecallMemoryInput;
+      try {
+        validatedInput = RecallMemoryInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new Error(formatValidationError(error));
+        }
+        throw error;
+      }
+
       const result = await recallMemoryTool.handler(
-        args as any,
+        validatedInput,
         this.projectMemoryManager
       );
 

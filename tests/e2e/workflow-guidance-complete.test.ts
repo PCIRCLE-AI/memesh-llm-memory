@@ -11,13 +11,13 @@
  */
 
 import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from 'vitest';
-import { SmartAgentsMCPServer } from '../../src/mcp/server.js';
+import { ClaudeCodeBuddyMCPServer } from '../../src/mcp/server.js';
 
 describe('Workflow Guidance System - Complete E2E', () => {
-  let server: SmartAgentsMCPServer;
+  let server: ClaudeCodeBuddyMCPServer;
 
   beforeAll(() => {
-    server = new SmartAgentsMCPServer();
+    server = new ClaudeCodeBuddyMCPServer();
   });
 
   // Reset token tracker before each test to avoid accumulation
@@ -191,8 +191,8 @@ describe('Workflow Guidance System - Complete E2E', () => {
     vi.useFakeTimers();
 
     // Create a fresh butler instance for this test to avoid cooldown conflicts
-    const { SmartAgentsMCPServer } = await import('../../src/mcp/server.js');
-    const testServer = new SmartAgentsMCPServer();
+    const { ClaudeCodeBuddyMCPServer } = await import('../../src/mcp/server.js');
+    const testServer = new ClaudeCodeBuddyMCPServer();
     const butler = (testServer as any).developmentButler;
 
     try {

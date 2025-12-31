@@ -1,0 +1,88 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { KnowledgeGraph } from '../index.js';
+import { existsSync, unlinkSync } from 'fs';
+
+describe('KnowledgeGraph', () => {
+  let kg: KnowledgeGraph;
+  const testDbPath = './data/test-knowledge-graph.db';
+
+  beforeEach(() => {
+    // Clean up test database if exists
+    if (existsSync(testDbPath)) {
+      unlinkSync(testDbPath);
+    }
+    kg = new KnowledgeGraph(testDbPath);
+  });
+
+  afterEach(() => {
+    kg.close();
+    // Clean up test database
+    if (existsSync(testDbPath)) {
+      unlinkSync(testDbPath);
+    }
+  });
+
+  describe('deleteEntity', () => {
+    it('should delete an entity by name', () => {
+      // Create an entity
+      kg.createEntity({
+        name: 'TestEntity',
+        type: 'test_type',
+        observations: ['observation1']
+      });
+
+      // Verify it exists
+      const beforeDelete = kg.searchEntities({ namePattern: 'TestEntity' });
+      expect(beforeDelete).toHaveLength(1);
+
+      // Delete the entity
+      kg.deleteEntity('TestEntity');
+
+      // Verify it's gone
+      const afterDelete = kg.searchEntities({ namePattern: 'TestEntity' });
+      expect(afterDelete).toHaveLength(0);
+    });
+
+    it('should delete entity and its relations', () => {
+      // Create entities
+      kg.createEntity({
+        name: 'Entity1',
+        type: 'test_type',
+        observations: ['obs1']
+      });
+      kg.createEntity({
+        name: 'Entity2',
+        type: 'test_type',
+        observations: ['obs2']
+      });
+
+      // Create relation
+      kg.createRelation({
+        from: 'Entity1',
+        to: 'Entity2',
+        relationType: 'related_to'
+      });
+
+      // Verify relation exists
+      const relationsBeforeDelete = kg.traceRelations('Entity1');
+      expect(relationsBeforeDelete).not.toBeNull();
+      expect(relationsBeforeDelete!.relations).toHaveLength(1);
+
+      // Delete Entity1
+      kg.deleteEntity('Entity1');
+
+      // Entity1 should be gone
+      const entity1 = kg.searchEntities({ namePattern: 'Entity1' });
+      expect(entity1).toHaveLength(0);
+
+      // Relations involving Entity1 should be gone
+      const relationsAfterDelete = kg.traceRelations('Entity1');
+      expect(relationsAfterDelete).toBeNull();
+    });
+
+    it('should return false when deleting non-existent entity', () => {
+      const result = kg.deleteEntity('NonExistent');
+      expect(result).toBe(false);
+    });
+  });
+});

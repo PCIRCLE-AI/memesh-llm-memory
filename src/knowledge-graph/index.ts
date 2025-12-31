@@ -311,6 +311,27 @@ export class KnowledgeGraph {
   }
 
   /**
+   * Delete an entity and all its relations (cascade delete)
+   * @param name - Entity name to delete
+   * @returns true if entity was deleted, false if not found
+   */
+  deleteEntity(name: string): boolean {
+    const getEntityId = this.db.prepare('SELECT id FROM entities WHERE name = ?');
+    const entity = getEntityId.get(name) as { id: number } | undefined;
+
+    if (!entity) {
+      return false;
+    }
+
+    // Delete the entity (cascade will handle observations, tags, and relations)
+    const stmt = this.db.prepare('DELETE FROM entities WHERE name = ?');
+    const result = stmt.run(name);
+
+    console.log(`[KG] Deleted entity: ${name}`);
+    return result.changes > 0;
+  }
+
+  /**
    * Close the database connection
    */
   close() {

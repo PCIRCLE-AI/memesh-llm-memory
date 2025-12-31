@@ -6,6 +6,17 @@
  */
 
 // ============================================================================
+// Database Types
+// ============================================================================
+
+/**
+ * Valid SQL parameter types for better-sqlite3
+ * More specific than `any[]` for type safety
+ */
+export type SQLParam = string | number | null | Buffer;
+export type SQLParams = SQLParam[];
+
+// ============================================================================
 // Core Types
 // ============================================================================
 

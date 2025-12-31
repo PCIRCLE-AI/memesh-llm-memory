@@ -48,6 +48,7 @@ import type {
   RewardRow,
   EvolutionStatsRow,
   ContextualPatternRow,
+  SQLParams,
   SQLParam,
 } from './types';
 
@@ -430,7 +431,7 @@ export class SQLiteStore implements EvolutionStore {
     offset?: number;
   }): Promise<Task[]> {
     let query = 'SELECT * FROM tasks';
-    const params: any[] = [];
+    const params: SQLParams = [];
 
     if (filters?.status) {
       query += ' WHERE status = ?';
@@ -616,7 +617,7 @@ export class SQLiteStore implements EvolutionStore {
    */
   async querySpans(query: SpanQuery): Promise<Span[]> {
     let sql = 'SELECT * FROM spans WHERE 1=1';
-    const params: any[] = [];
+    const params: SQLParams = [];
 
     // Identity filters
     if (query.task_id) {
@@ -836,7 +837,7 @@ export class SQLiteStore implements EvolutionStore {
     max_value?: number;
   }): Promise<Reward[]> {
     let sql = 'SELECT * FROM rewards WHERE 1=1';
-    const params: any[] = [];
+    const params: SQLParams = [];
 
     if (filters.start_time) {
       sql += ' AND provided_at >= ?';
@@ -919,7 +920,7 @@ export class SQLiteStore implements EvolutionStore {
    */
   async queryPatterns(query: PatternQuery): Promise<Pattern[]> {
     let sql = 'SELECT * FROM patterns WHERE 1=1';
-    const params: any[] = [];
+    const params: SQLParams = [];
 
     if (query.type) {
       if (Array.isArray(query.type)) {
@@ -1035,7 +1036,7 @@ export class SQLiteStore implements EvolutionStore {
     context: import('./types.js').PatternContext
   ): Promise<import('./types.js').ContextualPattern[]> {
     let sql = 'SELECT * FROM patterns WHERE 1=1';
-    const params: any[] = [];
+    const params: SQLParams = [];
 
     if (context.agent_type) {
       sql += ' AND applies_to_agent_type = ?';
@@ -1068,7 +1069,7 @@ export class SQLiteStore implements EvolutionStore {
   /**
    * Convert database row to ContextualPattern (Phase 2)
    */
-  private rowToContextualPattern(row: any): import('./types.js').ContextualPattern {
+  private rowToContextualPattern(row: ContextualPatternRow): import('./types.js').ContextualPattern {
     const pattern_data = safeJsonParse<Record<string, any>>(row.pattern_data, {});
     const config_keys = safeJsonParse(row.config_keys, undefined);
     const metadata = safeJsonParse(row.context_metadata, undefined);
@@ -1184,7 +1185,7 @@ export class SQLiteStore implements EvolutionStore {
     skillName?: string;
   }): Promise<Pattern[]> {
     let sql = 'SELECT * FROM patterns WHERE is_active = 1';
-    const params: any[] = [];
+    const params: SQLParams = [];
 
     if (filters.agentType) {
       sql += ' AND (applies_to_agent_type = ? OR applies_to_agent_type IS NULL)';
@@ -1263,7 +1264,7 @@ export class SQLiteStore implements EvolutionStore {
     isActive?: boolean;
   }): Promise<Adaptation[]> {
     let sql = 'SELECT * FROM adaptations WHERE 1=1';
-    const params: any[] = [];
+    const params: SQLParams = [];
 
     if (filters.patternId) {
       sql += ' AND pattern_id = ?';

@@ -5,18 +5,19 @@
  * Used by: MCP tools in server.ts (not the other way around)
  */
 
-import { KnowledgeGraph, Entity, Relation, SearchOptions } from './KnowledgeGraph.js';
+import { KnowledgeGraphSQLite } from './KnowledgeGraphSQLite.js';
+import { Entity, Relation, SearchOptions } from './KnowledgeGraph.js';
 
 export class KnowledgeAgent {
-  private graph: KnowledgeGraph;
+  private graph: KnowledgeGraphSQLite;
   private isInitialized = false;
-  private dbPath?: string; // For backward compatibility, not used in current implementation
+  private dbPath?: string;
 
   constructor(dbPath?: string) {
-    this.graph = new KnowledgeGraph();
-    this.dbPath = dbPath; // Store for future use, currently using in-memory storage
+    this.graph = new KnowledgeGraphSQLite({ dbPath });
+    this.dbPath = dbPath;
     if (dbPath) {
-      console.log(`KnowledgeAgent initialized with dbPath: ${dbPath} (currently using in-memory storage)`);
+      console.log(`KnowledgeAgent initialized with dbPath: ${dbPath}`);
     }
   }
 
@@ -51,8 +52,13 @@ export class KnowledgeAgent {
 
     const created: Entity[] = [];
     for (const entity of entities) {
-      const result = await this.graph.createEntity(entity);
-      created.push(result);
+      try {
+        const result = await this.graph.createEntity(entity);
+        created.push(result);
+      } catch (error) {
+        console.warn(`Failed to create entity "${entity.name}":`, error);
+        // Continue with next entity instead of failing entire batch
+      }
     }
 
     console.log(`Created ${created.length} entities`);
@@ -217,7 +223,7 @@ export class KnowledgeAgent {
    * Close the knowledge agent
    */
   async close(): Promise<void> {
-    // Cleanup if needed
+    await this.graph.close();
     this.isInitialized = false;
     console.log('Knowledge Agent closed');
   }

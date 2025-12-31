@@ -1,12 +1,18 @@
-import { describe, test, expect, beforeEach } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { KnowledgeAgent } from '../../../src/agents/knowledge/index.js';
 
 describe('KnowledgeAgent', () => {
   let agent: KnowledgeAgent;
 
   beforeEach(async () => {
-    agent = new KnowledgeAgent();
+    // Use in-memory database for tests
+    agent = new KnowledgeAgent(':memory:');
     await agent.initialize();
+  });
+
+  afterEach(async () => {
+    // Clean up database connection
+    await agent.close();
   });
 
   describe('Entity Operations', () => {

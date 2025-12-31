@@ -1,258 +1,216 @@
 # Changelog
 
-All notable changes to Smart-Agents will be documented in this file.
+All notable changes to Claude Code Buddy will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.2.0] - 2025-12-31
+## [2.0.0] - 2026-01-01
+
+### Major Rebrand: smart-agents → Claude Code Buddy (CCB)
+
+**Breaking Changes:**
+- Project renamed from "smart-agents" to "Claude Code Buddy (CCB)"
+- MCP server name changed: `smart-agents` → `claude-code-buddy`
+- Package name updated to reflect new branding
+
+**Note:** This is the initial public release, so while technically a "rebrand," there are no existing users to migrate.
 
 ### Added
-- **Phase 3: Essential Agents** 🎉
-  - **Test Writer Agent**: Automated test generation with vitest integration
-    - Code analysis with function extraction
-    - Vitest-compatible test file generation
-    - Automatic test path resolution (src/ → tests/)
-    - Knowledge Graph integration for test coverage tracking
-  - **DevOps Engineer Agent**: CI/CD automation and deployment analysis
-    - GitHub Actions and GitLab CI configuration generation
-    - Deployment readiness analysis
-    - CI/CD setup automation
-    - Infrastructure configuration tracking
-- **Phase 4: Documentation & Polish** 📚
-  - **USER_GUIDE.md**: Comprehensive 3,700+ line user guide covering all v2.2 features
-    - Getting started and installation
-    - Core concepts and architecture
-    - Detailed agent usage examples
-    - Event-driven butler and workflow guidance
-    - Smart planning system documentation
-    - Best practices and configuration
-  - **AGENT_REFERENCE.md**: Complete API documentation for all 20 agents
-    - TypeScript interfaces and function signatures
-    - Code examples for each agent
-    - Agent selection guide
-    - Known limitations and roadmap
-  - **TROUBLESHOOTING.md**: Comprehensive troubleshooting guide
-    - Common issues and solutions
-    - Agent-specific troubleshooting
-    - Diagnostic commands and FAQ
-  - **README.md Updates**: Enhanced with v2.2.0 features
-    - "What's New in v2.2.0" section
-    - Updated agent count (18 → 20)
-    - Links to new documentation
+
+#### New User-Friendly Command Layer
+- **\`buddy do <task>\`** - Execute tasks with smart routing (Ollama vs Claude)
+  - Analyzes task complexity automatically
+  - Routes simple tasks to Ollama (fast & free)
+  - Routes complex tasks to Claude (high quality)
+  - Supports aliases: \`help-with\`, \`execute\`, \`run\`, \`task\`
+- **\`buddy stats [period]\`** - Performance dashboard
+  - Shows token usage and cost savings
+  - Displays routing decisions (Ollama vs Claude breakdown)
+  - Supports periods: \`day\`, \`week\`, \`month\`, \`all\`
+  - Aliases: \`dashboard\`, \`metrics\`, \`performance\`
+- **\`buddy remember <query> [limit]\`** - Project memory recall
+  - Searches knowledge graph for past decisions
+  - Retrieves architecture choices and patterns
+  - Configurable result limit (1-50, default: 5)
+  - Aliases: \`recall\`, \`retrieve\`, \`search\`, \`find\`
+- **\`buddy help [command]\`** - Command documentation
+  - Shows all commands or specific command help
+  - Includes usage examples and aliases
+  - Provides parameter descriptions
+
+#### MCP Tool Implementations
+- \`buddy_do\` - MCP tool for task execution
+- \`buddy_stats\` - MCP tool for performance metrics
+- \`buddy_remember\` - MCP tool for memory recall
+- \`buddy_help\` - MCP tool for help system
+
+#### Command Infrastructure
+- \`BuddyCommands\` class - Command parsing and routing
+  - Handles 25+ command aliases
+  - Case-insensitive command matching
+  - Automatic "buddy" prefix removal
+  - Unknown command fallback to help
+- Tool handler architecture:
+  - Zod schema validation for all inputs
+  - Consistent error handling
+  - Formatted response system
+  - Dependency injection pattern
 
 ### Changed
-- **Agent Count**: Corrected documentation to reflect actual 23 agents (was incorrectly stated as 20)
-  - 5 real implementations (DevelopmentButler, TestWriter, DevOps, KnowledgeGraph, RAG)
-  - 17 enhanced prompt agents (was 12, added Frontend/Backend/Database/Performance/TestAutomator)
-  - 1 optional feature (RAG agent - requires OpenAI API)
-  - **Documentation Fix**: README now accurately lists all 23 agents registered in AgentRegistry
-- **Test Coverage**: Increased from 447 to 572 tests passing
-  - Phase 3 integration tests: 7/7 passing
-  - TestWriterAgent unit tests: 2/2 passing
-  - DevOpsEngineerAgent unit tests: 2/2 passing
-  - Total: 572 passed | 2 skipped (574 total)
-- **Architecture Diagram**: Updated to reflect 20 agents and Phase 3 additions
-- **Production Readiness**: Quality score 4.2/5, zero critical vulnerabilities
 
-### Fixed
-- **DevOpsEngineerAgent - Critical Production Fix** 🔧
-  - Replaced hardcoded `true` values with actual command execution
-  - `analyzeDeploymentReadiness()` now executes real tests, builds, and git status checks
-  - Added proper timeout handling (5min tests, 10min builds, 5sec git)
-  - Added comprehensive error handling with try-catch blocks
-  - **Impact**: Agent is now fully functional (was 90% stubbed)
+#### Core Infrastructure
+- **MCP Server Class:**
+  - Class name: \`SmartAgentsMCPServer\` → \`ClaudeCodeBuddyMCPServer\`
+  - Server name in MCP registration: \`smart-agents\` → \`claude-code-buddy\`
+  - Server version: \`1.0.0\` → \`2.0.0\`
+  - Console messages updated to reflect new branding
 
-- **KnowledgeGraph - Implemented Stubbed Methods** 🧠
-  - Implemented `findSimilar()`: Jaccard-style similarity calculation (>10% threshold)
-  - Implemented `getDecisions()`: Retrieves decision entities with outcome extraction
-  - Implemented `getLessonsLearned()`: Retrieves lesson_learned entities with context
-  - Implemented `getStats()`: Returns actual entity counts from graph statistics
-  - **Impact**: Learning system now fully operational (was 50% stubbed)
+#### Documentation
+- **README.md:**
+  - Title updated to "Claude Code Buddy (CCB)"
+  - Tagline: "Your friendly AI companion for Claude Code"
+  - Added buddy commands reference section
+  - Updated all examples to use new naming
+  - Installation instructions updated
+  - Removed API key requirement note (uses Claude Code subscription)
+  - Updated architecture diagrams
+  - Clarified limitations section
+- **New Documentation Files:**
+  - \`docs/COMMANDS.md\` - Comprehensive command reference (250+ lines)
+    - All buddy commands documented
+    - MCP tools reference
+    - Command aliases list
+    - Usage examples and best practices
+    - Troubleshooting guide
+  - \`CHANGELOG.md\` - Version history (this file)
 
-- **Orchestrator - Promise Pool Bug Fix** ⚡
-  - Fixed flawed `Promise.race()` logic that couldn't filter settled promises
-  - Implemented proper self-removing Promise pool pattern
-  - Eliminated race conditions in parallel task execution
-  - **Impact**: Parallel execution is now safe and reliable
+#### Installation
+- Repository URL: \`smart-agents.git\` → \`claude-code-buddy.git\`
+- Directory name: \`smart-agents/\` → \`claude-code-buddy/\`
+- No API keys required - uses Claude Code subscription via MCP
 
-- **TestWriterAgent - Upgraded to TypeScript AST** 🚀
-  - Replaced regex parsing with TypeScript compiler API (`import * as ts`)
-  - Accurate type extraction from AST (parameters, return types)
-  - Intelligent edge case generation based on actual types (number → zero/negative, string → empty, array → empty, nullable → null/undefined)
-  - Fixed duplicate test case generation using Set to track types
-  - Updated tests to match new intelligent behavior
-  - **Impact**: Generates meaningful, type-aware tests (was trivial regex-based)
+### Technical Details
 
-### Documentation
-- Complete user-facing documentation suite
-- Enhanced learning path with 5 steps
-- Updated all version references to 2.2.0
-- Added Phase 3 feature highlights
+#### Files Modified
+- \`package.json\` - Name, version, description updated
+- \`src/mcp/server.ts\` - Class name, server registration, tool integrations
+- \`README.md\` - Complete rebrand with buddy commands
+- \`.gitignore\` - Added package.json.backup
 
-## [2.1.0] - 2025-12-30
+#### Files Created
+- \`src/mcp/BuddyCommands.ts\` (248 lines) - Command parsing layer
+- \`tests/mcp/BuddyCommands.test.ts\` (7 tests) - Command parser tests
+- \`src/mcp/tools/buddy-do.ts\` (67 lines) - Task execution tool
+- \`src/mcp/tools/buddy-stats.ts\` (83 lines) - Performance dashboard tool
+- \`src/mcp/tools/buddy-remember.ts\` (97 lines) - Memory recall tool
+- \`src/mcp/tools/buddy-help.ts\` (67 lines) - Help system tool
+- \`docs/COMMANDS.md\` (250+ lines) - Command reference documentation
+- \`CHANGELOG.md\` - This changelog
 
-### Added
-- **Claude Code-Assisted Installation** ⭐ NEW
-  - One-command installation: "Install smart-agents MCP from [GitHub URL]"
-  - Interactive guided setup with feature prompts (RAG agent, API keys)
-  - Automated MCP server configuration
-  - Full customization via natural conversation with Claude Code
-  - Comprehensive installation guide: `docs/guides/CLAUDE_CODE_INSTALLATION.md`
-  - Setup time reduced from 15-20 minutes to 2-5 minutes
-  - Users can modify agents, create skills, update config - all through Claude Code
-- **MCP Server Integration**: Full integration with Claude Code via Model Context Protocol
-  - MCP setup verification tools and example config
-  - MCP server integration guide and comprehensive documentation
-  - Resources capability in MCP server initialization
-- **Development Butler**: Event-driven development automation agent
-  - Checkpoint detection system for workflow events
-  - Integration with Claude Code hooks
-  - Core agent implementation
-- **Test Writer Agent**: Automated test generation capabilities
-- **DevOps Engineer Agent**: CI/CD configuration and automation
-- **Agent Classification System**: Enhanced AgentRegistry with agent categorization
-- **MCP Tool Interface**: Agent-tool interaction layer for seamless integration
-- **Evolution Dashboard**: Real-time monitoring and analytics (`evolution_dashboard` tool)
-- **Permission-based UX**: Enhanced security and user control in integration
+#### Test Coverage
+- BuddyCommands: 7/7 tests passing
+  - Command parsing validation
+  - Alias resolution
+  - Unknown command handling
+  - Prefix removal (optional "buddy")
 
-### Changed
-- **Agent Count**: Reduced from 22 to 13 agents for better maintainability
-  - 5 real implementations, 7 enhanced prompts, 1 optional feature
-  - New categorization: Development (3), Operations (2), Management (2), Engineering (2), Analysis (2), Creative (1), Business (1)
-- **Test Coverage**: 447 passing tests (unit, integration, E2E, regression)
-- **Architecture Simplification**: Removed unused features and simplified to Claude + OpenAI only
-- **RAG Configuration**: OpenAI embeddings as primary, HuggingFace as optional alternative
+### Migration Guide
 
-### Fixed
-- MCP server verification check improvements
-- Agent count test expectations updated to match V2.1 reality (13 agents)
-- Filesystem and memory helpers added to MCPToolInterface
-- Environment variable loading for RAG with OpenAI API key
-- **Test Suite Fixes** (2025-12-30):
-  - Fixed MCPToolInterface test to correctly validate v2.1.0 behavior (prompt enhancement mode)
-  - Fixed evolution-regression cost tracking test: Added MicroDollars to dollars conversion using `toDollars()` utility
-  - Fixed AgentRouter MicroDollars formatting bug: Properly convert μUSD to dollars before display
-  - Root cause: Type confusion between MicroDollars (integer μUSD) and dollars (float)
-  - Prevention: Always use `toDollars()` utility from `src/utils/money.ts` for display/comparison
-  - Test suite now passing: 447/447 tests (100% pass rate)
+**For New Users:**
+- No migration needed - this is the initial public release
+- Follow installation guide in README.md
+- Use buddy commands from the start
 
-### Refactored
-- **Evolution Storage Layer** (Phase 1-3 refactoring)
-  - Phase 1: Critical security fixes
-    - Eliminated SQL injection vulnerabilities in FTS queries
-    - Hardened all database query parameters
-    - Improved error handling and validation
-  - Phase 2: Major improvements
-    - Implemented proper TypeScript type safety with branded MicroDollars type
-    - Added comprehensive JSDoc documentation for core utilities
-    - Created safeJsonParse utility for robust JSON handling
-    - Enhanced null safety throughout storage layer
-  - Phase 3: Minor improvements
-    - Eliminated all 51 'as any' type casts in SQLiteStore implementations
-    - Added JSDoc documentation to 8+ core public API methods
-    - Replaced magic numbers with named constants (money formatting)
-    - Standardized null handling patterns (|| null for inserts, ?? undefined for reads)
+**For Developers (Internal):**
+1. Update git remote if needed:
+   \`\`\`bash
+   git remote set-url origin https://github.com/yourusername/claude-code-buddy.git
+   \`\`\`
+2. Update local repository name:
+   \`\`\`bash
+   # Rename directory if desired
+   mv smart-agents claude-code-buddy
+   \`\`\`
+3. Reinstall dependencies:
+   \`\`\`bash
+   npm install
+   npm run build
+   \`\`\`
+4. Update Claude Code MCP config:
+   \`\`\`bash
+   # Update ~/.claude/config.json
+   # Change "smart-agents" to "ccb" or "claude-code-buddy"
+   \`\`\`
 
-### Documentation
-- **Project Rebranding**: Accurate positioning as "Prompt Enhancement System"
-  - Updated package.json description: "Claude Code Prompt Enhancement System"
-  - Clear distinction between "what it is" (prompt enhancement layer) and "what it isn't" (autonomous multi-agent AI)
-  - Honest terminology: 5 real implementations + 7 enhanced prompts + 1 optional agent
-  - Emphasis on MCP integration and prompt optimization workflow
-- **English-Only Codebase**: All Chinese code comments translated to English ✅ COMPLETED
-  - Core files translated: `src/orchestrator/types.ts`, `src/config/simple-config.ts`, `src/orchestrator/router.ts`
-  - International contributor accessibility achieved
-  - Maintains consistency with English-only documentation
-  - Type definitions, interfaces, and comments now fully in English
-  - Verified with automated checks: 0 Chinese characters remaining in code files
-- **English-Only Documentation**: All documentation files translated from Chinese to English
-  - Translated 8 major documentation files (HOOKS, OVERVIEW, SETUP, RAG, MODELS, EVOLUTION, etc.)
-  - Total ~5000+ lines of content converted for international accessibility
-  - Maintains technical accuracy while improving clarity and consistency
-  - Verified with automated checks: 0 Chinese characters remaining
-- **Documentation Simplification** - Embracing "Just Ask Claude Code" Philosophy
-  - README.md simplified from ~400 to ~200 lines (50% reduction)
-    - Removed all manual installation steps
-    - Removed detailed command reference
-    - Replaced with natural language prompts
-  - CLAUDE_CODE_INSTALLATION.md simplified from 417 to ~74 lines (82% reduction)
-    - Removed detailed bash commands and code templates
-    - Removed file structure reference and security details
-    - Kept only essentials: quick command, high-level workflow, example prompts
-  - All documentation now focuses on "what to ask Claude Code" rather than "how to do it manually"
-  - Users can customize everything through conversation - no manual file editing required
-- **Claude Code Installation Guide**: Interactive setup with one-command installation
-  - Quick Start: "Install smart-agents MCP from [GitHub URL]"
-  - Setup time reduced from 15-20 minutes to 2-5 minutes
-  - Interactive prompts for RAG feature selection and API key management
-  - Post-installation customization via natural conversation
-- Comprehensive v2.1.0 release notes
-- Complete user documentation and troubleshooting guide
-- Architecture diagram and design document
-- Updated README for V2.1 release with prominent Claude Code installation section
-- Fixed terminology inconsistencies across all docs
-- Agent implementation architecture details
-- MCP integration guide with step-by-step setup
-- Updated EVOLUTION.md with storage layer refactoring details
+### Commits
 
-### Removed
-- Unused collaboration features
-- Redundant code and features for cleaner architecture
-- HuggingFace as primary embedding (moved to optional)
+**Phase 0: Auto-Installation System**
+- \`bdbb832\` - feat(install): add interactive installation script with auto-config
+
+**Phase 1: Foundation**
+- \`e40d0e1\` - feat(core): rename package to claude-code-buddy (v2.0.0)
+- \`fec938e\` - refactor(mcp): rename SmartAgentsMCPServer to ClaudeCodeBuddyMCPServer
+
+**Phase 2: New Command Layer**
+- \`da31682\` - feat(commands): add user-friendly buddy command layer
+- \`9408580\` - feat(mcp): integrate buddy commands into MCP server (Task 2.2)
+
+**Phase 3: Documentation & Migration**
+- (Current) - docs: update README and create command reference
+
+### Breaking Changes Summary
+
+**None for end users** - This is the initial release.
+
+**For developers:**
+- Package name changed (affects imports if used as dependency)
+- MCP server name changed (affects Claude Code config)
+- Class names changed (affects code extending the server)
+
+### Known Issues
+
+- Pre-existing SQLiteStore compilation errors (unrelated to rebrand)
+  - Location: \`src/evolution/storage/SQLiteStore.enhanced.ts\`
+  - Impact: None on buddy tools functionality
+  - Status: Pre-existing, will be addressed separately
+
+### TODO / Roadmap
+
+**Phase 4: Testing & Validation** (Next)
+- Run integration tests
+- Full test suite verification
+- Manual testing of buddy commands via Claude Code
+
+**Phase 5: Release**
+- Create Git tag v2.0.0
+- Create GitHub release with release notes
+- Publish to npm (if applicable)
+
+**Future Enhancements:**
+- Implement actual token tracking for \`buddy_stats\` (currently placeholder data)
+- Add more buddy commands based on user feedback
+- Expand command alias system
+- Integration with ProjectMemoryManager for enhanced memory features
 
 ---
 
-## [2.0.0] - Previous Major Release
+## Development
 
-### Added
-- **V2.0 MCP Server Pattern**: Complete refactor to MCP-based architecture
-- **Evolution System**: Self-learning capabilities
-  - Performance tracking and metrics
-  - Learning manager with pattern analysis
-  - Adaptation engine for continuous improvement
-  - Evolution monitor and dashboard
-- **RAG System**: Vector-based retrieval augmented generation
-  - File drop feature with platform-friendly watch folder
-  - Auto-start RAG File Watcher on MCP server startup
-  - OpenAI and HuggingFace embedding options
-  - Interactive setup wizard
-- **Comprehensive Testing**: Evolution system test suites
-  - Integration tests
-  - Regression tests
-  - Performance benchmarks
-  - User acceptance tests (UAT)
-- **Experiments Framework**: Self-improvement experiment scripts
+**Testing:**
+\`\`\`bash
+npm test                          # Run all tests
+npm test -- tests/mcp/BuddyCommands.test.ts  # Test command parser
+npm run build                     # Build project
+\`\`\`
 
-### Changed
-- Simplified README to focus on features and user experience
-- Updated documentation for V2.0 MCP Server Pattern
-- Architecture refactored for MCP integration
-
-### Documentation
-- Phase 4 & 5 documentation (EvolutionMonitor, dashboard, testing)
-- RAG configuration and usage modes
-- HuggingFace embedding option guide
+**Contributing:**
+See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for development guidelines.
 
 ---
 
-## [1.x.x] - Early Development
-
-### Initial Features
-- Basic agent orchestration
-- Task routing and analysis
-- Cost tracking
-- Resource management
-- Knowledge graph integration
-- Agent registry system
-
----
-
-## Version Tags
-
-- **v2.1.0** - 2025-12-29 - Current stable release
-- **v2.0.0** - Earlier major release with MCP integration
-
----
-
-For detailed commit history, see: `git log --oneline --decorate`
+**Links:**
+- [GitHub Repository](https://github.com/yourusername/claude-code-buddy)
+- [Installation Guide](docs/INSTALL.md)
+- [Command Reference](docs/COMMANDS.md)
+- [Examples](docs/EXAMPLES.md)

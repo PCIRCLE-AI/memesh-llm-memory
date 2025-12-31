@@ -193,6 +193,36 @@ Smart Agents adds an intelligent layer between you and Claude Code:
 
 While agents are the user-facing components, Smart Agents also includes powerful infrastructure that operates behind the scenes:
 
+### Project Memory System
+
+**Automatic context capture across sessions** - Hybrid event-driven + token-based memory tracking
+- **Event-Driven Tracking** - Automatically records code changes and test results
+- **Token-Based Snapshots** - Creates periodic snapshots every 10k tokens as backup
+- **30-Day Retention** - Automatic cleanup to prevent unbounded growth
+- **MCP Tool Integration** - `recall-memory` tool for querying past work
+- **Knowledge Graph Storage** - Structured storage with entity relationships
+
+**Components:**
+- **ProjectAutoTracker** (`src/memory/ProjectAutoTracker.ts`) - Hybrid tracking engine
+- **ProjectMemoryManager** (`src/memory/ProjectMemoryManager.ts`) - Query and recall API
+- **ProjectMemoryCleanup** (`src/memory/ProjectMemoryCleanup.ts`) - Automatic retention management
+
+**MCP Tool:**
+- `recall-memory` - Recall recent work from previous sessions
+
+**Documentation:** See [Project Memory System Documentation](docs/PROJECT_MEMORY_SYSTEM.md)
+
+**How It Works:**
+```
+Development Event → Tracker Records → Knowledge Graph → recall-memory Tool → Context Restored
+```
+
+**Benefits:**
+- 🎯 No context loss between sessions
+- 📊 Automatic memory of what you worked on
+- 🔄 Backup snapshots prevent data loss
+- ✨ Seamless integration via MCP
+
 ### Workflow Guidance & Session Monitoring
 
 **Intelligent Recommendations** - Context-aware suggestions at development checkpoints

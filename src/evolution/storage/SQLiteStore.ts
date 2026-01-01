@@ -1,6 +1,15 @@
 /**
  * SQLiteStore - SQLite implementation of EvolutionStore
  *
+ * This is the main storage coordinator that delegates operations to specialized
+ * repositories following the Repository Pattern for better separation of concerns.
+ *
+ * Architecture:
+ * - Implements IEvolutionStore interface
+ * - Delegates to 7 specialized repositories (Task, Execution, Span, Pattern, Adaptation, Reward, Stats)
+ * - Manages database lifecycle and schema initialization
+ * - Coordinates cross-repository operations (links, tags)
+ *
  * Used for:
  * - Development and testing
  * - Local single-user deployments
@@ -8,9 +17,10 @@
  *
  * Features:
  * - Zero configuration (file-based or in-memory)
- * - Fast batch operations
+ * - Fast batch operations via repositories
  * - WAL mode for better concurrency
- * - Full-text search support
+ * - Full-text search support (via migrations)
+ * - Repository-based modular design
  */
 
 import Database from 'better-sqlite3';
@@ -18,12 +28,6 @@ import { v4 as uuid } from 'uuid';
 import { logger } from '../../utils/logger.js';
 import { SimpleDatabaseFactory } from '../../config/simple-config.js';
 import { MigrationManager } from './migrations/MigrationManager';
-import { ValidationError } from '../../errors/index.js';
-import {
-  validateSpan,
-  validatePattern,
-  validateAdaptation,
-} from './validation';
 import { safeJsonParse } from '../../utils/json.js';
 import { TaskRepository } from './repositories/TaskRepository';
 import { ExecutionRepository } from './repositories/ExecutionRepository';
@@ -88,6 +92,18 @@ export class SQLiteStore implements EvolutionStore {
   private statsRepository: StatsRepository;
   private options: Required<SQLiteStoreOptions>;
 
+  /**
+   * Creates a new SQLiteStore instance
+   *
+   * @param options - Configuration options for the store
+   *
+   * The constructor:
+   * 1. Initializes the SQLite database connection
+   * 2. Sets up the migration manager
+   * 3. Creates all 7 specialized repositories
+   *
+   * Note: Call initialize() after construction to create tables and run migrations.
+   */
   constructor(options: SQLiteStoreOptions = {}) {
     this.options = {
       dbPath: options.dbPath || ':memory:',
@@ -103,7 +119,7 @@ export class SQLiteStore implements EvolutionStore {
     // Initialize migration manager
     this.migrationManager = new MigrationManager(this.db);
 
-    // Initialize repositories
+    // Initialize repositories (delegated domain logic)
     this.taskRepository = new TaskRepository(this.db);
     this.executionRepository = new ExecutionRepository(this.db);
     this.spanRepository = new SpanRepository(this.db);
@@ -1038,6 +1054,30 @@ export class SQLiteStore implements EvolutionStore {
   // ========================================================================
   // Helper Methods (Row to Model conversion)
   // ========================================================================
+
+  private rowToSpan(row: SpanRow): Span {
+    return {
+      trace_id: row.trace_id,
+      span_id: row.span_id,
+      parent_span_id: row.parent_span_id ?? undefined,
+      task_id: row.task_id,
+      execution_id: row.execution_id,
+      name: row.name,
+      kind: row.kind as Span['kind'],
+      start_time: row.start_time,
+      end_time: row.end_time ?? undefined,
+      duration_ms: row.duration_ms ?? undefined,
+      status: {
+        code: row.status_code as Span['status']['code'],
+        message: row.status_message ?? undefined,
+      },
+      attributes: safeJsonParse(row.attributes, {}),
+      resource: safeJsonParse(row.resource, { 'task.id': '', 'execution.id': '', 'execution.attempt': 0 }),
+      links: safeJsonParse(row.links, undefined),
+      tags: safeJsonParse(row.tags, undefined),
+      events: safeJsonParse(row.events, undefined),
+    };
+  }
 
   private rowToPattern(row: PatternRow): Pattern {
     return {

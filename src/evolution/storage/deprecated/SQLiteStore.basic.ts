@@ -1,4 +1,11 @@
 /**
+ * @deprecated This file has been moved to deprecated/ folder.
+ *
+ * Use `../SQLiteStore.ts` instead - it's refactored with repository pattern.
+ *
+ * This basic version is NOT refactored and kept only for reference.
+ * All new code should use the main SQLiteStore which delegates to specialized repositories.
+ *
  * SQLiteStore - SQLite implementation of EvolutionStore
  *
  * Used for:
@@ -15,16 +22,16 @@
 
 import Database from 'better-sqlite3';
 import { v4 as uuid } from 'uuid';
-import { SimpleDatabaseFactory } from '../../config/simple-config.js';
-import type { EvolutionStore } from './EvolutionStore';
-import { ValidationError } from '../../errors/index.js';
+import { SimpleDatabaseFactory } from '../../../config/simple-config.js';
+import type { EvolutionStore } from '../EvolutionStore';
+import { ValidationError } from '../../../errors/index.js';
 import {
   validateSpan,
   validatePattern,
   validateAdaptation,
   validateReward,
-} from './validation';
-import { safeJsonParse } from '../../utils/json.js';
+} from '../validation';
+import { safeJsonParse } from '../../../utils/json.js';
 import type {
   Task,
   Execution,
@@ -48,7 +55,7 @@ import type {
   EvolutionStatsRow,
   SQLParam,
   SQLParams,
-} from './types';
+} from '../types';
 
 export interface SQLiteStoreOptions {
   /**

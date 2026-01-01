@@ -3,9 +3,10 @@
  */
 
 import { VectorStore } from './vectorstore.js';
-import { EmbeddingProviderFactory, type IEmbeddingProvider } from './embedding-provider.js';
+import { EmbeddingProviderFactory } from './embedding-provider.js';
 import { Reranker } from './reranker.js';
 import type {
+  IEmbeddingProvider,
   DocumentInput,
   SearchResult,
   SearchOptions,
@@ -31,18 +32,13 @@ export class RAGAgent {
 
   /**
    * Try to create default embedding provider (OpenAI) if API key available
+   * Note: Since provider creation is async, this always returns null.
+   * Use enableRAG() to explicitly enable providers.
    */
   private tryCreateDefaultProvider(): IEmbeddingProvider | null {
-    try {
-      const apiKey = process.env.OPENAI_API_KEY;
-      if (!apiKey) {
-        return null;
-      }
-      // Use legacy createOpenAI for backward compatibility
-      return EmbeddingProviderFactory.createOpenAI({ apiKey });
-    } catch (error) {
-      return null;
-    }
+    // Provider creation is now async, so cannot be done in constructor
+    // Users must explicitly call enableRAG() to enable providers
+    return null;
   }
 
   /**
@@ -95,9 +91,14 @@ export class RAGAgent {
           apiKey: providerConfig,
         });
       } else if (!providerConfig) {
-        // No config provided: use legacy OpenAI interactive prompt
-        this.embeddings = await EmbeddingProviderFactory.createOpenAI({
-          interactive: true,
+        // No config provided: use default OpenAI provider
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (!apiKey) {
+          throw new Error('OPENAI_API_KEY environment variable not set');
+        }
+        this.embeddings = await EmbeddingProviderFactory.create({
+          provider: 'openai',
+          apiKey,
         });
       } else {
         // New multi-provider config
@@ -159,7 +160,7 @@ export class RAGAgent {
     this.ensureRAGEnabled();
 
     // 生成 embedding
-    const embedding = await this.embeddings!.createEmbedding(content);
+    const embedding = await this.embeddings!.embed(content);
 
     // 添加到 vector store
     await this.vectorStore.addDocument({
@@ -202,7 +203,7 @@ export class RAGAgent {
 
       // 批次生成 embeddings
       const contents = batch.map((d) => d.content);
-      const embeddings = await this.embeddings!.createEmbeddings(contents);
+      const embeddings = await this.embeddings!.embedBatch(contents);
 
       // 準備文檔輸入
       const docsToAdd: DocumentInput[] = batch.map((doc, index) => ({
@@ -226,13 +227,15 @@ export class RAGAgent {
     }
 
     const duration = (Date.now() - startTime) / 1000;
-    const costTracker = this.embeddings!.getCostTracker();
+    // Note: Cost tracking not yet implemented in new provider interface
+    const totalTokens = 0; // TODO: Re-implement cost tracking
+    const totalCost = 0;
 
     const stats: EmbeddingStats = {
       totalDocuments: documents.length,
-      totalTokens: costTracker.totalTokens,
-      totalCost: costTracker.estimatedCost,
-      averageTokensPerDocument: Math.round(costTracker.totalTokens / documents.length),
+      totalTokens,
+      totalCost,
+      averageTokensPerDocument: totalTokens > 0 ? Math.round(totalTokens / documents.length) : 0,
     };
 
     console.log('\n=== Indexing Complete ===');
@@ -256,7 +259,7 @@ export class RAGAgent {
     console.log(`Searching: "${query}"`);
 
     // 生成 query embedding
-    const queryEmbedding = await this.embeddings!.createEmbedding(query);
+    const queryEmbedding = await this.embeddings!.embed(query);
 
     // 執行搜尋
     const results = await this.vectorStore.searchWithEmbedding(queryEmbedding, options);
@@ -354,15 +357,17 @@ export class RAGAgent {
     this.ensureRAGEnabled();
 
     const documentCount = await this.vectorStore.count();
-    const costTracker = this.embeddings!.getCostTracker();
+    // Note: Cost tracking not yet implemented in new provider interface
+    const totalTokens = 0; // TODO: Re-implement cost tracking
+    const totalCost = 0;
     const collectionInfo = await this.vectorStore.getCollectionInfo();
 
     const embeddingStats: EmbeddingStats = {
       totalDocuments: documentCount,
-      totalTokens: costTracker.totalTokens,
-      totalCost: costTracker.estimatedCost,
+      totalTokens,
+      totalCost,
       averageTokensPerDocument:
-        documentCount > 0 ? Math.round(costTracker.totalTokens / documentCount) : 0,
+        documentCount > 0 && totalTokens > 0 ? Math.round(totalTokens / documentCount) : 0,
     };
 
     return {

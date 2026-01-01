@@ -87,7 +87,7 @@ export class HuggingFaceProvider implements IEmbeddingProvider {
         throw new Error(`Hugging Face API error: ${response.status} - ${errorText}`);
       }
 
-      const result = await response.json();
+      const result = (await response.json()) as { data?: Array<{ embedding?: number[] }> };
 
       // OpenAI-compatible format: { data: [{ embedding: [...] }] }
       if (!result.data || !Array.isArray(result.data) || result.data.length === 0) {
@@ -153,7 +153,7 @@ export class HuggingFaceProvider implements IEmbeddingProvider {
           throw new Error(`Hugging Face API error: ${response.status} - ${errorText}`);
         }
 
-        const result = await response.json();
+        const result = (await response.json()) as { data?: Array<{ embedding?: number[] }> };
 
         // OpenAI-compatible format: { data: [{ embedding: [...] }, ...] }
         if (!result.data || !Array.isArray(result.data)) {
@@ -161,7 +161,7 @@ export class HuggingFaceProvider implements IEmbeddingProvider {
         }
 
         // Extract embeddings and normalize
-        const batchEmbeddings = result.data.map((item: { embedding: number[] }) => {
+        const batchEmbeddings = result.data.map((item) => {
           if (!Array.isArray(item.embedding)) {
             throw new Error(`Invalid embedding format in batch: ${JSON.stringify(item)}`);
           }

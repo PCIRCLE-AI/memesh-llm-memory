@@ -918,10 +918,11 @@ export class LearningManager {
   }): Promise<void> {
     // Store interaction as feedback
     this.addFeedback({
+      executionId: `exec-${Date.now()}`, // Generate execution ID
       agentId: interaction.agentId,
-      success: interaction.success,
+      type: interaction.success ? 'positive' : 'negative',
+      rating: interaction.success ? 4 : 2, // Default rating based on success
       feedback: interaction.feedback,
-      context: interaction.context,
     });
 
     return Promise.resolve();

@@ -7,6 +7,7 @@ import { EmbeddingProviderFactory } from './embedding-provider.js';
 import { Reranker } from './reranker.js';
 import type {
   IEmbeddingProvider,
+  IRAGAgent,
   DocumentInput,
   SearchResult,
   SearchOptions,
@@ -54,7 +55,7 @@ import { logger } from '../../utils/logger.js';
  * const results = await rag.search('How to use React hooks?', { topK: 5 });
  * ```
  */
-export class RAGAgent {
+export class RAGAgent implements IRAGAgent {
   private vectorStore: VectorStore;
   private embeddings: IEmbeddingProvider | null;
   private reranker: Reranker;

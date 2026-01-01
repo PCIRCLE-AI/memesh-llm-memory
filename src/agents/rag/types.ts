@@ -210,3 +210,19 @@ export type EmbeddingProviderConfig =
   | HuggingFaceProviderConfig
   | OllamaProviderConfig
   | LocalProviderConfig;
+
+/**
+ * RAG Agent Interface
+ *
+ * Minimal interface required by FileWatcher to avoid circular dependency.
+ * FileWatcher only needs indexDocument method, so we extract that here.
+ */
+export interface IRAGAgent {
+  /**
+   * Index a single document
+   * @param content - Document content
+   * @param metadata - Document metadata
+   * @param id - Optional document ID
+   */
+  indexDocument(content: string, metadata: DocumentMetadata, id?: string): Promise<void>;
+}

@@ -8,7 +8,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
-import type { RAGAgent } from './index.js';
+import type { IRAGAgent } from './types.js';
 import { logger } from '../../utils/logger.js';
 
 export interface FileWatcherOptions {
@@ -57,9 +57,9 @@ export class FileWatcher {
   private isWatching = false;
   private intervalId?: NodeJS.Timeout;
   private processedFiles = new Set<string>();
-  private ragAgent: RAGAgent;
+  private ragAgent: IRAGAgent;
 
-  constructor(ragAgent: RAGAgent, options: FileWatcherOptions = {}) {
+  constructor(ragAgent: IRAGAgent, options: FileWatcherOptions = {}) {
     this.ragAgent = ragAgent;
     this.watchDir = options.watchDir || this.getDefaultWatchDir();
     this.supportedExtensions = options.supportedExtensions || ['.md', '.txt', '.json', '.pdf', '.docx'];

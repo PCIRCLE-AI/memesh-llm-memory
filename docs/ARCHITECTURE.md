@@ -112,24 +112,92 @@ Claude Code Buddy (CCB) is an **MCP (Model Context Protocol) server** that enhan
 
 ## Component Deep Dive
 
-### 1. MCP Server Layer (`src/mcp/server.ts`)
+### 1. MCP Server Layer
 
-**Purpose**: Exposes Claude Code Buddy functionality to Claude Code via Model Context Protocol.
+The MCP server has been refactored into modular components for better maintainability and extensibility.
+
+#### Core Server (`src/mcp/server.ts`)
+
+**Purpose**: Main MCP server orchestration and lifecycle management.
 
 **Key Responsibilities**:
-- Register MCP tools for Claude Code integration
-- Handle incoming task requests
-- Delegate to Router for processing
-- Format responses for terminal display
+- Service initialization and dependency injection
+- Request handler setup and orchestration
+- Server lifecycle management (start/stop)
+- Coordination between handler modules
+
+**Structure**: ~500 lines (reduced from 2,410 lines through modularization)
+
+**Key Methods**:
+- `constructor()` - Initialize all services and handlers
+- `setupHandlers()` - Register MCP request handlers
+- `start()` - Start MCP server with stdio transport
+- `isValidAgent()` - Validate agent names
+
+#### Tool Definitions (`src/mcp/ToolDefinitions.ts`)
+
+**Purpose**: Centralized MCP tool definitions and schemas.
+
+**Key Responsibilities**:
+- Define all MCP tool schemas (input validation)
+- Common input schemas (task, dashboard, etc.)
+- Tool metadata and descriptions
+- Agent tool generation
+
+**Structure**: ~400 lines
 
 **Exposed MCP Tools**:
-1. `smart_route_task` - Route single task to best agent
-2. `smart_route_batch` - Batch task routing (optimization)
-3. `evolution_dashboard` - View learning progress and metrics
-4. `rag_search` - Search knowledge base (RAG agent)
-5. `rag_index` - Index documents (RAG agent)
+1. **SA (Smart Agents) Tools**:
+   - `sa_task` - Route task to best agent automatically
+   - `sa_dashboard` - View evolution system dashboard
+   - `sa_agents` - List all 22 specialized agents
+   - `sa_skills` - List all skills
+   - `sa_uninstall` - Uninstall CCB
 
-**File**: `src/mcp/server.ts` (500+ lines)
+2. **Buddy Commands** (user-friendly layer):
+   - `buddy_do` - Execute task with smart routing
+   - `buddy_stats` - Performance dashboard
+   - `buddy_remember` - Recall project memory
+   - `buddy_help` - Get help for commands
+
+3. **Workflow Guidance**:
+   - `get-workflow-guidance` - Intelligent workflow recommendations
+   - `get-session-health` - Session health monitoring
+   - `reload-context` - Reload CLAUDE.md context
+   - `record-token-usage` - Track token usage
+
+4. **Smart Planning** (Phase 2):
+   - `generate-smart-plan` - Generate implementation plans
+
+5. **Git Assistant**:
+   - `git-save-work`, `git-list-versions`, `git-status`
+   - `git-show-changes`, `git-go-back`, `git-create-backup`
+   - `git-setup`, `git-help`
+
+6. **Project Memory**:
+   - `recall-memory` - Search knowledge graph
+
+7. **Legacy Tools** (backward compatibility):
+   - `smart_route_task`, `evolution_dashboard`
+
+#### Handler Modules (`src/mcp/handlers/`)
+
+**Purpose**: Modular request handlers organized by domain.
+
+**Handlers**:
+- **GitHandlers.ts** (~330 lines) - Git operations (save, list versions, status, show changes, go back, backup, setup, help)
+- **ToolHandlers.ts** (~800 lines) - Core tool operations (smart routing, dashboard, agents list, skills list, uninstall, workflow guidance, session health, planning)
+- **BuddyHandlers.ts** (~110 lines) - User-friendly commands (do, stats, remember, help)
+- **ResourceHandlers.ts** (~90 lines) - MCP resources (usage guide, quick reference, examples, best practices)
+- **index.ts** - Barrel exports for cleaner imports
+
+**Benefits of Modular Architecture**:
+- **Maintainability**: Easier to find and modify specific functionality
+- **Testability**: Individual handlers can be unit tested in isolation
+- **Readability**: Each module has clear, focused responsibility
+- **Extensibility**: New handlers can be added without modifying core server
+- **Code Organization**: Related functionality grouped together
+- **Import Simplicity**: Barrel exports provide clean import statements
 
 ---
 

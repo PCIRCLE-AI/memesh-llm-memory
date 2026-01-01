@@ -14,6 +14,7 @@
  * @module ToolHandlers
  */
 
+import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { Router } from '../../orchestrator/router.js';
 import { AgentRegistry } from '../../core/AgentRegistry.js';
 import { FeedbackCollector } from '../../evolution/FeedbackCollector.js';
@@ -123,7 +124,7 @@ export class ToolHandlers {
     exportFormat?: string;
     includeCharts?: boolean;
     chartHeight?: number;
-  }): Promise<{ content: Array<{ type: string; text: string }> }> {
+  }): Promise<CallToolResult> {
     try {
       const format = input.format || 'summary';
       const exportFormat = input.exportFormat;
@@ -172,7 +173,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: dashboardText,
           },
         ],
@@ -193,7 +194,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `❌ Evolution dashboard failed: ${handled.message}`,
           },
         ],
@@ -232,7 +233,7 @@ export class ToolHandlers {
    * //   ...
    * ```
    */
-  async handleListAgents(): Promise<{ content: Array<{ type: string; text: string }> }> {
+  async handleListAgents(): Promise<CallToolResult> {
     try {
       const agents = this.agentRegistry.getAllAgents();
 
@@ -276,7 +277,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: output,
           },
         ],
@@ -296,7 +297,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `❌ List agents failed: ${handled.message}`,
           },
         ],
@@ -307,7 +308,7 @@ export class ToolHandlers {
   /**
    * Handle sa_skills tool - List all skills
    */
-  async handleListSkills(input: { filter?: string }): Promise<{ content: Array<{ type: string; text: string }> }> {
+  async handleListSkills(input: { filter?: string }): Promise<CallToolResult> {
     try {
       const filter = input.filter || 'all';
 
@@ -387,7 +388,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: output,
           },
         ],
@@ -408,7 +409,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `❌ List skills failed: ${handled.message}`,
           },
         ],
@@ -423,7 +424,7 @@ export class ToolHandlers {
     keepData?: boolean;
     keepConfig?: boolean;
     dryRun?: boolean
-  }): Promise<{ content: Array<{ type: string; text: string }> }> {
+  }): Promise<CallToolResult> {
     try {
       // Extract uninstall options from validated input
       const options = {
@@ -441,7 +442,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: formattedReport,
           },
         ],
@@ -462,7 +463,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `❌ Uninstall failed: ${handled.message}`,
           },
         ],
@@ -477,7 +478,7 @@ export class ToolHandlers {
     phase: string;
     filesChanged?: string[];
     testsPassing?: boolean
-  }): Promise<{ content: Array<{ type: string; text: string }> }> {
+  }): Promise<CallToolResult> {
     try {
       const result = await this.developmentButler.processCheckpoint(
         input.phase,
@@ -487,7 +488,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: result.formattedRequest,
           },
         ],
@@ -508,7 +509,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `❌ Workflow guidance failed: ${handled.message}`,
           },
         ],
@@ -519,14 +520,14 @@ export class ToolHandlers {
   /**
    * Handle get-session-health tool
    */
-  async handleGetSessionHealth(): Promise<{ content: Array<{ type: string; text: string }> }> {
+  async handleGetSessionHealth(): Promise<CallToolResult> {
     try {
       const health = this.developmentButler.getContextMonitor().checkSessionHealth();
 
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: JSON.stringify(health, null, 2),
           },
         ],
@@ -546,7 +547,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `❌ Session health check failed: ${handled.message}`,
           },
         ],
@@ -557,7 +558,7 @@ export class ToolHandlers {
   /**
    * Handle reload-context tool
    */
-  async handleReloadContext(input: { reason: string }): Promise<{ content: Array<{ type: string; text: string }> }> {
+  async handleReloadContext(input: { reason: string }): Promise<CallToolResult> {
     try {
       const requestId = `manual_${Date.now()}`;
       const result = await this.developmentButler.executeContextReload(requestId);
@@ -565,7 +566,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: JSON.stringify(result, null, 2),
           },
         ],
@@ -586,7 +587,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `❌ Context reload failed: ${handled.message}`,
           },
         ],
@@ -600,7 +601,7 @@ export class ToolHandlers {
   async handleRecordTokenUsage(input: {
     inputTokens: number;
     outputTokens: number
-  }): Promise<{ content: Array<{ type: string; text: string }> }> {
+  }): Promise<CallToolResult> {
     try {
       this.developmentButler.getTokenTracker().recordUsage({
         inputTokens: input.inputTokens,
@@ -610,7 +611,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: JSON.stringify({ success: true }, null, 2),
           },
         ],
@@ -631,7 +632,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `❌ Token usage recording failed: ${handled.message}`,
           },
         ],
@@ -646,7 +647,7 @@ export class ToolHandlers {
     featureDescription: string;
     requirements?: string[];
     constraints?: string[]
-  }): Promise<{ content: Array<{ type: string; text: string }> }> {
+  }): Promise<CallToolResult> {
     try {
       // Generate plan using PlanningEngine
       const plan = await this.planningEngine.generatePlan({
@@ -698,7 +699,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: planText,
           },
         ],
@@ -719,7 +720,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `❌ Smart plan generation failed: ${handled.message}`,
           },
         ],
@@ -733,7 +734,7 @@ export class ToolHandlers {
   async handleRecallMemory(input: {
     query: string;
     limit?: number
-  }): Promise<{ content: Array<{ type: string; text: string }> }> {
+  }): Promise<CallToolResult> {
     try {
       const result = await recallMemoryTool.handler(
         input,
@@ -770,7 +771,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text,
           },
         ],
@@ -791,7 +792,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `❌ Failed to recall memory: ${handled.message}`,
           },
         ],
@@ -846,7 +847,7 @@ export class ToolHandlers {
   async handleSmartRouteTask(input: {
     taskDescription: string;
     priority?: number
-  }): Promise<{ content: Array<{ type: string; text: string }> }> {
+  }): Promise<CallToolResult> {
     // Create task
     const task: Task = {
       id: this.generateTaskId(),
@@ -877,7 +878,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: formattedConfirmation,
           },
         ],
@@ -898,7 +899,7 @@ export class ToolHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `❌ Smart routing failed: ${handled.message}\n\nPlease try again or use a specific agent directly.`,
           },
         ],

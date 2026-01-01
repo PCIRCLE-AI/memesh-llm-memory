@@ -58,7 +58,7 @@ export function setupResourceHandlers(server: Server): void {
   }));
 
   // Read resource content
-  server.setRequestHandler(ReadResourceRequestSchema, async request => {
+  server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     const uri = request.params.uri;
 
     // Map URIs to file names
@@ -90,6 +90,7 @@ export function setupResourceHandlers(server: Server): void {
             uri,
             mimeType: 'text/markdown',
             text: content,
+            type: 'text' as const,
           },
         ],
       };

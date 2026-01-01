@@ -29,7 +29,7 @@ export type ValidatedBuddyStatsInput = z.infer<typeof BuddyStatsInputSchema>;
 export async function executeBuddyStats(
   input: ValidatedBuddyStatsInput,
   formatter: ResponseFormatter
-): Promise<{ content: Array<{ type: string; text: string }> }> {
+): Promise<{ content: Array<{ type: 'text'; text: string }> }> {
   try {
     // TODO: Implement actual stats collection from token tracker - See issue #5
     // For now, return placeholder data
@@ -56,7 +56,7 @@ export async function executeBuddyStats(
     return {
       content: [
         {
-          type: 'text',
+          type: 'text' as const,
           text: formattedResponse,
         },
       ],
@@ -74,7 +74,7 @@ export async function executeBuddyStats(
     return {
       content: [
         {
-          type: 'text',
+          type: 'text' as const,
           text: formattedError,
         },
       ],

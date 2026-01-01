@@ -6,6 +6,7 @@
 
 import { z } from 'zod';
 import { join } from 'path';
+import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { ResponseFormatter } from '../../ui/ResponseFormatter.js';
 import { BackupManager } from '../../db/BackupManager.js';
 import { logger } from '../../utils/logger.js';
@@ -159,7 +160,7 @@ function formatDate(date: Date): string {
 export async function executeCreateBackup(
   input: ValidatedCreateBackupInput,
   formatter: ResponseFormatter
-): Promise<{ content: Array<{ type: string; text: string }> }> {
+): Promise<CallToolResult> {
   try {
     const dbPath = resolveDbPath(input.dbPath);
     const manager = new BackupManager();
@@ -233,7 +234,7 @@ export async function executeCreateBackup(
 export async function executeListBackups(
   input: ValidatedListBackupsInput,
   formatter: ResponseFormatter
-): Promise<{ content: Array<{ type: string; text: string }> }> {
+): Promise<CallToolResult> {
   try {
     const dbPath = resolveDbPath(input.dbPath);
     const manager = new BackupManager();
@@ -308,7 +309,7 @@ export async function executeListBackups(
 export async function executeRestoreBackup(
   input: ValidatedRestoreBackupInput,
   formatter: ResponseFormatter
-): Promise<{ content: Array<{ type: string; text: string }> }> {
+): Promise<CallToolResult> {
   try {
     const manager = new BackupManager();
 
@@ -394,7 +395,7 @@ export async function executeRestoreBackup(
 export async function executeCleanBackups(
   input: ValidatedCleanBackupsInput,
   formatter: ResponseFormatter
-): Promise<{ content: Array<{ type: string; text: string }> }> {
+): Promise<CallToolResult> {
   try {
     const dbPath = resolveDbPath(input.dbPath);
     const manager = new BackupManager();
@@ -465,7 +466,7 @@ export async function executeCleanBackups(
 export async function executeBackupStats(
   input: ValidatedBackupStatsInput,
   formatter: ResponseFormatter
-): Promise<{ content: Array<{ type: string; text: string }> }> {
+): Promise<CallToolResult> {
   try {
     const dbPath = resolveDbPath(input.dbPath);
     const manager = new BackupManager();

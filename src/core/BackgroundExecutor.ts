@@ -76,6 +76,7 @@ import {
 } from './types.js';
 import { logger } from '../utils/logger.js';
 import { UIEventBus } from '../ui/UIEventBus.js';
+import { AttributionManager } from '../ui/AttributionManager.js';
 import { ValidationError, NotFoundError, StateError } from '../errors/index.js';
 
 /**
@@ -210,6 +211,7 @@ export class BackgroundExecutor {
   private tasks: Map<string, BackgroundTask>;
   private processingQueue: boolean = false;
   private eventBus?: UIEventBus;
+  private attributionManager?: AttributionManager;
   private resultHandler: ResultHandler;
   private executionMonitor: ExecutionMonitor;
 
@@ -242,6 +244,11 @@ export class BackgroundExecutor {
     this.eventBus = eventBus;
     this.resultHandler = new ResultHandler();
     this.executionMonitor = new ExecutionMonitor(eventBus);
+
+    // Create AttributionManager if UIEventBus provided
+    if (this.eventBus) {
+      this.attributionManager = new AttributionManager(this.eventBus);
+    }
   }
 
   /**

@@ -30,6 +30,9 @@ import { TaskRepository } from './repositories/TaskRepository';
 import { ExecutionRepository } from './repositories/ExecutionRepository';
 import { SpanRepository } from './repositories/SpanRepository';
 import { PatternRepository } from './repositories/PatternRepository';
+import { AdaptationRepository } from './repositories/AdaptationRepository';
+import { RewardRepository } from './repositories/RewardRepository';
+import { StatsRepository } from './repositories/StatsRepository';
 import type { EvolutionStore } from './EvolutionStore';
 import type {
   Task,
@@ -81,6 +84,9 @@ export class SQLiteStore implements EvolutionStore {
   private executionRepository: ExecutionRepository;
   private spanRepository: SpanRepository;
   private patternRepository: PatternRepository;
+  private adaptationRepository: AdaptationRepository;
+  private rewardRepository: RewardRepository;
+  private statsRepository: StatsRepository;
   private options: Required<SQLiteStoreOptions>;
 
   constructor(options: SQLiteStoreOptions = {}) {
@@ -103,6 +109,9 @@ export class SQLiteStore implements EvolutionStore {
     this.executionRepository = new ExecutionRepository(this.db);
     this.spanRepository = new SpanRepository(this.db);
     this.patternRepository = new PatternRepository(this.db);
+    this.adaptationRepository = new AdaptationRepository(this.db);
+    this.rewardRepository = new RewardRepository(this.db);
+    this.statsRepository = new StatsRepository(this.db);
   }
 
   // ========================================================================
@@ -538,43 +547,26 @@ export class SQLiteStore implements EvolutionStore {
    * @param reward - Reward to record
    */
   async recordReward(reward: Reward): Promise<void> {
-    // Validate reward before inserting
-    validateReward(reward);
-
-    const stmt = this.db.prepare(`
-      INSERT INTO rewards (
-        id, operation_span_id, value, dimensions, feedback, feedback_type,
-        provided_by, provided_at, metadata
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      reward.id,
-      reward.operation_span_id,
-      reward.value,
-      reward.dimensions ? JSON.stringify(reward.dimensions) : null,
-      reward.feedback || null,
-      reward.feedback_type || null,
-      reward.provided_by || null,
-      reward.provided_at.toISOString(),
-      reward.metadata ? JSON.stringify(reward.metadata) : null
-    );
+    return this.rewardRepository.recordReward(reward);
   }
 
   async getRewardsForSpan(spanId: string): Promise<Reward[]> {
-    const stmt = this.db.prepare(`
-      SELECT * FROM rewards WHERE operation_span_id = ? ORDER BY provided_at ASC
-    `);
-
-    const rows = stmt.all(spanId) as RewardRow[];
-
-    // Optimized: Pre-allocate array with known length
-    const rewards: Reward[] = new Array(rows.length);
-    for (let i = 0; i < rows.length; i++) {
-      rewards[i] = this.rowToReward(rows[i]);
-    }
-    return rewards;
+    return this.rewardRepository.getRewardsForSpan(spanId);
   }
+
+  async queryRewardsByOperationSpan(operationSpanId: string): Promise<Reward[]> {
+    return this.rewardRepository.queryRewardsByOperationSpan(operationSpanId);
+  }
+
+  async queryRewards(filters: {
+    start_time?: Date;
+    end_time?: Date;
+    min_value?: number;
+    max_value?: number;
+  }): Promise<Reward[]> {
+    return this.rewardRepository.queryRewards(filters);
+  }
+
 
   async queryRewardsByOperationSpan(operationSpanId: string): Promise<Reward[]> {
     const stmt = this.db.prepare(`
@@ -861,40 +853,11 @@ export class SQLiteStore implements EvolutionStore {
    * @param adaptation - Adaptation to store
    */
   async storeAdaptation(adaptation: Adaptation): Promise<void> {
-    // Validate adaptation before inserting
-    validateAdaptation(adaptation);
-
-    const stmt = this.db.prepare(`
-      INSERT INTO adaptations (
-        id, pattern_id, type, before_config, after_config,
-        applied_to_agent_id, applied_to_task_type, applied_to_skill,
-        applied_at, success_count, failure_count, avg_improvement, is_active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      adaptation.id,
-      adaptation.pattern_id,
-      adaptation.type,
-      JSON.stringify(adaptation.before_config),
-      JSON.stringify(adaptation.after_config),
-      adaptation.applied_to_agent_id || null,
-      adaptation.applied_to_task_type || null,
-      adaptation.applied_to_skill || null,
-      adaptation.applied_at.toISOString(),
-      adaptation.success_count,
-      adaptation.failure_count,
-      adaptation.avg_improvement,
-      adaptation.is_active ? 1 : 0
-    );
+    return this.adaptationRepository.recordAdaptation(adaptation);
   }
 
   async getAdaptation(adaptationId: string): Promise<Adaptation | null> {
-    const stmt = this.db.prepare('SELECT * FROM adaptations WHERE id = ?');
-    const row = stmt.get(adaptationId) as AdaptationRow | undefined;
-    if (!row) return null;
-
-    return this.rowToAdaptation(row);
+    return this.adaptationRepository.getAdaptation(adaptationId);
   }
 
   async queryAdaptations(filters: {
@@ -904,45 +867,7 @@ export class SQLiteStore implements EvolutionStore {
     skillName?: string;
     isActive?: boolean;
   }): Promise<Adaptation[]> {
-    let sql = 'SELECT * FROM adaptations WHERE 1=1';
-    const params: SQLParams = [];
-
-    if (filters.patternId) {
-      sql += ' AND pattern_id = ?';
-      params.push(filters.patternId);
-    }
-
-    if (filters.agentId) {
-      sql += ' AND applied_to_agent_id = ?';
-      params.push(filters.agentId);
-    }
-
-    if (filters.taskType) {
-      sql += ' AND applied_to_task_type = ?';
-      params.push(filters.taskType);
-    }
-
-    if (filters.skillName) {
-      sql += ' AND applied_to_skill = ?';
-      params.push(filters.skillName);
-    }
-
-    if (filters.isActive !== undefined) {
-      sql += ' AND is_active = ?';
-      params.push(filters.isActive ? 1 : 0);
-    }
-
-    sql += ' ORDER BY applied_at DESC';
-
-    const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as AdaptationRow[];
-
-    // Optimized: Pre-allocate array with known length
-    const adaptations: Adaptation[] = new Array(rows.length);
-    for (let i = 0; i < rows.length; i++) {
-      adaptations[i] = this.rowToAdaptation(rows[i]);
-    }
-    return adaptations;
+    return this.adaptationRepository.queryAdaptations(filters);
   }
 
   async updateAdaptationOutcome(
@@ -996,43 +921,7 @@ export class SQLiteStore implements EvolutionStore {
   // ========================================================================
 
   async getStats(agentId: string, timeRange: TimeRange): Promise<EvolutionStats> {
-    // This is a placeholder - real implementation would compute from spans
-    const stmt = this.db.prepare(`
-      SELECT * FROM evolution_stats
-      WHERE agent_id = ? AND period_start >= ? AND period_end <= ?
-      ORDER BY period_start DESC LIMIT 1
-    `);
-
-    const row = stmt.get(
-      agentId,
-      timeRange.start.toISOString(),
-      timeRange.end.toISOString()
-    ) as EvolutionStatsRow | undefined;
-
-    if (row) {
-      return this.rowToEvolutionStats(row);
-    }
-
-    // Return empty stats if no data
-    return {
-      id: uuid(),
-      agent_id: agentId,
-      period_start: timeRange.start,
-      period_end: timeRange.end,
-      period_type: 'daily',
-      total_executions: 0,
-      successful_executions: 0,
-      failed_executions: 0,
-      success_rate: 0,
-      avg_duration_ms: 0,
-      avg_cost: 0,
-      avg_quality_score: 0,
-      patterns_discovered: 0,
-      adaptations_applied: 0,
-      improvement_rate: 0,
-      created_at: new Date(),
-      updated_at: new Date(),
-    };
+    return this.statsRepository.getStats(agentId, timeRange);
   }
 
   async getAllStats(timeRange: TimeRange): Promise<EvolutionStats[]> {
@@ -1073,44 +962,7 @@ export class SQLiteStore implements EvolutionStore {
     skillName: string,
     timeRange: TimeRange
   ): Promise<SkillPerformance> {
-    // Query spans with skill.name attribute
-    // Wrap json_extract in try-catch via CASE to handle malformed JSON
-    const stmt = this.db.prepare(`
-      SELECT
-        COUNT(*) as total_uses,
-        SUM(CASE WHEN status_code = 'OK' THEN 1 ELSE 0 END) as successful_uses,
-        SUM(CASE WHEN status_code = 'ERROR' THEN 1 ELSE 0 END) as failed_uses,
-        AVG(duration_ms) as avg_duration_ms
-      FROM spans
-      WHERE CASE
-          WHEN json_valid(attributes) THEN json_extract(attributes, '$.skill.name') = ?
-          ELSE 0
-        END
-        AND start_time >= ? AND start_time <= ?
-    `);
-
-    const row = stmt.get(
-      skillName,
-      timeRange.start.getTime(),
-      timeRange.end.getTime()
-    ) as { total_uses: number; successful_uses: number; failed_uses: number; avg_duration_ms: number } | undefined;
-
-    const total = row?.total_uses || 0;
-    const successful = row?.successful_uses || 0;
-
-    return {
-      skill_name: skillName,
-      total_uses: total,
-      successful_uses: successful,
-      failed_uses: row?.failed_uses || 0,
-      success_rate: total > 0 ? successful / total : 0,
-      avg_duration_ms: row?.avg_duration_ms || 0,
-      avg_user_satisfaction: 0, // Would need to query from rewards
-      trend_7d: 'stable',
-      trend_30d: 'stable',
-      period_start: timeRange.start,
-      period_end: timeRange.end,
-    };
+    return this.statsRepository.getSkillPerformance(skillName, timeRange);
   }
 
   async getAllSkillsPerformance(
@@ -1167,9 +1019,7 @@ export class SQLiteStore implements EvolutionStore {
     agentType?: string;
     topN?: number;
   }): Promise<SkillRecommendation[]> {
-    // This would analyze historical success patterns
-    // Placeholder for now
-    return [];
+    return this.statsRepository.getSkillRecommendations(filters);
   }
 
   async recordSkillFeedback(

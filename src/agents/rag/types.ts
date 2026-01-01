@@ -122,3 +122,91 @@ export interface CostTracker {
   estimatedCost: number;
   lastUpdated: Date;
 }
+
+/**
+ * Embedding Provider Types
+ */
+export enum EmbeddingProvider {
+  OpenAI = 'openai',
+  HuggingFace = 'huggingface',
+  Ollama = 'ollama',
+  Local = 'local',
+}
+
+/**
+ * Model Information
+ */
+export interface ModelInfo {
+  provider: string;
+  model: string;
+  dimensions: number;
+  maxTokens?: number;
+}
+
+/**
+ * Embedding Provider Interface
+ *
+ * All embedding providers must implement this interface to ensure
+ * consistent behavior across different backends.
+ */
+export interface IEmbeddingProvider {
+  /**
+   * Generate embedding for a single text
+   * @param text - Text to embed
+   * @returns Embedding vector
+   */
+  embed(text: string): Promise<number[]>;
+
+  /**
+   * Generate embeddings for multiple texts in batch
+   * @param texts - Array of texts to embed
+   * @returns Array of embedding vectors
+   */
+  embedBatch(texts: string[]): Promise<number[][]>;
+
+  /**
+   * Get model information
+   * @returns Model metadata
+   */
+  getModelInfo(): ModelInfo;
+}
+
+/**
+ * Provider Configuration Types
+ */
+export interface OpenAIProviderConfig {
+  provider: 'openai';
+  apiKey: string;
+  model?: string;
+  dimensions?: number;
+}
+
+export interface HuggingFaceProviderConfig {
+  provider: 'huggingface';
+  apiKey: string;
+  model?: string;
+  dimensions?: number;
+}
+
+export interface OllamaProviderConfig {
+  provider: 'ollama';
+  baseUrl?: string;
+  model?: string;
+  dimensions?: number;
+}
+
+export interface LocalProviderConfig {
+  provider: 'local';
+  modelPath: string;
+  model?: string;
+  dimensions?: number;
+}
+
+/**
+ * Union type for all provider configurations
+ */
+export type EmbeddingProviderConfig =
+  | OpenAIProviderConfig
+  | HuggingFaceProviderConfig
+  | OllamaProviderConfig
+  | LocalProviderConfig;

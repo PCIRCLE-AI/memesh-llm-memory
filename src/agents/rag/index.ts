@@ -24,9 +24,25 @@ export class RAGAgent {
 
   constructor() {
     this.vectorStore = new VectorStore();
-    // Try to create embeddings provider, but don't fail if no API key
-    this.embeddings = EmbeddingProviderFactory.createSync({ optional: true });
+    // Try to create OpenAI embeddings provider, but don't fail if no API key
+    this.embeddings = this.tryCreateDefaultProvider();
     this.reranker = new Reranker();
+  }
+
+  /**
+   * Try to create default embedding provider (OpenAI) if API key available
+   */
+  private tryCreateDefaultProvider(): IEmbeddingProvider | null {
+    try {
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        return null;
+      }
+      // Use legacy createOpenAI for backward compatibility
+      return EmbeddingProviderFactory.createOpenAI({ apiKey });
+    } catch (error) {
+      return null;
+    }
   }
 
   /**
@@ -37,21 +53,59 @@ export class RAGAgent {
   }
 
   /**
-   * Enable RAG features by providing OpenAI API key
-   * This will prompt the user interactively for the API key
+   * Enable RAG features with a specific embedding provider
+   *
+   * @param providerConfig - Provider configuration (OpenAI, Hugging Face, Ollama, or Local)
+   * @param apiKey - Deprecated: For backward compatibility, treated as OpenAI API key
+   *
+   * @example
+   * // OpenAI (default)
+   * await ragAgent.enableRAG({ provider: 'openai', apiKey: 'sk-...' });
+   *
+   * // Hugging Face
+   * await ragAgent.enableRAG({ provider: 'huggingface', apiKey: 'hf_...' });
+   *
+   * // Ollama (local)
+   * await ragAgent.enableRAG({ provider: 'ollama', baseUrl: 'http://localhost:11434' });
+   *
+   * // Local transformers
+   * await ragAgent.enableRAG({ provider: 'local', modelPath: '/path/to/model' });
+   *
+   * // Backward compatible (OpenAI only)
+   * await ragAgent.enableRAG('sk-...');
    */
-  async enableRAG(apiKey?: string): Promise<boolean> {
+  async enableRAG(
+    providerConfig?:
+      | string
+      | { provider: 'openai'; apiKey?: string; model?: string }
+      | { provider: 'huggingface'; apiKey: string; model?: string; dimensions?: number }
+      | { provider: 'ollama'; baseUrl?: string; model?: string; dimensions?: number }
+      | { provider: 'local'; modelPath: string; model?: string; dimensions?: number }
+  ): Promise<boolean> {
     if (this.embeddings !== null) {
       console.log('✅ RAG features are already enabled');
       return true;
     }
 
     try {
-      this.embeddings = await EmbeddingProviderFactory.create({
-        apiKey,
-        interactive: !apiKey, // Only prompt if no key provided
-      });
-      console.log('✅ RAG features enabled successfully');
+      // Backward compatibility: string parameter treated as OpenAI API key
+      if (typeof providerConfig === 'string') {
+        this.embeddings = await EmbeddingProviderFactory.create({
+          provider: 'openai',
+          apiKey: providerConfig,
+        });
+      } else if (!providerConfig) {
+        // No config provided: use legacy OpenAI interactive prompt
+        this.embeddings = await EmbeddingProviderFactory.createOpenAI({
+          interactive: true,
+        });
+      } else {
+        // New multi-provider config
+        this.embeddings = await EmbeddingProviderFactory.create(providerConfig as any);
+      }
+
+      const modelInfo = this.embeddings.getModelInfo();
+      console.log(`✅ RAG features enabled successfully with ${modelInfo.provider} (${modelInfo.model})`);
       return true;
     } catch (error) {
       console.error('❌ Failed to enable RAG features:', error);
@@ -368,13 +422,19 @@ export class RAGAgent {
   private ensureRAGEnabled(): void {
     if (this.embeddings === null) {
       throw new ConfigurationError(
-        'RAG features are not enabled. Please provide OpenAI API key.\n' +
-        'Use enableRAG() method or set OPENAI_API_KEY environment variable.\n' +
-        'Get your API key at: https://platform.openai.com/api-keys',
+        'RAG features are not enabled. Please configure an embedding provider.\n\n' +
+        'Use enableRAG() method with one of the following:\n' +
+        '  - OpenAI: await ragAgent.enableRAG({ provider: "openai", apiKey: "sk-..." })\n' +
+        '  - Hugging Face: await ragAgent.enableRAG({ provider: "huggingface", apiKey: "hf_..." })\n' +
+        '  - Ollama: await ragAgent.enableRAG({ provider: "ollama", baseUrl: "http://localhost:11434" })\n' +
+        '  - Local: await ragAgent.enableRAG({ provider: "local", modelPath: "/path/to/model" })\n\n' +
+        'Or set OPENAI_API_KEY environment variable for auto-configuration.\n' +
+        'Get OpenAI API key at: https://platform.openai.com/api-keys',
         {
-          configKey: 'OPENAI_API_KEY',
-          provider: 'OpenAI',
+          configKey: 'EMBEDDING_PROVIDER',
           component: 'RAGAgent',
+          supportedProviders: ['openai', 'huggingface', 'ollama', 'local'],
+          defaultProvider: 'openai',
           apiKeyUrl: 'https://platform.openai.com/api-keys',
         }
       );

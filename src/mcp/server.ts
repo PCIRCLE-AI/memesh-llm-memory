@@ -266,116 +266,116 @@ class ClaudeCodeBuddyMCPServer {
       const toolName = params.name;
       const args = params.arguments;
 
-      // Handle sa_task (new name)
+      // Handle sa_task (new name) - Delegate to ToolHandlers
       if (toolName === 'sa_task') {
-        return await this.handleSmartRouting(args);
+        return await this.toolHandlers.handleSmartRouteTask(args as any);
       }
 
-      // Handle sa_dashboard (new name)
+      // Handle sa_dashboard (new name) - Delegate to ToolHandlers
       if (toolName === 'sa_dashboard') {
-        return await this.handleEvolutionDashboard(args);
+        return await this.toolHandlers.handleEvolutionDashboard(args as any);
       }
 
-      // Handle sa_agents (new tool)
+      // Handle sa_agents (new tool) - Delegate to ToolHandlers
       if (toolName === 'sa_agents') {
-        return await this.handleListAgents(args);
+        return await this.toolHandlers.handleListAgents();
       }
 
-      // Handle sa_skills (new tool)
+      // Handle sa_skills (new tool) - Delegate to ToolHandlers
       if (toolName === 'sa_skills') {
-        return await this.handleListSkills(args);
+        return await this.toolHandlers.handleListSkills(args as any);
       }
 
-      // Handle sa_uninstall (new tool)
+      // Handle sa_uninstall (new tool) - Delegate to ToolHandlers
       if (toolName === 'sa_uninstall') {
-        return await this.handleUninstall(args);
+        return await this.toolHandlers.handleUninstall(args as any);
       }
 
-      // Handle Buddy Commands (user-friendly layer)
+      // Handle Buddy Commands - Delegate to BuddyHandlers
       if (toolName === 'buddy_do') {
-        return await this.handleBuddyDo(args);
+        return await this.buddyHandlers.handleBuddyDo(args);
       }
 
       if (toolName === 'buddy_stats') {
-        return await this.handleBuddyStats(args);
+        return await this.buddyHandlers.handleBuddyStats(args);
       }
 
       if (toolName === 'buddy_remember') {
-        return await this.handleBuddyRemember(args);
+        return await this.buddyHandlers.handleBuddyRemember(args);
       }
 
       if (toolName === 'buddy_help') {
-        return await this.handleBuddyHelp(args);
+        return await this.buddyHandlers.handleBuddyHelp(args);
       }
 
-      // Handle workflow guidance tools
+      // Handle workflow guidance tools - Delegate to ToolHandlers
       if (toolName === 'get-workflow-guidance') {
-        return await this.handleGetWorkflowGuidance(args);
+        return await this.toolHandlers.handleGetWorkflowGuidance(args as any);
       }
 
       if (toolName === 'get-session-health') {
-        return await this.handleGetSessionHealth(args);
+        return await this.toolHandlers.handleGetSessionHealth();
       }
 
       if (toolName === 'reload-context') {
-        return await this.handleReloadContext(args);
+        return await this.toolHandlers.handleReloadContext(args as any);
       }
 
       if (toolName === 'record-token-usage') {
-        return await this.handleRecordTokenUsage(args);
+        return await this.toolHandlers.handleRecordTokenUsage(args as any);
       }
 
-      // Handle generate-smart-plan (Phase 2)
+      // Handle generate-smart-plan (Phase 2) - Delegate to ToolHandlers
       if (toolName === 'generate-smart-plan') {
-        return await this.handleGenerateSmartPlan(args);
+        return await this.toolHandlers.handleGenerateSmartPlan(args as any);
       }
 
-      // Handle Git Assistant tools
+      // Handle Git Assistant tools - Delegate to GitHandlers
       if (toolName === 'git-save-work') {
-        return await this.handleGitSaveWork(args);
+        return await this.gitHandlers.handleGitSaveWork(args);
       }
 
       if (toolName === 'git-list-versions') {
-        return await this.handleGitListVersions(args);
+        return await this.gitHandlers.handleGitListVersions(args);
       }
 
       if (toolName === 'git-status') {
-        return await this.handleGitStatus(args);
+        return await this.gitHandlers.handleGitStatus(args);
       }
 
       if (toolName === 'git-show-changes') {
-        return await this.handleGitShowChanges(args);
+        return await this.gitHandlers.handleGitShowChanges(args);
       }
 
       if (toolName === 'git-go-back') {
-        return await this.handleGitGoBack(args);
+        return await this.gitHandlers.handleGitGoBack(args);
       }
 
       if (toolName === 'git-create-backup') {
-        return await this.handleGitCreateBackup(args);
+        return await this.gitHandlers.handleGitCreateBackup(args);
       }
 
       if (toolName === 'git-setup') {
-        return await this.handleGitSetup(args);
+        return await this.gitHandlers.handleGitSetup(args);
       }
 
       if (toolName === 'git-help') {
-        return await this.handleGitHelp(args);
+        return await this.gitHandlers.handleGitHelp(args);
       }
 
-      // Handle recall-memory tool
+      // Handle recall-memory tool - Delegate to ToolHandlers
       if (toolName === 'recall-memory') {
-        return await this.handleRecallMemory(args);
+        return await this.toolHandlers.handleRecallMemory(args as any);
       }
 
-      // Handle smart_route_task (legacy name - backward compatibility)
+      // Handle smart_route_task (legacy name - backward compatibility) - Delegate to ToolHandlers
       if (toolName === 'smart_route_task') {
-        return await this.handleSmartRouting(args);
+        return await this.toolHandlers.handleSmartRouteTask(args as any);
       }
 
-      // Handle evolution_dashboard (legacy name - backward compatibility)
+      // Handle evolution_dashboard (legacy name - backward compatibility) - Delegate to ToolHandlers
       if (toolName === 'evolution_dashboard') {
-        return await this.handleEvolutionDashboard(args);
+        return await this.toolHandlers.handleEvolutionDashboard(args as any);
       }
 
       // Handle individual agent invocation (advanced mode)

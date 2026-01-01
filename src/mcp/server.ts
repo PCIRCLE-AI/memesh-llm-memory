@@ -140,10 +140,10 @@ class ClaudeCodeBuddyMCPServer {
   private knowledgeGraph: KnowledgeGraph;
   private projectMemoryManager: ProjectMemoryManager;
 
-  // Handler modules
-  private gitHandlers: GitHandlers;
-  private toolHandlers: ToolHandlers;
-  private buddyHandlers: BuddyHandlers;
+  // Handler modules (public for testing)
+  public gitHandlers: GitHandlers;
+  public toolHandlers: ToolHandlers;
+  public buddyHandlers: BuddyHandlers;
 
   constructor() {
     this.server = new Server(

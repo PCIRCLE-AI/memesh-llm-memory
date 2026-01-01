@@ -27,6 +27,9 @@ import {
 } from './validation';
 import { safeJsonParse } from '../../utils/json.js';
 import { TaskRepository } from './repositories/TaskRepository';
+import { ExecutionRepository } from './repositories/ExecutionRepository';
+import { SpanRepository } from './repositories/SpanRepository';
+import { PatternRepository } from './repositories/PatternRepository';
 import type { EvolutionStore } from './EvolutionStore';
 import type {
   Task,
@@ -43,7 +46,6 @@ import type {
   SkillPerformance,
   SkillRecommendation,
   TaskRow,
-  ExecutionRow,
   SpanRow,
   PatternRow,
   AdaptationRow,
@@ -76,6 +78,9 @@ export class SQLiteStore implements EvolutionStore {
   protected db: Database.Database;
   protected migrationManager: MigrationManager;
   private taskRepository: TaskRepository;
+  private executionRepository: ExecutionRepository;
+  private spanRepository: SpanRepository;
+  private patternRepository: PatternRepository;
   private options: Required<SQLiteStoreOptions>;
 
   constructor(options: SQLiteStoreOptions = {}) {
@@ -95,6 +100,9 @@ export class SQLiteStore implements EvolutionStore {
 
     // Initialize repositories
     this.taskRepository = new TaskRepository(this.db);
+    this.executionRepository = new ExecutionRepository(this.db);
+    this.spanRepository = new SpanRepository(this.db);
+    this.patternRepository = new PatternRepository(this.db);
   }
 
   // ========================================================================
@@ -393,97 +401,22 @@ export class SQLiteStore implements EvolutionStore {
     taskId: string,
     metadata?: Record<string, any>
   ): Promise<Execution> {
-    // Get current attempt count
-    const countStmt = this.db.prepare(
-      'SELECT COUNT(*) as count FROM executions WHERE task_id = ?'
-    );
-    const { count } = countStmt.get(taskId) as { count: number };
-
-    const execution: Execution = {
-      id: uuid(),
-      task_id: taskId,
-      attempt_number: count + 1,
-      status: 'running',
-      started_at: new Date(),
-      metadata,
-    };
-
-    const stmt = this.db.prepare(`
-      INSERT INTO executions (id, task_id, attempt_number, status, started_at, metadata)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      execution.id,
-      execution.task_id,
-      execution.attempt_number,
-      execution.status,
-      execution.started_at.toISOString(),
-      execution.metadata ? JSON.stringify(execution.metadata) : null
-    );
-
-    return execution;
+    return this.executionRepository.createExecution(taskId, metadata);
   }
 
   async getExecution(executionId: string): Promise<Execution | null> {
-    const stmt = this.db.prepare('SELECT * FROM executions WHERE id = ?');
-    const row = stmt.get(executionId) as ExecutionRow | undefined;
-    if (!row) return null;
-
-    return this.rowToExecution(row);
+    return this.executionRepository.getExecution(executionId);
   }
 
   async updateExecution(
     executionId: string,
     updates: Partial<Execution>
   ): Promise<void> {
-    const fields: string[] = [];
-    const values: SQLParam[] = [];
-
-    if (updates.status) {
-      fields.push('status = ?');
-      values.push(updates.status);
-    }
-
-    if (updates.completed_at) {
-      fields.push('completed_at = ?');
-      values.push(updates.completed_at.toISOString());
-    }
-
-    if (updates.result) {
-      fields.push('result = ?');
-      values.push(JSON.stringify(updates.result));
-    }
-
-    if (updates.error) {
-      fields.push('error = ?');
-      values.push(updates.error);
-    }
-
-    if (fields.length === 0) return;
-
-    values.push(executionId);
-
-    const stmt = this.db.prepare(`
-      UPDATE executions SET ${fields.join(', ')} WHERE id = ?
-    `);
-
-    stmt.run(...values);
+    return this.executionRepository.updateExecution(executionId, updates);
   }
 
   async listExecutions(taskId: string): Promise<Execution[]> {
-    const stmt = this.db.prepare(`
-      SELECT * FROM executions WHERE task_id = ? ORDER BY attempt_number ASC
-    `);
-
-    const rows = stmt.all(taskId) as ExecutionRow[];
-
-    // Optimized: Pre-allocate array with known length
-    const executions: Execution[] = new Array(rows.length);
-    for (let i = 0; i < rows.length; i++) {
-      executions[i] = this.rowToExecution(rows[i]);
-    }
-    return executions;
+    return this.executionRepository.listExecutions(taskId);
   }
 
   // ========================================================================
@@ -1621,22 +1554,6 @@ export class SQLiteStore implements EvolutionStore {
   // ========================================================================
   // Helper Methods (Row to Model conversion)
   // ========================================================================
-
-  private rowToExecution(row: ExecutionRow): Execution {
-    return {
-      id: row.id,
-      task_id: row.task_id,
-      attempt_number: row.attempt_number,
-      agent_id: row.agent_id ?? undefined,
-      agent_type: row.agent_type ?? undefined,
-      status: row.status as Execution['status'],
-      started_at: new Date(row.started_at),
-      completed_at: row.completed_at ? new Date(row.completed_at) : undefined,
-      result: safeJsonParse(row.result, undefined),
-      error: row.error ?? undefined,
-      metadata: safeJsonParse(row.metadata, undefined),
-    };
-  }
 
   protected rowToSpan(row: SpanRow): Span {
     return {

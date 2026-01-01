@@ -64,8 +64,9 @@ export class CircuitBreaker {
     history.attempts.push(record);
 
     if (success) {
-      // Reset consecutive failures on success
+      // Reset consecutive failures and total attempts on success
       history.consecutiveFailures = 0;
+      history.totalAttempts = 0;
     } else {
       history.consecutiveFailures++;
     }

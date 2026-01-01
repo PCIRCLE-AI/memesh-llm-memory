@@ -1,5 +1,6 @@
 import { MCPToolInterface } from '../core/MCPToolInterface.js';
 import { generateCIConfig } from './templates/ci-templates.js';
+import { logger } from '../utils/logger.js';
 
 export interface CIConfigOptions {
   platform: 'github-actions' | 'gitlab-ci';
@@ -30,7 +31,7 @@ export class DevOpsEngineerAgent {
       });
       return result.exitCode === 0;
     } catch (error) {
-      console.error('Test execution failed:', error);
+      logger.error('Test execution failed:', error);
       return false;
     }
   }
@@ -43,7 +44,7 @@ export class DevOpsEngineerAgent {
       });
       return result.exitCode === 0;
     } catch (error) {
-      console.error('Build execution failed:', error);
+      logger.error('Build execution failed:', error);
       return false;
     }
   }
@@ -57,7 +58,7 @@ export class DevOpsEngineerAgent {
       // Empty output means no uncommitted changes
       return result.stdout.trim() === '';
     } catch (error) {
-      console.error('Git status check failed:', error);
+      logger.error('Git status check failed:', error);
       return false;
     }
   }

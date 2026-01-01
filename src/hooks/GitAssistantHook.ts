@@ -14,6 +14,7 @@ import { MCPToolInterface } from '../core/MCPToolInterface';
 import { FriendlyGitCommands } from './FriendlyGitCommands';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import { logger } from '../utils/logger.js';
 
 export interface GitAssistantConfig {
   enabled: boolean;
@@ -128,7 +129,7 @@ export class GitAssistantHook {
       // Auto-enable GitHub if token is provided
       if (this.config.github.token && this.config.github.token.trim() !== '') {
         this.config.github.enabled = true;
-        console.log('✅ GitHub integration auto-enabled (token detected)');
+        logger.info('✅ GitHub integration auto-enabled (token detected)');
       }
     } catch (error) {
       // Config file doesn't exist, use defaults
@@ -234,37 +235,37 @@ export class GitAssistantHook {
    * Show educational explanation and ask permission to set up
    */
   private async handleProjectWithoutGit(projectPath: string): Promise<void> {
-    console.log('\n🔍 偵測到專案尚未使用版本控制');
-    console.log('');
-    console.log('╭─────────────────────────────────────────────────────────────╮');
-    console.log('│  💡 什麼是版本控制？                                         │');
-    console.log('├─────────────────────────────────────────────────────────────┤');
-    console.log('│                                                             │');
-    console.log('│  類比 1: 遊戲存檔點                                          │');
-    console.log('│  就像玩遊戲時可以儲存進度，隨時回到之前的存檔點             │');
-    console.log('│                                                             │');
-    console.log('│  類比 2: 拍照記錄                                            │');
-    console.log('│  就像拍照記錄專案的每個階段，可以回顧和比較                 │');
-    console.log('│                                                             │');
-    console.log('│  類比 3: 時光機器                                            │');
-    console.log('│  可以隨時回到過去任何一個時間點的代碼狀態                   │');
-    console.log('│                                                             │');
-    console.log('├─────────────────────────────────────────────────────────────┤');
-    console.log('│  ✅ 版本控制可以幫你：                                       │');
-    console.log('│     • 記錄每次修改                                          │');
-    console.log('│     • 回到之前的版本                                        │');
-    console.log('│     • 安心實驗新功能（壞了可以復原）                        │');
-    console.log('│     • 了解專案如何演進                                      │');
-    console.log('│                                                             │');
-    console.log('│  📝 完全在本機運作，不需要 GitHub 或網路                    │');
-    console.log('╰─────────────────────────────────────────────────────────────╯');
-    console.log('');
+    logger.info('\n🔍 偵測到專案尚未使用版本控制');
+    logger.info('');
+    logger.info('╭─────────────────────────────────────────────────────────────╮');
+    logger.info('│  💡 什麼是版本控制？                                         │');
+    logger.info('├─────────────────────────────────────────────────────────────┤');
+    logger.info('│                                                             │');
+    logger.info('│  類比 1: 遊戲存檔點                                          │');
+    logger.info('│  就像玩遊戲時可以儲存進度，隨時回到之前的存檔點             │');
+    logger.info('│                                                             │');
+    logger.info('│  類比 2: 拍照記錄                                            │');
+    logger.info('│  就像拍照記錄專案的每個階段，可以回顧和比較                 │');
+    logger.info('│                                                             │');
+    logger.info('│  類比 3: 時光機器                                            │');
+    logger.info('│  可以隨時回到過去任何一個時間點的代碼狀態                   │');
+    logger.info('│                                                             │');
+    logger.info('├─────────────────────────────────────────────────────────────┤');
+    logger.info('│  ✅ 版本控制可以幫你：                                       │');
+    logger.info('│     • 記錄每次修改                                          │');
+    logger.info('│     • 回到之前的版本                                        │');
+    logger.info('│     • 安心實驗新功能（壞了可以復原）                        │');
+    logger.info('│     • 了解專案如何演進                                      │');
+    logger.info('│                                                             │');
+    logger.info('│  📝 完全在本機運作，不需要 GitHub 或網路                    │');
+    logger.info('╰─────────────────────────────────────────────────────────────╯');
+    logger.info('');
 
     // Level 1+: Suggest setup
     if (this.config.automationLevel >= 1) {
-      console.log('🤔 要為這個專案設置版本控制嗎？');
-      console.log('   [y] 是的，幫我設置  [n] 不用了  [l] 了解更多');
-      console.log('');
+      logger.info('🤔 要為這個專案設置版本控制嗎？');
+      logger.info('   [y] 是的，幫我設置  [n] 不用了  [l] 了解更多');
+      logger.info('');
 
       // In real implementation, this would wait for user input
       // For now, we'll record the suggestion to Knowledge Graph
@@ -288,7 +289,7 @@ export class GitAssistantHook {
    * Monitor changes and provide smart suggestions
    */
   private async handleProjectWithGit(projectPath: string): Promise<void> {
-    console.log('✅ 已偵測到 Git 版本控制');
+    logger.info('✅ 已偵測到 Git 版本控制');
 
     // Get last commit info
     try {
@@ -297,24 +298,24 @@ export class GitAssistantHook {
       });
 
       const [timeAgo, message] = lastCommitResult.stdout.trim().split('|');
-      console.log(`📝 最後版本：${message} (${timeAgo})`);
+      logger.info(`📝 最後版本：${message} (${timeAgo})`);
 
       // Update change stats
       this.changeStats.lastCommitTime = await this.getLastCommitDate();
     } catch (error) {
-      console.log('ℹ️  尚無任何版本記錄');
+      logger.info('ℹ️  尚無任何版本記錄');
     }
 
     // Check for GitHub token and offer GitHub integration
     if (!this.config.github.enabled && !this.config.github.token) {
-      console.log('');
-      console.log('💡 提示：如果想要雲端備份，可以稍後提供 GitHub token');
-      console.log('   （完全可選，本地版本控制不需要 GitHub）');
+      logger.info('');
+      logger.info('💡 提示：如果想要雲端備份，可以稍後提供 GitHub token');
+      logger.info('   （完全可選，本地版本控制不需要 GitHub）');
     } else if (this.config.github.enabled) {
-      console.log('☁️  GitHub 整合：已啟用');
+      logger.info('☁️  GitHub 整合：已啟用');
     }
 
-    console.log('');
+    logger.info('');
   }
 
   /**
@@ -370,20 +371,20 @@ export class GitAssistantHook {
    * Level 1: Show reminder notification
    */
   private async showCommitReminder(suggestion: CommitSuggestion): Promise<void> {
-    console.log('');
-    console.log('┌─────────────────────────────────────────────────────────────┐');
-    console.log('│  💡 建議儲存版本                                            │');
-    console.log('├─────────────────────────────────────────────────────────────┤');
-    console.log(`│  ${suggestion.reason}`);
-    console.log(`│  信心度：${(suggestion.confidence * 100).toFixed(0)}%`);
-    console.log('│                                                             │');
-    console.log(`│  建議描述：${suggestion.suggestedMessage}`);
-    console.log('│                                                             │');
-    console.log(`│  已修改 ${suggestion.changedFiles.length} 個檔案`);
-    console.log('├─────────────────────────────────────────────────────────────┤');
-    console.log('│  [s] 儲存版本  [e] 編輯描述  [v] 查看變更  [x] 稍後提醒   │');
-    console.log('└─────────────────────────────────────────────────────────────┘');
-    console.log('');
+    logger.info('');
+    logger.info('┌─────────────────────────────────────────────────────────────┐');
+    logger.info('│  💡 建議儲存版本                                            │');
+    logger.info('├─────────────────────────────────────────────────────────────┤');
+    logger.info(`│  ${suggestion.reason}`);
+    logger.info(`│  信心度：${(suggestion.confidence * 100).toFixed(0)}%`);
+    logger.info('│                                                             │');
+    logger.info(`│  建議描述：${suggestion.suggestedMessage}`);
+    logger.info('│                                                             │');
+    logger.info(`│  已修改 ${suggestion.changedFiles.length} 個檔案`);
+    logger.info('├─────────────────────────────────────────────────────────────┤');
+    logger.info('│  [s] 儲存版本  [e] 編輯描述  [v] 查看變更  [x] 稍後提醒   │');
+    logger.info('└─────────────────────────────────────────────────────────────┘');
+    logger.info('');
 
     // Record suggestion to Knowledge Graph
     await this.mcp.memory.createEntities({
@@ -406,13 +407,13 @@ export class GitAssistantHook {
    * Level 2: Prepare commit, ask for quick approval
    */
   private async prepareCommitForApproval(suggestion: CommitSuggestion): Promise<void> {
-    console.log('');
-    console.log('🚀 準備建立版本...');
-    console.log(`   描述：${suggestion.suggestedMessage}`);
-    console.log(`   檔案：${suggestion.changedFiles.length} 個`);
-    console.log('');
-    console.log('   [Enter] 確認並儲存  [e] 編輯  [x] 取消');
-    console.log('');
+    logger.info('');
+    logger.info('🚀 準備建立版本...');
+    logger.info(`   描述：${suggestion.suggestedMessage}`);
+    logger.info(`   檔案：${suggestion.changedFiles.length} 個`);
+    logger.info('');
+    logger.info('   [Enter] 確認並儲存  [e] 編輯  [x] 取消');
+    logger.info('');
   }
 
   /**
@@ -422,11 +423,11 @@ export class GitAssistantHook {
     try {
       await this.friendlyCommands.saveWork(suggestion.suggestedMessage);
 
-      console.log('');
-      console.log('✅ 已自動儲存版本');
-      console.log(`   描述：${suggestion.suggestedMessage}`);
-      console.log(`   檔案：${suggestion.changedFiles.length} 個`);
-      console.log('');
+      logger.info('');
+      logger.info('✅ 已自動儲存版本');
+      logger.info(`   描述：${suggestion.suggestedMessage}`);
+      logger.info(`   檔案：${suggestion.changedFiles.length} 個`);
+      logger.info('');
 
       // Sync to GitHub if enabled
       if (this.config.github.enabled && this.config.github.autoSync) {
@@ -438,7 +439,7 @@ export class GitAssistantHook {
       this.changeStats.lastCommitTime = new Date();
 
     } catch (error) {
-      console.error('❌ 自動儲存失敗:', error);
+      logger.error('❌ 自動儲存失敗:', error);
     }
   }
 
@@ -451,15 +452,15 @@ export class GitAssistantHook {
     }
 
     try {
-      console.log('☁️  正在同步到 GitHub...');
+      logger.info('☁️  正在同步到 GitHub...');
 
       await this.mcp.bash({
         command: 'git push origin main',
       });
 
-      console.log('✅ GitHub 同步完成');
+      logger.info('✅ GitHub 同步完成');
     } catch (error) {
-      console.log('⚠️  GitHub 同步失敗（將在下次重試）');
+      logger.info('⚠️  GitHub 同步失敗（將在下次重試）');
     }
   }
 
@@ -539,7 +540,7 @@ export class GitAssistantHook {
     this.config.github.enabled = true; // Auto-enable
     await this.saveConfig();
 
-    console.log('✅ GitHub token 已設置，GitHub 整合已自動啟用');
+    logger.info('✅ GitHub token 已設置，GitHub 整合已自動啟用');
   }
 
   /**
@@ -550,6 +551,6 @@ export class GitAssistantHook {
     await this.saveConfig();
 
     const levelNames = ['完全手動', '智能提醒', '半自動', '全自動'];
-    console.log(`✅ 自動化等級已更新：Level ${level} (${levelNames[level]})`);
+    logger.info(`✅ 自動化等級已更新：Level ${level} (${levelNames[level]})`);
   }
 }

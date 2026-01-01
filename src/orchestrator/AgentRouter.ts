@@ -18,6 +18,7 @@ import os from 'os';
 import { TaskAnalysis, RoutingDecision, AgentType, SystemResources, TaskCapability, Task } from './types.js';
 import { PromptEnhancer } from '../core/PromptEnhancer.js';
 import { toDollars } from '../utils/money.js';
+import { logger } from '../utils/logger.js';
 
 export class AgentRouter {
   private promptEnhancer: PromptEnhancer;
@@ -96,7 +97,7 @@ export class AgentRouter {
     const requiredMemoryMB = this.estimateRequiredMemory(analysis);
 
     if (resources.availableMemoryMB < requiredMemoryMB) {
-      console.warn(
+      logger.warn(
         `⚠️  Insufficient memory: Available ${resources.availableMemoryMB}MB, ` +
         `Required ${requiredMemoryMB}MB`
       );

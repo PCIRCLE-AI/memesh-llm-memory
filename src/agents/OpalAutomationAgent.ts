@@ -6,6 +6,7 @@
  */
 
 import { MCPToolInterface } from '../core/MCPToolInterface.js';
+import { logger } from '../utils/logger.js';
 
 export interface OpalWorkflowRequest {
   description: string;  // 工作流描述（自然語言）
@@ -37,7 +38,7 @@ export class OpalAutomationAgent {
 
       // 2. 等待頁面載入
       const snapshot = await this.mcp.playwright.snapshot();
-      console.log('Opal page loaded:', snapshot);
+      logger.info('Opal page loaded:', snapshot);
 
       // 3. 尋找並點擊「Create new」或類似按鈕
       // 注意：實際的選擇器需要根據 Opal UI 調整
@@ -48,7 +49,7 @@ export class OpalAutomationAgent {
         });
       } catch (error) {
         // 如果找不到按鈕，可能已經在編輯器中
-        console.log('Already in editor or button not found');
+        logger.info('Already in editor or button not found');
       }
 
       await this.wait(1000);
@@ -100,7 +101,7 @@ export class OpalAutomationAgent {
       };
 
     } catch (error) {
-      console.error('Opal workflow creation failed:', error);
+      logger.error('Opal workflow creation failed:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error)
@@ -128,9 +129,9 @@ export class OpalAutomationAgent {
       try {
         const shareSnapshot = await this.mcp.playwright.snapshot();
         // 根據快照查找分享/導出選項
-        console.log('Snapshot:', shareSnapshot);
+        logger.info('Snapshot:', shareSnapshot);
       } catch (error) {
-        console.log('Share/Export button not found');
+        logger.info('Share/Export button not found');
       }
 
       return {
@@ -205,7 +206,12 @@ export class OpalAutomationAgent {
     const result = await this.mcp.playwright.evaluate({
       function: '() => window.location.href'
     });
-    return result.toString();
+    // Type guard: result should be a string from window.location.href
+    if (typeof result === 'string') {
+      return result;
+    }
+    // Fallback: convert to string if result is not string
+    return String(result);
   }
 
   /**

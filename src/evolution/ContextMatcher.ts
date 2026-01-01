@@ -6,6 +6,7 @@
  * - Jaccard similarity for set-based fields (config_keys)
  */
 
+import { logger } from '../utils/logger.js';
 import type { PatternContext, ContextualPattern } from './types.js';
 
 export interface MatchOptions {
@@ -100,7 +101,7 @@ export class ContextMatcher {
     if (weights) {
       const sum = Object.values(weights).reduce((a, b) => a + b, 0);
       if (Math.abs(sum - 1.0) > 0.01) {
-        console.warn('[ContextMatcher] Weights do not sum to 1.0', {
+        logger.warn('[ContextMatcher] Weights do not sum to 1.0', {
           weights,
           sum,
         });
@@ -155,7 +156,7 @@ export class ContextMatcher {
       (v) => v !== undefined
     );
     if (!hasDefinedField) {
-      console.warn(
+      logger.warn(
         '[ContextMatcher] Current context has no defined fields',
         { currentContext }
       );

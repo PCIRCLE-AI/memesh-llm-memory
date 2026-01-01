@@ -10,6 +10,7 @@ import { SimpleDatabaseFactory } from '../../config/simple-config.js';
 import { safeJsonParse } from '../../utils/json.js';
 import type { Entity, Relation, SearchOptions } from './KnowledgeGraph.js';
 import type { SQLParams } from '../../evolution/storage/types.js';
+import { logger } from '../../utils/logger.js';
 
 export interface KnowledgeGraphOptions {
   /**
@@ -161,7 +162,7 @@ export class KnowledgeGraphSQLite {
     const existing = await this.getEntity(fullEntity.name);
     if (existing) {
       // Entity already exists - update instead of insert
-      console.warn(`Entity "${fullEntity.name}" already exists, updating instead`);
+      logger.warn(`Entity "${fullEntity.name}" already exists, updating instead`);
       return await this.updateEntity(fullEntity.name, {
         entityType: fullEntity.entityType,
         observations: [...existing.observations, ...fullEntity.observations],
@@ -180,13 +181,13 @@ export class KnowledgeGraphSQLite {
         fullEntity.name,
         fullEntity.entityType,
         fullEntity.metadata ? JSON.stringify(fullEntity.metadata) : null,
-        fullEntity.createdAt.toISOString(),
-        fullEntity.updatedAt.toISOString()
+        fullEntity.createdAt?.toISOString() ?? now.toISOString(),
+        fullEntity.updatedAt?.toISOString() ?? now.toISOString()
       );
     } catch (error) {
       // Handle constraint violations gracefully
       if (error instanceof Error && error.message.includes('UNIQUE constraint')) {
-        console.warn(`Duplicate entity detected: ${fullEntity.name}`);
+        logger.warn(`Duplicate entity detected: ${fullEntity.name}`);
         const existing = await this.getEntity(fullEntity.name);
         return existing || fullEntity;
       }
@@ -370,9 +371,10 @@ export class KnowledgeGraphSQLite {
   // ========================================================================
 
   async createRelation(relation: Omit<Relation, 'createdAt'>): Promise<Relation> {
+    const now = new Date();
     const fullRelation: Relation = {
       ...relation,
-      createdAt: new Date(),
+      createdAt: now,
     };
 
     const stmt = this.db.prepare(`
@@ -385,7 +387,7 @@ export class KnowledgeGraphSQLite {
       fullRelation.to,
       fullRelation.relationType,
       fullRelation.metadata ? JSON.stringify(fullRelation.metadata) : null,
-      fullRelation.createdAt.toISOString()
+      fullRelation.createdAt?.toISOString() ?? now.toISOString()
     );
 
     return fullRelation;

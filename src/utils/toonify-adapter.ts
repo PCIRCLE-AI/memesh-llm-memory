@@ -18,6 +18,7 @@
 
 import type { LanguageProfile } from '../types/toonify.js';
 import { LRUCache } from './lru-cache.js';
+import { logger } from './logger.js';
 import { join } from 'path';
 
 export interface ToonifyConfig {
@@ -194,7 +195,7 @@ export class ToonifyAdapter {
       return mcpResult;
 
     } catch (error) {
-      console.error('[ToonifyAdapter] Optimization failed:', error);
+      logger.error('[ToonifyAdapter] Optimization failed:', error);
       return this.createSkippedResult(
         contentStr,
         `Optimization error: ${error instanceof Error ? error.message : 'Unknown error'}`

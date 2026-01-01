@@ -55,6 +55,7 @@ import {
   BuddyHandlers,
   setupResourceHandlers,
 } from './handlers/index.js';
+import { RateLimiter } from '../utils/RateLimiter.js';
 
 // Buddy Commands (user-friendly layer)
 import {
@@ -112,6 +113,9 @@ import {
 import { KnowledgeGraph } from '../knowledge-graph/index.js';
 import { ProjectMemoryManager } from '../memory/ProjectMemoryManager.js';
 import { recallMemoryTool } from './tools/recall-memory.js';
+import { logger } from '../utils/logger.js';
+import { logError, formatMCPError } from '../utils/errorHandler.js';
+import { validateAllApiKeys } from '../utils/apiKeyValidator.js';
 
 // Agent Registry is now used instead of static AGENT_TOOLS array
 // See src/core/AgentRegistry.ts for agent definitions
@@ -139,6 +143,7 @@ class ClaudeCodeBuddyMCPServer {
   private gitAssistant: GitAssistantIntegration;
   private knowledgeGraph: KnowledgeGraph;
   private projectMemoryManager: ProjectMemoryManager;
+  private rateLimiter: RateLimiter;
 
   // Handler modules (public for testing)
   public gitHandlers: GitHandlers;
@@ -197,8 +202,13 @@ class ClaudeCodeBuddyMCPServer {
     this.gitAssistant = new GitAssistantIntegration(this.toolInterface);
 
     // Initialize Project Memory System
-    this.knowledgeGraph = new KnowledgeGraph();
+    this.knowledgeGraph = KnowledgeGraph.createSync();
     this.projectMemoryManager = new ProjectMemoryManager(this.knowledgeGraph);
+
+    // Initialize Rate Limiter (100 requests per minute)
+    this.rateLimiter = new RateLimiter({
+      requestsPerMinute: 100, // Reasonable limit for local MCP server
+    });
 
     // Initialize handler modules
     this.gitHandlers = new GitHandlers(this.gitAssistant);
@@ -262,6 +272,20 @@ class ClaudeCodeBuddyMCPServer {
             method: 'call_tool',
             providedParams: params,
             requiredFields: ['name (string)', 'arguments (object)'],
+          }
+        );
+      }
+
+      // Rate limiting check
+      if (!this.rateLimiter.consume(1)) {
+        const status = this.rateLimiter.getStatus();
+        throw new OperationError(
+          'Rate limit exceeded. Please try again in a moment.',
+          {
+            component: 'ClaudeCodeBuddyMCPServer',
+            method: 'call_tool',
+            rateLimitStatus: status,
+            hint: 'Too many requests. The server allows up to 100 requests per minute.',
           }
         );
       }
@@ -390,6 +414,13 @@ class ClaudeCodeBuddyMCPServer {
         validatedInput = TaskInputSchema.parse(args);
       } catch (error) {
         if (error instanceof z.ZodError) {
+          // Log validation error with context
+          logError(error, {
+            component: 'ClaudeCodeBuddyMCPServer',
+            method: 'setupHandlers.CallToolRequestSchema',
+            operation: 'validating task input schema',
+            data: { agentName, schema: 'TaskInputSchema' },
+          });
           throw new ValidationError(
             formatValidationError(error),
             {
@@ -400,6 +431,13 @@ class ClaudeCodeBuddyMCPServer {
             }
           );
         }
+        // Log unexpected error
+        logError(error, {
+          component: 'ClaudeCodeBuddyMCPServer',
+          method: 'setupHandlers.CallToolRequestSchema',
+          operation: 'parsing task input',
+          data: { agentName },
+        });
         throw error;
       }
 
@@ -461,6 +499,14 @@ class ClaudeCodeBuddyMCPServer {
           ],
         };
       } catch (error) {
+        // Log error with full context and stack trace
+        logError(error, {
+          component: 'ClaudeCodeBuddyMCPServer',
+          method: 'setupHandlers.CallToolRequestSchema',
+          operation: `routing task to agent: ${agentName}`,
+          data: { agentName, taskDescription: taskDescription.substring(0, 100) },
+        });
+
         // Error handling - format error response
         // Safe cast: agentName has been validated by isValidAgent
         const errorResponse: AgentResponse = {
@@ -509,13 +555,13 @@ class ClaudeCodeBuddyMCPServer {
     await this.server.connect(transport);
 
     // Server ready
-    console.error('Claude Code Buddy MCP Server started');
-    console.error(`Available agents: ${this.agentRegistry.getAgentCount()}`);
+    logger.error('Claude Code Buddy MCP Server started');
+    logger.error(`Available agents: ${this.agentRegistry.getAgentCount()}`);
 
     // Auto-start FileWatcher if RAG is enabled
     await this.startFileWatcherIfEnabled();
 
-    console.error('Waiting for requests...');
+    logger.error('Waiting for requests...');
   }
 
   /**
@@ -530,7 +576,7 @@ class ClaudeCodeBuddyMCPServer {
     try {
       // Check if OPENAI_API_KEY is configured
       if (!process.env.OPENAI_API_KEY) {
-        console.error('RAG File Watcher: Skipped (no OpenAI API key)');
+        logger.error('RAG File Watcher: Skipped (no OpenAI API key)');
         return;
       }
 
@@ -538,24 +584,29 @@ class ClaudeCodeBuddyMCPServer {
       const rag = await getRAGAgent();
 
       if (!rag.isRAGEnabled()) {
-        console.error('RAG File Watcher: Skipped (RAG not enabled)');
+        logger.error('RAG File Watcher: Skipped (RAG not enabled)');
         return;
       }
 
       // Start FileWatcher
       this.fileWatcher = new FileWatcher(rag, {
         onIndexed: (files) => {
-          console.error(`RAG: Indexed ${files.length} file(s)`);
+          logger.error(`RAG: Indexed ${files.length} file(s)`);
         },
         onError: (error, file) => {
-          console.error(`RAG Error: ${file || 'unknown'}:`, error.message);
+          logger.error(`RAG Error: ${file || 'unknown'}:`, error.message);
         },
       });
 
       await this.fileWatcher.start();
-      console.error(`RAG File Watcher: Started monitoring ${this.fileWatcher.getWatchDir()}`);
+      logger.error(`RAG File Watcher: Started monitoring ${this.fileWatcher.getWatchDir()}`);
     } catch (error) {
-      console.error('RAG File Watcher: Failed to start:', error);
+      logError(error, {
+        component: 'ClaudeCodeBuddyMCPServer',
+        method: 'startFileWatcherIfEnabled',
+        operation: 'starting RAG file watcher',
+      });
+      logger.error('RAG File Watcher: Failed to start:', error);
     }
   }
 }
@@ -565,10 +616,19 @@ class ClaudeCodeBuddyMCPServer {
  */
 async function main() {
   try {
+    // Validate API keys on startup
+    // Note: Invalid keys are logged but don't block startup (since OPENAI_API_KEY is optional)
+    validateAllApiKeys();
+
     const mcpServer = new ClaudeCodeBuddyMCPServer();
     await mcpServer.start();
   } catch (error) {
-    console.error('Failed to start MCP server:', error);
+    logError(error, {
+      component: 'ClaudeCodeBuddyMCPServer',
+      method: 'main',
+      operation: 'starting MCP server',
+    });
+    logger.error('Failed to start MCP server:', error);
     process.exit(1);
   }
 }

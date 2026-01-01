@@ -1,40 +1,95 @@
 /**
- * AI 模型配置
- * 支援 Claude Sonnet 4.5 和 Opus 4.5
+ * AI Model Configuration
+ *
+ * Configuration for Claude and OpenAI models including model identifiers,
+ * pricing information, and model selection utilities.
+ *
+ * Features:
+ * - Claude model family (Sonnet, Opus, Haiku)
+ * - OpenAI models (Whisper, TTS, Embeddings)
+ * - Cost tracking per model
+ * - Automatic model selection by task complexity
+ * - TTS voice options
+ *
+ * @example
+ * ```typescript
+ * import { CLAUDE_MODELS, selectClaudeModel, MODEL_COSTS } from './models.js';
+ *
+ * // Use specific model
+ * const model = CLAUDE_MODELS.SONNET_4_5;
+ *
+ * // Auto-select by complexity
+ * const selectedModel = selectClaudeModel('complex'); // Returns Opus
+ *
+ * // Get pricing
+ * const cost = MODEL_COSTS[CLAUDE_MODELS.SONNET_4_5];
+ * console.log(`Input: $${cost.input}/1M tokens`);
+ * ```
  */
 
+/**
+ * Claude model identifiers
+ *
+ * Model selection guide:
+ * - SONNET: Primary model for daily development and code generation
+ * - OPUS: Complex tasks requiring deep reasoning and creative writing
+ * - HAIKU: Fast responses for simple tasks
+ */
 export const CLAUDE_MODELS = {
-  // 主力模型 - 日常開發和代碼生成
+  /** Claude 3 Sonnet (legacy) */
   SONNET: 'claude-3-sonnet-20240229',
+  /** Claude Sonnet 4.5 - Primary model for daily development and code generation */
   SONNET_4_5: 'claude-sonnet-4-5-20250929',
 
-  // 複雜任務專用 - 深度推理和創意寫作
+  /** Claude 3 Opus (legacy) */
   OPUS: 'claude-3-opus-20240229',
+  /** Claude Opus 4.5 - Complex tasks requiring deep reasoning and creative writing */
   OPUS_4_5: 'claude-opus-4-5-20251101',
 
-  // 快速響應 - 簡單任務
+  /** Claude 3 Haiku (legacy) */
   HAIKU: 'claude-3-haiku-20240307',
+  /** Claude 3.5 Haiku - Fast responses for simple tasks */
   HAIKU_3_5: 'claude-3-5-haiku-20241022',
+  /** Claude Haiku 4 - Latest fast model */
   HAIKU_4: 'claude-haiku-4-20250514',
 } as const;
 
+/**
+ * OpenAI model identifiers
+ *
+ * Includes speech-to-text, text-to-speech, embeddings, and GPT models.
+ */
 export const OPENAI_MODELS = {
-  // 語音轉文字
+  /** Whisper - Speech-to-text transcription */
   WHISPER: 'whisper-1',
 
-  // 文字轉語音
+  /** TTS - Standard quality text-to-speech */
   TTS: 'tts-1',
+  /** TTS HD - High-definition text-to-speech */
   TTS_HD: 'tts-1-hd',
 
-  // Embeddings
+  /** Text Embedding 3 Small - Efficient embeddings for semantic search */
   EMBEDDING_SMALL: 'text-embedding-3-small',
+  /** Text Embedding 3 Large - High-quality embeddings for complex tasks */
   EMBEDDING_LARGE: 'text-embedding-3-large',
 
-  // GPT (備選)
+  /** GPT-4 Turbo - Fallback language model */
   GPT4: 'gpt-4-turbo-preview',
+  /** GPT-4 Vision - Multimodal model with vision capabilities */
   GPT4_VISION: 'gpt-4-vision-preview',
 } as const;
 
+/**
+ * Text-to-speech voice options
+ *
+ * Each voice has distinct characteristics:
+ * - ALLOY: Neutral and balanced
+ * - ECHO: Clear and articulate
+ * - FABLE: Warm and expressive
+ * - ONYX: Deep and authoritative
+ * - NOVA: Energetic and friendly
+ * - SHIMMER: Soft and gentle
+ */
 export const TTS_VOICES = {
   ALLOY: 'alloy',
   ECHO: 'echo',
@@ -45,7 +100,23 @@ export const TTS_VOICES = {
 } as const;
 
 /**
- * 模型成本 (USD per 1M tokens)
+ * Model pricing in USD per 1M tokens
+ *
+ * Pricing structure varies by model:
+ * - Claude: Separate input/output token pricing
+ * - Whisper: Price per minute of audio
+ * - TTS: Price per 1,000 characters
+ * - Embeddings: Price per 1M input tokens
+ *
+ * @example
+ * ```typescript
+ * import { MODEL_COSTS, CLAUDE_MODELS } from './models.js';
+ *
+ * const cost = MODEL_COSTS[CLAUDE_MODELS.SONNET_4_5];
+ * const inputCost = (1000 / 1_000_000) * cost.input;  // Cost for 1000 input tokens
+ * const outputCost = (500 / 1_000_000) * cost.output; // Cost for 500 output tokens
+ * console.log(`Total: $${(inputCost + outputCost).toFixed(6)}`);
+ * ```
  */
 export const MODEL_COSTS = {
   [CLAUDE_MODELS.SONNET]: {

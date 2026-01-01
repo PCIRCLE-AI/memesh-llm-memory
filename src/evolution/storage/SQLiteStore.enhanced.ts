@@ -9,6 +9,7 @@
  * - Performance monitoring
  */
 
+import { logger } from '../../utils/logger.js';
 import Database from 'better-sqlite3';
 import { v4 as uuid } from 'uuid';
 import * as path from 'path';
@@ -262,11 +263,11 @@ class MigrationManager {
     const current = this.getCurrentVersion();
     const target = targetVersion || migrations.length;
 
-    console.log(`📦 Current schema version: ${current}`);
-    console.log(`📦 Target schema version: ${target}`);
+    logger.info(`📦 Current schema version: ${current}`);
+    logger.info(`📦 Target schema version: ${target}`);
 
     if (current === target) {
-      console.log('✅ Database is up to date');
+      logger.info('✅ Database is up to date');
       return;
     }
 
@@ -275,7 +276,7 @@ class MigrationManager {
       const migration = migrations[i - 1];
       if (!migration) break;
 
-      console.log(`⬆️  Applying migration ${i}: ${migration.name}`);
+      logger.info(`⬆️  Applying migration ${i}: ${migration.name}`);
 
       try {
         this.db.transaction(() => {
@@ -285,9 +286,9 @@ class MigrationManager {
             .run(migration.version, migration.name);
         })();
 
-        console.log(`✅ Migration ${i} applied successfully`);
+        logger.info(`✅ Migration ${i} applied successfully`);
       } catch (error) {
-        console.error(`❌ Migration ${i} failed:`, error);
+        logger.error(`❌ Migration ${i} failed:`, error);
         throw error;
       }
     }
@@ -301,14 +302,14 @@ class MigrationManager {
       if (version < 1) break;
 
       const migration = migrations[version - 1];
-      console.log(`⬇️  Rolling back migration ${version}: ${migration.name}`);
+      logger.info(`⬇️  Rolling back migration ${version}: ${migration.name}`);
 
       this.db.transaction(() => {
         migration.down(this.db);
         this.db.prepare('DELETE FROM migrations WHERE version = ?').run(version);
       })();
 
-      console.log(`✅ Migration ${version} rolled back`);
+      logger.info(`✅ Migration ${version} rolled back`);
     }
   }
 }
@@ -412,17 +413,17 @@ export class EnhancedSQLiteStore extends SQLiteStore {
   }
 
   private printPerformanceMetrics(): void {
-    console.log('\n📊 Performance Metrics:');
-    console.log('═'.repeat(80));
+    logger.info('\n📊 Performance Metrics:');
+    logger.info('═'.repeat(80));
 
     const sorted = Array.from(this.performanceMetrics.entries())
       .sort((a, b) => b[1].totalMs - a[1].totalMs);
 
     for (const [operation, { count, totalMs }] of sorted) {
       const avg = totalMs / count;
-      console.log(`${operation.padEnd(40)} ${count.toString().padStart(6)} calls  ${avg.toFixed(2).padStart(8)}ms avg  ${totalMs.toFixed(0).padStart(10)}ms total`);
+      logger.info(`${operation.padEnd(40)} ${count.toString().padStart(6)} calls  ${avg.toFixed(2).padStart(8)}ms avg  ${totalMs.toFixed(0).padStart(10)}ms total`);
     }
-    console.log('═'.repeat(80));
+    logger.info('═'.repeat(80));
   }
 
   // ========================================================================
@@ -431,7 +432,7 @@ export class EnhancedSQLiteStore extends SQLiteStore {
 
   private startBackupTimer(): void {
     this.backupTimer = setInterval(() => {
-      this.backup().catch(console.error);
+      this.backup().catch((error) => logger.error('Backup failed:', error));
     }, this.enhancedOptions.backupInterval * 60 * 1000);
   }
 
@@ -454,7 +455,7 @@ export class EnhancedSQLiteStore extends SQLiteStore {
 
     return this.trackPerformance('backup', () => {
       this.db.backup(backupPath);
-      console.log(`✅ Backup created: ${backupPath}`);
+      logger.info(`✅ Backup created: ${backupPath}`);
       return backupPath;
     });
   }
@@ -473,7 +474,7 @@ export class EnhancedSQLiteStore extends SQLiteStore {
     // Reopen with standard configuration
     this.db = SimpleDatabaseFactory.getInstance(this.enhancedOptions.dbPath);
 
-    console.log(`✅ Database restored from: ${backupPath}`);
+    logger.info(`✅ Database restored from: ${backupPath}`);
   }
 
   // ========================================================================
@@ -546,7 +547,7 @@ export class EnhancedSQLiteStore extends SQLiteStore {
 
         return {
           skill_name: skillName,
-          skill_version: undefined,
+          skill_version: undefined as string | undefined,
           total_uses: cached.total_uses,
           successful_uses: cached.successful_uses,
           failed_uses: cached.failed_uses,

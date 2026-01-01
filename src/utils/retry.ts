@@ -53,6 +53,20 @@ const DEFAULT_RETRYABLE_STATUS_CODES = [429, 503];
 
 /**
  * Check if error is retryable
+ *
+ * Determines if an error should trigger a retry attempt based on:
+ * - Custom retry check function (if provided)
+ * - HTTP status codes (OpenAI SDK, Axios errors)
+ * - Network errors (ECONNRESET, ETIMEDOUT, etc.)
+ * - Fetch API network errors
+ *
+ * @param error - Error to check
+ * @param retryableStatusCodes - HTTP status codes that should trigger retry
+ * @param customCheck - Optional custom function to determine if error is retryable
+ * @returns true if error should be retried, false otherwise
+ *
+ * @private
+ * @internal
  */
 function isRetryableError(
   error: unknown,
@@ -104,6 +118,21 @@ function isRetryableError(
 
 /**
  * Calculate delay with exponential backoff and optional jitter
+ *
+ * Implements exponential backoff: baseDelay * 2^attempt
+ * - attempt 0: 1x baseDelay (e.g., 1s)
+ * - attempt 1: 2x baseDelay (e.g., 2s)
+ * - attempt 2: 4x baseDelay (e.g., 4s)
+ *
+ * Optional jitter adds ±25% randomization to prevent thundering herd problem.
+ *
+ * @param attempt - Current attempt number (0-based)
+ * @param baseDelay - Base delay in milliseconds
+ * @param enableJitter - Whether to add jitter (±25% randomization)
+ * @returns Delay in milliseconds (rounded)
+ *
+ * @private
+ * @internal
  */
 function calculateDelay(
   attempt: number,
@@ -127,6 +156,12 @@ function calculateDelay(
 
 /**
  * Sleep for specified milliseconds
+ *
+ * @param ms - Milliseconds to sleep
+ * @returns Promise that resolves after delay
+ *
+ * @private
+ * @internal
  */
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -134,6 +169,14 @@ function sleep(ms: number): Promise<void> {
 
 /**
  * Extract error message for logging
+ *
+ * Safely extracts error message from various error types.
+ *
+ * @param error - Error to extract message from
+ * @returns Error message string
+ *
+ * @private
+ * @internal
  */
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -148,14 +191,41 @@ function getErrorMessage(error: unknown): string {
 /**
  * Retry async operation with exponential backoff
  *
+ * Automatically retries failed operations with increasing delays between attempts.
+ * Only retries errors that are classified as retryable (transient failures).
+ * Throws the last error if all retry attempts are exhausted.
+ *
+ * @template T - Return type of the operation
+ * @param operation - Async function to retry
+ * @param options - Retry configuration options
+ * @returns Result from successful operation
+ * @throws Last error if all retry attempts fail
+ *
  * @example
  * ```typescript
+ * // Basic retry with defaults (3 retries, 1s base delay)
+ * const result = await retryWithBackoff(
+ *   () => client.audio.transcriptions.create({ file, model: 'whisper-1' })
+ * );
+ *
+ * // Custom retry configuration
  * const result = await retryWithBackoff(
  *   () => client.audio.transcriptions.create({ ... }),
  *   {
  *     maxRetries: 3,
  *     baseDelay: 1000,
+ *     enableJitter: true,
+ *     retryableStatusCodes: [429, 503],
  *     operationName: 'Whisper Transcription'
+ *   }
+ * );
+ *
+ * // Custom retry logic
+ * const result = await retryWithBackoff(
+ *   () => fetchData(),
+ *   {
+ *     isRetryable: (error) => error instanceof NetworkError,
+ *     operationName: 'Data Fetch'
  *   }
  * );
  * ```

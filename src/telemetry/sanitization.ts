@@ -169,8 +169,11 @@ export function sanitizeEvent(event: unknown, visited = new WeakSet(), depth = 0
     // Create sanitized copy
     const sanitized: Record<string, unknown> = {};
 
+    // At this point, event is a plain object (not array, Date, or Error)
+    const eventObj = event as Record<string, unknown>;
+
     // Process all enumerable properties
-    for (const key in event) {
+    for (const key in eventObj) {
       try {
         // Skip banned fields
         if (BANNED_FIELDS.includes(key)) {
@@ -178,14 +181,14 @@ export function sanitizeEvent(event: unknown, visited = new WeakSet(), depth = 0
         }
 
         // Skip non-own properties (prototype chain)
-        if (!Object.prototype.hasOwnProperty.call(event, key)) {
+        if (!Object.prototype.hasOwnProperty.call(eventObj, key)) {
           continue;
         }
 
         // Get value safely (might be a getter that throws)
         let value;
         try {
-          value = event[key];
+          value = eventObj[key];
         } catch (error) {
           // Getter threw error - skip this field
           continue;

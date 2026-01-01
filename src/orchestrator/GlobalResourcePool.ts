@@ -15,6 +15,7 @@ import { SystemResourceManager, SystemResourcesConfig } from '../utils/SystemRes
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import os from 'os';
+import { logger } from '../utils/logger.js';
 
 const execAsync = promisify(exec);
 
@@ -115,7 +116,7 @@ export class GlobalResourcePool {
   async acquireE2ESlot(orchestratorId: string): Promise<void> {
     // 檢查是否已經持有槽位
     if (this.activeE2E.has(orchestratorId)) {
-      console.warn(`Orchestrator ${orchestratorId} already holds E2E slot`);
+      logger.warn(`Orchestrator ${orchestratorId} already holds E2E slot`);
       return;
     }
 
@@ -129,14 +130,14 @@ export class GlobalResourcePool {
         pid: process.pid,
       });
 
-      console.log(
+      logger.info(
         `[ResourcePool] E2E slot acquired by ${orchestratorId} (${this.activeE2E.size}/${this.config.maxConcurrentE2E})`
       );
       return;
     }
 
     // 槽位已滿，加入等待佇列
-    console.log(
+    logger.info(
       `[ResourcePool] E2E slot full, ${orchestratorId} waiting... (queue: ${this.e2eWaitQueue.length})`
     );
 
@@ -178,12 +179,12 @@ export class GlobalResourcePool {
    */
   releaseE2ESlot(orchestratorId: string): void {
     if (!this.activeE2E.has(orchestratorId)) {
-      console.warn(`Orchestrator ${orchestratorId} does not hold E2E slot`);
+      logger.warn(`Orchestrator ${orchestratorId} does not hold E2E slot`);
       return;
     }
 
     this.activeE2E.delete(orchestratorId);
-    console.log(
+    logger.info(
       `[ResourcePool] E2E slot released by ${orchestratorId} (${this.activeE2E.size}/${this.config.maxConcurrentE2E})`
     );
 
@@ -210,7 +211,7 @@ export class GlobalResourcePool {
         pid: process.pid,
       });
 
-      console.log(
+      logger.info(
         `[ResourcePool] E2E slot assigned to ${next.orchestratorId} from queue (waited ${Date.now() - next.queuedAt.getTime()}ms)`
       );
 
@@ -313,17 +314,17 @@ export class GlobalResourcePool {
       const age = now - slot.acquiredAt.getTime();
 
       if (age > this.config.staleLockThreshold) {
-        console.warn(
+        logger.warn(
           `[ResourcePool] Stale E2E slot detected: ${orchestratorId} (${Math.floor(age / 1000)}s old)`
         );
 
         // 檢查 PID 是否還存活
         try {
           process.kill(slot.pid, 0);  // Signal 0 只檢查，不發送信號
-          console.warn(`  PID ${slot.pid} still alive, keeping lock`);
+          logger.warn(`  PID ${slot.pid} still alive, keeping lock`);
         } catch (error) {
           // PID 已死，清理槽位
-          console.warn(`  PID ${slot.pid} dead, releasing stale lock`);
+          logger.warn(`  PID ${slot.pid} dead, releasing stale lock`);
           this.activeE2E.delete(orchestratorId);
           this.processE2EWaitQueue();
         }
@@ -337,7 +338,7 @@ export class GlobalResourcePool {
   private startStaleCheckTimer(): void {
     this.staleCheckTimer = setInterval(() => {
       this.checkStaleLocksと().catch(error => {
-        console.error('[ResourcePool] Stale check error:', error);
+        logger.error('[ResourcePool] Stale check error:', error);
       });
     }, this.config.staleCheckInterval);
   }

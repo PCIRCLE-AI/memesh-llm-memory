@@ -7,6 +7,7 @@
  * Inspired by Agent Lightning's LLMProxy pattern.
  */
 
+import { logger } from '../../utils/logger.js';
 import { SpanTracker, getGlobalTracker, ActiveSpan } from './SpanTracker';
 import type { SpanAttributes } from '../storage/types';
 import type { TelemetryCollector } from '../../telemetry/TelemetryCollector';
@@ -271,7 +272,7 @@ export function withEvolutionTrackingForAgent<T extends Record<string, any>>(
       // we add additional runtime safety checks
       const originalFunc = original as Function;
       if (typeof originalFunc !== 'function' || typeof originalFunc.bind !== 'function') {
-        console.warn(
+        logger.warn(
           `withEvolutionTrackingForAgent: Skipping non-function property ${String(prop)}`
         );
         return original;

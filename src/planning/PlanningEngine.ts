@@ -3,6 +3,7 @@ import type { AgentRegistry } from '../core/AgentRegistry.js';
 import type { LearningManager } from '../evolution/LearningManager.js';
 import type { ContextualPattern } from '../evolution/types.js';
 import { ValidationError } from '../errors/index.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Task priority levels
@@ -296,7 +297,7 @@ export class PlanningEngine {
       return this.filterRelevantPatterns(allPatterns, request);
     } catch (error) {
       // Log error for observability (Priority 1 fix)
-      console.error('[PlanningEngine] Failed to retrieve learned patterns:', error);
+      logger.error('[PlanningEngine] Failed to retrieve learned patterns:', error);
       // TODO: Add telemetry event when telemetry service is available
       // this.telemetry?.recordEvent('pattern_retrieval_error', { error: error.message });
       return [];

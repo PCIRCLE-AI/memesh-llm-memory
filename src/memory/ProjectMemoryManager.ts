@@ -7,6 +7,7 @@
 
 import type { KnowledgeGraph } from '../knowledge-graph';
 import type { Entity } from '../knowledge-graph/types';
+import { logger } from '../utils/logger.js';
 
 /**
  * Options for recalling recent work
@@ -39,7 +40,7 @@ export class ProjectMemoryManager {
    * @example
    * ```typescript
    * const recent = await manager.recallRecentWork({ limit: 5 });
-   * console.log(`Found ${recent.length} recent activities`);
+   * logger.info(`Found ${recent.length} recent activities`);
    * ```
    */
   async recallRecentWork(options: RecallOptions = {}): Promise<Entity[]> {
@@ -81,7 +82,7 @@ export class ProjectMemoryManager {
    * @example
    * ```typescript
    * const results = await manager.search('authentication', 5);
-   * console.log(`Found ${results.length} results`);
+   * logger.info(`Found ${results.length} results`);
    * ```
    */
   async search(query: string, limit: number = 10): Promise<Entity[]> {

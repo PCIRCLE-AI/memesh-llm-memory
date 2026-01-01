@@ -2,6 +2,7 @@
  * Migration Manager - Handles database schema versioning
  */
 
+import { logger } from '../../../utils/logger.js';
 import type Database from 'better-sqlite3';
 
 export interface Migration {
@@ -237,14 +238,14 @@ export class MigrationManager {
       return;
     }
 
-    console.log(`📦 Migrating database from v${current} to v${target}...`);
+    logger.info(`📦 Migrating database from v${current} to v${target}...`);
 
     // Run migrations
     for (let i = current + 1; i <= target; i++) {
       const migration = migrations[i - 1];
       if (!migration) break;
 
-      console.log(`  ⬆️  Applying migration ${i}: ${migration.name}`);
+      logger.info(`  ⬆️  Applying migration ${i}: ${migration.name}`);
 
       try {
         this.db.transaction(() => {
@@ -254,36 +255,36 @@ export class MigrationManager {
             .run(migration.version, migration.name);
         })();
 
-        console.log(`  ✅ Migration ${i} applied`);
+        logger.info(`  ✅ Migration ${i} applied`);
       } catch (error) {
-        console.error(`  ❌ Migration ${i} failed:`, error);
+        logger.error(`  ❌ Migration ${i} failed:`, error);
         throw error;
       }
     }
 
-    console.log(`✅ Database migrated to v${target}`);
+    logger.info(`✅ Database migrated to v${target}`);
   }
 
   async rollback(steps: number = 1): Promise<void> {
     const current = this.getCurrentVersion();
 
-    console.log(`📦 Rolling back ${steps} migration(s)...`);
+    logger.info(`📦 Rolling back ${steps} migration(s)...`);
 
     for (let i = 0; i < steps; i++) {
       const version = current - i;
       if (version < 1) break;
 
       const migration = migrations[version - 1];
-      console.log(`  ⬇️  Rolling back migration ${version}: ${migration.name}`);
+      logger.info(`  ⬇️  Rolling back migration ${version}: ${migration.name}`);
 
       this.db.transaction(() => {
         migration.down(this.db);
         this.db.prepare('DELETE FROM migrations WHERE version = ?').run(version);
       })();
 
-      console.log(`  ✅ Migration ${version} rolled back`);
+      logger.info(`  ✅ Migration ${version} rolled back`);
     }
 
-    console.log(`✅ Rollback complete`);
+    logger.info(`✅ Rollback complete`);
   }
 }

@@ -444,9 +444,12 @@ npm run dashboard
 
 <div align="center">
 
-**由開發者為開發者建構，懷著 ❤️**
+**由開發者為開發者用心打造 ❤️**
 
-**讓 Claude Code 更聰明，而不是更吵雜。**
+**讓 Claude Code 更聰明，而非更繁雜。**
+
+🇹🇼 **Crafted in Taiwan** | 台灣製造
+_Where innovation meets tradition_
 
 [開始使用](#快速開始2-分鐘) • [文件](docs/) • [回報問題](https://github.com/PCIRCLE-AI/claude-code-buddy/issues) • [加入討論](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
 

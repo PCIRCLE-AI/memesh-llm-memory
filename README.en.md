@@ -440,6 +440,8 @@ This is free and open-source software. If you modify and deploy this as a networ
 - Inspired by the Claude Code community
 - Thanks to all contributors and early testers
 
+**Disclaimer:** This is an independent open-source project and is not affiliated with, endorsed by, or officially connected to Anthropic PBC or its products (including Claude and Claude Code). Claude Code Buddy is a third-party tool designed to integrate with Claude Code.
+
 ---
 
 <div align="center">

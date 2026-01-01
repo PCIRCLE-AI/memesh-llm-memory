@@ -36,15 +36,15 @@
     "prompt-enhancement",
     "smart-routing"
   ],
-  "author": "Your Name",
+  "author": "PCIRCLE-AI",
   "license": "AGPL-3.0",
-  "homepage": "https://github.com/yourusername/claude-code-buddy",
+  "homepage": "https://github.com/PCIRCLE-AI/claude-code-buddy",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/claude-code-buddy.git"
+    "url": "https://github.com/PCIRCLE-AI/claude-code-buddy.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/claude-code-buddy/issues"
+    "url": "https://github.com/PCIRCLE-AI/claude-code-buddy/issues"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.1",

@@ -440,6 +440,8 @@ npm run dashboard
 - 受 Claude Code 社群啟發
 - 感謝所有貢獻者和早期測試者
 
+**免責聲明：** 本專案為獨立開發的開源專案，與 Anthropic PBC 或其產品（包括 Claude 和 Claude Code）無任何官方關聯或附屬關係。Claude Code Buddy 是設計用於與 Claude Code 整合的第三方工具。
+
 ---
 
 <div align="center">

@@ -269,6 +269,8 @@ CCB 學習並改進
 
 **技術深入探討：** 參見 [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
+**API 文檔：** 參見 [API Documentation](docs/api/) - 使用 `npm run docs` 生成
+
 ---
 
 ## CCB 擅長什麼 ✅
@@ -373,7 +375,12 @@ npm run dashboard
 
 **貢獻：** 我們歡迎貢獻！參見 [CONTRIBUTING.md](docs/CONTRIBUTING.md) 了解指南。
 
-**專案結構：** 參見 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) 深入了解。
+**完整文檔：**
+- 📐 [系統架構](docs/ARCHITECTURE.md) - 高階架構總覽、設計原則、技術堆疊
+- 🔧 [組件指南](docs/COMPONENT_GUIDE.md) - 詳細組件參考與 API 文檔
+- 🔄 [數據流程](docs/DATA_FLOW.md) - 請求生命週期、事務模式、錯誤傳播
+- 🚀 [部署指南](docs/DEPLOYMENT.md) - 安裝、配置、監控、故障排除
+- 🤝 [貢獻指南](docs/CONTRIBUTING.md) - 開發設置、代碼標準、PR 流程
 
 ---
 

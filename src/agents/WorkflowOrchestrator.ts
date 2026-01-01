@@ -203,7 +203,7 @@ Available n8n nodes:
    * Invoke brainstorming skill via MCP
    */
   private async invokeBrainstormingSkill(prompt: string): Promise<string> {
-    // TODO: Replace with actual MCP tool invocation
+    // TODO: Replace with actual MCP tool invocation - See issue #4
     // For now, use a mock implementation
 
     // In production, this would be:
@@ -233,9 +233,19 @@ Available n8n nodes:
    */
   private parseAIWorkflowResponse(aiResponse: string, originalDescription: string): N8nWorkflow {
     try {
-      const analysis = JSON.parse(aiResponse);
+      const analysis = JSON.parse(aiResponse) as {
+        workflow_steps: Array<{
+          step: string;
+          type: string;
+          description: string;
+        }>;
+        connections: Array<{
+          from: string;
+          to: string;
+        }>;
+      };
 
-      const nodes: N8nNode[] = analysis.workflow_steps.map((step: any, index: number) => ({
+      const nodes: N8nNode[] = analysis.workflow_steps.map((step, index: number) => ({
         id: `node_${index}`,
         type: `n8n-nodes-base.${step.type}`,
         name: step.step,
@@ -245,9 +255,9 @@ Available n8n nodes:
 
       // Build connections in n8n format
       const connections: N8nConnections = {};
-      analysis.connections.forEach((conn: any) => {
-        const fromIndex = analysis.workflow_steps.findIndex((s: any) => s.step === conn.from);
-        const toIndex = analysis.workflow_steps.findIndex((s: any) => s.step === conn.to);
+      analysis.connections.forEach((conn) => {
+        const fromIndex = analysis.workflow_steps.findIndex((s) => s.step === conn.from);
+        const toIndex = analysis.workflow_steps.findIndex((s) => s.step === conn.to);
 
         const fromNodeId = `node_${fromIndex}`;
         const toNodeId = `node_${toIndex}`;
@@ -282,7 +292,7 @@ Available n8n nodes:
   /**
    * Generate node-specific parameters
    */
-  private generateNodeParameters(nodeType: string, description: string): Record<string, any> {
+  private generateNodeParameters(nodeType: string, description: string): Record<string, unknown> {
     // Basic parameter generation based on node type
     switch (nodeType) {
       case 'webhook':
@@ -394,11 +404,19 @@ return items.map(item => ({
       const results = await this.mcp.memory.searchNodes('opal_workflow');
 
       return results.map((nodeData: unknown) => {
-        // Type assertion for memory node structure
-        const node = nodeData as { observations: string[] };
+        // Type guard for memory node structure
+        if (!nodeData || typeof nodeData !== 'object') {
+          return { url: '', description: '' };
+        }
+
+        const node = nodeData as { observations?: string[] };
+        if (!Array.isArray(node.observations)) {
+          return { url: '', description: '' };
+        }
+
         return {
-          url: node.observations.find((obs: string) => obs.startsWith('URL:'))?.split('URL: ')[1] || '',
-          description: node.observations.find((obs: string) => obs.startsWith('Description:'))?.split('Description: ')[1] || ''
+          url: node.observations.find((obs) => obs.startsWith('URL:'))?.split('URL: ')[1] || '',
+          description: node.observations.find((obs) => obs.startsWith('Description:'))?.split('Description: ')[1] || ''
         };
       });
     } catch (error) {

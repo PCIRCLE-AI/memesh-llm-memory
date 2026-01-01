@@ -7,16 +7,18 @@
 
 import Database from 'better-sqlite3';
 import { join } from 'path';
-import { promises as fsPromises } from 'fs';
+import { promises as fsPromises, existsSync, mkdirSync } from 'fs';
 import { NotFoundError } from '../errors/index.js';
 import { SimpleDatabaseFactory } from '../config/simple-config.js';
 import type { Entity, Relation, SearchQuery, RelationTrace, EntityType, RelationType } from './types.js';
 import type { SQLParams } from '../evolution/storage/types.js';
 import { logger } from '../utils/logger.js';
+import { QueryCache } from '../db/QueryCache.js';
 
 export class KnowledgeGraph {
   private db: Database.Database;
   private dbPath: string;
+  private queryCache: QueryCache<string, any>;
 
   /**
    * Private constructor - use KnowledgeGraph.create() instead
@@ -24,6 +26,13 @@ export class KnowledgeGraph {
   private constructor(dbPath: string, db: Database.Database) {
     this.dbPath = dbPath;
     this.db = db;
+
+    // Initialize query cache with 1000 entries, 5 minute TTL
+    this.queryCache = new QueryCache({
+      maxSize: 1000,
+      defaultTTL: 5 * 60 * 1000,
+      debug: false,
+    });
   }
 
   /**
@@ -78,13 +87,12 @@ export class KnowledgeGraph {
    * @returns KnowledgeGraph instance
    */
   static createSync(dbPath?: string): KnowledgeGraph {
-    const fs = require('fs');
     const resolvedPath = dbPath || join(process.cwd(), 'data', 'knowledge-graph.db');
 
     // Ensure data directory exists (sync)
     const dataDir = join(process.cwd(), 'data');
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
+    if (!existsSync(dataDir)) {
+      mkdirSync(dataDir, { recursive: true });
     }
 
     // Get database instance
@@ -147,13 +155,38 @@ export class KnowledgeGraph {
       -- Indexes for performance
       CREATE INDEX IF NOT EXISTS idx_entities_type ON entities(type);
       CREATE INDEX IF NOT EXISTS idx_entities_name ON entities(name);
+      CREATE INDEX IF NOT EXISTS idx_entities_type_created ON entities(type, created_at);
+
+      CREATE INDEX IF NOT EXISTS idx_observations_created ON observations(created_at);
+      CREATE INDEX IF NOT EXISTS idx_observations_entity_created ON observations(entity_id, created_at);
+
       CREATE INDEX IF NOT EXISTS idx_relations_from ON relations(from_entity_id);
       CREATE INDEX IF NOT EXISTS idx_relations_to ON relations(to_entity_id);
+      CREATE INDEX IF NOT EXISTS idx_relations_type ON relations(relation_type);
+      CREATE INDEX IF NOT EXISTS idx_relations_from_type ON relations(from_entity_id, relation_type);
+      CREATE INDEX IF NOT EXISTS idx_relations_to_type ON relations(to_entity_id, relation_type);
+      CREATE INDEX IF NOT EXISTS idx_relations_created ON relations(created_at);
+
       CREATE INDEX IF NOT EXISTS idx_tags_tag ON tags(tag);
       CREATE INDEX IF NOT EXISTS idx_tags_entity ON tags(entity_id);
+      CREATE INDEX IF NOT EXISTS idx_tags_entity_tag ON tags(entity_id, tag);
     `;
 
     this.db.exec(schema);
+  }
+
+  /**
+   * Escape special characters in LIKE patterns to prevent SQL injection
+   *
+   * Escapes: %, _, \, [
+   * These characters have special meaning in SQL LIKE patterns
+   */
+  private escapeLikePattern(pattern: string): string {
+    return pattern
+      .replace(/\\/g, '\\\\')  // Backslash first (escape character)
+      .replace(/%/g, '\\%')    // Percent (matches any sequence)
+      .replace(/_/g, '\\_')    // Underscore (matches single character)
+      .replace(/\[/g, '\\[');  // Left bracket (character class)
   }
 
   /**
@@ -211,6 +244,9 @@ export class KnowledgeGraph {
       }
     }
 
+    // Invalidate cache for entity queries
+    this.queryCache.invalidatePattern(/^entities:/);
+
     logger.info(`[KG] Created entity: ${entity.name} (type: ${entity.type})`);
     return actualId;
   }
@@ -255,6 +291,10 @@ export class KnowledgeGraph {
       JSON.stringify(relation.metadata || {})
     );
 
+    // Invalidate cache for relation queries
+    this.queryCache.invalidatePattern(/^relations:/);
+    this.queryCache.invalidatePattern(/^trace:/);
+
     logger.info(`[KG] Created relation: ${relation.from} -[${relation.relationType}]-> ${relation.to}`);
   }
 
@@ -262,6 +302,16 @@ export class KnowledgeGraph {
    * Search entities
    */
   searchEntities(query: SearchQuery): Entity[] {
+    // Generate cache key from query parameters
+    const cacheKey = `entities:${JSON.stringify(query)}`;
+
+    // Check cache first
+    const cached = this.queryCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // Cache miss - execute query
     let sql = `
       SELECT e.*,
         GROUP_CONCAT(o.content, '|||') as observations,
@@ -285,8 +335,8 @@ export class KnowledgeGraph {
     }
 
     if (query.namePattern) {
-      sql += ' AND e.name LIKE ?';
-      params.push(`%${query.namePattern}%`);
+      sql += " AND e.name LIKE ? ESCAPE '\\'";
+      params.push(`%${this.escapeLikePattern(query.namePattern)}%`);
     }
 
     sql += ' GROUP BY e.id ORDER BY e.created_at DESC';
@@ -304,9 +354,10 @@ export class KnowledgeGraph {
     const stmt = this.db.prepare(sql);
     const rows = stmt.all(...params) as unknown[];
 
-    return rows.map(row => {
-      // Type assertion after runtime validation via database query
-      const r = row as {
+    // Optimized: Pre-allocate array and use for loop
+    const entities: Entity[] = new Array(rows.length);
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i] as {
         id: number;
         name: string;
         type: string;
@@ -315,16 +366,34 @@ export class KnowledgeGraph {
         metadata: string | null;
         created_at: string;
       };
-      return {
+
+      // Optimized: Avoid intermediate arrays from split().filter()
+      let tags: string[] = [];
+      if (r.tags) {
+        const tagParts = r.tags.split(',');
+        const filteredTags: string[] = [];
+        for (let j = 0; j < tagParts.length; j++) {
+          const tag = tagParts[j];
+          if (tag) filteredTags.push(tag);
+        }
+        tags = filteredTags;
+      }
+
+      entities[i] = {
         id: r.id,
         name: r.name,
         type: r.type as EntityType,
         observations: r.observations ? r.observations.split('|||') : [],
-        tags: r.tags ? r.tags.split(',').filter(Boolean) : [],
+        tags,
         metadata: r.metadata ? JSON.parse(r.metadata) : {},
         createdAt: new Date(r.created_at)
       };
-    });
+    }
+
+    // Cache the results
+    this.queryCache.set(cacheKey, entities);
+
+    return entities;
   }
 
   /**
@@ -339,6 +408,16 @@ export class KnowledgeGraph {
    * Trace relations from an entity
    */
   traceRelations(entityName: string, depth: number = 2): RelationTrace | null {
+    // Generate cache key
+    const cacheKey = `trace:${entityName}:${depth}`;
+
+    // Check cache first
+    const cached = this.queryCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // Cache miss - execute query
     const getEntityId = this.db.prepare('SELECT id FROM entities WHERE name = ?');
     const entity = getEntityId.get(entityName) as { id: number } | undefined;
 
@@ -346,7 +425,7 @@ export class KnowledgeGraph {
       return null;
     }
 
-    const relations = this.db.prepare(`
+    const relationRows = this.db.prepare(`
       SELECT
         e1.name as from_name,
         e2.name as to_name,
@@ -358,25 +437,33 @@ export class KnowledgeGraph {
       WHERE r.from_entity_id = ? OR r.to_entity_id = ?
     `).all(entity.id, entity.id) as unknown[];
 
-    return {
+    // Optimized: Pre-allocate array and use for loop
+    const relations: Relation[] = new Array(relationRows.length);
+    for (let i = 0; i < relationRows.length; i++) {
+      const r = relationRows[i] as {
+        from_name: string;
+        to_name: string;
+        relation_type: string;
+        metadata: string | null;
+      };
+      relations[i] = {
+        from: r.from_name,
+        to: r.to_name,
+        relationType: r.relation_type as RelationType,
+        metadata: r.metadata ? JSON.parse(r.metadata) : {}
+      };
+    }
+
+    const result = {
       entity: entityName,
-      relations: relations.map(row => {
-        // Type assertion after runtime validation via database query
-        const r = row as {
-          from_name: string;
-          to_name: string;
-          relation_type: string;
-          metadata: string | null;
-        };
-        return {
-          from: r.from_name,
-          to: r.to_name,
-          relationType: r.relation_type as RelationType,
-          metadata: r.metadata ? JSON.parse(r.metadata) : {}
-        };
-      }),
+      relations,
       depth
     };
+
+    // Cache the result
+    this.queryCache.set(cacheKey, result);
+
+    return result;
   }
 
   /**
@@ -387,6 +474,16 @@ export class KnowledgeGraph {
     totalRelations: number;
     entitiesByType: Record<string, number>;
   } {
+    // Generate cache key
+    const cacheKey = 'stats:all';
+
+    // Check cache first
+    const cached = this.queryCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // Cache miss - execute queries
     const totalEntities = this.db
       .prepare('SELECT COUNT(*) as count FROM entities')
       .get() as { count: number };
@@ -404,11 +501,16 @@ export class KnowledgeGraph {
       entitiesByType[row.type] = row.count;
     });
 
-    return {
+    const result = {
       totalEntities: totalEntities.count,
       totalRelations: totalRelations.count,
       entitiesByType
     };
+
+    // Cache the result (shorter TTL since stats change frequently)
+    this.queryCache.set(cacheKey, result, 60 * 1000); // 1 minute TTL
+
+    return result;
   }
 
   /**
@@ -428,6 +530,12 @@ export class KnowledgeGraph {
     const stmt = this.db.prepare('DELETE FROM entities WHERE name = ?');
     const result = stmt.run(name);
 
+    // Invalidate all caches since entity deletion affects multiple queries
+    this.queryCache.invalidatePattern(/^entities:/);
+    this.queryCache.invalidatePattern(/^relations:/);
+    this.queryCache.invalidatePattern(/^trace:/);
+    this.queryCache.invalidatePattern(/^stats:/);
+
     logger.info(`[KG] Deleted entity: ${name}`);
     return result.changes > 0;
   }
@@ -436,8 +544,28 @@ export class KnowledgeGraph {
    * Close the database connection
    */
   close() {
+    // Cleanup cache
+    this.queryCache.destroy();
+
+    // Close database
     this.db.close();
-    logger.info('[KG] Database connection closed');
+
+    logger.info('[KG] Database connection and cache closed');
+  }
+
+  /**
+   * Get cache statistics (for monitoring and debugging)
+   */
+  getCacheStats() {
+    return this.queryCache.getStats();
+  }
+
+  /**
+   * Clear cache manually (useful after bulk operations)
+   */
+  clearCache() {
+    this.queryCache.clear();
+    logger.info('[KG] Cache cleared manually');
   }
 }
 

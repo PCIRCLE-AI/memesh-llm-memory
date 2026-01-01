@@ -298,7 +298,7 @@ export class PlanningEngine {
     } catch (error) {
       // Log error for observability (Priority 1 fix)
       logger.error('[PlanningEngine] Failed to retrieve learned patterns:', error);
-      // TODO: Add telemetry event when telemetry service is available
+      // TODO: Add telemetry event when telemetry service is available - See issue #8
       // this.telemetry?.recordEvent('pattern_retrieval_error', { error: error.message });
       return [];
     }

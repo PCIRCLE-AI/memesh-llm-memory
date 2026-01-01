@@ -151,7 +151,7 @@ interface TaskData {
  */
 interface WorkerHandle {
   /** Promise representing the task execution, resolves with result or rejects with error */
-  promise: Promise<any>;
+  promise: Promise<unknown>;
 
   /** Cancellation function to request task termination */
   cancel: () => void;

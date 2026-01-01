@@ -31,7 +31,7 @@ export async function executeBuddyStats(
   formatter: ResponseFormatter
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
   try {
-    // TODO: Implement actual stats collection from token tracker
+    // TODO: Implement actual stats collection from token tracker - See issue #5
     // For now, return placeholder data
     const stats = {
       period: input.period,

@@ -5,10 +5,10 @@
  * Provides hook points for automatic Git management.
  */
 
-import { MCPToolInterface } from '../core/MCPToolInterface';
-import { GitAssistantHook } from '../hooks/GitAssistantHook';
-import { GitSetupWizard } from '../hooks/GitSetupWizard';
-import { FriendlyGitCommands } from '../hooks/FriendlyGitCommands';
+import { MCPToolInterface } from '../core/MCPToolInterface.js';
+import { GitAssistantHook } from '../hooks/GitAssistantHook.js';
+import { GitSetupWizard } from '../hooks/GitSetupWizard.js';
+import { FriendlyGitCommands } from '../hooks/FriendlyGitCommands.js';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 

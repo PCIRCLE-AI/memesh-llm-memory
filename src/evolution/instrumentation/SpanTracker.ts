@@ -5,7 +5,7 @@
  */
 
 import { v4 as uuid } from 'uuid';
-import type { EvolutionStore } from '../storage/EvolutionStore';
+import type { EvolutionStore } from '../storage/EvolutionStore.js';
 import type {
   Span,
   SpanKind,
@@ -16,7 +16,7 @@ import type {
   SpanEvent,
   Task,
   Execution,
-} from '../storage/types';
+} from '../storage/types.js';
 import { StateError } from '../../errors/index.js';
 
 export interface SpanContext {

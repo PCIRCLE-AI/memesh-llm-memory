@@ -10,7 +10,7 @@
  * - goBackTo("昨天的版本") instead of git checkout <hash>
  */
 
-import { MCPToolInterface } from '../core/MCPToolInterface';
+import { MCPToolInterface } from '../core/MCPToolInterface.js';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as os from 'os';

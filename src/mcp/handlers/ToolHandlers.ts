@@ -1,8 +1,17 @@
 /**
- * Tool Handlers
+ * Tool Handlers Module
  *
- * Handles all MCP tool operations (except Git-related).
- * Extracted from server.ts for better organization.
+ * Handles all MCP tool operations except Git-related tools. Provides handlers for:
+ * - Smart agent operations (task routing, dashboard, agent/skill listing)
+ * - Workflow guidance and session management
+ * - Planning and decomposition
+ * - Memory recall
+ * - Uninstallation
+ *
+ * This module was extracted from server.ts for better modularity and separation
+ * of concerns. Each handler method corresponds to a specific MCP tool.
+ *
+ * @module ToolHandlers
  */
 
 import { Router } from '../../orchestrator/router.js';
@@ -22,7 +31,42 @@ import { recallMemoryTool } from '../tools/recall-memory.js';
 import { Task, AgentType, TaskAnalysis, RoutingDecision } from '../../orchestrator/types.js';
 import { handleError, logError, formatMCPError } from '../../utils/errorHandler.js';
 
+/**
+ * Tool Handlers Class
+ *
+ * Centralized handler for all non-Git MCP tools. Each public method corresponds
+ * to a specific tool and is called by ToolRouter based on the tool name.
+ *
+ * **Responsibilities**:
+ * - Input validation and error handling
+ * - Delegating to appropriate service classes
+ * - Formatting responses for MCP protocol
+ * - Logging and telemetry
+ *
+ * **Design Patterns**:
+ * - Dependency Injection: All dependencies passed via constructor
+ * - Single Responsibility: Each method handles exactly one tool
+ * - Error Handling: Try-catch with structured error logging
+ * - Consistent Response Format: All methods return CallToolResult shape
+ */
 export class ToolHandlers {
+  /**
+   * Create a new ToolHandlers instance
+   *
+   * @param router - Main task routing engine
+   * @param agentRegistry - Registry of available agents
+   * @param feedbackCollector - User feedback collection system
+   * @param performanceTracker - Performance metrics tracker
+   * @param learningManager - Continuous learning system
+   * @param evolutionMonitor - Evolution monitoring and reporting
+   * @param skillManager - Skill installation and management
+   * @param uninstallManager - Uninstallation coordinator
+   * @param developmentButler - Workflow guidance engine
+   * @param checkpointDetector - Development checkpoint detection
+   * @param planningEngine - Task decomposition and planning
+   * @param projectMemoryManager - Project-specific memory system
+   * @param ui - Human-in-loop UI formatter
+   */
   constructor(
     private router: Router,
     private agentRegistry: AgentRegistry,
@@ -41,6 +85,38 @@ export class ToolHandlers {
 
   /**
    * Handle evolution_dashboard / sa_dashboard tool
+   *
+   * Generates a comprehensive dashboard showing evolution metrics, learning progress,
+   * and performance statistics for all agents. Supports multiple output formats.
+   *
+   * **Available Formats**:
+   * - **summary** (default): High-level overview with charts
+   * - **detailed**: Full metrics + learning progress breakdown
+   * - **json**: Machine-readable JSON export
+   * - **csv**: CSV export for data analysis
+   * - **markdown**: Markdown-formatted report
+   *
+   * @param input - Dashboard options
+   * @param input.format - Output format (summary|detailed)
+   * @param input.exportFormat - Export format (json|csv|markdown)
+   * @param input.includeCharts - Whether to include ASCII charts (default: true)
+   * @param input.chartHeight - Chart height in lines (default: 8)
+   * @returns Promise resolving to formatted dashboard text
+   *
+   * @example
+   * ```typescript
+   * // Get summary dashboard
+   * await handleEvolutionDashboard({ format: 'summary' });
+   *
+   * // Export as JSON
+   * await handleEvolutionDashboard({ exportFormat: 'json' });
+   *
+   * // Detailed with custom chart size
+   * await handleEvolutionDashboard({
+   *   format: 'detailed',
+   *   chartHeight: 12
+   * });
+   * ```
    */
   async handleEvolutionDashboard(input: {
     format?: string;
@@ -126,7 +202,35 @@ export class ToolHandlers {
   }
 
   /**
-   * Handle sa_agents tool - List all agents
+   * Handle sa_agents tool - List all available agents
+   *
+   * Returns a formatted list of all registered agents grouped by category.
+   * Each agent includes name, description, and category.
+   *
+   * **Agent Categories**:
+   * - code: Development agents (frontend, backend, etc.)
+   * - testing: Testing and QA agents
+   * - design: UI/UX design agents
+   * - analysis: Code analysis and review agents
+   * - documentation: Documentation generation agents
+   * - deployment: DevOps and deployment agents
+   * - general: General-purpose agents
+   *
+   * @returns Promise resolving to formatted agent list
+   *
+   * @example
+   * ```typescript
+   * const result = await handleListAgents();
+   * // Returns:
+   * // 🤖 Claude Code Buddy - Available Agents
+   * // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   * // Total: 12 specialized agents
+   * //
+   * // 💻 Code (4)
+   * //   • frontend-developer: Builds React/Vue/Angular components
+   * //   • backend-developer: Creates APIs and backend logic
+   * //   ...
+   * ```
    */
   async handleListAgents(): Promise<{ content: Array<{ type: string; text: string }> }> {
     try {
@@ -697,6 +801,47 @@ export class ToolHandlers {
 
   /**
    * Handle smart_route_task / sa_task tool
+   *
+   * Intelligently routes a task to the most appropriate agent using:
+   * 1. TaskAnalyzer: Analyzes task complexity, requirements, domain
+   * 2. AgentRouter: Selects best agent based on analysis
+   * 3. PromptEnhancer: Generates optimized prompt for selected agent
+   *
+   * Returns a human-in-loop confirmation request with:
+   * - Recommended agent
+   * - Confidence score
+   * - Reasoning (top 3 factors)
+   * - Alternative agent suggestions
+   *
+   * **Workflow**:
+   * ```
+   * User task → TaskAnalyzer → AgentRouter → PromptEnhancer → Claude
+   *                ↓              ↓              ↓
+   *            Complexity    Best Agent    Enhanced Prompt
+   * ```
+   *
+   * @param input - Task routing request
+   * @param input.taskDescription - Detailed task description
+   * @param input.priority - Task priority (0-10, default: 5)
+   * @returns Promise resolving to confirmation request with routing recommendation
+   *
+   * @example
+   * ```typescript
+   * await handleSmartRouteTask({
+   *   taskDescription: 'Create a responsive login form with validation',
+   *   priority: 8
+   * });
+   *
+   * // Returns confirmation:
+   * // 🎯 Recommended Agent: frontend-developer (confidence: 92%)
+   * // Reasoning:
+   * //   1. Task involves UI component creation
+   * //   2. Requires form validation logic
+   * //   3. Mentions responsive design
+   * // Alternatives:
+   * //   • ui-designer (75%) - UI design expertise
+   * //   • general-agent (50%) - Fallback option
+   * ```
    */
   async handleSmartRouteTask(input: {
     taskDescription: string;

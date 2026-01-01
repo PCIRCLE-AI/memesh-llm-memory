@@ -322,7 +322,7 @@ export class KnowledgeAgent {
 
   /**
    * Record a decision in the knowledge graph (STUB)
-   * TODO: Implement using createEntities with type 'decision'
+   * TODO: Implement using createEntities with type 'decision' - See issue #9
    */
   async recordDecision(decision: {
     name: string;
@@ -338,7 +338,7 @@ export class KnowledgeAgent {
 
   /**
    * Record a feature implementation (STUB)
-   * TODO: Implement using createEntities with type 'feature'
+   * TODO: Implement using createEntities with type 'feature' - See issue #9
    */
   async recordFeature(feature: {
     name: string;
@@ -353,7 +353,7 @@ export class KnowledgeAgent {
 
   /**
    * Record a bug fix (STUB)
-   * TODO: Implement using createEntities with type 'bug_fix'
+   * TODO: Implement using createEntities with type 'bug_fix' - See issue #9
    */
   async recordBugFix(bugFix: {
     name: string;
@@ -368,7 +368,7 @@ export class KnowledgeAgent {
 
   /**
    * Record a best practice (STUB)
-   * TODO: Implement using createEntities with type 'best_practice'
+   * TODO: Implement using createEntities with type 'best_practice' - See issue #9
    */
   async recordBestPractice(practice: {
     name: string;

@@ -402,6 +402,113 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
   };
 
   // ========================================
+  // Database Backup Tools
+  // ========================================
+
+  const createDatabaseBackupTool: MCPToolDefinition = {
+    name: 'create_database_backup',
+    description: '💾 Database Backup: Create a manual backup of a SQLite database with compression and verification.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        dbPath: {
+          type: 'string',
+          description: 'Path to database file (default: data/knowledge-graph.db). Supports: knowledge-graph.db, evolution.db, collaboration.db',
+        },
+        compress: {
+          type: 'boolean',
+          description: 'Whether to compress backup (default: true)',
+        },
+        verify: {
+          type: 'boolean',
+          description: 'Whether to verify backup after creation (default: true)',
+        },
+        prefix: {
+          type: 'string',
+          description: 'Optional prefix for backup filename',
+        },
+      },
+    },
+  };
+
+  const listDatabaseBackupsTool: MCPToolDefinition = {
+    name: 'list_database_backups',
+    description: '📋 Database Backup: List all available backups for a database.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        dbPath: {
+          type: 'string',
+          description: 'Path to database file (default: data/knowledge-graph.db)',
+        },
+      },
+    },
+  };
+
+  const restoreDatabaseBackupTool: MCPToolDefinition = {
+    name: 'restore_database_backup',
+    description: '♻️ Database Backup: Restore database from a backup. WARNING: Creates backup of current database before restoring.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        backupPath: {
+          type: 'string',
+          description: 'Path to backup file to restore',
+        },
+        targetPath: {
+          type: 'string',
+          description: 'Target path for restored database (default: original database path)',
+        },
+        verify: {
+          type: 'boolean',
+          description: 'Whether to verify backup before restore (default: true)',
+        },
+      },
+      required: ['backupPath'],
+    },
+  };
+
+  const cleanDatabaseBackupsTool: MCPToolDefinition = {
+    name: 'clean_database_backups',
+    description: '🧹 Database Backup: Clean old backups based on retention policy (7 daily, 4 weekly, 12 monthly by default).',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        dbPath: {
+          type: 'string',
+          description: 'Path to database file (default: data/knowledge-graph.db)',
+        },
+        dailyBackups: {
+          type: 'number',
+          description: 'Number of daily backups to keep (default: 7)',
+        },
+        weeklyBackups: {
+          type: 'number',
+          description: 'Number of weekly backups to keep (default: 4)',
+        },
+        monthlyBackups: {
+          type: 'number',
+          description: 'Number of monthly backups to keep (default: 12)',
+        },
+      },
+    },
+  };
+
+  const getBackupStatsTool: MCPToolDefinition = {
+    name: 'get_backup_stats',
+    description: '📊 Database Backup: Get backup statistics for a database (total backups, size, age).',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        dbPath: {
+          type: 'string',
+          description: 'Path to database file (default: data/knowledge-graph.db)',
+        },
+      },
+    },
+  };
+
+  // ========================================
   // Project Memory Tools
   // ========================================
 
@@ -484,6 +591,12 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
     gitCreateBackupTool,
     gitSetupTool,
     gitHelpTool,
+    // Database Backup tools
+    createDatabaseBackupTool,
+    listDatabaseBackupsTool,
+    restoreDatabaseBackupTool,
+    cleanDatabaseBackupsTool,
+    getBackupStatsTool,
     // Project Memory tools
     recallMemoryToolDef,
     // Legacy tools (backward compatibility)

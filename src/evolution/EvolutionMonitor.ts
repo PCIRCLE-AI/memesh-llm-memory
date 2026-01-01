@@ -35,7 +35,7 @@ export interface AgentLearningProgress {
 export interface TimeSeriesDataPoint {
   timestamp: number;
   value: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface TimeSeriesMetrics {
@@ -62,10 +62,16 @@ export class EvolutionMonitor {
   private adaptationEngine: AdaptationEngine;
 
   // Test helper data structures
-  private metricsHistory: Map<string, Array<{ value: number; timestamp: number }>> = new Map();
+  private metricsHistory: Map<string, Array<{ value: number; timestamp: number; metadata?: Record<string, unknown> }>> = new Map();
   private alertThresholds: Map<string, number> = new Map();
-  private eventListeners: Map<string, Function[]> = new Map();
-  private triggeredAlerts: Array<any> = [];
+  private eventListeners: Map<string, Array<(data: unknown) => void>> = new Map();
+  private triggeredAlerts: Array<{
+    type: string;
+    metric: string;
+    threshold: number;
+    actualValue: number;
+    timestamp: number;
+  }> = [];
   private isInitialized: boolean = false;
 
   constructor(
@@ -240,7 +246,7 @@ export class EvolutionMonitor {
   /**
    * Track a system-wide metric over time
    */
-  trackSystemMetric(metricName: string, value: number, metadata?: Record<string, any>): void {
+  trackSystemMetric(metricName: string, value: number, metadata?: Record<string, unknown>): void {
     const timestamp = Date.now();
 
     if (!this.metricsHistory.has(metricName)) {
@@ -251,7 +257,7 @@ export class EvolutionMonitor {
       value,
       timestamp,
       metadata,
-    } as any); // Cast needed for metadata
+    });
   }
 
   /**
@@ -393,14 +399,14 @@ export class EvolutionMonitor {
 
     // Aggregate if requested
     if (options?.aggregateInterval) {
-      dataPoints = this.aggregateByInterval(metricName, options.aggregateInterval) as any[];
+      dataPoints = this.aggregateByInterval(metricName, options.aggregateInterval);
     }
 
     // Extract values for chart
     const values = dataPoints.map(p => p.value);
 
     // Configure chart
-    const config: any = {
+    const config = {
       height: options?.height || 10,
       width: options?.width,
     };
@@ -442,7 +448,7 @@ export class EvolutionMonitor {
 
       // Aggregate if requested
       if (options?.aggregateInterval) {
-        dataPoints = this.aggregateByInterval(metricName, options.aggregateInterval) as any[];
+        dataPoints = this.aggregateByInterval(metricName, options.aggregateInterval);
       }
 
       allSeries.push(dataPoints.map(p => p.value));
@@ -453,8 +459,8 @@ export class EvolutionMonitor {
       return `No data available for metrics: ${metricNames.join(', ')}`;
     }
 
-    // Configure chart
-    const config: any = {
+    // Configure chart (colors are ANSI color codes from asciichart)
+    const config = {
       height: options?.height || 10,
       width: options?.width,
       colors: [
@@ -713,7 +719,7 @@ export class EvolutionMonitor {
   /**
    * Register event listener (test helper)
    */
-  on(event: string, callback: Function): void {
+  on(event: string, callback: (data: unknown) => void): void {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
     }
@@ -723,7 +729,7 @@ export class EvolutionMonitor {
   /**
    * Emit event to listeners (test helper)
    */
-  private emit(event: string, data: any): void {
+  private emit(event: string, data: unknown): void {
     const listeners = this.eventListeners.get(event) || [];
     listeners.forEach(callback => callback(data));
   }
@@ -738,7 +744,13 @@ export class EvolutionMonitor {
   /**
    * Get all triggered alerts (test helper)
    */
-  async getAlerts(): Promise<Array<any>> {
+  async getAlerts(): Promise<Array<{
+    type: string;
+    metric: string;
+    threshold: number;
+    actualValue: number;
+    timestamp: number;
+  }>> {
     return Promise.resolve([...this.triggeredAlerts]);
   }
 

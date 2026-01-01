@@ -8,7 +8,7 @@
  */
 
 import { IEmbeddingProvider, ModelInfo } from '../types';
-import { logger } from '../../../utils/logger';
+import { logger } from '../../../utils/logger.js';
 
 /**
  * Default model configurations

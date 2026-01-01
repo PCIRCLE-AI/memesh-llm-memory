@@ -5,7 +5,7 @@
  * Returns recent code changes, test results, and work context.
  */
 
-import type { ProjectMemoryManager } from '../../memory/ProjectMemoryManager';
+import type { ProjectMemoryManager } from '../../memory/ProjectMemoryManager.js';
 
 export interface RecallMemoryArgs {
   /** Maximum number of memories to return (default: 10) */

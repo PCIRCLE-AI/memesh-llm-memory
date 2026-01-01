@@ -88,7 +88,7 @@ npm run build
 print_success "Build completed"
 
 # Step 4: Configure environment (optional)
-print_step "Step 4/7: Configuring environment..."
+print_step "Step 4/8: Configuring environment..."
 
 # Check if .env exists
 if [ -f .env ]; then
@@ -102,8 +102,86 @@ else
     echo ""
 fi
 
-# Step 5: Configure MCP
-print_step "Step 5/7: Configuring MCP integration..."
+# Step 4.5: Configure RAG (optional)
+print_step "Step 5/8: Configure RAG (optional)..."
+echo ""
+echo "RAG (Retrieval-Augmented Generation) allows CCB to:"
+echo "  • Index and search your project documentation"
+echo "  • Remember context from files you drop in ~/Documents/claude-code-buddy-knowledge/"
+echo "  • Provide more accurate answers based on your codebase"
+echo ""
+echo "RAG requires an embedding provider:"
+echo "  1. HuggingFace (FREE) - Uses free Hugging Face Inference API"
+echo "  2. OpenAI (PAID) - Uses OpenAI embeddings (requires API key)"
+echo ""
+
+# Ask if user wants to enable RAG
+read -p "Do you want to enable RAG? (y/n): " enable_rag
+
+if [[ "$enable_rag" =~ ^[Yy]$ ]]; then
+    echo ""
+    read -p "Choose embedding provider (1=HuggingFace FREE, 2=OpenAI PAID): " provider_choice
+
+    if [ "$provider_choice" = "1" ]; then
+        # HuggingFace (free)
+        print_success "Using HuggingFace (free)"
+        echo ""
+        echo "Get your FREE HuggingFace API key:"
+        echo "  1. Go to https://huggingface.co/settings/tokens"
+        echo "  2. Create a new token (read access is enough)"
+        echo ""
+        read -p "Enter your HuggingFace API key (or press Enter to skip): " hf_key
+
+        if [ ! -z "$hf_key" ]; then
+            # Update .env with HuggingFace config
+            sed -i.bak "s|^EMBEDDING_PROVIDER=.*|EMBEDDING_PROVIDER=huggingface|" .env
+            sed -i.bak "s|^HUGGINGFACE_API_KEY=.*|HUGGINGFACE_API_KEY=$hf_key|" .env
+            sed -i.bak "s|^# RAG_ENABLED=.*|RAG_ENABLED=true|" .env 2>/dev/null || echo "RAG_ENABLED=true" >> .env
+            rm -f .env.bak
+
+            # Create knowledge drop inbox
+            mkdir -p "$HOME/Documents/claude-code-buddy-knowledge"
+            print_success "RAG enabled with HuggingFace (free)"
+            print_success "Knowledge drop inbox created: ~/Documents/claude-code-buddy-knowledge/"
+        else
+            print_warning "Skipped HuggingFace API key - RAG will not be enabled"
+        fi
+
+    elif [ "$provider_choice" = "2" ]; then
+        # OpenAI (paid)
+        print_success "Using OpenAI"
+        echo ""
+        echo "Get your OpenAI API key:"
+        echo "  1. Go to https://platform.openai.com/api-keys"
+        echo "  2. Create a new secret key"
+        echo ""
+        read -p "Enter your OpenAI API key (or press Enter to skip): " openai_key
+
+        if [ ! -z "$openai_key" ]; then
+            # Update .env with OpenAI config
+            sed -i.bak "s|^EMBEDDING_PROVIDER=.*|EMBEDDING_PROVIDER=openai|" .env
+            sed -i.bak "s|^OPENAI_API_KEY=.*|OPENAI_API_KEY=$openai_key|" .env
+            sed -i.bak "s|^# RAG_ENABLED=.*|RAG_ENABLED=true|" .env 2>/dev/null || echo "RAG_ENABLED=true" >> .env
+            rm -f .env.bak
+
+            # Create knowledge drop inbox
+            mkdir -p "$HOME/Documents/claude-code-buddy-knowledge"
+            print_success "RAG enabled with OpenAI"
+            print_success "Knowledge drop inbox created: ~/Documents/claude-code-buddy-knowledge/"
+        else
+            print_warning "Skipped OpenAI API key - RAG will not be enabled"
+        fi
+    else
+        print_warning "Invalid choice - RAG will not be enabled"
+    fi
+else
+    print_success "RAG disabled (you can enable it later by editing .env)"
+fi
+
+echo ""
+
+# Step 6: Configure MCP
+print_step "Step 6/8: Configuring MCP integration..."
 
 MCP_CONFIG="$HOME/.claude/config.json"
 CCB_PATH="$(pwd)/dist/mcp/server.js"
@@ -121,8 +199,8 @@ fi
 node scripts/install-helpers.js add-to-mcp "$CCB_PATH"
 print_success "CCB added to Claude Code MCP configuration"
 
-# Step 6: Test installation
-print_step "Step 6/7: Testing installation..."
+# Step 7: Test installation
+print_step "Step 7/8: Testing installation..."
 
 # Run a simple test
 if npm test -- --run 2>&1 | grep -q "PASS"; then
@@ -131,8 +209,8 @@ else
     print_warning "Some tests failed (installation still successful)"
 fi
 
-# Step 7: Verify MCP server
-print_step "Step 7/7: Verifying MCP server..."
+# Step 8: Verify MCP server
+print_step "Step 8/8: Verifying MCP server..."
 
 # Try to start MCP server (timeout after 3 seconds)
 timeout 3 node dist/mcp/server.js &> /dev/null && print_success "MCP server starts successfully" || print_success "MCP server configured (will start when Claude Code connects)"

@@ -36,7 +36,7 @@ describe('Smart-Planning System - Complete E2E', () => {
    */
   it('should generate complete executable plan from feature description', async () => {
     // Call generate-smart-plan MCP tool
-    const result = await (server as any).handleGenerateSmartPlan({
+    const result = await (server as any).toolHandlers.handleGenerateSmartPlan({
       featureDescription: 'Add user profile management with avatar upload',
       requirements: [
         'CRUD operations for user profiles',
@@ -104,7 +104,7 @@ describe('Smart-Planning System - Complete E2E', () => {
    */
   it('should assign appropriate agents based on task types', async () => {
     // Generate plan for security-focused feature
-    const result = await (server as any).handleGenerateSmartPlan({
+    const result = await (server as any).toolHandlers.handleGenerateSmartPlan({
       featureDescription: 'Add secure user authentication with role-based access control',
       requirements: [
         'JWT token generation',
@@ -171,7 +171,7 @@ describe('Smart-Planning System - Complete E2E', () => {
    */
   it('should integrate learned patterns into plan generation', async () => {
     // Generate plan for API development (common pattern domain)
-    const result = await (server as any).handleGenerateSmartPlan({
+    const result = await (server as any).toolHandlers.handleGenerateSmartPlan({
       featureDescription: 'Add API rate limiting',
       requirements: [
         'Request throttling by IP address',
@@ -215,7 +215,7 @@ describe('Smart-Planning System - Complete E2E', () => {
    */
   it('should handle complex multi-domain features with proper ordering', async () => {
     // Generate plan for complex cross-domain feature
-    const result = await (server as any).handleGenerateSmartPlan({
+    const result = await (server as any).toolHandlers.handleGenerateSmartPlan({
       featureDescription: 'Add real-time notification system',
       requirements: [
         'WebSocket server setup',
@@ -283,14 +283,14 @@ describe('Smart-Planning System - Complete E2E', () => {
    */
   it('should handle invalid inputs gracefully', async () => {
     // Test 1: Missing featureDescription
-    const result1 = await (server as any).handleGenerateSmartPlan({});
+    const result1 = await (server as any).toolHandlers.handleGenerateSmartPlan({});
 
     expect(result1.content).toBeDefined();
     expect(result1.content[0].text).toContain('failed');
     expect(result1.content[0].text).toMatch(/featureDescription|required/i);
 
     // Test 2: Empty featureDescription
-    const result2 = await (server as any).handleGenerateSmartPlan({
+    const result2 = await (server as any).toolHandlers.handleGenerateSmartPlan({
       featureDescription: '',
     });
 
@@ -299,7 +299,7 @@ describe('Smart-Planning System - Complete E2E', () => {
     expect(result2.content[0].text).toMatch(/featureDescription|empty/i);
 
     // Test 3: Extremely long featureDescription (>1000 chars)
-    const result3 = await (server as any).handleGenerateSmartPlan({
+    const result3 = await (server as any).toolHandlers.handleGenerateSmartPlan({
       featureDescription: 'A'.repeat(1001),
     });
 
@@ -317,7 +317,7 @@ describe('Smart-Planning System - Complete E2E', () => {
    */
   it('should generate plan with minimal inputs', async () => {
     // Generate plan with only featureDescription
-    const result = await (server as any).handleGenerateSmartPlan({
+    const result = await (server as any).toolHandlers.handleGenerateSmartPlan({
       featureDescription: 'Add user logout functionality',
     });
 

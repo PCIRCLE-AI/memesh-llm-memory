@@ -11,9 +11,15 @@
 import os from 'os';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { logger } from './logger.js';
 
 const execAsync = promisify(exec);
 
+/**
+ * Configuration for system resource management
+ *
+ * Allows customizing resource thresholds and threading strategies.
+ */
 export interface SystemResourcesConfig {
   // 資源使用閾值（百分比）
   cpuThreshold?: number;      // CPU 使用率警戒線（預設 80%）
@@ -30,6 +36,11 @@ export interface SystemResourcesConfig {
   e2eMaxConcurrent?: number;  // E2E 測試最大並行數（預設：自動計算）
 }
 
+/**
+ * Current system resource status
+ *
+ * Provides comprehensive information about CPU, memory, and recommended concurrency levels.
+ */
 export interface SystemResources {
   // CPU 資訊
   cpuCores: number;           // 總 CPU 核心數
@@ -51,6 +62,36 @@ export interface SystemResources {
   warnings: string[];         // 警告訊息
 }
 
+/**
+ * System Resource Manager
+ *
+ * Dynamically monitors system resources and provides recommendations
+ * for safe concurrency levels. Prevents resource exhaustion by adjusting
+ * thread counts based on current CPU and memory usage.
+ *
+ * Features:
+ * - Real-time CPU and memory monitoring
+ * - Dynamic thread count recommendations
+ * - Special handling for resource-intensive E2E tests
+ * - Configurable thresholds and strategies
+ *
+ * @example
+ * ```typescript
+ * const manager = new SystemResourceManager({
+ *   cpuThreshold: 80,
+ *   memoryThreshold: 85,
+ *   threadStrategy: 'balanced'
+ * });
+ *
+ * const resources = await manager.getResources();
+ * console.log(`Recommended threads: ${resources.recommendedThreads}`);
+ *
+ * const e2eCheck = await manager.canRunE2E(2);
+ * if (!e2eCheck.canRun) {
+ *   console.warn(e2eCheck.reason);
+ * }
+ * ```
+ */
 export class SystemResourceManager {
   private config: Required<SystemResourcesConfig>;
 
@@ -250,7 +291,7 @@ export class SystemResourceManager {
         return Math.min(100, (loadavg / cpuCores) * 100);
       }
     } catch (error) {
-      console.warn('Failed to get CPU usage, using fallback:', error);
+      logger.warn('Failed to get CPU usage, using fallback:', error);
       // Fallback: use load average
       const loadavg = os.loadavg()[0];
       const cpuCores = os.cpus().length;
@@ -259,7 +300,27 @@ export class SystemResourceManager {
   }
 
   /**
-   * 檢查是否可以安全執行 E2E 測試
+   * Check if it's safe to run E2E tests
+   *
+   * Evaluates whether system has sufficient resources for E2E tests.
+   * E2E tests are resource-intensive (multiple services per test).
+   *
+   * @param count - Number of E2E tests to run concurrently (default: 1)
+   * @returns Object containing:
+   *   - canRun: Whether tests can safely run
+   *   - reason: Why tests can't run (if canRun is false)
+   *   - recommendation: Suggested action (if canRun is false)
+   *
+   * @example
+   * ```typescript
+   * const check = await manager.canRunE2E(3);
+   * if (check.canRun) {
+   *   // Safe to run 3 E2E tests
+   * } else {
+   *   console.warn(check.reason);
+   *   console.log(check.recommendation);
+   * }
+   * ```
    */
   async canRunE2E(count: number = 1): Promise<{
     canRun: boolean;
@@ -310,7 +371,24 @@ export class SystemResourceManager {
   }
 
   /**
-   * 生成資源報告
+   * Generate formatted system resources report
+   *
+   * Creates a human-readable ASCII table showing current resource status,
+   * recommended concurrency levels, and any warnings.
+   *
+   * @returns Formatted report string
+   *
+   * @example
+   * ```typescript
+   * const report = await manager.generateReport();
+   * console.log(report);
+   * // ╔═══════════════════════════════════════════════════════════╗
+   * // ║           SYSTEM RESOURCES REPORT                       ║
+   * // ╠═══════════════════════════════════════════════════════════╣
+   * // ║ CPU Cores:           8                                  ║
+   * // ║ CPU Usage:           45.2% ✅                           ║
+   * // ...
+   * ```
    */
   async generateReport(): Promise<string> {
     const resources = await this.getResources();
@@ -362,7 +440,18 @@ export class SystemResourceManager {
   }
 }
 
-// 導出便利函數
+/**
+ * Convenience function to get system resources without creating a manager instance
+ *
+ * @param config - Optional configuration
+ * @returns Current system resources
+ *
+ * @example
+ * ```typescript
+ * const resources = await getSystemResources({ cpuThreshold: 75 });
+ * console.log(`CPU: ${resources.cpuUsage.toFixed(1)}%`);
+ * ```
+ */
 export async function getSystemResources(
   config?: SystemResourcesConfig
 ): Promise<SystemResources> {
@@ -370,6 +459,21 @@ export async function getSystemResources(
   return manager.getResources();
 }
 
+/**
+ * Convenience function to check if E2E tests can run safely
+ *
+ * @param count - Number of E2E tests to run concurrently (default: 1)
+ * @param config - Optional configuration
+ * @returns Check result with canRun status and recommendations
+ *
+ * @example
+ * ```typescript
+ * const check = await canRunE2ETest(2);
+ * if (!check.canRun) {
+ *   console.log(check.recommendation);
+ * }
+ * ```
+ */
 export async function canRunE2ETest(
   count: number = 1,
   config?: SystemResourcesConfig

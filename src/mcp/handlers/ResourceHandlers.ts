@@ -14,6 +14,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { NotFoundError, OperationError } from '../../errors/index.js';
+import { handleError, logError } from '../../utils/errorHandler.js';
 
 /**
  * Setup MCP Resource handlers
@@ -93,14 +94,28 @@ export function setupResourceHandlers(server: Server): void {
         ],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      // Log error with full stack trace and context
+      logError(error, {
+        component: 'ResourceHandlers',
+        method: 'readResource',
+        operation: 'reading resource file',
+        data: { uri, filePath },
+      });
+
+      // Get formatted error for exception
+      const handledError = handleError(error, {
+        component: 'ResourceHandlers',
+        method: 'readResource',
+      });
+
       throw new OperationError(
-        `Failed to read resource ${uri}: ${errorMessage}`,
+        `Failed to read resource ${uri}: ${handledError.message}`,
         {
           operation: 'readResource',
           uri,
           filePath,
-          originalError: errorMessage,
+          originalError: handledError.message,
+          stack: handledError.stack,
         }
       );
     }

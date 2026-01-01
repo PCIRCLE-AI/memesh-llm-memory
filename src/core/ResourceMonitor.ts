@@ -1,14 +1,57 @@
 /**
- * Resource Monitor - System resource monitoring and tracking
+ * Resource Monitor - System Resource Monitoring and Tracking
  *
- * Monitors CPU, memory, and active background agents to determine
- * if the system can handle additional background tasks.
+ * Monitors CPU usage, memory consumption, and active background agents
+ * to determine if the system can safely handle additional background tasks.
+ * Provides threshold-based resource checks and real-time monitoring capabilities.
+ *
+ * Features:
+ * - Real-time CPU and memory monitoring
+ * - Concurrent background agent tracking
+ * - Configurable resource thresholds
+ * - Resource check before task execution
+ * - Threshold exceeded event notifications
+ *
+ * @example
+ * ```typescript
+ * import { ResourceMonitor } from './ResourceMonitor.js';
+ * import { DEFAULT_EXECUTION_CONFIG } from './types.js';
+ *
+ * // Create resource monitor with defaults
+ * const monitor = new ResourceMonitor();
+ *
+ * // Check if system can run a task
+ * const check = monitor.canRunBackgroundTask(DEFAULT_EXECUTION_CONFIG);
+ * if (check.canExecute) {
+ *   monitor.registerBackgroundTask();
+ *   // Execute task...
+ *   monitor.unregisterBackgroundTask();
+ * } else {
+ *   console.warn(check.reason);
+ *   console.log(check.suggestion);
+ * }
+ *
+ * // Monitor for high CPU usage
+ * const unsubscribe = monitor.onThresholdExceeded('cpu', (resources) => {
+ *   console.warn(`High CPU usage: ${resources.cpu.usage}%`);
+ * });
+ *
+ * // Get current system resources
+ * const resources = monitor.getCurrentResources();
+ * console.log(`CPU: ${resources.cpu.usage}%, Memory: ${resources.memory.usagePercent}%`);
+ * ```
  */
 
 import os from 'os';
 import { SystemResources, ResourceCheckResult, ExecutionConfig } from './types.js';
 import { ValidationError } from '../errors/index.js';
 
+/**
+ * ResourceMonitor Class
+ *
+ * Monitors system resources and manages background task execution limits.
+ * Prevents system overload by checking resource availability before task execution.
+ */
 export class ResourceMonitor {
   private activeBackgroundCount: number = 0;
   private maxBackgroundAgents: number;
@@ -19,8 +62,32 @@ export class ResourceMonitor {
 
   /**
    * Create a new ResourceMonitor
-   * @param maxBackgroundAgents Maximum concurrent background agents (default: 6)
-   * @param thresholds Resource usage thresholds
+   *
+   * Initializes the resource monitor with configurable limits for concurrent
+   * background agents and resource usage thresholds.
+   *
+   * @param maxBackgroundAgents - Maximum concurrent background agents (default: 6)
+   * @param thresholds - Resource usage thresholds
+   * @param thresholds.maxCPU - Maximum CPU usage percentage (default: 70%)
+   * @param thresholds.maxMemory - Maximum memory usage in MB (default: 8192 MB / 8 GB)
+   *
+   * @example
+   * ```typescript
+   * // Use defaults (6 agents, 70% CPU, 8GB memory)
+   * const monitor = new ResourceMonitor();
+   *
+   * // Custom limits for high-resource system
+   * const highEndMonitor = new ResourceMonitor(10, {
+   *   maxCPU: 85,
+   *   maxMemory: 16384 // 16GB
+   * });
+   *
+   * // Conservative limits for resource-constrained system
+   * const conservativeMonitor = new ResourceMonitor(3, {
+   *   maxCPU: 50,
+   *   maxMemory: 4096 // 4GB
+   * });
+   * ```
    */
   constructor(
     maxBackgroundAgents: number = 6,
@@ -38,6 +105,27 @@ export class ResourceMonitor {
 
   /**
    * Get current system resources
+   *
+   * Retrieves real-time system resource information including CPU usage,
+   * memory usage, and active background agent count.
+   *
+   * @returns SystemResources Current resource snapshot
+   *
+   * @example
+   * ```typescript
+   * const resources = monitor.getCurrentResources();
+   *
+   * console.log(`CPU Usage: ${resources.cpu.usage.toFixed(1)}%`);
+   * console.log(`CPU Cores: ${resources.cpu.cores}`);
+   * console.log(`Memory: ${resources.memory.used.toFixed(0)}MB / ${resources.memory.total.toFixed(0)}MB`);
+   * console.log(`Memory Usage: ${resources.memory.usagePercent.toFixed(1)}%`);
+   * console.log(`Active Agents: ${resources.activeBackgroundAgents}`);
+   *
+   * // Check if resources are healthy
+   * if (resources.cpu.usage < 50 && resources.memory.usagePercent < 70) {
+   *   console.log('System resources healthy');
+   * }
+   * ```
    */
   getCurrentResources(): SystemResources {
     const cpus = os.cpus();
@@ -67,7 +155,52 @@ export class ResourceMonitor {
 
   /**
    * Check if system can run a background task
-   * @param config Execution configuration
+   *
+   * Evaluates current system resources against thresholds and task requirements
+   * to determine if a background task can be safely executed.
+   *
+   * Checks performed:
+   * - Concurrent agent limit
+   * - CPU usage threshold
+   * - Memory usage threshold
+   * - Task-specific resource requirements (if config provided)
+   *
+   * @param config - Optional execution configuration with resource limits
+   * @returns ResourceCheckResult Check result with canExecute flag, reason, and suggestion
+   *
+   * @example
+   * ```typescript
+   * import { DEFAULT_EXECUTION_CONFIG } from './types.js';
+   *
+   * // Basic check without config
+   * const check1 = monitor.canRunBackgroundTask();
+   * if (!check1.canExecute) {
+   *   console.warn(`Cannot execute: ${check1.reason}`);
+   *   console.log(`Suggestion: ${check1.suggestion}`);
+   * }
+   *
+   * // Check with specific task requirements
+   * const check2 = monitor.canRunBackgroundTask(DEFAULT_EXECUTION_CONFIG);
+   * if (check2.canExecute) {
+   *   console.log('System can handle this task');
+   *   console.log(`Available CPU: ${check2.resources?.cpu.usage}%`);
+   *   console.log(`Available Memory: ${check2.resources?.memory.available}MB`);
+   * }
+   *
+   * // Check for high-resource task
+   * const heavyTaskConfig = {
+   *   ...DEFAULT_EXECUTION_CONFIG,
+   *   resourceLimits: {
+   *     maxCPU: 50,
+   *     maxMemory: 4096,
+   *     maxDuration: 3600
+   *   }
+   * };
+   * const check3 = monitor.canRunBackgroundTask(heavyTaskConfig);
+   * if (!check3.canExecute) {
+   *   console.log(`Wait for more resources: ${check3.suggestion}`);
+   * }
+   * ```
    */
   canRunBackgroundTask(config?: ExecutionConfig): ResourceCheckResult {
     const resources = this.getCurrentResources();

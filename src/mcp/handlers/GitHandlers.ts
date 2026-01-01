@@ -8,6 +8,7 @@
 import { z } from 'zod';
 import { GitAssistantIntegration } from '../../integrations/GitAssistantIntegration.js';
 import { ValidationError } from '../../errors/index.js';
+import { handleError, logError, formatMCPError } from '../../utils/errorHandler.js';
 import {
   GitSaveWorkInputSchema,
   GitListVersionsInputSchema,
@@ -70,12 +71,24 @@ export class GitHandlers {
         ],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      logError(error, {
+        component: 'GitHandlers',
+        method: 'handleGitSaveWork',
+        operation: 'saving work',
+        data: { args },
+      });
+
+      const handled = handleError(error, {
+        component: 'GitHandlers',
+        method: 'handleGitSaveWork',
+        operation: 'saving work',
+      });
+
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Failed to save work: ${errorMessage}`,
+            text: `❌ Failed to save work: ${handled.message}`,
           },
         ],
       };
@@ -118,12 +131,24 @@ export class GitHandlers {
         ],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      logError(error, {
+        component: 'GitHandlers',
+        method: 'handleGitListVersions',
+        operation: 'listing versions',
+        data: { args },
+      });
+
+      const handled = handleError(error, {
+        component: 'GitHandlers',
+        method: 'handleGitListVersions',
+        operation: 'listing versions',
+      });
+
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Failed to list versions: ${errorMessage}`,
+            text: `❌ Failed to list versions: ${handled.message}`,
           },
         ],
       };
@@ -148,12 +173,23 @@ export class GitHandlers {
         ],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      logError(error, {
+        component: 'GitHandlers',
+        method: 'handleGitStatus',
+        operation: 'getting git status',
+      });
+
+      const handled = handleError(error, {
+        component: 'GitHandlers',
+        method: 'handleGitStatus',
+        operation: 'getting git status',
+      });
+
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Failed to get status: ${errorMessage}`,
+            text: `❌ Failed to get status: ${handled.message}`,
           },
         ],
       };
@@ -196,12 +232,24 @@ export class GitHandlers {
         ],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      logError(error, {
+        component: 'GitHandlers',
+        method: 'handleGitShowChanges',
+        operation: 'showing changes',
+        data: { args },
+      });
+
+      const handled = handleError(error, {
+        component: 'GitHandlers',
+        method: 'handleGitShowChanges',
+        operation: 'showing changes',
+      });
+
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Failed to show changes: ${errorMessage}`,
+            text: `❌ Failed to show changes: ${handled.message}`,
           },
         ],
       };
@@ -244,12 +292,24 @@ export class GitHandlers {
         ],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      logError(error, {
+        component: 'GitHandlers',
+        method: 'handleGitGoBack',
+        operation: 'going back to version',
+        data: { args },
+      });
+
+      const handled = handleError(error, {
+        component: 'GitHandlers',
+        method: 'handleGitGoBack',
+        operation: 'going back to version',
+      });
+
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Failed to go back: ${errorMessage}`,
+            text: `❌ Failed to go back: ${handled.message}`,
           },
         ],
       };
@@ -274,12 +334,23 @@ export class GitHandlers {
         ],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      logError(error, {
+        component: 'GitHandlers',
+        method: 'handleGitCreateBackup',
+        operation: 'creating backup',
+      });
+
+      const handled = handleError(error, {
+        component: 'GitHandlers',
+        method: 'handleGitCreateBackup',
+        operation: 'creating backup',
+      });
+
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Failed to create backup: ${errorMessage}`,
+            text: `❌ Failed to create backup: ${handled.message}`,
           },
         ],
       };
@@ -326,12 +397,24 @@ export class GitHandlers {
         ],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      logError(error, {
+        component: 'GitHandlers',
+        method: 'handleGitSetup',
+        operation: 'setting up git',
+        data: { args },
+      });
+
+      const handled = handleError(error, {
+        component: 'GitHandlers',
+        method: 'handleGitSetup',
+        operation: 'setting up git',
+      });
+
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Git setup failed: ${errorMessage}`,
+            text: `❌ Git setup failed: ${handled.message}`,
           },
         ],
       };
@@ -356,12 +439,23 @@ export class GitHandlers {
         ],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      logError(error, {
+        component: 'GitHandlers',
+        method: 'handleGitHelp',
+        operation: 'showing help',
+      });
+
+      const handled = handleError(error, {
+        component: 'GitHandlers',
+        method: 'handleGitHelp',
+        operation: 'showing help',
+      });
+
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Failed to show help: ${errorMessage}`,
+            text: `❌ Failed to show help: ${handled.message}`,
           },
         ],
       };

@@ -9,6 +9,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import type { RAGAgent } from './index.js';
+import { logger } from '../../utils/logger.js';
 
 export interface FileWatcherOptions {
   /**
@@ -100,11 +101,33 @@ export class FileWatcher {
   }
 
   /**
+   * Sanitize and validate file path to prevent path traversal attacks
+   * @param filename - Filename to validate
+   * @returns Sanitized absolute path
+   * @throws Error if path escapes watch directory
+   */
+  private sanitizeFilePath(filename: string): string {
+    // Remove any path separators at the start (security)
+    const cleanFilename = filename.replace(/^[/\\]+/, '');
+
+    // Resolve the full path
+    const fullPath = path.resolve(this.watchDir, cleanFilename);
+    const normalizedWatchDir = path.resolve(this.watchDir);
+
+    // Security: Ensure the resolved path is within watchDir
+    if (!fullPath.startsWith(normalizedWatchDir + path.sep) && fullPath !== normalizedWatchDir) {
+      throw new Error(`Path traversal detected: ${filename} escapes watch directory`);
+    }
+
+    return fullPath;
+  }
+
+  /**
    * Start watching for new files
    */
   async start(): Promise<void> {
     if (this.isWatching) {
-      console.log('⚠️  File watcher is already running');
+      logger.warn('⚠️  File watcher is already running');
       return;
     }
 
@@ -114,17 +137,17 @@ export class FileWatcher {
     // Load already processed files
     await this.loadProcessedFiles();
 
-    console.log(`\n📁 File Watcher Started`);
-    console.log(`📂 Watching directory: ${this.watchDir}`);
-    console.log(`📄 Supported extensions: ${this.supportedExtensions.join(', ')}`);
-    console.log(`⏱️  Polling interval: ${this.pollingInterval}ms\n`);
+    logger.info(`\n📁 File Watcher Started`);
+    logger.info(`📂 Watching directory: ${this.watchDir}`);
+    logger.info(`📄 Supported extensions: ${this.supportedExtensions.join(', ')}`);
+    logger.info(`⏱️  Polling interval: ${this.pollingInterval}ms\n`);
 
     this.isWatching = true;
 
     // Start polling
     this.intervalId = setInterval(() => {
       this.scanAndProcess().catch((error) => {
-        console.error('Error in file watcher:', error);
+        logger.error('Error in file watcher:', error);
         if (this.onError) {
           this.onError(error);
         }
@@ -140,7 +163,7 @@ export class FileWatcher {
    */
   stop(): void {
     if (!this.isWatching) {
-      console.log('⚠️  File watcher is not running');
+      logger.warn('⚠️  File watcher is not running');
       return;
     }
 
@@ -150,7 +173,7 @@ export class FileWatcher {
     }
 
     this.isWatching = false;
-    console.log('\n🛑 File Watcher Stopped\n');
+    logger.info('\n🛑 File Watcher Stopped\n');
   }
 
   /**
@@ -162,7 +185,7 @@ export class FileWatcher {
     } catch {
       // Directory doesn't exist, create it
       await fs.mkdir(this.watchDir, { recursive: true });
-      console.log(`✅ Created watch directory: ${this.watchDir}`);
+      logger.info(`✅ Created watch directory: ${this.watchDir}`);
     }
   }
 
@@ -170,13 +193,14 @@ export class FileWatcher {
    * Load list of already processed files
    */
   private async loadProcessedFiles(): Promise<void> {
-    const stateFile = path.join(this.watchDir, '.processed_files.json');
+    // Security: Use sanitized path even for known filenames (defense in depth)
+    const stateFile = this.sanitizeFilePath('.processed_files.json');
 
     try {
       const data = await fs.readFile(stateFile, 'utf-8');
       const processed = JSON.parse(data) as string[];
       this.processedFiles = new Set(processed);
-      console.log(`📋 Loaded ${this.processedFiles.size} processed files from state`);
+      logger.info(`📋 Loaded ${this.processedFiles.size} processed files from state`);
     } catch {
       // State file doesn't exist or is invalid, start fresh
       this.processedFiles = new Set();
@@ -187,13 +211,14 @@ export class FileWatcher {
    * Save list of processed files
    */
   private async saveProcessedFiles(): Promise<void> {
-    const stateFile = path.join(this.watchDir, '.processed_files.json');
+    // Security: Use sanitized path even for known filenames (defense in depth)
+    const stateFile = this.sanitizeFilePath('.processed_files.json');
     const processed = Array.from(this.processedFiles);
 
     try {
       await fs.writeFile(stateFile, JSON.stringify(processed, null, 2), 'utf-8');
     } catch (error) {
-      console.error('Failed to save processed files state:', error);
+      logger.error('Failed to save processed files state:', error);
     }
   }
 
@@ -213,11 +238,19 @@ export class FileWatcher {
           continue;
         }
 
-        const ext = path.extname(file).toLowerCase();
-        const filePath = path.join(this.watchDir, file);
+        // Security: Validate file path to prevent path traversal
+        try {
+          const filePath = this.sanitizeFilePath(file);
+          const ext = path.extname(file).toLowerCase();
 
-        if (this.supportedExtensions.includes(ext) && !this.processedFiles.has(file)) {
-          newFiles.push(file);
+          if (this.supportedExtensions.includes(ext) && !this.processedFiles.has(file)) {
+            newFiles.push(file);
+          }
+        } catch (error) {
+          logger.error(`⚠️  Skipping suspicious file: ${file}`, error);
+          if (this.onError) {
+            this.onError(error as Error, file);
+          }
         }
       }
 
@@ -225,8 +258,8 @@ export class FileWatcher {
         return; // No new files
       }
 
-      console.log(`\n🆕 Found ${newFiles.length} new file(s):`);
-      newFiles.forEach((file) => console.log(`   - ${file}`));
+      logger.info(`\n🆕 Found ${newFiles.length} new file(s):`);
+      newFiles.forEach((file) => logger.info(`   - ${file}`));
 
       // Process in batches
       for (let i = 0; i < newFiles.length; i += this.batchSize) {
@@ -243,7 +276,7 @@ export class FileWatcher {
       }
 
     } catch (error) {
-      console.error('Error scanning directory:', error);
+      logger.error('Error scanning directory:', error);
       if (this.onError) {
         this.onError(error as Error);
       }
@@ -254,12 +287,13 @@ export class FileWatcher {
    * Process a batch of files
    */
   private async processBatch(files: string[]): Promise<void> {
-    console.log(`\n📥 Processing batch of ${files.length} file(s)...`);
+    logger.info(`\n📥 Processing batch of ${files.length} file(s)...`);
 
     for (const file of files) {
-      const filePath = path.join(this.watchDir, file);
-
       try {
+        // Security: Validate file path to prevent path traversal
+        const filePath = this.sanitizeFilePath(file);
+
         // Read file content
         const content = await fs.readFile(filePath, 'utf-8');
 
@@ -275,13 +309,13 @@ export class FileWatcher {
           updatedAt: stats.mtime.toISOString(),
         });
 
-        console.log(`   ✅ Indexed: ${file}`);
+        logger.info(`   ✅ Indexed: ${file}`);
 
         // Mark as processed
         this.processedFiles.add(file);
 
       } catch (error) {
-        console.error(`   ❌ Failed to index ${file}:`, error);
+        logger.error(`   ❌ Failed to index ${file}:`, error);
 
         if (this.onError) {
           this.onError(error as Error, file);
@@ -289,7 +323,7 @@ export class FileWatcher {
       }
     }
 
-    console.log(`✅ Batch processing complete\n`);
+    logger.info(`✅ Batch processing complete\n`);
   }
 
   /**
@@ -298,6 +332,6 @@ export class FileWatcher {
   async clearState(): Promise<void> {
     this.processedFiles.clear();
     await this.saveProcessedFiles();
-    console.log('✅ Cleared processed files state');
+    logger.info('✅ Cleared processed files state');
   }
 }

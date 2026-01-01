@@ -36,6 +36,15 @@ export class UIEventBus {
   private static instance: UIEventBus;
   private emitter: EventEmitter;
 
+  /**
+   * Track wrapped handlers to prevent memory leaks
+   * Maps original handler to wrapped handler for proper cleanup
+   *
+   * Note: Using WeakMap with 'any' to handle generic type variance
+   * Type safety is ensured through method signatures
+   */
+  private handlerMap: WeakMap<EventHandler<any>, EventHandler<any>> = new WeakMap();
+
   private constructor() {
     this.emitter = new EventEmitter();
     // Remove default limit to support many listeners
@@ -73,14 +82,41 @@ export class UIEventBus {
    * Subscribe to a generic event
    * Returns unsubscribe function
    */
-  on(eventType: UIEventTypeValue, handler: EventHandler): UnsubscribeFunction {
-    const wrappedHandler = this.wrapHandlerWithErrorBoundary(handler, eventType);
+  on<T = unknown>(eventType: UIEventTypeValue, handler: EventHandler<T>): UnsubscribeFunction {
+    // Check if this handler is already wrapped
+    let wrappedHandler = this.handlerMap.get(handler) as EventHandler<T> | undefined;
+
+    // If not wrapped yet, create and store the wrapped version
+    if (!wrappedHandler) {
+      wrappedHandler = this.wrapHandlerWithErrorBoundary(handler, eventType);
+      this.handlerMap.set(handler, wrappedHandler);
+    }
+
     this.emitter.on(eventType, wrappedHandler);
 
-    // Return unsubscribe function
+    // Return unsubscribe function that properly cleans up
     return () => {
-      this.emitter.off(eventType, wrappedHandler);
+      this.emitter.off(eventType, wrappedHandler as EventHandler<T>);
     };
+  }
+
+  /**
+   * Remove a specific listener
+   * Uses the original handler reference to find and remove the wrapped handler
+   */
+  off<T = unknown>(eventType: UIEventTypeValue, handler: EventHandler<T>): void {
+    const wrappedHandler = this.handlerMap.get(handler) as EventHandler<T> | undefined;
+    if (wrappedHandler) {
+      this.emitter.off(eventType, wrappedHandler);
+    }
+  }
+
+  /**
+   * Remove all listeners for a specific event type
+   * Helps prevent memory leaks in long-running processes
+   */
+  removeAllListenersForEvent(eventType: UIEventTypeValue): void {
+    this.emitter.removeAllListeners(eventType);
   }
 
   /**
@@ -193,14 +229,62 @@ export class UIEventBus {
   }
 
   /**
+   * Get listener count for a specific event type
+   * Useful for detecting memory leaks
+   */
+  getListenerCount(eventType: UIEventTypeValue): number {
+    return this.emitter.listenerCount(eventType);
+  }
+
+  /**
+   * Get all listener counts (for debugging)
+   * Returns a map of event types to listener counts
+   */
+  getAllListenerCounts(): Record<string, number> {
+    const counts: Record<string, number> = {};
+
+    // Get all event types
+    const eventTypes = Object.values(UIEventType);
+
+    for (const eventType of eventTypes) {
+      const count = this.emitter.listenerCount(eventType);
+      if (count > 0) {
+        counts[eventType] = count;
+      }
+    }
+
+    return counts;
+  }
+
+  /**
+   * Check for potential memory leaks
+   * Warns if any event type has an unusually high number of listeners
+   *
+   * @param threshold - Maximum listeners per event type (default: 10)
+   * @returns Array of event types with excessive listeners
+   */
+  detectPotentialLeaks(threshold: number = 10): Array<{ eventType: string; count: number }> {
+    const leaks: Array<{ eventType: string; count: number }> = [];
+    const counts = this.getAllListenerCounts();
+
+    for (const [eventType, count] of Object.entries(counts)) {
+      if (count > threshold) {
+        leaks.push({ eventType, count });
+      }
+    }
+
+    return leaks;
+  }
+
+  /**
    * Wrap handler with error boundary
    * If handler throws, emit error event and continue processing other handlers
    */
-  private wrapHandlerWithErrorBoundary(
-    handler: EventHandler,
+  private wrapHandlerWithErrorBoundary<T>(
+    handler: EventHandler<T>,
     eventType: UIEventTypeValue
-  ): EventHandler {
-    return (data: unknown) => {
+  ): EventHandler<T> {
+    return (data: T) => {
       try {
         handler(data);
       } catch (error) {

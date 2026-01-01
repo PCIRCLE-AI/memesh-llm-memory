@@ -15,6 +15,7 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import { NotFoundError } from '../errors/index.js';
+import { logger } from '../utils/logger.js';
 
 export interface VersionInfo {
   number: number;
@@ -47,7 +48,7 @@ export class FriendlyGitCommands {
    */
   async saveWork(description: string, autoBackup: boolean = true): Promise<void> {
     try {
-      console.log('💾 正在儲存工作...');
+      logger.info('💾 正在儲存工作...');
 
       // Stage all changes
       await this.mcp.bash({
@@ -64,9 +65,9 @@ export class FriendlyGitCommands {
         await this.createLocalBackup();
       }
 
-      console.log('✅ 工作已儲存');
-      console.log(`📝 描述: ${description}`);
-      console.log(`🕐 時間: ${new Date().toLocaleString('zh-TW')}`);
+      logger.info('✅ 工作已儲存');
+      logger.info(`📝 描述: ${description}`);
+      logger.info(`🕐 時間: ${new Date().toLocaleString('zh-TW')}`);
 
       // Record to Knowledge Graph
       await this.mcp.memory.createEntities({
@@ -82,7 +83,7 @@ export class FriendlyGitCommands {
       });
 
     } catch (error: unknown) {
-      console.error('❌ 儲存失敗:', this.getErrorMessage(error));
+      logger.error('❌ 儲存失敗:', this.getErrorMessage(error));
       throw error;
     }
   }
@@ -113,16 +114,16 @@ export class FriendlyGitCommands {
         };
       });
 
-      console.log('📚 最近的版本：\n');
+      logger.info('📚 最近的版本：\n');
       versions.forEach(v => {
-        console.log(`${v.number}. ${v.message}`);
-        console.log(`   (版本號: ${v.hash}, ${v.timeAgo})\n`);
+        logger.info(`${v.number}. ${v.message}`);
+        logger.info(`   (版本號: ${v.hash}, ${v.timeAgo})\n`);
       });
 
       return versions;
 
     } catch (error) {
-      console.error('❌ 無法列出版本（專案可能還沒有任何版本）');
+      logger.error('❌ 無法列出版本（專案可能還沒有任何版本）');
       return [];
     }
   }
@@ -138,7 +139,7 @@ export class FriendlyGitCommands {
    */
   async goBackTo(identifier: string): Promise<void> {
     try {
-      console.log(`🔍 正在尋找版本: ${identifier}...`);
+      logger.info(`🔍 正在尋找版本: ${identifier}...`);
 
       let commitHash: string;
 
@@ -182,17 +183,17 @@ export class FriendlyGitCommands {
         command: `git checkout ${commitHash}`,
       });
 
-      console.log('✅ 已回到該版本');
-      console.log(`ℹ️  版本號: ${commitHash}`);
+      logger.info('✅ 已回到該版本');
+      logger.info(`ℹ️  版本號: ${commitHash}`);
 
       // Show warning about detached HEAD
-      console.log('');
-      console.log('⚠️  提醒：你現在處於「查看舊版本」模式');
-      console.log('   如果要繼續開發，請先儲存當前狀態：');
-      console.log('   save-work "從這個版本繼續開發"');
+      logger.info('');
+      logger.info('⚠️  提醒：你現在處於「查看舊版本」模式');
+      logger.info('   如果要繼續開發，請先儲存當前狀態：');
+      logger.info('   save-work "從這個版本繼續開發"');
 
     } catch (error: unknown) {
-      console.error('❌ 無法回到該版本:', this.getErrorMessage(error));
+      logger.error('❌ 無法回到該版本:', this.getErrorMessage(error));
       throw error;
     }
   }
@@ -226,9 +227,9 @@ export class FriendlyGitCommands {
 
       const summary = this.generateChangesSummary(addedLines, removedLines, modifiedFiles);
 
-      console.log('📊 與上一版本的差異：\n');
-      console.log(summary);
-      console.log('');
+      logger.info('📊 與上一版本的差異：\n');
+      logger.info(summary);
+      logger.info('');
 
       return {
         addedLines,
@@ -238,7 +239,7 @@ export class FriendlyGitCommands {
       };
 
     } catch (error) {
-      console.error('❌ 無法查看變更');
+      logger.error('❌ 無法查看變更');
       return {
         addedLines: 0,
         removedLines: 0,
@@ -279,12 +280,12 @@ export class FriendlyGitCommands {
         await fs.rm(path.join(backupDir, backup), { recursive: true });
       }
 
-      console.log(`✅ 備份已建立: ${backupPath}`);
+      logger.info(`✅ 備份已建立: ${backupPath}`);
 
       return backupPath;
 
     } catch (error: unknown) {
-      console.error('❌ 備份失敗:', this.getErrorMessage(error));
+      logger.error('❌ 備份失敗:', this.getErrorMessage(error));
       throw error;
     }
   }
@@ -304,11 +305,11 @@ export class FriendlyGitCommands {
       const lines = result.stdout.trim().split('\n').filter(line => line.length > 0);
 
       if (lines.length === 0) {
-        console.log('✅ 目前沒有未儲存的變更');
+        logger.info('✅ 目前沒有未儲存的變更');
         return;
       }
 
-      console.log('📝 目前狀態：\n');
+      logger.info('📝 目前狀態：\n');
 
       const modified = lines.filter(line => line.startsWith(' M'));
       const added = lines.filter(line => line.startsWith('A'));
@@ -316,37 +317,37 @@ export class FriendlyGitCommands {
       const untracked = lines.filter(line => line.startsWith('??'));
 
       if (modified.length > 0) {
-        console.log(`✏️  已修改: ${modified.length} 個檔案`);
-        modified.slice(0, 3).forEach(line => console.log(`   - ${line.substring(3)}`));
-        if (modified.length > 3) console.log(`   ... 還有 ${modified.length - 3} 個`);
-        console.log('');
+        logger.info(`✏️  已修改: ${modified.length} 個檔案`);
+        modified.slice(0, 3).forEach(line => logger.info(`   - ${line.substring(3)}`));
+        if (modified.length > 3) logger.info(`   ... 還有 ${modified.length - 3} 個`);
+        logger.info('');
       }
 
       if (added.length > 0) {
-        console.log(`➕ 已新增: ${added.length} 個檔案`);
-        added.slice(0, 3).forEach(line => console.log(`   - ${line.substring(3)}`));
-        if (added.length > 3) console.log(`   ... 還有 ${added.length - 3} 個`);
-        console.log('');
+        logger.info(`➕ 已新增: ${added.length} 個檔案`);
+        added.slice(0, 3).forEach(line => logger.info(`   - ${line.substring(3)}`));
+        if (added.length > 3) logger.info(`   ... 還有 ${added.length - 3} 個`);
+        logger.info('');
       }
 
       if (deleted.length > 0) {
-        console.log(`❌ 已刪除: ${deleted.length} 個檔案`);
-        deleted.slice(0, 3).forEach(line => console.log(`   - ${line.substring(3)}`));
-        if (deleted.length > 3) console.log(`   ... 還有 ${deleted.length - 3} 個`);
-        console.log('');
+        logger.info(`❌ 已刪除: ${deleted.length} 個檔案`);
+        deleted.slice(0, 3).forEach(line => logger.info(`   - ${line.substring(3)}`));
+        if (deleted.length > 3) logger.info(`   ... 還有 ${deleted.length - 3} 個`);
+        logger.info('');
       }
 
       if (untracked.length > 0) {
-        console.log(`❓ 未追蹤: ${untracked.length} 個檔案`);
-        untracked.slice(0, 3).forEach(line => console.log(`   - ${line.substring(3)}`));
-        if (untracked.length > 3) console.log(`   ... 還有 ${untracked.length - 3} 個`);
-        console.log('');
+        logger.info(`❓ 未追蹤: ${untracked.length} 個檔案`);
+        untracked.slice(0, 3).forEach(line => logger.info(`   - ${line.substring(3)}`));
+        if (untracked.length > 3) logger.info(`   ... 還有 ${untracked.length - 3} 個`);
+        logger.info('');
       }
 
-      console.log('💡 提示: 使用 save-work "描述" 儲存這些變更');
+      logger.info('💡 提示: 使用 save-work "描述" 儲存這些變更');
 
     } catch (error) {
-      console.error('❌ 無法查看狀態');
+      logger.error('❌ 無法查看狀態');
     }
   }
 
@@ -355,7 +356,7 @@ export class FriendlyGitCommands {
    */
   async initialize(name: string, email: string): Promise<void> {
     try {
-      console.log('⚙️  正在初始化 Git...');
+      logger.info('⚙️  正在初始化 Git...');
 
       // Init
       await this.mcp.bash({
@@ -371,25 +372,25 @@ export class FriendlyGitCommands {
         command: `git config user.email "${this.escapeShellArg(email)}"`,
       });
 
-      console.log('✅ Git 初始化完成');
+      logger.info('✅ Git 初始化完成');
 
       // Create first commit
-      console.log('📝 正在建立第一個版本...');
+      logger.info('📝 正在建立第一個版本...');
 
       await this.saveWork('Initial commit (專案開始)');
 
-      console.log('');
-      console.log('🎉 版本控制已經準備好了！');
-      console.log('');
-      console.log('📚 常用指令：');
-      console.log('   save-work "描述"     - 儲存目前工作');
-      console.log('   list-versions        - 查看歷史版本');
-      console.log('   show-changes         - 查看變更');
-      console.log('   status               - 查看目前狀態');
-      console.log('');
+      logger.info('');
+      logger.info('🎉 版本控制已經準備好了！');
+      logger.info('');
+      logger.info('📚 常用指令：');
+      logger.info('   save-work "描述"     - 儲存目前工作');
+      logger.info('   list-versions        - 查看歷史版本');
+      logger.info('   show-changes         - 查看變更');
+      logger.info('   status               - 查看目前狀態');
+      logger.info('');
 
     } catch (error: unknown) {
-      console.error('❌ 初始化失敗:', this.getErrorMessage(error));
+      logger.error('❌ 初始化失敗:', this.getErrorMessage(error));
       throw error;
     }
   }

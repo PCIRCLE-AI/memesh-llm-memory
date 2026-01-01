@@ -20,6 +20,7 @@ import { ProjectMemoryManager } from '../../memory/ProjectMemoryManager.js';
 import { HumanInLoopUI } from '../HumanInLoopUI.js';
 import { recallMemoryTool } from '../tools/recall-memory.js';
 import { Task, AgentType, TaskAnalysis, RoutingDecision } from '../../orchestrator/types.js';
+import { handleError, logError, formatMCPError } from '../../utils/errorHandler.js';
 
 export class ToolHandlers {
   constructor(
@@ -101,12 +102,23 @@ export class ToolHandlers {
         ],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleEvolutionDashboard',
+        operation: 'generating evolution dashboard',
+        data: { format: input.format, exportFormat: input.exportFormat },
+      });
+
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleEvolutionDashboard',
+      });
+
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Evolution dashboard failed: ${errorMessage}`,
+            text: `❌ Evolution dashboard failed: ${handled.message}`,
           },
         ],
       };
@@ -166,12 +178,22 @@ export class ToolHandlers {
         ],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleListAgents',
+        operation: 'listing available agents',
+      });
+
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleListAgents',
+      });
+
       return {
         content: [
           {
             type: 'text',
-            text: `❌ List agents failed: ${errorMessage}`,
+            text: `❌ List agents failed: ${handled.message}`,
           },
         ],
       };
@@ -267,12 +289,23 @@ export class ToolHandlers {
         ],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleListSkills',
+        operation: 'listing skills',
+        data: { filter: input.filter },
+      });
+
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleListSkills',
+      });
+
       return {
         content: [
           {
             type: 'text',
-            text: `❌ List skills failed: ${errorMessage}`,
+            text: `❌ List skills failed: ${handled.message}`,
           },
         ],
       };
@@ -310,12 +343,23 @@ export class ToolHandlers {
         ],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleUninstall',
+        operation: 'uninstalling Claude Code Buddy',
+        data: { options: input },
+      });
+
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleUninstall',
+      });
+
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Uninstall failed: ${errorMessage}`,
+            text: `❌ Uninstall failed: ${handled.message}`,
           },
         ],
       };
@@ -345,12 +389,23 @@ export class ToolHandlers {
         ],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleGetWorkflowGuidance',
+        operation: 'processing workflow checkpoint',
+        data: { phase: input.phase },
+      });
+
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleGetWorkflowGuidance',
+      });
+
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Workflow guidance failed: ${errorMessage}`,
+            text: `❌ Workflow guidance failed: ${handled.message}`,
           },
         ],
       };
@@ -373,12 +428,22 @@ export class ToolHandlers {
         ],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleGetSessionHealth',
+        operation: 'checking session health',
+      });
+
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleGetSessionHealth',
+      });
+
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Session health check failed: ${errorMessage}`,
+            text: `❌ Session health check failed: ${handled.message}`,
           },
         ],
       };
@@ -402,12 +467,23 @@ export class ToolHandlers {
         ],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleReloadContext',
+        operation: 'reloading context',
+        data: { reason: input.reason },
+      });
+
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleReloadContext',
+      });
+
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Context reload failed: ${errorMessage}`,
+            text: `❌ Context reload failed: ${handled.message}`,
           },
         ],
       };
@@ -436,12 +512,23 @@ export class ToolHandlers {
         ],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleRecordTokenUsage',
+        operation: 'recording token usage',
+        data: { inputTokens: input.inputTokens, outputTokens: input.outputTokens },
+      });
+
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleRecordTokenUsage',
+      });
+
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Token usage recording failed: ${errorMessage}`,
+            text: `❌ Token usage recording failed: ${handled.message}`,
           },
         ],
       };
@@ -513,12 +600,23 @@ export class ToolHandlers {
         ],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleGenerateSmartPlan',
+        operation: 'generating smart plan',
+        data: { featureDescription: input.featureDescription },
+      });
+
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleGenerateSmartPlan',
+      });
+
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Smart plan generation failed: ${errorMessage}`,
+            text: `❌ Smart plan generation failed: ${handled.message}`,
           },
         ],
       };
@@ -574,12 +672,23 @@ export class ToolHandlers {
         ],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleRecallMemory',
+        operation: 'recalling project memory',
+        data: { query: input.query, limit: input.limit },
+      });
+
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleRecallMemory',
+      });
+
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Failed to recall memory: ${errorMessage}`,
+            text: `❌ Failed to recall memory: ${handled.message}`,
           },
         ],
       };
@@ -629,13 +738,23 @@ export class ToolHandlers {
         ],
       };
     } catch (error) {
-      // Return formatted error response
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleSmartRouteTask',
+        operation: 'routing task',
+        data: { taskDescription: input.taskDescription, taskId: task.id },
+      });
+
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleSmartRouteTask',
+      });
+
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Smart routing failed: ${errorMessage}\n\nPlease try again or use a specific agent directly.`,
+            text: `❌ Smart routing failed: ${handled.message}\n\nPlease try again or use a specific agent directly.`,
           },
         ],
       };

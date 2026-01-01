@@ -7,30 +7,98 @@
 
 import Database from 'better-sqlite3';
 import { join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
+import { promises as fsPromises } from 'fs';
 import { NotFoundError } from '../errors/index.js';
 import { SimpleDatabaseFactory } from '../config/simple-config.js';
 import type { Entity, Relation, SearchQuery, RelationTrace, EntityType, RelationType } from './types.js';
 import type { SQLParams } from '../evolution/storage/types.js';
+import { logger } from '../utils/logger.js';
 
 export class KnowledgeGraph {
   private db: Database.Database;
   private dbPath: string;
 
-  constructor(dbPath?: string) {
-    // Default to data/knowledge-graph.db
-    this.dbPath = dbPath || join(process.cwd(), 'data', 'knowledge-graph.db');
+  /**
+   * Private constructor - use KnowledgeGraph.create() instead
+   */
+  private constructor(dbPath: string, db: Database.Database) {
+    this.dbPath = dbPath;
+    this.db = db;
+  }
 
-    // Ensure data directory exists
+  /**
+   * Create a new KnowledgeGraph instance (async factory method)
+   *
+   * @param dbPath - Optional database path (defaults to data/knowledge-graph.db)
+   * @returns Promise<KnowledgeGraph> Initialized knowledge graph instance
+   *
+   * @example
+   * ```typescript
+   * // Create with default path
+   * const kg = await KnowledgeGraph.create();
+   *
+   * // Create with custom path
+   * const customKg = await KnowledgeGraph.create('./custom/path/kg.db');
+   * ```
+   */
+  static async create(dbPath?: string): Promise<KnowledgeGraph> {
+    // Default to data/knowledge-graph.db
+    const resolvedPath = dbPath || join(process.cwd(), 'data', 'knowledge-graph.db');
+
+    // Ensure data directory exists (async)
     const dataDir = join(process.cwd(), 'data');
-    if (!existsSync(dataDir)) {
-      mkdirSync(dataDir, { recursive: true });
+    try {
+      await fsPromises.access(dataDir);
+    } catch {
+      // Directory doesn't exist, create it
+      await fsPromises.mkdir(dataDir, { recursive: true });
     }
 
-    this.db = SimpleDatabaseFactory.getInstance(this.dbPath);
-    this.initialize();
+    // Get database instance
+    const db = SimpleDatabaseFactory.getInstance(resolvedPath);
 
-    console.log(`[KnowledgeGraph] Initialized at: ${this.dbPath}`);
+    // Create instance
+    const instance = new KnowledgeGraph(resolvedPath, db);
+
+    // Initialize schema
+    instance.initialize();
+
+    logger.info(`[KnowledgeGraph] Initialized at: ${resolvedPath}`);
+
+    return instance;
+  }
+
+  /**
+   * Create a KnowledgeGraph instance synchronously (legacy compatibility)
+   *
+   * **Deprecated**: Use `await KnowledgeGraph.create()` instead for async file operations.
+   * This method is kept for backward compatibility but uses synchronous directory creation.
+   *
+   * @param dbPath - Optional database path (defaults to data/knowledge-graph.db)
+   * @returns KnowledgeGraph instance
+   */
+  static createSync(dbPath?: string): KnowledgeGraph {
+    const fs = require('fs');
+    const resolvedPath = dbPath || join(process.cwd(), 'data', 'knowledge-graph.db');
+
+    // Ensure data directory exists (sync)
+    const dataDir = join(process.cwd(), 'data');
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+
+    // Get database instance
+    const db = SimpleDatabaseFactory.getInstance(resolvedPath);
+
+    // Create instance
+    const instance = new KnowledgeGraph(resolvedPath, db);
+
+    // Initialize schema
+    instance.initialize();
+
+    logger.info(`[KnowledgeGraph] Initialized at: ${resolvedPath}`);
+
+    return instance;
   }
 
   private initialize() {
@@ -143,7 +211,7 @@ export class KnowledgeGraph {
       }
     }
 
-    console.log(`[KG] Created entity: ${entity.name} (type: ${entity.type})`);
+    logger.info(`[KG] Created entity: ${entity.name} (type: ${entity.type})`);
     return actualId;
   }
 
@@ -187,7 +255,7 @@ export class KnowledgeGraph {
       JSON.stringify(relation.metadata || {})
     );
 
-    console.log(`[KG] Created relation: ${relation.from} -[${relation.relationType}]-> ${relation.to}`);
+    logger.info(`[KG] Created relation: ${relation.from} -[${relation.relationType}]-> ${relation.to}`);
   }
 
   /**
@@ -360,7 +428,7 @@ export class KnowledgeGraph {
     const stmt = this.db.prepare('DELETE FROM entities WHERE name = ?');
     const result = stmt.run(name);
 
-    console.log(`[KG] Deleted entity: ${name}`);
+    logger.info(`[KG] Deleted entity: ${name}`);
     return result.changes > 0;
   }
 
@@ -369,7 +437,7 @@ export class KnowledgeGraph {
    */
   close() {
     this.db.close();
-    console.log('[KG] Database connection closed');
+    logger.info('[KG] Database connection closed');
   }
 }
 

@@ -7,6 +7,7 @@
  * - Domination checking
  */
 
+import { logger } from '../utils/logger.js';
 import type {
   OptimizationCandidate,
   OptimizationObjectives,
@@ -29,7 +30,7 @@ export class MultiObjectiveOptimizer {
 
     if (keys.length === 0) {
       // No common objectives = cannot compare
-      console.warn('[MultiObjectiveOptimizer] No common objectives for domination check', {
+      logger.warn('[MultiObjectiveOptimizer] No common objectives for domination check', {
         c1Keys: Object.keys(c1.objectives),
         c2Keys: Object.keys(c2.objectives),
       });
@@ -43,7 +44,7 @@ export class MultiObjectiveOptimizer {
 
       // Skip invalid values
       if (!Number.isFinite(val1) || !Number.isFinite(val2)) {
-        console.warn('[MultiObjectiveOptimizer] Non-finite objective value detected', { key, val1, val2 });
+        logger.warn('[MultiObjectiveOptimizer] Non-finite objective value detected', { key, val1, val2 });
         continue;
       }
 
@@ -130,12 +131,12 @@ export class MultiObjectiveOptimizer {
     // Validate weights
     const weightValues = Object.values(weights).filter(v => v !== undefined) as number[];
     if (weightValues.length === 0) {
-      console.warn('[MultiObjectiveOptimizer] No valid weights provided');
+      logger.warn('[MultiObjectiveOptimizer] No valid weights provided');
       return undefined;
     }
 
     if (weightValues.some(w => w < 0 || !Number.isFinite(w))) {
-      console.error('[MultiObjectiveOptimizer] Invalid weights detected', { weights });
+      logger.error('[MultiObjectiveOptimizer] Invalid weights detected', { weights });
       return undefined;
     }
 

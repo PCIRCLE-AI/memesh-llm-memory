@@ -1,8 +1,59 @@
 /**
- * Agent Registry
+ * Agent Registry - Centralized Agent Discovery and Metadata Management
  *
- * Centralized registry for all available agents in the claude-code-buddy system.
- * Provides dynamic agent discovery and metadata management.
+ * Provides a centralized registry for all available agents in the system with
+ * dynamic agent discovery, categorization, classification filtering, and metadata
+ * management. Supports 22 agents across development, analysis, operations, and
+ * creative domains with real implementations, enhanced prompts, and optional features.
+ *
+ * Features:
+ * - Automatic agent registration on instantiation
+ * - Agent discovery by name, category, or classification
+ * - Three classification types: real-implementation, enhanced-prompt, optional-feature
+ * - Agent metadata including capabilities, MCP tools, and dependencies
+ * - Validation for agent queries
+ * - Agent count and type enumeration
+ *
+ * Agent Categories:
+ * - **development**: Frontend, backend, testing, code review, refactoring
+ * - **analysis**: Architecture, research, data analysis
+ * - **operations**: DevOps, security auditing, infrastructure
+ * - **management**: Project management, product management
+ * - **creative**: UI/UX design, marketing strategy
+ * - **engineering**: ML engineering, data engineering
+ *
+ * @example
+ * ```typescript
+ * import { AgentRegistry } from './AgentRegistry.js';
+ *
+ * // Create registry (auto-registers all agents)
+ * const registry = new AgentRegistry();
+ *
+ * // Get specific agent
+ * const codeReviewer = registry.getAgent('code-reviewer');
+ * console.log(codeReviewer?.description);
+ * console.log(codeReviewer?.capabilities);
+ *
+ * // Get all development agents
+ * const devAgents = registry.getAgentsByCategory('development');
+ * console.log(`Found ${devAgents.length} development agents`);
+ *
+ * // Get agents by classification
+ * const realAgents = registry.getRealImplementations();
+ * const promptAgents = registry.getEnhancedPrompts();
+ * const optionalAgents = registry.getOptionalAgents();
+ *
+ * console.log(`Real: ${realAgents.length}, Prompt: ${promptAgents.length}, Optional: ${optionalAgents.length}`);
+ *
+ * // Check agent availability
+ * if (registry.hasAgent('frontend-developer')) {
+ *   console.log('Frontend development agent available');
+ * }
+ *
+ * // List all agent types
+ * const allTypes = registry.getAllAgentTypes();
+ * console.log(`Total agents: ${allTypes.length}`);
+ * ```
  */
 
 import { AgentType } from '../orchestrator/types.js';
@@ -10,7 +61,41 @@ import { AgentClassification } from '../types/AgentClassification.js';
 import { ValidationError } from '../errors/index.js';
 
 /**
- * Agent metadata for MCP tool registration
+ * Agent metadata for MCP tool registration and discovery
+ *
+ * Comprehensive metadata structure describing agent capabilities, dependencies,
+ * and classification. Used for agent discovery, validation, and task assignment.
+ *
+ * @example
+ * ```typescript
+ * // Real implementation agent with MCP tools
+ * const devButler: AgentMetadata = {
+ *   name: 'development-butler',
+ *   description: 'Event-driven workflow automation, code maintenance, testing',
+ *   category: 'development',
+ *   classification: AgentClassification.REAL_IMPLEMENTATION,
+ *   capabilities: ['workflow', 'testing', 'maintenance'],
+ *   mcpTools: ['filesystem', 'memory', 'bash']
+ * };
+ *
+ * // Enhanced prompt agent (no MCP tools needed)
+ * const codeReviewer: AgentMetadata = {
+ *   name: 'code-reviewer',
+ *   description: 'Expert code review, security analysis, best practices',
+ *   category: 'development',
+ *   classification: AgentClassification.ENHANCED_PROMPT,
+ *   capabilities: ['code-review', 'security', 'best-practices']
+ * };
+ *
+ * // Optional agent with external dependencies
+ * const ragAgent: AgentMetadata = {
+ *   name: 'rag-agent',
+ *   description: 'Knowledge retrieval, vector search',
+ *   category: 'analysis',
+ *   classification: AgentClassification.OPTIONAL_FEATURE,
+ *   requiredDependencies: ['chromadb', 'openai']
+ * };
+ * ```
  */
 export interface AgentMetadata {
   /** Unique agent identifier */
@@ -45,8 +130,38 @@ export interface AgentMetadata {
 /**
  * Agent Registry Class
  *
- * Manages the registration and retrieval of all available agents.
- * Provides a centralized source of truth for agent metadata.
+ * Centralized registry managing all available agents in the system.
+ * Automatically registers 22 agents on instantiation with support for
+ * dynamic discovery, filtering by category/classification, and metadata queries.
+ *
+ * Agent Distribution:
+ * - 6 real implementation agents (with actual MCP tool integration)
+ * - 15 enhanced prompt agents (specialized prompts without tools)
+ * - 1 optional feature agent (requires external dependencies)
+ *
+ * @example
+ * ```typescript
+ * import { AgentRegistry } from './AgentRegistry.js';
+ *
+ * // Registry auto-registers all agents on creation
+ * const registry = new AgentRegistry();
+ *
+ * // Discover agents by category
+ * const developmentAgents = registry.getAgentsByCategory('development');
+ * developmentAgents.forEach(agent => {
+ *   console.log(`${agent.name}: ${agent.description}`);
+ * });
+ *
+ * // Filter by classification
+ * const realAgents = registry.getRealImplementations();
+ * console.log(`Real agents with MCP tools: ${realAgents.length}`);
+ *
+ * // Query specific agent
+ * const debugger = registry.getAgent('debugger');
+ * if (debugger) {
+ *   console.log(`Capabilities: ${debugger.capabilities?.join(', ')}`);
+ * }
+ * ```
  */
 export class AgentRegistry {
   private agents: Map<AgentType, AgentMetadata> = new Map();
@@ -77,9 +192,42 @@ export class AgentRegistry {
   /**
    * Get agent by name
    *
-   * @param name - Agent type identifier
+   * Retrieves detailed metadata for a specific agent by its type identifier.
+   * Returns undefined if agent is not registered. Validates input to ensure
+   * non-empty string values.
+   *
+   * @param name - Agent type identifier (e.g., 'code-reviewer', 'frontend-developer')
    * @returns Agent metadata or undefined if not found
-   * @throws Error if name is empty or invalid
+   * @throws ValidationError if name is empty or invalid
+   *
+   * @example
+   * ```typescript
+   * const registry = new AgentRegistry();
+   *
+   * // Get code reviewer agent
+   * const reviewer = registry.getAgent('code-reviewer');
+   * if (reviewer) {
+   *   console.log(`Description: ${reviewer.description}`);
+   *   console.log(`Category: ${reviewer.category}`);
+   *   console.log(`Classification: ${reviewer.classification}`);
+   *   console.log(`Capabilities: ${reviewer.capabilities?.join(', ')}`);
+   * } else {
+   *   console.log('Agent not found');
+   * }
+   *
+   * // Check for real implementation
+   * const devButler = registry.getAgent('development-butler');
+   * if (devButler?.mcpTools) {
+   *   console.log(`MCP Tools: ${devButler.mcpTools.join(', ')}`);
+   * }
+   *
+   * // Handle invalid input (throws ValidationError)
+   * try {
+   *   registry.getAgent('');
+   * } catch (error) {
+   *   console.error('Invalid agent name');
+   * }
+   * ```
    */
   getAgent(name: AgentType): AgentMetadata | undefined {
     if (!name || typeof name !== 'string' || name.trim() === '') {
@@ -94,9 +242,42 @@ export class AgentRegistry {
   /**
    * Get agents by category
    *
+   * Filters agents by category to find all agents in a specific domain.
+   * Useful for discovering available agents for particular types of tasks.
+   *
+   * Available Categories:
+   * - **development**: Frontend, backend, testing, code review, debugging, refactoring
+   * - **analysis**: Architecture analysis, research, data analysis
+   * - **operations**: DevOps, security auditing, infrastructure management
+   * - **management**: Project management, product management
+   * - **creative**: UI/UX design, marketing strategy
+   * - **engineering**: ML engineering, data engineering
+   *
    * @param category - Category to filter by (e.g., 'development', 'analysis')
    * @returns Array of agents in the specified category
-   * @throws Error if category is empty or invalid
+   * @throws ValidationError if category is empty or invalid
+   *
+   * @example
+   * ```typescript
+   * const registry = new AgentRegistry();
+   *
+   * // Get all development agents
+   * const devAgents = registry.getAgentsByCategory('development');
+   * console.log(`Found ${devAgents.length} development agents:`);
+   * devAgents.forEach(agent => {
+   *   console.log(`- ${agent.name}: ${agent.description}`);
+   * });
+   *
+   * // Get all analysis agents
+   * const analysisAgents = registry.getAgentsByCategory('analysis');
+   * const capabilities = analysisAgents.flatMap(a => a.capabilities || []);
+   * console.log(`Analysis capabilities: ${capabilities.join(', ')}`);
+   *
+   * // Get operations agents and check MCP tools
+   * const opsAgents = registry.getAgentsByCategory('operations');
+   * const toolsNeeded = new Set(opsAgents.flatMap(a => a.mcpTools || []));
+   * console.log(`Required MCP tools: ${Array.from(toolsNeeded).join(', ')}`);
+   * ```
    */
   getAgentsByCategory(category: string): AgentMetadata[] {
     if (!category || typeof category !== 'string' || category.trim() === '') {
@@ -148,7 +329,33 @@ export class AgentRegistry {
   /**
    * Get agents by classification type
    *
+   * Returns all agents with REAL_IMPLEMENTATION classification.
+   * These agents have actual MCP tool integration and can perform real operations
+   * like file system access, memory storage, and bash command execution.
+   *
    * @returns Array of agents with REAL_IMPLEMENTATION classification
+   *
+   * @example
+   * ```typescript
+   * const registry = new AgentRegistry();
+   *
+   * // Get all real implementation agents
+   * const realAgents = registry.getRealImplementations();
+   * console.log(`Real agents: ${realAgents.length}`);
+   *
+   * // List MCP tools required by real agents
+   * const allMcpTools = new Set<string>();
+   * realAgents.forEach(agent => {
+   *   agent.mcpTools?.forEach(tool => allMcpTools.add(tool));
+   * });
+   * console.log(`MCP tools needed: ${Array.from(allMcpTools).join(', ')}`);
+   *
+   * // Find agents that can use filesystem
+   * const filesystemAgents = realAgents.filter(a =>
+   *   a.mcpTools?.includes('filesystem')
+   * );
+   * console.log(`Agents with filesystem access: ${filesystemAgents.length}`);
+   * ```
    */
   getRealImplementations(): AgentMetadata[] {
     return this.getAllAgents().filter(
@@ -159,7 +366,33 @@ export class AgentRegistry {
   /**
    * Get agents by classification type
    *
+   * Returns all agents with ENHANCED_PROMPT classification.
+   * These agents use specialized prompts without MCP tool integration,
+   * relying on the underlying LLM's capabilities for their expertise.
+   *
    * @returns Array of agents with ENHANCED_PROMPT classification
+   *
+   * @example
+   * ```typescript
+   * const registry = new AgentRegistry();
+   *
+   * // Get all enhanced prompt agents
+   * const promptAgents = registry.getEnhancedPrompts();
+   * console.log(`Enhanced prompt agents: ${promptAgents.length}`);
+   *
+   * // Group by category
+   * const byCategory = promptAgents.reduce((acc, agent) => {
+   *   acc[agent.category] = (acc[agent.category] || 0) + 1;
+   *   return acc;
+   * }, {} as Record<string, number>);
+   * console.log('Agents by category:', byCategory);
+   *
+   * // List all capabilities
+   * const allCapabilities = new Set(
+   *   promptAgents.flatMap(a => a.capabilities || [])
+   * );
+   * console.log(`Available capabilities: ${Array.from(allCapabilities).join(', ')}`);
+   * ```
    */
   getEnhancedPrompts(): AgentMetadata[] {
     return this.getAllAgents().filter(
@@ -170,7 +403,32 @@ export class AgentRegistry {
   /**
    * Get agents by classification type
    *
+   * Returns all agents with OPTIONAL_FEATURE classification.
+   * These agents require external dependencies (like chromadb, openai) and
+   * may not be available unless dependencies are installed.
+   *
    * @returns Array of agents with OPTIONAL_FEATURE classification
+   *
+   * @example
+   * ```typescript
+   * const registry = new AgentRegistry();
+   *
+   * // Get all optional agents
+   * const optionalAgents = registry.getOptionalAgents();
+   * console.log(`Optional agents: ${optionalAgents.length}`);
+   *
+   * // Check required dependencies
+   * optionalAgents.forEach(agent => {
+   *   console.log(`${agent.name} requires: ${agent.requiredDependencies?.join(', ')}`);
+   * });
+   *
+   * // Simulate dependency check
+   * const availableDeps = ['chromadb', 'openai']; // Mock installed dependencies
+   * const availableOptionalAgents = optionalAgents.filter(agent =>
+   *   agent.requiredDependencies?.every(dep => availableDeps.includes(dep))
+   * );
+   * console.log(`Available optional agents: ${availableOptionalAgents.length}`);
+   * ```
    */
   getOptionalAgents(): AgentMetadata[] {
     return this.getAllAgents().filter(

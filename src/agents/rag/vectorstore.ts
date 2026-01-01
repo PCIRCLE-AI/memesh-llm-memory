@@ -38,7 +38,7 @@ export class VectorStore {
    */
   async initialize(): Promise<void> {
     if (this.isInitialized) {
-      console.log('VectorStore already initialized');
+      logger.info('VectorStore already initialized');
       return;
     }
 
@@ -50,13 +50,13 @@ export class VectorStore {
       if (!(await this.index.isIndexCreated())) {
         // 創建新 index
         await this.index.createIndex({ version: 1 });
-        console.log(`Created new Vectra index at ${this.dataPath}`);
+        logger.info(`Created new Vectra index at ${this.dataPath}`);
       } else {
-        console.log(`Loaded existing Vectra index from ${this.dataPath}`);
+        logger.info(`Loaded existing Vectra index from ${this.dataPath}`);
       }
 
       this.isInitialized = true;
-      console.log('VectorStore initialized successfully (local file storage)');
+      logger.info('VectorStore initialized successfully (local file storage)');
     } catch (error) {
       logger.error('Failed to initialize VectorStore', { error });
       throw new OperationError(
@@ -147,7 +147,7 @@ export class VectorStore {
 
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
-      console.log(`Processing batch ${i + 1}/${batches.length} (${batch.length} docs)`);
+      logger.info(`Processing batch ${i + 1}/${batches.length} (${batch.length} docs)`);
 
       for (const doc of batch) {
         const id = doc.id || this.generateId();
@@ -162,7 +162,7 @@ export class VectorStore {
       }
     }
 
-    console.log(`Successfully added ${docs.length} documents`);
+    logger.info(`Successfully added ${docs.length} documents`);
   }
 
   /**
@@ -251,7 +251,7 @@ export class VectorStore {
       await this.index!.deleteItem(item.id);
     }
 
-    console.log(`VectorStore cleared`);
+    logger.info(`VectorStore cleared`);
   }
 
   /**
@@ -328,6 +328,6 @@ export class VectorStore {
   async close(): Promise<void> {
     this.isInitialized = false;
     this.index = null;
-    console.log('VectorStore closed');
+    logger.info('VectorStore closed');
   }
 }

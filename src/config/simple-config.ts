@@ -15,49 +15,196 @@
  * - LOG_LEVEL: Log level (debug/info/warn/error, default: info)
  */
 
+import { logger } from '../utils/logger.js';
+
 /**
  * Simplified Configuration Class - All configuration read from environment variables
+ *
+ * Provides centralized access to all environment-based configuration settings
+ * without complex encryption, audit logging, or RBAC systems. Designed for
+ * MCP server context where Claude Code manages the Claude API subscription.
+ *
+ * Features:
+ * - **Environment Variable Reading**: All config from process.env
+ * - **Sensible Defaults**: Fallback values for optional settings
+ * - **Type Safety**: Strongly-typed configuration getters
+ * - **Environment Detection**: isDevelopment/isProduction/isTest helpers
+ * - **Validation**: validateRequired() checks for missing critical config
+ * - **Debugging**: getAll() with sensitive data masking
+ *
+ * @example
+ * ```typescript
+ * import { SimpleConfig } from './simple-config.js';
+ *
+ * // Get configuration values
+ * const model = SimpleConfig.CLAUDE_MODEL;
+ * const dbPath = SimpleConfig.DATABASE_PATH;
+ * const logLevel = SimpleConfig.LOG_LEVEL;
+ *
+ * // Check environment
+ * if (SimpleConfig.isDevelopment) {
+ *   console.log('Running in development mode');
+ *   console.log(SimpleConfig.getAll()); // Debug: show all config
+ * }
+ *
+ * // Validate configuration
+ * const missing = SimpleConfig.validateRequired();
+ * if (missing.length > 0) {
+ *   throw new Error(`Missing required config: ${missing.join(', ')}`);
+ * }
+ *
+ * // Use OpenAI API key if available
+ * if (SimpleConfig.OPENAI_API_KEY) {
+ *   // Initialize RAG agent with OpenAI
+ * }
+ * ```
  */
 export class SimpleConfig {
   /**
-   * Claude AI Model (No longer needed, MCP server doesn't directly call Claude API)
-   * Kept as reference, actually managed by Claude Code
+   * Claude AI Model name
+   *
+   * Specifies which Claude model to use for agent operations. In MCP server context,
+   * this is kept as a reference but actual API calls are managed by Claude Code.
+   *
+   * **Environment Variable**: `CLAUDE_MODEL`
+   * **Default**: `'claude-sonnet-4-5-20250929'`
+   * **Purpose**: Reference configuration (MCP server doesn't directly call Claude API)
+   *
+   * @example
+   * ```typescript
+   * const model = SimpleConfig.CLAUDE_MODEL;
+   * console.log(model); // 'claude-sonnet-4-5-20250929' (or custom from env)
+   * ```
    */
   static get CLAUDE_MODEL(): string {
     return process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250929';
   }
 
   /**
-   * OpenAI API Key (for RAG agent vector search, if needed)
-   * Optional configuration, not all agents need it
+   * OpenAI API Key for RAG agent vector search
+   *
+   * Optional API key for RAG (Retrieval-Augmented Generation) agent that needs
+   * OpenAI embeddings for vector search operations. Not all agents require this.
+   *
+   * **Environment Variable**: `OPENAI_API_KEY`
+   * **Default**: Empty string (optional configuration)
+   * **Purpose**: Enable RAG agent with OpenAI vector search
+   * **Security**: Masked when retrieving via getAll()
+   *
+   * @example
+   * ```typescript
+   * // Check if OpenAI integration is available
+   * if (SimpleConfig.OPENAI_API_KEY) {
+   *   console.log('OpenAI API key configured - RAG agent available');
+   *   // Initialize RAG agent with vector search
+   * } else {
+   *   console.log('OpenAI API key not set - RAG agent unavailable');
+   * }
+   * ```
    */
   static get OPENAI_API_KEY(): string {
     return process.env.OPENAI_API_KEY || '';
   }
 
   /**
-   * Vectra Index Path (Knowledge graph vector index path)
+   * Vectra vector index storage path
+   *
+   * Directory path where Vectra stores the knowledge graph vector index for
+   * semantic search operations.
+   *
+   * **Environment Variable**: `VECTRA_INDEX_PATH`
+   * **Default**: `~/.claude-code-buddy/vectra`
+   * **Purpose**: Vector index storage for knowledge graph
+   *
+   * @example
+   * ```typescript
+   * const indexPath = SimpleConfig.VECTRA_INDEX_PATH;
+   * console.log(indexPath); // '/Users/username/.claude-code-buddy/vectra'
+   *
+   * // Custom path via environment variable
+   * // export VECTRA_INDEX_PATH=/custom/path/to/vectra
+   * ```
    */
   static get VECTRA_INDEX_PATH(): string {
     return process.env.VECTRA_INDEX_PATH || `${process.env.HOME}/.claude-code-buddy/vectra`;
   }
 
   /**
-   * Database Path (SQLite database path)
+   * SQLite database file path
+   *
+   * Path to the SQLite database file used for persistent storage of agent data,
+   * session history, and system state.
+   *
+   * **Environment Variable**: `DATABASE_PATH`
+   * **Default**: `~/.claude-code-buddy/database.db`
+   * **Purpose**: SQLite database storage location
+   *
+   * @example
+   * ```typescript
+   * const dbPath = SimpleConfig.DATABASE_PATH;
+   * console.log(dbPath); // '/Users/username/.claude-code-buddy/database.db'
+   *
+   * // Custom database location
+   * // export DATABASE_PATH=/var/lib/claude-code-buddy/db.sqlite
+   * ```
    */
   static get DATABASE_PATH(): string {
     return process.env.DATABASE_PATH || `${process.env.HOME}/.claude-code-buddy/database.db`;
   }
 
   /**
-   * Node Environment
+   * Node.js environment name
+   *
+   * Indicates the current runtime environment (development/production/test).
+   * Used to enable/disable features and adjust logging/debugging behavior.
+   *
+   * **Environment Variable**: `NODE_ENV`
+   * **Default**: `'development'`
+   * **Valid Values**: 'development' | 'production' | 'test'
+   * **Purpose**: Environment-specific behavior configuration
+   *
+   * @example
+   * ```typescript
+   * const env = SimpleConfig.NODE_ENV;
+   * console.log(env); // 'development' (default)
+   *
+   * // Check environment
+   * if (env === 'production') {
+   *   // Disable verbose logging
+   * } else {
+   *   // Enable debug features
+   * }
+   * ```
    */
   static get NODE_ENV(): string {
     return process.env.NODE_ENV || 'development';
   }
 
   /**
-   * Log Level
+   * Logging level
+   *
+   * Controls the verbosity of application logging. Invalid values fallback to 'info'.
+   *
+   * **Environment Variable**: `LOG_LEVEL`
+   * **Default**: `'info'`
+   * **Valid Values**: 'debug' | 'info' | 'warn' | 'error'
+   * **Purpose**: Control logging verbosity
+   * **Validation**: Invalid values fallback to 'info'
+   *
+   * @example
+   * ```typescript
+   * const logLevel = SimpleConfig.LOG_LEVEL;
+   * console.log(logLevel); // 'info' (default)
+   *
+   * // Valid levels
+   * // export LOG_LEVEL=debug  → 'debug' (most verbose)
+   * // export LOG_LEVEL=info   → 'info' (normal)
+   * // export LOG_LEVEL=warn   → 'warn' (warnings only)
+   * // export LOG_LEVEL=error  → 'error' (errors only)
+   *
+   * // Invalid level fallback
+   * // export LOG_LEVEL=trace  → 'info' (fallback to default)
+   * ```
    */
   static get LOG_LEVEL(): 'debug' | 'info' | 'warn' | 'error' {
     const level = process.env.LOG_LEVEL || 'info';
@@ -68,21 +215,60 @@ export class SimpleConfig {
   }
 
   /**
-   * Check if in development environment
+   * Check if running in development environment
+   *
+   * Convenience method that returns true if NODE_ENV is 'development'.
+   * Useful for enabling debug features, verbose logging, and development tools.
+   *
+   * @returns True if NODE_ENV === 'development', false otherwise
+   *
+   * @example
+   * ```typescript
+   * if (SimpleConfig.isDevelopment) {
+   *   console.log('Development mode - enabling debug features');
+   *   // Enable source maps, verbose logging, hot reload
+   * }
+   * ```
    */
   static get isDevelopment(): boolean {
     return this.NODE_ENV === 'development';
   }
 
   /**
-   * Check if in production environment
+   * Check if running in production environment
+   *
+   * Convenience method that returns true if NODE_ENV is 'production'.
+   * Useful for enabling performance optimizations and disabling debug features.
+   *
+   * @returns True if NODE_ENV === 'production', false otherwise
+   *
+   * @example
+   * ```typescript
+   * if (SimpleConfig.isProduction) {
+   *   console.log('Production mode - optimizations enabled');
+   *   // Disable debug logging, enable caching, minify assets
+   * }
+   * ```
    */
   static get isProduction(): boolean {
     return this.NODE_ENV === 'production';
   }
 
   /**
-   * Check if in test environment
+   * Check if running in test environment
+   *
+   * Convenience method that returns true if NODE_ENV is 'test'.
+   * Useful for enabling test-specific behavior like mocking and stubbing.
+   *
+   * @returns True if NODE_ENV === 'test', false otherwise
+   *
+   * @example
+   * ```typescript
+   * if (SimpleConfig.isTest) {
+   *   console.log('Test mode - using in-memory database');
+   *   // Use mock services, in-memory database, fast timeouts
+   * }
+   * ```
    */
   static get isTest(): boolean {
     return this.NODE_ENV === 'test';
@@ -90,7 +276,30 @@ export class SimpleConfig {
 
   /**
    * Validate required configuration exists
-   * @returns List of missing configuration items
+   *
+   * Checks if all critical configuration values are set. In the current MCP server mode,
+   * no configuration is strictly required since all values have sensible defaults:
+   * - VECTRA_INDEX_PATH and DATABASE_PATH have default paths
+   * - OPENAI_API_KEY is optional (only needed for RAG agent)
+   * - CLAUDE_MODEL has a default value
+   *
+   * This method is provided for future extensibility when required configuration is added.
+   *
+   * @returns Array of missing configuration keys (currently always empty)
+   *
+   * @example
+   * ```typescript
+   * // Validate configuration on application startup
+   * const missing = SimpleConfig.validateRequired();
+   * if (missing.length > 0) {
+   *   throw new Error(`Missing required config: ${missing.join(', ')}`);
+   * } else {
+   *   console.log('Configuration validated - all required values present');
+   * }
+   *
+   * // Currently always passes (no required config)
+   * console.log(missing); // []
+   * ```
    */
   static validateRequired(): string[] {
     const missing: string[] = [];
@@ -103,8 +312,39 @@ export class SimpleConfig {
   }
 
   /**
-   * Get all configuration (for debugging)
-   * Note: Excludes sensitive information (API keys are masked)
+   * Get all configuration values (for debugging)
+   *
+   * Returns a complete snapshot of all configuration values with sensitive information
+   * masked for security. Useful for debugging configuration issues, logging startup
+   * state, or verifying environment variable loading.
+   *
+   * **Security Note**: API keys are automatically masked as '***masked***' or empty string
+   * to prevent accidental exposure in logs or debug output.
+   *
+   * @returns Record of all configuration values (API keys masked)
+   *
+   * @example
+   * ```typescript
+   * // Debug configuration on startup (development mode only)
+   * if (SimpleConfig.isDevelopment) {
+   *   console.log('Configuration:', SimpleConfig.getAll());
+   *   // {
+   *   //   CLAUDE_MODEL: 'claude-sonnet-4-5-20250929',
+   *   //   OPENAI_API_KEY: '***masked***',  // or '' if not set
+   *   //   VECTRA_INDEX_PATH: '/Users/username/.claude-code-buddy/vectra',
+   *   //   DATABASE_PATH: '/Users/username/.claude-code-buddy/database.db',
+   *   //   NODE_ENV: 'development',
+   *   //   LOG_LEVEL: 'info',
+   *   //   isDevelopment: true,
+   *   //   isProduction: false,
+   *   //   isTest: false
+   *   // }
+   * }
+   *
+   * // Log configuration to file (safe - no API keys exposed)
+   * const config = SimpleConfig.getAll();
+   * fs.writeFileSync('config.json', JSON.stringify(config, null, 2));
+   * ```
    */
   static getAll(): Record<string, string | boolean> {
     return {
@@ -122,22 +362,105 @@ export class SimpleConfig {
 }
 
 /**
- * Simplified DatabaseFactory replacement
- * Replaces original complex credentials/DatabaseFactory
+ * Simplified Database Factory - Singleton Pattern for SQLite Connections
+ *
+ * Replaces the original complex credentials/DatabaseFactory system with a straightforward
+ * singleton-based database connection manager. Provides optimized SQLite connections with
+ * WAL mode, pragma settings, and connection pooling.
+ *
+ * Features:
+ * - **Singleton Pattern**: Cached database connections (one per unique path)
+ * - **Connection Reuse**: Avoids creating duplicate connections to the same database
+ * - **WAL Mode**: Write-Ahead Logging for better concurrency (production/development)
+ * - **Performance Optimization**: Configured with optimal pragma settings
+ * - **Resource Management**: Proper cleanup with closeAll() and close()
+ * - **Test Mode Support**: In-memory databases for testing (`:memory:`)
+ *
+ * Optimization Settings:
+ * - **busy_timeout**: 5 seconds (prevents immediate "database locked" errors)
+ * - **journal_mode**: WAL (Write-Ahead Logging for better concurrency)
+ * - **cache_size**: -10000 (10MB cache for query performance)
+ * - **mmap_size**: 128MB (memory-mapped I/O)
+ * - **foreign_keys**: ON (enforce referential integrity)
+ *
+ * @example
+ * ```typescript
+ * import { SimpleDatabaseFactory } from './simple-config.js';
+ *
+ * // Get database instance (singleton - reuses connection)
+ * const db1 = SimpleDatabaseFactory.getInstance();
+ * const db2 = SimpleDatabaseFactory.getInstance(); // Same instance as db1
+ * console.log(db1 === db2); // true
+ *
+ * // Use custom database path
+ * const customDb = SimpleDatabaseFactory.getInstance('/custom/path/db.sqlite');
+ *
+ * // Create test database (in-memory, no WAL mode)
+ * const testDb = SimpleDatabaseFactory.createTestDatabase();
+ * testDb.exec('CREATE TABLE test (id INTEGER PRIMARY KEY)');
+ *
+ * // Query database
+ * const stmt = db1.prepare('SELECT * FROM users WHERE id = ?');
+ * const user = stmt.get(1);
+ *
+ * // Cleanup on application shutdown
+ * process.on('SIGTERM', () => {
+ *   SimpleDatabaseFactory.closeAll();
+ *   process.exit(0);
+ * });
+ * ```
  */
 import Database from 'better-sqlite3';
 
 export class SimpleDatabaseFactory {
   /**
    * Singleton instances cache
+   *
+   * Maps database file paths to their corresponding Database instances.
+   * Ensures only one connection per unique database path.
+   *
+   * @internal
    */
   private static instances: Map<string, Database.Database> = new Map();
 
   /**
    * Create database connection (internal use)
-   * @param path Database file path
-   * @param isTest Whether this is a test database
-   * @returns Database instance
+   *
+   * Internal method that creates a new SQLite database connection with optimized
+   * pragma settings. Configures different settings for test vs production databases.
+   *
+   * Production/Development Configuration:
+   * - WAL mode enabled (better concurrency)
+   * - 10MB cache size (faster queries)
+   * - 128MB memory-mapped I/O
+   * - 5 second busy timeout
+   * - Foreign key constraints enabled
+   * - Verbose logging in development mode
+   *
+   * Test Configuration:
+   * - No WAL mode (in-memory database)
+   * - Standard cache size
+   * - No memory-mapped I/O
+   * - 5 second busy timeout
+   * - Foreign key constraints enabled
+   *
+   * @param path - Database file path or ':memory:' for in-memory database
+   * @param isTest - Whether this is a test database (disables WAL mode)
+   * @returns Configured Database instance
+   * @throws Error if database creation fails
+   *
+   * @internal
+   *
+   * @example
+   * ```typescript
+   * // Production database
+   * const prodDb = SimpleDatabaseFactory['createDatabase']('/data/app.db', false);
+   * // Configured with: WAL mode, 10MB cache, 128MB mmap
+   *
+   * // Test database
+   * const testDb = SimpleDatabaseFactory['createDatabase'](':memory:', true);
+   * // Configured with: Standard settings, no WAL mode
+   * ```
    */
   private static createDatabase(path: string, isTest: boolean = false): Database.Database {
     try {
@@ -162,15 +485,45 @@ export class SimpleDatabaseFactory {
 
       return db;
     } catch (error) {
-      console.error(`Failed to create database at ${path}:`, error);
+      logger.error(`Failed to create database at ${path}:`, error);
       throw error;
     }
   }
 
   /**
    * Get database instance (Singleton pattern)
-   * @param path Database file path (optional, defaults to SimpleConfig)
-   * @returns Database instance
+   *
+   * Returns a singleton database instance for the specified path. If a connection
+   * already exists and is open, it returns the cached instance. Otherwise, creates
+   * a new connection and caches it.
+   *
+   * Resource Management:
+   * - Checks if cached connection is still open
+   * - Cleans up stale connections (closed but still in cache)
+   * - Creates new connection only when necessary
+   * - Caches connection for reuse
+   *
+   * @param path - Optional database file path (defaults to SimpleConfig.DATABASE_PATH)
+   * @returns Singleton Database instance
+   * @throws Error if database creation fails
+   *
+   * @example
+   * ```typescript
+   * // Default database (from SimpleConfig.DATABASE_PATH)
+   * const db1 = SimpleDatabaseFactory.getInstance();
+   * const db2 = SimpleDatabaseFactory.getInstance();
+   * console.log(db1 === db2); // true (same instance)
+   *
+   * // Custom database path
+   * const customDb = SimpleDatabaseFactory.getInstance('/custom/path/db.sqlite');
+   *
+   * // Use database
+   * const stmt = db1.prepare('SELECT * FROM users WHERE id = ?');
+   * const user = stmt.get(1);
+   *
+   * // Instance is cached - subsequent calls return same connection
+   * const db3 = SimpleDatabaseFactory.getInstance(); // Same as db1
+   * ```
    */
   static getInstance(path?: string): Database.Database {
     const dbPath = path || SimpleConfig.DATABASE_PATH;
@@ -200,7 +553,42 @@ export class SimpleDatabaseFactory {
 
   /**
    * Create test database (in-memory mode)
-   * @returns Database instance
+   *
+   * Creates an in-memory SQLite database for testing purposes. In-memory databases
+   * are faster, isolated, and automatically cleaned up when the connection closes.
+   * WAL mode is disabled for in-memory databases.
+   *
+   * Test Database Characteristics:
+   * - Path: ':memory:' (not persisted to disk)
+   * - No WAL mode (in-memory databases don't support WAL)
+   * - Standard cache and mmap settings
+   * - Foreign key constraints enabled
+   * - Isolated (doesn't affect production database)
+   * - Automatically cleaned up on close
+   *
+   * @returns In-memory Database instance (not cached in singleton map)
+   *
+   * @example
+   * ```typescript
+   * // Create test database
+   * const testDb = SimpleDatabaseFactory.createTestDatabase();
+   *
+   * // Setup test schema
+   * testDb.exec(`
+   *   CREATE TABLE users (
+   *     id INTEGER PRIMARY KEY,
+   *     name TEXT NOT NULL
+   *   )
+   * `);
+   *
+   * // Run tests
+   * testDb.prepare('INSERT INTO users (name) VALUES (?)').run('Alice');
+   * const user = testDb.prepare('SELECT * FROM users WHERE id = 1').get();
+   * expect(user.name).toBe('Alice');
+   *
+   * // Cleanup (database destroyed when connection closes)
+   * testDb.close();
+   * ```
    */
   static createTestDatabase(): Database.Database {
     return this.createDatabase(':memory:', true);
@@ -208,13 +596,45 @@ export class SimpleDatabaseFactory {
 
   /**
    * Close all database connections
+   *
+   * Closes all cached database connections and clears the singleton cache.
+   * Should be called during application shutdown to ensure proper cleanup.
+   * Errors during close are logged but don't prevent other connections from closing.
+   *
+   * Use Cases:
+   * - Application shutdown (graceful cleanup)
+   * - Test teardown (reset state)
+   * - Forced resource cleanup
+   *
+   * @example
+   * ```typescript
+   * // Graceful shutdown on SIGTERM
+   * process.on('SIGTERM', () => {
+   *   console.log('Shutting down...');
+   *   SimpleDatabaseFactory.closeAll();
+   *   process.exit(0);
+   * });
+   *
+   * // Test cleanup
+   * afterAll(() => {
+   *   SimpleDatabaseFactory.closeAll();
+   * });
+   *
+   * // Force cleanup during error recovery
+   * try {
+   *   // ... operations ...
+   * } catch (error) {
+   *   SimpleDatabaseFactory.closeAll(); // Clean slate
+   *   throw error;
+   * }
+   * ```
    */
   static closeAll(): void {
     for (const [path, db] of this.instances.entries()) {
       try {
         db.close();
       } catch (error) {
-        console.error(`Failed to close database at ${path}:`, error);
+        logger.error(`Failed to close database at ${path}:`, error);
       }
     }
     this.instances.clear();
@@ -222,7 +642,28 @@ export class SimpleDatabaseFactory {
 
   /**
    * Close specific database connection
-   * @param path Database file path
+   *
+   * Closes a specific database connection and removes it from the singleton cache.
+   * Subsequent getInstance() calls for this path will create a new connection.
+   *
+   * @param path - Optional database file path (defaults to SimpleConfig.DATABASE_PATH)
+   *
+   * @example
+   * ```typescript
+   * // Close default database
+   * SimpleDatabaseFactory.close();
+   *
+   * // Close custom database
+   * SimpleDatabaseFactory.close('/custom/path/db.sqlite');
+   *
+   * // Next getInstance() will create new connection
+   * const newDb = SimpleDatabaseFactory.getInstance(); // Fresh connection
+   *
+   * // Use case: Database file replacement
+   * SimpleDatabaseFactory.close('/data/old.db');
+   * fs.renameSync('/data/new.db', '/data/old.db');
+   * const db = SimpleDatabaseFactory.getInstance('/data/old.db'); // New file
+   * ```
    */
   static close(path?: string): void {
     const dbPath = path || SimpleConfig.DATABASE_PATH;
@@ -233,7 +674,7 @@ export class SimpleDatabaseFactory {
         db.close();
         this.instances.delete(dbPath);
       } catch (error) {
-        console.error(`Failed to close database at ${dbPath}:`, error);
+        logger.error(`Failed to close database at ${dbPath}:`, error);
       }
     }
   }

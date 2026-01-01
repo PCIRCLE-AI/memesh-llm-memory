@@ -8,6 +8,7 @@
 import { KnowledgeGraphSQLite } from './KnowledgeGraphSQLite.js';
 import { Entity, Relation, SearchOptions } from './KnowledgeGraph.js';
 import { StateError } from '../../errors/index.js';
+import { logger } from '../../utils/logger.js';
 
 export class KnowledgeAgent {
   private graph: KnowledgeGraphSQLite;
@@ -18,7 +19,7 @@ export class KnowledgeAgent {
     this.graph = new KnowledgeGraphSQLite({ dbPath });
     this.dbPath = dbPath;
     if (dbPath) {
-      console.log(`KnowledgeAgent initialized with dbPath: ${dbPath}`);
+      logger.info(`KnowledgeAgent initialized with dbPath: ${dbPath}`);
     }
   }
 
@@ -27,15 +28,15 @@ export class KnowledgeAgent {
    */
   async initialize(): Promise<void> {
     if (this.isInitialized) {
-      console.log('Knowledge Agent already initialized');
+      logger.info('Knowledge Agent already initialized');
       return;
     }
 
-    console.log('Initializing Knowledge Agent...');
+    logger.info('Initializing Knowledge Agent...');
     await this.graph.initialize();
 
     this.isInitialized = true;
-    console.log('Knowledge Agent initialized successfully');
+    logger.info('Knowledge Agent initialized successfully');
 
     await this.printStats();
   }
@@ -57,12 +58,12 @@ export class KnowledgeAgent {
         const result = await this.graph.createEntity(entity);
         created.push(result);
       } catch (error) {
-        console.warn(`Failed to create entity "${entity.name}":`, error);
+        logger.warn(`Failed to create entity "${entity.name}":`, error);
         // Continue with next entity instead of failing entire batch
       }
     }
 
-    console.log(`Created ${created.length} entities`);
+    logger.info(`Created ${created.length} entities`);
     return created;
   }
 
@@ -74,7 +75,7 @@ export class KnowledgeAgent {
 
     const entity = await this.graph.getEntity(entityName);
     if (!entity) {
-      console.warn(`Entity not found: ${entityName}`);
+      logger.warn(`Entity not found: ${entityName}`);
       return undefined;
     }
 
@@ -82,7 +83,7 @@ export class KnowledgeAgent {
       observations: [...entity.observations, ...observations],
     });
 
-    console.log(`Added ${observations.length} observations to ${entityName}`);
+    logger.info(`Added ${observations.length} observations to ${entityName}`);
     return updated;
   }
 
@@ -93,7 +94,7 @@ export class KnowledgeAgent {
     this.ensureInitialized();
 
     const results = await this.graph.searchEntities(query, options);
-    console.log(`Found ${results.length} matching entities`);
+    logger.info(`Found ${results.length} matching entities`);
     return results;
   }
 
@@ -109,7 +110,7 @@ export class KnowledgeAgent {
       if (entity) {
         entities.push(entity);
       } else {
-        console.warn(`Entity not found: ${name}`);
+        logger.warn(`Entity not found: ${name}`);
       }
     }
 
@@ -134,7 +135,7 @@ export class KnowledgeAgent {
       const toEntity = await this.graph.getEntity(relation.to);
 
       if (!fromEntity || !toEntity) {
-        console.warn(`Cannot create relation: entity not found (from: ${relation.from}, to: ${relation.to})`);
+        logger.warn(`Cannot create relation: entity not found (from: ${relation.from}, to: ${relation.to})`);
         continue;
       }
 
@@ -142,7 +143,7 @@ export class KnowledgeAgent {
       created.push(result);
     }
 
-    console.log(`Created ${created.length} relations`);
+    logger.info(`Created ${created.length} relations`);
     return created;
   }
 
@@ -164,9 +165,9 @@ export class KnowledgeAgent {
       }
     }
 
-    console.log(`Deleted ${deleted.length} entities`);
+    logger.info(`Deleted ${deleted.length} entities`);
     if (notFound.length > 0) {
-      console.warn(`Not found: ${notFound.join(', ')}`);
+      logger.warn(`Not found: ${notFound.join(', ')}`);
     }
 
     return { deleted, notFound };
@@ -202,12 +203,12 @@ export class KnowledgeAgent {
    */
   private async printStats(): Promise<void> {
     const stats = await this.graph.getStats();
-    console.log('Knowledge Graph Statistics:');
-    console.log(`  Total Entities: ${stats.totalEntities}`);
-    console.log(`  Total Relations: ${stats.totalRelations}`);
-    console.log(`  Entity Types:`);
+    logger.info('Knowledge Graph Statistics:');
+    logger.info(`  Total Entities: ${stats.totalEntities}`);
+    logger.info(`  Total Relations: ${stats.totalRelations}`);
+    logger.info(`  Entity Types:`);
     for (const [type, count] of Object.entries(stats.entityTypeBreakdown)) {
-      console.log(`    ${type}: ${count}`);
+      logger.info(`    ${type}: ${count}`);
     }
   }
 
@@ -230,7 +231,7 @@ export class KnowledgeAgent {
   async close(): Promise<void> {
     await this.graph.close();
     this.isInitialized = false;
-    console.log('Knowledge Agent closed');
+    logger.info('Knowledge Agent closed');
   }
 
   // ========================================
@@ -286,7 +287,7 @@ export class KnowledgeAgent {
       id: entity.name,
       description: entity.name,
       outcome: entity.observations.find(o => o.includes('outcome:'))?.replace('outcome:', '').trim() || '',
-      timestamp: entity.createdAt
+      timestamp: entity.createdAt ?? new Date(0) // Fallback to epoch if no timestamp
     }));
   }
 
@@ -301,7 +302,7 @@ export class KnowledgeAgent {
       id: entity.name,
       lesson: entity.name,
       context: entity.observations.join(' | '),
-      timestamp: entity.createdAt
+      timestamp: entity.createdAt ?? new Date(0) // Fallback to epoch if no timestamp
     }));
   }
 
@@ -332,7 +333,7 @@ export class KnowledgeAgent {
     tags: string[];
   }): Promise<void> {
     // Stub: no-op
-    console.warn('recordDecision is a stub method - use createEntities instead');
+    logger.warn('recordDecision is a stub method - use createEntities instead');
   }
 
   /**
@@ -347,7 +348,7 @@ export class KnowledgeAgent {
     tags: string[];
   }): Promise<void> {
     // Stub: no-op
-    console.warn('recordFeature is a stub method - use createEntities instead');
+    logger.warn('recordFeature is a stub method - use createEntities instead');
   }
 
   /**
@@ -362,7 +363,7 @@ export class KnowledgeAgent {
     tags: string[];
   }): Promise<void> {
     // Stub: no-op
-    console.warn('recordBugFix is a stub method - use createEntities instead');
+    logger.warn('recordBugFix is a stub method - use createEntities instead');
   }
 
   /**
@@ -377,7 +378,7 @@ export class KnowledgeAgent {
     tags?: string[];
   }): Promise<void> {
     // Stub: no-op
-    console.warn('recordBestPractice is a stub method - use createEntities instead');
+    logger.warn('recordBestPractice is a stub method - use createEntities instead');
   }
 }
 

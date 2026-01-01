@@ -8,14 +8,11 @@ export default defineConfig({
 
     // OPTION 1: Use threads with singleThread mode (recommended)
     pool: 'threads',
-    poolOptions: {
-      threads: {
-        singleThread: true,
-        // Explicit limits as fallback
-        maxThreads: 1,
-        minThreads: 1,
-      },
-    },
+    // Vitest 4.x: poolOptions moved to top-level
+    singleThread: true,
+    // Explicit limits as fallback
+    maxThreads: 1,
+    minThreads: 1,
 
     // OPTION 2: Disable file parallelism entirely
     fileParallelism: false,

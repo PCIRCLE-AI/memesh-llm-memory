@@ -16,6 +16,7 @@ import type {
   DocumentMetadata,
 } from './types.js';
 import { StateError, ConfigurationError } from '../../errors/index.js';
+import { logger } from '../../utils/logger.js';
 
 export class RAGAgent {
   private vectorStore: VectorStore;
@@ -79,7 +80,7 @@ export class RAGAgent {
       | { provider: 'local'; modelPath: string; model?: string; dimensions?: number }
   ): Promise<boolean> {
     if (this.embeddings !== null) {
-      console.log('✅ RAG features are already enabled');
+      logger.info('✅ RAG features are already enabled');
       return true;
     }
 
@@ -106,10 +107,10 @@ export class RAGAgent {
       }
 
       const modelInfo = this.embeddings.getModelInfo();
-      console.log(`✅ RAG features enabled successfully with ${modelInfo.provider} (${modelInfo.model})`);
+      logger.info(`✅ RAG features enabled successfully with ${modelInfo.provider} (${modelInfo.model})`);
       return true;
     } catch (error) {
-      console.error('❌ Failed to enable RAG features:', error);
+      logger.error('❌ Failed to enable RAG features:', error);
       return false;
     }
   }
@@ -119,11 +120,11 @@ export class RAGAgent {
    */
   async initialize(): Promise<void> {
     if (this.isInitialized) {
-      console.log('RAG Agent already initialized');
+      logger.info('RAG Agent already initialized');
       return;
     }
 
-    console.log('Initializing RAG Agent...');
+    logger.info('Initializing RAG Agent...');
 
     // 初始化 vector store
     await this.vectorStore.initialize();
@@ -142,7 +143,7 @@ export class RAGAgent {
     }
 
     this.isInitialized = true;
-    console.log('RAG Agent initialized successfully');
+    logger.info('RAG Agent initialized successfully');
 
     // 顯示統計資訊
     await this.printStats();
@@ -170,7 +171,7 @@ export class RAGAgent {
       embedding,
     });
 
-    console.log(`Document indexed: ${metadata.source}`);
+    logger.info(`Document indexed: ${metadata.source}`);
   }
 
   /**
@@ -191,8 +192,8 @@ export class RAGAgent {
     const maxConcurrent = options.maxConcurrent || 5;
     const onProgress = options.onProgress;
 
-    console.log(`Indexing ${documents.length} documents...`);
-    console.log(`Batch size: ${batchSize}, Max concurrent: ${maxConcurrent}`);
+    logger.info(`Indexing ${documents.length} documents...`);
+    logger.info(`Batch size: ${batchSize}, Max concurrent: ${maxConcurrent}`);
 
     const startTime = Date.now();
     let processedCount = 0;
@@ -223,7 +224,7 @@ export class RAGAgent {
         onProgress(processedCount, documents.length);
       }
 
-      console.log(`Progress: ${processedCount}/${documents.length} documents`);
+      logger.info(`Progress: ${processedCount}/${documents.length} documents`);
     }
 
     const duration = (Date.now() - startTime) / 1000;
@@ -238,13 +239,13 @@ export class RAGAgent {
       averageTokensPerDocument: totalTokens > 0 ? Math.round(totalTokens / documents.length) : 0,
     };
 
-    console.log('\n=== Indexing Complete ===');
-    console.log(`Total documents: ${stats.totalDocuments}`);
-    console.log(`Total tokens: ${stats.totalTokens.toLocaleString()}`);
-    console.log(`Total cost: $${stats.totalCost.toFixed(4)}`);
-    console.log(`Avg tokens/doc: ${stats.averageTokensPerDocument}`);
-    console.log(`Duration: ${duration.toFixed(2)}s`);
-    console.log(`Throughput: ${(documents.length / duration).toFixed(2)} docs/sec`);
+    logger.info('\n=== Indexing Complete ===');
+    logger.info(`Total documents: ${stats.totalDocuments}`);
+    logger.info(`Total tokens: ${stats.totalTokens.toLocaleString()}`);
+    logger.info(`Total cost: $${stats.totalCost.toFixed(4)}`);
+    logger.info(`Avg tokens/doc: ${stats.averageTokensPerDocument}`);
+    logger.info(`Duration: ${duration.toFixed(2)}s`);
+    logger.info(`Throughput: ${(documents.length / duration).toFixed(2)} docs/sec`);
 
     return stats;
   }
@@ -256,7 +257,7 @@ export class RAGAgent {
     this.ensureInitialized();
     this.ensureRAGEnabled();
 
-    console.log(`Searching: "${query}"`);
+    logger.info(`Searching: "${query}"`);
 
     // 生成 query embedding
     const queryEmbedding = await this.embeddings!.embed(query);
@@ -264,7 +265,7 @@ export class RAGAgent {
     // 執行搜尋
     const results = await this.vectorStore.searchWithEmbedding(queryEmbedding, options);
 
-    console.log(`Found ${results.length} results`);
+    logger.info(`Found ${results.length} results`);
 
     return results;
   }
@@ -282,8 +283,8 @@ export class RAGAgent {
     const keywordWeight = options.keywordWeight || 0.3;
     const keywords = options.keywords || this.extractKeywords(query);
 
-    console.log(`Hybrid search: "${query}"`);
-    console.log(`Keywords: ${keywords.join(', ')}`);
+    logger.info(`Hybrid search: "${query}"`);
+    logger.info(`Keywords: ${keywords.join(', ')}`);
 
     // 1. 語義搜尋
     const semanticResults = await this.search(query, {
@@ -305,7 +306,7 @@ export class RAGAgent {
       .sort((a, b) => b.score - a.score)
       .slice(0, topK);
 
-    console.log(`Hybrid search complete: ${finalResults.length} results`);
+    logger.info(`Hybrid search complete: ${finalResults.length} results`);
 
     return finalResults;
   }
@@ -383,7 +384,7 @@ export class RAGAgent {
   async deleteDocuments(ids: string[]): Promise<void> {
     this.ensureInitialized();
     await this.vectorStore.delete(ids);
-    console.log(`Deleted ${ids.length} documents`);
+    logger.info(`Deleted ${ids.length} documents`);
   }
 
   /**
@@ -393,7 +394,7 @@ export class RAGAgent {
     this.ensureInitialized();
     await this.vectorStore.clear();
     this.reranker.clearCache();
-    console.log('All documents cleared');
+    logger.info('All documents cleared');
   }
 
   /**
@@ -402,7 +403,7 @@ export class RAGAgent {
   async close(): Promise<void> {
     await this.vectorStore.close();
     this.isInitialized = false;
-    console.log('RAG Agent closed');
+    logger.info('RAG Agent closed');
   }
 
   /**
@@ -465,22 +466,22 @@ export class RAGAgent {
    */
   private async printStats(): Promise<void> {
     if (!this.isRAGEnabled()) {
-      console.log('\n=== RAG Agent Status ===');
-      console.log('RAG features: ❌ Disabled (no OpenAI API key)');
-      console.log('Tip: Use enableRAG() to enable RAG features');
-      console.log('========================\n');
+      logger.info('\n=== RAG Agent Status ===');
+      logger.info('RAG features: ❌ Disabled (no OpenAI API key)');
+      logger.info('Tip: Use enableRAG() to enable RAG features');
+      logger.info('========================\n');
       return;
     }
 
     const stats = await this.getStats();
     const modelInfo = this.embeddings!.getModelInfo();
-    console.log('\n=== RAG Agent Status ===');
-    console.log(`Collection: ${stats.collectionInfo.name}`);
-    console.log(`Documents: ${stats.documentCount}`);
-    console.log(`Embedding provider: ${modelInfo.provider}`);
-    console.log(`Embedding model: ${modelInfo.model}`);
-    console.log(`Embedding dimension: ${modelInfo.dimensions}`);
-    console.log('========================\n');
+    logger.info('\n=== RAG Agent Status ===');
+    logger.info(`Collection: ${stats.collectionInfo.name}`);
+    logger.info(`Documents: ${stats.documentCount}`);
+    logger.info(`Embedding provider: ${modelInfo.provider}`);
+    logger.info(`Embedding model: ${modelInfo.model}`);
+    logger.info(`Embedding dimension: ${modelInfo.dimensions}`);
+    logger.info('========================\n');
   }
 }
 

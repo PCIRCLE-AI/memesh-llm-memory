@@ -35,6 +35,7 @@ import { BackgroundExecutor } from '../core/BackgroundExecutor.js';
 import { ResourceMonitor } from '../core/ResourceMonitor.js';
 import { ExecutionConfig, Progress, BackgroundTask } from '../core/types.js';
 import { ValidationError } from '../errors/index.js';
+import { logger } from '../utils/logger.js';
 
 export class Orchestrator {
   private router: Router;
@@ -61,7 +62,7 @@ export class Orchestrator {
     this.resourceMonitor = new ResourceMonitor();
     this.backgroundExecutor = new BackgroundExecutor(this.resourceMonitor);
 
-    console.log(`[Orchestrator] Initialized with ID: ${this.orchestratorId}`);
+    logger.info(`[Orchestrator] Initialized with ID: ${this.orchestratorId}`);
   }
 
   /**
@@ -81,9 +82,9 @@ export class Orchestrator {
       // 步驟 0: 查詢知識圖譜，尋找相似任務的經驗
       const similarTasks = await this.knowledge.findSimilar(task.description, 'feature');
       if (similarTasks.length > 0) {
-        console.log(`💡 Found ${similarTasks.length} similar past experiences`);
+        logger.info(`💡 Found ${similarTasks.length} similar past experiences`);
         similarTasks.slice(0, 2).forEach((t: SimilarTask, i: number) => {
-          console.log(`   ${i + 1}. ${t.name}`);
+          logger.info(`   ${i + 1}. ${t.name}`);
         });
       }
 
@@ -104,10 +105,10 @@ export class Orchestrator {
         );
       }
 
-      console.log(`\n🎯 Executing task: ${task.id}`);
-      console.log(`📊 Complexity: ${analysis.complexity}`);
-      console.log(`🤖 Agent: ${routing.selectedAgent}`);
-      console.log(`💰 Estimated cost: $${routing.estimatedCost.toFixed(6)}\n`);
+      logger.info(`\n🎯 Executing task: ${task.id}`);
+      logger.info(`📊 Complexity: ${analysis.complexity}`);
+      logger.info(`🤖 Agent: ${routing.selectedAgent}`);
+      logger.info(`💰 Estimated cost: $${routing.estimatedCost.toFixed(6)}\n`);
 
       // 記錄路由決策到知識圖譜
       await this.knowledge.recordDecision({
@@ -134,8 +135,8 @@ export class Orchestrator {
 
       const executionTimeMs = Date.now() - startTime;
 
-      console.log(`✅ Task completed in ${executionTimeMs}ms`);
-      console.log(`💰 Actual cost: $${actualCost.toFixed(6)}\n`);
+      logger.info(`✅ Task completed in ${executionTimeMs}ms`);
+      logger.info(`💰 Actual cost: $${actualCost.toFixed(6)}\n`);
 
       // 記錄成功執行的特徵到知識圖譜
       await this.knowledge.recordFeature({
@@ -166,7 +167,7 @@ export class Orchestrator {
         tags: ['error', 'task-failure', task.id]
       });
 
-      console.error(`❌ Task failed after ${executionTimeMs}ms:`, error);
+      logger.error(`❌ Task failed after ${executionTimeMs}ms:`, error);
       throw error;
     }
   }
@@ -201,7 +202,7 @@ export class Orchestrator {
 
     // E2E 測試必須序列化
     if (hasE2E) {
-      console.log('⚠️  Detected E2E tests - forcing sequential execution');
+      logger.info('⚠️  Detected E2E tests - forcing sequential execution');
       mode = 'sequential';
     }
 
@@ -210,7 +211,7 @@ export class Orchestrator {
       mode = 'sequential';
     }
 
-    console.log(`\n🚀 Executing ${tasks.length} tasks in ${mode} mode...\n`);
+    logger.info(`\n🚀 Executing ${tasks.length} tasks in ${mode} mode...\n`);
 
     let results: Awaited<ReturnType<Orchestrator['executeTask']>>[];
 
@@ -230,10 +231,10 @@ export class Orchestrator {
     const totalCost = results.reduce((sum, r) => sum + r.cost, 0);
     const totalTimeMs = Date.now() - startTime;
 
-    console.log(`\n✅ Batch completed`);
-    console.log(`📊 Tasks: ${results.length}`);
-    console.log(`💰 Total cost: $${totalCost.toFixed(6)}`);
-    console.log(`⏱️  Total time: ${totalTimeMs}ms\n`);
+    logger.info(`\n✅ Batch completed`);
+    logger.info(`📊 Tasks: ${results.length}`);
+    logger.info(`💰 Total cost: $${totalCost.toFixed(6)}`);
+    logger.info(`⏱️  Total time: ${totalTimeMs}ms\n`);
 
     return {
       results,
@@ -555,30 +556,30 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     },
   ];
 
-  console.log('🎯 Agent Orchestrator Demo\n');
+  logger.info('🎯 Agent Orchestrator Demo\n');
 
   // 分析所有任務
   for (const task of demoTasks) {
     const { analysis, routing } = await orchestrator.analyzeTask(task);
-    console.log(`\n📋 Task: ${task.id}`);
-    console.log(`   Description: ${task.description}`);
-    console.log(`   Complexity: ${analysis.complexity}`);
-    console.log(`   Agent: ${routing.selectedAgent}`);
-    console.log(`   Estimated cost: $${routing.estimatedCost.toFixed(6)}`);
-    console.log(`   Reasoning: ${analysis.reasoning}`);
+    logger.info(`\n📋 Task: ${task.id}`);
+    logger.info(`   Description: ${task.description}`);
+    logger.info(`   Complexity: ${analysis.complexity}`);
+    logger.info(`   Agent: ${routing.selectedAgent}`);
+    logger.info(`   Estimated cost: $${routing.estimatedCost.toFixed(6)}`);
+    logger.info(`   Reasoning: ${analysis.reasoning}`);
   }
 
   // 顯示系統狀態
-  console.log('\n' + '═'.repeat(60));
+  logger.info('\n' + '═'.repeat(60));
   const status = await orchestrator.getSystemStatus();
-  console.log('\n💻 System Resources:');
-  console.log(`   Memory: ${status.resources.availableMemoryMB}MB available`);
-  console.log(`   Usage: ${status.resources.memoryUsagePercent}%`);
+  logger.info('\n💻 System Resources:');
+  logger.info(`   Memory: ${status.resources.availableMemoryMB}MB available`);
+  logger.info(`   Usage: ${status.resources.memoryUsagePercent}%`);
 
-  console.log('\n💰 Cost Stats:');
-  console.log(`   Monthly spend: $${status.costStats.monthlySpend.toFixed(6)}`);
-  console.log(`   Remaining budget: $${status.costStats.remainingBudget.toFixed(2)}`);
-  console.log(`   Recommendation: ${status.recommendation}`);
+  logger.info('\n💰 Cost Stats:');
+  logger.info(`   Monthly spend: $${status.costStats.monthlySpend.toFixed(6)}`);
+  logger.info(`   Remaining budget: $${status.costStats.remainingBudget.toFixed(2)}`);
+  logger.info(`   Recommendation: ${status.recommendation}`);
 
-  console.log('\n' + '═'.repeat(60) + '\n');
+  logger.info('\n' + '═'.repeat(60) + '\n');
 }

@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import fs from 'fs';
+import { promises as fsPromises } from 'fs';
 import path from 'path';
 import { Entity, Relation } from '../types';
 import { logger } from '../../../utils/logger.js';
@@ -22,10 +23,13 @@ export class KnowledgeGraphStore {
     }
 
     try {
-      // Ensure data directory exists
+      // Ensure data directory exists (async)
       const dir = path.dirname(this.dbPath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+      try {
+        await fsPromises.access(dir);
+      } catch {
+        // Directory doesn't exist, create it
+        await fsPromises.mkdir(dir, { recursive: true });
       }
 
       // Open database
@@ -33,9 +37,9 @@ export class KnowledgeGraphStore {
       this.db.pragma('journal_mode = WAL'); // Write-Ahead Logging for better concurrency
       this.db.pragma('foreign_keys = ON'); // Enable foreign key constraints
 
-      // Read and execute schema
+      // Read and execute schema (async)
       const schemaPath = path.join(__dirname, 'schema.sql');
-      const schema = fs.readFileSync(schemaPath, 'utf-8');
+      const schema = await fsPromises.readFile(schemaPath, 'utf-8');
       this.db.exec(schema);
 
       this.initialized = true;

@@ -67,7 +67,7 @@ const RAG_BENEFITS = `
  * 互動式提示取得 API Key
  */
 async function promptForApiKey(): Promise<string | null> {
-  console.log(RAG_BENEFITS);
+  logger.info(RAG_BENEFITS);
 
   const rl = readline.createInterface({
     input: process.stdin,
@@ -80,15 +80,15 @@ async function promptForApiKey(): Promise<string | null> {
       const apiKey = answer.trim();
 
       if (!apiKey) {
-        console.log('\n⚠️  跳過 RAG 功能設定。');
-        console.log('   您可以稍後設定 OPENAI_API_KEY 環境變數來啟用。\n');
+        logger.info('\n⚠️  跳過 RAG 功能設定。');
+        logger.info('   您可以稍後設定 OPENAI_API_KEY 環境變數來啟用。\n');
         resolve(null);
       } else if (apiKey.startsWith('sk-')) {
-        console.log('\n✅ API Key 已設定！');
-        console.log('   💡 建議：將此 key 加入 .env 檔案以長期使用\n');
+        logger.info('\n✅ API Key 已設定！');
+        logger.info('   💡 建議：將此 key 加入 .env 檔案以長期使用\n');
         resolve(apiKey);
       } else {
-        console.log('\n❌ 無效的 API Key 格式（應該以 "sk-" 開頭）\n');
+        logger.info('\n❌ 無效的 API Key 格式（應該以 "sk-" 開頭）\n');
         resolve(null);
       }
     });

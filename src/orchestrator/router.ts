@@ -12,6 +12,7 @@ import { PerformanceTracker } from '../evolution/PerformanceTracker.js';
 import { LearningManager } from '../evolution/LearningManager.js';
 import { AdaptationEngine, AdaptedExecution } from '../evolution/AdaptationEngine.js';
 import { getAllAgentConfigs, toAdaptationConfig } from '../evolution/AgentEvolutionConfig.js';
+import { logger } from '../utils/logger.js';
 
 export class Router {
   private analyzer: TaskAnalyzer;
@@ -53,7 +54,7 @@ export class Router {
       }
     }
 
-    console.log(
+    logger.info(
       `Evolution system initialized for ${allConfigs.size} agents`
     );
   }
@@ -88,7 +89,7 @@ export class Router {
 
     // Log applied patterns
     if (adaptedExecution.appliedPatterns.length > 0) {
-      console.log('Applied evolution patterns:', {
+      logger.info('Applied evolution patterns:', {
         agentId: routing.selectedAgent,
         patterns: adaptedExecution.appliedPatterns,
       });

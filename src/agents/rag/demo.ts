@@ -4,12 +4,13 @@
 
 import { RAGAgent } from './index.js';
 import type { DocumentMetadata } from './types.js';
+import { logger } from '../../utils/logger.js';
 
 /**
  * 基礎範例：索引和搜尋
  */
 async function basicExample() {
-  console.log('\n=== Basic Example ===\n');
+  logger.info('\n=== Basic Example ===\n');
 
   const rag = new RAGAgent();
   await rag.initialize();
@@ -41,18 +42,18 @@ async function basicExample() {
     // 2. 語義搜尋
     const results = await rag.search('什麼是 TypeScript?', { topK: 2 });
 
-    console.log('\n搜尋結果:');
+    logger.info('\n搜尋結果:');
     results.forEach((result, index) => {
-      console.log(`\n${index + 1}. Score: ${result.score.toFixed(4)}`);
-      console.log(`   Source: ${result.metadata.source}`);
-      console.log(`   Content: ${result.content.substring(0, 100)}...`);
+      logger.info(`\n${index + 1}. Score: ${result.score.toFixed(4)}`);
+      logger.info(`   Source: ${result.metadata.source}`);
+      logger.info(`   Content: ${result.content.substring(0, 100)}...`);
     });
 
     // 3. 取得統計資訊
     const stats = await rag.getStats();
-    console.log('\n統計資訊:');
-    console.log(`總文檔數: ${stats.documentCount}`);
-    console.log(`總成本: $${stats.embeddingStats.totalCost.toFixed(4)}`);
+    logger.info('\n統計資訊:');
+    logger.info(`總文檔數: ${stats.documentCount}`);
+    logger.info(`總成本: $${stats.embeddingStats.totalCost.toFixed(4)}`);
   } finally {
     await rag.close();
   }
@@ -62,7 +63,7 @@ async function basicExample() {
  * 批次索引範例
  */
 async function batchIndexingExample() {
-  console.log('\n=== Batch Indexing Example ===\n');
+  logger.info('\n=== Batch Indexing Example ===\n');
 
   const rag = new RAGAgent();
   await rag.initialize();
@@ -121,15 +122,15 @@ async function batchIndexingExample() {
     const stats = await rag.indexDocuments(documents, {
       batchSize: 2,
       onProgress: (current, total) => {
-        console.log(`進度: ${current}/${total}`);
+        logger.info(`進度: ${current}/${total}`);
       },
     });
 
-    console.log('\n索引完成統計:');
-    console.log(`文檔總數: ${stats.totalDocuments}`);
-    console.log(`Token 總數: ${stats.totalTokens}`);
-    console.log(`平均 Token/文檔: ${stats.averageTokensPerDocument}`);
-    console.log(`總成本: $${stats.totalCost.toFixed(4)}`);
+    logger.info('\n索引完成統計:');
+    logger.info(`文檔總數: ${stats.totalDocuments}`);
+    logger.info(`Token 總數: ${stats.totalTokens}`);
+    logger.info(`平均 Token/文檔: ${stats.averageTokensPerDocument}`);
+    logger.info(`總成本: $${stats.totalCost.toFixed(4)}`);
   } finally {
     await rag.close();
   }
@@ -139,7 +140,7 @@ async function batchIndexingExample() {
  * Hybrid 搜尋範例
  */
 async function hybridSearchExample() {
-  console.log('\n=== Hybrid Search Example ===\n');
+  logger.info('\n=== Hybrid Search Example ===\n');
 
   const rag = new RAGAgent();
   await rag.initialize();
@@ -180,11 +181,11 @@ async function hybridSearchExample() {
       keywords: ['Docker', '容器', '管理'],
     });
 
-    console.log('\nHybrid 搜尋結果:');
+    logger.info('\nHybrid 搜尋結果:');
     results.forEach((result, index) => {
-      console.log(`\n${index + 1}. Score: ${result.score.toFixed(4)}`);
-      console.log(`   Source: ${result.metadata.source}`);
-      console.log(`   Content: ${result.content}`);
+      logger.info(`\n${index + 1}. Score: ${result.score.toFixed(4)}`);
+      logger.info(`   Source: ${result.metadata.source}`);
+      logger.info(`   Content: ${result.content}`);
     });
   } finally {
     await rag.close();
@@ -195,7 +196,7 @@ async function hybridSearchExample() {
  * 進階搜尋：包含重排序和多樣性
  */
 async function advancedSearchExample() {
-  console.log('\n=== Advanced Search with Reranking ===\n');
+  logger.info('\n=== Advanced Search with Reranking ===\n');
 
   const rag = new RAGAgent();
   await rag.initialize();
@@ -229,11 +230,11 @@ async function advancedSearchExample() {
       rerankAlgorithm: 'reciprocal-rank',
     });
 
-    console.log('\n重排序後的搜尋結果:');
+    logger.info('\n重排序後的搜尋結果:');
     results.forEach((result, index) => {
-      console.log(`\n${index + 1}. Score: ${result.score.toFixed(4)}`);
-      console.log(`   Source: ${result.metadata.source}`);
-      console.log(`   Content: ${result.content}`);
+      logger.info(`\n${index + 1}. Score: ${result.score.toFixed(4)}`);
+      logger.info(`   Source: ${result.metadata.source}`);
+      logger.info(`   Content: ${result.content}`);
     });
   } finally {
     await rag.close();
@@ -250,9 +251,9 @@ async function runAllExamples() {
     await hybridSearchExample();
     await advancedSearchExample();
 
-    console.log('\n\n✅ 所有範例執行完成！\n');
+    logger.info('\n\n✅ 所有範例執行完成！\n');
   } catch (error) {
-    console.error('範例執行失敗:', error);
+    logger.error('範例執行失敗:', error);
     process.exit(1);
   }
 }

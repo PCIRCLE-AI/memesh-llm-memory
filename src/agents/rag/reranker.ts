@@ -3,6 +3,7 @@
  */
 
 import type { SearchResult, RerankOptions } from './types.js';
+import { logger } from '../../utils/logger.js';
 
 /**
  * Re-ranker 類別
@@ -23,7 +24,7 @@ export class Reranker {
 
     // 檢查快取
     if (options.useCache && this.cache.has(cacheKey)) {
-      console.log('Using cached reranked results');
+      logger.debug('Using cached reranked results');
       return this.cache.get(cacheKey)!;
     }
 
@@ -38,7 +39,7 @@ export class Reranker {
         break;
       case 'llm-rerank':
         // LLM-based reranking 需要外部 LLM 調用
-        console.warn('LLM reranking not implemented, falling back to score fusion');
+        logger.warn('LLM reranking not implemented, falling back to score fusion');
         rerankedResults = this.scoreFusion(results);
         break;
       default:

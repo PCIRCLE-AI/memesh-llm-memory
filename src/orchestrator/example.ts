@@ -6,6 +6,7 @@
 
 import { Orchestrator, Task } from './index.js';
 import { toDollars, toMicroDollars } from '../utils/money.js';
+import { logger } from '../utils/logger.js';
 
 // Money formatting constants
 const MICRO_COST_DECIMALS = 6; // Precision for sub-cent costs (micro-dollars)
@@ -13,13 +14,13 @@ const BUDGET_DECIMALS = 2; // Standard currency precision
 const TEST_COST_DECIMALS = 3; // Precision for test cost examples
 
 async function main() {
-  console.log('🎯 Agent Orchestrator Examples\n');
-  console.log('═'.repeat(60) + '\n');
+  logger.info('🎯 Agent Orchestrator Examples\n');
+  logger.info('═'.repeat(60) + '\n');
 
   const orchestrator = new Orchestrator();
 
   // ==================== 範例 1: 簡單任務分析 ====================
-  console.log('📋 Example 1: Simple Task Analysis\n');
+  logger.info('📋 Example 1: Simple Task Analysis\n');
 
   const simpleTask: Task = {
     id: 'task-simple',
@@ -27,16 +28,16 @@ async function main() {
   };
 
   const simpleAnalysis = await orchestrator.analyzeTask(simpleTask);
-  console.log(`Task: ${simpleTask.description}`);
-  console.log(`Complexity: ${simpleAnalysis.analysis.complexity}`);
-  console.log(`Selected Agent: ${simpleAnalysis.routing.selectedAgent}`);
-  console.log(`Model: ${simpleAnalysis.routing.modelName}`);
-  console.log(`Estimated Cost: $${toDollars(simpleAnalysis.routing.estimatedCost).toFixed(MICRO_COST_DECIMALS)}`);
-  console.log(`Reasoning: ${simpleAnalysis.analysis.reasoning}`);
-  console.log('\n' + '─'.repeat(60) + '\n');
+  logger.info(`Task: ${simpleTask.description}`);
+  logger.info(`Complexity: ${simpleAnalysis.analysis.complexity}`);
+  logger.info(`Selected Agent: ${simpleAnalysis.routing.selectedAgent}`);
+  logger.info(`Model: ${simpleAnalysis.routing.modelName}`);
+  logger.info(`Estimated Cost: $${toDollars(simpleAnalysis.routing.estimatedCost).toFixed(MICRO_COST_DECIMALS)}`);
+  logger.info(`Reasoning: ${simpleAnalysis.analysis.reasoning}`);
+  logger.info('\n' + '─'.repeat(60) + '\n');
 
   // ==================== 範例 2: 複雜任務分析 ====================
-  console.log('📋 Example 2: Complex Task Analysis\n');
+  logger.info('📋 Example 2: Complex Task Analysis\n');
 
   const complexTask: Task = {
     id: 'task-complex',
@@ -47,16 +48,16 @@ async function main() {
   };
 
   const complexAnalysis = await orchestrator.analyzeTask(complexTask);
-  console.log(`Task: ${complexTask.description.substring(0, 80)}...`);
-  console.log(`Complexity: ${complexAnalysis.analysis.complexity}`);
-  console.log(`Selected Agent: ${complexAnalysis.routing.selectedAgent}`);
-  console.log(`Model: ${complexAnalysis.routing.modelName}`);
-  console.log(`Estimated Cost: $${toDollars(complexAnalysis.routing.estimatedCost).toFixed(MICRO_COST_DECIMALS)}`);
-  console.log(`Reasoning: ${complexAnalysis.analysis.reasoning}`);
-  console.log('\n' + '─'.repeat(60) + '\n');
+  logger.info(`Task: ${complexTask.description.substring(0, 80)}...`);
+  logger.info(`Complexity: ${complexAnalysis.analysis.complexity}`);
+  logger.info(`Selected Agent: ${complexAnalysis.routing.selectedAgent}`);
+  logger.info(`Model: ${complexAnalysis.routing.modelName}`);
+  logger.info(`Estimated Cost: $${toDollars(complexAnalysis.routing.estimatedCost).toFixed(MICRO_COST_DECIMALS)}`);
+  logger.info(`Reasoning: ${complexAnalysis.analysis.reasoning}`);
+  logger.info('\n' + '─'.repeat(60) + '\n');
 
   // ==================== 範例 3: 中等任務分析 ====================
-  console.log('📋 Example 3: Medium Task Analysis\n');
+  logger.info('📋 Example 3: Medium Task Analysis\n');
 
   const mediumTask: Task = {
     id: 'task-medium',
@@ -64,16 +65,16 @@ async function main() {
   };
 
   const mediumAnalysis = await orchestrator.analyzeTask(mediumTask);
-  console.log(`Task: ${mediumTask.description}`);
-  console.log(`Complexity: ${mediumAnalysis.analysis.complexity}`);
-  console.log(`Selected Agent: ${mediumAnalysis.routing.selectedAgent}`);
-  console.log(`Model: ${mediumAnalysis.routing.modelName}`);
-  console.log(`Estimated Cost: $${toDollars(mediumAnalysis.routing.estimatedCost).toFixed(MICRO_COST_DECIMALS)}`);
-  console.log(`Reasoning: ${mediumAnalysis.analysis.reasoning}`);
-  console.log('\n' + '─'.repeat(60) + '\n');
+  logger.info(`Task: ${mediumTask.description}`);
+  logger.info(`Complexity: ${mediumAnalysis.analysis.complexity}`);
+  logger.info(`Selected Agent: ${mediumAnalysis.routing.selectedAgent}`);
+  logger.info(`Model: ${mediumAnalysis.routing.modelName}`);
+  logger.info(`Estimated Cost: $${toDollars(mediumAnalysis.routing.estimatedCost).toFixed(MICRO_COST_DECIMALS)}`);
+  logger.info(`Reasoning: ${mediumAnalysis.analysis.reasoning}`);
+  logger.info('\n' + '─'.repeat(60) + '\n');
 
   // ==================== 範例 4: 批次任務分析 ====================
-  console.log('📋 Example 4: Batch Task Analysis\n');
+  logger.info('📋 Example 4: Batch Task Analysis\n');
 
   const batchTasks: Task[] = [
     { id: 'batch-1', description: 'Format JSON' },
@@ -90,63 +91,63 @@ async function main() {
   const batchAnalyses = await router.getAnalyzer().analyzeBatch(batchTasks);
   const batchRoutings = await router.getRouter().routeBatch(batchAnalyses);
 
-  console.log(`Analyzing ${batchTasks.length} tasks:\n`);
+  logger.info(`Analyzing ${batchTasks.length} tasks:\n`);
 
   batchRoutings.forEach((routing, index) => {
     const task = batchTasks[index];
-    console.log(`  ${index + 1}. ${task.description.substring(0, 50)}...`);
-    console.log(`     Agent: ${routing.selectedAgent}`);
-    console.log(`     Cost: $${toDollars(routing.estimatedCost).toFixed(MICRO_COST_DECIMALS)}\n`);
+    logger.info(`  ${index + 1}. ${task.description.substring(0, 50)}...`);
+    logger.info(`     Agent: ${routing.selectedAgent}`);
+    logger.info(`     Cost: $${toDollars(routing.estimatedCost).toFixed(MICRO_COST_DECIMALS)}\n`);
   });
 
   const totalEstimatedCost = batchRoutings.reduce((sum, r) => sum + r.estimatedCost, 0);
-  console.log(`Total Estimated Cost: $${toDollars(totalEstimatedCost as import('../utils/money.js').MicroDollars).toFixed(MICRO_COST_DECIMALS)}`);
-  console.log('\n' + '─'.repeat(60) + '\n');
+  logger.info(`Total Estimated Cost: $${toDollars(totalEstimatedCost as import('../utils/money.js').MicroDollars).toFixed(MICRO_COST_DECIMALS)}`);
+  logger.info('\n' + '─'.repeat(60) + '\n');
 
   // ==================== 範例 5: 系統狀態檢查 ====================
-  console.log('📋 Example 5: System Status Check\n');
+  logger.info('📋 Example 5: System Status Check\n');
 
   const status = await orchestrator.getSystemStatus();
 
-  console.log('💻 System Resources:');
-  console.log(`   Total Memory: ${status.resources.totalMemoryMB}MB`);
-  console.log(`   Available Memory: ${status.resources.availableMemoryMB}MB`);
-  console.log(`   Memory Usage: ${status.resources.memoryUsagePercent}%`);
-  console.log(`   CPU Usage: ${status.resources.cpuUsagePercent}%`);
+  logger.info('💻 System Resources:');
+  logger.info(`   Total Memory: ${status.resources.totalMemoryMB}MB`);
+  logger.info(`   Available Memory: ${status.resources.availableMemoryMB}MB`);
+  logger.info(`   Memory Usage: ${status.resources.memoryUsagePercent}%`);
+  logger.info(`   CPU Usage: ${status.resources.cpuUsagePercent}%`);
 
-  console.log('\n💰 Cost Statistics:');
-  console.log(`   Total Tasks: ${status.costStats.taskCount}`);
-  console.log(`   Total Cost: $${toDollars(status.costStats.totalCost).toFixed(MICRO_COST_DECIMALS)}`);
-  console.log(`   Monthly Spend: $${toDollars(status.costStats.monthlySpend).toFixed(MICRO_COST_DECIMALS)}`);
-  console.log(`   Remaining Budget: $${toDollars(status.costStats.remainingBudget).toFixed(BUDGET_DECIMALS)}`);
+  logger.info('\n💰 Cost Statistics:');
+  logger.info(`   Total Tasks: ${status.costStats.taskCount}`);
+  logger.info(`   Total Cost: $${toDollars(status.costStats.totalCost).toFixed(MICRO_COST_DECIMALS)}`);
+  logger.info(`   Monthly Spend: $${toDollars(status.costStats.monthlySpend).toFixed(MICRO_COST_DECIMALS)}`);
+  logger.info(`   Remaining Budget: $${toDollars(status.costStats.remainingBudget).toFixed(BUDGET_DECIMALS)}`);
 
-  console.log(`\n💡 Recommendation: ${status.recommendation}`);
+  logger.info(`\n💡 Recommendation: ${status.recommendation}`);
 
-  console.log('\n' + '═'.repeat(60) + '\n');
+  logger.info('\n' + '═'.repeat(60) + '\n');
 
   // ==================== 範例 6: 成本追蹤 ====================
-  console.log('📋 Example 6: Cost Tracking Simulation\n');
+  logger.info('📋 Example 6: Cost Tracking Simulation\n');
 
   const costTracker = router.getCostTracker();
 
   // 模擬幾次任務執行
-  console.log('Simulating task executions...\n');
+  logger.info('Simulating task executions...\n');
 
   costTracker.recordCost('sim-1', 'claude-haiku-4-20250514', 1000, 2000);
-  console.log('✅ Task 1: Haiku - 1000 input, 2000 output tokens');
+  logger.info('✅ Task 1: Haiku - 1000 input, 2000 output tokens');
 
   costTracker.recordCost('sim-2', 'claude-sonnet-4-5-20250929', 5000, 10000);
-  console.log('✅ Task 2: Sonnet - 5000 input, 10000 output tokens');
+  logger.info('✅ Task 2: Sonnet - 5000 input, 10000 output tokens');
 
   costTracker.recordCost('sim-3', 'claude-opus-4-5-20251101', 3000, 8000);
-  console.log('✅ Task 3: Opus - 3000 input, 8000 output tokens');
+  logger.info('✅ Task 3: Opus - 3000 input, 8000 output tokens');
 
-  console.log('\n' + costTracker.generateReport());
+  logger.info('\n' + costTracker.generateReport());
 
-  console.log('\n' + '═'.repeat(60) + '\n');
+  logger.info('\n' + '═'.repeat(60) + '\n');
 
   // ==================== 範例 7: 預算檢查 ====================
-  console.log('📋 Example 7: Budget Check\n');
+  logger.info('📋 Example 7: Budget Check\n');
 
   const testCosts = [
     { description: 'Small task', cost: 0.001 },
@@ -159,12 +160,12 @@ async function main() {
     const costInMicroDollars = toMicroDollars(cost);
     const withinBudget = costTracker.isWithinBudget(costInMicroDollars);
     const icon = withinBudget ? '✅' : '❌';
-    console.log(`${icon} ${description} ($${cost.toFixed(TEST_COST_DECIMALS)}): ${withinBudget ? 'Approved' : 'Blocked'}`);
+    logger.info(`${icon} ${description} ($${cost.toFixed(TEST_COST_DECIMALS)}): ${withinBudget ? 'Approved' : 'Blocked'}`);
   });
 
-  console.log('\n' + '═'.repeat(60) + '\n');
-  console.log('✨ Examples completed!\n');
+  logger.info('\n' + '═'.repeat(60) + '\n');
+  logger.info('✨ Examples completed!\n');
 }
 
 // 執行範例
-main().catch(console.error);
+main().catch((error) => logger.error('Example failed:', error));

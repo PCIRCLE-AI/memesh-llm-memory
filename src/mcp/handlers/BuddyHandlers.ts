@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 import { ValidationError } from '../../errors/index.js';
+import { logError } from '../../utils/errorHandler.js';
 import type { Router } from '../../orchestrator/router.js';
 import type { ResponseFormatter } from '../../ui/ResponseFormatter.js';
 import type { ProjectMemoryManager } from '../../memory/ProjectMemoryManager.js';
@@ -64,6 +65,13 @@ export class BuddyHandlers {
     try {
       validatedInput = BuddyDoInputSchema.parse(args);
     } catch (error) {
+      logError(error, {
+        component: 'BuddyHandlers',
+        method: 'handleBuddyDo',
+        operation: 'validating buddy_do input',
+        data: { providedArgs: args },
+      });
+
       if (error instanceof z.ZodError) {
         throw new ValidationError(
           'Invalid buddy_do input',
@@ -78,7 +86,17 @@ export class BuddyHandlers {
       throw error;
     }
 
-    return await executeBuddyDo(validatedInput, this.router, this.formatter);
+    try {
+      return await executeBuddyDo(validatedInput, this.router, this.formatter);
+    } catch (error) {
+      logError(error, {
+        component: 'BuddyHandlers',
+        method: 'handleBuddyDo',
+        operation: 'executing buddy_do command',
+        data: { task: validatedInput.task },
+      });
+      throw error;
+    }
   }
 
   /**
@@ -92,6 +110,13 @@ export class BuddyHandlers {
     try {
       validatedInput = BuddyStatsInputSchema.parse(args);
     } catch (error) {
+      logError(error, {
+        component: 'BuddyHandlers',
+        method: 'handleBuddyStats',
+        operation: 'validating buddy_stats input',
+        data: { providedArgs: args },
+      });
+
       if (error instanceof z.ZodError) {
         throw new ValidationError(
           'Invalid buddy_stats input',
@@ -106,7 +131,17 @@ export class BuddyHandlers {
       throw error;
     }
 
-    return await executeBuddyStats(validatedInput, this.formatter);
+    try {
+      return await executeBuddyStats(validatedInput, this.formatter);
+    } catch (error) {
+      logError(error, {
+        component: 'BuddyHandlers',
+        method: 'handleBuddyStats',
+        operation: 'executing buddy_stats command',
+        data: { period: validatedInput.period },
+      });
+      throw error;
+    }
   }
 
   /**
@@ -120,6 +155,13 @@ export class BuddyHandlers {
     try {
       validatedInput = BuddyRememberInputSchema.parse(args);
     } catch (error) {
+      logError(error, {
+        component: 'BuddyHandlers',
+        method: 'handleBuddyRemember',
+        operation: 'validating buddy_remember input',
+        data: { providedArgs: args },
+      });
+
       if (error instanceof z.ZodError) {
         throw new ValidationError(
           'Invalid buddy_remember input',
@@ -134,7 +176,17 @@ export class BuddyHandlers {
       throw error;
     }
 
-    return await executeBuddyRemember(validatedInput, this.projectMemoryManager, this.formatter);
+    try {
+      return await executeBuddyRemember(validatedInput, this.projectMemoryManager, this.formatter);
+    } catch (error) {
+      logError(error, {
+        component: 'BuddyHandlers',
+        method: 'handleBuddyRemember',
+        operation: 'executing buddy_remember command',
+        data: { query: validatedInput.query },
+      });
+      throw error;
+    }
   }
 
   /**
@@ -148,6 +200,13 @@ export class BuddyHandlers {
     try {
       validatedInput = BuddyHelpInputSchema.parse(args);
     } catch (error) {
+      logError(error, {
+        component: 'BuddyHandlers',
+        method: 'handleBuddyHelp',
+        operation: 'validating buddy_help input',
+        data: { providedArgs: args },
+      });
+
       if (error instanceof z.ZodError) {
         throw new ValidationError(
           'Invalid buddy_help input',
@@ -162,6 +221,16 @@ export class BuddyHandlers {
       throw error;
     }
 
-    return await executeBuddyHelp(validatedInput, this.formatter);
+    try {
+      return await executeBuddyHelp(validatedInput, this.formatter);
+    } catch (error) {
+      logError(error, {
+        component: 'BuddyHandlers',
+        method: 'handleBuddyHelp',
+        operation: 'executing buddy_help command',
+        data: { command: validatedInput.command },
+      });
+      throw error;
+    }
   }
 }

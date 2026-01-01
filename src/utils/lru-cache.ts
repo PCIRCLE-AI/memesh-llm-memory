@@ -10,20 +10,89 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
+import { logger } from './logger.js';
 
+/**
+ * Configuration options for LRU Cache
+ *
+ * @template V - Type of values stored in the cache
+ */
 export interface LRUCacheOptions<V> {
+  /**
+   * Maximum number of entries the cache can hold
+   * When exceeded, least recently used entries are evicted
+   */
   maxSize: number;
-  ttl?: number;                    // Time-to-live in milliseconds
-  persistPath?: string;             // Path to persist cache to disk
+
+  /**
+   * Optional time-to-live in milliseconds
+   * Entries older than this are considered expired
+   */
+  ttl?: number;
+
+  /**
+   * Optional file path for persisting cache to disk
+   * Cache is automatically saved on modifications and loaded on initialization
+   */
+  persistPath?: string;
+
+  /**
+   * Optional callback invoked when an entry is evicted
+   * Useful for cleanup or logging
+   *
+   * @param key - The key being evicted
+   * @param value - The value being evicted
+   */
   onEvict?: (key: string, value: V) => void;
 }
 
+/**
+ * Internal cache entry structure
+ *
+ * @template V - Type of the cached value
+ * @internal
+ */
 interface CacheEntry<V> {
+  /** The cached value */
   value: V;
+  /** Timestamp when entry was created or last updated (ms since epoch) */
   timestamp: number;
+  /** Number of times this entry has been accessed */
   accessCount: number;
 }
 
+/**
+ * LRU (Least Recently Used) Cache implementation
+ *
+ * Features:
+ * - Automatic eviction of least recently used entries when full
+ * - Optional TTL (time-to-live) for automatic expiration
+ * - Optional disk persistence for durability across restarts
+ * - Performance statistics tracking (hits, misses, evictions)
+ * - Type-safe generic implementation
+ *
+ * @template V - Type of values stored in the cache (defaults to unknown)
+ *
+ * @example
+ * ```typescript
+ * // Basic usage
+ * const cache = new LRUCache<User>({ maxSize: 100 });
+ * cache.set('user:123', { name: 'John', role: 'admin' });
+ * const user = cache.get('user:123');
+ *
+ * // With TTL and persistence
+ * const cache = new LRUCache<string>({
+ *   maxSize: 1000,
+ *   ttl: 60000, // 60 seconds
+ *   persistPath: '/tmp/cache.json',
+ *   onEvict: (key, value) => console.log(`Evicted ${key}`)
+ * });
+ *
+ * // Monitor performance
+ * const stats = cache.getStats();
+ * console.log(`Hit rate: ${stats.hitRate.toFixed(1)}%`);
+ * ```
+ */
 export class LRUCache<V = unknown> {
   private cache: Map<string, CacheEntry<V>>;
   private accessOrder: string[];
@@ -53,6 +122,19 @@ export class LRUCache<V = unknown> {
 
   /**
    * Get value from cache
+   *
+   * Updates access order and increments access count.
+   * Returns undefined if key doesn't exist or entry has expired.
+   *
+   * @param key - The cache key to retrieve
+   * @returns The cached value, or undefined if not found or expired
+   *
+   * @example
+   * ```typescript
+   * const cache = new LRUCache<string>({ maxSize: 100 });
+   * cache.set('user:123', 'John Doe');
+   * const value = cache.get('user:123'); // Returns 'John Doe'
+   * ```
    */
   get(key: string): V | undefined {
     const entry = this.cache.get(key);
@@ -86,6 +168,18 @@ export class LRUCache<V = unknown> {
 
   /**
    * Set value in cache
+   *
+   * If key already exists, updates the value and moves it to most recently used.
+   * If cache is full, evicts the least recently used entry.
+   * Automatically persists to disk if persistPath was configured.
+   *
+   * @param key - The cache key
+   * @param value - The value to cache
+   *
+   * @example
+   * ```typescript
+   * cache.set('user:123', { name: 'John', role: 'admin' });
+   * ```
    */
   set(key: string, value: V): void {
     // Check if key already exists
@@ -123,7 +217,20 @@ export class LRUCache<V = unknown> {
   }
 
   /**
-   * Check if key exists (without updating access order)
+   * Check if key exists in cache
+   *
+   * Unlike get(), this method does not update access order or count.
+   * Automatically checks for expiration if TTL is configured.
+   *
+   * @param key - The cache key to check
+   * @returns true if key exists and is not expired, false otherwise
+   *
+   * @example
+   * ```typescript
+   * if (cache.has('user:123')) {
+   *   console.log('User data is cached');
+   * }
+   * ```
    */
   has(key: string): boolean {
     const entry = this.cache.get(key);
@@ -143,6 +250,16 @@ export class LRUCache<V = unknown> {
 
   /**
    * Delete key from cache
+   *
+   * Removes the entry and updates persistence if enabled.
+   *
+   * @param key - The cache key to delete
+   * @returns true if the key existed and was deleted, false otherwise
+   *
+   * @example
+   * ```typescript
+   * cache.delete('user:123');
+   * ```
    */
   delete(key: string): boolean {
     const entry = this.cache.get(key);
@@ -165,7 +282,15 @@ export class LRUCache<V = unknown> {
   }
 
   /**
-   * Clear all entries
+   * Clear all entries from cache
+   *
+   * Removes all cached data and updates persistence if enabled.
+   * Statistics are not reset - use resetStats() for that.
+   *
+   * @example
+   * ```typescript
+   * cache.clear(); // Remove all entries
+   * ```
    */
   clear(): void {
     this.cache.clear();
@@ -177,21 +302,59 @@ export class LRUCache<V = unknown> {
   }
 
   /**
-   * Get cache size
+   * Get current number of entries in cache
+   *
+   * @returns Number of entries currently cached
+   *
+   * @example
+   * ```typescript
+   * console.log(`Cache has ${cache.size()} entries`);
+   * ```
    */
   size(): number {
     return this.cache.size;
   }
 
   /**
-   * Get all keys
+   * Get all cache keys
+   *
+   * Returns keys in no particular order.
+   * Use with caution on large caches as it creates a new array.
+   *
+   * @returns Array of all cache keys
+   *
+   * @example
+   * ```typescript
+   * const allKeys = cache.keys();
+   * console.log('Cached keys:', allKeys);
+   * ```
    */
   keys(): string[] {
     return Array.from(this.cache.keys());
   }
 
   /**
-   * Get statistics
+   * Get cache performance statistics
+   *
+   * Useful for monitoring cache effectiveness and tuning maxSize/TTL.
+   *
+   * @returns Statistics object containing:
+   *   - size: Current number of entries
+   *   - maxSize: Maximum capacity
+   *   - hits: Number of successful get() calls
+   *   - misses: Number of failed get() calls
+   *   - evictions: Number of entries evicted due to capacity
+   *   - hitRate: Percentage of successful gets (0-100)
+   *   - averageAccessCount: Average number of accesses per entry
+   *
+   * @example
+   * ```typescript
+   * const stats = cache.getStats();
+   * console.log(`Hit rate: ${stats.hitRate.toFixed(1)}%`);
+   * if (stats.hitRate < 50) {
+   *   console.warn('Low hit rate - consider increasing maxSize');
+   * }
+   * ```
    */
   getStats(): {
     size: number;
@@ -225,7 +388,15 @@ export class LRUCache<V = unknown> {
   }
 
   /**
-   * Reset statistics
+   * Reset performance statistics to zero
+   *
+   * Clears hits, misses, and evictions counters.
+   * Does not affect cached data.
+   *
+   * @example
+   * ```typescript
+   * cache.resetStats(); // Start fresh statistics tracking
+   * ```
    */
   resetStats(): void {
     this.hits = 0;
@@ -234,7 +405,18 @@ export class LRUCache<V = unknown> {
   }
 
   /**
-   * Cleanup expired entries
+   * Remove all expired entries from cache
+   *
+   * Only has effect if TTL was configured.
+   * Automatically called on load from disk.
+   *
+   * @returns Number of entries removed
+   *
+   * @example
+   * ```typescript
+   * const removed = cache.cleanupExpired();
+   * console.log(`Cleaned up ${removed} expired entries`);
+   * ```
    */
   cleanupExpired(): number {
     if (!this.ttl) return 0;
@@ -254,6 +436,12 @@ export class LRUCache<V = unknown> {
 
   /**
    * Evict least recently used entry
+   *
+   * Removes the first entry in the access order (oldest).
+   * Calls onEvict callback if configured.
+   *
+   * @private
+   * @internal
    */
   private evictLRU(): void {
     if (this.accessOrder.length === 0) return;
@@ -273,6 +461,13 @@ export class LRUCache<V = unknown> {
 
   /**
    * Save cache to disk
+   *
+   * Serializes cache data and statistics to JSON file.
+   * Creates directory if it doesn't exist.
+   * Silently logs errors without throwing.
+   *
+   * @private
+   * @internal
    */
   private saveToDisk(): void {
     if (!this.persistPath) return;
@@ -297,12 +492,19 @@ export class LRUCache<V = unknown> {
 
       writeFileSync(this.persistPath, JSON.stringify(data, null, 2), 'utf-8');
     } catch (error) {
-      console.error('[LRUCache] Failed to save to disk:', error);
+      logger.error('[LRUCache] Failed to save to disk:', error);
     }
   }
 
   /**
    * Load cache from disk
+   *
+   * Deserializes cache data from JSON file.
+   * Automatically cleans up expired entries after loading.
+   * Falls back to empty cache on errors.
+   *
+   * @private
+   * @internal
    */
   private loadFromDisk(): void {
     if (!this.persistPath || !existsSync(this.persistPath)) {
@@ -327,7 +529,7 @@ export class LRUCache<V = unknown> {
         this.cleanupExpired();
       }
     } catch (error) {
-      console.error('[LRUCache] Failed to load from disk:', error);
+      logger.error('[LRUCache] Failed to load from disk:', error);
       this.cache = new Map();
       this.accessOrder = [];
     }

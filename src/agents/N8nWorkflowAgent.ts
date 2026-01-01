@@ -7,6 +7,7 @@
 
 import { MCPToolInterface } from '../core/MCPToolInterface.js';
 import { ExternalServiceError } from '../errors/index.js';
+import { logger } from '../utils/logger.js';
 
 export interface N8nWorkflow {
   id?: string;
@@ -140,7 +141,7 @@ export class N8nWorkflowAgent {
       return result.data;
 
     } catch (error) {
-      console.error('Get workflow failed:', error);
+      logger.error('Get workflow failed:', error);
       return null;
     }
   }
@@ -173,7 +174,7 @@ export class N8nWorkflowAgent {
       return result.data || [];
 
     } catch (error) {
-      console.error('List workflows failed:', error);
+      logger.error('List workflows failed:', error);
       return [];
     }
   }
@@ -235,7 +236,7 @@ export class N8nWorkflowAgent {
       return response.exitCode === 0;
 
     } catch (error) {
-      console.error('Delete workflow failed:', error);
+      logger.error('Delete workflow failed:', error);
       return false;
     }
   }
@@ -273,7 +274,7 @@ export class N8nWorkflowAgent {
       return result.data;
 
     } catch (error) {
-      console.error('Execute workflow failed:', error);
+      logger.error('Execute workflow failed:', error);
       return null;
     }
   }

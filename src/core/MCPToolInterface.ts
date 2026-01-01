@@ -1,8 +1,56 @@
 /**
  * MCP Tool Interface
  *
- * Provides a standardized interface for agents to interact with MCP tools.
- * Handles tool registration, invocation, and dependency checking.
+ * Provides a standardized interface for agents to interact with MCP (Model Context Protocol) tools.
+ * Centralizes tool registration, invocation, and dependency checking with convenient helper methods
+ * for common operations like filesystem access, memory/knowledge graph manipulation, browser
+ * automation with Playwright, and shell command execution.
+ *
+ * Features:
+ * - Tool registration and metadata management
+ * - Standardized tool invocation interface
+ * - Dependency checking for required tools
+ * - Helper namespaces for common tool categories:
+ *   - `filesystem`: File operations (read, write)
+ *   - `memory`: Knowledge graph operations (create entities, search nodes)
+ *   - `playwright`: Browser automation (navigate, click, type, screenshot)
+ *   - `bash`: Shell command execution
+ *
+ * @example
+ * ```typescript
+ * import { MCPToolInterface } from './MCPToolInterface.js';
+ *
+ * const mcpTools = new MCPToolInterface();
+ *
+ * // Register MCP tools
+ * mcpTools.registerTool('filesystem', {
+ *   description: 'File system operations',
+ *   methods: ['readFile', 'writeFile', 'listDirectory']
+ * });
+ *
+ * // Use filesystem helper
+ * const content = await mcpTools.filesystem.readFile('/path/to/file.txt');
+ * await mcpTools.filesystem.writeFile({
+ *   path: '/path/to/output.txt',
+ *   content: 'Hello, world!'
+ * });
+ *
+ * // Use memory/knowledge graph helper
+ * const results = await mcpTools.memory.searchNodes('project architecture');
+ * await mcpTools.memory.createEntities({
+ *   entities: [{
+ *     name: 'Feature Implementation',
+ *     entityType: 'milestone',
+ *     observations: ['Completed API integration', 'Added unit tests']
+ *   }]
+ * });
+ *
+ * // Check tool availability
+ * const check = mcpTools.checkRequiredTools(['filesystem', 'memory']);
+ * if (!check.allAvailable) {
+ *   console.warn('Missing tools:', check.missing);
+ * }
+ * ```
  */
 
 import { NotFoundError, OperationError } from '../errors/index.js';
@@ -72,8 +120,35 @@ export class MCPToolInterface {
 
     /**
      * Write file content
-     * @param opts - Write options {path, content}
+     *
+     * Writes content to a file, creating the file if it doesn't exist
+     * or overwriting it if it does.
+     *
+     * @param opts - Write options
+     * @param opts.path - Target file path (absolute or relative)
+     * @param opts.content - Content to write to the file
      * @returns Promise<void>
+     *
+     * @example
+     * ```typescript
+     * // Write JSON data
+     * await mcpTools.filesystem.writeFile({
+     *   path: 'data/output.json',
+     *   content: JSON.stringify({ results: [...] }, null, 2)
+     * });
+     *
+     * // Write generated code
+     * await mcpTools.filesystem.writeFile({
+     *   path: 'generated/schema.ts',
+     *   content: generatedTypeScriptCode
+     * });
+     *
+     * // Write log file
+     * await mcpTools.filesystem.writeFile({
+     *   path: 'logs/execution.log',
+     *   content: `Execution completed at ${new Date().toISOString()}`
+     * });
+     * ```
      */
     writeFile: async (opts: { path: string; content: string }): Promise<void> => {
       await this.invokeTool('filesystem', 'writeFile', opts);
@@ -82,13 +157,71 @@ export class MCPToolInterface {
 
   /**
    * Memory helper methods
-   * Provides convenient access to memory/knowledge graph MCP tool operations
+   *
+   * Provides convenient access to memory/knowledge graph MCP tool operations.
+   * Enables structured knowledge storage and retrieval for project context,
+   * decisions, lessons learned, and system architecture.
+   *
+   * @example
+   * ```typescript
+   * // Store project milestone
+   * await mcpTools.memory.createEntities({
+   *   entities: [{
+   *     name: 'API Integration v2.0',
+   *     entityType: 'milestone',
+   *     observations: [
+   *       'Completed RESTful API endpoints',
+   *       'Added authentication middleware',
+   *       'Achieved 95% test coverage'
+   *     ]
+   *   }]
+   * });
+   *
+   * // Search for architecture decisions
+   * const results = await mcpTools.memory.searchNodes('database schema');
+   * console.log(`Found ${results.length} related nodes`);
+   * ```
    */
   public memory = {
     /**
      * Create entities in knowledge graph
+     *
+     * Creates new entities (nodes) in the knowledge graph with associated
+     * observations and metadata. Useful for storing project milestones,
+     * decisions, lessons learned, and system architecture information.
+     *
      * @param opts - Entity creation options
+     * @param opts.entities - Array of entities to create
      * @returns Promise<void>
+     *
+     * @example
+     * ```typescript
+     * // Store lesson learned
+     * await mcpTools.memory.createEntities({
+     *   entities: [{
+     *     name: 'Authentication Bug Fix 2025-01-01',
+     *     entityType: 'lesson_learned',
+     *     observations: [
+     *       'Root cause: JWT token expiry not properly handled',
+     *       'Fix: Added token refresh mechanism',
+     *       'Prevention: Added integration tests for auth flow'
+     *     ]
+     *   }]
+     * });
+     *
+     * // Store architecture decision
+     * await mcpTools.memory.createEntities({
+     *   entities: [{
+     *     name: 'PostgreSQL Database Selection',
+     *     entityType: 'architecture_decision',
+     *     observations: [
+     *       'Chosen PostgreSQL over MongoDB',
+     *       'Reason: Complex relational queries required',
+     *       'Trade-off: More rigid schema but better data integrity'
+     *     ]
+     *   }]
+     * });
+     * ```
      */
     createEntities: async (opts: Record<string, unknown>): Promise<void> => {
       await this.invokeTool('memory', 'createEntities', opts);
@@ -96,8 +229,28 @@ export class MCPToolInterface {
 
     /**
      * Search nodes in knowledge graph
+     *
+     * Searches the knowledge graph for entities matching a query string.
+     * Searches across entity names, types, and observation content.
+     *
      * @param query - Search query (entity name, type, or pattern)
-     * @returns Promise<unknown[]> Search results
+     * @returns Promise<unknown[]> Array of matching entities
+     *
+     * @example
+     * ```typescript
+     * // Search for API-related entities
+     * const apiNodes = await mcpTools.memory.searchNodes('API endpoints');
+     * console.log(`Found ${apiNodes.length} API-related nodes`);
+     *
+     * // Search for recent decisions
+     * const decisions = await mcpTools.memory.searchNodes('architecture decision');
+     *
+     * // Search for specific component
+     * const authNodes = await mcpTools.memory.searchNodes('authentication');
+     * authNodes.forEach(node => {
+     *   console.log(`Entity: ${node.name}, Type: ${node.entityType}`);
+     * });
+     * ```
      */
     searchNodes: async (query: string): Promise<unknown[]> => {
       const result = await this.invokeTool('memory', 'searchNodes', { query });

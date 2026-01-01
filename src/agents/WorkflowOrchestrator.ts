@@ -44,8 +44,8 @@ export class WorkflowOrchestrator {
       // 1. 分析用戶意圖，選擇最佳平台
       const platform = await this.choosePlatform(request);
 
-      console.log(`🎯 Selected platform: ${platform}`);
-      console.log(`📝 Reasoning: ${this.getReasoningForPlatform(request, platform)}`);
+      logger.info(`🎯 Selected platform: ${platform}`);
+      logger.info(`📝 Reasoning: ${this.getReasoningForPlatform(request, platform)}`);
 
       // 2. 根據平台執行
       if (platform === 'opal') {
@@ -402,7 +402,7 @@ return items.map(item => ({
         };
       });
     } catch (error) {
-      console.error('Failed to retrieve Opal workflows from memory:', error);
+      logger.error('Failed to retrieve Opal workflows from memory:', error);
       return [];
     }
   }

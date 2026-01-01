@@ -22,6 +22,7 @@ import {
   addCosts,
   calculateBudgetPercentage,
 } from '../utils/money.js';
+import { logger } from '../utils/logger.js';
 
 export class CostTracker {
   private costs: CostRecord[] = [];
@@ -79,7 +80,7 @@ export class CostTracker {
 
     // Error handling for unknown models or models without input/output pricing
     if (!costs || !('input' in costs && 'output' in costs)) {
-      console.warn(
+      logger.warn(
         `⚠️  Unknown model or unsupported cost structure: ${modelName}\n` +
         `   Using fallback pricing (Claude Sonnet: $3/$15 per 1M tokens) for cost estimation.\n` +
         `   Please add this model to MODEL_COSTS configuration.`
@@ -154,7 +155,7 @@ export class CostTracker {
     ) / 100;
 
     if (budgetUsagePercent >= this.alertThreshold) {
-      console.warn(
+      logger.warn(
         `\n⚠️  BUDGET ALERT ⚠️\n` +
         `Monthly spend: ${formatMoney(stats.monthlySpend, 2)} / ${formatMoney(this.monthlyBudget, 2)}\n` +
         `Usage: ${(budgetUsagePercent * 100).toFixed(1)}%\n` +
@@ -235,7 +236,7 @@ export class CostTracker {
   clearOldRecords(keepRecent: number = 1000): void {
     if (this.costs.length > keepRecent) {
       this.costs = this.costs.slice(-keepRecent);
-      console.log(`🧹 Cleared old cost records. Keeping ${keepRecent} recent records.`);
+      logger.info(`🧹 Cleared old cost records. Keeping ${keepRecent} recent records.`);
     }
   }
 

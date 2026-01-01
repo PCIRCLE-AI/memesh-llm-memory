@@ -653,11 +653,15 @@ export class SimpleDatabaseFactory {
       const connectionTimeout = parseInt(process.env.DB_POOL_TIMEOUT || '5000', 10) || 5000;
       const idleTimeout = parseInt(process.env.DB_POOL_IDLE_TIMEOUT || '30000', 10) || 30000;
 
-      pool = new ConnectionPool(dbPath, {
-        maxConnections,
-        connectionTimeout,
-        idleTimeout,
-      });
+      pool = new ConnectionPool(
+        dbPath,
+        {
+          maxConnections,
+          connectionTimeout,
+          idleTimeout,
+        },
+        SimpleConfig.isDevelopment ? logger : undefined
+      );
 
       this.pools.set(dbPath, pool);
       logger.info(`Created connection pool for ${dbPath}`, {

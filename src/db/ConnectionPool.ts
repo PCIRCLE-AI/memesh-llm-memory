@@ -50,7 +50,7 @@
 
 import Database from 'better-sqlite3';
 import { logger } from '../utils/logger.js';
-import { SimpleConfig } from '../config/simple-config.js';
+import type { ILogger } from '../utils/ILogger.js';
 
 /**
  * Connection Pool Configuration Options
@@ -209,6 +209,7 @@ interface ConnectionMetadata {
 export class ConnectionPool {
   private readonly dbPath: string;
   private readonly options: Required<ConnectionPoolOptions>;
+  private readonly verboseLogger?: ILogger;
   private readonly pool: ConnectionMetadata[] = [];
   private readonly available: ConnectionMetadata[] = [];
   private readonly waiting: Array<{
@@ -236,6 +237,7 @@ export class ConnectionPool {
    *
    * @param dbPath - Path to SQLite database file (or ':memory:')
    * @param options - Pool configuration options
+   * @param verboseLogger - Optional logger for verbose SQLite output (development mode)
    * @throws Error if pool initialization fails
    *
    * @example
@@ -250,13 +252,18 @@ export class ConnectionPool {
    *   idleTimeout: 60000,
    *   healthCheckInterval: 15000
    * });
+   *
+   * // With verbose logging
+   * const pool = new ConnectionPool('/data/app.db', {}, myLogger);
    * ```
    */
   constructor(
     dbPath: string,
-    options: Partial<ConnectionPoolOptions> = {}
+    options: Partial<ConnectionPoolOptions> = {},
+    verboseLogger?: ILogger
   ) {
     this.dbPath = dbPath;
+    this.verboseLogger = verboseLogger;
     this.options = {
       maxConnections: options.maxConnections ?? 5,
       connectionTimeout: options.connectionTimeout ?? 5000,
@@ -325,7 +332,7 @@ export class ConnectionPool {
    */
   private createConnection(): Database.Database {
     const db = new Database(this.dbPath, {
-      verbose: SimpleConfig.isDevelopment ? ((msg: unknown) => logger.debug('SQLite', { message: msg })) : undefined,
+      verbose: this.verboseLogger ? ((msg: unknown) => this.verboseLogger!.debug('SQLite', { message: msg })) : undefined,
     });
 
     // Set busy timeout (5 seconds)

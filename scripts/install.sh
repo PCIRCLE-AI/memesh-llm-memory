@@ -47,7 +47,7 @@ echo "This script will guide you through setup step-by-step."
 echo ""
 
 # Step 1: Check prerequisites
-print_step "Step 1/7: Checking prerequisites..."
+print_step "Step 1/9: Checking prerequisites..."
 
 # Check Node.js
 if ! command -v node &> /dev/null; then
@@ -78,17 +78,23 @@ else
 fi
 
 # Step 2: Install dependencies
-print_step "Step 2/7: Installing dependencies..."
+print_step "Step 2/9: Installing dependencies..."
 npm install
 print_success "Dependencies installed"
 
 # Step 3: Build project
-print_step "Step 3/7: Building CCB..."
+print_step "Step 3/9: Building CCB..."
 npm run build
 print_success "Build completed"
 
-# Step 4: Configure environment (optional)
-print_step "Step 4/8: Configuring environment..."
+# Step 4: Check system resources
+print_step "Step 4/9: Checking system resources..."
+echo ""
+node scripts/check-system-resources.js || true  # Don't fail on error
+echo ""
+
+# Step 5: Configure environment (optional)
+print_step "Step 5/9: Configuring environment..."
 
 # Check if .env exists
 if [ -f .env ]; then
@@ -102,8 +108,8 @@ else
     echo ""
 fi
 
-# Step 4.5: Configure RAG (optional)
-print_step "Step 5/8: Configure RAG (optional)..."
+# Step 6: Configure RAG (optional)
+print_step "Step 6/9: Configure RAG (optional)..."
 echo ""
 echo "RAG (Retrieval-Augmented Generation) allows CCB to:"
 echo "  • Index and search your project documentation"
@@ -180,8 +186,8 @@ fi
 
 echo ""
 
-# Step 6: Configure MCP
-print_step "Step 6/8: Configuring MCP integration..."
+# Step 7: Configure MCP
+print_step "Step 7/9: Configuring MCP integration..."
 
 MCP_CONFIG="$HOME/.claude/config.json"
 CCB_PATH="$(pwd)/dist/mcp/server.js"
@@ -199,8 +205,8 @@ fi
 node scripts/install-helpers.js add-to-mcp "$CCB_PATH"
 print_success "CCB added to Claude Code MCP configuration"
 
-# Step 7: Test installation
-print_step "Step 7/8: Testing installation..."
+# Step 8: Test installation
+print_step "Step 8/9: Testing installation..."
 
 # Run a simple test
 if npm test -- --run 2>&1 | grep -q "PASS"; then
@@ -209,8 +215,8 @@ else
     print_warning "Some tests failed (installation still successful)"
 fi
 
-# Step 8: Verify MCP server
-print_step "Step 8/8: Verifying MCP server..."
+# Step 9: Verify MCP server
+print_step "Step 9/9: Verifying MCP server..."
 
 # Try to start MCP server (timeout after 3 seconds)
 timeout 3 node dist/mcp/server.js &> /dev/null && print_success "MCP server starts successfully" || print_success "MCP server configured (will start when Claude Code connects)"

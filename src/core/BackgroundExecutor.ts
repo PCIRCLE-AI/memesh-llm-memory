@@ -66,6 +66,8 @@
 import { randomBytes } from 'crypto';
 import { ResourceMonitor } from './ResourceMonitor.js';
 import { ExecutionQueue } from './ExecutionQueue.js';
+import { ResultHandler } from './ResultHandler.js';
+import { ExecutionMonitor } from './ExecutionMonitor.js';
 import {
   ExecutionConfig,
   BackgroundTask,
@@ -74,7 +76,6 @@ import {
 } from './types.js';
 import { logger } from '../utils/logger.js';
 import { UIEventBus } from '../ui/UIEventBus.js';
-import { AttributionManager } from '../ui/AttributionManager.js';
 import { ValidationError, NotFoundError, StateError } from '../errors/index.js';
 
 /**
@@ -208,7 +209,8 @@ export class BackgroundExecutor {
   private tasks: Map<string, BackgroundTask>;
   private processingQueue: boolean = false;
   private eventBus?: UIEventBus;
-  private attributionManager?: AttributionManager;
+  private resultHandler: ResultHandler;
+  private executionMonitor: ExecutionMonitor;
 
   /**
    * Create a new BackgroundExecutor
@@ -237,6 +239,7 @@ export class BackgroundExecutor {
     this.resourceMonitor = resourceMonitor;
     this.tasks = new Map();
     this.eventBus = eventBus;
+    this.resultHandler = new ResultHandler();
 
     // Create AttributionManager if UIEventBus provided
     if (this.eventBus) {
@@ -527,6 +530,8 @@ export class BackgroundExecutor {
 
   /**
    * Handle task completion
+   *
+   * Delegates to ResultHandler for consistent result processing.
    */
   private handleTaskCompleted(taskId: string, result: unknown): void {
     const task = this.tasks.get(taskId);
@@ -534,23 +539,14 @@ export class BackgroundExecutor {
       return;
     }
 
-    task.status = 'completed';
-    task.endTime = new Date();
-    task.result = result;
-    task.progress = {
-      progress: 1.0,
-      currentStage: 'completed',
-    };
+    this.resultHandler.handleCompleted(task, result);
     this.tasks.set(taskId, task);
-
-    logger.info(`BackgroundExecutor: Task ${taskId} completed`);
-
-    // Call completion callback
-    task.config.callbacks?.onComplete?.(result);
   }
 
   /**
    * Handle task failure
+   *
+   * Delegates to ResultHandler for consistent error handling.
    */
   private handleTaskFailed(taskId: string, error: Error): void {
     const task = this.tasks.get(taskId);
@@ -558,19 +554,14 @@ export class BackgroundExecutor {
       return;
     }
 
-    task.status = 'failed';
-    task.endTime = new Date();
-    task.error = error;
+    this.resultHandler.handleFailed(task, error);
     this.tasks.set(taskId, task);
-
-    logger.error(`BackgroundExecutor: Task ${taskId} failed:`, error);
-
-    // Call error callback
-    task.config.callbacks?.onError?.(error);
   }
 
   /**
    * Handle task cancellation
+   *
+   * Delegates to ResultHandler for consistent cancellation handling.
    */
   private handleTaskCancelled(taskId: string): void {
     const task = this.tasks.get(taskId);
@@ -578,11 +569,8 @@ export class BackgroundExecutor {
       return;
     }
 
-    task.status = 'cancelled';
-    task.endTime = new Date();
+    this.resultHandler.handleCancelled(task);
     this.tasks.set(taskId, task);
-
-    logger.info(`BackgroundExecutor: Task ${taskId} cancelled`);
   }
 
   /**

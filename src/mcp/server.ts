@@ -48,6 +48,10 @@ import { CheckpointDetector } from '../core/CheckpointDetector.js';
 import { MCPToolInterface } from '../core/MCPToolInterface.js';
 import { PlanningEngine } from '../planning/PlanningEngine.js';
 import { GitAssistantIntegration } from '../integrations/GitAssistantIntegration.js';
+import { getAllToolDefinitions } from './ToolDefinitions.js';
+import { GitHandlers } from './handlers/GitHandlers.js';
+import { ToolHandlers } from './handlers/ToolHandlers.js';
+import { BuddyHandlers } from './handlers/BuddyHandlers.js';
 
 // Buddy Commands (user-friendly layer)
 import {
@@ -133,6 +137,11 @@ class ClaudeCodeBuddyMCPServer {
   private knowledgeGraph: KnowledgeGraph;
   private projectMemoryManager: ProjectMemoryManager;
 
+  // Handler modules
+  private gitHandlers: GitHandlers;
+  private toolHandlers: ToolHandlers;
+  private buddyHandlers: BuddyHandlers;
+
   constructor() {
     this.server = new Server(
       {
@@ -188,6 +197,31 @@ class ClaudeCodeBuddyMCPServer {
     this.knowledgeGraph = new KnowledgeGraph();
     this.projectMemoryManager = new ProjectMemoryManager(this.knowledgeGraph);
 
+    // Initialize handler modules
+    this.gitHandlers = new GitHandlers(this.gitAssistant);
+
+    this.toolHandlers = new ToolHandlers(
+      this.router,
+      this.agentRegistry,
+      this.feedbackCollector,
+      this.performanceTracker,
+      this.learningManager,
+      this.evolutionMonitor,
+      this.skillManager,
+      this.uninstallManager,
+      this.developmentButler,
+      this.checkpointDetector,
+      this.planningEngine,
+      this.projectMemoryManager,
+      this.ui
+    );
+
+    this.buddyHandlers = new BuddyHandlers(
+      this.router,
+      this.formatter,
+      this.projectMemoryManager
+    );
+
     this.setupHandlers();
     this.setupResourceHandlers();
   }
@@ -199,494 +233,9 @@ class ClaudeCodeBuddyMCPServer {
     // List available tools (smart router + individual agents)
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       const allAgents = this.agentRegistry.getAllAgents();
+      const tools = getAllToolDefinitions(allAgents);
 
-      // Common input schema for task tools
-      const taskInputSchema = {
-        type: 'object' as const,
-        properties: {
-          taskDescription: {
-            type: 'string',
-            description: 'Description of the task to be performed',
-          },
-          priority: {
-            type: 'number',
-            description: 'Task priority (optional, 1-10)',
-            minimum: 1,
-            maximum: 10,
-          },
-        },
-        required: ['taskDescription'],
-      };
-
-      // Common input schema for dashboard tools
-      const dashboardInputSchema = {
-        type: 'object' as const,
-        properties: {
-          format: {
-            type: 'string',
-            description: 'Dashboard format: "summary" (default) or "detailed"',
-            enum: ['summary', 'detailed'],
-          },
-        },
-      };
-
-      // ========================================
-      // NEW: sa_* prefixed tools (recommended)
-      // ========================================
-
-      // sa_task - Main task routing tool
-      const saTaskTool = {
-        name: 'sa_task',
-        description: '🤖 Claude Code Buddy: Execute a task with autonomous agent routing. Analyzes your task, selects the best of 22 specialized agents, and returns an optimized execution plan.',
-        inputSchema: taskInputSchema,
-      };
-
-      // sa_dashboard - Evolution system dashboard
-      const saDashboardTool = {
-        name: 'sa_dashboard',
-        description: '📊 Claude Code Buddy: View evolution system dashboard showing agent learning progress, discovered patterns, and performance improvements. Tracks 22 agent evolution configurations (18 currently available + 4 planned).',
-        inputSchema: dashboardInputSchema,
-      };
-
-      // sa_agents - List all available agents
-      const saAgentsTool = {
-        name: 'sa_agents',
-        description: '📋 Claude Code Buddy: List all 22 specialized agents with their capabilities and specializations.',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {},
-        },
-      };
-
-      // sa_skills - List and manage claude-code-buddy skills
-      const saSkillsTool = {
-        name: 'sa_skills',
-        description: '🎓 Claude Code Buddy: List all skills, differentiate sa: prefixed skills from user skills.',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {
-            filter: {
-              type: 'string',
-              description: 'Filter skills: "all" (default), "claude-code-buddy" (sa: prefix only), "user" (user skills only)',
-              enum: ['all', 'claude-code-buddy', 'user'],
-            },
-          },
-        },
-      };
-
-      // sa_uninstall - Uninstall claude-code-buddy
-      const saUninstallTool = {
-        name: 'sa_uninstall',
-        description: '🗑️ Claude Code Buddy: Uninstall Claude Code Buddy and clean up files with control over data retention.',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {
-            keepData: {
-              type: 'boolean',
-              description: 'Keep user data (evolution patterns, task history). Default: false',
-            },
-            keepConfig: {
-              type: 'boolean',
-              description: 'Keep configuration files (~/.claude-code-buddy/). Default: false',
-            },
-            dryRun: {
-              type: 'boolean',
-              description: 'Preview what would be removed without actually removing. Default: false',
-            },
-          },
-        },
-      };
-
-      // ========================================
-      // Buddy Commands (User-Friendly Layer)
-      // ========================================
-
-      // buddy_do - Execute tasks with smart routing
-      const buddyDoTool = {
-        name: 'buddy_do',
-        description: '🤖 CCB: Execute a task with smart routing. Analyzes complexity and routes to Ollama (fast & free) or Claude (high quality).',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {
-            task: {
-              type: 'string',
-              description: 'Task description to execute (e.g., "setup authentication", "fix login bug")',
-            },
-          },
-          required: ['task'],
-        },
-      };
-
-      // buddy_stats - Performance dashboard
-      const buddyStatsTool = {
-        name: 'buddy_stats',
-        description: '📊 CCB: View performance dashboard showing token usage, cost savings, and model routing decisions.',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {
-            period: {
-              type: 'string',
-              enum: ['day', 'week', 'month', 'all'],
-              description: 'Time period for statistics (default: "all")',
-            },
-          },
-        },
-      };
-
-      // buddy_remember - Recall project memory
-      const buddyRememberTool = {
-        name: 'buddy_remember',
-        description: '🧠 CCB: Recall project memory - past decisions, API design, bug fixes, and patterns.',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {
-            query: {
-              type: 'string',
-              description: 'What to remember/recall (e.g., "api design decisions", "authentication approach")',
-            },
-            limit: {
-              type: 'number',
-              description: 'Maximum number of memories to retrieve (1-50, default: 5)',
-              minimum: 1,
-              maximum: 50,
-            },
-          },
-          required: ['query'],
-        },
-      };
-
-      // buddy_help - Get help and documentation
-      const buddyHelpTool = {
-        name: 'buddy_help',
-        description: '📖 CCB: Get help for all buddy commands or a specific command.',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {
-            command: {
-              type: 'string',
-              description: 'Specific command to get help for (optional, e.g., "do", "stats", "remember")',
-            },
-          },
-        },
-      };
-
-      // ========================================
-      // Workflow Guidance Tools
-      // ========================================
-
-      // get-workflow-guidance - Get intelligent workflow recommendations
-      const getWorkflowGuidanceTool = {
-        name: 'get-workflow-guidance',
-        description: '🔄 Claude Code Buddy: Get intelligent workflow recommendations based on current development context',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {
-            phase: {
-              type: 'string',
-              enum: ['idle', 'code-written', 'test-complete', 'commit-ready', 'committed'],
-              description: 'Current workflow phase',
-            },
-            filesChanged: {
-              type: 'array',
-              items: { type: 'string' },
-              description: 'List of files that were changed',
-            },
-            testsPassing: {
-              type: 'boolean',
-              description: 'Whether tests are passing',
-            },
-          },
-          required: ['phase'],
-        },
-      };
-
-      // get-session-health - Check session health
-      const getSessionHealthTool = {
-        name: 'get-session-health',
-        description: '💊 Claude Code Buddy: Check session health including token usage and quality metrics',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {},
-        },
-      };
-
-      // reload-context - Reload CLAUDE.md context
-      const reloadContextTool = {
-        name: 'reload-context',
-        description: '🔄 Claude Code Buddy: Reload CLAUDE.md context to refresh session',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {
-            reason: {
-              type: 'string',
-              enum: ['token-threshold', 'quality-degradation', 'manual', 'context-staleness'],
-              description: 'Reason for reload',
-            },
-          },
-          required: ['reason'],
-        },
-      };
-
-      // record-token-usage - Record token usage for monitoring
-      const recordTokenUsageTool = {
-        name: 'record-token-usage',
-        description: '📊 Claude Code Buddy: Record token usage for session monitoring',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {
-            inputTokens: {
-              type: 'number',
-              description: 'Number of input tokens',
-            },
-            outputTokens: {
-              type: 'number',
-              description: 'Number of output tokens',
-            },
-          },
-          required: ['inputTokens', 'outputTokens'],
-        },
-      };
-
-      // ========================================
-      // Smart Planning Tools (Phase 2)
-      // ========================================
-
-      // generate-smart-plan - Generate implementation plans
-      const generateSmartPlanTool = {
-        name: 'generate-smart-plan',
-        description: '📋 Claude Code Buddy: Generate intelligent implementation plan with agent-aware task breakdown and TDD structure. Creates bite-sized tasks (2-5 min each) with learning-enhanced recommendations.',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {
-            featureDescription: {
-              type: 'string',
-              description: 'Description of the feature to plan',
-            },
-            requirements: {
-              type: 'array',
-              items: { type: 'string' },
-              description: 'List of specific requirements',
-            },
-            constraints: {
-              type: 'object',
-              properties: {
-                projectType: { type: 'string' },
-                techStack: {
-                  type: 'array',
-                  items: { type: 'string' },
-                },
-                complexity: { type: 'string', enum: ['low', 'medium', 'high'] },
-              },
-              description: 'Project constraints and context',
-            },
-          },
-          required: ['featureDescription'],
-        },
-      };
-
-      // ========================================
-      // Git Assistant Tools
-      // ========================================
-
-      // git-save-work - Save current work with friendly commit
-      const gitSaveWorkTool = {
-        name: 'git-save-work',
-        description: '💾 Git Assistant: Save your work with a friendly commit message. Automatically stages changes and creates a commit.',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {
-            description: {
-              type: 'string',
-              description: 'Description of what you did (in plain language)',
-            },
-            autoBackup: {
-              type: 'boolean',
-              description: 'Create local backup before committing. Default: true',
-            },
-          },
-          required: ['description'],
-        },
-      };
-
-      // git-list-versions - List recent versions/commits
-      const gitListVersionsTool = {
-        name: 'git-list-versions',
-        description: '📚 Git Assistant: List recent versions (commits) with friendly format.',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {
-            limit: {
-              type: 'number',
-              description: 'Number of versions to show. Default: 10',
-            },
-          },
-        },
-      };
-
-      // git-status - Show current working tree status
-      const gitStatusTool = {
-        name: 'git-status',
-        description: '📊 Git Assistant: Show current status of your files in a friendly format.',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {},
-        },
-      };
-
-      // git-show-changes - Show changes compared to a ref
-      const gitShowChangesTool = {
-        name: 'git-show-changes',
-        description: '🔍 Git Assistant: Show what changed compared to a specific version or branch.',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {
-            compareWith: {
-              type: 'string',
-              description: 'Version/branch to compare with. Default: HEAD',
-            },
-          },
-        },
-      };
-
-      // git-go-back - Go back to a previous version
-      const gitGoBackTool = {
-        name: 'git-go-back',
-        description: '⏪ Git Assistant: Go back to a previous version. Can use version number or commit hash.',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {
-            identifier: {
-              type: 'string',
-              description: 'Version number (e.g., "3") or commit hash to go back to',
-            },
-          },
-          required: ['identifier'],
-        },
-      };
-
-      // git-create-backup - Create local backup
-      const gitCreateBackupTool = {
-        name: 'git-create-backup',
-        description: '💼 Git Assistant: Create a local backup of your project.',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {},
-        },
-      };
-
-      // git-setup - Setup Git for a new project
-      const gitSetupTool = {
-        name: 'git-setup',
-        description: '⚙️ Git Assistant: Setup Git for a new project with guided wizard.',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {
-            existingGit: {
-              type: 'boolean',
-              description: 'Whether project already has Git initialized. Default: false',
-            },
-          },
-        },
-      };
-
-      // git-help - Show Git Assistant help
-      const gitHelpTool = {
-        name: 'git-help',
-        description: '❓ Git Assistant: Show help and available commands.',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {},
-        },
-      };
-
-      // ========================================
-      // Project Memory Tools
-      // ========================================
-
-      // recall-memory - Recall project memory from previous sessions
-      const recallMemoryToolDef = {
-        name: recallMemoryTool.name,
-        description: recallMemoryTool.description,
-        inputSchema: recallMemoryTool.inputSchema,
-      };
-
-      // ========================================
-      // Backward compatibility (old names)
-      // ========================================
-
-      // Smart router tool (legacy name)
-      const smartRouterTool = {
-        name: 'smart_route_task',
-        description: '[LEGACY] Smart task router that analyzes your task and recommends the best agent. Use sa_task instead for shorter command.',
-        inputSchema: taskInputSchema,
-      };
-
-      // Evolution dashboard tool (legacy name)
-      const evolutionDashboardTool = {
-        name: 'evolution_dashboard',
-        description: '[LEGACY] View evolution system dashboard. Use sa_dashboard instead for shorter command.',
-        inputSchema: dashboardInputSchema,
-      };
-
-      // Individual agent tools (advanced mode)
-      const agentTools = allAgents.map(agent => ({
-        name: agent.name,
-        description: agent.description,
-        inputSchema: agent.inputSchema || {
-          type: 'object',
-          properties: {
-            task_description: {
-              type: 'string',
-              description: 'Description of the task to be performed',
-            },
-            priority: {
-              type: 'number',
-              description: 'Task priority (optional, 1-10)',
-              minimum: 1,
-              maximum: 10,
-            },
-          },
-          required: ['task_description'],
-        },
-      }));
-
-      return {
-        tools: [
-          // New sa_* tools first (recommended)
-          saTaskTool,
-          saDashboardTool,
-          saAgentsTool,
-          saSkillsTool,
-          saUninstallTool,
-          // Buddy Commands (user-friendly layer)
-          buddyDoTool,
-          buddyStatsTool,
-          buddyRememberTool,
-          buddyHelpTool,
-          // Workflow guidance tools
-          getWorkflowGuidanceTool,
-          getSessionHealthTool,
-          reloadContextTool,
-          recordTokenUsageTool,
-          // Smart Planning tools (Phase 2)
-          generateSmartPlanTool,
-          // Git Assistant tools
-          gitSaveWorkTool,
-          gitListVersionsTool,
-          gitStatusTool,
-          gitShowChangesTool,
-          gitGoBackTool,
-          gitCreateBackupTool,
-          gitSetupTool,
-          gitHelpTool,
-          // Project Memory tools
-          recallMemoryToolDef,
-          // Legacy tools (backward compatibility)
-          smartRouterTool,
-          evolutionDashboardTool,
-          // Individual agents
-          ...agentTools,
-        ],
+      return { tools
       };
     });
 

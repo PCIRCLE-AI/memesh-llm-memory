@@ -429,37 +429,7 @@ export class SQLiteStore implements EvolutionStore {
    * @param span - Span to record
    */
   async recordSpan(span: Span): Promise<void> {
-    // Validate span before inserting
-    validateSpan(span);
-
-    const stmt = this.db.prepare(`
-      INSERT INTO spans (
-        span_id, trace_id, parent_span_id, task_id, execution_id,
-        name, kind, start_time, end_time, duration_ms,
-        status_code, status_message,
-        attributes, resource, links, tags, events
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      span.span_id,
-      span.trace_id,
-      span.parent_span_id || null,
-      span.task_id,
-      span.execution_id,
-      span.name,
-      span.kind,
-      span.start_time,
-      span.end_time || null,
-      span.duration_ms || null,
-      span.status.code,
-      span.status.message || null,
-      JSON.stringify(span.attributes),
-      JSON.stringify(span.resource),
-      span.links ? JSON.stringify(span.links) : null,
-      span.tags ? JSON.stringify(span.tags) : null,
-      span.events ? JSON.stringify(span.events) : null
-    );
+    return this.spanRepository.recordSpan(span);
   }
 
   /**
@@ -468,13 +438,7 @@ export class SQLiteStore implements EvolutionStore {
    * @param spans - Array of spans to record
    */
   async recordSpanBatch(spans: Span[]): Promise<void> {
-    const insertMany = this.db.transaction((spans: Span[]) => {
-      for (const span of spans) {
-        this.recordSpan(span);
-      }
-    });
-
-    insertMany(spans);
+    return this.spanRepository.recordSpanBatch(spans);
   }
 
   /**
@@ -484,155 +448,19 @@ export class SQLiteStore implements EvolutionStore {
    * @returns Array of matching spans
    */
   async querySpans(query: SpanQuery): Promise<Span[]> {
-    let sql = 'SELECT * FROM spans WHERE 1=1';
-    const params: SQLParams = [];
-
-    // Identity filters
-    if (query.task_id) {
-      sql += ' AND task_id = ?';
-      params.push(query.task_id);
-    }
-
-    if (query.execution_id) {
-      sql += ' AND execution_id = ?';
-      params.push(query.execution_id);
-    }
-
-    if (query.trace_id) {
-      sql += ' AND trace_id = ?';
-      params.push(query.trace_id);
-    }
-
-    if (query.span_id) {
-      sql += ' AND span_id = ?';
-      params.push(query.span_id);
-    }
-
-    // Status filters
-    if (query.status_code) {
-      sql += ' AND status_code = ?';
-      params.push(query.status_code);
-    }
-
-    // Time filters
-    if (query.start_time_gte) {
-      sql += ' AND start_time >= ?';
-      params.push(query.start_time_gte);
-    }
-
-    if (query.start_time_lte) {
-      sql += ' AND start_time <= ?';
-      params.push(query.start_time_lte);
-    }
-
-    if (query.end_time_gte) {
-      sql += ' AND end_time >= ?';
-      params.push(query.end_time_gte);
-    }
-
-    if (query.end_time_lte) {
-      sql += ' AND end_time <= ?';
-      params.push(query.end_time_lte);
-    }
-
-    // Sorting - SQL injection protection
-    const ALLOWED_SORT_COLUMNS = [
-      'start_time', 'duration_ms', 'status_code', 'name', 'kind',
-      'end_time', 'span_id', 'trace_id', 'task_id', 'execution_id'
-    ];
-    const ALLOWED_SORT_ORDERS = ['ASC', 'DESC'];
-
-    if (query.sort_by) {
-      if (!ALLOWED_SORT_COLUMNS.includes(query.sort_by)) {
-        throw new ValidationError(
-          `Invalid sort column: ${query.sort_by}. Allowed: ${ALLOWED_SORT_COLUMNS.join(', ')}`,
-          {
-            component: 'SQLiteStore',
-            method: 'querySpans',
-            providedValue: query.sort_by,
-            allowedValues: ALLOWED_SORT_COLUMNS,
-            constraint: 'sort_by must be one of allowed columns',
-          }
-        );
-      }
-      sql += ` ORDER BY ${query.sort_by}`;
-
-      if (query.sort_order) {
-        const upperOrder = query.sort_order.toUpperCase();
-        if (!ALLOWED_SORT_ORDERS.includes(upperOrder)) {
-          throw new ValidationError(
-            `Invalid sort order: ${query.sort_order}. Allowed: ASC, DESC`,
-            {
-              component: 'SQLiteStore',
-              method: 'querySpans',
-              providedValue: query.sort_order,
-              allowedValues: ALLOWED_SORT_ORDERS,
-              constraint: 'sort_order must be ASC or DESC',
-            }
-          );
-        }
-        sql += ` ${upperOrder}`;
-      }
-    } else {
-      sql += ' ORDER BY start_time DESC';
-    }
-
-    // Pagination
-    if (query.limit) {
-      sql += ' LIMIT ?';
-      params.push(query.limit);
-    }
-
-    if (query.offset) {
-      sql += ' OFFSET ?';
-      params.push(query.offset);
-    }
-
-    const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as SpanRow[];
-
-    // Optimized: Pre-allocate array with known length
-    const spans: Span[] = new Array(rows.length);
-    for (let i = 0; i < rows.length; i++) {
-      spans[i] = this.rowToSpan(rows[i]);
-    }
-    return spans;
+    return this.spanRepository.querySpans(query);
   }
 
   async getSpan(spanId: string): Promise<Span | null> {
-    const stmt = this.db.prepare('SELECT * FROM spans WHERE span_id = ?');
-    const row = stmt.get(spanId) as SpanRow | undefined;
-    if (!row) return null;
-
-    return this.rowToSpan(row);
+    return this.spanRepository.getSpan(spanId);
   }
 
   async getSpansByTrace(traceId: string): Promise<Span[]> {
-    const stmt = this.db.prepare(
-      'SELECT * FROM spans WHERE trace_id = ? ORDER BY start_time ASC'
-    );
-    const rows = stmt.all(traceId) as SpanRow[];
-
-    // Optimized: Pre-allocate array with known length
-    const spans: Span[] = new Array(rows.length);
-    for (let i = 0; i < rows.length; i++) {
-      spans[i] = this.rowToSpan(rows[i]);
-    }
-    return spans;
+    return this.spanRepository.getSpansByTrace(traceId);
   }
 
   async getChildSpans(parentSpanId: string): Promise<Span[]> {
-    const stmt = this.db.prepare(
-      'SELECT * FROM spans WHERE parent_span_id = ? ORDER BY start_time ASC'
-    );
-    const rows = stmt.all(parentSpanId) as SpanRow[];
-
-    // Optimized: Pre-allocate array with known length
-    const spans: Span[] = new Array(rows.length);
-    for (let i = 0; i < rows.length; i++) {
-      spans[i] = this.rowToSpan(rows[i]);
-    }
-    return spans;
+    return this.spanRepository.getChildSpans(parentSpanId);
   }
 
   // ========================================================================
@@ -815,39 +643,11 @@ export class SQLiteStore implements EvolutionStore {
    * @param pattern - Pattern to store
    */
   async storePattern(pattern: Pattern): Promise<void> {
-    // Validate pattern before inserting
-    validatePattern(pattern);
-
-    const stmt = this.db.prepare(`
-      INSERT INTO patterns (
-        id, type, confidence, occurrences, pattern_data, source_span_ids,
-        applies_to_agent_type, applies_to_task_type, applies_to_skill,
-        first_observed, last_observed, is_active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      pattern.id,
-      pattern.type,
-      pattern.confidence,
-      pattern.occurrences,
-      JSON.stringify(pattern.pattern_data),
-      JSON.stringify(pattern.source_span_ids),
-      pattern.applies_to_agent_type || null,
-      pattern.applies_to_task_type || null,
-      pattern.applies_to_skill || null,
-      pattern.first_observed.toISOString(),
-      pattern.last_observed.toISOString(),
-      pattern.is_active ? 1 : 0
-    );
+    return this.patternRepository.recordPattern(pattern);
   }
 
   async getPattern(patternId: string): Promise<Pattern | null> {
-    const stmt = this.db.prepare('SELECT * FROM patterns WHERE id = ?');
-    const row = stmt.get(patternId) as PatternRow | undefined;
-    if (!row) return null;
-
-    return this.rowToPattern(row);
+    return this.patternRepository.getPattern(patternId);
   }
 
   /**
@@ -857,87 +657,7 @@ export class SQLiteStore implements EvolutionStore {
    * @returns Array of matching patterns
    */
   async queryPatterns(query: PatternQuery): Promise<Pattern[]> {
-    let sql = 'SELECT * FROM patterns WHERE 1=1';
-    const params: SQLParams = [];
-
-    if (query.type) {
-      if (Array.isArray(query.type)) {
-        sql += ` AND type IN (${query.type.map(() => '?').join(',')})`;
-        params.push(...query.type);
-      } else {
-        sql += ' AND type = ?';
-        params.push(query.type);
-      }
-    }
-
-    if (query.min_confidence !== undefined) {
-      sql += ' AND confidence >= ?';
-      params.push(query.min_confidence);
-    }
-
-    if (query.max_confidence !== undefined) {
-      sql += ' AND confidence <= ?';
-      params.push(query.max_confidence);
-    }
-
-    if (query.agent_type) {
-      sql += ' AND applies_to_agent_type = ?';
-      params.push(query.agent_type);
-    }
-
-    if (query.task_type) {
-      sql += ' AND applies_to_task_type = ?';
-      params.push(query.task_type);
-    }
-
-    if (query.skill_name) {
-      sql += ' AND applies_to_skill = ?';
-      params.push(query.skill_name);
-    }
-
-    if (query.is_active !== undefined) {
-      sql += ' AND is_active = ?';
-      params.push(query.is_active ? 1 : 0);
-    }
-
-    if (query.observed_after) {
-      sql += ' AND last_observed >= ?';
-      params.push(query.observed_after.toISOString());
-    }
-
-    if (query.observed_before) {
-      sql += ' AND first_observed <= ?';
-      params.push(query.observed_before.toISOString());
-    }
-
-    // Sorting
-    if (query.sort_by) {
-      sql += ` ORDER BY ${query.sort_by}`;
-      if (query.sort_order) {
-        sql += ` ${query.sort_order.toUpperCase()}`;
-      }
-    }
-
-    // Pagination
-    if (query.limit) {
-      sql += ' LIMIT ?';
-      params.push(query.limit);
-    }
-
-    if (query.offset) {
-      sql += ' OFFSET ?';
-      params.push(query.offset);
-    }
-
-    const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as PatternRow[];
-
-    // Optimized: Pre-allocate array with known length
-    const patterns: Pattern[] = new Array(rows.length);
-    for (let i = 0; i < rows.length; i++) {
-      patterns[i] = this.rowToPattern(rows[i]);
-    }
-    return patterns;
+    return this.patternRepository.queryPatterns(query);
   }
 
   /**
@@ -1084,34 +804,7 @@ export class SQLiteStore implements EvolutionStore {
     patternId: string,
     updates: Partial<Pattern>
   ): Promise<void> {
-    const fields: string[] = [];
-    const values: SQLParam[] = [];
-
-    if (updates.confidence !== undefined) {
-      fields.push('confidence = ?');
-      values.push(updates.confidence);
-    }
-
-    if (updates.occurrences !== undefined) {
-      fields.push('occurrences = ?');
-      values.push(updates.occurrences);
-    }
-
-    if (updates.last_observed) {
-      fields.push('last_observed = ?');
-      values.push(updates.last_observed.toISOString());
-    }
-
-    if (fields.length > 0) {
-      fields.push('updated_at = CURRENT_TIMESTAMP');
-      values.push(patternId);
-
-      const stmt = this.db.prepare(`
-        UPDATE patterns SET ${fields.join(', ')} WHERE id = ?
-      `);
-
-      stmt.run(...values);
-    }
+    return this.patternRepository.updatePattern(patternId, updates);
   }
 
   async deactivatePattern(patternId: string, reason?: string): Promise<void> {
@@ -1554,30 +1247,6 @@ export class SQLiteStore implements EvolutionStore {
   // ========================================================================
   // Helper Methods (Row to Model conversion)
   // ========================================================================
-
-  protected rowToSpan(row: SpanRow): Span {
-    return {
-      trace_id: row.trace_id,
-      span_id: row.span_id,
-      parent_span_id: row.parent_span_id ?? undefined,
-      task_id: row.task_id,
-      execution_id: row.execution_id,
-      name: row.name,
-      kind: row.kind as Span['kind'],
-      start_time: row.start_time,
-      end_time: row.end_time ?? undefined,
-      duration_ms: row.duration_ms ?? undefined,
-      status: {
-        code: row.status_code as Span['status']['code'],
-        message: row.status_message ?? undefined,
-      },
-      attributes: safeJsonParse(row.attributes, {}),
-      resource: safeJsonParse(row.resource, { 'task.id': '', 'execution.id': '', 'execution.attempt': 0 }),
-      links: safeJsonParse(row.links, undefined),
-      tags: safeJsonParse(row.tags, undefined),
-      events: safeJsonParse(row.events, undefined),
-    };
-  }
 
   private rowToPattern(row: PatternRow): Pattern {
     return {

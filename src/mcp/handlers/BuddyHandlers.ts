@@ -20,6 +20,7 @@
  */
 
 import { z } from 'zod';
+import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { ValidationError } from '../../errors/index.js';
 import { logError } from '../../utils/errorHandler.js';
 import type { Router } from '../../orchestrator/router.js';
@@ -126,7 +127,7 @@ export class BuddyHandlers {
    */
   async handleBuddyDo(
     args: unknown
-  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+  ): Promise<CallToolResult> {
     // Validate input
     let validatedInput: ValidatedBuddyDoInput;
     try {
@@ -171,7 +172,7 @@ export class BuddyHandlers {
    */
   async handleBuddyStats(
     args: unknown
-  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+  ): Promise<CallToolResult> {
     // Validate input
     let validatedInput: ValidatedBuddyStatsInput;
     try {
@@ -249,7 +250,7 @@ export class BuddyHandlers {
    */
   async handleBuddyRemember(
     args: unknown
-  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+  ): Promise<CallToolResult> {
     // Validate input
     let validatedInput: ValidatedBuddyRememberInput;
     try {
@@ -294,7 +295,7 @@ export class BuddyHandlers {
    */
   async handleBuddyHelp(
     args: unknown
-  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+  ): Promise<CallToolResult> {
     // Validate input
     let validatedInput: ValidatedBuddyHelpInput;
     try {

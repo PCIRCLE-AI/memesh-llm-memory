@@ -23,6 +23,7 @@
  */
 
 import { z } from 'zod';
+import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { GitAssistantIntegration } from '../../integrations/GitAssistantIntegration.js';
 import { ValidationError } from '../../errors/index.js';
 import { handleError, logError, formatMCPError } from '../../utils/errorHandler.js';
@@ -103,7 +104,7 @@ export class GitHandlers {
    */
   async handleGitSaveWork(
     args: unknown
-  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+  ): Promise<CallToolResult> {
     try {
       let validatedInput: ValidatedGitSaveWorkInput;
       try {
@@ -128,7 +129,7 @@ export class GitHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `✅ Work saved successfully with description: "${validatedInput.description}"`,
           },
         ],
@@ -150,7 +151,7 @@ export class GitHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `❌ Failed to save work: ${handled.message}`,
           },
         ],
@@ -163,7 +164,7 @@ export class GitHandlers {
    */
   async handleGitListVersions(
     args: unknown
-  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+  ): Promise<CallToolResult> {
     try {
       let validatedInput: ValidatedGitListVersionsInput;
       try {
@@ -188,7 +189,7 @@ export class GitHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: JSON.stringify(versions, null, 2),
           },
         ],
@@ -210,7 +211,7 @@ export class GitHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `❌ Failed to list versions: ${handled.message}`,
           },
         ],
@@ -223,14 +224,14 @@ export class GitHandlers {
    */
   async handleGitStatus(
     _args: unknown
-  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+  ): Promise<CallToolResult> {
     try {
       await this.gitAssistant.status();
 
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: '✅ Git status displayed',
           },
         ],
@@ -251,7 +252,7 @@ export class GitHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `❌ Failed to get status: ${handled.message}`,
           },
         ],
@@ -264,7 +265,7 @@ export class GitHandlers {
    */
   async handleGitShowChanges(
     args: unknown
-  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+  ): Promise<CallToolResult> {
     try {
       let validatedInput: ValidatedGitShowChangesInput;
       try {
@@ -289,7 +290,7 @@ export class GitHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: JSON.stringify(changes, null, 2),
           },
         ],
@@ -311,7 +312,7 @@ export class GitHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `❌ Failed to show changes: ${handled.message}`,
           },
         ],
@@ -353,7 +354,7 @@ export class GitHandlers {
    */
   async handleGitGoBack(
     args: unknown
-  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+  ): Promise<CallToolResult> {
     try {
       let validatedInput: ValidatedGitGoBackInput;
       try {
@@ -378,7 +379,7 @@ export class GitHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `✅ Successfully went back to version: ${validatedInput.identifier}`,
           },
         ],
@@ -400,7 +401,7 @@ export class GitHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `❌ Failed to go back: ${handled.message}`,
           },
         ],
@@ -413,14 +414,14 @@ export class GitHandlers {
    */
   async handleGitCreateBackup(
     _args: unknown
-  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+  ): Promise<CallToolResult> {
     try {
       const backupPath = await this.gitAssistant.createBackup();
 
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `✅ Backup created at: ${backupPath}`,
           },
         ],
@@ -441,7 +442,7 @@ export class GitHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `❌ Failed to create backup: ${handled.message}`,
           },
         ],
@@ -454,7 +455,7 @@ export class GitHandlers {
    */
   async handleGitSetup(
     args: unknown
-  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+  ): Promise<CallToolResult> {
     try {
       let validatedInput: ValidatedGitSetupInput;
       try {
@@ -483,7 +484,7 @@ export class GitHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: '✅ Git setup completed successfully',
           },
         ],
@@ -505,7 +506,7 @@ export class GitHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `❌ Git setup failed: ${handled.message}`,
           },
         ],
@@ -518,14 +519,14 @@ export class GitHandlers {
    */
   async handleGitHelp(
     _args: unknown
-  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+  ): Promise<CallToolResult> {
     try {
       await this.gitAssistant.showHelp();
 
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: '✅ Git Assistant help displayed',
           },
         ],
@@ -546,7 +547,7 @@ export class GitHandlers {
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: `❌ Failed to show help: ${handled.message}`,
           },
         ],

@@ -34,7 +34,7 @@ export async function executeBuddyRemember(
   input: ValidatedBuddyRememberInput,
   projectMemory: ProjectMemoryManager,
   formatter: ResponseFormatter
-): Promise<{ content: Array<{ type: string; text: string }> }> {
+): Promise<{ content: Array<{ type: 'text'; text: string }> }> {
   try {
     // Search project memory
     const memories = await projectMemory.search(input.query, input.limit);
@@ -58,7 +58,7 @@ export async function executeBuddyRemember(
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: formattedResponse,
           },
         ],
@@ -79,7 +79,7 @@ export async function executeBuddyRemember(
     return {
       content: [
         {
-          type: 'text',
+          type: 'text' as const,
           text: formattedResponse,
         },
       ],
@@ -97,7 +97,7 @@ export async function executeBuddyRemember(
     return {
       content: [
         {
-          type: 'text',
+          type: 'text' as const,
           text: formattedError,
         },
       ],

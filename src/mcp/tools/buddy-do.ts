@@ -24,7 +24,7 @@ export async function executeBuddyDo(
   input: ValidatedBuddyDoInput,
   router: Router,
   formatter: ResponseFormatter
-): Promise<{ content: Array<{ type: string; text: string }> }> {
+): Promise<{ content: Array<{ type: 'text'; text: string }> }> {
   try {
     // Route task through smart routing system
     const result = await router.routeTask({
@@ -43,7 +43,7 @@ export async function executeBuddyDo(
     return {
       content: [
         {
-          type: 'text',
+          type: 'text' as const,
           text: formattedResponse,
         },
       ],
@@ -62,7 +62,7 @@ export async function executeBuddyDo(
     return {
       content: [
         {
-          type: 'text',
+          type: 'text' as const,
           text: formattedError,
         },
       ],

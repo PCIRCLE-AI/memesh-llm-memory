@@ -28,7 +28,7 @@ export type ValidatedBuddyHelpInput = z.infer<typeof BuddyHelpInputSchema>;
 export async function executeBuddyHelp(
   input: ValidatedBuddyHelpInput,
   formatter: ResponseFormatter
-): Promise<{ content: Array<{ type: string; text: string }> }> {
+): Promise<{ content: Array<{ type: 'text'; text: string }> }> {
   try {
     const helpText = BuddyCommands.getHelp(input.command);
 
@@ -47,7 +47,7 @@ export async function executeBuddyHelp(
     return {
       content: [
         {
-          type: 'text',
+          type: 'text' as const,
           text: formattedResponse,
         },
       ],
@@ -67,7 +67,7 @@ export async function executeBuddyHelp(
     return {
       content: [
         {
-          type: 'text',
+          type: 'text' as const,
           text: formattedError,
         },
       ],

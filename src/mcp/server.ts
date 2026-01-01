@@ -49,10 +49,12 @@ import { MCPToolInterface } from '../core/MCPToolInterface.js';
 import { PlanningEngine } from '../planning/PlanningEngine.js';
 import { GitAssistantIntegration } from '../integrations/GitAssistantIntegration.js';
 import { getAllToolDefinitions } from './ToolDefinitions.js';
-import { GitHandlers } from './handlers/GitHandlers.js';
-import { ToolHandlers } from './handlers/ToolHandlers.js';
-import { BuddyHandlers } from './handlers/BuddyHandlers.js';
-import { setupResourceHandlers } from './handlers/ResourceHandlers.js';
+import {
+  GitHandlers,
+  ToolHandlers,
+  BuddyHandlers,
+  setupResourceHandlers,
+} from './handlers/index.js';
 
 // Buddy Commands (user-friendly layer)
 import {

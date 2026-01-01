@@ -120,6 +120,11 @@ docs/drafts/**
 *-audit.md
 *-debug.md
 *-progress.md
+*IMPLEMENTATION*.md
+*_IMPLEMENTATION*.md
+IMPLEMENTATION_*.md
+*MIGRATION*.md
+REFACTORING_ANALYSIS.md
 
 # Test reports and analysis
 test-reports/

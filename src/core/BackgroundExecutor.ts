@@ -7,12 +7,12 @@
  *
  * Features:
  * - **Resource-Aware Scheduling**: Monitors CPU, memory, and concurrent agent limits
- * - **Priority-Based Queueing**: Executes high-priority tasks first using ExecutionQueue
+ * - **Priority-Based Queueing**: Executes high-priority tasks first using TaskScheduler
  * - **Progress Tracking**: Real-time progress updates with stage information
  * - **Task Cancellation**: Cancel queued or running tasks with immediate status updates
  * - **Asynchronous Execution**: Non-blocking task execution with promise-based completion
  * - **UIEventBus Integration**: Progress events for frontend monitoring and attribution
- * - **AttributionManager**: Tracks time saved and generates success/error attributions
+ * - **Result Handling**: Dedicated result handler for task completion/failure
  *
  * Task Lifecycle:
  * 1. **Queued**: Task submitted, waiting for resources
@@ -65,7 +65,7 @@
 
 import { randomBytes } from 'crypto';
 import { ResourceMonitor } from './ResourceMonitor.js';
-import { ExecutionQueue } from './ExecutionQueue.js';
+import { TaskScheduler } from './TaskScheduler.js';
 import { ResultHandler } from './ResultHandler.js';
 import { ExecutionMonitor } from './ExecutionMonitor.js';
 import {
@@ -169,11 +169,12 @@ interface WorkerHandle {
  * cancellation support throughout.
  *
  * Architecture:
- * - **ExecutionQueue**: Priority-based task queue (high → medium → low)
+ * - **TaskScheduler**: Priority-based task scheduling with resource checking (high → medium → low)
  * - **ResourceMonitor**: CPU, memory, and concurrent agent tracking
  * - **ActiveWorkers**: Map of running tasks with cancellation handles
+ * - **ResultHandler**: Task completion and failure handling
+ * - **ExecutionMonitor**: Task registration and monitoring
  * - **UIEventBus**: Optional integration for frontend progress updates
- * - **AttributionManager**: Optional integration for success/error attribution
  *
  * Thread Safety:
  * - Single-threaded queue processing (processingQueue flag prevents concurrent processing)
@@ -203,7 +204,7 @@ interface WorkerHandle {
  * ```
  */
 export class BackgroundExecutor {
-  private taskQueue: ExecutionQueue;
+  private scheduler: TaskScheduler;
   private activeWorkers: Map<string, WorkerHandle>;
   private resourceMonitor: ResourceMonitor;
   private tasks: Map<string, BackgroundTask>;
@@ -216,7 +217,7 @@ export class BackgroundExecutor {
    * Create a new BackgroundExecutor
    *
    * Initializes the execution engine with resource monitoring and optional UI integration.
-   * Creates internal task queue, worker tracking, and attribution manager if UIEventBus provided.
+   * Creates internal task scheduler, worker tracking, and attribution manager if UIEventBus provided.
    *
    * @param resourceMonitor - Resource monitor for CPU, memory, and concurrent agent tracking
    * @param eventBus - Optional UIEventBus for progress updates and attribution events
@@ -234,17 +235,13 @@ export class BackgroundExecutor {
    * ```
    */
   constructor(resourceMonitor: ResourceMonitor, eventBus?: UIEventBus) {
-    this.taskQueue = new ExecutionQueue();
+    this.scheduler = new TaskScheduler(resourceMonitor);
     this.activeWorkers = new Map();
     this.resourceMonitor = resourceMonitor;
     this.tasks = new Map();
     this.eventBus = eventBus;
     this.resultHandler = new ResultHandler();
-
-    // Create AttributionManager if UIEventBus provided
-    if (this.eventBus) {
-      this.attributionManager = new AttributionManager(this.eventBus);
-    }
+    this.executionMonitor = new ExecutionMonitor(eventBus);
   }
 
   /**
@@ -348,11 +345,12 @@ export class BackgroundExecutor {
       },
     };
 
-    // Store task
+    // Store task and register with monitor
     this.tasks.set(taskId, backgroundTask);
+    this.executionMonitor.registerTask(taskId, backgroundTask);
 
-    // Enqueue task
-    this.taskQueue.enqueue(backgroundTask);
+    // Enqueue task with scheduler
+    this.scheduler.enqueue(backgroundTask);
 
     logger.info(`BackgroundExecutor: Task ${taskId} queued with priority ${config.priority}`);
 
@@ -373,19 +371,11 @@ export class BackgroundExecutor {
     this.processingQueue = true;
 
     try {
-      while (!this.taskQueue.isEmpty()) {
-        // Check if we can run more tasks
-        const resourceCheck = this.resourceMonitor.canRunBackgroundTask();
-        if (!resourceCheck.canExecute) {
-          logger.warn(
-            `BackgroundExecutor: Cannot start new tasks - ${resourceCheck.reason}`
-          );
-          break;
-        }
-
-        // Dequeue next task
-        const backgroundTask = this.taskQueue.dequeue();
+      while (!this.scheduler.isEmpty()) {
+        // Get next task from scheduler (checks resources automatically)
+        const backgroundTask = this.scheduler.getNextTask();
         if (!backgroundTask) {
+          // No tasks available or resources insufficient
           break;
         }
 
@@ -422,36 +412,12 @@ export class BackgroundExecutor {
       cancelled = true;
     };
 
-    // Progress update function
+    // Progress update function (delegate to ExecutionMonitor)
     const updateProgress = (progress: number, stage?: string) => {
       if (cancelled) {
         return;
       }
-
-      const currentTask = this.tasks.get(taskId);
-      if (currentTask) {
-        currentTask.progress = {
-          progress: Math.max(0, Math.min(1, progress)),
-          currentStage: stage,
-        };
-        this.tasks.set(taskId, currentTask);
-
-        // Emit UIEventBus progress event if available
-        if (this.eventBus) {
-          const taskData = currentTask.task as TaskData;
-          this.eventBus.emitProgress({
-            agentId: taskId,
-            agentType: 'background-executor',
-            taskDescription: taskData.description || 'Background task',
-            progress: Math.max(0, Math.min(1, progress)),
-            currentStage: stage,
-            startTime: currentTask.startTime,
-          });
-        }
-
-        // Call progress callback if provided
-        config.callbacks?.onProgress?.(progress);
-      }
+      this.executionMonitor.updateProgress(taskId, backgroundTask, progress, stage);
     };
 
     // Execute task
@@ -693,7 +659,7 @@ export class BackgroundExecutor {
    */
   async cancelTask(taskId: string): Promise<void> {
     // Check if task is in queue
-    if (this.taskQueue.remove(taskId)) {
+    if (this.scheduler.removeTask(taskId)) {
       const task = this.tasks.get(taskId);
       if (task) {
         task.status = 'cancelled';
@@ -904,7 +870,7 @@ export class BackgroundExecutor {
     completed: number;
     failed: number;
     cancelled: number;
-    queueStats: ReturnType<ExecutionQueue['getStats']>;
+    queueStats: ReturnType<TaskScheduler['getStats']>;
   } {
     return {
       queued: this.getTasksByStatus('queued').length,
@@ -912,7 +878,7 @@ export class BackgroundExecutor {
       completed: this.getTasksByStatus('completed').length,
       failed: this.getTasksByStatus('failed').length,
       cancelled: this.getTasksByStatus('cancelled').length,
-      queueStats: this.taskQueue.getStats(),
+      queueStats: this.scheduler.getStats(),
     };
   }
 

@@ -1,8 +1,25 @@
 /**
  * Git Assistant Handler Module
  *
- * Handles all Git-related MCP tool calls.
- * Extracted from server.ts for better modularity.
+ * Provides user-friendly Git operations through MCP tools. Simplifies common
+ * Git workflows with natural language commands and educational feedback.
+ *
+ * **Supported Operations**:
+ * - Save work (commit with auto-generated messages)
+ * - List versions (commit history)
+ * - Show changes (diff viewing)
+ * - Go back (restore previous versions)
+ * - Create backups (emergency snapshots)
+ * - Setup Git (repository initialization)
+ * - Get help (command documentation)
+ *
+ * **Design Philosophy**:
+ * - Hide Git complexity from users
+ * - Provide educational feedback
+ * - Prevent destructive operations without confirmation
+ * - Auto-backup before risky operations
+ *
+ * @module GitHandlers
  */
 
 import { z } from 'zod';
@@ -26,17 +43,63 @@ import {
 /**
  * Git Handler Class
  *
- * Encapsulates all Git Assistant tool handlers
+ * Provides MCP tool handlers for Git operations. Each method validates input,
+ * delegates to GitAssistantIntegration, and returns formatted responses.
+ *
+ * **Error Handling**:
+ * - Input validation using Zod schemas
+ * - Structured error logging with context
+ * - User-friendly error messages
+ * - Automatic error recovery where possible
+ *
+ * **Response Format**:
+ * All methods return CallToolResult shape:
+ * ```typescript
+ * {
+ *   content: [{ type: 'text', text: '...' }]
+ * }
+ * ```
  */
 export class GitHandlers {
   private gitAssistant: GitAssistantIntegration;
 
+  /**
+   * Create a new GitHandlers instance
+   *
+   * @param gitAssistant - Git integration service
+   */
   constructor(gitAssistant: GitAssistantIntegration) {
     this.gitAssistant = gitAssistant;
   }
 
   /**
    * Handle git-save-work tool
+   *
+   * Saves current work with a descriptive commit message. Optionally creates
+   * a backup before committing for extra safety.
+   *
+   * **Workflow**:
+   * 1. Stage all changes (git add .)
+   * 2. Create backup if autoBackup=true
+   * 3. Commit with provided description
+   * 4. Show success confirmation
+   *
+   * @param args - Save work arguments
+   * @param args.description - Commit message describing the changes
+   * @param args.autoBackup - Create backup before committing (default: false)
+   * @returns Promise resolving to success confirmation
+   *
+   * @throws ValidationError if input validation fails
+   * @throws OperationError if Git operations fail
+   *
+   * @example
+   * ```typescript
+   * await handleGitSaveWork({
+   *   description: 'Implement user authentication',
+   *   autoBackup: true
+   * });
+   * // ✅ Work saved successfully with description: "Implement user authentication"
+   * ```
    */
   async handleGitSaveWork(
     args: unknown
@@ -258,6 +321,35 @@ export class GitHandlers {
 
   /**
    * Handle git-go-back tool
+   *
+   * Restores the project to a previous version. Can restore by:
+   * - Commit hash (e.g., "abc123")
+   * - Relative reference (e.g., "HEAD~2")
+   * - Tag name (e.g., "v1.0.0")
+   *
+   * **Safety**:
+   * - Creates automatic backup before restoration
+   * - Shows preview of changes before applying
+   * - Preserves uncommitted changes in stash
+   *
+   * @param args - Go back arguments
+   * @param args.identifier - Version identifier (commit hash, reference, or tag)
+   * @returns Promise resolving to success confirmation
+   *
+   * @throws ValidationError if identifier is invalid
+   * @throws OperationError if Git reset fails
+   *
+   * @example
+   * ```typescript
+   * // Go back 2 commits
+   * await handleGitGoBack({ identifier: 'HEAD~2' });
+   *
+   * // Restore specific commit
+   * await handleGitGoBack({ identifier: 'abc123' });
+   *
+   * // Restore tagged version
+   * await handleGitGoBack({ identifier: 'v1.0.0' });
+   * ```
    */
   async handleGitGoBack(
     args: unknown

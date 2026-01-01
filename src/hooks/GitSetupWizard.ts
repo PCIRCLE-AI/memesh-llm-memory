@@ -5,10 +5,10 @@
  * Provides educational content and friendly prompts.
  */
 
-import { MCPToolInterface } from '../core/MCPToolInterface';
-import { FriendlyGitCommands } from './FriendlyGitCommands';
-import { GitAssistantHook, GitAssistantConfig } from './GitAssistantHook';
-import { GitEducationTemplates, SetupWizard } from '../templates/git-education-templates';
+import { MCPToolInterface } from '../core/MCPToolInterface.js';
+import { FriendlyGitCommands } from './FriendlyGitCommands.js';
+import { GitAssistantHook, GitAssistantConfig } from './GitAssistantHook.js';
+import { GitEducationTemplates, SetupWizard } from '../templates/git-education-templates.js';
 import { logger } from '../utils/logger.js';
 
 export interface SetupOptions {

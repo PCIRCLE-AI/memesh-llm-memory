@@ -8,7 +8,7 @@
  */
 
 import { IEmbeddingProvider, ModelInfo } from '../types';
-import { logger } from '../../../utils/logger';
+import { logger } from '../../../utils/logger.js';
 
 /**
  * Default model configurations
@@ -248,7 +248,8 @@ export class LocalProvider implements IEmbeddingProvider {
     return {
       size: this.embeddingCache.size,
       maxSize: this.maxCacheSize,
-      hitRate: 0, // TODO: Track hits/misses for accurate hit rate
+      // TODO: Track hits/misses for accurate hit rate - See issue #6
+      hitRate: 0,
     };
   }
 

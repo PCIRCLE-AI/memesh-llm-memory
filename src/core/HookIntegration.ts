@@ -585,7 +585,8 @@ export class HookIntegration {
         total,
         passed,
         failed,
-        failures: [], // TODO: Extract from test output
+        // TODO: Extract from test output - See issue #3
+        failures: [],
       });
     }
   }

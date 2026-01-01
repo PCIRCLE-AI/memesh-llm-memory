@@ -362,14 +362,15 @@ export class SimpleConfig {
 }
 
 /**
- * Simplified Database Factory - Singleton Pattern for SQLite Connections
+ * Simplified Database Factory - Singleton Pattern with Connection Pooling
  *
  * Replaces the original complex credentials/DatabaseFactory system with a straightforward
  * singleton-based database connection manager. Provides optimized SQLite connections with
- * WAL mode, pragma settings, and connection pooling.
+ * WAL mode, pragma settings, and connection pooling for improved performance.
  *
  * Features:
  * - **Singleton Pattern**: Cached database connections (one per unique path)
+ * - **Connection Pooling**: Optional pooling for concurrent query scenarios
  * - **Connection Reuse**: Avoids creating duplicate connections to the same database
  * - **WAL Mode**: Write-Ahead Logging for better concurrency (production/development)
  * - **Performance Optimization**: Configured with optimal pragma settings
@@ -383,6 +384,11 @@ export class SimpleConfig {
  * - **mmap_size**: 128MB (memory-mapped I/O)
  * - **foreign_keys**: ON (enforce referential integrity)
  *
+ * Connection Pool Settings (configurable via environment):
+ * - **DB_POOL_SIZE**: Maximum connections (default: 5)
+ * - **DB_POOL_TIMEOUT**: Connection timeout in ms (default: 5000)
+ * - **DB_POOL_IDLE_TIMEOUT**: Idle timeout in ms (default: 30000)
+ *
  * @example
  * ```typescript
  * import { SimpleDatabaseFactory } from './simple-config.js';
@@ -391,6 +397,18 @@ export class SimpleConfig {
  * const db1 = SimpleDatabaseFactory.getInstance();
  * const db2 = SimpleDatabaseFactory.getInstance(); // Same instance as db1
  * console.log(db1 === db2); // true
+ *
+ * // Get pooled connection (recommended for concurrent queries)
+ * const pooledDb = await SimpleDatabaseFactory.getPooledConnection();
+ * try {
+ *   const result = pooledDb.prepare('SELECT * FROM users').all();
+ * } finally {
+ *   SimpleDatabaseFactory.releasePooledConnection(pooledDb);
+ * }
+ *
+ * // Check pool statistics
+ * const stats = SimpleDatabaseFactory.getPoolStats();
+ * console.log(stats); // { total: 5, active: 2, idle: 3, waiting: 0 }
  *
  * // Use custom database path
  * const customDb = SimpleDatabaseFactory.getInstance('/custom/path/db.sqlite');
@@ -404,13 +422,14 @@ export class SimpleConfig {
  * const user = stmt.get(1);
  *
  * // Cleanup on application shutdown
- * process.on('SIGTERM', () => {
- *   SimpleDatabaseFactory.closeAll();
+ * process.on('SIGTERM', async () => {
+ *   await SimpleDatabaseFactory.closeAll();
  *   process.exit(0);
  * });
  * ```
  */
 import Database from 'better-sqlite3';
+import { ConnectionPool, type PoolStats } from '../db/ConnectionPool.js';
 
 export class SimpleDatabaseFactory {
   /**
@@ -422,6 +441,16 @@ export class SimpleDatabaseFactory {
    * @internal
    */
   private static instances: Map<string, Database.Database> = new Map();
+
+  /**
+   * Connection pools cache
+   *
+   * Maps database file paths to their corresponding ConnectionPool instances.
+   * Used for pooled connection management.
+   *
+   * @internal
+   */
+  private static pools: Map<string, ConnectionPool> = new Map();
 
   /**
    * Create database connection (internal use)
@@ -465,7 +494,7 @@ export class SimpleDatabaseFactory {
   private static createDatabase(path: string, isTest: boolean = false): Database.Database {
     try {
       const db = new Database(path, {
-        verbose: SimpleConfig.isDevelopment ? console.log : undefined,
+        verbose: SimpleConfig.isDevelopment ? ((msg: unknown) => logger.debug('SQLite', { message: msg })) : undefined,
       });
 
       // Set busy timeout (5 seconds)
@@ -595,9 +624,133 @@ export class SimpleDatabaseFactory {
   }
 
   /**
-   * Close all database connections
+   * Get connection pool instance
    *
-   * Closes all cached database connections and clears the singleton cache.
+   * Returns or creates a connection pool for the specified database path.
+   * Pool is configured using environment variables or defaults.
+   *
+   * @param path - Optional database file path (defaults to SimpleConfig.DATABASE_PATH)
+   * @returns ConnectionPool instance
+   *
+   * @example
+   * ```typescript
+   * const pool = SimpleDatabaseFactory.getPool();
+   * const db = await pool.acquire();
+   * try {
+   *   // ... use connection ...
+   * } finally {
+   *   pool.release(db);
+   * }
+   * ```
+   */
+  static getPool(path?: string): ConnectionPool {
+    const dbPath = path || SimpleConfig.DATABASE_PATH;
+    let pool = this.pools.get(dbPath);
+
+    if (!pool) {
+      // Read pool configuration from environment variables with fallback to defaults
+      const maxConnections = parseInt(process.env.DB_POOL_SIZE || '5', 10) || 5;
+      const connectionTimeout = parseInt(process.env.DB_POOL_TIMEOUT || '5000', 10) || 5000;
+      const idleTimeout = parseInt(process.env.DB_POOL_IDLE_TIMEOUT || '30000', 10) || 30000;
+
+      pool = new ConnectionPool(dbPath, {
+        maxConnections,
+        connectionTimeout,
+        idleTimeout,
+      });
+
+      this.pools.set(dbPath, pool);
+      logger.info(`Created connection pool for ${dbPath}`, {
+        maxConnections,
+        connectionTimeout,
+        idleTimeout,
+      });
+    }
+
+    return pool;
+  }
+
+  /**
+   * Get pooled connection
+   *
+   * Convenience method to acquire a connection from the default pool.
+   * Always release the connection using releasePooledConnection() when done.
+   *
+   * @param path - Optional database file path (defaults to SimpleConfig.DATABASE_PATH)
+   * @returns Promise that resolves to a Database connection
+   *
+   * @example
+   * ```typescript
+   * const db = await SimpleDatabaseFactory.getPooledConnection();
+   * try {
+   *   const users = db.prepare('SELECT * FROM users').all();
+   * } finally {
+   *   SimpleDatabaseFactory.releasePooledConnection(db);
+   * }
+   * ```
+   */
+  static async getPooledConnection(path?: string): Promise<Database.Database> {
+    const pool = this.getPool(path);
+    return pool.acquire();
+  }
+
+  /**
+   * Release pooled connection
+   *
+   * Returns a connection back to the pool. Must be called for every
+   * connection acquired via getPooledConnection().
+   *
+   * @param db - Database connection to release
+   * @param path - Optional database file path (defaults to SimpleConfig.DATABASE_PATH)
+   *
+   * @example
+   * ```typescript
+   * const db = await SimpleDatabaseFactory.getPooledConnection();
+   * try {
+   *   // ... use connection ...
+   * } finally {
+   *   SimpleDatabaseFactory.releasePooledConnection(db);
+   * }
+   * ```
+   */
+  static releasePooledConnection(db: Database.Database, path?: string): void {
+    const dbPath = path || SimpleConfig.DATABASE_PATH;
+    const pool = this.pools.get(dbPath);
+
+    if (!pool) {
+      logger.error('Attempted to release connection to non-existent pool');
+      return;
+    }
+
+    pool.release(db);
+  }
+
+  /**
+   * Get pool statistics
+   *
+   * Returns statistics for the specified connection pool.
+   *
+   * @param path - Optional database file path (defaults to SimpleConfig.DATABASE_PATH)
+   * @returns Pool statistics or null if pool doesn't exist
+   *
+   * @example
+   * ```typescript
+   * const stats = SimpleDatabaseFactory.getPoolStats();
+   * if (stats) {
+   *   console.log(`Active: ${stats.active}, Idle: ${stats.idle}, Waiting: ${stats.waiting}`);
+   * }
+   * ```
+   */
+  static getPoolStats(path?: string): PoolStats | null {
+    const dbPath = path || SimpleConfig.DATABASE_PATH;
+    const pool = this.pools.get(dbPath);
+    return pool ? pool.getStats() : null;
+  }
+
+  /**
+   * Close all database connections and pools
+   *
+   * Closes all cached database connections and connection pools, then clears caches.
    * Should be called during application shutdown to ensure proper cleanup.
    * Errors during close are logged but don't prevent other connections from closing.
    *
@@ -606,30 +759,33 @@ export class SimpleDatabaseFactory {
    * - Test teardown (reset state)
    * - Forced resource cleanup
    *
+   * @returns Promise that resolves when all cleanup is complete
+   *
    * @example
    * ```typescript
    * // Graceful shutdown on SIGTERM
-   * process.on('SIGTERM', () => {
+   * process.on('SIGTERM', async () => {
    *   console.log('Shutting down...');
-   *   SimpleDatabaseFactory.closeAll();
+   *   await SimpleDatabaseFactory.closeAll();
    *   process.exit(0);
    * });
    *
    * // Test cleanup
-   * afterAll(() => {
-   *   SimpleDatabaseFactory.closeAll();
+   * afterAll(async () => {
+   *   await SimpleDatabaseFactory.closeAll();
    * });
    *
    * // Force cleanup during error recovery
    * try {
    *   // ... operations ...
    * } catch (error) {
-   *   SimpleDatabaseFactory.closeAll(); // Clean slate
+   *   await SimpleDatabaseFactory.closeAll(); // Clean slate
    *   throw error;
    * }
    * ```
    */
-  static closeAll(): void {
+  static async closeAll(): Promise<void> {
+    // Close all singleton instances
     for (const [path, db] of this.instances.entries()) {
       try {
         db.close();
@@ -638,43 +794,69 @@ export class SimpleDatabaseFactory {
       }
     }
     this.instances.clear();
+
+    // Shutdown all connection pools
+    const poolShutdowns: Promise<void>[] = [];
+    for (const [path, pool] of this.pools.entries()) {
+      poolShutdowns.push(
+        pool.shutdown().catch((error) => {
+          logger.error(`Failed to shutdown pool at ${path}:`, error);
+        })
+      );
+    }
+
+    await Promise.all(poolShutdowns);
+    this.pools.clear();
   }
 
   /**
-   * Close specific database connection
+   * Close specific database connection and pool
    *
-   * Closes a specific database connection and removes it from the singleton cache.
-   * Subsequent getInstance() calls for this path will create a new connection.
+   * Closes a specific database connection and its pool, removing both from caches.
+   * Subsequent getInstance() or getPool() calls for this path will create new instances.
    *
    * @param path - Optional database file path (defaults to SimpleConfig.DATABASE_PATH)
+   * @returns Promise that resolves when cleanup is complete
    *
    * @example
    * ```typescript
    * // Close default database
-   * SimpleDatabaseFactory.close();
+   * await SimpleDatabaseFactory.close();
    *
    * // Close custom database
-   * SimpleDatabaseFactory.close('/custom/path/db.sqlite');
+   * await SimpleDatabaseFactory.close('/custom/path/db.sqlite');
    *
    * // Next getInstance() will create new connection
    * const newDb = SimpleDatabaseFactory.getInstance(); // Fresh connection
    *
    * // Use case: Database file replacement
-   * SimpleDatabaseFactory.close('/data/old.db');
+   * await SimpleDatabaseFactory.close('/data/old.db');
    * fs.renameSync('/data/new.db', '/data/old.db');
    * const db = SimpleDatabaseFactory.getInstance('/data/old.db'); // New file
    * ```
    */
-  static close(path?: string): void {
+  static async close(path?: string): Promise<void> {
     const dbPath = path || SimpleConfig.DATABASE_PATH;
-    const db = this.instances.get(dbPath);
 
+    // Close singleton instance
+    const db = this.instances.get(dbPath);
     if (db) {
       try {
         db.close();
         this.instances.delete(dbPath);
       } catch (error) {
         logger.error(`Failed to close database at ${dbPath}:`, error);
+      }
+    }
+
+    // Shutdown pool
+    const pool = this.pools.get(dbPath);
+    if (pool) {
+      try {
+        await pool.shutdown();
+        this.pools.delete(dbPath);
+      } catch (error) {
+        logger.error(`Failed to shutdown pool at ${dbPath}:`, error);
       }
     }
   }

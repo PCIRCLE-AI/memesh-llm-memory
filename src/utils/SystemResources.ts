@@ -265,38 +265,63 @@ export class SystemResourceManager {
   /**
    * 獲取 CPU 使用率
    *
-   * 方法：
-   * - macOS: 使用 top 命令
-   * - Linux: 使用 /proc/stat 或 top
-   * - 跨平台備援：使用 os.loadavg()
+   * 使用 Node.js 原生 API 計算，避免 shell 命令注入風險
+   *
+   * 實作方式：
+   * 1. 記錄 CPU 時間快照
+   * 2. 等待 100ms
+   * 3. 再次記錄 CPU 時間
+   * 4. 計算差值得出使用率
    */
   private async getCPUUsage(): Promise<number> {
     try {
-      if (process.platform === 'darwin') {
-        // macOS
-        const { stdout } = await execAsync(
-          "ps aux | awk '{sum+=$3} END {print sum}'"
-        );
-        return parseFloat(stdout.trim()) || 0;
-      } else if (process.platform === 'linux') {
-        // Linux
-        const { stdout } = await execAsync(
-          "top -bn1 | grep 'Cpu(s)' | awk '{print $2}' | cut -d'%' -f1"
-        );
-        return parseFloat(stdout.trim()) || 0;
-      } else {
-        // Windows or other - use load average as fallback
-        const loadavg = os.loadavg()[0];  // 1 minute average
-        const cpuCores = os.cpus().length;
-        return Math.min(100, (loadavg / cpuCores) * 100);
+      // Get first CPU snapshot
+      const startUsage = this.getCPUSnapshot();
+
+      // Wait 100ms for measurement
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Get second CPU snapshot
+      const endUsage = this.getCPUSnapshot();
+
+      // Calculate CPU usage percentage
+      const totalDiff = endUsage.total - startUsage.total;
+      const idleDiff = endUsage.idle - startUsage.idle;
+
+      if (totalDiff === 0) {
+        return 0;
       }
+
+      const usagePercent = ((totalDiff - idleDiff) / totalDiff) * 100;
+      return Math.max(0, Math.min(100, usagePercent));
+
     } catch (error) {
       logger.warn('Failed to get CPU usage, using fallback:', error);
       // Fallback: use load average
-      const loadavg = os.loadavg()[0];
+      const loadavg = os.loadavg()[0];  // 1 minute average
       const cpuCores = os.cpus().length;
       return Math.min(100, (loadavg / cpuCores) * 100);
     }
+  }
+
+  /**
+   * 獲取 CPU 時間快照（用於計算使用率）
+   */
+  private getCPUSnapshot(): { total: number; idle: number } {
+    const cpus = os.cpus();
+    let totalTime = 0;
+    let idleTime = 0;
+
+    for (const cpu of cpus) {
+      // Sum all CPU times
+      for (const type in cpu.times) {
+        totalTime += cpu.times[type as keyof typeof cpu.times];
+      }
+      // Track idle time
+      idleTime += cpu.times.idle;
+    }
+
+    return { total: totalTime, idle: idleTime };
   }
 
   /**

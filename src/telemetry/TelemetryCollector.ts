@@ -1,9 +1,9 @@
 /**
  * Telemetry Collector - Privacy-First Event Recording
  */
-import { TelemetryStore } from './TelemetryStore';
-import { sanitizeEvent } from './sanitization';
-import type { TelemetryEvent } from './types';
+import { TelemetryStore } from './TelemetryStore.js';
+import { sanitizeEvent } from './sanitization.js';
+import type { TelemetryEvent } from './types.js';
 
 // Import version from package.json
 import packageJson from '../../package.json';

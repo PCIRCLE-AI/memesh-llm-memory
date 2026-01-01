@@ -19,6 +19,47 @@ import { OllamaProvider } from './providers/OllamaProvider.js';
 import { LocalProvider } from './providers/LocalProvider.js';
 
 /**
+ * Validate API key is a non-empty string
+ *
+ * @param apiKey - API key to validate (can be undefined/null)
+ * @param providerName - Name of the provider (for error messages)
+ * @param setupHints - Additional setup hints for the error message
+ * @returns Validated and trimmed API key
+ * @throws ConfigurationError if API key is invalid
+ */
+function validateApiKey(
+  apiKey: string | undefined | null,
+  providerName: string,
+  setupHints: {
+    configKey: string;
+    envVar?: string;
+    apiKeyUrl?: string;
+  }
+): string {
+  if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
+    const envVarHint = setupHints.envVar
+      ? `Set ${setupHints.envVar} environment variable or configure in SecureKeyStore`
+      : `Configure in SecureKeyStore or pass as parameter`;
+
+    const urlHint = setupHints.apiKeyUrl
+      ? `\n\nGet your API key at: ${setupHints.apiKeyUrl}`
+      : '';
+
+    throw new ConfigurationError(
+      `${providerName} API key is required for RAG functionality${urlHint}`,
+      {
+        configKey: setupHints.configKey,
+        envVar: setupHints.envVar,
+        hint: envVarHint,
+        apiKeyUrl: setupHints.apiKeyUrl,
+      }
+    );
+  }
+
+  return apiKey.trim();
+}
+
+/**
  * 統一的 Embedding Provider 接口
  */
 export interface IEmbeddingProvider {
@@ -112,19 +153,14 @@ export class EmbeddingProviderFactory {
     switch (config.provider) {
       case 'openai': {
         // Check SecureKeyStore first, then provided apiKey
-        const apiKey = config.apiKey || SecureKeyStore.get('openai') || process.env.OPENAI_API_KEY;
+        const rawApiKey = config.apiKey || SecureKeyStore.get('openai') || process.env.OPENAI_API_KEY;
 
-        if (!apiKey) {
-          throw new ConfigurationError(
-            'OpenAI API key not found. Please set OPENAI_API_KEY environment variable or pass apiKey parameter.\n\n' +
-            'Get your API key at: https://platform.openai.com/api-keys',
-            {
-              configKey: 'OPENAI_API_KEY',
-              provider: 'OpenAI',
-              apiKeyUrl: 'https://platform.openai.com/api-keys',
-            }
-          );
-        }
+        // Validate API key is a non-empty string
+        const apiKey = validateApiKey(rawApiKey, 'OpenAI', {
+          configKey: 'apiKey',
+          envVar: 'OPENAI_API_KEY',
+          apiKeyUrl: 'https://platform.openai.com/api-keys',
+        });
 
         const openaiService = new EmbeddingService(apiKey);
         if (!openaiService.isAvailable()) {
@@ -138,24 +174,19 @@ export class EmbeddingProviderFactory {
       }
 
       case 'huggingface': {
-        if (!config.apiKey) {
-          throw new ConfigurationError(
-            'Hugging Face API key is required.\n\n' +
-            'Get your API key at: https://huggingface.co/settings/tokens',
-            {
-              configKey: 'HUGGINGFACE_API_KEY',
-              provider: 'Hugging Face',
-              apiKeyUrl: 'https://huggingface.co/settings/tokens',
-            }
-          );
-        }
+        // Validate API key is a non-empty string
+        const apiKey = validateApiKey(config.apiKey, 'Hugging Face', {
+          configKey: 'apiKey',
+          envVar: 'HUGGINGFACE_API_KEY',
+          apiKeyUrl: 'https://huggingface.co/settings/tokens',
+        });
 
         logger.info('Using Hugging Face Embeddings API for RAG', {
           model: config.model || 'sentence-transformers/all-MiniLM-L6-v2',
         });
 
         return new HuggingFaceProvider({
-          apiKey: config.apiKey,
+          apiKey,
           model: config.model,
           dimensions: config.dimensions,
         });
@@ -238,17 +269,24 @@ export class EmbeddingProviderFactory {
     interactive?: boolean;
   } = {}): Promise<IEmbeddingProvider> {
     // Check SecureKeyStore first, then process.env, then provided apiKey
-    let apiKey = options.apiKey || SecureKeyStore.get('openai') || process.env.OPENAI_API_KEY;
+    let rawApiKey = options.apiKey || SecureKeyStore.get('openai') || process.env.OPENAI_API_KEY;
 
     // 如果沒有 API key 且允許互動模式
-    if (!apiKey && options.interactive) {
-      apiKey = await promptForApiKey() || undefined;
+    if (!rawApiKey && options.interactive) {
+      rawApiKey = await promptForApiKey() || undefined;
 
       // 如果使用者提供了 key，安全儲存到記憶體（不修改 process.env）
-      if (apiKey) {
-        SecureKeyStore.set('openai', apiKey);
+      if (rawApiKey) {
+        SecureKeyStore.set('openai', rawApiKey);
       }
     }
+
+    // Validate API key before creating service
+    const apiKey = validateApiKey(rawApiKey, 'OpenAI', {
+      configKey: 'apiKey',
+      envVar: 'OPENAI_API_KEY',
+      apiKeyUrl: 'https://platform.openai.com/api-keys',
+    });
 
     const openaiService = new EmbeddingService(apiKey);
 
@@ -257,13 +295,10 @@ export class EmbeddingProviderFactory {
       return openaiService;
     }
 
-    // 無可用 provider
-    const errorMessage = options.interactive
-      ? 'OpenAI API key is required for RAG features. Please provide a valid API key.'
-      : 'OpenAI API key not found. Please set OPENAI_API_KEY environment variable or pass apiKey parameter.';
-
+    // If service is not available even with valid API key, throw error
     throw new ConfigurationError(
-      errorMessage + '\n\nGet your API key at: https://platform.openai.com/api-keys',
+      'OpenAI service is not available with the provided API key.\n\n' +
+      'Please verify your API key at: https://platform.openai.com/api-keys',
       {
         configKey: 'OPENAI_API_KEY',
         provider: 'OpenAI',
@@ -281,23 +316,32 @@ export class EmbeddingProviderFactory {
    */
   static createSync(options: { apiKey?: string; optional?: boolean } = {}): IEmbeddingProvider | null {
     // Check SecureKeyStore first, then process.env, then provided apiKey
-    const key = options.apiKey || SecureKeyStore.get('openai') || process.env.OPENAI_API_KEY;
-    const openaiService = new EmbeddingService(key);
+    const rawApiKey = options.apiKey || SecureKeyStore.get('openai') || process.env.OPENAI_API_KEY;
+
+    // If optional and no key available, return null early
+    if (options.optional && (!rawApiKey || typeof rawApiKey !== 'string' || rawApiKey.trim().length === 0)) {
+      logger.info('RAG features disabled (no OpenAI API key configured)');
+      return null;
+    }
+
+    // Validate API key
+    const apiKey = validateApiKey(rawApiKey, 'OpenAI', {
+      configKey: 'apiKey',
+      envVar: 'OPENAI_API_KEY',
+      apiKeyUrl: 'https://platform.openai.com/api-keys',
+    });
+
+    const openaiService = new EmbeddingService(apiKey);
 
     if (openaiService.isAvailable()) {
       logger.info('Using OpenAI Embeddings API for RAG');
       return openaiService;
     }
 
-    // If optional, return null instead of throwing
-    if (options.optional) {
-      logger.info('RAG features disabled (no OpenAI API key configured)');
-      return null;
-    }
-
+    // If service is not available even with valid API key, throw error
     throw new ConfigurationError(
-      'OpenAI API key not found. Please set OPENAI_API_KEY environment variable.\n' +
-      'Get your API key at: https://platform.openai.com/api-keys',
+      'OpenAI service is not available with the provided API key.\n\n' +
+      'Please verify your API key at: https://platform.openai.com/api-keys',
       {
         configKey: 'OPENAI_API_KEY',
         provider: 'OpenAI',

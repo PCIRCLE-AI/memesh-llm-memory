@@ -23,7 +23,6 @@ import {
   validateSpan,
   validatePattern,
   validateAdaptation,
-  validateReward,
 } from './validation';
 import { safeJsonParse } from '../../utils/json.js';
 import { TaskRepository } from './repositories/TaskRepository';
@@ -568,64 +567,6 @@ export class SQLiteStore implements EvolutionStore {
   }
 
 
-  async queryRewardsByOperationSpan(operationSpanId: string): Promise<Reward[]> {
-    const stmt = this.db.prepare(`
-      SELECT * FROM rewards WHERE operation_span_id = ? ORDER BY provided_at DESC
-    `);
-
-    const rows = stmt.all(operationSpanId) as RewardRow[];
-
-    // Optimized: Pre-allocate array with known length
-    const rewards: Reward[] = new Array(rows.length);
-    for (let i = 0; i < rows.length; i++) {
-      rewards[i] = this.rowToReward(rows[i]);
-    }
-    return rewards;
-  }
-
-  async queryRewards(filters: {
-    start_time?: Date;
-    end_time?: Date;
-    min_value?: number;
-    max_value?: number;
-  }): Promise<Reward[]> {
-    let sql = 'SELECT * FROM rewards WHERE 1=1';
-    const params: SQLParams = [];
-
-    if (filters.start_time) {
-      sql += ' AND provided_at >= ?';
-      params.push(filters.start_time.toISOString());
-    }
-
-    if (filters.end_time) {
-      sql += ' AND provided_at <= ?';
-      params.push(filters.end_time.toISOString());
-    }
-
-    if (filters.min_value !== undefined) {
-      sql += ' AND value >= ?';
-      params.push(filters.min_value);
-    }
-
-    if (filters.max_value !== undefined) {
-      sql += ' AND value <= ?';
-      params.push(filters.max_value);
-    }
-
-    sql += ' ORDER BY provided_at DESC';
-
-    const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as RewardRow[];
-
-    // Optimized: Pre-allocate array with known length
-    const rewards: Reward[] = new Array(rows.length);
-    for (let i = 0; i < rows.length; i++) {
-      rewards[i] = this.rowToReward(rows[i]);
-    }
-    return rewards;
-  }
-
-  // ========================================================================
   // Pattern Management
   // ========================================================================
 
@@ -1119,44 +1060,6 @@ export class SQLiteStore implements EvolutionStore {
       is_active: row.is_active === 1,
       created_at: new Date(row.created_at),
       updated_at: new Date(row.updated_at),
-    };
-  }
-
-  private rowToAdaptation(row: AdaptationRow): Adaptation {
-    return {
-      id: row.id,
-      pattern_id: row.pattern_id,
-      type: row.type as Adaptation['type'],
-      before_config: safeJsonParse(row.before_config, {}),
-      after_config: safeJsonParse(row.after_config, {}),
-      applied_to_agent_id: row.applied_to_agent_id ?? undefined,
-      applied_to_task_type: row.applied_to_task_type ?? undefined,
-      applied_to_skill: row.applied_to_skill ?? undefined,
-      applied_at: new Date(row.applied_at),
-      success_count: row.success_count,
-      failure_count: row.failure_count,
-      avg_improvement: row.avg_improvement,
-      is_active: row.is_active === 1,
-      deactivated_at: row.deactivated_at
-        ? new Date(row.deactivated_at)
-        : undefined,
-      deactivation_reason: row.deactivation_reason ?? undefined,
-      created_at: new Date(row.created_at),
-      updated_at: new Date(row.updated_at),
-    };
-  }
-
-  private rowToReward(row: RewardRow): Reward {
-    return {
-      id: row.id,
-      operation_span_id: row.operation_span_id,
-      value: row.value,
-      dimensions: safeJsonParse(row.dimensions, undefined),
-      feedback: row.feedback ?? undefined,
-      feedback_type: row.feedback_type as Reward['feedback_type'],
-      provided_by: row.provided_by ?? undefined,
-      provided_at: new Date(row.provided_at),
-      metadata: safeJsonParse(row.metadata, undefined),
     };
   }
 

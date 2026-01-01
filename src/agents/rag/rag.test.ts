@@ -396,7 +396,7 @@ describe('Error Scenarios - EmbeddingProvider', () => {
     const provider = EmbeddingProviderFactory.createSync();
 
     // Current implementation may throw or return empty embedding
-    // TODO: Standardize empty text handling
+    // TODO: Standardize empty text handling - See issue #10
     await expect(
       provider!.createEmbedding('')
     ).resolves.toBeDefined();
@@ -640,7 +640,7 @@ describe('Error Scenarios - RAGAgent', () => {
 
   it('should handle indexing empty document', async () => {
     // RAGAgent accepts empty documents (current behavior)
-    // TODO: Consider rejecting empty documents in future
+    // TODO: Consider rejecting empty documents in future - See issue #10
     await expect(
       rag.indexDocument('', { source: 'empty.md' } as DocumentMetadata)
     ).resolves.not.toThrow();

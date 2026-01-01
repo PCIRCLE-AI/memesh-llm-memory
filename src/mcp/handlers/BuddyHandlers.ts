@@ -1,8 +1,22 @@
 /**
  * Buddy Command Handlers Module
  *
- * Handles user-friendly buddy commands (buddy_do, buddy_stats, buddy_remember, buddy_help).
- * Extracted from server.ts for better modularity.
+ * Provides user-friendly "buddy" commands for common operations. These commands
+ * use natural language and hide technical complexity from users.
+ *
+ * **Available Commands**:
+ * - **buddy_do**: Execute tasks with smart routing (simplified sa_task)
+ * - **buddy_stats**: View performance dashboard (simplified sa_dashboard)
+ * - **buddy_remember**: Recall project memory (search knowledge graph)
+ * - **buddy_help**: Get help and usage instructions
+ *
+ * **Design Philosophy**:
+ * - Natural language interface
+ * - Beginner-friendly error messages
+ * - Contextual help and suggestions
+ * - Progressive disclosure of advanced features
+ *
+ * @module BuddyHandlers
  */
 
 import { z } from 'zod';
@@ -37,13 +51,34 @@ import {
 /**
  * Buddy Command Handler Class
  *
- * Encapsulates all buddy command handlers (buddy_do, buddy_stats, buddy_remember, buddy_help)
+ * Provides simplified, user-friendly interfaces for common operations. Acts as
+ * a facade over more complex underlying systems (Router, Memory, etc.).
+ *
+ * **Command Categories**:
+ * - **Task Execution**: buddy_do (delegated to Router)
+ * - **Monitoring**: buddy_stats (delegated to EvolutionMonitor)
+ * - **Memory**: buddy_remember (delegated to ProjectMemoryManager)
+ * - **Help**: buddy_help (contextual documentation)
+ *
+ * **Error Handling**:
+ * All commands use consistent error handling:
+ * - Input validation with Zod schemas
+ * - Structured error logging
+ * - User-friendly error messages
+ * - Suggested next steps on failures
  */
 export class BuddyHandlers {
   private router: Router;
   private formatter: ResponseFormatter;
   private projectMemoryManager: ProjectMemoryManager;
 
+  /**
+   * Create a new BuddyHandlers instance
+   *
+   * @param router - Main task routing engine
+   * @param formatter - Response formatting utility
+   * @param projectMemoryManager - Project memory management system
+   */
   constructor(
     router: Router,
     formatter: ResponseFormatter,
@@ -56,6 +91,38 @@ export class BuddyHandlers {
 
   /**
    * Handle buddy_do command - Execute tasks with smart routing
+   *
+   * Natural language interface for task execution. Automatically routes tasks
+   * to the most appropriate agent and returns enhanced prompts.
+   *
+   * This is a simplified version of sa_task with:
+   * - More forgiving input validation
+   * - Friendlier error messages
+   * - Contextual usage tips
+   *
+   * **Workflow**:
+   * 1. Validate task description
+   * 2. Route through main Router (TaskAnalyzer → AgentRouter)
+   * 3. Format response with ResponseFormatter
+   * 4. Return enhanced prompt + agent recommendation
+   *
+   * @param args - Buddy do arguments
+   * @param args.task - Task description in natural language
+   * @returns Promise resolving to formatted task response
+   *
+   * @throws ValidationError if task description is missing/invalid
+   *
+   * @example
+   * ```typescript
+   * await handleBuddyDo({
+   *   task: 'Create a React component for user profile'
+   * });
+   *
+   * // Returns:
+   * // 🤖 Routing to: frontend-developer
+   * // 📝 Enhanced Prompt:
+   * // [Detailed instructions for building the component]
+   * ```
    */
   async handleBuddyDo(
     args: unknown
@@ -146,6 +213,39 @@ export class BuddyHandlers {
 
   /**
    * Handle buddy_remember command - Recall project memory
+   *
+   * Searches the knowledge graph for relevant project memories. Useful for:
+   * - Recalling past decisions and their rationale
+   * - Finding similar problems and solutions
+   * - Understanding project history
+   * - Discovering related features
+   *
+   * **Search Capabilities**:
+   * - Semantic search (meaning-based, not just keywords)
+   * - Entity relationship traversal
+   * - Temporal filtering (recent vs. historical)
+   * - Type-based filtering (decisions, lessons, features, etc.)
+   *
+   * @param args - Buddy remember arguments
+   * @param args.query - Search query in natural language
+   * @returns Promise resolving to formatted memory results
+   *
+   * @example
+   * ```typescript
+   * await handleBuddyRemember({
+   *   query: 'authentication implementation'
+   * });
+   *
+   * // Returns:
+   * // 📚 Found 3 relevant memories:
+   * // 1. 2025-01-01: Implemented JWT authentication
+   * //    - Used passport.js library
+   * //    - Token expiration: 24 hours
+   * //    - Refresh token rotation enabled
+   * // 2. 2024-12-15: Authentication architecture decision
+   * //    - Chose JWT over sessions for scalability
+   * //    ...
+   * ```
    */
   async handleBuddyRemember(
     args: unknown

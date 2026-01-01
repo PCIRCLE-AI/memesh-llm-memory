@@ -6,12 +6,13 @@ describe('KnowledgeGraph', () => {
   let kg: KnowledgeGraph;
   const testDbPath = './data/test-knowledge-graph.db';
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Clean up test database if exists
     if (existsSync(testDbPath)) {
       unlinkSync(testDbPath);
     }
-    kg = new KnowledgeGraph(testDbPath);
+    // Use createSync for backward compatibility with synchronous tests
+    kg = KnowledgeGraph.createSync(testDbPath);
   });
 
   afterEach(() => {

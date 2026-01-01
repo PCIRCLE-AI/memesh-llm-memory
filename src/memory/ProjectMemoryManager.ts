@@ -5,8 +5,8 @@
  * Provides semantic queries and convenient recall methods.
  */
 
-import type { KnowledgeGraph } from '../knowledge-graph';
-import type { Entity } from '../knowledge-graph/types';
+import type { KnowledgeGraph } from '../knowledge-graph/index.js';
+import type { Entity } from '../knowledge-graph/types.js';
 import { logger } from '../utils/logger.js';
 
 /**

@@ -225,7 +225,7 @@ export class PerformanceTracker {
    */
   private updateHeapForAgent(agentId: string): void {
     // Rebuild heap to reflect new oldest metrics
-    // TODO: Optimize by tracking heap indices for O(log N) update
+    // TODO: Optimize by tracking heap indices for O(log N) update - See issue #7
     this.rebuildHeap();
   }
 
@@ -563,7 +563,7 @@ export class PerformanceTracker {
       this.metrics.delete(agentId);
 
       // Rebuild heap to remove this agent's entry
-      // TODO: Optimize by tracking heap indices for direct removal
+      // TODO: Optimize by tracking heap indices for direct removal - See issue #7
       this.rebuildHeap();
 
       logger.info('Metrics cleared', {

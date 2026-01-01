@@ -17,140 +17,100 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
-import { ValidationError, NotFoundError, OperationError } from '../errors/index.js';
-
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
-  ListResourcesRequestSchema,
-  ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { Router } from '../orchestrator/router.js';
-import { Task, AgentType, TaskAnalysis, RoutingDecision } from '../orchestrator/types.js';
-import { ResponseFormatter, AgentResponse } from '../ui/ResponseFormatter.js';
-import { AgentRegistry } from '../core/AgentRegistry.js';
-import { HumanInLoopUI } from './HumanInLoopUI.js';
-import { FeedbackCollector } from '../evolution/FeedbackCollector.js';
-import { PerformanceTracker } from '../evolution/PerformanceTracker.js';
-import { LearningManager } from '../evolution/LearningManager.js';
-import { EvolutionMonitor } from '../evolution/EvolutionMonitor.js';
+import { ServerInitializer, ServerComponents } from './ServerInitializer.js';
+import { ToolRouter } from './ToolRouter.js';
+import { getAllToolDefinitions } from './ToolDefinitions.js';
+import { setupResourceHandlers } from './handlers/index.js';
 import { getRAGAgent } from '../agents/rag/index.js';
 import { FileWatcher } from '../agents/rag/FileWatcher.js';
-import { SkillManager } from '../skills/index.js';
-import { UninstallManager } from '../management/index.js';
-import { DevelopmentButler } from '../agents/DevelopmentButler.js';
-import { CheckpointDetector } from '../core/CheckpointDetector.js';
-import { MCPToolInterface } from '../core/MCPToolInterface.js';
-import { PlanningEngine } from '../planning/PlanningEngine.js';
-import { GitAssistantIntegration } from '../integrations/GitAssistantIntegration.js';
-import { getAllToolDefinitions } from './ToolDefinitions.js';
-import {
-  GitHandlers,
-  ToolHandlers,
-  BuddyHandlers,
-  setupResourceHandlers,
-} from './handlers/index.js';
-import { RateLimiter } from '../utils/RateLimiter.js';
-
-// Buddy Commands (user-friendly layer)
-import {
-  executeBuddyDo,
-  BuddyDoInputSchema,
-  type ValidatedBuddyDoInput,
-} from './tools/buddy-do.js';
-import {
-  executeBuddyStats,
-  BuddyStatsInputSchema,
-  type ValidatedBuddyStatsInput,
-} from './tools/buddy-stats.js';
-import {
-  executeBuddyRemember,
-  BuddyRememberInputSchema,
-  type ValidatedBuddyRememberInput,
-} from './tools/buddy-remember.js';
-import {
-  executeBuddyHelp,
-  BuddyHelpInputSchema,
-  type ValidatedBuddyHelpInput,
-} from './tools/buddy-help.js';
-
-import { z } from 'zod';
-import {
-  TaskInputSchema,
-  DashboardInputSchema,
-  ListAgentsInputSchema,
-  ListSkillsInputSchema,
-  UninstallInputSchema,
-  WorkflowGuidanceInputSchema,
-  RecordTokenUsageInputSchema,
-  GenerateSmartPlanInputSchema,
-  GitSaveWorkInputSchema,
-  GitListVersionsInputSchema,
-  GitShowChangesInputSchema,
-  GitGoBackInputSchema,
-  GitSetupInputSchema,
-  RecallMemoryInputSchema,
-  formatValidationError,
-  type ValidatedTaskInput,
-  type ValidatedDashboardInput,
-  type ValidatedListSkillsInput,
-  type ValidatedUninstallInput,
-  type ValidatedWorkflowGuidanceInput,
-  type ValidatedRecordTokenUsageInput,
-  type ValidatedGenerateSmartPlanInput,
-  type ValidatedGitSaveWorkInput,
-  type ValidatedGitListVersionsInput,
-  type ValidatedGitShowChangesInput,
-  type ValidatedGitGoBackInput,
-  type ValidatedGitSetupInput,
-  type ValidatedRecallMemoryInput,
-} from './validation.js';
-import { KnowledgeGraph } from '../knowledge-graph/index.js';
-import { ProjectMemoryManager } from '../memory/ProjectMemoryManager.js';
-import { recallMemoryTool } from './tools/recall-memory.js';
 import { logger } from '../utils/logger.js';
-import { logError, formatMCPError } from '../utils/errorHandler.js';
+import { logError } from '../utils/errorHandler.js';
 import { validateAllApiKeys } from '../utils/apiKeyValidator.js';
 
-// Agent Registry is now used instead of static AGENT_TOOLS array
-// See src/core/AgentRegistry.ts for agent definitions
-
 /**
- * MCP Server Main Class
+ * Claude Code Buddy MCP Server
+ *
+ * Main server class that integrates Model Context Protocol (MCP) with the Claude Code Buddy
+ * multi-agent system. Provides intelligent task routing, agent orchestration, and enhanced
+ * prompt generation for software development workflows.
+ *
+ * Architecture:
+ * - MCP Server handles protocol-level communication
+ * - ServerInitializer sets up all components and dependencies
+ * - ToolRouter dispatches requests to appropriate handlers
+ * - ResponseFormatter ensures consistent output formatting
+ *
+ * Features:
+ * - 12+ specialized development agents (frontend, backend, testing, etc.)
+ * - Smart task analysis and routing
+ * - Evolution monitoring and continuous learning
+ * - RAG-based knowledge retrieval
+ * - Git integration for version control
+ * - Project memory management
+ *
+ * @example
+ * ```typescript
+ * // Server is typically started via CLI:
+ * // npx claude-code-buddy
+ *
+ * // Or programmatically:
+ * const server = new ClaudeCodeBuddyMCPServer();
+ * await server.start();
+ * ```
  */
 class ClaudeCodeBuddyMCPServer {
   private server: Server;
-  private router: Router;
-  private formatter: ResponseFormatter;
-  private agentRegistry: AgentRegistry;
-  private ui: HumanInLoopUI;
-  private feedbackCollector: FeedbackCollector;
-  private performanceTracker: PerformanceTracker;
-  private learningManager: LearningManager;
-  private evolutionMonitor: EvolutionMonitor;
+  private components: ServerComponents;
+  private toolRouter: ToolRouter;
   private fileWatcher?: FileWatcher;
-  private skillManager: SkillManager;
-  private uninstallManager: UninstallManager;
-  private developmentButler: DevelopmentButler;
-  private checkpointDetector: CheckpointDetector;
-  private toolInterface: MCPToolInterface;
-  private planningEngine: PlanningEngine;
-  private gitAssistant: GitAssistantIntegration;
-  private knowledgeGraph: KnowledgeGraph;
-  private projectMemoryManager: ProjectMemoryManager;
-  private rateLimiter: RateLimiter;
 
-  // Handler modules (public for testing)
-  public gitHandlers: GitHandlers;
-  public toolHandlers: ToolHandlers;
-  public buddyHandlers: BuddyHandlers;
+  /**
+   * Get Git handler module (exposed for testing)
+   *
+   * @returns GitHandlers instance
+   */
+  public get gitHandlers() {
+    return this.components.gitHandlers;
+  }
 
+  /**
+   * Get Tool handler module (exposed for testing)
+   *
+   * @returns ToolHandlers instance
+   */
+  public get toolHandlers() {
+    return this.components.toolHandlers;
+  }
+
+  /**
+   * Get Buddy command handler module (exposed for testing)
+   *
+   * @returns BuddyHandlers instance
+   */
+  public get buddyHandlers() {
+    return this.components.buddyHandlers;
+  }
+
+  /**
+   * Create a new MCP server instance
+   *
+   * Initializes all server components including:
+   * - Core routing and orchestration
+   * - Evolution monitoring system
+   * - Knowledge graph and memory management
+   * - Handler modules for tools, Git, and buddy commands
+   *
+   * The constructor follows a strict initialization order managed by ServerInitializer
+   * to ensure all dependencies are properly set up.
+   */
   constructor() {
+    // Initialize MCP server
     this.server = new Server(
       {
         name: 'claude-code-buddy',
@@ -164,391 +124,65 @@ class ClaudeCodeBuddyMCPServer {
       }
     );
 
-    this.router = new Router();
-    this.formatter = new ResponseFormatter();
-    this.agentRegistry = new AgentRegistry();
-    this.ui = new HumanInLoopUI();
-    this.skillManager = new SkillManager();
-    this.uninstallManager = new UninstallManager(this.skillManager);
+    // Initialize all components using ServerInitializer
+    this.components = ServerInitializer.initialize();
 
-    // Initialize evolution system
-    this.performanceTracker = new PerformanceTracker();
-    this.learningManager = new LearningManager(this.performanceTracker);
-    this.feedbackCollector = new FeedbackCollector(this.learningManager);
-
-    // Initialize evolution monitor using Router's evolution components
-    this.evolutionMonitor = new EvolutionMonitor(
-      this.router.getPerformanceTracker(),
-      this.router.getLearningManager(),
-      this.router.getAdaptationEngine()
-    );
-
-    // Initialize DevelopmentButler components
-    this.checkpointDetector = new CheckpointDetector();
-    this.toolInterface = new MCPToolInterface();
-    this.developmentButler = new DevelopmentButler(
-      this.checkpointDetector,
-      this.toolInterface,
-      this.router.getLearningManager()
-    );
-
-    // Initialize PlanningEngine (Phase 2)
-    this.planningEngine = new PlanningEngine(
-      this.agentRegistry,
-      this.router.getLearningManager()
-    );
-
-    // Initialize Git Assistant
-    this.gitAssistant = new GitAssistantIntegration(this.toolInterface);
-
-    // Initialize Project Memory System
-    this.knowledgeGraph = KnowledgeGraph.createSync();
-    this.projectMemoryManager = new ProjectMemoryManager(this.knowledgeGraph);
-
-    // Initialize Rate Limiter (100 requests per minute)
-    this.rateLimiter = new RateLimiter({
-      requestsPerMinute: 100, // Reasonable limit for local MCP server
+    // Create ToolRouter
+    this.toolRouter = new ToolRouter({
+      router: this.components.router,
+      formatter: this.components.formatter,
+      agentRegistry: this.components.agentRegistry,
+      rateLimiter: this.components.rateLimiter,
+      gitHandlers: this.components.gitHandlers,
+      toolHandlers: this.components.toolHandlers,
+      buddyHandlers: this.components.buddyHandlers,
     });
 
-    // Initialize handler modules
-    this.gitHandlers = new GitHandlers(this.gitAssistant);
-
-    this.toolHandlers = new ToolHandlers(
-      this.router,
-      this.agentRegistry,
-      this.feedbackCollector,
-      this.performanceTracker,
-      this.learningManager,
-      this.evolutionMonitor,
-      this.skillManager,
-      this.uninstallManager,
-      this.developmentButler,
-      this.checkpointDetector,
-      this.planningEngine,
-      this.projectMemoryManager,
-      this.ui
-    );
-
-    this.buddyHandlers = new BuddyHandlers(
-      this.router,
-      this.formatter,
-      this.projectMemoryManager
-    );
-
+    // Setup MCP request handlers
     this.setupHandlers();
     setupResourceHandlers(this.server);
   }
 
   /**
    * Setup MCP request handlers
+   *
+   * Configures the MCP server to handle:
+   * - ListTools: Returns all available tools (agents + utilities)
+   * - CallTool: Routes tool execution requests to appropriate handlers
+   *
+   * @private
    */
   private setupHandlers(): void {
     // List available tools (smart router + individual agents)
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      const allAgents = this.agentRegistry.getAllAgents();
+      const allAgents = this.components.agentRegistry.getAllAgents();
       const tools = getAllToolDefinitions(allAgents);
 
-      return { tools
-      };
+      return { tools };
     });
 
     // Execute tool (route task to agent)
     this.server.setRequestHandler(CallToolRequestSchema, async request => {
-      // Safely extract and validate parameters
-      const params = request.params;
-
-      // Type guard: validate params structure
-      if (
-        !params ||
-        typeof params !== 'object' ||
-        typeof params.name !== 'string' ||
-        !params.arguments ||
-        typeof params.arguments !== 'object'
-      ) {
-        throw new ValidationError(
-          'Invalid request parameters',
-          {
-            component: 'ClaudeCodeBuddyMCPServer',
-            method: 'call_tool',
-            providedParams: params,
-            requiredFields: ['name (string)', 'arguments (object)'],
-          }
-        );
-      }
-
-      // Rate limiting check
-      if (!this.rateLimiter.consume(1)) {
-        const status = this.rateLimiter.getStatus();
-        throw new OperationError(
-          'Rate limit exceeded. Please try again in a moment.',
-          {
-            component: 'ClaudeCodeBuddyMCPServer',
-            method: 'call_tool',
-            rateLimitStatus: status,
-            hint: 'Too many requests. The server allows up to 100 requests per minute.',
-          }
-        );
-      }
-
-      const toolName = params.name;
-      const args = params.arguments;
-
-      // Handle sa_task (new name) - Delegate to ToolHandlers
-      if (toolName === 'sa_task') {
-        return await this.toolHandlers.handleSmartRouteTask(args as any);
-      }
-
-      // Handle sa_dashboard (new name) - Delegate to ToolHandlers
-      if (toolName === 'sa_dashboard') {
-        return await this.toolHandlers.handleEvolutionDashboard(args as any);
-      }
-
-      // Handle sa_agents (new tool) - Delegate to ToolHandlers
-      if (toolName === 'sa_agents') {
-        return await this.toolHandlers.handleListAgents();
-      }
-
-      // Handle sa_skills (new tool) - Delegate to ToolHandlers
-      if (toolName === 'sa_skills') {
-        return await this.toolHandlers.handleListSkills(args as any);
-      }
-
-      // Handle sa_uninstall (new tool) - Delegate to ToolHandlers
-      if (toolName === 'sa_uninstall') {
-        return await this.toolHandlers.handleUninstall(args as any);
-      }
-
-      // Handle Buddy Commands - Delegate to BuddyHandlers
-      if (toolName === 'buddy_do') {
-        return await this.buddyHandlers.handleBuddyDo(args);
-      }
-
-      if (toolName === 'buddy_stats') {
-        return await this.buddyHandlers.handleBuddyStats(args);
-      }
-
-      if (toolName === 'buddy_remember') {
-        return await this.buddyHandlers.handleBuddyRemember(args);
-      }
-
-      if (toolName === 'buddy_help') {
-        return await this.buddyHandlers.handleBuddyHelp(args);
-      }
-
-      // Handle workflow guidance tools - Delegate to ToolHandlers
-      if (toolName === 'get-workflow-guidance') {
-        return await this.toolHandlers.handleGetWorkflowGuidance(args as any);
-      }
-
-      if (toolName === 'get-session-health') {
-        return await this.toolHandlers.handleGetSessionHealth();
-      }
-
-      if (toolName === 'reload-context') {
-        return await this.toolHandlers.handleReloadContext(args as any);
-      }
-
-      if (toolName === 'record-token-usage') {
-        return await this.toolHandlers.handleRecordTokenUsage(args as any);
-      }
-
-      // Handle generate-smart-plan (Phase 2) - Delegate to ToolHandlers
-      if (toolName === 'generate-smart-plan') {
-        return await this.toolHandlers.handleGenerateSmartPlan(args as any);
-      }
-
-      // Handle Git Assistant tools - Delegate to GitHandlers
-      if (toolName === 'git-save-work') {
-        return await this.gitHandlers.handleGitSaveWork(args);
-      }
-
-      if (toolName === 'git-list-versions') {
-        return await this.gitHandlers.handleGitListVersions(args);
-      }
-
-      if (toolName === 'git-status') {
-        return await this.gitHandlers.handleGitStatus(args);
-      }
-
-      if (toolName === 'git-show-changes') {
-        return await this.gitHandlers.handleGitShowChanges(args);
-      }
-
-      if (toolName === 'git-go-back') {
-        return await this.gitHandlers.handleGitGoBack(args);
-      }
-
-      if (toolName === 'git-create-backup') {
-        return await this.gitHandlers.handleGitCreateBackup(args);
-      }
-
-      if (toolName === 'git-setup') {
-        return await this.gitHandlers.handleGitSetup(args);
-      }
-
-      if (toolName === 'git-help') {
-        return await this.gitHandlers.handleGitHelp(args);
-      }
-
-      // Handle recall-memory tool - Delegate to ToolHandlers
-      if (toolName === 'recall-memory') {
-        return await this.toolHandlers.handleRecallMemory(args as any);
-      }
-
-      // Handle smart_route_task (legacy name - backward compatibility) - Delegate to ToolHandlers
-      if (toolName === 'smart_route_task') {
-        return await this.toolHandlers.handleSmartRouteTask(args as any);
-      }
-
-      // Handle evolution_dashboard (legacy name - backward compatibility) - Delegate to ToolHandlers
-      if (toolName === 'evolution_dashboard') {
-        return await this.toolHandlers.handleEvolutionDashboard(args as any);
-      }
-
-      // Handle individual agent invocation (advanced mode)
-      const agentName = toolName;
-
-      // Validate input using Zod schema
-      let validatedInput: ValidatedTaskInput;
-      try {
-        validatedInput = TaskInputSchema.parse(args);
-      } catch (error) {
-        if (error instanceof z.ZodError) {
-          // Log validation error with context
-          logError(error, {
-            component: 'ClaudeCodeBuddyMCPServer',
-            method: 'setupHandlers.CallToolRequestSchema',
-            operation: 'validating task input schema',
-            data: { agentName, schema: 'TaskInputSchema' },
-          });
-          throw new ValidationError(
-            formatValidationError(error),
-            {
-              component: 'ClaudeCodeBuddyMCPServer',
-              method: 'call_tool',
-              schema: 'TaskInputSchema',
-              providedArgs: args,
-            }
-          );
-        }
-        // Log unexpected error
-        logError(error, {
-          component: 'ClaudeCodeBuddyMCPServer',
-          method: 'setupHandlers.CallToolRequestSchema',
-          operation: 'parsing task input',
-          data: { agentName },
-        });
-        throw error;
-      }
-
-      // Extract validated task description and priority
-      const taskDescription = validatedInput.taskDescription || validatedInput.task_description!;
-      const priority = validatedInput.priority;
-
-      try {
-        // Validate agent name
-        if (!this.isValidAgent(agentName)) {
-          throw new NotFoundError(
-            `Unknown agent: ${agentName}`,
-            'agent',
-            agentName,
-            { availableAgents: this.agentRegistry.getAllAgents().map(a => a.name) }
-          );
-        }
-
-        // Create task
-        const task: Task = {
-          id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          description: taskDescription,
-          priority,
-        };
-
-        // Route task through the pipeline
-        const startTime = Date.now();
-        const result = await this.router.routeTask(task);
-        const duration = Date.now() - startTime;
-
-        // Build agent response
-        const agentResponse: AgentResponse = {
-          agentType: result.routing.selectedAgent,
-          taskDescription: task.description,
-          status: result.approved ? 'success' : 'error',
-          enhancedPrompt: result.routing.enhancedPrompt,
-          metadata: {
-            duration,
-            tokensUsed: result.analysis.estimatedTokens,
-            model: result.routing.enhancedPrompt.suggestedModel,
-          },
-        };
-
-        // If not approved (budget exceeded), add error
-        if (!result.approved) {
-          agentResponse.status = 'error';
-          agentResponse.error = new Error(result.message);
-        }
-
-        // Format response using ResponseFormatter
-        const formattedOutput = this.formatter.format(agentResponse);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: formattedOutput,
-            },
-          ],
-        };
-      } catch (error) {
-        // Log error with full context and stack trace
-        logError(error, {
-          component: 'ClaudeCodeBuddyMCPServer',
-          method: 'setupHandlers.CallToolRequestSchema',
-          operation: `routing task to agent: ${agentName}`,
-          data: { agentName, taskDescription: taskDescription.substring(0, 100) },
-        });
-
-        // Error handling - format error response
-        // Safe cast: agentName has been validated by isValidAgent
-        const errorResponse: AgentResponse = {
-          agentType: agentName as AgentType,
-          taskDescription: taskDescription,
-          status: 'error',
-          error: error instanceof Error ? error : new Error(String(error)),
-        };
-
-        const formattedError = this.formatter.format(errorResponse);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: formattedError,
-            },
-          ],
-          isError: true,
-        };
-      }
+      return await this.toolRouter.routeToolCall(request.params);
     });
   }
 
   /**
-   * Validate if agent name is valid
-   * Type guard that narrows string to AgentType
-   */
-  private isValidAgent(name: string): name is AgentType {
-    return this.agentRegistry.hasAgent(name as AgentType);
-  }
-
-
-
-
-
-
-
-
-
-  /**
    * Start the MCP server
+   *
+   * Initializes stdio transport and begins listening for MCP requests.
+   * Also auto-starts the RAG FileWatcher if OpenAI API key is configured.
+   *
+   * The server runs indefinitely until the process is terminated or an
+   * unrecoverable error occurs.
+   *
+   * @throws Error if server fails to start or connect to transport
+   *
+   * @example
+   * ```typescript
+   * const server = new ClaudeCodeBuddyMCPServer();
+   * await server.start(); // Runs until terminated
+   * ```
    */
   async start(): Promise<void> {
     const transport = new StdioServerTransport();
@@ -556,7 +190,7 @@ class ClaudeCodeBuddyMCPServer {
 
     // Server ready
     logger.error('Claude Code Buddy MCP Server started');
-    logger.error(`Available agents: ${this.agentRegistry.getAgentCount()}`);
+    logger.error(`Available agents: ${this.components.agentRegistry.getAgentCount()}`);
 
     // Auto-start FileWatcher if RAG is enabled
     await this.startFileWatcherIfEnabled();
@@ -590,11 +224,44 @@ class ClaudeCodeBuddyMCPServer {
 
       // Start FileWatcher
       this.fileWatcher = new FileWatcher(rag, {
-        onIndexed: (files) => {
-          logger.error(`RAG: Indexed ${files.length} file(s)`);
+        onIndexed: async (files) => {
+          if (files.length === 0) return;
+
+          // Detailed notification for each indexed file
+          logger.error('\n📥 New Files Indexed by RAG Agent:');
+          logger.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+          for (const filePath of files) {
+            const fileName = filePath.split('/').pop() || filePath;
+            const timestamp = new Date().toLocaleString();
+
+            logger.error(`   📄 ${fileName}`);
+            logger.error(`      Path: ${filePath}`);
+            logger.error(`      Indexed at: ${timestamp}`);
+            logger.error('');
+
+            // Record to Knowledge Graph for later retrieval
+            try {
+              this.components.knowledgeGraph.createEntity({
+                name: `RAG Indexed File: ${fileName} (${new Date().toISOString().split('T')[0]})`,
+                type: 'rag_indexed_file' as any,
+                observations: [
+                  `File path: ${filePath}`,
+                  `Indexed at: ${timestamp}`,
+                  `File name: ${fileName}`,
+                  'Status: Successfully indexed and searchable'
+                ]
+              });
+            } catch (kgError) {
+              logger.error(`Failed to record indexed file to Knowledge Graph: ${kgError}`);
+            }
+          }
+
+          logger.error(`✅ Total: ${files.length} file(s) indexed and ready for search`);
+          logger.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
         },
         onError: (error, file) => {
-          logger.error(`RAG Error: ${file || 'unknown'}:`, error.message);
+          logger.error(`❌ RAG Indexing Error: ${file || 'unknown'} - ${error.message}`);
         },
       });
 
@@ -612,7 +279,12 @@ class ClaudeCodeBuddyMCPServer {
 }
 
 /**
- * Main Entry Point
+ * Main entry point for the MCP server
+ *
+ * Validates API keys and starts the server. API key validation is non-blocking
+ * since OpenAI is optional (only needed for RAG features).
+ *
+ * @throws Error if server initialization or startup fails
  */
 async function main() {
   try {

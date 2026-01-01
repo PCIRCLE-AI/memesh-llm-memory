@@ -10,8 +10,8 @@
  * - 4 automation levels: Manual (0) → Smart Reminders (1) → Semi-Auto (2) → Full-Auto (3)
  */
 
-import { MCPToolInterface } from '../core/MCPToolInterface';
-import { FriendlyGitCommands } from './FriendlyGitCommands';
+import { MCPToolInterface } from '../core/MCPToolInterface.js';
+import { FriendlyGitCommands } from './FriendlyGitCommands.js';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { logger } from '../utils/logger.js';

@@ -18,12 +18,54 @@ import type {
 import { StateError, ConfigurationError } from '../../errors/index.js';
 import { logger } from '../../utils/logger.js';
 
+/**
+ * RAG (Retrieval-Augmented Generation) Agent
+ *
+ * Provides semantic search and knowledge retrieval capabilities using vector embeddings.
+ * Supports multiple embedding providers (OpenAI, Hugging Face, Ollama, Local) and
+ * advanced search features including hybrid search and re-ranking.
+ *
+ * **Key Features**:
+ * - Multi-provider embedding support (OpenAI, Hugging Face, Ollama, Local)
+ * - Hybrid search (semantic + keyword)
+ * - Re-ranking for improved relevance
+ * - Batch indexing for large document sets
+ * - Persistent vector storage with SQLite
+ *
+ * **Architecture**:
+ * - VectorStore: Manages embeddings and search
+ * - EmbeddingProvider: Generates embeddings from text
+ * - Reranker: Improves search result relevance
+ *
+ * @example
+ * ```typescript
+ * // Create and initialize
+ * const rag = new RAGAgent();
+ * await rag.enableRAG({ provider: 'openai', apiKey: 'sk-...' });
+ * await rag.initialize();
+ *
+ * // Index documents
+ * await rag.indexDocument({
+ *   text: 'React is a JavaScript library...',
+ *   metadata: { source: 'docs', topic: 'react' }
+ * });
+ *
+ * // Search
+ * const results = await rag.search('How to use React hooks?', { topK: 5 });
+ * ```
+ */
 export class RAGAgent {
   private vectorStore: VectorStore;
   private embeddings: IEmbeddingProvider | null;
   private reranker: Reranker;
   private isInitialized = false;
 
+  /**
+   * Create a new RAG Agent
+   *
+   * Creates an uninitialized RAG agent. Call enableRAG() to configure an
+   * embedding provider, then initialize() to set up the vector store.
+   */
   constructor() {
     this.vectorStore = new VectorStore();
     // Try to create OpenAI embeddings provider, but don't fail if no API key
@@ -44,6 +86,11 @@ export class RAGAgent {
 
   /**
    * Check if RAG features are enabled
+   *
+   * Returns true if an embedding provider has been configured via enableRAG().
+   * RAG features require an embedding provider to function.
+   *
+   * @returns true if RAG is enabled, false otherwise
    */
   isRAGEnabled(): boolean {
     return this.embeddings !== null;
@@ -116,7 +163,24 @@ export class RAGAgent {
   }
 
   /**
-   * 初始化 RAG Agent
+   * Initialize RAG Agent
+   *
+   * Sets up the vector store and performs health checks. Must be called after
+   * enableRAG() and before using search/indexing features.
+   *
+   * **Initialization Steps**:
+   * 1. Initialize vector store (create tables, load indexes)
+   * 2. Run health check
+   * 3. Print statistics
+   *
+   * @throws StateError if health check fails
+   *
+   * @example
+   * ```typescript
+   * const rag = new RAGAgent();
+   * await rag.enableRAG({ provider: 'openai' });
+   * await rag.initialize(); // Now ready to use
+   * ```
    */
   async initialize(): Promise<void> {
     if (this.isInitialized) {
@@ -229,7 +293,8 @@ export class RAGAgent {
 
     const duration = (Date.now() - startTime) / 1000;
     // Note: Cost tracking not yet implemented in new provider interface
-    const totalTokens = 0; // TODO: Re-implement cost tracking
+    // TODO: Re-implement cost tracking - See issue #2
+    const totalTokens = 0;
     const totalCost = 0;
 
     const stats: EmbeddingStats = {
@@ -359,7 +424,8 @@ export class RAGAgent {
 
     const documentCount = await this.vectorStore.count();
     // Note: Cost tracking not yet implemented in new provider interface
-    const totalTokens = 0; // TODO: Re-implement cost tracking
+    // TODO: Re-implement cost tracking - See issue #2
+    const totalTokens = 0;
     const totalCost = 0;
     const collectionInfo = await this.vectorStore.getCollectionInfo();
 
@@ -494,6 +560,50 @@ export async function getRAGAgent(): Promise<RAGAgent> {
   if (!ragAgentInstance) {
     ragAgentInstance = new RAGAgent();
     await ragAgentInstance.initialize();
+
+    // Auto-enable RAG based on .env configuration
+    const ragEnabled = process.env.RAG_ENABLED === 'true';
+    if (ragEnabled && !ragAgentInstance.isRAGEnabled()) {
+      const embeddingProvider = process.env.EMBEDDING_PROVIDER || 'openai';
+
+      try {
+        if (embeddingProvider === 'huggingface') {
+          const apiKey = process.env.HUGGINGFACE_API_KEY;
+          const model = process.env.HUGGINGFACE_MODEL || 'sentence-transformers/all-MiniLM-L6-v2';
+
+          if (apiKey) {
+            logger.info('[RAG] Auto-enabling with HuggingFace provider...');
+            await ragAgentInstance.enableRAG({
+              provider: 'huggingface',
+              apiKey,
+              model,
+            });
+            logger.info('[RAG] ✅ Enabled with HuggingFace (free)');
+          } else {
+            logger.info('[RAG] ⚠️  RAG_ENABLED=true but HUGGINGFACE_API_KEY not set');
+          }
+        } else if (embeddingProvider === 'openai') {
+          const apiKey = process.env.OPENAI_API_KEY;
+          const model = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small';
+
+          if (apiKey) {
+            logger.info('[RAG] Auto-enabling with OpenAI provider...');
+            await ragAgentInstance.enableRAG({
+              provider: 'openai',
+              apiKey,
+              model,
+            });
+            logger.info('[RAG] ✅ Enabled with OpenAI');
+          } else {
+            logger.info('[RAG] ⚠️  RAG_ENABLED=true but OPENAI_API_KEY not set');
+          }
+        } else {
+          logger.info(`[RAG] ⚠️  Unknown EMBEDDING_PROVIDER: ${embeddingProvider}`);
+        }
+      } catch (error) {
+        logger.info('[RAG] ❌ Failed to auto-enable RAG:', error);
+      }
+    }
   }
   return ragAgentInstance;
 }

@@ -63,6 +63,7 @@
 import type { SessionTokenTracker } from './SessionTokenTracker.js';
 import type { ThresholdWarning } from './SessionTokenTracker.js';
 import { StateError, ValidationError } from '../errors/index.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Session health status classification

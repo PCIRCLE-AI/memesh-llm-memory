@@ -1,126 +1,126 @@
-# Local Git Workflow（本地 Git 工作流程）
+# Local Git Workflow
 
-## 🎯 核心理念
+## 🎯 Core Philosophy
 
-**GitHub 不是必須的** - Smart-agents 和 Claude Code 可以完全在本地運作，只使用本地 Git 進行版本控制和代碼管理。
+**GitHub is NOT Required** - Claude Code Buddy can operate entirely locally, using only local Git for version control and code management.
 
-## 📊 GitHub vs 本地 Git 比較
+## 📊 GitHub vs Local Git Comparison
 
-| 功能 | 本地 Git (Local Only) | GitHub (Remote) |
-|------|----------------------|-----------------|
-| **版本控制** | ✅ 完整支援 | ✅ 完整支援 |
-| **代碼備份** | ⚠️ 只在本機 | ✅ 雲端備份 |
-| **多人協作** | ❌ 不支援 | ✅ 完整支援 |
-| **代碼分享** | ❌ 不方便 | ✅ 公開/私密分享 |
-| **CI/CD** | ❌ 無法使用 | ✅ GitHub Actions |
-| **學習成本** | ✅ 較低 | ⚠️ 較高 |
-| **需要網路** | ❌ 不需要 | ✅ 需要 |
-| **需要帳號** | ❌ 不需要 | ✅ 需要 GitHub 帳號 |
-| **適合對象** | 個人專案、學習 | 團隊協作、開源 |
+| Feature | Local Git (Local Only) | GitHub (Remote) |
+|---------|----------------------|-----------------|
+| **Version Control** | ✅ Full Support | ✅ Full Support |
+| **Code Backup** | ⚠️ Local Only | ✅ Cloud Backup |
+| **Collaboration** | ❌ Not Supported | ✅ Full Support |
+| **Code Sharing** | ❌ Inconvenient | ✅ Public/Private Sharing |
+| **CI/CD** | ❌ Not Available | ✅ GitHub Actions |
+| **Learning Curve** | ✅ Lower | ⚠️ Higher |
+| **Requires Internet** | ❌ No | ✅ Yes |
+| **Requires Account** | ❌ No | ✅ GitHub Account Required |
+| **Best For** | Personal Projects, Learning | Team Collaboration, Open Source |
 
-## 🏠 本地 Git 工作流程（推薦給非技術用戶）
+## 🏠 Local Git Workflow (Recommended for Non-Technical Users)
 
-### 基本概念
+### Basic Concepts
 
 ```
-你的專案資料夾 (Working Directory)
+Your Project Folder (Working Directory)
     ↓
-本地 Git 儲存庫 (Local Repository)
+Local Git Repository (Local Repository)
     ↓
-版本歷史 (Commit History)
+Version History (Commit History)
 
-不需要：
-❌ GitHub 帳號
+NOT Required:
+❌ GitHub Account
 ❌ SSH Keys
 ❌ Remote Repository
 ❌ Push/Pull
-❌ 網路連線
+❌ Internet Connection
 ```
 
-### 簡化工作流程
+### Simplified Workflow
 
 ```bash
-# 1. 初始化專案（只需一次）
+# 1. Initialize project (one-time setup)
 cd /path/to/your/project
 git init
 
-# 2. 配置基本資訊（只需一次）
-git config user.name "你的名字"
+# 2. Configure basic information (one-time setup)
+git config user.name "Your Name"
 git config user.email "your@email.com"
 
-# 3. 日常工作流程
-# 寫代碼 → 儲存版本 → 繼續工作
+# 3. Daily workflow
+# Write code → Save version → Continue working
 
-# 儲存當前版本
+# Save current version
 git add .
-git commit -m "完成登入功能"
+git commit -m "Complete login feature"
 
-# 查看歷史版本
+# View version history
 git log --oneline
 
-# 回到之前的版本
+# Go back to previous version
 git checkout <commit-id>
 
-# 建立新分支測試功能
+# Create new branch to test feature
 git checkout -b new-feature
 
-# 完成後合併
+# Merge after completion
 git checkout main
 git merge new-feature
 ```
 
-## 🎨 Claude Code Buddy 本地工作流程
+## 🎨 Claude Code Buddy Local Workflow
 
-### 方案 A: 純本地（無 GitHub）
-
-```
-用戶專案
-├── .git/                    # 本地 Git 儲存庫
-├── src/                     # 原始碼
-├── docs/                    # 文檔
-└── .claude-code-buddy/          # Smart-agents 配置
-    ├── knowledge-graph/    # 本地知識圖譜
-    ├── workflows/          # 本地工作流
-    └── backups/            # 本地備份
-
-所有資料都在本機，不上傳到雲端
-```
-
-**優點**：
-- ✅ 簡單、不需要學習 GitHub
-- ✅ 不需要網路
-- ✅ 隱私完全掌控
-- ✅ 適合個人專案、學習
-
-**缺點**：
-- ⚠️ 電腦損壞 = 資料遺失（需要手動備份）
-- ⚠️ 無法多人協作
-- ⚠️ 無法從其他電腦存取
-
-### 方案 B: 本地 + 可選 GitHub
+### Option A: Pure Local (No GitHub)
 
 ```
-用戶專案
-├── .git/                    # 本地 Git
+User Project
+├── .git/                    # Local Git repository
+├── src/                     # Source code
+├── docs/                    # Documentation
+└── .claude-code-buddy/      # Claude Code Buddy config
+    ├── knowledge-graph/     # Local knowledge graph
+    ├── workflows/           # Local workflows
+    └── backups/             # Local backups
+
+All data stays local, never uploaded to cloud
+```
+
+**Advantages**:
+- ✅ Simple, no need to learn GitHub
+- ✅ No internet required
+- ✅ Complete privacy control
+- ✅ Suitable for personal projects and learning
+
+**Disadvantages**:
+- ⚠️ Computer failure = data loss (requires manual backup)
+- ⚠️ No multi-user collaboration
+- ⚠️ Cannot access from other computers
+
+### Option B: Local + Optional GitHub
+
+```
+User Project
+├── .git/                    # Local Git
 ├── src/
 ├── docs/
 └── .claude-code-buddy/
     └── config.json
         {
           "git": {
-            "mode": "local",        # 預設本地模式
-            "autoBackup": false,    # 不自動備份到 GitHub
+            "mode": "local",        # Default local mode
+            "autoBackup": false,    # Don't auto-backup to GitHub
             "github": {
-              "enabled": false      # GitHub 功能關閉
+              "enabled": false      # GitHub features disabled
             }
           }
         }
 
-# 用戶可以隨時啟用 GitHub（可選）
+# Users can enable GitHub anytime (optional)
 {
   "git": {
-    "mode": "hybrid",             # 本地 + GitHub
-    "autoBackup": true,           # 自動備份到 GitHub
+    "mode": "hybrid",             # Local + GitHub
+    "autoBackup": true,           # Auto-backup to GitHub
     "github": {
       "enabled": true,
       "repo": "username/project"
@@ -129,148 +129,148 @@ git merge new-feature
 }
 ```
 
-**優點**：
-- ✅ 預設簡單（本地模式）
-- ✅ 需要時可以升級到 GitHub
-- ✅ 漸進式學習
-- ✅ 靈活度高
+**Advantages**:
+- ✅ Simple by default (local mode)
+- ✅ Can upgrade to GitHub when needed
+- ✅ Progressive learning path
+- ✅ High flexibility
 
-## 🛡️ 本地備份策略（不使用 GitHub）
+## 🛡️ Local Backup Strategy (Without GitHub)
 
-既然不用 GitHub，如何保護代碼？
+How to protect your code without GitHub?
 
-### 策略 1: 自動本地備份
+### Strategy 1: Automatic Local Backup
 
 ```bash
-# Smart-agents 可以自動執行
+# Claude Code Buddy can automatically execute
 #!/bin/bash
 # .claude-code-buddy/scripts/local-backup.sh
 
 BACKUP_DIR="$HOME/.claude-code-buddy-backups/$(basename $(pwd))"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-# 創建備份目錄
+# Create backup directory
 mkdir -p "$BACKUP_DIR"
 
-# 複製整個專案（包含 .git）
+# Copy entire project (including .git)
 cp -r . "$BACKUP_DIR/$TIMESTAMP"
 
-# 保留最近 10 個備份
+# Keep only last 10 backups
 ls -t "$BACKUP_DIR" | tail -n +11 | xargs -I {} rm -rf "$BACKUP_DIR/{}"
 
 echo "✅ Backup created: $BACKUP_DIR/$TIMESTAMP"
 ```
 
-### 策略 2: 外接硬碟備份
+### Strategy 2: External Drive Backup
 
 ```bash
-# 備份到外接硬碟
+# Backup to external drive
 rsync -av --exclude=node_modules \
   /path/to/project \
   /Volumes/ExternalDrive/Backups/
 ```
 
-### 策略 3: iCloud/Dropbox 同步
+### Strategy 3: iCloud/Dropbox Sync
 
 ```bash
-# 將專案放在雲端同步資料夾
+# Place project in cloud sync folder
 ~/Library/Mobile Documents/com~apple~CloudDocs/Projects/my-project/
 
-# Git 依然正常運作，檔案自動同步
+# Git still works normally, files auto-sync
 ```
 
-## 🎓 非技術用戶友善的 Git 命令
+## 🎓 User-Friendly Git Commands for Non-Technical Users
 
-### 簡化版命令（Smart-agents 可以提供）
+### Simplified Commands (Claude Code Buddy provides)
 
 ```bash
-# ❌ 技術性命令（嚇人）
+# ❌ Technical commands (intimidating)
 git add .
 git commit -m "feat: implement authentication module with JWT tokens"
 git push origin feature/auth-system
 
-# ✅ 友善命令（易懂）
-save-work "完成登入功能"
-# → Smart-agents 自動執行 git add + commit
+# ✅ Friendly commands (easy to understand)
+save-work "Complete login feature"
+# → Claude Code Buddy automatically executes git add + commit
 
 list-versions
-# → Smart-agents 顯示歷史版本（格式化）
+# → Claude Code Buddy shows version history (formatted)
 
-go-back-to "昨天下午的版本"
-# → Smart-agents 找到對應 commit 並 checkout
+go-back-to "yesterday afternoon version"
+# → Claude Code Buddy finds corresponding commit and checkout
 
 backup-now
-# → Smart-agents 執行本地備份
+# → Claude Code Buddy executes local backup
 
 show-changes
-# → Smart-agents 顯示與上一版本的差異（可視化）
+# → Claude Code Buddy shows differences from last version (visualized)
 ```
 
-### Claude Code Buddy CLI 包裝
+### Claude Code Buddy CLI Wrapper
 
 ```typescript
 // src/cli/friendly-git-commands.ts
 
 export class FriendlyGitCommands {
   /**
-   * 儲存目前工作
+   * Save current work
    */
   async saveWork(description: string): Promise<void> {
-    // 內部執行 git add + commit
+    // Internally executes git add + commit
     await execAsync('git add .');
     await execAsync(`git commit -m "${description}"`);
 
-    // 自動本地備份
+    // Auto local backup
     if (this.config.autoLocalBackup) {
       await this.createLocalBackup();
     }
 
-    console.log('✅ 工作已儲存');
-    console.log('📝 描述:', description);
-    console.log('🕐 時間:', new Date().toLocaleString());
+    console.log('✅ Work saved');
+    console.log('📝 Description:', description);
+    console.log('🕐 Time:', new Date().toLocaleString());
   }
 
   /**
-   * 列出歷史版本
+   * List version history
    */
   async listVersions(limit: number = 10): Promise<void> {
     const result = await execAsync(`git log --oneline -${limit}`);
 
-    console.log('📚 最近的版本：\n');
+    console.log('📚 Recent versions:\n');
     const commits = result.stdout.split('\n');
 
     commits.forEach((commit, index) => {
       const [hash, ...messageParts] = commit.split(' ');
       const message = messageParts.join(' ');
       console.log(`${index + 1}. ${message}`);
-      console.log(`   (版本號: ${hash})\n`);
+      console.log(`   (Version ID: ${hash})\n`);
     });
   }
 
   /**
-   * 回到之前的版本
+   * Go back to previous version
    */
   async goBackTo(identifier: string): Promise<void> {
-    // 用戶可以用版本號、描述、或相對時間
+    // User can use version number, description, or relative time
     let commitHash: string;
 
-    if (identifier.includes('昨天')) {
-      // 找昨天的 commit
+    if (identifier.includes('yesterday')) {
+      // Find yesterday's commit
       commitHash = await this.findCommitByTime('yesterday');
-    } else if (identifier.includes('版本')) {
-      // 用版本號查找
+    } else if (identifier.includes('version')) {
+      // Find by version number
       commitHash = await this.findCommitByNumber(parseInt(identifier));
     } else {
-      // 直接用 hash
+      // Use hash directly
       commitHash = identifier;
     }
 
     await execAsync(`git checkout ${commitHash}`);
-    console.log('✅ 已回到該版本');
+    console.log('✅ Returned to that version');
   }
 
   /**
-   * 創建本地備份
+   * Create local backup
    */
   private async createLocalBackup(): Promise<void> {
     const backupDir = path.join(
@@ -285,7 +285,7 @@ export class FriendlyGitCommands {
     await fs.mkdir(backupDir, { recursive: true });
     await execAsync(`cp -r . ${backupPath}`);
 
-    // 只保留最近 10 個備份
+    // Keep only last 10 backups
     const backups = await fs.readdir(backupDir);
     const sortedBackups = backups.sort().reverse();
 
@@ -295,14 +295,14 @@ export class FriendlyGitCommands {
   }
 
   /**
-   * 顯示變更
+   * Show changes
    */
   async showChanges(): Promise<void> {
     const result = await execAsync('git diff HEAD~1');
 
-    console.log('📊 與上一版本的差異：\n');
+    console.log('📊 Differences from last version:\n');
 
-    // 簡化的 diff 顯示
+    // Simplified diff display
     const lines = result.stdout.split('\n');
     const changes = {
       added: [] as string[],
@@ -318,15 +318,15 @@ export class FriendlyGitCommands {
       }
     }
 
-    console.log(`✅ 新增了 ${changes.added.length} 行`);
-    console.log(`❌ 刪除了 ${changes.removed.length} 行`);
+    console.log(`✅ Added ${changes.added.length} lines`);
+    console.log(`❌ Removed ${changes.removed.length} lines`);
   }
 }
 ```
 
-## 📱 視覺化 Git 介面（未來）
+## 📱 Visual Git Interface (Future)
 
-對於完全不想用命令列的用戶：
+For users who don't want to use command line at all:
 
 ```
 Claude Code Buddy GUI (Electron App)
@@ -338,27 +338,28 @@ Claude Code Buddy GUI (Electron App)
 │                                          │
 │  Recent Versions:                       │
 │  ┌────────────────────────────────────┐ │
-│  │ 1. 完成登入功能 (2 小時前)          │ │
-│  │ 2. 修復密碼驗證 bug (昨天)          │ │
-│  │ 3. 新增註冊頁面 (3 天前)            │ │
+│  │ 1. Complete login feature (2h ago) │ │
+│  │ 2. Fix password validation bug     │ │
+│  │    (yesterday)                      │ │
+│  │ 3. Add registration page (3d ago)  │ │
 │  └────────────────────────────────────┘ │
 │                                          │
 │  Actions:                                │
-│  [💾 儲存目前工作]  [⏮️ 回到上一版本]    │
-│  [📊 查看變更]      [💿 創建備份]        │
+│  [💾 Save Current Work] [⏮️ Go Back]    │
+│  [📊 View Changes]      [💿 Create Backup]│
 │                                          │
 │  Unsaved Changes:                        │
 │  ✏️ src/login.ts                        │
 │  ✏️ src/auth.ts                         │
 │                                          │
 │  Description: ___________________        │
-│                [儲存版本] 按鈕            │
+│                [Save Version] Button     │
 └─────────────────────────────────────────┘
 ```
 
-## 🎯 建議的預設配置
+## 🎯 Recommended Default Configuration
 
-### 個人用戶（學習、個人專案）
+### Personal Users (Learning, Personal Projects)
 
 ```json
 {
@@ -380,7 +381,7 @@ Claude Code Buddy GUI (Electron App)
 }
 ```
 
-### 專業用戶（團隊協作、開源）
+### Professional Users (Team Collaboration, Open Source)
 
 ```json
 {
@@ -402,128 +403,128 @@ Claude Code Buddy GUI (Electron App)
 }
 ```
 
-## 🚀 實作建議
+## 🚀 Implementation Suggestions
 
-### Phase 1: 本地優先（立即實作）
+### Phase 1: Local-First (Immediate Implementation)
 
-1. ✅ 預設使用本地 Git
-2. ✅ 不強制要求 GitHub
-3. ✅ 提供友善的 Git 命令包裝
-4. ✅ 自動本地備份
+1. ✅ Use local Git by default
+2. ✅ Don't require GitHub
+3. ✅ Provide friendly Git command wrappers
+4. ✅ Auto local backup
 
-### Phase 2: 漸進式複雜度（未來）
+### Phase 2: Progressive Complexity (Future)
 
-1. ⬜ 檢測用戶熟悉度
-2. ⬜ 根據熟悉度顯示不同介面
-3. ⬜ 新手模式：只顯示簡化命令
-4. ⬜ 專家模式：顯示原始 Git 命令
+1. ⬜ Detect user proficiency level
+2. ⬜ Show different interfaces based on proficiency
+3. ⬜ Beginner mode: Show only simplified commands
+4. ⬜ Expert mode: Show raw Git commands
 
-### Phase 3: 可選 GitHub（未來）
+### Phase 3: Optional GitHub (Future)
 
-1. ⬜ "升級到 GitHub" 引導流程
-2. ⬜ 自動創建 GitHub repo
-3. ⬜ 自動配置 remote
-4. ⬜ 簡化 push/pull 操作
+1. ⬜ "Upgrade to GitHub" guided flow
+2. ⬜ Auto-create GitHub repo
+3. ⬜ Auto-configure remote
+4. ⬜ Simplify push/pull operations
 
-## 💡 關鍵洞察
+## 💡 Key Insights
 
-### 對於非技術用戶
+### For Non-Technical Users
 
-**他們不需要知道**：
-- ❌ Git 的內部運作
-- ❌ Commit, Branch, Merge 的技術概念
+**They DON'T need to know**:
+- ❌ Git internal workings
+- ❌ Technical concepts like Commit, Branch, Merge
 - ❌ Remote, Push, Pull
-- ❌ GitHub 是什麼
+- ❌ What GitHub is
 
-**他們只需要知道**：
-- ✅ "儲存版本" 可以記錄目前狀態
-- ✅ "回到之前版本" 可以恢復舊代碼
-- ✅ "查看變更" 可以看修改了什麼
-- ✅ "創建備份" 可以保護工作
+**They ONLY need to know**:
+- ✅ "Save version" records current state
+- ✅ "Go back to previous version" restores old code
+- ✅ "View changes" shows what was modified
+- ✅ "Create backup" protects their work
 
-### 類比：就像文件系統
+### Analogy: Like a File System
 
 ```
-Git 版本控制    ≈    檔案管理
+Git Version Control    ≈    File Management
 
-儲存版本       ≈    儲存檔案
-回到之前版本   ≈    開啟舊版本檔案
-查看歷史       ≈    查看檔案修改日期
-創建分支       ≈    複製資料夾測試
+Save version          ≈    Save file
+Go to previous version ≈   Open old version of file
+View history          ≈    View file modification date
+Create branch         ≈    Copy folder for testing
 ```
 
-## 📚 用戶文檔範例
+## 📚 User Documentation Example
 
-### 新手指南
+### Beginner's Guide
 
 ```markdown
-# 如何保存你的工作
+# How to Save Your Work
 
-## 1. 儲存目前版本
+## 1. Save Current Version
 
-當你完成一個功能後，使用：
+When you complete a feature, use:
 
 ​```bash
-save-work "完成了登入功能"
+save-work "Completed login feature"
 ​```
 
-就像儲存文件一樣簡單！
+It's as simple as saving a document!
 
-## 2. 查看歷史版本
+## 2. View Version History
 
-想看之前做了什麼？
+Want to see what you did before?
 
 ​```bash
 list-versions
 ​```
 
-會顯示：
-1. 完成登入功能 (2 小時前)
-2. 修復密碼 bug (昨天)
-3. 新增註冊頁面 (3 天前)
+Shows:
+1. Complete login feature (2 hours ago)
+2. Fix password bug (yesterday)
+3. Add registration page (3 days ago)
 
-## 3. 回到之前的版本
+## 3. Go Back to Previous Version
 
-發現新代碼有問題？回到舊版本：
+Found a problem with new code? Go back to old version:
 
 ​```bash
-go-back-to "昨天的版本"
+go-back-to "yesterday's version"
 ​```
 
-就這麼簡單！
+That's it!
 ```
 
-## 🔒 資料安全
+## 🔒 Data Security
 
-### 本地 Git 的資料保護
+### Data Protection with Local Git
 
 ```bash
-# 1. 定期自動備份（Smart-agents 自動執行）
+# 1. Regular auto-backup (Claude Code Buddy executes automatically)
 0 */4 * * * ~/.claude-code-buddy/scripts/local-backup.sh
 
-# 2. 外接硬碟備份（每週）
+# 2. External drive backup (weekly)
 rsync -av ~/Projects /Volumes/Backup/
 
-# 3. 雲端同步（可選）
-# 放在 iCloud/Dropbox 資料夾，自動同步
+# 3. Cloud sync (optional)
+# Place in iCloud/Dropbox folder, auto-syncs
 
-# 4. Time Machine（macOS）
-# 系統自動備份整個電腦
+# 4. Time Machine (macOS)
+# System automatically backs up entire computer
 ```
 
-## ✅ 結論
+## ✅ Conclusion
 
-**GitHub 不是必需的！**
+**GitHub is NOT required!**
 
-Smart-agents 應該：
-1. ✅ 預設使用本地 Git
-2. ✅ 提供友善的命令介面
-3. ✅ 自動本地備份
-4. ✅ GitHub 作為可選功能
-5. ✅ 漸進式學習路徑
+Claude Code Buddy should:
+1. ✅ Use local Git by default
+2. ✅ Provide friendly command interface
+3. ✅ Auto local backup
+4. ✅ GitHub as optional feature
+5. ✅ Progressive learning path
 
-這樣可以：
-- 降低學習門檻
-- 保護用戶隱私
-- 適合個人專案
-- 需要時可升級到 GitHub
+This allows:
+- Lower learning barrier
+- Protect user privacy
+- Suitable for personal projects
+- Can upgrade to GitHub when needed

@@ -77,7 +77,7 @@ export class OllamaProvider implements IEmbeddingProvider {
         throw new Error(`Ollama API error: ${response.status} - ${errorText}`);
       }
 
-      const result = await response.json();
+      const result = (await response.json()) as { embedding?: number[] };
 
       if (!result.embedding || !Array.isArray(result.embedding)) {
         throw new Error(`Invalid response from Ollama: missing or invalid embedding`);
@@ -198,8 +198,8 @@ export class OllamaProvider implements IEmbeddingProvider {
         throw new Error(`Failed to list models: ${response.status}`);
       }
 
-      const result = await response.json();
-      return result.models?.map((m: any) => m.name) || [];
+      const result = (await response.json()) as { models?: Array<{ name: string }> };
+      return result.models?.map((m) => m.name) || [];
     } catch (error) {
       logger.error('Failed to list Ollama models', {
         error: error instanceof Error ? error.message : String(error),

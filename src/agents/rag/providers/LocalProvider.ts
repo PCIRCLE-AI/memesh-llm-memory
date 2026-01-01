@@ -85,6 +85,7 @@ export class LocalProvider implements IEmbeddingProvider {
     this.initializationPromise = (async () => {
       try {
         // Dynamically import @xenova/transformers to avoid bundling if not used
+        // @ts-expect-error - @xenova/transformers is an optional dependency, only needed for local embeddings
         const { pipeline } = await import('@xenova/transformers');
 
         logger.info('Loading local embedding model', {

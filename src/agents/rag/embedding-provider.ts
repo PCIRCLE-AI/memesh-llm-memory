@@ -1,15 +1,22 @@
 /**
- * Embedding Provider - OpenAI Embeddings Only
+ * Embedding Provider Factory
  *
- * Simplified to use only OpenAI embeddings API for stability and reliability
+ * Supports multiple embedding providers:
+ * - OpenAI (default, stable and reliable)
+ * - Hugging Face (alternative cloud provider)
+ * - Ollama (local inference)
+ * - Local (offline with transformers.js)
  */
 
 import { EmbeddingService } from './embeddings.js';
 import { logger } from '../../utils/logger.js';
-import type { CostTracker } from './types.js';
+import type { CostTracker, IEmbeddingProvider as IEmbeddingProviderNew, EmbeddingProviderConfig } from './types.js';
 import * as readline from 'readline';
 import { SecureKeyStore } from '../../utils/SecureKeyStore.js';
 import { ConfigurationError } from '../../errors/index.js';
+import { HuggingFaceProvider } from './providers/HuggingFaceProvider.js';
+import { OllamaProvider } from './providers/OllamaProvider.js';
+import { LocalProvider } from './providers/LocalProvider.js';
 
 /**
  * 統一的 Embedding Provider 接口
@@ -91,15 +98,142 @@ async function promptForApiKey(): Promise<string | null> {
 /**
  * Embedding Provider Factory
  *
- * 僅支援 OpenAI embeddings（穩定可靠）
+ * Creates embedding providers based on configuration.
+ * Supports: OpenAI, Hugging Face, Ollama, Local
  */
 export class EmbeddingProviderFactory {
   /**
-   * 創建 embedding provider
+   * Create embedding provider from configuration
    *
-   * 如果沒有 API key，會提示使用者輸入
+   * @param config - Provider configuration with discriminated union type
+   * @returns Embedding provider instance
    */
-  static async create(options: {
+  static async create(config: EmbeddingProviderConfig): Promise<IEmbeddingProviderNew> {
+    switch (config.provider) {
+      case 'openai': {
+        // Check SecureKeyStore first, then provided apiKey
+        const apiKey = config.apiKey || SecureKeyStore.get('openai') || process.env.OPENAI_API_KEY;
+
+        if (!apiKey) {
+          throw new ConfigurationError(
+            'OpenAI API key not found. Please set OPENAI_API_KEY environment variable or pass apiKey parameter.\n\n' +
+            'Get your API key at: https://platform.openai.com/api-keys',
+            {
+              configKey: 'OPENAI_API_KEY',
+              provider: 'OpenAI',
+              apiKeyUrl: 'https://platform.openai.com/api-keys',
+            }
+          );
+        }
+
+        const openaiService = new EmbeddingService(apiKey);
+        if (!openaiService.isAvailable()) {
+          throw new ConfigurationError('OpenAI service is not available with provided API key', {
+            provider: 'OpenAI',
+          });
+        }
+
+        logger.info('Using OpenAI Embeddings API for RAG');
+        return openaiService;
+      }
+
+      case 'huggingface': {
+        if (!config.apiKey) {
+          throw new ConfigurationError(
+            'Hugging Face API key is required.\n\n' +
+            'Get your API key at: https://huggingface.co/settings/tokens',
+            {
+              configKey: 'HUGGINGFACE_API_KEY',
+              provider: 'Hugging Face',
+              apiKeyUrl: 'https://huggingface.co/settings/tokens',
+            }
+          );
+        }
+
+        logger.info('Using Hugging Face Embeddings API for RAG', {
+          model: config.model || 'sentence-transformers/all-MiniLM-L6-v2',
+        });
+
+        return new HuggingFaceProvider({
+          apiKey: config.apiKey,
+          model: config.model,
+          dimensions: config.dimensions,
+        });
+      }
+
+      case 'ollama': {
+        const baseUrl = config.baseUrl || 'http://localhost:11434';
+
+        logger.info('Using Ollama local embeddings for RAG', {
+          baseUrl,
+          model: config.model || 'nomic-embed-text',
+        });
+
+        const provider = new OllamaProvider({
+          baseUrl,
+          model: config.model,
+          dimensions: config.dimensions,
+        });
+
+        // Check if Ollama is running
+        const isAvailable = await provider.checkAvailability();
+        if (!isAvailable) {
+          throw new ConfigurationError(
+            `Ollama is not running at ${baseUrl}.\n\n` +
+            'Please start Ollama: ollama serve\n' +
+            'And ensure your model is pulled: ollama pull ' + (config.model || 'nomic-embed-text'),
+            {
+              provider: 'Ollama',
+              baseUrl,
+            }
+          );
+        }
+
+        return provider;
+      }
+
+      case 'local': {
+        if (!config.modelPath) {
+          throw new ConfigurationError(
+            'Model path is required for local embedding provider.\n\n' +
+            'Please provide the path to a downloaded transformers.js model.',
+            {
+              provider: 'Local',
+              configKey: 'modelPath',
+            }
+          );
+        }
+
+        logger.info('Using local embeddings with transformers.js', {
+          modelPath: config.modelPath,
+          model: config.model || 'all-MiniLM-L6-v2',
+        });
+
+        return new LocalProvider({
+          modelPath: config.modelPath,
+          model: config.model,
+          dimensions: config.dimensions,
+        });
+      }
+
+      default: {
+        throw new ConfigurationError(
+          `Unsupported embedding provider: ${(config as any).provider}`,
+          {
+            provider: (config as any).provider,
+            supportedProviders: ['openai', 'huggingface', 'ollama', 'local'],
+          }
+        );
+      }
+    }
+  }
+
+  /**
+   * Legacy method for backward compatibility with OpenAI-only code
+   *
+   * @deprecated Use create() with EmbeddingProviderConfig instead
+   */
+  static async createOpenAI(options: {
     apiKey?: string;
     interactive?: boolean;
   } = {}): Promise<IEmbeddingProvider> {

@@ -278,10 +278,26 @@ export class EmbeddingService {
    */
   getModelInfo(): { provider: string; model: string; dimensions: number } {
     return {
-      provider: 'openai',
+      provider: 'OpenAI',
       model: this.model,
       dimensions: this.getModelDimension(),
     };
+  }
+
+  /**
+   * IEmbeddingProvider interface implementation
+   * Adapter method for new provider interface
+   */
+  async embed(text: string): Promise<number[]> {
+    return this.createEmbedding(text);
+  }
+
+  /**
+   * IEmbeddingProvider interface implementation
+   * Adapter method for new provider interface
+   */
+  async embedBatch(texts: string[]): Promise<number[][]> {
+    return this.createEmbeddingsBatch(texts);
   }
 }
 

@@ -331,19 +331,19 @@
                     <div class="flex items-start mb-4">
                         <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center text-2xl mr-4 flex-shrink-0">❌</div>
                         <div>
-                            <h3 class="text-2xl font-bold text-gray-900 mb-2">Problem: Session Crashes</h3>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-2">Problem: Expensive Token Costs</h3>
                             <p class="text-gray-600">
-                                Claude Code hits the <strong>200K token limit</strong> and crashes, losing your entire conversation and work progress.
+                                All tasks use <strong>expensive models</strong> even for simple work, wasting tokens and budget on routine operations.
                             </p>
                         </div>
                     </div>
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <div class="flex items-start">
-                            <div class="w-12 h-12 icon-blue rounded-xl flex items-center justify-center text-2xl mr-4 flex-shrink-0">📊</div>
+                            <div class="w-12 h-12 icon-green rounded-xl flex items-center justify-center text-2xl mr-4 flex-shrink-0">💰</div>
                             <div>
-                                <h4 class="text-xl font-bold text-blue-600 mb-2">Solution: Session Health</h4>
+                                <h4 class="text-xl font-bold text-green-600 mb-2">Solution: Smart Model Selection</h4>
                                 <p class="text-gray-700">
-                                    Monitors token usage and <strong>automatically reloads context at 90% capacity</strong>, preventing crashes and data loss.
+                                    Routes tasks by complexity: <strong>Haiku</strong> (simple, cheap) → <strong>Sonnet</strong> (balanced) → <strong>Opus</strong> (complex, quality). Saves ~40% token costs.
                                 </p>
                             </div>
                         </div>
@@ -355,19 +355,19 @@
                     <div class="flex items-start mb-4">
                         <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center text-2xl mr-4 flex-shrink-0">❌</div>
                         <div>
-                            <h3 class="text-2xl font-bold text-gray-900 mb-2">Problem: Repeated Mistakes</h3>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-2">Problem: Repetitive Context</h3>
                             <p class="text-gray-600">
-                                Claude makes the <strong>same mistakes repeatedly</strong> because it doesn't learn from your corrections and feedback.
+                                Explaining your <strong>project structure and decisions every conversation</strong> wastes time and breaks flow.
                             </p>
                         </div>
                     </div>
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <div class="flex items-start">
-                            <div class="w-12 h-12 icon-orange rounded-xl flex items-center justify-center text-2xl mr-4 flex-shrink-0">📈</div>
+                            <div class="w-12 h-12 icon-purple rounded-xl flex items-center justify-center text-2xl mr-4 flex-shrink-0">📂</div>
                             <div>
-                                <h4 class="text-xl font-bold text-orange-600 mb-2">Solution: Learning System</h4>
+                                <h4 class="text-xl font-bold text-purple-600 mb-2">Solution: RAG + Drop Inbox</h4>
                                 <p class="text-gray-700">
-                                    Learns from your feedback (👍/👎) and adapts to your <strong>project-specific patterns</strong>, improving over time.
+                                    Drop files into <strong>~/Documents/claude-code-buddy-knowledge/</strong> → Auto-indexed every 5 seconds → <strong>No repeated explanations</strong> needed.
                                 </p>
                             </div>
                         </div>
@@ -456,31 +456,31 @@ git-list-versions</code></pre>
                     </div>
                 </div>
 
-                <!-- Session Health -->
+                <!-- Smart Model Selection -->
                 <div class="glass-card rounded-2xl p-8 md:col-span-2">
                     <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                        <span class="w-12 h-12 icon-orange rounded-lg flex items-center justify-center text-2xl mr-3">📊</span>
-                        Session Health Monitoring
+                        <span class="w-12 h-12 icon-orange rounded-lg flex items-center justify-center text-2xl mr-3">💰</span>
+                        Smart Model Selection
                     </h3>
                     <p class="text-gray-600 mb-5">
-                        Prevents Claude Code crashes by monitoring the 200K token limit
+                        Saves ~40% token costs by routing tasks to the right Claude model
                     </p>
                     <div class="grid md:grid-cols-2 gap-4">
                         <div class="flex items-start">
                             <span class="text-green-500 mr-3 text-xl">✓</span>
-                            <span class="text-gray-700">Automatic context reload at 90% capacity</span>
+                            <span class="text-gray-700">Claude Haiku for simple tasks (cheap & fast)</span>
                         </div>
                         <div class="flex items-start">
                             <span class="text-green-500 mr-3 text-xl">✓</span>
-                            <span class="text-gray-700">Token usage tracking per agent</span>
+                            <span class="text-gray-700">Claude Sonnet for balanced tasks (standard)</span>
                         </div>
                         <div class="flex items-start">
                             <span class="text-green-500 mr-3 text-xl">✓</span>
-                            <span class="text-gray-700">Success rate analytics</span>
+                            <span class="text-gray-700">Claude Opus for complex tasks (quality)</span>
                         </div>
                         <div class="flex items-start">
                             <span class="text-green-500 mr-3 text-xl">✓</span>
-                            <span class="text-gray-700">Intelligent next-step recommendations</span>
+                            <span class="text-gray-700">Automatic complexity analysis & cost estimation</span>
                         </div>
                     </div>
                 </div>
@@ -521,7 +521,7 @@ git-list-versions</code></pre>
                         </li>
                         <li class="flex items-start">
                             <span class="text-green-500 mr-3 text-xl font-bold">✓</span>
-                            <span class="text-gray-700"><strong>Session Health Monitoring</strong></span>
+                            <span class="text-gray-700"><strong>Smart Model Selection</strong></span>
                         </li>
                         <li class="flex items-start">
                             <span class="text-green-500 mr-3 text-xl font-bold">✓</span>

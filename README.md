@@ -33,10 +33,10 @@ CCB remembers your architecture decisions, coding patterns, and past solutions. 
 ### 2. 🎯 **Smart Task Routing**
 Your request gets analyzed and routed to the right "expert mode" - code review tasks get code review expertise, debugging gets systematic debugging methodology, frontend gets UI/UX best practices.
 
-### 3. 📈 **Learns From Feedback**
-Thumbs up/down after each response trains the system. It learns which approaches work for your project and adapts over time.
+### 3. 💰 **Smart Model Selection**
+Routes tasks to the right Claude model (Haiku/Sonnet/Opus) based on complexity, saving ~40% on token costs without sacrificing quality.
 
-**Result:** Expert responses without expert prompts. Context that persists. An AI that gets smarter the more you use it.
+**Result:** Expert responses without expert prompts. Context that persists. Cost-effective intelligence that never forgets.
 
 ---
 
@@ -108,22 +108,17 @@ CCB remembers:
 - What you've already built
 ```
 
-### 📊 Session Health & Crash Prevention
+### 💰 Smart Model Selection & Cost Savings
 
-```bash
-buddy stats week
+CCB analyzes task complexity and routes to the optimal Claude model, saving ~40% on token costs:
 
-Total Agent Calls: 1,245
-Total Tokens Used: 2.4M (within Claude Code session limits)
-Success Rate: 94.2%
-Session Health: Healthy (65% token usage)
+- **Haiku** (simple/cheap) - Quick tasks like code formatting, simple bug fixes
+- **Sonnet** (balanced) - Standard development work, code reviews
+- **Opus** (complex/quality) - Architecture design, complex debugging
 
-Per-agent breakdown:
-code-reviewer: 234 calls, 85% success
-debugger: 123 calls, 92% success
-```
+**How it works**: TaskAnalyzer examines your request → Estimates complexity → Routes to the most cost-effective model → You get quality results without overpaying for simple tasks.
 
-**Never lose work again.** CCB monitors your Claude Code session's 200K token limit and automatically reloads context at 90% to prevent crashes. Track token usage, get intelligent next-step recommendations, and optimize for quality.
+**Real example**: "Fix this typo" uses Haiku ($0.001), "Design authentication system" uses Opus ($0.015), "Review this PR" uses Sonnet ($0.003).
 
 ### 🤝 User-Friendly Commands
 
@@ -257,15 +252,12 @@ Enhances prompt with specialized context
     ↓
 Claude Code executes with your subscription
     ↓
-You provide feedback (👍/👎)
-    ↓
-CCB learns and improves
+System learns from your choices (when you override recommendations)
 ```
 
 **Under the hood:**
 - **22 total agents**: 6 real implementations (RAG, Knowledge Graph, Test Writer, DevOps Engineer, etc.) + 16 enhanced prompts + 1 optional
-- **Evolution system** that learns from your feedback and adapts over time
-- **Intelligent routing** automatically picks the best agent for your task
+- **Smart routing** analyzes task complexity and automatically selects the right agent and Claude model
 
 **Technical deep dive:** See [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
@@ -277,8 +269,8 @@ CCB learns and improves
 - **Reduces repetitive prompting** through intelligent task routing
 - **Remembers between sessions** with persistent memory systems (RAG + Knowledge Graph + Project Context)
 - **Provides specialized expertise** without you writing expert prompts
-- **Learns from your feedback** to improve over time
-- **Prevents session crashes** by monitoring token usage and auto-reloading context
+- **Saves token costs** by routing to optimal Claude models (Haiku/Sonnet/Opus)
+- **Learns from your choices** when you override agent recommendations
 - **Guides your workflow** with intelligent next-step recommendations
 - **Coordinates complex workflows** across multiple steps
 

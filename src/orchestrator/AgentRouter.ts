@@ -192,6 +192,9 @@ export class AgentRouter {
       'data-engineer': ['data-analysis'],
       'ml-engineer': ['data-analysis'],
       'marketing-strategist': ['general'],
+      'workflow-orchestrator': ['workflow-automation'],
+      'opal-automation': ['workflow-automation'],
+      'n8n-workflow': ['workflow-automation'],
     };
 
     return agentCapabilities[agent] || ['general'];
@@ -241,6 +244,11 @@ export class AgentRouter {
       'data-engineer': 'data-analyst',
       'ml-engineer': 'data-analyst',
       'marketing-strategist': 'general-agent',
+
+      // Workflow Automation Agents
+      'workflow-orchestrator': 'general-agent',
+      'opal-automation': 'general-agent',
+      'n8n-workflow': 'general-agent',
 
       // general-agent 沒有 fallback
       'general-agent': undefined,
@@ -299,6 +307,9 @@ export class AgentRouter {
       'data-engineer': 'Data pipeline engineering, ETL/ELT, data infrastructure, data quality',
       'ml-engineer': 'Machine learning engineering, model development, ML ops, deployment',
       'marketing-strategist': 'Marketing strategy, campaign planning, growth, customer acquisition',
+      'workflow-orchestrator': 'Intelligent workflow platform selector, delegates to Opal and n8n based on requirements',
+      'opal-automation': 'Google Opal browser automation using Playwright, workflow recording and execution',
+      'n8n-workflow': 'n8n workflow API integration, workflow creation and management via CLI',
     };
 
     if (agentDescriptions[selectedAgent]) {

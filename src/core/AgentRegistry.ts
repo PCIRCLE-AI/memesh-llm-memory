@@ -459,14 +459,14 @@ export class AgentRegistry {
         category: 'development',
         classification: AgentClassification.REAL_IMPLEMENTATION,
         mcpTools: ['filesystem', 'bash'],
-        capabilities: ['test', 'test-generation', 'coverage'],
+        capabilities: ['testing', 'test-generation', 'coverage'],
       },
       {
         name: 'test-automator',
         description: 'Test automation specialist, automated testing expert',
         category: 'development',
         classification: AgentClassification.ENHANCED_PROMPT,
-        capabilities: ['test', 'test-generation', 'automation'],
+        capabilities: ['testing', 'test-generation', 'automation'],
       },
       {
         name: 'e2e-healing-agent',
@@ -611,6 +611,69 @@ export class AgentRegistry {
         classification: AgentClassification.ENHANCED_PROMPT,
         capabilities: ['data-analysis', 'statistics', 'business-intelligence'],
       },
+      {
+        name: 'performance-profiler',
+        description: 'Performance profiling, bottleneck identification, optimization analysis',
+        category: 'development',
+        classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['performance', 'profiling', 'optimization'],
+      },
+      {
+        name: 'db-optimizer',
+        description: 'Database optimization, query tuning, index design specialist',
+        category: 'development',
+        classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['database', 'optimization', 'query-tuning'],
+      },
+      {
+        name: 'frontend-specialist',
+        description: 'Frontend architecture, performance optimization, modern frameworks expert',
+        category: 'development',
+        classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['frontend', 'architecture', 'optimization'],
+      },
+      {
+        name: 'backend-specialist',
+        description: 'Backend architecture, scalability, microservices expert',
+        category: 'development',
+        classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['backend', 'architecture', 'scalability'],
+      },
+      {
+        name: 'knowledge-agent',
+        description: 'Knowledge management, information retrieval, documentation organization',
+        category: 'knowledge',
+        classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['knowledge-management', 'information-retrieval', 'documentation'],
+      },
+      {
+        name: 'technical-writer',
+        description: 'Technical documentation, API documentation, user guides expert',
+        category: 'creative',
+        classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['documentation', 'technical-writing', 'api-docs'],
+      },
+      {
+        name: 'migration-assistant',
+        description: 'Migration planning, version upgrades, legacy system modernization',
+        category: 'utility',
+        classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['migration', 'upgrade', 'modernization'],
+      },
+      {
+        name: 'api-integrator',
+        description: 'API integration, third-party services, SDK implementation expert',
+        category: 'utility',
+        classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['api-integration', 'third-party', 'sdk'],
+      },
+      {
+        name: 'general-agent',
+        description: 'General purpose agent for miscellaneous tasks and fallback scenarios',
+        category: 'general',
+        classification: AgentClassification.ENHANCED_PROMPT,
+        capabilities: ['general'],
+      },
 
       // Optional Feature Agents (1)
       {
@@ -619,6 +682,32 @@ export class AgentRegistry {
         category: 'analysis',
         classification: AgentClassification.OPTIONAL_FEATURE,
         requiredDependencies: ['chromadb', 'openai'],
+      },
+
+      // Workflow Automation Agents (3)
+      {
+        name: 'workflow-orchestrator',
+        description: 'Intelligent Workflow platform selector (Opal vs n8n), workflow automation orchestration',
+        category: 'automation',
+        classification: AgentClassification.REAL_IMPLEMENTATION,
+        mcpTools: [],
+        capabilities: ['workflow-automation', 'intelligent-platform-selection', 'opal', 'n8n'],
+      },
+      {
+        name: 'opal-automation',
+        description: 'Google Opal browser automation, natural language workflow creation, AI-powered prototypes',
+        category: 'automation',
+        classification: AgentClassification.REAL_IMPLEMENTATION,
+        mcpTools: ['playwright', 'memory'],
+        capabilities: ['workflow-automation', 'browser-automation', 'opal-workflows', 'natural-language-ui'],
+      },
+      {
+        name: 'n8n-workflow',
+        description: 'n8n workflow API integration, production workflow management, multi-system integration',
+        category: 'automation',
+        classification: AgentClassification.REAL_IMPLEMENTATION,
+        mcpTools: ['bash', 'memory'],
+        capabilities: ['workflow-automation', 'n8n-integration', 'api-integration'],
       },
     ];
 

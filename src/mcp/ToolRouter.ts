@@ -54,8 +54,8 @@ export interface ToolRouterConfig {
  * and dispatches to appropriate handler modules based on tool name.
  *
  * The router supports three main categories of tools:
- * - **Smart Agent Tools**: sa_task, sa_dashboard, sa_agents, sa_skills, sa_uninstall
- * - **Buddy Commands**: buddy_do, buddy_stats, buddy_remember, buddy_help
+ * - **Buddy Tools**: buddy_do, buddy_agents, buddy_skills, buddy_uninstall, buddy_stats, buddy_remember, buddy_help, buddy_dashboard
+ * - **Buddy Commands** (Legacy naming, same as Buddy Tools)
  * - **Git Tools**: git-save-work, git-list-versions, git-status, etc.
  * - **Workflow Tools**: get-workflow-guidance, reload-context, etc.
  * - **Database Backup Tools**: create_database_backup, list_database_backups, etc.
@@ -80,7 +80,7 @@ export interface ToolRouterConfig {
  *
  * // Route a tool call
  * const result = await router.routeToolCall({
- *   name: 'sa_task',
+ *   name: 'buddy_do',
  *   arguments: { taskDescription: 'Build a React component' }
  * });
  * ```
@@ -163,8 +163,7 @@ export class ToolRouter {
    * Dispatch tool call to appropriate handler
    *
    * Internal routing logic that maps tool names to handler methods. Supports:
-   * - Smart agent tools (sa_*)
-   * - Buddy commands (buddy_*)
+   * - Buddy tools (buddy_*)
    * - Git tools (git-*)
    * - Workflow tools (get-workflow-guidance, etc.)
    * - Database backup tools (create_database_backup, etc.)
@@ -183,24 +182,16 @@ export class ToolRouter {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async dispatch(toolName: string, args: any): Promise<CallToolResult> {
-    // Smart Agents tools
-    if (toolName === 'sa_task') {
-      return await this.toolHandlers.handleSmartRouteTask(args);
-    }
-
-    if (toolName === 'sa_dashboard') {
-      return await this.toolHandlers.handleEvolutionDashboard(args);
-    }
-
-    if (toolName === 'sa_agents') {
+    // Buddy tools
+    if (toolName === 'buddy_agents') {
       return await this.toolHandlers.handleListAgents();
     }
 
-    if (toolName === 'sa_skills') {
+    if (toolName === 'buddy_skills') {
       return await this.toolHandlers.handleListSkills(args);
     }
 
-    if (toolName === 'sa_uninstall') {
+    if (toolName === 'buddy_uninstall') {
       return await this.toolHandlers.handleUninstall(args);
     }
 
@@ -279,6 +270,40 @@ export class ToolRouter {
     // Memory tools
     if (toolName === 'recall-memory') {
       return await this.toolHandlers.handleRecallMemory(args);
+    }
+
+    if (toolName === 'create-entities') {
+      return await this.toolHandlers.handleCreateEntities(args);
+    }
+
+    if (toolName === 'add-observations') {
+      return await this.toolHandlers.handleAddObservations(args);
+    }
+
+    if (toolName === 'create-relations') {
+      return await this.toolHandlers.handleCreateRelations(args);
+    }
+
+    // DevOps tools
+    if (toolName === 'devops-generate-ci-config') {
+      return await this.toolHandlers.handleGenerateCIConfig(args);
+    }
+
+    if (toolName === 'devops-analyze-deployment') {
+      return await this.toolHandlers.handleAnalyzeDeployment(args);
+    }
+
+    if (toolName === 'devops-setup-ci') {
+      return await this.toolHandlers.handleSetupCI(args);
+    }
+
+    // Workflow Automation tools
+    if (toolName === 'workflow-create') {
+      return await this.toolHandlers.handleCreateWorkflow(args);
+    }
+
+    if (toolName === 'workflow-list') {
+      return await this.toolHandlers.handleListWorkflows(args);
     }
 
     // Database Backup tools
@@ -365,15 +390,6 @@ export class ToolRouter {
         }
         throw error;
       }
-    }
-
-    // Legacy names (backward compatibility)
-    if (toolName === 'smart_route_task') {
-      return await this.toolHandlers.handleSmartRouteTask(args);
-    }
-
-    if (toolName === 'evolution_dashboard') {
-      return await this.toolHandlers.handleEvolutionDashboard(args);
     }
 
     // Individual agent invocation (advanced mode)

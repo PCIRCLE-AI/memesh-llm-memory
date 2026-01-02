@@ -6,6 +6,14 @@
  */
 
 import { recallMemoryTool } from './tools/recall-memory.js';
+import { createEntitiesTool } from './tools/create-entities.js';
+import { addObservationsTool } from './tools/add-observations.js';
+import { createRelationsTool } from './tools/create-relations.js';
+import { generateCIConfigTool } from './tools/devops-generate-ci-config.js';
+import { analyzeDeploymentTool } from './tools/devops-analyze-deployment.js';
+import { setupCITool } from './tools/devops-setup-ci.js';
+import { createWorkflowTool } from './tools/workflow-create.js';
+import { listWorkflowsTool } from './tools/workflow-list.js';
 import { AgentMetadata } from '../core/AgentRegistry.js';
 
 /**
@@ -55,23 +63,11 @@ export interface MCPToolDefinition {
  */
 export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefinition[] {
   // ========================================
-  // NEW: sa_* prefixed tools (recommended)
+  // Buddy Tools (buddy_* prefix - standard naming)
   // ========================================
 
-  const saTaskTool: MCPToolDefinition = {
-    name: 'sa_task',
-    description: '🤖 Claude Code Buddy: Execute a task with autonomous agent routing. Analyzes your task, selects the best of 22 specialized agents, and returns an optimized execution plan.',
-    inputSchema: CommonSchemas.taskInput,
-  };
-
-  const saDashboardTool: MCPToolDefinition = {
-    name: 'sa_dashboard',
-    description: '📊 Claude Code Buddy: View evolution system dashboard showing agent learning progress, discovered patterns, and performance improvements. Tracks 22 agent evolution configurations (18 currently available + 4 planned).',
-    inputSchema: CommonSchemas.dashboardInput,
-  };
-
-  const saAgentsTool: MCPToolDefinition = {
-    name: 'sa_agents',
+  const buddyAgentsTool: MCPToolDefinition = {
+    name: 'buddy_agents',
     description: '📋 Claude Code Buddy: List all 22 specialized agents with their capabilities and specializations.',
     inputSchema: {
       type: 'object' as const,
@@ -79,8 +75,8 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
     },
   };
 
-  const saSkillsTool: MCPToolDefinition = {
-    name: 'sa_skills',
+  const buddySkillsTool: MCPToolDefinition = {
+    name: 'buddy_skills',
     description: '🎓 Claude Code Buddy: List all skills, differentiate sa: prefixed skills from user skills.',
     inputSchema: {
       type: 'object' as const,
@@ -94,8 +90,8 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
     },
   };
 
-  const saUninstallTool: MCPToolDefinition = {
-    name: 'sa_uninstall',
+  const buddyUninstallTool: MCPToolDefinition = {
+    name: 'buddy_uninstall',
     description: '🗑️ Claude Code Buddy: Uninstall Claude Code Buddy and clean up files with control over data retention.',
     inputSchema: {
       type: 'object' as const,
@@ -402,6 +398,44 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
   };
 
   // ========================================
+  // DevOps Tools
+  // ========================================
+
+  const devopsGenerateCIConfigToolDef: MCPToolDefinition = {
+    name: generateCIConfigTool.name,
+    description: generateCIConfigTool.description,
+    inputSchema: generateCIConfigTool.inputSchema,
+  };
+
+  const devopsAnalyzeDeploymentToolDef: MCPToolDefinition = {
+    name: analyzeDeploymentTool.name,
+    description: analyzeDeploymentTool.description,
+    inputSchema: analyzeDeploymentTool.inputSchema,
+  };
+
+  const devopsSetupCIToolDef: MCPToolDefinition = {
+    name: setupCITool.name,
+    description: setupCITool.description,
+    inputSchema: setupCITool.inputSchema,
+  };
+
+  // ========================================
+  // Workflow Automation Tools
+  // ========================================
+
+  const workflowCreateToolDef: MCPToolDefinition = {
+    name: createWorkflowTool.name,
+    description: createWorkflowTool.description,
+    inputSchema: createWorkflowTool.inputSchema,
+  };
+
+  const workflowListToolDef: MCPToolDefinition = {
+    name: listWorkflowsTool.name,
+    description: listWorkflowsTool.description,
+    inputSchema: listWorkflowsTool.inputSchema,
+  };
+
+  // ========================================
   // Database Backup Tools
   // ========================================
 
@@ -518,21 +552,24 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
     inputSchema: recallMemoryTool.inputSchema,
   };
 
-  // ========================================
-  // Backward compatibility (old names)
-  // ========================================
-
-  const smartRouterTool: MCPToolDefinition = {
-    name: 'smart_route_task',
-    description: '[LEGACY] Smart task router that analyzes your task and recommends the best agent. Use sa_task instead for shorter command.',
-    inputSchema: CommonSchemas.taskInput,
+  const createEntitiesToolDef: MCPToolDefinition = {
+    name: createEntitiesTool.name,
+    description: createEntitiesTool.description,
+    inputSchema: createEntitiesTool.inputSchema,
   };
 
-  const evolutionDashboardTool: MCPToolDefinition = {
-    name: 'evolution_dashboard',
-    description: '[LEGACY] View evolution system dashboard. Use sa_dashboard instead for shorter command.',
-    inputSchema: CommonSchemas.dashboardInput,
+  const addObservationsToolDef: MCPToolDefinition = {
+    name: addObservationsTool.name,
+    description: addObservationsTool.description,
+    inputSchema: addObservationsTool.inputSchema,
   };
+
+  const createRelationsToolDef: MCPToolDefinition = {
+    name: createRelationsTool.name,
+    description: createRelationsTool.description,
+    inputSchema: createRelationsTool.inputSchema,
+  };
+
 
   // ========================================
   // Individual agent tools (dynamic)
@@ -564,12 +601,10 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
   // ========================================
 
   return [
-    // New sa_* tools first (recommended)
-    saTaskTool,
-    saDashboardTool,
-    saAgentsTool,
-    saSkillsTool,
-    saUninstallTool,
+    // Buddy tools
+    buddyAgentsTool,
+    buddySkillsTool,
+    buddyUninstallTool,
     // Buddy Commands (user-friendly layer)
     buddyDoTool,
     buddyStatsTool,
@@ -591,6 +626,13 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
     gitCreateBackupTool,
     gitSetupTool,
     gitHelpTool,
+    // DevOps tools
+    devopsGenerateCIConfigToolDef,
+    devopsAnalyzeDeploymentToolDef,
+    devopsSetupCIToolDef,
+    // Workflow Automation tools
+    workflowCreateToolDef,
+    workflowListToolDef,
     // Database Backup tools
     createDatabaseBackupTool,
     listDatabaseBackupsTool,
@@ -599,9 +641,9 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
     getBackupStatsTool,
     // Project Memory tools
     recallMemoryToolDef,
-    // Legacy tools (backward compatibility)
-    smartRouterTool,
-    evolutionDashboardTool,
+    createEntitiesToolDef,
+    addObservationsToolDef,
+    createRelationsToolDef,
     // Individual agents
     ...agentTools,
   ];

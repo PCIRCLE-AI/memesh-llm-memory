@@ -12,7 +12,7 @@ Claude Code Buddy is an intelligent multi-agent system with 22 specialized agent
 ### Using the Smart Router (Recommended)
 
 ```
-sa_task "implement user authentication with JWT"
+buddy_do "implement user authentication with JWT"
 ```
 
 The system will:
@@ -24,7 +24,7 @@ The system will:
 ### Viewing Available Agents
 
 ```
-sa_agents
+buddy_agents
 ```
 
 ## 📋 All 22 Specialized Agents
@@ -42,7 +42,7 @@ sa_agents
 
 **Example**:
 ```
-sa_task "review the authentication module for security issues"
+buddy_do "review the authentication module for security issues"
 ```
 
 ---
@@ -59,7 +59,7 @@ sa_task "review the authentication module for security issues"
 
 **Example**:
 ```
-sa_task "write unit tests for the UserService class"
+buddy_do "write unit tests for the UserService class"
 ```
 
 ---
@@ -76,7 +76,7 @@ sa_task "write unit tests for the UserService class"
 
 **Example**:
 ```
-sa_task "debug why the API is returning 500 errors on user login"
+buddy_do "debug why the API is returning 500 errors on user login"
 ```
 
 ---
@@ -93,7 +93,7 @@ sa_task "debug why the API is returning 500 errors on user login"
 
 **Example**:
 ```
-sa_task "refactor the authentication logic to use the Strategy pattern"
+buddy_do "refactor the authentication logic to use the Strategy pattern"
 ```
 
 ---
@@ -110,7 +110,7 @@ sa_task "refactor the authentication logic to use the Strategy pattern"
 
 **Example**:
 ```
-sa_task "design a RESTful API for the blog platform"
+buddy_do "design a RESTful API for the blog platform"
 ```
 
 ---
@@ -127,7 +127,7 @@ sa_task "design a RESTful API for the blog platform"
 
 **Example**:
 ```
-sa_task "optimize the user search query that's timing out"
+buddy_do "optimize the user search query that's timing out"
 ```
 
 ---
@@ -144,7 +144,7 @@ sa_task "optimize the user search query that's timing out"
 
 **Example**:
 ```
-sa_task "create a reusable dropdown component in React"
+buddy_do "create a reusable dropdown component in React"
 ```
 
 ---
@@ -161,7 +161,7 @@ sa_task "create a reusable dropdown component in React"
 
 **Example**:
 ```
-sa_task "implement a user registration endpoint with email verification"
+buddy_do "implement a user registration endpoint with email verification"
 ```
 
 ---
@@ -178,7 +178,7 @@ sa_task "implement a user registration endpoint with email verification"
 
 **Example**:
 ```
-sa_task "set up automated dependency updates with testing"
+buddy_do "set up automated dependency updates with testing"
 ```
 
 ---
@@ -196,7 +196,7 @@ sa_task "set up automated dependency updates with testing"
 
 **Example**:
 ```
-sa_task "find all authentication-related code in the codebase"
+buddy_do "find all authentication-related code in the codebase"
 ```
 
 ---
@@ -212,7 +212,7 @@ sa_task "find all authentication-related code in the codebase"
 
 **Example**:
 ```
-sa_task "research and compare PostgreSQL vs MongoDB for our use case"
+buddy_do "research and compare PostgreSQL vs MongoDB for our use case"
 ```
 
 ---
@@ -228,7 +228,7 @@ sa_task "research and compare PostgreSQL vs MongoDB for our use case"
 
 **Example**:
 ```
-sa_task "design a microservices architecture for the e-commerce platform"
+buddy_do "design a microservices architecture for the e-commerce platform"
 ```
 
 ---
@@ -244,7 +244,7 @@ sa_task "design a microservices architecture for the e-commerce platform"
 
 **Example**:
 ```
-sa_task "analyze user engagement metrics from the last month"
+buddy_do "analyze user engagement metrics from the last month"
 ```
 
 ---
@@ -260,7 +260,7 @@ sa_task "analyze user engagement metrics from the last month"
 
 **Example**:
 ```
-sa_task "profile and optimize the dashboard loading time"
+buddy_do "profile and optimize the dashboard loading time"
 ```
 
 ---
@@ -278,7 +278,7 @@ sa_task "profile and optimize the dashboard loading time"
 
 **Example**:
 ```
-sa_task "create a comprehensive API documentation"
+buddy_do "create a comprehensive API documentation"
 ```
 
 ---
@@ -296,7 +296,7 @@ sa_task "create a comprehensive API documentation"
 
 **Example**:
 ```
-sa_task "set up a GitHub Actions CI/CD pipeline for the Node.js app"
+buddy_do "set up a GitHub Actions CI/CD pipeline for the Node.js app"
 ```
 
 ---
@@ -312,7 +312,7 @@ sa_task "set up a GitHub Actions CI/CD pipeline for the Node.js app"
 
 **Example**:
 ```
-sa_task "audit the application for OWASP Top 10 vulnerabilities"
+buddy_do "audit the application for OWASP Top 10 vulnerabilities"
 ```
 
 ---
@@ -330,7 +330,7 @@ sa_task "audit the application for OWASP Top 10 vulnerabilities"
 
 **Example**:
 ```
-sa_task "write a user guide for the new feature"
+buddy_do "write a user guide for the new feature"
 ```
 
 ---
@@ -346,7 +346,7 @@ sa_task "write a user guide for the new feature"
 
 **Example**:
 ```
-sa_task "design a user-friendly login page"
+buddy_do "design a user-friendly login page"
 ```
 
 ---
@@ -364,7 +364,7 @@ sa_task "design a user-friendly login page"
 
 **Example**:
 ```
-sa_task "plan migration from Express 4 to Express 5"
+buddy_do "plan migration from Express 4 to Express 5"
 ```
 
 ---
@@ -380,7 +380,7 @@ sa_task "plan migration from Express 4 to Express 5"
 
 **Example**:
 ```
-sa_task "integrate Stripe payment API"
+buddy_do "integrate Stripe payment API"
 ```
 
 ---
@@ -397,7 +397,7 @@ sa_task "integrate Stripe payment API"
 
 **Example**:
 ```
-sa_task "help me understand how WebSockets work"
+buddy_do "help me understand how WebSockets work"
 ```
 
 ---
@@ -408,25 +408,25 @@ sa_task "help me understand how WebSockets work"
 
 ❌ Bad:
 ```
-sa_task "fix bug"
+buddy_do "fix bug"
 ```
 
 ✅ Good:
 ```
-sa_task "fix the authentication bug where users can't login after password reset"
+buddy_do "fix the authentication bug where users can't login after password reset"
 ```
 
 ### 2. Specify Context When Needed
 
 ```
-sa_task "review the UserController.ts file for security vulnerabilities, focusing on SQL injection and XSS"
+buddy_do "review the UserController.ts file for security vulnerabilities, focusing on SQL injection and XSS"
 ```
 
 ### 3. Leverage the Smart Router
 
 Let the system choose the best agent:
 ```
-sa_task "optimize database queries"
+buddy_do "optimize database queries"
 ```
 
 The router will automatically select `db-optimizer` based on keywords.
@@ -434,7 +434,7 @@ The router will automatically select `db-optimizer` based on keywords.
 ### 4. Check Evolution Dashboard
 
 ```
-sa_dashboard
+buddy_dashboard
 ```
 
 See which agents are performing well and learn from patterns.
@@ -444,27 +444,27 @@ See which agents are performing well and learn from patterns.
 ### Feature Development Workflow
 
 ```
-1. sa_task "design API endpoints for user management"  → api-designer
-2. sa_task "implement user registration with validation" → backend-specialist
-3. sa_task "write tests for user registration"          → test-writer
-4. sa_task "review user management code"                 → code-reviewer
+1. buddy_do "design API endpoints for user management"  → api-designer
+2. buddy_do "implement user registration with validation" → backend-specialist
+3. buddy_do "write tests for user registration"          → test-writer
+4. buddy_do "review user management code"                 → code-reviewer
 ```
 
 ### Bug Fix Workflow
 
 ```
-1. sa_task "debug login timeout issue"                   → debugger
-2. sa_task "optimize login query performance"            → db-optimizer
-3. sa_task "write regression test for login timeout"     → test-writer
+1. buddy_do "debug login timeout issue"                   → debugger
+2. buddy_do "optimize login query performance"            → db-optimizer
+3. buddy_do "write regression test for login timeout"     → test-writer
 ```
 
 ### Refactoring Workflow
 
 ```
-1. sa_task "analyze current architecture for scalability" → architecture-agent
-2. sa_task "refactor monolith to microservices"          → refactorer
-3. sa_task "set up CI/CD for microservices"               → devops-engineer
-4. sa_task "performance test the new architecture"        → performance-profiler
+1. buddy_do "analyze current architecture for scalability" → architecture-agent
+2. buddy_do "refactor monolith to microservices"          → refactorer
+3. buddy_do "set up CI/CD for microservices"               → devops-engineer
+4. buddy_do "performance test the new architecture"        → performance-profiler
 ```
 
 ## 📊 Evolution System
@@ -479,7 +479,7 @@ See which agents are performing well and learn from patterns.
 ### Viewing Progress
 
 ```
-sa_dashboard
+buddy_dashboard
 ```
 
 Shows:
@@ -493,7 +493,7 @@ Shows:
 ### 1. Combine Agents for Complex Tasks
 
 ```
-sa_task "research best database for real-time chat, then design the schema"
+buddy_do "research best database for real-time chat, then design the schema"
 ```
 
 System may route to: research-agent → db-optimizer
@@ -510,8 +510,8 @@ System may route to: research-agent → db-optimizer
 ### 3. View All Available Agents
 
 ```
-sa_agents --category development
-sa_agents --category analysis
+buddy_agents --category development
+buddy_agents --category analysis
 ```
 
 ## 🆘 Troubleshooting

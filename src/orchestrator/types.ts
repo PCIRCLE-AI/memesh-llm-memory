@@ -66,6 +66,11 @@ export type AgentType =
   // Marketing Agents
   | 'marketing-strategist'
 
+  // Workflow Automation Agents
+  | 'workflow-orchestrator'
+  | 'opal-automation'
+  | 'n8n-workflow'
+
   // General Agent (fallback)
   | 'general-agent';
 
@@ -87,6 +92,7 @@ export type TaskCapability =
   | 'data-analysis'
   | 'knowledge-query'
   | 'documentation'
+  | 'workflow-automation'
   | 'general';
 
 /**

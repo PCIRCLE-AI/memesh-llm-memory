@@ -5,12 +5,12 @@
 ## 🚀 Quick Commands
 
 ```bash
-sa_task "<task description>"      # Smart router (recommended)
-sa_agents                          # List all agents
-sa_agents --category development   # Filter by category
-sa_dashboard                       # View evolution metrics
-sa_skills                          # List all skills
-sa_uninstall                       # Uninstall claude-code-buddy
+buddy_do "<task description>"      # Smart router (recommended)
+buddy_agents                          # List all agents
+buddy_agents --category development   # Filter by category
+buddy_dashboard                       # View evolution metrics
+buddy_skills                          # List all skills
+buddy_uninstall                       # Uninstall claude-code-buddy
 ```
 
 ## 📋 Agent Quick Lookup
@@ -118,7 +118,7 @@ sa_uninstall                       # Uninstall claude-code-buddy
 - **Deploy** → devops-engineer
 - **Research** → research-agent
 - **Document** → technical-writer
-- **Not sure** → Use `sa_task` (smart router)
+- **Not sure** → Use `buddy_do` (smart router)
 
 ### Best Practice Patterns
 
@@ -137,17 +137,17 @@ sa_uninstall                       # Uninstall claude-code-buddy
 ## 🔄 Evolution Dashboard Metrics
 
 ```
-sa_dashboard --agents          # Agent performance
-sa_dashboard --patterns        # Learned workflows
-sa_dashboard --metrics         # Success rates
+buddy_dashboard --agents          # Agent performance
+buddy_dashboard --patterns        # Learned workflows
+buddy_dashboard --metrics         # Success rates
 ```
 
 ## 🎓 Skills System
 
 ```
-sa_skills                      # List all skills
-sa_skills --filter claude-code-buddy  # Only sa: skills
-sa_skills --filter user         # Only user skills
+buddy_skills                      # List all skills
+buddy_skills --filter claude-code-buddy  # Only sa: skills
+buddy_skills --filter user         # Only user skills
 ```
 
 **Naming Convention**:
@@ -157,10 +157,10 @@ sa_skills --filter user         # Only user skills
 ## 🗑️ Uninstallation
 
 ```
-sa_uninstall                   # Complete removal
-sa_uninstall --keepData true   # Keep evolution data
-sa_uninstall --keepConfig true # Keep config files
-sa_uninstall --dryRun true     # Preview only
+buddy_uninstall                   # Complete removal
+buddy_uninstall --keepData true   # Keep evolution data
+buddy_uninstall --keepConfig true # Keep config files
+buddy_uninstall --dryRun true     # Preview only
 ```
 
 ## 📚 Full Documentation
@@ -171,4 +171,4 @@ sa_uninstall --dryRun true     # Preview only
 
 ---
 
-**Remember**: The smart router (`sa_task`) learns from your patterns - the more you use it, the better it gets!
+**Remember**: The smart router (`buddy_do`) learns from your patterns - the more you use it, the better it gets!

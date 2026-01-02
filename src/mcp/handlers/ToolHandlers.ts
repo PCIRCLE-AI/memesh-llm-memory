@@ -27,8 +27,19 @@ import { DevelopmentButler } from '../../agents/DevelopmentButler.js';
 import { CheckpointDetector } from '../../core/CheckpointDetector.js';
 import { PlanningEngine } from '../../planning/PlanningEngine.js';
 import { ProjectMemoryManager } from '../../memory/ProjectMemoryManager.js';
+import { KnowledgeGraph } from '../../knowledge-graph/index.js';
 import { HumanInLoopUI } from '../HumanInLoopUI.js';
 import { recallMemoryTool } from '../tools/recall-memory.js';
+import { createEntitiesTool } from '../tools/create-entities.js';
+import { addObservationsTool } from '../tools/add-observations.js';
+import { createRelationsTool } from '../tools/create-relations.js';
+import { generateCIConfigTool } from '../tools/devops-generate-ci-config.js';
+import { analyzeDeploymentTool } from '../tools/devops-analyze-deployment.js';
+import { setupCITool } from '../tools/devops-setup-ci.js';
+import { createWorkflowTool } from '../tools/workflow-create.js';
+import { listWorkflowsTool } from '../tools/workflow-list.js';
+import type { DevOpsEngineerAgent } from '../../agents/DevOpsEngineerAgent.js';
+import type { WorkflowOrchestrator } from '../../agents/WorkflowOrchestrator.js';
 import { Task, AgentType, TaskAnalysis, RoutingDecision } from '../../orchestrator/types.js';
 import { handleError, logError, formatMCPError } from '../../utils/errorHandler.js';
 
@@ -66,7 +77,10 @@ export class ToolHandlers {
    * @param checkpointDetector - Development checkpoint detection
    * @param planningEngine - Task decomposition and planning
    * @param projectMemoryManager - Project-specific memory system
+   * @param knowledgeGraph - Knowledge graph for entity/relation storage
    * @param ui - Human-in-loop UI formatter
+   * @param devopsEngineer - DevOps engineer agent for CI/CD automation
+   * @param workflowOrchestrator - Workflow orchestrator for Opal and n8n
    */
   constructor(
     private router: Router,
@@ -81,129 +95,14 @@ export class ToolHandlers {
     private checkpointDetector: CheckpointDetector,
     private planningEngine: PlanningEngine,
     private projectMemoryManager: ProjectMemoryManager,
-    private ui: HumanInLoopUI
+    private knowledgeGraph: KnowledgeGraph,
+    private ui: HumanInLoopUI,
+    private devopsEngineer: DevOpsEngineerAgent,
+    private workflowOrchestrator: WorkflowOrchestrator
   ) {}
 
   /**
-   * Handle evolution_dashboard / sa_dashboard tool
-   *
-   * Generates a comprehensive dashboard showing evolution metrics, learning progress,
-   * and performance statistics for all agents. Supports multiple output formats.
-   *
-   * **Available Formats**:
-   * - **summary** (default): High-level overview with charts
-   * - **detailed**: Full metrics + learning progress breakdown
-   * - **json**: Machine-readable JSON export
-   * - **csv**: CSV export for data analysis
-   * - **markdown**: Markdown-formatted report
-   *
-   * @param input - Dashboard options
-   * @param input.format - Output format (summary|detailed)
-   * @param input.exportFormat - Export format (json|csv|markdown)
-   * @param input.includeCharts - Whether to include ASCII charts (default: true)
-   * @param input.chartHeight - Chart height in lines (default: 8)
-   * @returns Promise resolving to formatted dashboard text
-   *
-   * @example
-   * ```typescript
-   * // Get summary dashboard
-   * await handleEvolutionDashboard({ format: 'summary' });
-   *
-   * // Export as JSON
-   * await handleEvolutionDashboard({ exportFormat: 'json' });
-   *
-   * // Detailed with custom chart size
-   * await handleEvolutionDashboard({
-   *   format: 'detailed',
-   *   chartHeight: 12
-   * });
-   * ```
-   */
-  async handleEvolutionDashboard(input: {
-    format?: string;
-    exportFormat?: string;
-    includeCharts?: boolean;
-    chartHeight?: number;
-  }): Promise<CallToolResult> {
-    try {
-      const format = input.format || 'summary';
-      const exportFormat = input.exportFormat;
-      const includeCharts = input.includeCharts !== false;
-      const chartHeight = input.chartHeight || 8;
-
-      let dashboardText: string;
-
-      // If export format is specified, use export methods
-      if (exportFormat === 'json') {
-        dashboardText = this.evolutionMonitor.exportAsJSON();
-      } else if (exportFormat === 'csv') {
-        dashboardText = this.evolutionMonitor.exportAsCSV();
-      } else if (exportFormat === 'markdown') {
-        dashboardText = this.evolutionMonitor.exportAsMarkdown();
-      } else if (format === 'detailed') {
-        // Detailed format: formatted dashboard + learning progress
-        dashboardText = this.evolutionMonitor.formatDashboard({
-          includeCharts,
-          chartHeight,
-        });
-
-        // Add detailed learning progress
-        const progress = this.evolutionMonitor.getLearningProgress();
-        const activeAgents = progress.filter(p => p.learnedPatterns > 0);
-
-        if (activeAgents.length > 0) {
-          dashboardText += '\n\n📋 Detailed Learning Progress:\n';
-          activeAgents.forEach(agent => {
-            dashboardText += `\n${agent.agentId}:\n`;
-            dashboardText += `  - Total Executions: ${agent.totalExecutions}\n`;
-            dashboardText += `  - Learned Patterns: ${agent.learnedPatterns}\n`;
-            dashboardText += `  - Applied Adaptations: ${agent.appliedAdaptations}\n`;
-            dashboardText += `  - Success Rate Improvement: ${agent.successRateImprovement >= 0 ? '+' : ''}${(agent.successRateImprovement * 100).toFixed(1)}%\n`;
-            dashboardText += `  - Last Learning: ${agent.lastLearningDate ? agent.lastLearningDate.toISOString() : 'Never'}\n`;
-          });
-        }
-      } else {
-        // Summary format: use formatted dashboard with chart options
-        dashboardText = this.evolutionMonitor.formatDashboard({
-          includeCharts,
-          chartHeight,
-        });
-      }
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: dashboardText,
-          },
-        ],
-      };
-    } catch (error) {
-      logError(error, {
-        component: 'ToolHandlers',
-        method: 'handleEvolutionDashboard',
-        operation: 'generating evolution dashboard',
-        data: { format: input.format, exportFormat: input.exportFormat },
-      });
-
-      const handled = handleError(error, {
-        component: 'ToolHandlers',
-        method: 'handleEvolutionDashboard',
-      });
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `❌ Evolution dashboard failed: ${handled.message}`,
-          },
-        ],
-      };
-    }
-  }
-
-  /**
-   * Handle sa_agents tool - List all available agents
+   * Handle buddy_agents tool - List all available agents
    *
    * Returns a formatted list of all registered agents grouped by category.
    * Each agent includes name, description, and category.
@@ -306,7 +205,7 @@ export class ToolHandlers {
   }
 
   /**
-   * Handle sa_skills tool - List all skills
+   * Handle buddy_skills tool - List all skills
    */
   async handleListSkills(input: { filter?: string }): Promise<CallToolResult> {
     try {
@@ -378,9 +277,9 @@ export class ToolHandlers {
 
       output += '━'.repeat(60) + '\n';
       output += '\n💡 Usage:\n';
-      output += '  • sa_skills - List all skills\n';
-      output += '  • sa_skills --filter claude-code-buddy - List only sa: skills\n';
-      output += '  • sa_skills --filter user - List only user skills\n';
+      output += '  • buddy_skills - List all skills\n';
+      output += '  • buddy_skills --filter claude-code-buddy - List only sa: skills\n';
+      output += '  • buddy_skills --filter user - List only user skills\n';
       output += '\n📚 Skill Naming Convention:\n';
       output += '  • sa:<name> - Claude Code Buddy generated skills\n';
       output += '  • <name> - User-installed skills\n';
@@ -418,7 +317,7 @@ export class ToolHandlers {
   }
 
   /**
-   * Handle sa_uninstall tool - Uninstall Claude Code Buddy
+   * Handle buddy_uninstall tool - Uninstall Claude Code Buddy
    */
   async handleUninstall(input: {
     keepData?: boolean;
@@ -801,106 +700,78 @@ export class ToolHandlers {
   }
 
   /**
-   * Handle smart_route_task / sa_task tool
+   * Handle create-entities tool
    *
-   * Intelligently routes a task to the most appropriate agent using:
-   * 1. TaskAnalyzer: Analyzes task complexity, requirements, domain
-   * 2. AgentRouter: Selects best agent based on analysis
-   * 3. PromptEnhancer: Generates optimized prompt for selected agent
-   *
-   * Returns a human-in-loop confirmation request with:
-   * - Recommended agent
-   * - Confidence score
-   * - Reasoning (top 3 factors)
-   * - Alternative agent suggestions
-   *
-   * **Workflow**:
-   * ```
-   * User task → TaskAnalyzer → AgentRouter → PromptEnhancer → Claude
-   *                ↓              ↓              ↓
-   *            Complexity    Best Agent    Enhanced Prompt
-   * ```
-   *
-   * @param input - Task routing request
-   * @param input.taskDescription - Detailed task description
-   * @param input.priority - Task priority (0-10, default: 5)
-   * @returns Promise resolving to confirmation request with routing recommendation
-   *
-   * @example
-   * ```typescript
-   * await handleSmartRouteTask({
-   *   taskDescription: 'Create a responsive login form with validation',
-   *   priority: 8
-   * });
-   *
-   * // Returns confirmation:
-   * // 🎯 Recommended Agent: frontend-developer (confidence: 92%)
-   * // Reasoning:
-   * //   1. Task involves UI component creation
-   * //   2. Requires form validation logic
-   * //   3. Mentions responsive design
-   * // Alternatives:
-   * //   • ui-designer (75%) - UI design expertise
-   * //   • general-agent (50%) - Fallback option
-   * ```
+   * Creates new entities in the Knowledge Graph for manual knowledge recording.
    */
-  async handleSmartRouteTask(input: {
-    taskDescription: string;
-    priority?: number
+  async handleCreateEntities(input: {
+    entities: Array<{
+      name: string;
+      entityType: string;
+      observations: string[];
+      metadata?: Record<string, unknown>;
+    }>;
   }): Promise<CallToolResult> {
-    // Create task
-    const task: Task = {
-      id: this.generateTaskId(),
-      description: input.taskDescription,
-      priority: input.priority,
-    };
-
     try {
-      // Route task through pipeline
-      const result = await this.router.routeTask(task);
+      const result = await createEntitiesTool.handler(
+        input,
+        this.knowledgeGraph
+      );
 
-      // Generate alternatives (top 2-3 other suitable agents)
-      const alternatives = this.generateAlternatives(result.routing.selectedAgent, result.analysis);
+      // Format the result into readable text
+      let text = '✨ Knowledge Graph Entity Creation\n';
+      text += '━'.repeat(60) + '\n\n';
 
-      // Create confirmation request
-      const confirmationRequest = {
-        taskDescription: task.description,
-        recommendedAgent: result.routing.selectedAgent,
-        confidence: this.estimateConfidence(result.analysis, result.routing),
-        reasoning: result.routing.reasoning.split('. ').slice(0, 3).filter(r => r.length > 0),
-        alternatives,
-      };
+      if (result.count === 0) {
+        text += '⚠️ No entities were created.\n\n';
+        if (result.errors && result.errors.length > 0) {
+          text += 'Errors encountered:\n';
+          result.errors.forEach(error => {
+            text += `  ❌ ${error.name}: ${error.error}\n`;
+          });
+        }
+      } else {
+        text += `✅ Successfully created ${result.count} ${result.count === 1 ? 'entity' : 'entities'}:\n\n`;
+        result.created.forEach((name, index) => {
+          text += `${index + 1}. ${name}\n`;
+        });
 
-      // Format using HumanInLoopUI
-      const formattedConfirmation = this.ui.formatConfirmationRequest(confirmationRequest);
+        if (result.errors && result.errors.length > 0) {
+          text += '\n⚠️ Some entities failed:\n';
+          result.errors.forEach(error => {
+            text += `  ❌ ${error.name}: ${error.error}\n`;
+          });
+        }
+      }
 
-      // Return formatted confirmation
+      text += '\n' + '━'.repeat(60) + '\n';
+
       return {
         content: [
           {
             type: 'text' as const,
-            text: formattedConfirmation,
+            text,
           },
         ],
       };
     } catch (error) {
       logError(error, {
         component: 'ToolHandlers',
-        method: 'handleSmartRouteTask',
-        operation: 'routing task',
-        data: { taskDescription: input.taskDescription, taskId: task.id },
+        method: 'handleCreateEntities',
+        operation: 'creating knowledge graph entities',
+        data: { entityCount: input.entities.length },
       });
 
       const handled = handleError(error, {
         component: 'ToolHandlers',
-        method: 'handleSmartRouteTask',
+        method: 'handleCreateEntities',
       });
 
       return {
         content: [
           {
             type: 'text' as const,
-            text: `❌ Smart routing failed: ${handled.message}\n\nPlease try again or use a specific agent directly.`,
+            text: `❌ Failed to create entities: ${handled.message}`,
           },
         ],
       };
@@ -908,62 +779,488 @@ export class ToolHandlers {
   }
 
   /**
-   * Generate unique task ID
+   * Handle add-observations tool
+   *
+   * Adds new observations to existing entities in the Knowledge Graph.
    */
-  private generateTaskId(): string {
-    return `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  }
+  async handleAddObservations(input: {
+    observations: Array<{
+      entityName: string;
+      contents: string[];
+    }>;
+  }): Promise<CallToolResult> {
+    try {
+      const result = await addObservationsTool.handler(
+        input,
+        this.knowledgeGraph
+      );
 
-  /**
-   * Generate alternative agent options
-   */
-  private generateAlternatives(
-    selectedAgent: AgentType,
-    analysis: TaskAnalysis
-  ): Array<{ agent: AgentType; confidence: number; reason: string }> {
-    const alternatives: Array<{ agent: AgentType; confidence: number; reason: string }> = [];
+      // Format the result into readable text
+      let text = '📝 Knowledge Graph Observation Update\n';
+      text += '━'.repeat(60) + '\n\n';
 
-    // Get fallback agent if available
-    const agentsByCategory = this.agentRegistry.getAgentsByCategory(
-      this.agentRegistry.getAgent(selectedAgent)?.category || 'general'
-    );
-
-    // Add agents from same category (excluding selected)
-    agentsByCategory
-      .filter(a => a.name !== selectedAgent)
-      .slice(0, 2)
-      .forEach((agent, index) => {
-        alternatives.push({
-          agent: agent.name,
-          confidence: 0.7 - index * 0.1,
-          reason: `Alternative from ${agent.category} category`,
+      if (result.count === 0) {
+        text += '⚠️ No observations were added.\n\n';
+        if (result.notFound && result.notFound.length > 0) {
+          text += 'Entities not found:\n';
+          result.notFound.forEach(name => {
+            text += `  ❌ ${name}\n`;
+          });
+        }
+        if (result.errors && result.errors.length > 0) {
+          text += '\nErrors encountered:\n';
+          result.errors.forEach(error => {
+            text += `  ❌ ${error.entityName}: ${error.error}\n`;
+          });
+        }
+      } else {
+        text += `✅ Successfully updated ${result.count} ${result.count === 1 ? 'entity' : 'entities'}:\n\n`;
+        result.updated.forEach((name, index) => {
+          text += `${index + 1}. ${name}\n`;
         });
+
+        if (result.notFound && result.notFound.length > 0) {
+          text += '\n⚠️ Some entities were not found:\n';
+          result.notFound.forEach(name => {
+            text += `  ❌ ${name}\n`;
+          });
+        }
+
+        if (result.errors && result.errors.length > 0) {
+          text += '\n⚠️ Some updates failed:\n';
+          result.errors.forEach(error => {
+            text += `  ❌ ${error.entityName}: ${error.error}\n`;
+          });
+        }
+      }
+
+      text += '\n' + '━'.repeat(60) + '\n';
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text,
+          },
+        ],
+      };
+    } catch (error) {
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleAddObservations',
+        operation: 'adding observations to entities',
+        data: { observationCount: input.observations.length },
       });
 
-    // Add general-agent as fallback if not already selected
-    if (selectedAgent !== 'general-agent' && alternatives.length < 3) {
-      alternatives.push({
-        agent: 'general-agent',
-        confidence: 0.5,
-        reason: 'General-purpose fallback',
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleAddObservations',
       });
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `❌ Failed to add observations: ${handled.message}`,
+          },
+        ],
+      };
     }
-
-    return alternatives.slice(0, 3);
   }
 
   /**
-   * Estimate confidence based on analysis
+   * Handle create-relations tool
+   *
+   * Creates relations between entities in the Knowledge Graph.
    */
-  private estimateConfidence(analysis: TaskAnalysis, routing: RoutingDecision): number {
-    // Simple confidence estimation based on complexity match
-    const baseConfidence = 0.75;
+  async handleCreateRelations(input: {
+    relations: Array<{
+      from: string;
+      to: string;
+      relationType: string;
+      metadata?: Record<string, unknown>;
+    }>;
+  }): Promise<CallToolResult> {
+    try {
+      const result = await createRelationsTool.handler(
+        input,
+        this.knowledgeGraph
+      );
 
-    // Higher confidence for specific agent matches
-    if (routing.selectedAgent !== 'general-agent') {
-      return Math.min(baseConfidence + 0.15, 0.95);
+      // Format the result into readable text
+      let text = '🔗 Knowledge Graph Relation Creation\n';
+      text += '━'.repeat(60) + '\n\n';
+
+      if (result.count === 0) {
+        text += '⚠️ No relations were created.\n\n';
+        if (result.missingEntities && result.missingEntities.length > 0) {
+          text += 'Entities not found:\n';
+          result.missingEntities.forEach(name => {
+            text += `  ❌ ${name}\n`;
+          });
+        }
+        if (result.errors && result.errors.length > 0) {
+          text += '\nErrors encountered:\n';
+          result.errors.forEach(error => {
+            text += `  ❌ ${error.from} → ${error.to}: ${error.error}\n`;
+          });
+        }
+      } else {
+        text += `✅ Successfully created ${result.count} ${result.count === 1 ? 'relation' : 'relations'}:\n\n`;
+        result.created.forEach((rel, index) => {
+          text += `${index + 1}. ${rel.from} --[${rel.type}]--> ${rel.to}\n`;
+        });
+
+        if (result.missingEntities && result.missingEntities.length > 0) {
+          text += '\n⚠️ Some entities were not found:\n';
+          result.missingEntities.forEach(name => {
+            text += `  ❌ ${name}\n`;
+          });
+        }
+
+        if (result.errors && result.errors.length > 0) {
+          text += '\n⚠️ Some relations failed:\n';
+          result.errors.forEach(error => {
+            text += `  ❌ ${error.from} → ${error.to}: ${error.error}\n`;
+          });
+        }
+      }
+
+      text += '\n' + '━'.repeat(60) + '\n';
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text,
+          },
+        ],
+      };
+    } catch (error) {
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleCreateRelations',
+        operation: 'creating entity relations',
+        data: { relationCount: input.relations.length },
+      });
+
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleCreateRelations',
+      });
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `❌ Failed to create relations: ${handled.message}`,
+          },
+        ],
+      };
     }
+  }
 
-    return baseConfidence;
+
+
+  /**
+   * Handle devops-generate-ci-config tool
+   *
+   * Generates CI/CD configuration files for GitHub Actions or GitLab CI.
+   */
+  async handleGenerateCIConfig(input: {
+    platform: 'github-actions' | 'gitlab-ci';
+    testCommand: string;
+    buildCommand: string;
+    deployCommand?: string;
+    nodeVersion?: string;
+    enableCaching?: boolean;
+  }): Promise<CallToolResult> {
+    try {
+      const result = await generateCIConfigTool.handler(
+        input,
+        this.devopsEngineer
+      );
+
+      if (!result.success) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `❌ Failed to generate CI config: ${result.error}`,
+            },
+          ],
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `🚀 CI/CD Configuration Generated
+
+Platform: ${result.platform}
+Config File: ${result.configFileName}
+
+${result.instructions}
+
+──────────────────────────────────────
+Configuration Content:
+──────────────────────────────────────
+
+${result.config}
+`,
+          },
+        ],
+      };
+    } catch (error) {
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleGenerateCIConfig',
+        operation: 'generating CI/CD config',
+        data: { platform: input.platform },
+      });
+
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleGenerateCIConfig',
+      });
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `❌ Failed to generate CI config: ${handled.message}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle devops-analyze-deployment tool
+   *
+   * Analyzes deployment readiness by running tests, build, and checking git status.
+   */
+  async handleAnalyzeDeployment(input: {
+    testCommand?: string;
+    buildCommand?: string;
+  }): Promise<CallToolResult> {
+    try {
+      const result = await analyzeDeploymentTool.handler(
+        input,
+        this.devopsEngineer
+      );
+
+      if (!result.success) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `❌ Deployment analysis failed: ${result.error}`,
+            },
+          ],
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: result.summary || 'Deployment analysis completed',
+          },
+        ],
+      };
+    } catch (error) {
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleAnalyzeDeployment',
+        operation: 'analyzing deployment readiness',
+      });
+
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleAnalyzeDeployment',
+      });
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `❌ Failed to analyze deployment: ${handled.message}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle devops-setup-ci tool
+   *
+   * Complete CI/CD setup that generates config, writes to file, and records to Knowledge Graph.
+   */
+  async handleSetupCI(input: {
+    platform: 'github-actions' | 'gitlab-ci';
+    testCommand: string;
+    buildCommand: string;
+  }): Promise<CallToolResult> {
+    try {
+      const result = await setupCITool.handler(
+        input,
+        this.devopsEngineer
+      );
+
+      if (!result.success) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `❌ CI setup failed: ${result.error}`,
+            },
+          ],
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `${result.message}
+
+${result.nextSteps}
+
+──────────────────────────────────────
+Configuration Details:
+──────────────────────────────────────
+
+Config File: ${result.details?.configFile || result.configFileName}
+Test Command: ${result.details?.testCommand || input.testCommand}
+Build Command: ${result.details?.buildCommand || input.buildCommand}
+`,
+          },
+        ],
+      };
+    } catch (error) {
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleSetupCI',
+        operation: 'setting up CI/CD',
+        data: { platform: input.platform },
+      });
+
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleSetupCI',
+      });
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `❌ Failed to setup CI: ${handled.message}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle workflow-create tool
+   *
+   * Creates automated workflows using Google Opal or n8n.
+   * Automatically selects the best platform based on description.
+   *
+   * @param input - Workflow creation arguments
+   * @returns Tool execution result
+   */
+  async handleCreateWorkflow(input: {
+    description: string;
+    platform?: 'opal' | 'n8n' | 'auto';
+    priority?: 'speed' | 'production';
+  }): Promise<CallToolResult> {
+    try {
+      const result = await createWorkflowTool.handler(
+        input,
+        this.workflowOrchestrator
+      );
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleCreateWorkflow',
+        operation: 'creating workflow',
+        data: { description: input.description, platform: input.platform },
+      });
+
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleCreateWorkflow',
+      });
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `❌ Failed to create workflow: ${handled.message}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle workflow-list tool
+   *
+   * Lists all workflows from Google Opal and n8n platforms.
+   *
+   * @param input - Workflow list arguments
+   * @returns Tool execution result
+   */
+  async handleListWorkflows(input: {
+    platform?: 'opal' | 'n8n' | 'all';
+  }): Promise<CallToolResult> {
+    try {
+      const result = await listWorkflowsTool.handler(
+        input,
+        this.workflowOrchestrator
+      );
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleListWorkflows',
+        operation: 'listing workflows',
+        data: { platform: input.platform },
+      });
+
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleListWorkflows',
+      });
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `❌ Failed to list workflows: ${handled.message}`,
+          },
+        ],
+      };
+    }
   }
 }

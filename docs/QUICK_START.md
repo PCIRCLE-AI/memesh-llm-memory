@@ -39,7 +39,7 @@ Tools appear automatically in Claude Code.
 
 | Tool | Use Case |
 |------|----------|
-| `smart_route_task` | Auto-route any task to best agent |
+| `buddy_do` | Auto-route any task to best agent |
 | `development_butler` | Checkpoint-based dev automation |
 | `test_writer` | Generate unit/integration tests |
 | `devops_engineer` | CI/CD configuration |

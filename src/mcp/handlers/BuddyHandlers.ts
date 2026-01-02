@@ -5,8 +5,8 @@
  * use natural language and hide technical complexity from users.
  *
  * **Available Commands**:
- * - **buddy_do**: Execute tasks with smart routing (simplified sa_task)
- * - **buddy_stats**: View performance dashboard (simplified sa_dashboard)
+ * - **buddy_do**: Execute tasks with smart routing (replaces smart_route_task/sa_task)
+ * - **buddy_stats**: View performance dashboard (replaces evolution_dashboard/sa_dashboard)
  * - **buddy_remember**: Recall project memory (search knowledge graph)
  * - **buddy_help**: Get help and usage instructions
  *
@@ -96,7 +96,7 @@ export class BuddyHandlers {
    * Natural language interface for task execution. Automatically routes tasks
    * to the most appropriate agent and returns enhanced prompts.
    *
-   * This is a simplified version of sa_task with:
+   * This replaces smart_route_task/sa_task with:
    * - More forgiving input validation
    * - Friendlier error messages
    * - Contextual usage tips

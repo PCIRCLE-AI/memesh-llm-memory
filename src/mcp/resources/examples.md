@@ -12,7 +12,7 @@
 
 ```bash
 # Step 1: Design the API
-sa_task "design RESTful API endpoints for user management including registration, login, profile, and password reset"
+buddy_do "design RESTful API endpoints for user management including registration, login, profile, and password reset"
 
 # Agent selected: api-designer
 # Output: API specification with endpoints, methods, request/response schemas
@@ -20,7 +20,7 @@ sa_task "design RESTful API endpoints for user management including registration
 
 ```bash
 # Step 2: Implement backend logic
-sa_task "implement user registration endpoint with email validation, password hashing, and duplicate email check"
+buddy_do "implement user registration endpoint with email validation, password hashing, and duplicate email check"
 
 # Agent selected: backend-specialist
 # Output: UserController.ts with registration logic
@@ -28,7 +28,7 @@ sa_task "implement user registration endpoint with email validation, password ha
 
 ```bash
 # Step 3: Write comprehensive tests
-sa_task "write unit and integration tests for user registration covering valid inputs, invalid emails, duplicate users, and password requirements"
+buddy_do "write unit and integration tests for user registration covering valid inputs, invalid emails, duplicate users, and password requirements"
 
 # Agent selected: test-writer
 # Output: UserController.test.ts with comprehensive test suite
@@ -36,7 +36,7 @@ sa_task "write unit and integration tests for user registration covering valid i
 
 ```bash
 # Step 4: Review code for security
-sa_task "review user registration code for security vulnerabilities including SQL injection, password security, and input validation"
+buddy_do "review user registration code for security vulnerabilities including SQL injection, password security, and input validation"
 
 # Agent selected: code-reviewer
 # Output: Security review report with recommendations
@@ -54,7 +54,7 @@ sa_task "review user registration code for security vulnerabilities including SQ
 
 ```bash
 # Step 1: Profile performance
-sa_task "profile the dashboard page load time and identify performance bottlenecks"
+buddy_do "profile the dashboard page load time and identify performance bottlenecks"
 
 # Agent selected: performance-profiler
 # Output: Performance report showing slow database queries and large payload sizes
@@ -62,7 +62,7 @@ sa_task "profile the dashboard page load time and identify performance bottlenec
 
 ```bash
 # Step 2: Optimize database queries
-sa_task "optimize the user analytics query that's taking 5 seconds, currently fetching all user data without indexes"
+buddy_do "optimize the user analytics query that's taking 5 seconds, currently fetching all user data without indexes"
 
 # Agent selected: db-optimizer
 # Output: Optimized query with proper indexes and pagination
@@ -70,7 +70,7 @@ sa_task "optimize the user analytics query that's taking 5 seconds, currently fe
 
 ```bash
 # Step 3: Optimize frontend
-sa_task "reduce dashboard bundle size and implement lazy loading for charts and heavy components"
+buddy_do "reduce dashboard bundle size and implement lazy loading for charts and heavy components"
 
 # Agent selected: frontend-specialist
 # Output: Code-split components and lazy loading implementation
@@ -78,7 +78,7 @@ sa_task "reduce dashboard bundle size and implement lazy loading for charts and 
 
 ```bash
 # Step 4: Verify improvements
-sa_task "performance test the optimized dashboard and compare before/after metrics"
+buddy_do "performance test the optimized dashboard and compare before/after metrics"
 
 # Agent selected: performance-profiler
 # Output: Performance comparison showing 8s → 1.2s load time
@@ -96,7 +96,7 @@ sa_task "performance test the optimized dashboard and compare before/after metri
 
 ```bash
 # Step 1: Research migration strategy
-sa_task "research best practices for migrating from jQuery to React, including incremental migration strategies and common pitfalls"
+buddy_do "research best practices for migrating from jQuery to React, including incremental migration strategies and common pitfalls"
 
 # Agent selected: research-agent
 # Output: Migration strategy report with recommendations
@@ -104,7 +104,7 @@ sa_task "research best practices for migrating from jQuery to React, including i
 
 ```bash
 # Step 2: Design architecture
-sa_task "design React component architecture for the current jQuery application, maintaining existing functionality while improving structure"
+buddy_do "design React component architecture for the current jQuery application, maintaining existing functionality while improving structure"
 
 # Agent selected: architecture-agent
 # Output: Component hierarchy and state management plan
@@ -112,7 +112,7 @@ sa_task "design React component architecture for the current jQuery application,
 
 ```bash
 # Step 3: Implement migration
-sa_task "create a migration assistant for converting jQuery components to React, starting with the user profile page"
+buddy_do "create a migration assistant for converting jQuery components to React, starting with the user profile page"
 
 # Agent selected: migration-assistant
 # Output: Migration plan and initial React components
@@ -120,7 +120,7 @@ sa_task "create a migration assistant for converting jQuery components to React,
 
 ```bash
 # Step 4: Refactor converted code
-sa_task "refactor the converted React components to use modern patterns including hooks, context API, and functional components"
+buddy_do "refactor the converted React components to use modern patterns including hooks, context API, and functional components"
 
 # Agent selected: refactorer
 # Output: Clean, modern React code with hooks
@@ -137,7 +137,7 @@ sa_task "refactor the converted React components to use modern patterns includin
 #### Example: Login Timeout Issue
 
 ```bash
-sa_task "debug why users are getting timeout errors during login after recent deployment. The error happens after password verification step and before session creation."
+buddy_do "debug why users are getting timeout errors during login after recent deployment. The error happens after password verification step and before session creation."
 
 # Agent selected: debugger
 # Process:
@@ -151,7 +151,7 @@ sa_task "debug why users are getting timeout errors during login after recent de
 #### Example: Memory Leak
 
 ```bash
-sa_task "investigate memory leak in Node.js application where memory usage grows from 200MB to 2GB over 6 hours"
+buddy_do "investigate memory leak in Node.js application where memory usage grows from 200MB to 2GB over 6 hours"
 
 # Agent selected: debugger → performance-profiler
 # Process:
@@ -169,7 +169,7 @@ sa_task "investigate memory leak in Node.js application where memory usage grows
 #### Example: E2E Test Suite
 
 ```bash
-sa_task "create end-to-end test suite for checkout flow including adding items to cart, applying discount code, payment, and order confirmation"
+buddy_do "create end-to-end test suite for checkout flow including adding items to cart, applying discount code, payment, and order confirmation"
 
 # Agent selected: test-writer
 # Output:
@@ -182,7 +182,7 @@ sa_task "create end-to-end test suite for checkout flow including adding items t
 #### Example: Regression Tests
 
 ```bash
-sa_task "write regression tests for the bug where users could delete other users' posts, ensuring proper authorization checks"
+buddy_do "write regression tests for the bug where users could delete other users' posts, ensuring proper authorization checks"
 
 # Agent selected: test-writer
 # Output:
@@ -198,7 +198,7 @@ sa_task "write regression tests for the bug where users could delete other users
 #### Example: Stripe Integration
 
 ```bash
-sa_task "integrate Stripe payment API for subscription billing including webhook handling for successful payments and failed charges"
+buddy_do "integrate Stripe payment API for subscription billing including webhook handling for successful payments and failed charges"
 
 # Agent selected: api-integrator
 # Output:
@@ -212,7 +212,7 @@ sa_task "integrate Stripe payment API for subscription billing including webhook
 #### Example: OAuth Implementation
 
 ```bash
-sa_task "implement Google OAuth 2.0 authentication flow including authorization, token exchange, and user profile retrieval"
+buddy_do "implement Google OAuth 2.0 authentication flow including authorization, token exchange, and user profile retrieval"
 
 # Agent selected: api-integrator
 # Output:
@@ -229,7 +229,7 @@ sa_task "implement Google OAuth 2.0 authentication flow including authorization,
 #### Example: CI/CD Pipeline
 
 ```bash
-sa_task "set up GitHub Actions CI/CD pipeline for Node.js application with testing, linting, building, and automatic deployment to AWS"
+buddy_do "set up GitHub Actions CI/CD pipeline for Node.js application with testing, linting, building, and automatic deployment to AWS"
 
 # Agent selected: devops-engineer
 # Output:
@@ -242,7 +242,7 @@ sa_task "set up GitHub Actions CI/CD pipeline for Node.js application with testi
 #### Example: Docker Configuration
 
 ```bash
-sa_task "create production-ready Dockerfile for Next.js application with multi-stage build, optimized caching, and minimal image size"
+buddy_do "create production-ready Dockerfile for Next.js application with multi-stage build, optimized caching, and minimal image size"
 
 # Agent selected: devops-engineer
 # Output:
@@ -295,7 +295,7 @@ sa_task "create production-ready Dockerfile for Next.js application with multi-s
 
 ```bash
 # Comprehensive code quality workflow
-sa_task "analyze codebase for code smells, suggest refactoring, implement improvements, and verify with tests"
+buddy_do "analyze codebase for code smells, suggest refactoring, implement improvements, and verify with tests"
 
 # Agent flow:
 # 1. code-reviewer → Identify issues
@@ -309,7 +309,7 @@ sa_task "analyze codebase for code smells, suggest refactoring, implement improv
 ### Database Migration
 
 ```bash
-sa_task "plan and execute migration from MySQL to PostgreSQL including schema conversion, data migration, and query optimization"
+buddy_do "plan and execute migration from MySQL to PostgreSQL including schema conversion, data migration, and query optimization"
 
 # Agent flow:
 # 1. research-agent → Research PostgreSQL features and differences
@@ -325,7 +325,7 @@ sa_task "plan and execute migration from MySQL to PostgreSQL including schema co
 ### API Redesign
 
 ```bash
-sa_task "redesign legacy SOAP API to modern RESTful API with versioning and GraphQL support"
+buddy_do "redesign legacy SOAP API to modern RESTful API with versioning and GraphQL support"
 
 # Agent flow:
 # 1. api-designer → Design REST API structure
@@ -387,13 +387,13 @@ Try these simple examples to get familiar:
 
 ```bash
 # Simple review
-sa_task "review this API controller for best practices"
+buddy_do "review this API controller for best practices"
 
 # Quick test
-sa_task "write unit tests for the calculateTotal function"
+buddy_do "write unit tests for the calculateTotal function"
 
 # Fast optimization
-sa_task "optimize this slow SQL query"
+buddy_do "optimize this slow SQL query"
 ```
 
 Then graduate to full workflows as you get comfortable!

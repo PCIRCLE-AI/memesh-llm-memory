@@ -372,29 +372,29 @@
                     </div>
                 </div>
 
-                <!-- Problem 3: Session Crashes → Session Health -->
+                <!-- Problem 3: Expensive Token Costs → Smart Model Selection -->
                 <div class="glass-card rounded-2xl p-8">
                     <div class="flex items-start mb-4">
                         <div class="icon-red mr-6">❌</div>
                         <div class="flex-1">
-                            <h3 class="text-2xl font-bold text-gray-900 mb-3">問題：Session 崩潰</h3>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-3">問題：昂貴的 Token 成本</h3>
                             <p class="text-gray-700 text-lg leading-relaxed">
-                                Claude Code 的 200K token 限制讓長時間工作 session 突然崩潰，失去所有進度。
+                                所有任務都使用昂貴的模型，即使是簡單工作也浪費 token 和預算。
                             </p>
                         </div>
                     </div>
 
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <div class="flex items-start">
-                            <div class="icon-blue mr-6">📊</div>
+                            <div class="icon-blue mr-6">💰</div>
                             <div class="flex-1">
-                                <h4 class="text-xl font-bold text-gray-900 mb-3">解決方案：Session 健康監控</h4>
+                                <h4 class="text-xl font-bold text-gray-900 mb-3">解決方案：智能模型選擇</h4>
                                 <p class="text-gray-700 mb-4 leading-relaxed">
-                                    追蹤 token 使用，在 90% 容量時自動重載上下文，提供智能下一步建議以優化品質。
+                                    依複雜度路由任務：Haiku（簡單、便宜）→ Sonnet（平衡）→ Opus（複雜、高品質）。節省約 40% token 成本。
                                 </p>
                                 <div class="warm-gradient-blue rounded-xl p-5">
                                     <p class="text-gray-700 text-sm">
-                                        <strong>實際範例：</strong>「buddy stats week」→ 查看總 token 使用 (2.4M)、成功率 (94.2%)、session 健康 (65% 使用率) + 每個 agent 的細分
+                                        <strong>實際運作：</strong>TaskAnalyzer 分析任務複雜度 → 自動選擇最適合的 Claude 模型 → 簡單代碼用 Haiku，複雜架構用 Opus
                                     </p>
                                 </div>
                             </div>
@@ -402,29 +402,29 @@
                     </div>
                 </div>
 
-                <!-- Problem 4: Repeated Mistakes → Learning System -->
+                <!-- Problem 4: Repetitive Context → RAG + Drop Inbox -->
                 <div class="glass-card rounded-2xl p-8">
                     <div class="flex items-start mb-4">
                         <div class="icon-red mr-6">❌</div>
                         <div class="flex-1">
-                            <h3 class="text-2xl font-bold text-gray-900 mb-3">問題：重複錯誤</h3>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-3">問題：重複的上下文說明</h3>
                             <p class="text-gray-700 text-lg leading-relaxed">
-                                Claude 不會從過去的錯誤中學習。同樣的問題會一次又一次發生，沒有改進。
+                                每次對話都要重新解釋專案結構和決策，浪費時間、打斷工作流程。
                             </p>
                         </div>
                     </div>
 
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <div class="flex items-start">
-                            <div class="icon-blue mr-6">📈</div>
+                            <div class="icon-blue mr-6">📚</div>
                             <div class="flex-1">
-                                <h4 class="text-xl font-bold text-gray-900 mb-3">解決方案：學習系統</h4>
+                                <h4 class="text-xl font-bold text-gray-900 mb-3">解決方案：RAG + Drop Inbox</h4>
                                 <p class="text-gray-700 mb-4 leading-relaxed">
-                                    你的回饋（按讚/按踩）會訓練系統。CCB 學習哪些方法適合你的專案，並隨時間調整回應。
+                                    將文件拖放到 ~/Documents/claude-code-buddy-knowledge/ → 每 5 秒自動索引 → 不需重複說明。
                                 </p>
                                 <div class="warm-gradient-blue rounded-xl p-5">
                                     <p class="text-gray-700 text-sm">
-                                        <strong>實際範例：</strong>對程式碼審查建議按踩 → CCB 記錄這個反模式 → 未來審查自動避免該建議並提出更好替代方案
+                                        <strong>實際運作：</strong>FileWatcher 監控文件夾 → 新增 .md/.txt/.json/.pdf/.docx → 自動建立索引 → buddy remember 可搜尋內容
                                     </p>
                                 </div>
                             </div>

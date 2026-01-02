@@ -377,28 +377,6 @@ npm run dashboard
 
 ---
 
-## Roadmap
-
-### v2.1 (Next Release - Q1 2026)
-- Web UI for configuration and monitoring
-- One-click installer for Windows/Mac/Linux
-- Video tutorials and interactive docs
-- More pre-built skills for common workflows
-
-### v2.5 (Q2 2026)
-- Cloud-hosted option (no local setup)
-- Team collaboration features
-- Advanced cost optimization algorithms
-- Integration marketplace (GitHub Actions, Jenkins, etc.)
-
-### v3.0 (Vision - Q3 2026)
-- Multi-model support (Claude + GPT + local models)
-- Visual workflow builder
-- Community skills marketplace
-- Enterprise features (SSO, audit logs, compliance)
-
----
-
 ## FAQ
 
 **Q: Do I need to be a developer to use this?**

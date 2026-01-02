@@ -30,15 +30,14 @@ const MAX_FORMAT_STRING_LENGTH = 20;
 const MAX_FILTER_STRING_LENGTH = 50;
 
 /**
- * Task input schema for sa_task and individual agents
+ * Task input schema for buddy_do and individual agents
  *
  * Used by:
- * - sa_task tool
- * - smart_route_task tool (legacy)
+ * - buddy_do tool
  * - Individual agent tools
  */
 export const TaskInputSchema = z.object({
-  // taskDescription for sa_task (new style)
+  // taskDescription for buddy_do
   taskDescription: z
     .string()
     .min(1, 'Task description cannot be empty')
@@ -73,11 +72,10 @@ export const TaskInputSchema = z.object({
 );
 
 /**
- * Dashboard input schema for sa_dashboard
+ * Dashboard input schema for buddy_dashboard
  *
  * Used by:
- * - sa_dashboard tool
- * - evolution_dashboard tool (legacy)
+ * - buddy_dashboard tool
  */
 export const DashboardInputSchema = z.object({
   format: z
@@ -106,14 +104,14 @@ export const DashboardInputSchema = z.object({
 });
 
 /**
- * List agents input schema for sa_agents
+ * List agents input schema for buddy_agents
  */
 export const ListAgentsInputSchema = z.object({
   // Currently no parameters, but defined for future extensibility
 });
 
 /**
- * List skills input schema for sa_skills
+ * List skills input schema for buddy_skills
  */
 export const ListSkillsInputSchema = z.object({
   filter: z
@@ -128,7 +126,7 @@ export const ListSkillsInputSchema = z.object({
 });
 
 /**
- * Uninstall input schema for sa_uninstall
+ * Uninstall input schema for buddy_uninstall
  */
 export const UninstallInputSchema = z.object({
   keepData: z.boolean().optional().default(false),

@@ -798,6 +798,54 @@ When optimizing performance, you:
 6. Monitor production performance
 7. Optimize resource utilization
 8. Ensure SLA compliance`,
+
+  'workflow-orchestrator': `You are an expert Workflow Orchestrator specializing in intelligent platform selection and workflow automation.
+
+Your expertise includes:
+- Google Opal browser automation evaluation
+- n8n workflow platform evaluation
+- Workflow requirement analysis
+- Platform selection optimization
+- Workflow execution coordination
+
+When orchestrating workflows, you:
+1. Analyze workflow requirements (speed vs production)
+2. Select optimal platform (Opal for speed, n8n for production)
+3. Delegate to specialized agents (OpalAutomationAgent or N8nWorkflowAgent)
+4. Coordinate workflow execution
+5. Monitor and optimize workflow performance`,
+
+  'opal-automation': `You are an expert Google Opal Automation specialist.
+
+Your expertise includes:
+- Browser automation using Playwright
+- Google Opal workflow recording and playback
+- Workflow URL management
+- Visual workflow testing
+- Rapid prototyping
+
+When automating with Opal, you:
+1. Record browser interactions as workflows
+2. Generate shareable workflow URLs
+3. Execute workflows with Playwright
+4. Verify visual results
+5. Optimize for speed and simplicity`,
+
+  'n8n-workflow': `You are an expert n8n Workflow specialist.
+
+Your expertise includes:
+- n8n workflow API integration
+- Workflow creation via CLI
+- Production workflow management
+- Workflow version control
+- Enterprise workflow patterns
+
+When working with n8n, you:
+1. Create workflows via API/CLI
+2. Manage workflow lifecycle
+3. Ensure production readiness
+4. Implement error handling and monitoring
+5. Optimize for reliability and maintainability`,
 };
 
 /**
@@ -838,6 +886,9 @@ export const AGENT_TOOLS: Record<AgentType, string[]> = {
   'backend-developer': ['read_file', 'write_file', 'run_tests', 'api_test', 'database', 'cache'],
   'database-administrator': ['database', 'query_analyzer', 'backup_tool', 'migration', 'index_optimizer'],
   'performance-engineer': ['profiler', 'benchmark', 'load_test', 'apm', 'memory_analyzer', 'cpu_tracer'],
+  'workflow-orchestrator': ['workflow_selector', 'platform_evaluator', 'requirement_analyzer'],
+  'opal-automation': ['playwright', 'opal_recorder', 'workflow_player', 'screenshot'],
+  'n8n-workflow': ['n8n_cli', 'workflow_api', 'bash', 'curl'],
 };
 
 /**
@@ -1028,6 +1079,21 @@ export const MODEL_SUGGESTIONS: Record<AgentType, ModelSuggestion> = {
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-opus-4-5-20251101',
   },
+  'workflow-orchestrator': {
+    simple: 'claude-3-5-haiku-20241022',
+    medium: 'claude-sonnet-4-5-20250929',
+    complex: 'claude-sonnet-4-5-20250929',
+  },
+  'opal-automation': {
+    simple: 'claude-3-5-haiku-20241022',
+    medium: 'claude-3-5-haiku-20241022',
+    complex: 'claude-sonnet-4-5-20250929',
+  },
+  'n8n-workflow': {
+    simple: 'claude-3-5-haiku-20241022',
+    medium: 'claude-sonnet-4-5-20250929',
+    complex: 'claude-sonnet-4-5-20250929',
+  },
 };
 
 /**
@@ -1068,4 +1134,7 @@ export const AGENT_INSTRUCTIONS: Record<AgentType, string> = {
   'backend-developer': 'Please provide:\n1. API and microservices implementation\n2. Database integration and caching strategy\n3. Security, error handling, and monitoring',
   'database-administrator': 'Please provide:\n1. Schema design and migration strategy\n2. Performance tuning and index optimization\n3. Backup, recovery, and high availability plan',
   'performance-engineer': 'Please provide:\n1. End-to-end performance analysis\n2. Scalability and load testing strategy\n3. Optimization recommendations with metrics',
+  'workflow-orchestrator': 'Please provide:\n1. Workflow requirement analysis (speed vs production)\n2. Platform recommendation (Opal vs n8n) with reasoning\n3. Workflow creation plan and execution strategy',
+  'opal-automation': 'Please provide:\n1. Opal workflow recording steps\n2. Workflow URL and playback instructions\n3. Visual verification results',
+  'n8n-workflow': 'Please provide:\n1. n8n workflow creation command\n2. Workflow structure and node configuration\n3. Production deployment checklist',
 };

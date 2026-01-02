@@ -39,31 +39,4 @@ describe('MCP Server Tools', () => {
       expect(butler?.description).toContain('workflow automation');
     });
   });
-
-  describe('Smart Router Tool Schema', () => {
-    it('should define schema for smart_route_task (manual verification)', () => {
-      // This test documents the expected schema for smart_route_task
-      // Implementation will be in src/mcp/server.ts
-
-      const expectedSchema = {
-        type: 'object',
-        properties: {
-          taskDescription: {
-            type: 'string',
-            description: 'Description of the task to be performed',
-          },
-          priority: {
-            type: 'number',
-            description: 'Task priority (optional, 1-10)',
-            minimum: 1,
-            maximum: 10,
-          },
-        },
-        required: ['taskDescription'],
-      };
-
-      expect(expectedSchema).toBeDefined();
-      expect(expectedSchema.required).toContain('taskDescription');
-    });
-  });
 });

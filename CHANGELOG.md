@@ -5,6 +5,90 @@ All notable changes to Claude Code Buddy will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Breaking Changes
+
+#### Tool Cleanup and Standardization
+- **Removed LEGACY tools:**
+  - `smart_route_task` - Replaced by `buddy_do` (use `buddy_do` for all task routing)
+  - `evolution_dashboard` - Replaced by `buddy_dashboard` (use `buddy_dashboard` for performance metrics)
+
+- **Removed deprecated tools:**
+  - `sa_task` - Use `buddy_do` instead
+  - `sa_dashboard` - Use `buddy_dashboard` instead
+
+- **Renamed tools (standardized to buddy_ prefix):**
+  - `sa_agents` → `buddy_agents` (list available agents)
+  - `sa_skills` → `buddy_skills` (list available skills)
+  - `sa_uninstall` → `buddy_uninstall` (uninstall CCB)
+
+**Migration Guide:**
+```javascript
+// OLD (no longer works):
+smart_route_task({ taskDescription: "..." })
+sa_agents()
+sa_skills({ filter: "all" })
+
+// NEW (use these instead):
+buddy_do({ task: "..." })
+buddy_agents()
+buddy_skills({ filter: "all" })
+```
+
+### Removed
+
+#### MCP Tool Handlers
+- `handleSmartRouteTask()` - Removed from `ToolHandlers.ts`
+- `handleEvolutionDashboard()` - Removed from `ToolHandlers.ts`
+- Tests for removed handlers removed from `ToolHandlers.test.ts`
+
+### Changed
+
+#### Tool Routing
+- Updated `ToolRouter.ts` to remove legacy routing logic
+- Removed conditional branches for `smart_route_task` and `evolution_dashboard`
+- Updated routing comments to reflect buddy_ prefix standard
+
+#### Documentation
+- Updated all tool references in documentation files:
+  - `src/mcp/resources/usage-guide.md`
+  - `src/mcp/resources/best-practices.md`
+  - `src/mcp/resources/quick-reference.md`
+  - `src/mcp/resources/examples.md`
+  - `docs/QUICK_START.md`
+- Updated internal code comments in:
+  - `src/mcp/ToolRouter.ts`
+  - `src/mcp/ToolDefinitions.ts`
+  - `src/mcp/validation.ts`
+
+#### Tests
+- Updated `ToolRouter.test.ts` to use new tool names
+- Removed tests for deleted LEGACY tools
+- Updated test expectations for renamed tools
+
+### Technical Details
+
+**Total Changes:**
+- 2 LEGACY tools removed
+- 2 deprecated tools removed
+- 3 tools renamed (buddy_ prefix)
+- 9 files updated
+- 2 test sections removed
+- 73 → 75 passing tests (2 unrelated pre-existing failures remain)
+
+**Files Modified:**
+- `src/mcp/ToolRouter.ts`
+- `src/mcp/ToolDefinitions.ts`
+- `src/mcp/validation.ts`
+- `src/mcp/__tests__/ToolRouter.test.ts`
+- `src/mcp/handlers/__tests__/ToolHandlers.test.ts`
+- `src/mcp/resources/usage-guide.md`
+- `src/mcp/resources/best-practices.md`
+- `src/mcp/resources/quick-reference.md`
+- `src/mcp/resources/examples.md`
+- `docs/QUICK_START.md`
+
 ## [2.0.0] - 2026-01-01
 
 ### Major Rebrand: claude-code-buddy → Claude Code Buddy (CCB)

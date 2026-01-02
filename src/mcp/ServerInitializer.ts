@@ -25,8 +25,11 @@ import { PlanningEngine } from '../planning/PlanningEngine.js';
 import { GitAssistantIntegration } from '../integrations/GitAssistantIntegration.js';
 import { KnowledgeGraph } from '../knowledge-graph/index.js';
 import { ProjectMemoryManager } from '../memory/ProjectMemoryManager.js';
+import { ProjectAutoTracker } from '../memory/ProjectAutoTracker.js';
 import { RateLimiter } from '../utils/RateLimiter.js';
 import { GitHandlers, ToolHandlers, BuddyHandlers } from './handlers/index.js';
+import { DevOpsEngineerAgent } from '../agents/DevOpsEngineerAgent.js';
+import { WorkflowOrchestrator } from '../agents/WorkflowOrchestrator.js';
 
 /**
  * Initialized Server Components
@@ -60,6 +63,11 @@ export interface ServerComponents {
   // Memory & Knowledge
   knowledgeGraph: KnowledgeGraph;
   projectMemoryManager: ProjectMemoryManager;
+  projectAutoTracker: ProjectAutoTracker;
+
+  // Agents
+  devopsEngineer: DevOpsEngineerAgent;
+  workflowOrchestrator: WorkflowOrchestrator;
 
   // Rate limiting
   rateLimiter: RateLimiter;
@@ -99,7 +107,7 @@ export class ServerInitializer {
    * 1. **Core Infrastructure**: Router, Formatter, AgentRegistry, UI
    * 2. **Evolution System**: Performance tracking, learning, adaptation
    * 3. **Development Tools**: DevelopmentButler, PlanningEngine, GitAssistant
-   * 4. **Memory Systems**: KnowledgeGraph, ProjectMemoryManager
+   * 4. **Memory Systems**: KnowledgeGraph, ProjectMemoryManager, ProjectAutoTracker
    * 5. **Handler Modules**: GitHandlers, ToolHandlers, BuddyHandlers
    *
    * @returns ServerComponents - Fully initialized and wired components
@@ -157,6 +165,15 @@ export class ServerInitializer {
     const knowledgeGraph = KnowledgeGraph.createSync();
     const projectMemoryManager = new ProjectMemoryManager(knowledgeGraph);
 
+    // Initialize ProjectAutoTracker (automatic knowledge tracking)
+    const projectAutoTracker = new ProjectAutoTracker(toolInterface);
+
+    // Initialize DevOps Engineer Agent
+    const devopsEngineer = new DevOpsEngineerAgent(toolInterface);
+
+    // Initialize Workflow Orchestrator (Opal + n8n)
+    const workflowOrchestrator = new WorkflowOrchestrator(toolInterface);
+
     // Initialize Rate Limiter (30 requests per minute)
     const rateLimiter = new RateLimiter({
       requestsPerMinute: 30, // Conservative limit to prevent DoS attacks
@@ -178,7 +195,10 @@ export class ServerInitializer {
       checkpointDetector,
       planningEngine,
       projectMemoryManager,
-      ui
+      knowledgeGraph,
+      ui,
+      devopsEngineer,
+      workflowOrchestrator
     );
 
     const buddyHandlers = new BuddyHandlers(
@@ -206,6 +226,9 @@ export class ServerInitializer {
       gitAssistant,
       knowledgeGraph,
       projectMemoryManager,
+      projectAutoTracker,
+      devopsEngineer,
+      workflowOrchestrator,
       rateLimiter,
       gitHandlers,
       toolHandlers,

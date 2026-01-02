@@ -12,7 +12,7 @@
 - Ignore evolution suggestions
 
 **✅ Do**:
-- Use `sa_task` and let the router choose
+- Use `buddy_do` and let the router choose
 - Review evolution dashboard regularly
 - Trust the learned patterns
 - Provide feedback when results are unexpected
@@ -25,16 +25,16 @@
 
 **❌ Don't**:
 ```bash
-sa_task "fix bug"
-sa_task "add feature"
-sa_task "make it faster"
+buddy_do "fix bug"
+buddy_do "add feature"
+buddy_do "make it faster"
 ```
 
 **✅ Do**:
 ```bash
-sa_task "fix authentication bug where JWT tokens expire immediately after login"
-sa_task "add email verification to user registration with 24-hour expiry"
-sa_task "optimize dashboard SQL query reducing load time from 5s to under 1s"
+buddy_do "fix authentication bug where JWT tokens expire immediately after login"
+buddy_do "add email verification to user registration with 24-hour expiry"
+buddy_do "optimize dashboard SQL query reducing load time from 5s to under 1s"
 ```
 
 **Why**: Specific descriptions help the router select the best agent and provide better context for execution.
@@ -45,12 +45,12 @@ sa_task "optimize dashboard SQL query reducing load time from 5s to under 1s"
 
 **❌ Don't**:
 ```bash
-sa_task "review code"  # Which code? What aspects?
+buddy_do "review code"  # Which code? What aspects?
 ```
 
 **✅ Do**:
 ```bash
-sa_task "review UserController.ts focusing on security vulnerabilities, input validation, and error handling"
+buddy_do "review UserController.ts focusing on security vulnerabilities, input validation, and error handling"
 ```
 
 **Why**: Context enables more focused and valuable agent work.
@@ -80,12 +80,12 @@ sa_task "review UserController.ts focusing on security vulnerabilities, input va
 
 **❌ Vague**:
 ```bash
-sa_task "add caching"
+buddy_do "add caching"
 ```
 
 **✅ Specific**:
 ```bash
-sa_task "add Redis caching to product API with 5-minute TTL and cache invalidation on product updates"
+buddy_do "add Redis caching to product API with 5-minute TTL and cache invalidation on product updates"
 ```
 
 **Include**:
@@ -110,11 +110,11 @@ sa_task "add Redis caching to product API with 5-minute TTL and cache invalidati
 
 **Example**:
 ```bash
-sa_task "design API endpoints for blog post management (CRUD operations)"
-sa_task "implement blog post API with validation, authentication, and authorization"
-sa_task "write comprehensive tests for blog API covering CRUD, auth, and edge cases"
-sa_task "review blog API code for security, performance, and best practices"
-sa_task "set up CI/CD pipeline for blog service deployment"
+buddy_do "design API endpoints for blog post management (CRUD operations)"
+buddy_do "implement blog post API with validation, authentication, and authorization"
+buddy_do "write comprehensive tests for blog API covering CRUD, auth, and edge cases"
+buddy_do "review blog API code for security, performance, and best practices"
+buddy_do "set up CI/CD pipeline for blog service deployment"
 ```
 
 ---
@@ -129,9 +129,9 @@ sa_task "set up CI/CD pipeline for blog service deployment"
 
 **Example**:
 ```bash
-sa_task "debug checkout failure where payment succeeds but order is not created"
-sa_task "fix order creation race condition in payment webhook handler"
-sa_task "write regression test for payment webhook race condition"
+buddy_do "debug checkout failure where payment succeeds but order is not created"
+buddy_do "fix order creation race condition in payment webhook handler"
+buddy_do "write regression test for payment webhook race condition"
 ```
 
 ---
@@ -147,10 +147,10 @@ sa_task "write regression test for payment webhook race condition"
 
 **Example**:
 ```bash
-sa_task "analyze UserService class for code smells and refactoring opportunities"
-sa_task "refactor UserService to separate concerns using repository pattern and service layer"
-sa_task "write tests for refactored UserService maintaining 100% code coverage"
-sa_task "review refactored code ensuring improved maintainability"
+buddy_do "analyze UserService class for code smells and refactoring opportunities"
+buddy_do "refactor UserService to separate concerns using repository pattern and service layer"
+buddy_do "write tests for refactored UserService maintaining 100% code coverage"
+buddy_do "review refactored code ensuring improved maintainability"
 ```
 
 ---
@@ -249,17 +249,17 @@ sa_task "review refactored code ensuring improved maintainability"
 
 Instead of one giant task:
 ```bash
-❌ sa_task "implement complete user management system with registration, login, profile, password reset, email verification, and admin panel"
+❌ buddy_do "implement complete user management system with registration, login, profile, password reset, email verification, and admin panel"
 ```
 
 Break into logical steps:
 ```bash
-✅ sa_task "design user management API endpoints"
-✅ sa_task "implement user registration with validation"
-✅ sa_task "implement login with JWT authentication"
-✅ sa_task "implement profile management"
-✅ sa_task "implement password reset flow"
-✅ sa_task "write comprehensive tests for user management"
+✅ buddy_do "design user management API endpoints"
+✅ buddy_do "implement user registration with validation"
+✅ buddy_do "implement login with JWT authentication"
+✅ buddy_do "implement profile management"
+✅ buddy_do "implement password reset flow"
+✅ buddy_do "write comprehensive tests for user management"
 ```
 
 **Why**: Better agent selection, clearer results, easier debugging
@@ -269,7 +269,7 @@ Break into logical steps:
 ### 2. Use Evolution Dashboard
 
 ```bash
-sa_dashboard
+buddy_dashboard
 ```
 
 **Look for**:
@@ -304,12 +304,12 @@ Use keywords that trigger the right agent:
 
 **❌ Vague**:
 ```bash
-sa_task "improve performance"
+buddy_do "improve performance"
 ```
 
 **✅ Clear Success Criteria**:
 ```bash
-sa_task "improve homepage load time from 3s to under 1s measured by Lighthouse performance score"
+buddy_do "improve homepage load time from 3s to under 1s measured by Lighthouse performance score"
 ```
 
 **Benefits**:
@@ -331,7 +331,7 @@ code-reviewer "write unit tests"  # Wrong! Use test-writer
 
 **✅ Do**:
 ```bash
-sa_task "write unit tests for authentication"  # Let router choose
+buddy_do "write unit tests for authentication"  # Let router choose
 ```
 
 ---
@@ -340,14 +340,14 @@ sa_task "write unit tests for authentication"  # Let router choose
 
 **❌ Don't**:
 ```bash
-sa_task "fix the thing"
-sa_task "add that feature we discussed"
+buddy_do "fix the thing"
+buddy_do "add that feature we discussed"
 ```
 
 **✅ Do**:
 ```bash
-sa_task "fix race condition in order creation where concurrent requests create duplicate orders"
-sa_task "add dark mode toggle to settings page with localStorage persistence"
+buddy_do "fix race condition in order creation where concurrent requests create duplicate orders"
+buddy_do "add dark mode toggle to settings page with localStorage persistence"
 ```
 
 ---
@@ -360,7 +360,7 @@ sa_task "add dark mode toggle to settings page with localStorage persistence"
 - Skip pattern review
 
 **✅ Do**:
-- Check `sa_dashboard` regularly
+- Check `buddy_dashboard` regularly
 - Notice successful patterns
 - Adapt workflow based on learning
 
@@ -370,15 +370,15 @@ sa_task "add dark mode toggle to settings page with localStorage persistence"
 
 **❌ Don't**:
 ```bash
-sa_task "implement login, fix checkout bug, optimize database, and write documentation"
+buddy_do "implement login, fix checkout bug, optimize database, and write documentation"
 ```
 
 **✅ Do**:
 ```bash
-sa_task "implement JWT-based login with refresh tokens"
-sa_task "debug checkout payment processing timeout"
-sa_task "optimize product search query with proper indexes"
-sa_task "write API documentation for user endpoints"
+buddy_do "implement JWT-based login with refresh tokens"
+buddy_do "debug checkout payment processing timeout"
+buddy_do "optimize product search query with proper indexes"
+buddy_do "write API documentation for user endpoints"
 ```
 
 ---
@@ -388,12 +388,12 @@ sa_task "write API documentation for user endpoints"
 ### Key Metrics to Track
 
 1. **Task Success Rate**
-   - View in `sa_dashboard --metrics`
+   - View in `buddy_dashboard --metrics`
    - Target: >90% success rate
 
 2. **Agent Selection Accuracy**
    - Are tasks going to the right agent?
-   - Check via `sa_dashboard --patterns`
+   - Check via `buddy_dashboard --patterns`
 
 3. **Time to Completion**
    - Are tasks completing faster over time?
@@ -401,7 +401,7 @@ sa_task "write API documentation for user endpoints"
 
 4. **Pattern Emergence**
    - Are common workflows being recognized?
-   - Check `sa_dashboard --patterns`
+   - Check `buddy_dashboard --patterns`
 
 ---
 
@@ -409,7 +409,7 @@ sa_task "write API documentation for user endpoints"
 
 **Weekly Review**:
 ```bash
-sa_dashboard --timeframe week
+buddy_dashboard --timeframe week
 ```
 
 **Questions to Ask**:
@@ -433,25 +433,25 @@ For complex features, plan the full sequence:
 
 ```bash
 # 1. Architecture
-sa_task "design microservices architecture for order processing system"
+buddy_do "design microservices architecture for order processing system"
 
 # 2. Database
-sa_task "design PostgreSQL schema for orders, products, and inventory"
+buddy_do "design PostgreSQL schema for orders, products, and inventory"
 
 # 3. API
-sa_task "design REST API endpoints for order management"
+buddy_do "design REST API endpoints for order management"
 
 # 4. Implementation
-sa_task "implement order creation API with inventory validation"
+buddy_do "implement order creation API with inventory validation"
 
 # 5. Testing
-sa_task "write integration tests for order creation flow"
+buddy_do "write integration tests for order creation flow"
 
 # 6. Review
-sa_task "review order system for race conditions and edge cases"
+buddy_do "review order system for race conditions and edge cases"
 
 # 7. Deploy
-sa_task "set up CI/CD for order service with staging environment"
+buddy_do "set up CI/CD for order service with staging environment"
 ```
 
 ---
@@ -462,15 +462,15 @@ Use agent output to refine next task:
 
 ```bash
 # Initial
-sa_task "design user management API"
+buddy_do "design user management API"
 # → Output suggests using OAuth
 
 # Refined
-sa_task "research OAuth 2.0 implementation best practices for user management"
+buddy_do "research OAuth 2.0 implementation best practices for user management"
 # → Output recommends specific libraries
 
 # Implemented
-sa_task "implement user authentication using OAuth 2.0 with passport.js"
+buddy_do "implement user authentication using OAuth 2.0 with passport.js"
 ```
 
 ---
@@ -481,16 +481,16 @@ For independent features:
 
 ```bash
 # Track 1: Frontend
-sa_task "implement user profile UI with React hooks"
+buddy_do "implement user profile UI with React hooks"
 
 # Track 2: Backend (parallel)
-sa_task "implement user profile API endpoints"
+buddy_do "implement user profile API endpoints"
 
 # Track 3: Testing (parallel)
-sa_task "write E2E tests for user profile"
+buddy_do "write E2E tests for user profile"
 
 # Merge point
-sa_task "integrate frontend and backend for user profile"
+buddy_do "integrate frontend and backend for user profile"
 ```
 
 ---
@@ -500,9 +500,9 @@ sa_task "integrate frontend and backend for user profile"
 ### Quick Access
 
 ```bash
-sa_agents                  # View all agents
-sa_dashboard               # Check evolution
-sa_skills                  # List available skills
+buddy_agents                  # View all agents
+buddy_dashboard               # Check evolution
+buddy_skills                  # List available skills
 ```
 
 ### Documentation

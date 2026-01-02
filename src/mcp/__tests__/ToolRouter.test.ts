@@ -105,12 +105,6 @@ describe('ToolRouter', () => {
     } as unknown as GitHandlers;
 
     mockToolHandlers = {
-      handleSmartRouteTask: vi.fn().mockResolvedValue({
-        content: [{ type: 'text', text: 'Task routed' }],
-      }),
-      handleEvolutionDashboard: vi.fn().mockResolvedValue({
-        content: [{ type: 'text', text: 'Dashboard' }],
-      }),
       handleListAgents: vi.fn().mockResolvedValue({
         content: [{ type: 'text', text: 'Agents list' }],
       }),
@@ -192,7 +186,7 @@ describe('ToolRouter', () => {
 
       await expect(async () => {
         await toolRouter.routeToolCall({
-          name: 'sa_task',
+          name: 'buddy_do',
           arguments: { taskDescription: 'test' },
         });
       }).rejects.toThrow(OperationError);
@@ -200,7 +194,7 @@ describe('ToolRouter', () => {
 
     it('should route valid tool calls', async () => {
       const result = await toolRouter.routeToolCall({
-        name: 'sa_task',
+        name: 'buddy_do',
         arguments: { taskDescription: 'Create a component' },
       });
 
@@ -209,30 +203,10 @@ describe('ToolRouter', () => {
     });
   });
 
-  describe('Smart Agents Tools', () => {
-    it('should route sa_task', async () => {
+  describe('Buddy Tools', () => {
+    it('should route buddy_agents', async () => {
       const result = await toolRouter.routeToolCall({
-        name: 'sa_task',
-        arguments: { taskDescription: 'Test task' },
-      });
-
-      expect(mockToolHandlers.handleSmartRouteTask).toHaveBeenCalled();
-      expect(result.content[0].text).toBe('Task routed');
-    });
-
-    it('should route sa_dashboard', async () => {
-      const result = await toolRouter.routeToolCall({
-        name: 'sa_dashboard',
-        arguments: {},
-      });
-
-      expect(mockToolHandlers.handleEvolutionDashboard).toHaveBeenCalled();
-      expect(result.content[0].text).toBe('Dashboard');
-    });
-
-    it('should route sa_agents', async () => {
-      const result = await toolRouter.routeToolCall({
-        name: 'sa_agents',
+        name: 'buddy_agents',
         arguments: {},
       });
 
@@ -240,9 +214,9 @@ describe('ToolRouter', () => {
       expect(result.content[0].text).toBe('Agents list');
     });
 
-    it('should route sa_skills', async () => {
+    it('should route buddy_skills', async () => {
       const result = await toolRouter.routeToolCall({
-        name: 'sa_skills',
+        name: 'buddy_skills',
         arguments: { filter: 'all' },
       });
 
@@ -250,9 +224,9 @@ describe('ToolRouter', () => {
       expect(result.content[0].text).toBe('Skills list');
     });
 
-    it('should route sa_uninstall', async () => {
+    it('should route buddy_uninstall', async () => {
       const result = await toolRouter.routeToolCall({
-        name: 'sa_uninstall',
+        name: 'buddy_uninstall',
         arguments: {},
       });
 
@@ -511,26 +485,6 @@ describe('ToolRouter', () => {
     });
   });
 
-  describe('Legacy Tool Names', () => {
-    it('should support smart_route_task (legacy)', async () => {
-      const result = await toolRouter.routeToolCall({
-        name: 'smart_route_task',
-        arguments: { taskDescription: 'Test' },
-      });
-
-      expect(mockToolHandlers.handleSmartRouteTask).toHaveBeenCalled();
-    });
-
-    it('should support evolution_dashboard (legacy)', async () => {
-      const result = await toolRouter.routeToolCall({
-        name: 'evolution_dashboard',
-        arguments: {},
-      });
-
-      expect(mockToolHandlers.handleEvolutionDashboard).toHaveBeenCalled();
-    });
-  });
-
   describe('Error Handling', () => {
     it('should handle handler exceptions gracefully', async () => {
       vi.mocked(mockToolHandlers.handleListAgents).mockRejectedValue(
@@ -539,7 +493,7 @@ describe('ToolRouter', () => {
 
       await expect(async () => {
         await toolRouter.routeToolCall({
-          name: 'sa_agents',
+          name: 'buddy_agents',
           arguments: {},
         });
       }).rejects.toThrow('Handler error');
@@ -548,7 +502,7 @@ describe('ToolRouter', () => {
     it('should handle invalid JSON in arguments', async () => {
       await expect(async () => {
         await toolRouter.routeToolCall({
-          name: 'sa_task',
+          name: 'buddy_do',
           arguments: 'invalid' as any,
         });
       }).rejects.toThrow();
@@ -602,7 +556,7 @@ describe('ToolRouter', () => {
 
     it('should handle null in arguments', async () => {
       const result = await toolRouter.routeToolCall({
-        name: 'sa_task',
+        name: 'buddy_do',
         arguments: { taskDescription: null } as any,
       });
 

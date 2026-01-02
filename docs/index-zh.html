@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code Buddy - 你的友善 AI 編程助手</title>
+    <meta name="description" content="免費開源的 MCP 伺服器，為 Claude Code 提供智能路由、記憶管理和 22 個專業 Agents。你的友善 AI 編程夥伴。">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Claude Code Buddy - 你的友善 AI 編程助手">
+    <meta property="og:description" content="智能任務路由、記憶管理和 22 個以上專業 Agents 為 Claude Code 賦能">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://ccb.pcircle.ai">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%);
+        }
+
+        /* Glassmorphism Effects */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+        }
+
+        .glass-card-hover {
+            transition: all 0.3s ease;
+        }
+
+        .glass-card-hover:hover {
+            background: rgba(255, 255, 255, 0.35);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(31, 38, 135, 0.2);
+        }
+
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* Warm Gradient Backgrounds */
+        .warm-gradient {
+            background: linear-gradient(135deg, #FEF3C7 0%, #DBEAFE 50%, #FECACA 100%);
+        }
+
+        .hero-gradient {
+            background: linear-gradient(135deg, #EFF6FF 0%, #FEF3C7 50%, #FED7AA 100%);
+        }
+
+        /* Smooth Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        /* Soft Rounded Buttons */
+        .btn-primary {
+            background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(10px);
+            color: #1E293B;
+            padding: 1rem 2.5rem;
+            border-radius: 1rem;
+            font-weight: 600;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.7);
+            transform: translateY(-2px);
+        }
+
+        /* Code Blocks with Glass Effect */
+        pre {
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            overflow-x: auto;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+        }
+
+        code {
+            color: #E2E8F0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .inline-code {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3B82F6;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.875em;
+            font-weight: 500;
+        }
+
+        /* Syntax Highlighting */
+        .keyword { color: #60A5FA; }
+        .string { color: #FCA5A5; }
+        .comment { color: #94A3B8; }
+
+        /* Language Switcher */
+        .lang-switcher {
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 0.75rem;
+            padding: 0.5rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .lang-switcher:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .lang-active {
+            color: #3B82F6;
+            font-weight: 700;
+        }
+
+        /* Stat Cards */
+        .stat-card {
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(15px);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <!-- Navigation -->
+    <nav class="glass-nav sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <span class="text-2xl font-bold text-gray-900">🤖 Claude Code Buddy</span>
+                </div>
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="#features" class="text-gray-700 hover:text-blue-600 transition font-medium">功能特色</a>
+                    <a href="#how-it-works" class="text-gray-700 hover:text-blue-600 transition font-medium">運作原理</a>
+                    <a href="#quickstart" class="text-gray-700 hover:text-blue-600 transition font-medium">快速開始</a>
+                    <div class="lang-switcher">
+                        <a href="index.html" class="text-sm font-semibold text-gray-700 hover:text-blue-600">EN</a>
+                        <span class="text-gray-400 mx-1">/</span>
+                        <span class="text-sm font-semibold lang-active">繁中</span>
+                    </div>
+                    <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="btn-primary inline-flex items-center space-x-2">
+                        <span>⭐</span>
+                        <span>GitHub 星標</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-gradient py-24 md:py-32">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center fade-in-up">
+                <!-- Badge -->
+                <div class="inline-flex items-center space-x-2 bg-white bg-opacity-40 backdrop-blur-md px-6 py-3 rounded-full mb-8 border border-white border-opacity-30">
+                    <span class="text-green-600 font-bold text-sm">🎉 免費開源</span>
+                    <span class="text-gray-400">•</span>
+                    <span class="text-blue-600 font-semibold text-sm">AGPL-3.0 授權</span>
+                </div>
+
+                <h1 class="text-5xl md:text-7xl font-bold text-gray-900 mb-8 leading-tight">
+                    你的友善 AI 編程夥伴<br>
+                    <span class="text-blue-600">專為 Claude Code 打造</span>
+                </h1>
+
+                <p class="text-xl md:text-2xl text-gray-700 mb-12 max-w-3xl mx-auto leading-relaxed">
+                    為 Claude Code 增強<strong>智能任務路由</strong>、<strong>持久記憶</strong>和 <strong>22 個專業 Agents</strong>。
+                    將你的 AI 助手轉變為<strong>專案感知的團隊成員</strong>，永不遺忘。
+                </p>
+
+                <!-- Key Benefits Pills -->
+                <div class="flex flex-wrap justify-center gap-4 mb-12">
+                    <div class="glass-card px-6 py-3 rounded-full">
+                        <span class="text-gray-800 font-semibold">💡 智能化</span>
+                    </div>
+                    <div class="glass-card px-6 py-3 rounded-full">
+                        <span class="text-gray-800 font-semibold">🧠 記憶力</span>
+                    </div>
+                    <div class="glass-card px-6 py-3 rounded-full">
+                        <span class="text-gray-800 font-semibold">⚡ 高效率</span>
+                    </div>
+                </div>
+
+                <!-- CTA Buttons -->
+                <div class="flex flex-col sm:flex-row justify-center gap-4 mb-12">
+                    <a href="#quickstart" class="btn-primary inline-flex items-center justify-center space-x-2">
+                        <span>🚀</span>
+                        <span>免費開始使用</span>
+                    </a>
+                    <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="btn-secondary inline-flex items-center justify-center space-x-2">
+                        <span>📖</span>
+                        <span>查看文檔</span>
+                    </a>
+                </div>
+
+                <!-- Quick Install -->
+                <div class="max-w-3xl mx-auto">
+                    <div class="glass-card rounded-2xl p-6 text-left">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-sm font-semibold text-gray-700">快速安裝</span>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-500 text-white">
+                                2 分鐘
+                            </span>
+                        </div>
+                        <pre><code><span class="comment"># 複製儲存庫</span>
+<span class="keyword">git</span> clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
+<span class="keyword">cd</span> claude-code-buddy
+
+<span class="comment"># 執行互動式安裝程式</span>
+./scripts/install.sh</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="py-16 -mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="stat-card glass-card-hover">
+                    <div class="text-5xl font-bold text-blue-600 mb-2">40%</div>
+                    <div class="text-gray-700 font-semibold">Token 成本節省</div>
+                    <div class="text-gray-500 text-sm mt-2">透過 Ollama 混合路由</div>
+                </div>
+                <div class="stat-card glass-card-hover">
+                    <div class="text-5xl font-bold text-orange-600 mb-2">22+</div>
+                    <div class="text-gray-700 font-semibold">專業 Agents</div>
+                    <div class="text-gray-500 text-sm mt-2">適用於各種開發任務</div>
+                </div>
+                <div class="stat-card glass-card-hover">
+                    <div class="text-5xl font-bold text-green-600 mb-2">100%</div>
+                    <div class="text-gray-700 font-semibold">免費開源</div>
+                    <div class="text-gray-500 text-sm mt-2">AGPL-3.0 授權</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">強大功能</h2>
+                <p class="text-xl text-gray-600">智能 AI 輔助開發所需的一切功能</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Feature 1: Intelligent Task Routing -->
+                <div class="glass-card rounded-2xl p-8 glass-card-hover">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-3xl mb-6 float-animation">
+                        ⚡
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">智能任務路由</h3>
+                    <p class="text-gray-700 mb-4 leading-relaxed">
+                        Ollama + Claude 混合路由節省 40% token 成本。簡單任務使用本地 Ollama 模型，複雜任務使用 Claude Sonnet 4.5。
+                    </p>
+                    <div class="bg-white bg-opacity-50 rounded-lg p-4">
+                        <div class="text-sm text-gray-600 space-y-2">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-green-500">✓</span>
+                                <span>簡單代碼：<code class="inline-code">qwen2.5-coder:14b</code></span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-green-500">✓</span>
+                                <span>複雜任務：<code class="inline-code">Claude Sonnet 4.5</code></span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-green-500">✓</span>
+                                <span>基於複雜度的自動路由</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature 2: Memory Management -->
+                <div class="glass-card rounded-2xl p-8 glass-card-hover">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-3xl mb-6 float-animation" style="animation-delay: 0.2s;">
+                        🧠
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">永不遺忘</h3>
+                    <p class="text-gray-700 mb-4 leading-relaxed">
+                        三層記憶系統記住你的架構、決策和編程模式，跨所有對話保持一致。
+                    </p>
+                    <div class="space-y-3">
+                        <div class="bg-white bg-opacity-50 rounded-lg p-3">
+                            <div class="font-semibold text-gray-900">知識圖譜</div>
+                            <div class="text-sm text-gray-600">決策、替代方案、權衡分析</div>
+                        </div>
+                        <div class="bg-white bg-opacity-50 rounded-lg p-3">
+                            <div class="font-semibold text-gray-900">RAG 搜尋</div>
+                            <div class="text-sm text-gray-600">語義化程式碼庫搜尋</div>
+                        </div>
+                        <div class="bg-white bg-opacity-50 rounded-lg p-3">
+                            <div class="font-semibold text-gray-900">專案上下文</div>
+                            <div class="text-sm text-gray-600">標準與慣例</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature 3: 22 Specialized Agents -->
+                <div class="glass-card rounded-2xl p-8 glass-card-hover md:col-span-2">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-3xl mb-6 float-animation" style="animation-delay: 0.4s;">
+                        👥
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">22 個專業 Agents</h3>
+                    <p class="text-gray-700 mb-6 leading-relaxed">
+                        根據任務類型自動路由到專業 Agents。每個 Agent 都針對特定開發場景進行訓練。
+                    </p>
+                    <div class="grid md:grid-cols-4 gap-4">
+                        <div class="bg-white bg-opacity-50 rounded-lg p-4">
+                            <div class="font-semibold text-gray-900 mb-2">code-reviewer</div>
+                            <div class="text-sm text-gray-600">安全性、品質、反模式檢測</div>
+                        </div>
+                        <div class="bg-white bg-opacity-50 rounded-lg p-4">
+                            <div class="font-semibold text-gray-900 mb-2">debugger</div>
+                            <div class="text-sm text-gray-600">系統性除錯</div>
+                        </div>
+                        <div class="bg-white bg-opacity-50 rounded-lg p-4">
+                            <div class="font-semibold text-gray-900 mb-2">ui-designer</div>
+                            <div class="text-sm text-gray-600">UI/UX、無障礙設計</div>
+                        </div>
+                        <div class="bg-white bg-opacity-50 rounded-lg p-4">
+                            <div class="font-semibold text-gray-900 mb-2">architect</div>
+                            <div class="text-sm text-gray-600">系統設計、模式</div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-4 text-gray-500 italic">...還有 18 個專業 Agents</div>
+                </div>
+
+                <!-- Feature 4: Beginner-Friendly Git -->
+                <div class="glass-card rounded-2xl p-8 glass-card-hover">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-3xl mb-6 float-animation" style="animation-delay: 0.6s;">
+                        🔧
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">新手友善的 Git</h3>
+                    <p class="text-gray-700 mb-4 leading-relaxed">
+                        8 個使用簡單語言的 Git 工具。無需複雜的 Git 命令。
+                    </p>
+                    <div class="glass-card rounded-lg p-4">
+                        <pre class="text-sm"><code><span class="comment"># 儲存你的工作</span>
+git-save-work <span class="string">"新增登入功能"</span>
+
+<span class="comment"># 查看版本</span>
+git-list-versions
+
+<span class="comment"># 回到版本 3</span>
+git-go-back 3</code></pre>
+                    </div>
+                </div>
+
+                <!-- Feature 5: Session Health -->
+                <div class="glass-card rounded-2xl p-8 glass-card-hover">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-3xl mb-6 float-animation" style="animation-delay: 0.8s;">
+                        📊
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">對話健康監控</h3>
+                    <p class="text-gray-700 mb-4 leading-relaxed">
+                        監控 Claude Code 的 200K token 限制，透過智能警告防止崩潰。
+                    </p>
+                    <ul class="space-y-2">
+                        <li class="flex items-start space-x-2">
+                            <span class="text-green-500 text-lg">✓</span>
+                            <span class="text-gray-700">90% 容量時自動重載上下文</span>
+                        </li>
+                        <li class="flex items-start space-x-2">
+                            <span class="text-green-500 text-lg">✓</span>
+                            <span class="text-gray-700">每個 Agent 的 token 使用追蹤</span>
+                        </li>
+                        <li class="flex items-start space-x-2">
+                            <span class="text-green-500 text-lg">✓</span>
+                            <span class="text-gray-700">成功率分析</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how-it-works" class="py-20 warm-gradient">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">運作原理</h2>
+                <p class="text-xl text-gray-600">簡單的工作流程，強大的結果</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Step 1 -->
+                <div class="glass-card rounded-2xl p-8 text-center glass-card-hover">
+                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white text-2xl font-bold flex items-center justify-center mx-auto mb-6">
+                        1
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">自然提問</h3>
+                    <p class="text-gray-700">
+                        像平常一樣與 Claude Code 對話。CCB 會聆聽並理解你的意圖。
+                    </p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="glass-card rounded-2xl p-8 text-center glass-card-hover">
+                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-orange-700 text-white text-2xl font-bold flex items-center justify-center mx-auto mb-6">
+                        2
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">智能路由</h3>
+                    <p class="text-gray-700">
+                        CCB 分析任務並自動路由到最佳 Agent 或模型。
+                    </p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="glass-card rounded-2xl p-8 text-center glass-card-hover">
+                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-green-700 text-white text-2xl font-bold flex items-center justify-center mx-auto mb-6">
+                        3
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">學習與改進</h3>
+                    <p class="text-gray-700">
+                        你的反饋會教導 CCB 學習你的偏好和專案模式。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Important Notice -->
+    <section class="py-16">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="glass-card rounded-2xl p-8 border-l-4 border-purple-500">
+                <div class="flex items-start space-x-4">
+                    <div class="text-4xl">💡</div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-3">核心功能無需 API Key</h3>
+                        <p class="text-gray-700 mb-4 leading-relaxed">
+                            Claude Code Buddy 使用你現有的 <strong>Claude Code 訂閱</strong>。
+                            所有 22 個 Agents、記憶系統和任務路由功能開箱即用。
+                        </p>
+                        <div class="bg-white bg-opacity-50 rounded-lg p-4">
+                            <p class="text-gray-600 text-sm">
+                                <strong>選配增強功能：</strong>RAG（檢索增強生成）功能需要 OpenAI API Key
+                                以增強程式碼庫搜尋能力。典型成本：小型至中型專案每月約 $0.10-$1.00。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Start -->
+    <section id="quickstart" class="py-20 warm-gradient">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">快速開始</h2>
+                <p class="text-xl text-gray-600">只需 <strong>2 分鐘</strong>即可開始使用</p>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Step 1 -->
+                <div class="glass-card rounded-2xl p-8 glass-card-hover">
+                    <div class="flex items-start space-x-6">
+                        <div class="flex-shrink-0">
+                            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white text-xl font-bold flex items-center justify-center">
+                                1
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-2xl font-bold text-gray-900 mb-4">前置需求</h3>
+                            <p class="text-gray-700 mb-4">Node.js 18+ 和 Claude Code 已安裝</p>
+                            <div class="glass-card rounded-xl p-5">
+                                <pre><code><span class="comment"># 檢查 Node.js 版本</span>
+node --version  <span class="comment"># 應為 v18 或更高</span></code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="glass-card rounded-2xl p-8 glass-card-hover">
+                    <div class="flex items-start space-x-6">
+                        <div class="flex-shrink-0">
+                            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500 to-orange-700 text-white text-xl font-bold flex items-center justify-center">
+                                2
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-2xl font-bold text-gray-900 mb-4">複製與安裝</h3>
+                            <div class="glass-card rounded-xl p-5">
+                                <pre><code><span class="comment"># 複製儲存庫</span>
+<span class="keyword">git</span> clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
+<span class="keyword">cd</span> claude-code-buddy
+
+<span class="comment"># 執行互動式安裝程式（處理所有事項）</span>
+./scripts/install.sh</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="glass-card rounded-2xl p-8 glass-card-hover">
+                    <div class="flex items-start space-x-6">
+                        <div class="flex-shrink-0">
+                            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500 to-green-700 text-white text-xl font-bold flex items-center justify-center">
+                                3
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-2xl font-bold text-gray-900 mb-4">開始使用</h3>
+                            <p class="text-gray-700 mb-4">重新啟動 Claude Code 並嘗試這些 Buddy 命令：</p>
+                            <div class="grid md:grid-cols-2 gap-3">
+                                <div class="bg-white bg-opacity-60 rounded-lg p-4">
+                                    <code class="text-blue-700 font-semibold">"分析我的程式碼庫架構"</code>
+                                </div>
+                                <div class="bg-white bg-opacity-60 rounded-lg p-4">
+                                    <code class="text-blue-700 font-semibold">"為 auth.ts 生成測試"</code>
+                                </div>
+                                <div class="bg-white bg-opacity-60 rounded-lg p-4">
+                                    <code class="text-blue-700 font-semibold">"審查此代碼的安全性"</code>
+                                </div>
+                                <div class="bg-white bg-opacity-60 rounded-lg p-4">
+                                    <code class="text-blue-700 font-semibold">"優化此資料庫查詢"</code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 bg-gradient-to-br from-blue-600 via-blue-700 to-purple-800 text-white">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-4xl md:text-5xl font-bold mb-6">準備好轉變你的 Claude Code 了嗎？</h2>
+            <p class="text-xl md:text-2xl mb-10 text-blue-100 leading-relaxed">
+                立即安裝 Claude Code Buddy。<strong>免費、開源</strong>，2 分鐘即可就緒。
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="bg-white text-blue-600 px-10 py-4 rounded-xl text-lg font-bold hover:bg-gray-100 transition inline-flex items-center justify-center space-x-2 shadow-xl">
+                    <span>🚀</span>
+                    <span>免費開始使用</span>
+                </a>
+                <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="bg-orange-500 hover:bg-orange-600 text-white px-10 py-4 rounded-xl text-lg font-bold transition inline-flex items-center justify-center space-x-2 shadow-xl">
+                    <span>⭐</span>
+                    <span>GitHub 星標</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gradient-to-br from-gray-900 to-gray-800 text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-10 mb-12">
+                <div>
+                    <h4 class="font-bold text-lg mb-5 text-gray-100">專案</h4>
+                    <ul class="space-y-3">
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="text-gray-400 hover:text-white transition">GitHub 儲存庫</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/releases" class="text-gray-400 hover:text-white transition">發布版本</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/CHANGELOG.md" class="text-gray-400 hover:text-white transition">變更日誌</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/ROADMAP.md" class="text-gray-400 hover:text-white transition">發展藍圖</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-5 text-gray-100">文檔</h4>
+                    <ul class="space-y-3">
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy#quick-start-2-minutes" class="text-gray-400 hover:text-white transition">快速開始</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/ARCHITECTURE.md" class="text-gray-400 hover:text-white transition">架構說明</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/API.md" class="text-gray-400 hover:text-white transition">API 參考</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/FAQ.md" class="text-gray-400 hover:text-white transition">常見問題</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-5 text-gray-100">社群</h4>
+                    <ul class="space-y-3">
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/discussions" class="text-gray-400 hover:text-white transition">討論區</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/CONTRIBUTING.md" class="text-gray-400 hover:text-white transition">貢獻指南</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/CODE_OF_CONDUCT.md" class="text-gray-400 hover:text-white transition">行為準則</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/graphs/contributors" class="text-gray-400 hover:text-white transition">貢獻者</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-5 text-gray-100">PCIRCLE AI</h4>
+                    <ul class="space-y-3">
+                        <li><a href="https://pcircle.ai" class="text-gray-400 hover:text-white transition">公司網站</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI" class="text-gray-400 hover:text-white transition">GitHub 組織</a></li>
+                        <li><a href="https://toonify.pcircle.ai" class="text-gray-400 hover:text-white transition">Toonify MCP</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-700 pt-10">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="mb-5 md:mb-0">
+                        <p class="text-gray-400 text-sm">
+                            © 2026 PCIRCLE AI. 授權於
+                            <a href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/LICENSE" class="text-blue-400 hover:text-blue-300 transition">AGPL-3.0</a>
+                        </p>
+                    </div>
+                    <div class="flex space-x-6">
+                        <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="text-gray-400 hover:text-white transition" aria-label="GitHub">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

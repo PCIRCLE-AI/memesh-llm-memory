@@ -381,13 +381,13 @@ A: No - CCB uses your existing Claude Code subscription. It helps optimize token
 A: Claude Code treats every task the same. CCB adds task-specific expertise, memory, and learning.
 
 **Q: Is my code private?**
-A: Yes. Everything runs locally through your Claude Code subscription. Optional RAG feature uses OpenAI API for embeddings only.
+A: Yes. Everything runs locally through your Claude Code subscription. Optional RAG feature offers two embedding options: Local Ollama (no API key, fully private) or OpenAI API (bring your own key).
 
 **Q: What if I don't like it?**
 A: Remove it from your MCP config. No lock-in, no vendor dependency.
 
 **Q: How much does it cost?**
-A: CCB is free and open-source (AGPL-3.0). Works with your existing Claude Code subscription. Optional RAG feature requires OpenAI API key.
+A: CCB is free and open-source (AGPL-3.0). Works with your existing Claude Code subscription. Optional RAG feature is FREE - use local Ollama embeddings (no API key) or bring your own OpenAI API key.
 
 **Q: Can I customize the agents?**
 A: Absolutely! Prompt templates are in `src/core/PromptEnhancer.ts`. Evolution config in `src/evolution/AgentEvolutionConfig.ts`.

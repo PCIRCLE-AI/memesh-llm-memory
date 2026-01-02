@@ -388,13 +388,13 @@ npm run dashboard
 答：Claude Code 對所有任務一視同仁。CCB 增加了任務特定的專業知識、記憶和學習。
 
 **問：我的程式碼是私有的嗎？**
-答：是的。所有內容都透過你的 Claude Code 訂閱在本地執行。可選的 RAG 功能僅使用 OpenAI API 進行嵌入向量處理。
+答：是的。所有內容都透過你的 Claude Code 訂閱在本地執行。可選的 RAG 功能提供兩種嵌入選項：本地 Ollama（無需 API 金鑰，完全私密）或 OpenAI API（自備金鑰）。
 
 **問：如果我不喜歡怎麼辦？**
 答：從你的 MCP 設定中移除它。沒有鎖定，沒有供應商依賴。
 
 **問：這要多少錢？**
-答：CCB 是免費且開源的（AGPL-3.0）。與你現有的 Claude Code 訂閱一起使用。可選的 RAG 功能需要 OpenAI API 金鑰。
+答：CCB 是免費且開源的（AGPL-3.0）。與你現有的 Claude Code 訂閱一起使用。可選的 RAG 功能是免費的 - 使用本地 Ollama 嵌入（無需 API 金鑰）或自備 OpenAI API 金鑰。
 
 **問：我可以自訂 agent 嗎？**
 答：當然！提示範本在 `src/core/PromptEnhancer.ts`。演化設定在 `src/evolution/AgentEvolutionConfig.ts`。

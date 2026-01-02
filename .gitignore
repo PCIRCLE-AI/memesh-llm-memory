@@ -45,6 +45,10 @@ chroma_db/
 *.db
 *.sqlite
 
+# Data directory (development databases and files)
+data/
+!data/.gitkeep
+
 # Test coverage
 coverage/
 .nyc_output/
@@ -101,6 +105,11 @@ docs/meetings/**
 docs/notes/**
 docs/wip/**
 docs/drafts/**
+docs/refactoring/**
+docs/architecture/**
+docs/diagrams/**
+docs/internal/**
+docs/design/**
 
 # Development artifacts - DO NOT PUSH
 *.plan.md
@@ -133,6 +142,19 @@ reports/
 *.test-report.md
 benchmarks/
 performance-reports/
+
+# Internal development scripts
+scripts/check-system-resources.js
+scripts/create-agent.sh
+scripts/e2e-resource-monitor.sh
+scripts/find-console-statements.py
+scripts/migrate-to-logger.sh
+scripts/refactor-console-to-logger.sh
+scripts/kill-zombie-vitest.sh
+scripts/user-acceptance-test.ts
+scripts/*-test.ts
+scripts/*-debug.*
+scripts/*-monitor.*
 
 # Meeting notes and personal docs
 meetings/

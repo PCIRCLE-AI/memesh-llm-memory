@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code Buddy - Open Source MCP Server for Intelligent AI Coding</title>
+    <meta name="description" content="Free & open-source MCP server that adds intelligence, memory, and task routing to Claude Code. AGPL-3.0 licensed. Transform Claude into a project-aware AI teammate.">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Claude Code Buddy - Intelligent MCP Server">
+    <meta property="og:description" content="Add memory, specialized agents, and intelligent task routing to Claude Code">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://ccb.pcircle.ai">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: JetBrains Mono + IBM Plex Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --color-primary: #2563EB;
+            --color-secondary: #3B82F6;
+            --color-cta: #F97316;
+            --color-cta-hover: #EA580C;
+            --color-bg-light: #F8FAFC;
+            --color-bg-dark: #0F172A;
+            --color-text-light: #1E293B;
+            --color-text-dark: #F8FAFC;
+            --color-border-light: #E2E8F0;
+            --color-border-dark: #334155;
+            --color-accent-blue: #DBEAFE;
+            --color-accent-orange: #FFEDD5;
+        }
+
+        * {
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        h1, h2, h3, h4, h5, h6, code, pre {
+            font-family: 'JetBrains Mono', 'Monaco', 'Courier New', monospace;
+        }
+
+        body {
+            background: var(--color-bg-light);
+            color: var(--color-text-light);
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background: var(--color-bg-dark);
+            color: var(--color-text-dark);
+        }
+
+        body.dark-mode .bg-white {
+            background: #1E293B !important;
+        }
+
+        body.dark-mode .bg-gray-50 {
+            background: #0F172A !important;
+        }
+
+        body.dark-mode .bg-gray-100 {
+            background: #334155 !important;
+        }
+
+        body.dark-mode .text-gray-900 {
+            color: #F8FAFC !important;
+        }
+
+        body.dark-mode .text-gray-700 {
+            color: #E2E8F0 !important;
+        }
+
+        body.dark-mode .text-gray-600 {
+            color: #CBD5E1 !important;
+        }
+
+        body.dark-mode .border-gray-200 {
+            border-color: #334155 !important;
+        }
+
+        /* Smooth Animations (200-300ms) */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Soft UI Shadows */
+        .soft-shadow {
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04),
+                        0 4px 16px rgba(15, 23, 42, 0.03);
+        }
+
+        body.dark-mode .soft-shadow {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3),
+                        0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .soft-shadow-hover {
+            transition: box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                        transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .soft-shadow-hover:hover {
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08),
+                        0 8px 32px rgba(15, 23, 42, 0.06);
+            transform: translateY(-2px);
+        }
+
+        body.dark-mode .soft-shadow-hover:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4),
+                        0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Bento Box Grid */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .bento-large {
+                grid-column: span 2;
+            }
+        }
+
+        /* CTA Button Styles */
+        .btn-primary {
+            background: var(--color-cta);
+            color: white;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-primary:hover {
+            background: var(--color-cta-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(249, 115, 22, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--color-primary);
+            color: var(--color-primary);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        body.dark-mode .btn-secondary {
+            border-color: var(--color-secondary);
+            color: var(--color-secondary);
+        }
+
+        body.dark-mode .btn-secondary:hover {
+            background: var(--color-secondary);
+        }
+
+        /* Code Blocks */
+        pre {
+            background: #1E293B;
+            border-radius: 12px;
+            padding: 1.5rem;
+            overflow-x: auto;
+            border: 1px solid #334155;
+        }
+
+        body.dark-mode pre {
+            background: #0F172A;
+            border-color: #1E293B;
+        }
+
+        code {
+            color: #E2E8F0;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .inline-code {
+            background: #E2E8F0;
+            color: #1E293B;
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875em;
+        }
+
+        body.dark-mode .inline-code {
+            background: #334155;
+            color: #F8FAFC;
+        }
+
+        /* Syntax Highlighting */
+        .keyword { color: #60A5FA; }
+        .string { color: #FCA5A5; }
+        .comment { color: #94A3B8; }
+        .function { color: #A78BFA; }
+
+        /* Badge Styles */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.375rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .badge-orange {
+            background: var(--color-cta);
+            color: white;
+        }
+
+        /* Dark Mode Toggle */
+        .dark-mode-toggle {
+            background: #E2E8F0;
+            border-radius: 9999px;
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: background 0.25s;
+        }
+
+        body.dark-mode .dark-mode-toggle {
+            background: #334155;
+        }
+
+        /* Hero Gradient */
+        .hero-gradient {
+            background: linear-gradient(135deg, #DBEAFE 0%, #EFF6FF 50%, #FFEDD5 100%);
+        }
+
+        body.dark-mode .hero-gradient {
+            background: linear-gradient(135deg, #1E3A8A 0%, #1E293B 50%, #7C2D12 100%);
+        }
+
+        /* Feature Icon Backgrounds */
+        .icon-blue {
+            background: var(--color-accent-blue);
+            color: var(--color-primary);
+        }
+
+        .icon-orange {
+            background: var(--color-accent-orange);
+            color: var(--color-cta);
+        }
+
+        body.dark-mode .icon-blue {
+            background: #1E3A8A;
+            color: #60A5FA;
+        }
+
+        body.dark-mode .icon-orange {
+            background: #7C2D12;
+            color: #FB923C;
+        }
+
+        /* Accessibility: Focus States */
+        a:focus, button:focus {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+
+        /* Grid System: 8pt base */
+        .grid-8pt {
+            padding: 0.5rem; /* 8px */
+        }
+
+        .grid-16pt {
+            padding: 1rem; /* 16px */
+        }
+
+        .grid-24pt {
+            padding: 1.5rem; /* 24px */
+        }
+
+        .grid-32pt {
+            padding: 2rem; /* 32px */
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <!-- Navigation -->
+    <nav class="bg-white dark:bg-gray-900 soft-shadow sticky top-0 z-50 backdrop-blur-sm bg-opacity-95">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <span class="text-xl font-bold text-gray-900">Claude Code Buddy</span>
+                    <span class="badge badge-primary">Open Source</span>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#features" class="text-gray-700 hover:text-blue-600 transition font-medium">Features</a>
+                    <a href="#quickstart" class="text-gray-700 hover:text-blue-600 transition font-medium">Quick Start</a>
+                    <a href="#pricing" class="text-gray-700 hover:text-blue-600 transition font-medium">Pricing</a>
+                    <a href="#contributing" class="text-gray-700 hover:text-blue-600 transition font-medium">Contributing</a>
+                    <button id="darkModeToggle" class="dark-mode-toggle" aria-label="Toggle dark mode">
+                        <span id="darkModeIcon">🌙</span>
+                    </button>
+                    <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="btn-primary px-6 py-2.5 rounded-lg font-semibold inline-flex items-center space-x-2">
+                        <span>⭐</span>
+                        <span>Star on GitHub</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-gradient py-20 md:py-28">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center fade-in-up">
+                <!-- GitHub Badges -->
+                <div class="flex justify-center flex-wrap gap-3 mb-8">
+                    <img src="https://img.shields.io/github/stars/PCIRCLE-AI/claude-code-buddy?style=social" alt="GitHub stars" loading="lazy">
+                    <img src="https://img.shields.io/github/forks/PCIRCLE-AI/claude-code-buddy?style=social" alt="GitHub forks" loading="lazy">
+                    <img src="https://img.shields.io/github/license/PCIRCLE-AI/claude-code-buddy" alt="License" loading="lazy">
+                    <img src="https://img.shields.io/badge/version-2.0.0-blue" alt="Version" loading="lazy">
+                </div>
+
+                <h1 class="text-5xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+                    Free & Open Source<br>
+                    <span class="text-blue-600">MCP Server for Claude Code</span>
+                </h1>
+
+                <p class="text-xl md:text-2xl text-gray-700 mb-10 max-w-3xl mx-auto font-light">
+                    Add intelligence, memory, and task routing to Claude Code. Transform it from a powerful assistant into a <strong>project-aware AI teammate</strong>.
+                </p>
+
+                <div class="flex flex-col sm:flex-row justify-center gap-4 mb-12">
+                    <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="btn-primary px-10 py-4 rounded-lg font-semibold text-lg inline-flex items-center justify-center space-x-2">
+                        <span>🚀</span>
+                        <span>Get Started Free</span>
+                    </a>
+                    <a href="#quickstart" class="btn-secondary px-10 py-4 rounded-lg text-lg font-semibold inline-flex items-center justify-center space-x-2">
+                        <span>📖</span>
+                        <span>View Documentation</span>
+                    </a>
+                </div>
+
+                <!-- Quick Install -->
+                <div class="bg-gray-900 rounded-xl p-6 max-w-3xl mx-auto text-left soft-shadow">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-gray-400 text-sm font-semibold">Quick Installation</span>
+                        <span class="badge" style="background: #10B981; color: white;">AGPL-3.0 License</span>
+                    </div>
+                    <pre><code><span class="comment"># Clone the repository</span>
+<span class="keyword">git</span> clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
+<span class="keyword">cd</span> claude-code-buddy
+
+<span class="comment"># Run the interactive installer</span>
+./scripts/install.sh</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Value Proposition -->
+    <section class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">What is Claude Code Buddy?</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    An <strong>MCP (Model Context Protocol)</strong> server that extends Claude Code with persistent memory, intelligent task routing, and specialized agent expertise.
+                </p>
+            </div>
+
+            <!-- Bento Box Grid: Core Value Props -->
+            <div class="bento-grid">
+                <div class="bg-blue-50 rounded-2xl p-8 soft-shadow-hover">
+                    <div class="w-14 h-14 icon-blue rounded-xl flex items-center justify-center text-3xl mb-5">🧠</div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Project Memory</h3>
+                    <p class="text-gray-700 leading-relaxed">
+                        Remembers your architecture decisions, coding patterns, and past solutions <strong>across sessions</strong>. No more repeating yourself.
+                    </p>
+                </div>
+
+                <div class="bg-orange-50 rounded-2xl p-8 soft-shadow-hover">
+                    <div class="w-14 h-14 icon-orange rounded-xl flex items-center justify-center text-3xl mb-5">🎯</div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Smart Task Routing</h3>
+                    <p class="text-gray-700 leading-relaxed">
+                        Automatically routes requests to <strong>22 specialized agents</strong> (code-reviewer, debugger, frontend-specialist) based on task type.
+                    </p>
+                </div>
+
+                <div class="bg-blue-50 rounded-2xl p-8 soft-shadow-hover">
+                    <div class="w-14 h-14 icon-blue rounded-xl flex items-center justify-center text-3xl mb-5">📈</div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Learning System</h3>
+                    <p class="text-gray-700 leading-relaxed">
+                        Learns from your feedback (👍/👎) and adapts to your <strong>project-specific patterns</strong> over time.
+                    </p>
+                </div>
+
+                <div class="bg-orange-50 rounded-2xl p-8 soft-shadow-hover">
+                    <div class="w-14 h-14 icon-orange rounded-xl flex items-center justify-center text-3xl mb-5">⚡</div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Zero Configuration</h3>
+                    <p class="text-gray-700 leading-relaxed">
+                        <strong>No API keys needed</strong> for core features. Uses your existing Claude Code subscription. Install in 2 minutes.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Key Features: Bento Box Layout -->
+    <section id="features" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Powerful Features</h2>
+                <p class="text-xl text-gray-600">Built for professional developers</p>
+            </div>
+
+            <div class="bento-grid">
+                <!-- 22 Specialized Agents -->
+                <div class="bg-white rounded-2xl p-8 soft-shadow-hover bento-large">
+                    <h3 class="text-3xl font-bold text-gray-900 mb-6 flex items-center">
+                        <span class="w-12 h-12 icon-orange rounded-lg flex items-center justify-center text-2xl mr-4">⚡</span>
+                        22 Specialized Agents
+                    </h3>
+                    <p class="text-gray-600 mb-6 text-lg">
+                        Automatic expertise routing to specialized agents based on task type:
+                    </p>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <code class="inline-code text-base">code-reviewer</code>
+                            <p class="text-gray-600 text-sm mt-2">Security, quality, anti-patterns</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <code class="inline-code text-base">debugger</code>
+                            <p class="text-gray-600 text-sm mt-2">Systematic debugging methodology</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <code class="inline-code text-base">frontend-specialist</code>
+                            <p class="text-gray-600 text-sm mt-2">UI/UX, accessibility, responsive design</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <code class="inline-code text-base">backend-specialist</code>
+                            <p class="text-gray-600 text-sm mt-2">API design, database optimization</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-500 mt-4 italic">...and 18 more specialized agents for every development task</p>
+                </div>
+
+                <!-- Three Memory Systems -->
+                <div class="bg-white rounded-2xl p-8 soft-shadow-hover">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                        <span class="w-12 h-12 icon-blue rounded-lg flex items-center justify-center text-2xl mr-4">💾</span>
+                        Three Memory Systems
+                    </h3>
+                    <div class="space-y-5">
+                        <div>
+                            <h4 class="font-bold text-gray-900 mb-2">RAG (Retrieval-Augmented Generation)</h4>
+                            <p class="text-gray-600 text-sm">Searches your codebase, finds actual files, shows patterns</p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 mb-2">Knowledge Graph</h4>
+                            <p class="text-gray-600 text-sm">Recalls decisions, alternatives, and tradeoffs</p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 mb-2">Project Context</h4>
+                            <p class="text-gray-600 text-sm">Remembers coding standards, naming conventions, patterns</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Session Health -->
+                <div class="bg-white rounded-2xl p-8 soft-shadow-hover">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                        <span class="w-12 h-12 icon-orange rounded-lg flex items-center justify-center text-2xl mr-4">📊</span>
+                        Session Health Monitoring
+                    </h3>
+                    <p class="text-gray-600 mb-5">
+                        Monitors Claude Code's 200K token limit and prevents crashes:
+                    </p>
+                    <ul class="space-y-3 text-gray-700">
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-3 text-xl">✓</span>
+                            <span>Automatic context reload at 90% capacity</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-3 text-xl">✓</span>
+                            <span>Token usage tracking per agent</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-3 text-xl">✓</span>
+                            <span>Success rate analytics</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-3 text-xl">✓</span>
+                            <span>Intelligent next-step recommendations</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Git Assistant -->
+                <div class="bg-white rounded-2xl p-8 soft-shadow-hover">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                        <span class="w-12 h-12 icon-blue rounded-lg flex items-center justify-center text-2xl mr-4">🔧</span>
+                        Beginner-Friendly Git
+                    </h3>
+                    <p class="text-gray-600 mb-5">
+                        <strong>8 Git tools</strong> in plain language (no Git commands needed):
+                    </p>
+                    <div class="bg-gray-900 rounded-lg p-5">
+                        <pre><code><span class="comment"># Save your work</span>
+git-save-work <span class="string">"added login feature"</span>
+
+<span class="comment"># See versions</span>
+git-list-versions
+
+<span class="comment"># Go back to version 3</span>
+git-go-back 3</code></pre>
+                    </div>
+                </div>
+
+                <!-- Buddy Commands Highlight -->
+                <div class="bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl p-8 soft-shadow-hover text-white bento-large">
+                    <h3 class="text-3xl font-bold mb-6 flex items-center">
+                        <span class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center text-2xl mr-4">💬</span>
+                        Buddy Commands - Natural Language Interface
+                    </h3>
+                    <p class="text-blue-100 mb-6 text-lg">
+                        Control CCB with simple, conversational commands. No complex syntax to memorize.
+                    </p>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur-sm">
+                            <code class="text-yellow-300 font-semibold">"Analyze my codebase architecture"</code>
+                            <p class="text-blue-100 text-sm mt-2">Comprehensive architecture analysis with diagrams</p>
+                        </div>
+                        <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur-sm">
+                            <code class="text-yellow-300 font-semibold">"Generate tests for auth.ts"</code>
+                            <p class="text-blue-100 text-sm mt-2">Auto-generate unit tests with edge cases</p>
+                        </div>
+                        <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur-sm">
+                            <code class="text-yellow-300 font-semibold">"Review this code for security"</code>
+                            <p class="text-blue-100 text-sm mt-2">Security audit with vulnerability detection</p>
+                        </div>
+                        <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur-sm">
+                            <code class="text-yellow-300 font-semibold">"Optimize this database query"</code>
+                            <p class="text-blue-100 text-sm mt-2">Performance optimization with explanations</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-20 bg-white">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Simple, Transparent Pricing</h2>
+                <p class="text-xl text-gray-600">Free core features. Optional enhancements available.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Free Core Features -->
+                <div class="bg-gray-50 rounded-2xl p-8 soft-shadow-hover border-2 border-gray-200">
+                    <div class="mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Core Features</h3>
+                        <div class="flex items-baseline">
+                            <span class="text-5xl font-bold text-gray-900">Free</span>
+                            <span class="text-gray-600 ml-3">Forever</span>
+                        </div>
+                    </div>
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-3 text-xl font-bold">✓</span>
+                            <span class="text-gray-700"><strong>22 Specialized Agents</strong> - Full task routing</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-3 text-xl font-bold">✓</span>
+                            <span class="text-gray-700"><strong>Knowledge Graph Memory</strong> - Persistent learning</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-3 text-xl font-bold">✓</span>
+                            <span class="text-gray-700"><strong>Project Context</strong> - Standards & patterns</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-3 text-xl font-bold">✓</span>
+                            <span class="text-gray-700"><strong>Session Health</strong> - Token monitoring</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-3 text-xl font-bold">✓</span>
+                            <span class="text-gray-700"><strong>Git Tools</strong> - 8 beginner-friendly commands</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-3 text-xl font-bold">✓</span>
+                            <span class="text-gray-700"><strong>Community Support</strong> - GitHub Discussions</span>
+                        </li>
+                    </ul>
+                    <div class="bg-blue-50 border-l-4 border-blue-600 p-4 rounded">
+                        <p class="text-gray-700 text-sm">
+                            <strong>No API keys needed</strong> - CCB uses your existing Claude Code subscription.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Optional RAG Enhancement -->
+                <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-8 soft-shadow-hover border-2 border-orange-300">
+                    <div class="mb-6">
+                        <span class="badge badge-orange mb-3">Optional Enhancement</span>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">RAG (Retrieval-Augmented Generation)</h3>
+                        <div class="flex items-baseline">
+                            <span class="text-5xl font-bold text-gray-900">$</span>
+                            <span class="text-gray-600 ml-2">OpenAI API cost</span>
+                        </div>
+                    </div>
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-start">
+                            <span class="text-orange-500 mr-3 text-xl font-bold">⭐</span>
+                            <span class="text-gray-700"><strong>Enhanced Codebase Search</strong> - Semantic search</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-orange-500 mr-3 text-xl font-bold">⭐</span>
+                            <span class="text-gray-700"><strong>Pattern Detection</strong> - Find similar code</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-orange-500 mr-3 text-xl font-bold">⭐</span>
+                            <span class="text-gray-700"><strong>Contextual Retrieval</strong> - Relevant file discovery</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-orange-500 mr-3 text-xl font-bold">⭐</span>
+                            <span class="text-gray-700"><strong>Large Codebase Support</strong> - 100K+ files</span>
+                        </li>
+                    </ul>
+                    <div class="bg-white bg-opacity-60 border-l-4 border-orange-600 p-4 rounded">
+                        <p class="text-gray-700 text-sm mb-2">
+                            <strong>Requires:</strong> OpenAI API key for enhanced codebase search capabilities.
+                        </p>
+                        <p class="text-gray-600 text-xs">
+                            Typical cost: ~$0.10-$1.00 per month for small-medium projects.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-12 text-center">
+                <p class="text-gray-600 text-lg">
+                    <strong>Open Source:</strong> Licensed under AGPL-3.0. Free to use, modify, and distribute.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Start -->
+    <section id="quickstart" class="py-20 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Quick Start</h2>
+                <p class="text-xl text-gray-600">Get up and running in <strong>2 minutes</strong></p>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Step 1 -->
+                <div class="bg-white rounded-2xl p-8 soft-shadow-hover">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <div class="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center font-bold text-xl">1</div>
+                        </div>
+                        <div class="ml-6 flex-1">
+                            <h3 class="text-2xl font-bold text-gray-900 mb-3">Prerequisites</h3>
+                            <p class="text-gray-600 mb-4">Node.js 18+ and Claude Code installed</p>
+                            <div class="bg-gray-900 rounded-lg p-5">
+                                <pre><code><span class="comment"># Check Node.js version</span>
+node --version  <span class="comment"># Should be v18 or higher</span></code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="bg-white rounded-2xl p-8 soft-shadow-hover">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <div class="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center font-bold text-xl">2</div>
+                        </div>
+                        <div class="ml-6 flex-1">
+                            <h3 class="text-2xl font-bold text-gray-900 mb-3">Clone & Install</h3>
+                            <div class="bg-gray-900 rounded-lg p-5">
+                                <pre><code><span class="comment"># Clone the repository</span>
+git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
+cd claude-code-buddy
+
+<span class="comment"># Run interactive installer (handles everything)</span>
+./scripts/install.sh</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="bg-white rounded-2xl p-8 soft-shadow-hover">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <div class="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center font-bold text-xl">3</div>
+                        </div>
+                        <div class="ml-6 flex-1">
+                            <h3 class="text-2xl font-bold text-gray-900 mb-3">Start Using</h3>
+                            <p class="text-gray-600 mb-4">Restart Claude Code and try these buddy commands:</p>
+                            <div class="grid md:grid-cols-2 gap-3">
+                                <div class="bg-blue-50 rounded-lg p-4">
+                                    <code class="text-blue-700 font-semibold text-sm">"Analyze my codebase architecture"</code>
+                                </div>
+                                <div class="bg-blue-50 rounded-lg p-4">
+                                    <code class="text-blue-700 font-semibold text-sm">"Generate tests for auth.ts"</code>
+                                </div>
+                                <div class="bg-blue-50 rounded-lg p-4">
+                                    <code class="text-blue-700 font-semibold text-sm">"Review this code for security"</code>
+                                </div>
+                                <div class="bg-blue-50 rounded-lg p-4">
+                                    <code class="text-blue-700 font-semibold text-sm">"Optimize this database query"</code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Important Note -->
+            <div class="mt-8 bg-blue-50 border-l-4 border-blue-600 rounded-xl p-6">
+                <p class="text-gray-700 text-lg mb-2">
+                    <strong>No API keys needed for core features</strong> - CCB uses your existing Claude Code subscription.
+                </p>
+                <p class="text-gray-600 text-sm">
+                    <em>Optional:</em> RAG (Retrieval-Augmented Generation) feature requires an OpenAI API key for enhanced codebase search capabilities.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">How It Works</h2>
+                <p class="text-xl text-gray-600">Technical architecture overview</p>
+            </div>
+
+            <div class="bg-gray-50 rounded-2xl p-10 soft-shadow">
+                <div class="space-y-8">
+                    <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
+                        <div class="w-full md:w-64 bg-blue-100 text-blue-700 px-6 py-4 rounded-xl font-bold text-center soft-shadow">
+                            Your Request
+                        </div>
+                        <div class="text-3xl text-gray-400 transform md:rotate-0 rotate-90">→</div>
+                        <div class="flex-1 text-gray-700 text-center md:text-left">
+                            Natural language query to Claude Code
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
+                        <div class="w-full md:w-64 bg-orange-100 text-orange-700 px-6 py-4 rounded-xl font-bold text-center soft-shadow">
+                            Task Analysis
+                        </div>
+                        <div class="text-3xl text-gray-400 transform md:rotate-0 rotate-90">→</div>
+                        <div class="flex-1 text-gray-700 text-center md:text-left">
+                            CCB analyzes the task type (code review, debugging, etc.)
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
+                        <div class="w-full md:w-64 bg-blue-100 text-blue-700 px-6 py-4 rounded-xl font-bold text-center soft-shadow">
+                            Agent Routing
+                        </div>
+                        <div class="text-3xl text-gray-400 transform md:rotate-0 rotate-90">→</div>
+                        <div class="flex-1 text-gray-700 text-center md:text-left">
+                            Routes to best specialized agent (e.g., code-reviewer)
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
+                        <div class="w-full md:w-64 bg-orange-100 text-orange-700 px-6 py-4 rounded-xl font-bold text-center soft-shadow">
+                            Context Enhancement
+                        </div>
+                        <div class="text-3xl text-gray-400 transform md:rotate-0 rotate-90">→</div>
+                        <div class="flex-1 text-gray-700 text-center md:text-left">
+                            Adds specialized context and project memory
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
+                        <div class="w-full md:w-64 bg-blue-100 text-blue-700 px-6 py-4 rounded-xl font-bold text-center soft-shadow">
+                            Claude Execution
+                        </div>
+                        <div class="text-3xl text-gray-400 transform md:rotate-0 rotate-90">→</div>
+                        <div class="flex-1 text-gray-700 text-center md:text-left">
+                            Claude Code executes with enhanced context
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
+                        <div class="w-full md:w-64 bg-orange-100 text-orange-700 px-6 py-4 rounded-xl font-bold text-center soft-shadow">
+                            Learning
+                        </div>
+                        <div class="text-3xl text-gray-400 transform md:rotate-0 rotate-90">→</div>
+                        <div class="flex-1 text-gray-700 text-center md:text-left">
+                            Your feedback (👍/👎) trains the system
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contributing -->
+    <section id="contributing" class="py-20 bg-gray-50">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Contributing</h2>
+                <p class="text-xl text-gray-600">We welcome contributions from the community!</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-white rounded-2xl p-8 soft-shadow-hover">
+                    <div class="text-4xl mb-4">🐛</div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Report Issues</h3>
+                    <p class="text-gray-600 mb-5">Found a bug? Have a feature request?</p>
+                    <a href="https://github.com/PCIRCLE-AI/claude-code-buddy/issues" class="text-blue-600 hover:text-blue-700 font-semibold inline-flex items-center">
+                        Open an issue on GitHub
+                        <span class="ml-2">→</span>
+                    </a>
+                </div>
+
+                <div class="bg-white rounded-2xl p-8 soft-shadow-hover">
+                    <div class="text-4xl mb-4">💻</div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Submit Pull Requests</h3>
+                    <p class="text-gray-600 mb-5">Want to contribute code?</p>
+                    <a href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/CONTRIBUTING.md" class="text-blue-600 hover:text-blue-700 font-semibold inline-flex items-center">
+                        Read Contributing Guidelines
+                        <span class="ml-2">→</span>
+                    </a>
+                </div>
+
+                <div class="bg-white rounded-2xl p-8 soft-shadow-hover">
+                    <div class="text-4xl mb-4">💬</div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Join Discussions</h3>
+                    <p class="text-gray-600 mb-5">Have questions? Want to share ideas?</p>
+                    <a href="https://github.com/PCIRCLE-AI/claude-code-buddy/discussions" class="text-blue-600 hover:text-blue-700 font-semibold inline-flex items-center">
+                        Join GitHub Discussions
+                        <span class="ml-2">→</span>
+                    </a>
+                </div>
+
+                <div class="bg-white rounded-2xl p-8 soft-shadow-hover">
+                    <div class="text-4xl mb-4">📚</div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Improve Documentation</h3>
+                    <p class="text-gray-600 mb-5">Help make CCB easier to use for everyone.</p>
+                    <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="text-blue-600 hover:text-blue-700 font-semibold inline-flex items-center">
+                        Contribute to Docs
+                        <span class="ml-2">→</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 bg-gradient-to-br from-blue-600 to-blue-800 text-white">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-4xl md:text-5xl font-bold mb-6">Ready to supercharge your Claude Code?</h2>
+            <p class="text-xl md:text-2xl mb-10 text-blue-100">
+                Install Claude Code Buddy now. Free, open source, and ready in 2 minutes.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="bg-orange-500 hover:bg-orange-600 text-white px-10 py-4 rounded-lg text-lg font-bold transition inline-flex items-center justify-center space-x-2">
+                    <span>🚀</span>
+                    <span>Get Started Free</span>
+                </a>
+                <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="bg-white text-blue-600 px-10 py-4 rounded-lg text-lg font-bold hover:bg-gray-100 transition inline-flex items-center justify-center space-x-2">
+                    <span>⭐</span>
+                    <span>Star on GitHub</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-10 mb-12">
+                <div>
+                    <h4 class="font-bold text-lg mb-5 text-gray-100">Project</h4>
+                    <ul class="space-y-3">
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="text-gray-400 hover:text-white transition">GitHub Repository</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/releases" class="text-gray-400 hover:text-white transition">Releases</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/CHANGELOG.md" class="text-gray-400 hover:text-white transition">Changelog</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/ROADMAP.md" class="text-gray-400 hover:text-white transition">Roadmap</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-5 text-gray-100">Documentation</h4>
+                    <ul class="space-y-3">
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy#quick-start-2-minutes" class="text-gray-400 hover:text-white transition">Quick Start</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/ARCHITECTURE.md" class="text-gray-400 hover:text-white transition">Architecture</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/API.md" class="text-gray-400 hover:text-white transition">API Reference</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/FAQ.md" class="text-gray-400 hover:text-white transition">FAQ</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-5 text-gray-100">Community</h4>
+                    <ul class="space-y-3">
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/discussions" class="text-gray-400 hover:text-white transition">Discussions</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/CONTRIBUTING.md" class="text-gray-400 hover:text-white transition">Contributing</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/CODE_OF_CONDUCT.md" class="text-gray-400 hover:text-white transition">Code of Conduct</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI/claude-code-buddy/graphs/contributors" class="text-gray-400 hover:text-white transition">Contributors</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-5 text-gray-100">PCIRCLE AI</h4>
+                    <ul class="space-y-3">
+                        <li><a href="https://pcircle.ai" class="text-gray-400 hover:text-white transition">Company Website</a></li>
+                        <li><a href="https://github.com/PCIRCLE-AI" class="text-gray-400 hover:text-white transition">GitHub Organization</a></li>
+                        <li><a href="https://toonify.pcircle.ai" class="text-gray-400 hover:text-white transition">Toonify MCP</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-800 pt-10">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="mb-5 md:mb-0">
+                        <p class="text-gray-400 text-sm">
+                            © 2026 PCIRCLE AI. Licensed under
+                            <a href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/LICENSE" class="text-blue-400 hover:text-blue-300 transition">AGPL-3.0</a>
+                        </p>
+                    </div>
+                    <div class="flex space-x-6">
+                        <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="text-gray-400 hover:text-white transition" aria-label="GitHub">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Dark Mode Toggle Script -->
+    <script>
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const darkModeIcon = document.getElementById('darkModeIcon');
+        const body = document.body;
+
+        // Check for saved dark mode preference or default to light mode
+        const currentMode = localStorage.getItem('darkMode') || 'light';
+        if (currentMode === 'dark') {
+            body.classList.add('dark-mode');
+            darkModeIcon.textContent = '☀️';
+        }
+
+        darkModeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            darkModeIcon.textContent = isDark ? '☀️' : '🌙';
+            localStorage.setItem('darkMode', isDark ? 'dark' : 'light');
+        });
+    </script>
+</body>
+</html>

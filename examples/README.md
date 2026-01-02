@@ -43,7 +43,7 @@ Complete technical assessment and implementation guide for building elegant term
 ### 1. Install Dependencies
 
 ```bash
-cd /Users/ktseng/Developer/Projects/claude-code-buddy
+cd /path/to/claude-code-buddy
 
 # Core framework + utilities
 npm install ink ink-spinner chalk ora boxen

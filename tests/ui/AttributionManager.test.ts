@@ -73,7 +73,7 @@ describe('AttributionManager', () => {
   it('should sanitize sensitive data from issue body', () => {
     const error = new Error('Failed to connect');
     error.stack = `Error: Failed to connect
-    at /Users/ktseng/secret-project/api.ts:42
+    at /Users/username/project/api.ts:42
     Token: sk-abc123xyz456
     API_KEY=secret_key_here`;
 
@@ -95,7 +95,7 @@ describe('AttributionManager', () => {
     const suggestion = manager.generateIssueSuggestion(attribution, error);
 
     // Should not contain user paths
-    expect(suggestion.body).not.toContain('/Users/ktseng');
+    expect(suggestion.body).not.toContain('/Users/username');
     // Should not contain API keys/tokens
     expect(suggestion.body).not.toContain('sk-abc123xyz456');
     expect(suggestion.body).not.toContain('secret_key_here');

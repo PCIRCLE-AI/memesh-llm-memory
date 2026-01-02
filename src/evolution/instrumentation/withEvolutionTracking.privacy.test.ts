@@ -52,7 +52,7 @@ describe('withEvolutionTracking - Privacy Protection', () => {
       password: 'MySecretPassword123!',
       token: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
       email: 'user@example.com',
-      filePath: '/Users/ktseng/secret/config.json',
+      filePath: '/Users/username/secret/config.json',
     };
 
     const failingFunction = async () => {
@@ -113,7 +113,7 @@ describe('withEvolutionTracking - Privacy Protection', () => {
   it('should NOT store file paths in error messages', async () => {
     const failingFunction = async () => {
       throw new Error(
-        'File not found: /Users/ktseng/Documents/secret-keys.txt'
+        'File not found: /Users/username/Documents/secret-keys.txt'
       );
     };
 
@@ -140,9 +140,9 @@ describe('withEvolutionTracking - Privacy Protection', () => {
     const errorMessage = span.attributes['error.message'] || '';
 
     // Should not contain actual file path
-    expect(statusMessage).not.toContain('/Users/ktseng');
+    expect(statusMessage).not.toContain('/Users/username');
     expect(statusMessage).not.toContain('secret-keys.txt');
-    expect(errorMessage).not.toContain('/Users/ktseng');
+    expect(errorMessage).not.toContain('/Users/username');
     expect(errorMessage).not.toContain('secret-keys.txt');
   });
 

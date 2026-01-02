@@ -450,9 +450,6 @@ This is free and open-source software. If you modify and deploy this as a networ
 
 **Make Claude Code smarter, not louder.**
 
-🇹🇼 **Crafted in Taiwan** | 台灣製造
-_Where innovation meets tradition_
-
 [Get Started](#quick-start-2-minutes) • [Documentation](docs/) • [Report Issue](https://github.com/PCIRCLE-AI/claude-code-buddy/issues) • [Join Discussion](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
 
 ---

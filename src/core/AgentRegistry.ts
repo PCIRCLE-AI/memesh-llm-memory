@@ -469,6 +469,14 @@ export class AgentRegistry {
         capabilities: ['test', 'test-generation', 'automation'],
       },
       {
+        name: 'e2e-healing-agent',
+        description: 'End-to-end test automation with self-healing capabilities, Playwright-powered browser testing, automatic failure analysis and code fixing, reduces test maintenance burden',
+        category: 'development',
+        classification: AgentClassification.REAL_IMPLEMENTATION,
+        mcpTools: ['playwright', 'filesystem', 'bash', 'memory'],
+        capabilities: ['e2e-testing', 'auto-healing', 'testing', 'code-generation', 'debugging'],
+      },
+      {
         name: 'devops-engineer',
         description: 'DevOps, CI/CD, infrastructure automation, deployment expert',
         category: 'operations',

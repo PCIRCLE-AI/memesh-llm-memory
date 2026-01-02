@@ -34,6 +34,7 @@ interface GraduationCriteria {
 export class GraduatedAutonomyPolicy {
   private currentLevel: AutomationLevel = AutomationLevel.SUGGEST_ONLY;
   private fixHistory: FixRecord[] = [];
+  private readonly MAX_FIX_HISTORY = 1000; // Max fix records to keep
   private rollbackCount: number = 0;
 
   private graduationCriteria: Record<AutomationLevel, GraduationCriteria> = {
@@ -72,6 +73,11 @@ export class GraduatedAutonomyPolicy {
       ...record,
       timestamp: Date.now(),
     });
+
+    // Trim history to prevent unbounded growth
+    if (this.fixHistory.length > this.MAX_FIX_HISTORY) {
+      this.fixHistory = this.fixHistory.slice(-this.MAX_FIX_HISTORY);
+    }
   }
 
   recordRollback(environment: string): void {
@@ -90,6 +96,11 @@ export class GraduatedAutonomyPolicy {
       return false;
     }
 
+    // Type-safe with runtime validation
+    if (!this.isValidAutomationLevel(nextLevel)) {
+      throw new Error(`Invalid automation level: ${nextLevel}`);
+    }
+
     const criteria = this.graduationCriteria[nextLevel];
     const stats = this.calculateStats();
 
@@ -98,6 +109,13 @@ export class GraduatedAutonomyPolicy {
       stats.successRate >= criteria.minSuccessRate &&
       this.rollbackCount <= criteria.maxRollbacks &&
       stats.approvalRate >= criteria.humanApprovalRate
+    );
+  }
+
+  private isValidAutomationLevel(level: number): level is AutomationLevel {
+    return (
+      level >= AutomationLevel.SUGGEST_ONLY &&
+      level <= AutomationLevel.AUTO_PROD
     );
   }
 

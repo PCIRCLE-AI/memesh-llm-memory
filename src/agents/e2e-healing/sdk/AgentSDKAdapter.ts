@@ -37,12 +37,16 @@ export class AgentSDKAdapter {
     const response = await this.client.messages.create({
       model: 'claude-sonnet-4-5-20250929',
       max_tokens: 4000,
-      thinking: input.useExtendedThinking
+      // Extended thinking mode for deeper analysis
+      // Type assertion needed until @anthropic-ai/sdk v0.30.1 types are updated
+      ...(input.useExtendedThinking
         ? {
-            type: 'enabled',
-            budget_tokens: 10000,
+            thinking: {
+              type: 'enabled',
+              budget_tokens: 10000,
+            } as any,
           }
-        : undefined,
+        : {}),
       messages: [
         {
           role: 'user',
@@ -61,8 +65,8 @@ Identify the root cause of this failure.`,
     });
 
     const text = response.content
-      .filter((c) => c.type === 'text')
-      .map((c) => (c as any).text)
+      .filter((c): c is Anthropic.TextBlock => c.type === 'text')
+      .map((c) => c.text)
       .join('\n');
 
     return {
@@ -79,8 +83,10 @@ Identify the root cause of this failure.`,
         {
           type: 'text' as const,
           text: 'You are an expert at fixing E2E test failures. Generate minimal code fixes.',
-          cache_control: { type: 'ephemeral' as const },
-        },
+          // Prompt caching for cost optimization
+          // Type assertion needed until @anthropic-ai/sdk v0.30.1 types are updated
+          cache_control: { type: 'ephemeral' } as any,
+        } as any,
       ],
       messages: [
         {
@@ -100,16 +106,19 @@ Provide the fixed code in a TypeScript code block.`,
     });
 
     const text = response.content
-      .filter((c) => c.type === 'text')
-      .map((c) => (c as any).text)
+      .filter((c): c is Anthropic.TextBlock => c.type === 'text')
+      .map((c) => c.text)
       .join('\n');
 
     // Extract code from markdown code block
     const codeMatch = text.match(/```(?:typescript|tsx?)\n([\s\S]*?)```/);
     const code = codeMatch ? codeMatch[1] : text;
 
+    // Check for cache hit with runtime validation
+    // cache_read_input_tokens exists in API but not in SDK types yet
     const cacheHit =
-      (response.usage as any).cache_read_input_tokens !== undefined &&
+      'cache_read_input_tokens' in response.usage &&
+      typeof (response.usage as any).cache_read_input_tokens === 'number' &&
       (response.usage as any).cache_read_input_tokens > 0;
 
     return {

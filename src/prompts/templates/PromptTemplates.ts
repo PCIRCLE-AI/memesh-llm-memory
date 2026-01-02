@@ -686,6 +686,31 @@ When automating tests, you:
 7. Monitor test reliability and flakiness
 8. Maintain and update test suites`,
 
+  'e2e-healing-agent': `You are an expert E2E Self-Healing Test Agent specializing in automated test execution, failure analysis, and code fixing.
+
+Your expertise includes:
+- Playwright-powered browser automation and E2E testing
+- Automated failure analysis and root cause identification
+- Code fix generation for failed tests
+- Self-healing test suites with minimal human intervention
+- Safety mechanisms (circuit breaker, scope limiting, rollback)
+- Graduated autonomy model (Conservative → Semi-Auto → Auto)
+- Integration with CI/CD pipelines and preview environments
+- Test evidence collection (screenshots, logs, network traces)
+- Knowledge graph integration for learning from failures
+
+When healing E2E tests, you:
+1. Execute tests using Playwright browser automation
+2. Collect comprehensive failure evidence (screenshots, console logs, network)
+3. Analyze failures using Claude-powered analysis
+4. Generate targeted code fixes for root causes
+5. Apply safety gates before modifying code
+6. Validate fixes by re-running tests
+7. Record lessons learned to prevent future failures
+8. Respect automation level and scope constraints
+9. Provide rollback mechanisms for failed healing attempts
+10. Transform E2E testing from "finding problems" to "finding AND solving problems"`,
+
   'frontend-developer': `You are an expert Frontend Developer specializing in full-stack frontend development.
 
 Your expertise includes:
@@ -808,6 +833,7 @@ export const AGENT_TOOLS: Record<AgentType, string[]> = {
   'ml-engineer': ['model_trainer', 'feature_engineering', 'model_evaluator', 'mlflow'],
   'marketing-strategist': ['analytics', 'seo_tools', 'content_planner', 'campaign_manager'],
   'test-automator': ['run_tests', 'coverage_report', 'test_framework', 'ci_cd_integration'],
+  'e2e-healing-agent': ['playwright', 'read_file', 'write_file', 'run_tests', 'screenshot', 'console_logs', 'network_trace', 'failure_analyzer', 'fix_generator', 'rollback_manager'],
   'frontend-developer': ['read_file', 'write_file', 'run_tests', 'lighthouse', 'webpack', 'component_library'],
   'backend-developer': ['read_file', 'write_file', 'run_tests', 'api_test', 'database', 'cache'],
   'database-administrator': ['database', 'query_analyzer', 'backup_tool', 'migration', 'index_optimizer'],
@@ -977,6 +1003,11 @@ export const MODEL_SUGGESTIONS: Record<AgentType, ModelSuggestion> = {
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
+  'e2e-healing-agent': {
+    simple: 'claude-3-5-haiku-20241022',
+    medium: 'claude-sonnet-4-5-20250929',
+    complex: 'claude-opus-4-5-20251101',
+  },
   'frontend-developer': {
     simple: 'claude-3-5-haiku-20241022',
     medium: 'claude-sonnet-4-5-20250929',
@@ -1032,6 +1063,7 @@ export const AGENT_INSTRUCTIONS: Record<AgentType, string> = {
   'ml-engineer': 'Please provide:\n1. ML model design and training approach\n2. Feature engineering and evaluation metrics\n3. Deployment and monitoring strategy',
   'marketing-strategist': 'Please provide:\n1. Marketing strategy and target audience\n2. Campaign plan with channels and tactics\n3. Success metrics and optimization approach',
   'test-automator': 'Please provide:\n1. Test automation framework design\n2. CI/CD integration strategy\n3. Test coverage analysis and reporting',
+  'e2e-healing-agent': 'Please provide:\n1. Test execution results with failure evidence (screenshots, logs, network traces)\n2. Root cause analysis of test failures\n3. Proposed code fixes with safety validation\n4. Healing status (healed/unhealed/aborted) with reasoning\n5. Recommendations for preventing similar failures',
   'frontend-developer': 'Please provide:\n1. Component implementation with state management\n2. Build configuration and optimization\n3. Accessibility and performance best practices',
   'backend-developer': 'Please provide:\n1. API and microservices implementation\n2. Database integration and caching strategy\n3. Security, error handling, and monitoring',
   'database-administrator': 'Please provide:\n1. Schema design and migration strategy\n2. Performance tuning and index optimization\n3. Backup, recovery, and high availability plan',

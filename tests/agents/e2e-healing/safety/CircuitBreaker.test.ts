@@ -50,12 +50,12 @@ describe('CircuitBreaker', () => {
     expect(canAttempt).toBe(false);
   });
 
-  it('should track successful attempts', () => {
+  it('should reset attempt counter on success', () => {
     breaker.recordAttempt(testId, true);
     const history = breaker.getHistory(testId);
 
     expect(history).toBeDefined();
-    expect(history.totalAttempts).toBe(1);
+    expect(history.totalAttempts).toBe(0); // Reset to allow re-healing if test fails again
     expect(history.consecutiveFailures).toBe(0);
   });
 

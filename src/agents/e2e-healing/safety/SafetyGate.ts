@@ -21,6 +21,7 @@ export interface SafetyValidationResult {
  */
 export class SafetyGate {
   private attemptCounts: Map<string, number> = new Map();
+  private readonly MAX_TESTS_TRACKED = 1000; // Max tests to track
 
   constructor(
     private circuitBreaker: CircuitBreaker,
@@ -46,6 +47,9 @@ export class SafetyGate {
     // Track attempt count
     const attemptCount = (this.attemptCounts.get(testId) || 0) + 1;
     this.attemptCounts.set(testId, attemptCount);
+
+    // Cleanup old tests if tracking too many
+    this.cleanupOldTests();
 
     // Check 0: Max validation attempts
     if (attemptCount > this.maxAttempts) {
@@ -118,5 +122,28 @@ export class SafetyGate {
         diff: fix.code,
       },
     ];
+  }
+
+  /**
+   * Cleanup old tests to prevent unbounded Map growth
+   *
+   * Removes tests with highest attempt counts (likely failed repeatedly).
+   * These tests have already exceeded limits and won't succeed.
+   */
+  private cleanupOldTests(): void {
+    if (this.attemptCounts.size <= this.MAX_TESTS_TRACKED) {
+      return;
+    }
+
+    // Sort by attempt count (highest first) - remove most failed tests
+    const entries = Array.from(this.attemptCounts.entries()).sort(
+      (a, b) => b[1] - a[1]
+    );
+
+    // Remove worst 10% to avoid frequent cleanup
+    const toRemove = Math.floor(this.MAX_TESTS_TRACKED * 0.1);
+    for (let i = 0; i < toRemove; i++) {
+      this.attemptCounts.delete(entries[i][0]);
+    }
   }
 }

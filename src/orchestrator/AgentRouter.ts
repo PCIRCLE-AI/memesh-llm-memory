@@ -162,6 +162,7 @@ export class AgentRouter {
       'code-reviewer': ['code-review'],
       'test-writer': ['testing'], // Code generation is implicit in testing
       'test-automator': ['testing'],
+      'e2e-healing-agent': ['e2e-testing', 'auto-healing', 'testing'],
       'debugger': ['debugging'],
       'refactorer': ['refactoring'], // Code generation is implicit in refactoring
       'api-designer': ['api-design'], // Code generation is implicit in API design
@@ -206,6 +207,7 @@ export class AgentRouter {
       'code-reviewer': 'general-agent',
       'test-writer': 'general-agent',
       'test-automator': 'test-writer',
+      'e2e-healing-agent': 'test-automator',
       'debugger': 'general-agent',
       'refactorer': 'general-agent',
       'api-designer': 'general-agent',
@@ -267,6 +269,7 @@ export class AgentRouter {
       'code-reviewer': 'Specialized in code quality analysis and security review',
       'test-writer': 'Expert in test automation and TDD',
       'test-automator': 'Automated test execution, CI/CD integration, test coverage analysis',
+      'e2e-healing-agent': 'E2E test automation with self-healing capabilities, Playwright-powered browser testing, automatic failure analysis and code fixing',
       'debugger': 'Specialized in root cause analysis and debugging',
       'refactorer': 'Expert in code refactoring and design patterns',
       'api-designer': 'Specialized in API design and RESTful principles',

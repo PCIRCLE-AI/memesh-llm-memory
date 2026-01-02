@@ -1,6 +1,6 @@
 # Claude Code Buddy (CCB)
 
-**語言版本:** [English](README.en.md) | 繁體中文
+**語言版本:** [English](README.md) | 繁體中文
 
 ---
 

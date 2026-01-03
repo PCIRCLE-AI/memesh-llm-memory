@@ -1,6 +1,6 @@
 # Claude Code Buddy (CCB)
 
-**語言版本:** [English](README.md) | 繁體中文
+🌐 **網站:** [ccb.pcircle.ai](https://ccb.pcircle.ai) | **語言版本:** [English](README.md) | 繁體中文
 
 ---
 

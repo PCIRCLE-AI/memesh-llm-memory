@@ -4,6 +4,15 @@
   "description": "Your friendly AI companion for Claude Code - smart routing, prompt enhancement, and project memory",
   "main": "dist/index.js",
   "type": "module",
+  "bin": {
+    "claude-code-buddy": "dist/mcp/server.js"
+  },
+  "files": [
+    "dist/",
+    ".claude-plugin/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",

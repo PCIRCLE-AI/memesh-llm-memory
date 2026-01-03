@@ -45,7 +45,12 @@ CCB remembers your architecture decisions, coding patterns, and past solutions. 
 Your request gets analyzed and routed to the right "expert mode" - code review tasks get code review expertise, debugging gets systematic debugging methodology, frontend gets UI/UX best practices.
 
 ### 3. 💰 **Smart Model Selection**
-Routes tasks to the right Claude model (Haiku/Sonnet/Opus) based on complexity, saving ~40% on token costs without sacrificing quality.
+Routes tasks to the right model based on complexity:
+- **Ollama** (simple tasks) - Fast & free local processing
+- **Hybrid** (medium tasks) - Ollama draft + Claude polish
+- **Claude** (complex tasks) - Full Claude power when needed
+
+Saves ~40% on token costs without sacrificing quality.
 
 **Result:** Expert responses without expert prompts. Context that persists. Cost-effective intelligence that never forgets.
 
@@ -184,15 +189,15 @@ CCB remembers:
 
 ### 💰 Smart Model Selection & Cost Savings
 
-CCB analyzes task complexity and routes to the optimal Claude model, saving ~40% on token costs:
+CCB analyzes task complexity and routes to the optimal model tier, saving ~40% on token costs:
 
-- **Haiku** (simple/cheap) - Quick tasks like code formatting, simple bug fixes
-- **Sonnet** (balanced) - Standard development work, code reviews
-- **Opus** (complex/quality) - Architecture design, complex debugging
+- **Ollama** (simple/free) - Local processing for quick tasks like code formatting, simple bug fixes
+- **Hybrid** (balanced) - Ollama draft + Claude polish for standard development work, code reviews
+- **Claude** (complex/quality) - Full Claude power for architecture design, complex debugging
 
-**How it works**: TaskAnalyzer examines your request → Estimates complexity → Routes to the most cost-effective model → You get quality results without overpaying for simple tasks.
+**How it works**: TaskAnalyzer examines your request → Estimates complexity (1-10) → Routes to the most cost-effective model tier → You get quality results without overpaying for simple tasks.
 
-**Real example**: "Fix this typo" uses Haiku ($0.001), "Design authentication system" uses Opus ($0.015), "Review this PR" uses Sonnet ($0.003).
+**Real example**: "Fix this typo" uses Ollama (free), "Design authentication system" uses Claude (full power), "Review this PR" uses Hybrid (cost-effective).
 
 ### 🤝 User-Friendly Commands
 
@@ -359,7 +364,7 @@ System learns from your choices (when you override recommendations)
 - **Reduces repetitive prompting** through intelligent task routing
 - **Remembers between sessions** with persistent memory systems (RAG + Knowledge Graph + Project Context)
 - **Provides specialized expertise** without you writing expert prompts
-- **Saves token costs** by routing to optimal Claude models (Haiku/Sonnet/Opus)
+- **Saves token costs** by routing to optimal model tiers (Ollama/Hybrid/Claude)
 - **Learns from your choices** when you override agent recommendations
 - **Guides your workflow** with intelligent next-step recommendations
 - **Coordinates complex workflows** across multiple steps

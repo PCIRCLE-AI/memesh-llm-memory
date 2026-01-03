@@ -1107,7 +1107,7 @@ ${result.config}
     try {
       const result = await setupCITool.handler(
         input,
-        this.knowledgeGraph
+        this.devopsEngineer
       );
 
       if (!result.success) {

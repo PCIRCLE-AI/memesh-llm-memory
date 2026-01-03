@@ -1,5 +1,16 @@
 # Claude Code Buddy (CCB)
 
+> [!CAUTION]
+> **🚧 UNDER ACTIVE DEVELOPMENT - NOT PRODUCTION READY 🚧**
+>
+> This project is currently **unstable** and undergoing major changes. Known issues include test failures, API inconsistencies, and incomplete features.
+>
+> **Please do not use in production environments.** Check back later for a stable release.
+>
+> For updates, watch this repository or check the [Issues](https://github.com/PCIRCLE-AI/claude-code-buddy/issues) page.
+
+---
+
 **Languages:** English | [繁體中文](README.zh-TW.md)
 
 ---

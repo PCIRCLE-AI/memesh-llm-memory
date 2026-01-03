@@ -141,7 +141,7 @@ export class BuddyHandlers {
       });
 
       if (error instanceof z.ZodError) {
-        throw new ValidationError(
+        const validationError = new ValidationError(
           'Invalid buddy_do input',
           {
             component: 'BuddyHandlers',
@@ -150,6 +150,19 @@ export class BuddyHandlers {
             providedArgs: args,
           }
         );
+
+        // Return formatted validation error instead of throwing
+        const errorText = `${validationError.name}: ${validationError.message}`;
+
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: errorText,
+            },
+          ],
+          isError: true,
+        };
       }
       throw error;
     }
@@ -186,7 +199,7 @@ export class BuddyHandlers {
       });
 
       if (error instanceof z.ZodError) {
-        throw new ValidationError(
+        const validationError = new ValidationError(
           'Invalid buddy_stats input',
           {
             component: 'BuddyHandlers',
@@ -195,6 +208,19 @@ export class BuddyHandlers {
             providedArgs: args,
           }
         );
+
+        // Return formatted validation error instead of throwing
+        const errorText = `${validationError.name}: ${validationError.message}`;
+
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: errorText,
+            },
+          ],
+          isError: true,
+        };
       }
       throw error;
     }
@@ -264,7 +290,7 @@ export class BuddyHandlers {
       });
 
       if (error instanceof z.ZodError) {
-        throw new ValidationError(
+        const validationError = new ValidationError(
           'Invalid buddy_remember input',
           {
             component: 'BuddyHandlers',
@@ -273,6 +299,19 @@ export class BuddyHandlers {
             providedArgs: args,
           }
         );
+
+        // Return formatted validation error instead of throwing
+        const errorText = `${validationError.name}: ${validationError.message}`;
+
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: errorText,
+            },
+          ],
+          isError: true,
+        };
       }
       throw error;
     }
@@ -309,7 +348,7 @@ export class BuddyHandlers {
       });
 
       if (error instanceof z.ZodError) {
-        throw new ValidationError(
+        const validationError = new ValidationError(
           'Invalid buddy_help input',
           {
             component: 'BuddyHandlers',
@@ -318,6 +357,19 @@ export class BuddyHandlers {
             providedArgs: args,
           }
         );
+
+        // Return formatted validation error instead of throwing
+        const errorText = `${validationError.name}: ${validationError.message}`;
+
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: errorText,
+            },
+          ],
+          isError: true,
+        };
       }
       throw error;
     }

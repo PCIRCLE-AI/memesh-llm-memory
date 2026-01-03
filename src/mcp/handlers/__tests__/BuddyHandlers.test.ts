@@ -101,25 +101,28 @@ describe('BuddyHandlers', () => {
     });
 
     it('should validate task is required', async () => {
-      await expect(async () => {
-        await buddyHandlers.handleBuddyDo({});
-      }).rejects.toThrow();
+      const result = await buddyHandlers.handleBuddyDo({});
+      expect(result.isError).toBe(true);
+      expect(result.content[0].type).toBe('text');
+      expect(result.content[0].text).toContain('ValidationError');
     });
 
     it('should validate task is a string', async () => {
-      await expect(async () => {
-        await buddyHandlers.handleBuddyDo({
-          task: 123,
-        });
-      }).rejects.toThrow();
+      const result = await buddyHandlers.handleBuddyDo({
+        task: 123,
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].type).toBe('text');
+      expect(result.content[0].text).toContain('ValidationError');
     });
 
     it('should handle empty task string', async () => {
-      await expect(async () => {
-        await buddyHandlers.handleBuddyDo({
-          task: '',
-        });
-      }).rejects.toThrow();
+      const result = await buddyHandlers.handleBuddyDo({
+        task: '',
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].type).toBe('text');
+      expect(result.content[0].text).toContain('ValidationError');
     });
 
     it('should handle routing errors', async () => {
@@ -190,19 +193,21 @@ describe('BuddyHandlers', () => {
     });
 
     it('should validate invalid period', async () => {
-      await expect(async () => {
-        await buddyHandlers.handleBuddyStats({
-          period: 'invalid',
-        });
-      }).rejects.toThrow();
+      const result = await buddyHandlers.handleBuddyStats({
+        period: 'invalid',
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].type).toBe('text');
+      expect(result.content[0].text).toContain('ValidationError');
     });
 
     it('should validate period is a string', async () => {
-      await expect(async () => {
-        await buddyHandlers.handleBuddyStats({
-          period: 123,
-        });
-      }).rejects.toThrow();
+      const result = await buddyHandlers.handleBuddyStats({
+        period: 123,
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].type).toBe('text');
+      expect(result.content[0].text).toContain('ValidationError');
     });
   });
 
@@ -228,25 +233,28 @@ describe('BuddyHandlers', () => {
     });
 
     it('should validate query is required', async () => {
-      await expect(async () => {
-        await buddyHandlers.handleBuddyRemember({});
-      }).rejects.toThrow();
+      const result = await buddyHandlers.handleBuddyRemember({});
+      expect(result.isError).toBe(true);
+      expect(result.content[0].type).toBe('text');
+      expect(result.content[0].text).toContain('ValidationError');
     });
 
     it('should validate query is a string', async () => {
-      await expect(async () => {
-        await buddyHandlers.handleBuddyRemember({
-          query: null,
-        });
-      }).rejects.toThrow();
+      const result = await buddyHandlers.handleBuddyRemember({
+        query: null,
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].type).toBe('text');
+      expect(result.content[0].text).toContain('ValidationError');
     });
 
     it('should handle empty query string', async () => {
-      await expect(async () => {
-        await buddyHandlers.handleBuddyRemember({
-          query: '',
-        });
-      }).rejects.toThrow();
+      const result = await buddyHandlers.handleBuddyRemember({
+        query: '',
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].type).toBe('text');
+      expect(result.content[0].text).toContain('ValidationError');
     });
 
     it('should handle search errors', async () => {
@@ -326,47 +334,53 @@ describe('BuddyHandlers', () => {
     });
 
     it('should validate command is a string if provided', async () => {
-      await expect(async () => {
-        await buddyHandlers.handleBuddyHelp({
-          command: 123,
-        });
-      }).rejects.toThrow();
+      const result = await buddyHandlers.handleBuddyHelp({
+        command: 123,
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].type).toBe('text');
+      expect(result.content[0].text).toContain('ValidationError');
     });
   });
 
   describe('Error Handling', () => {
     it('should handle null inputs', async () => {
-      await expect(async () => {
-        await buddyHandlers.handleBuddyDo(null as any);
-      }).rejects.toThrow();
+      const result = await buddyHandlers.handleBuddyDo(null as any);
+      expect(result.isError).toBe(true);
+      expect(result.content[0].type).toBe('text');
+      expect(result.content[0].text).toContain('ValidationError');
     });
 
     it('should handle undefined inputs', async () => {
-      await expect(async () => {
-        await buddyHandlers.handleBuddyDo(undefined as any);
-      }).rejects.toThrow();
+      const result = await buddyHandlers.handleBuddyDo(undefined as any);
+      expect(result.isError).toBe(true);
+      expect(result.content[0].type).toBe('text');
+      expect(result.content[0].text).toContain('ValidationError');
     });
 
     it('should handle array inputs', async () => {
-      await expect(async () => {
-        await buddyHandlers.handleBuddyDo(['task'] as any);
-      }).rejects.toThrow();
+      const result = await buddyHandlers.handleBuddyDo(['task'] as any);
+      expect(result.isError).toBe(true);
+      expect(result.content[0].type).toBe('text');
+      expect(result.content[0].text).toContain('ValidationError');
     });
 
     it('should handle number inputs', async () => {
-      await expect(async () => {
-        await buddyHandlers.handleBuddyDo(123 as any);
-      }).rejects.toThrow();
+      const result = await buddyHandlers.handleBuddyDo(123 as any);
+      expect(result.isError).toBe(true);
+      expect(result.content[0].type).toBe('text');
+      expect(result.content[0].text).toContain('ValidationError');
     });
 
     it('should log errors properly', async () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      await expect(async () => {
-        await buddyHandlers.handleBuddyDo({
-          task: '', // Invalid empty string
-        });
-      }).rejects.toThrow();
+      const result = await buddyHandlers.handleBuddyDo({
+        task: '', // Invalid empty string
+      });
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('ValidationError');
 
       // Note: Logger might not use console.error directly
       // expect(consoleErrorSpy).toHaveBeenCalled();
@@ -375,13 +389,11 @@ describe('BuddyHandlers', () => {
     });
 
     it('should include context in validation errors', async () => {
-      try {
-        await buddyHandlers.handleBuddyDo({});
-        expect.fail('Should have thrown');
-      } catch (error: any) {
-        // Validation errors should include helpful context
-        expect(error).toBeDefined();
-      }
+      const result = await buddyHandlers.handleBuddyDo({});
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('ValidationError');
+      // Validation errors should include helpful context
+      expect(result.content[0].text).toBeDefined();
     });
   });
 
@@ -430,20 +442,22 @@ describe('BuddyHandlers', () => {
   describe('Edge Cases', () => {
     it('should handle whitespace-only task', async () => {
       // Whitespace is trimmed, so this becomes empty and should fail validation
-      await expect(async () => {
-        await buddyHandlers.handleBuddyDo({
-          task: '   '.trim() || ' ', // At least 1 char
-        });
-      }).rejects.toThrow();
+      const result = await buddyHandlers.handleBuddyDo({
+        task: '   '.trim() || ' ', // At least 1 char
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].type).toBe('text');
+      expect(result.content[0].text).toContain('ValidationError');
     });
 
     it('should handle whitespace-only query', async () => {
       // Whitespace is trimmed, so this becomes empty and should fail validation
-      await expect(async () => {
-        await buddyHandlers.handleBuddyRemember({
-          query: '   '.trim() || ' ', // At least 1 char
-        });
-      }).rejects.toThrow();
+      const result = await buddyHandlers.handleBuddyRemember({
+        query: '   '.trim() || ' ', // At least 1 char
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].type).toBe('text');
+      expect(result.content[0].text).toContain('ValidationError');
     });
 
     it('should handle unicode characters', async () => {

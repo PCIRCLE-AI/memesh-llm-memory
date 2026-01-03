@@ -44,7 +44,7 @@ describe('EmbeddingProviderFactory', () => {
     const modelInfo = provider!.getModelInfo();
 
     expect(modelInfo).toHaveProperty('provider');
-    expect(modelInfo.provider).toBe('openai');
+    expect(modelInfo.provider).toBe('OpenAI');
     expect(modelInfo).toHaveProperty('model');
     expect(modelInfo).toHaveProperty('dimensions');
     expect(typeof modelInfo.dimensions).toBe('number');

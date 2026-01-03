@@ -463,7 +463,13 @@ return items.map(item => ({
 
     // 檢測工作流類型
     if (lowerDesc.includes('http') || lowerDesc.includes('api') || lowerDesc.includes('請求')) {
-      const url = this.extractUrl(description) || 'https://api.example.com';
+      const url = this.extractUrl(description);
+      if (!url) {
+        throw new Error(
+          'HTTP workflow requires a URL. Please include the target URL in your description ' +
+          '(e.g., "Call API at https://myapi.com/endpoint")'
+        );
+      }
       return this.n8nAgent.createSimpleHttpWorkflow(
         `API Workflow - ${Date.now()}`,
         url
@@ -478,10 +484,10 @@ return items.map(item => ({
       );
     }
 
-    // 預設：簡單的 HTTP 工作流
-    return this.n8nAgent.createSimpleHttpWorkflow(
+    // Default: AI agent workflow (more useful than HTTP with fake URL)
+    return this.n8nAgent.createAIAgentWorkflow(
       `Workflow - ${Date.now()}`,
-      'https://api.example.com'
+      description
     );
   }
 

@@ -53,12 +53,12 @@ export interface ToolRouterConfig {
  * Central routing hub for all MCP tool calls. Validates requests, applies rate limiting,
  * and dispatches to appropriate handler modules based on tool name.
  *
- * The router supports three main categories of tools:
- * - **Buddy Tools**: buddy_do, buddy_agents, buddy_skills, buddy_uninstall, buddy_stats, buddy_remember, buddy_help, buddy_dashboard
- * - **Buddy Commands** (Legacy naming, same as Buddy Tools)
+ * The router supports five main categories of tools:
+ * - **Buddy Tools**: buddy-do, buddy-agents, buddy-skills, buddy-uninstall, buddy-stats, buddy-remember, buddy-help
  * - **Git Tools**: git-save-work, git-list-versions, git-status, etc.
- * - **Workflow Tools**: get-workflow-guidance, reload-context, etc.
- * - **Database Backup Tools**: create_database_backup, list_database_backups, etc.
+ * - **Workflow Tools**: get-workflow-guidance, reload-context, workflow-create, workflow-list
+ * - **DevOps Tools**: devops-generate-ci-config, devops-analyze-deployment, devops-setup-ci
+ * - **Database Backup Tools**: create-database-backup, list-database-backups, etc.
  *
  * Architecture:
  * - Rate limiting prevents DoS attacks (30 requests/minute default)
@@ -184,32 +184,32 @@ export class ToolRouter {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async dispatch(toolName: string, args: any): Promise<CallToolResult> {
     // Buddy tools
-    if (toolName === 'buddy_agents') {
+    if (toolName === 'buddy-agents') {
       return await this.toolHandlers.handleListAgents();
     }
 
-    if (toolName === 'buddy_skills') {
+    if (toolName === 'buddy-skills') {
       return await this.toolHandlers.handleListSkills(args);
     }
 
-    if (toolName === 'buddy_uninstall') {
+    if (toolName === 'buddy-uninstall') {
       return await this.toolHandlers.handleUninstall(args);
     }
 
     // Buddy Commands
-    if (toolName === 'buddy_do') {
+    if (toolName === 'buddy-do') {
       return await this.buddyHandlers.handleBuddyDo(args);
     }
 
-    if (toolName === 'buddy_stats') {
+    if (toolName === 'buddy-stats') {
       return await this.buddyHandlers.handleBuddyStats(args);
     }
 
-    if (toolName === 'buddy_remember') {
+    if (toolName === 'buddy-remember') {
       return await this.buddyHandlers.handleBuddyRemember(args);
     }
 
-    if (toolName === 'buddy_help') {
+    if (toolName === 'buddy-help') {
       return await this.buddyHandlers.handleBuddyHelp(args);
     }
 
@@ -308,7 +308,7 @@ export class ToolRouter {
     }
 
     // Database Backup tools
-    if (toolName === 'create_database_backup') {
+    if (toolName === 'create-database-backup') {
       try {
         const validatedInput = CreateBackupInputSchema.parse(args);
         return await executeCreateBackup(validatedInput, this.formatter);
@@ -325,7 +325,7 @@ export class ToolRouter {
       }
     }
 
-    if (toolName === 'list_database_backups') {
+    if (toolName === 'list-database-backups') {
       try {
         const validatedInput = ListBackupsInputSchema.parse(args);
         return await executeListBackups(validatedInput, this.formatter);
@@ -342,7 +342,7 @@ export class ToolRouter {
       }
     }
 
-    if (toolName === 'restore_database_backup') {
+    if (toolName === 'restore-database-backup') {
       try {
         const validatedInput = RestoreBackupInputSchema.parse(args);
         return await executeRestoreBackup(validatedInput, this.formatter);
@@ -359,7 +359,7 @@ export class ToolRouter {
       }
     }
 
-    if (toolName === 'clean_database_backups') {
+    if (toolName === 'clean-database-backups') {
       try {
         const validatedInput = CleanBackupsInputSchema.parse(args);
         return await executeCleanBackups(validatedInput, this.formatter);
@@ -376,7 +376,7 @@ export class ToolRouter {
       }
     }
 
-    if (toolName === 'get_backup_stats') {
+    if (toolName === 'get-backup-stats') {
       try {
         const validatedInput = BackupStatsInputSchema.parse(args);
         return await executeBackupStats(validatedInput, this.formatter);

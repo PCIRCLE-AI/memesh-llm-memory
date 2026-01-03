@@ -5,7 +5,7 @@ import {
   validatePatternProgression,
   validatePromptProgression,
   detectDegradation,
-} from './test-scenarios';
+} from './integration-test-scenarios.js';
 import { LearningManager } from './LearningManager';
 import { AdaptationEngine } from './AdaptationEngine';
 import { EvolutionMonitor } from './EvolutionMonitor';

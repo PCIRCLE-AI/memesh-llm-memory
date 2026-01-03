@@ -872,6 +872,7 @@ export class ToolHandlers {
    * Handle create-relations tool
    *
    * Creates relations between entities in the Knowledge Graph.
+   *
    */
   async handleCreateRelations(input: {
     relations: Array<{
@@ -960,12 +961,11 @@ export class ToolHandlers {
     }
   }
 
-
-
   /**
    * Handle devops-generate-ci-config tool
    *
    * Generates CI/CD configuration files for GitHub Actions or GitLab CI.
+   *
    */
   async handleGenerateCIConfig(input: {
     platform: 'github-actions' | 'gitlab-ci';
@@ -1040,6 +1040,7 @@ ${result.config}
    * Handle devops-analyze-deployment tool
    *
    * Analyzes deployment readiness by running tests, build, and checking git status.
+   *
    */
   async handleAnalyzeDeployment(input: {
     testCommand?: string;
@@ -1106,7 +1107,7 @@ ${result.config}
     try {
       const result = await setupCITool.handler(
         input,
-        this.devopsEngineer
+        this.knowledgeGraph
       );
 
       if (!result.success) {

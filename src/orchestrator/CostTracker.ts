@@ -6,6 +6,7 @@
  * - 計算累積成本
  * - 預算警報
  * - 成本報告生成
+ * - SQLite 持久化（數據不再在重啟時丟失！）
  *
  * 使用整數運算 (micro-dollars) 避免浮點精度錯誤
  */
@@ -23,17 +24,71 @@ import {
   calculateBudgetPercentage,
 } from '../utils/money.js';
 import { logger } from '../utils/logger.js';
+import { CostRecordsRepository } from '../evolution/storage/repositories/CostRecordsRepository.js';
 
 export class CostTracker {
   private costs: CostRecord[] = [];
   /** Monthly budget in micro-dollars (μUSD) */
   private monthlyBudget: MicroDollars;
   private alertThreshold: number;
+  // SQLite persistence repository (optional - graceful degradation if not provided)
+  private repository?: CostRecordsRepository;
 
-  constructor() {
+  constructor(config?: { repository?: CostRecordsRepository }) {
     // Convert USD budget to micro-dollars for precise tracking
     this.monthlyBudget = toMicroDollars(appConfig.costs.monthlyBudget);
     this.alertThreshold = appConfig.costs.alertThreshold;
+    this.repository = config?.repository;
+
+    // If repository provided, ensure schema and load existing records
+    if (this.repository) {
+      try {
+        this.repository.ensureSchema();
+        this.loadFromRepository();
+        logger.info('CostTracker initialized with SQLite persistence', {
+          monthlyBudget: formatMoney(this.monthlyBudget),
+          loadedRecords: this.costs.length,
+        });
+      } catch (error) {
+        logger.warn('Failed to initialize SQLite persistence, falling back to in-memory only', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        this.repository = undefined;
+      }
+    } else {
+      logger.info('CostTracker initialized (in-memory only)', {
+        monthlyBudget: formatMoney(this.monthlyBudget),
+      });
+    }
+  }
+
+  /**
+   * Load cost records from SQLite repository on startup
+   */
+  private loadFromRepository(): void {
+    if (!this.repository) return;
+
+    // Load current month's records (for stats calculations)
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const records = this.repository.getByTimeRange(monthStart, now);
+
+    // Convert repository records to CostRecord format
+    for (const record of records) {
+      this.costs.push({
+        timestamp: record.timestamp,
+        taskId: record.taskId,
+        modelName: record.modelName,
+        inputTokens: record.inputTokens,
+        outputTokens: record.outputTokens,
+        cost: record.cost,
+      });
+    }
+
+    logger.debug('Loaded cost records from SQLite', {
+      recordCount: records.length,
+      monthStart: monthStart.toISOString(),
+    });
   }
 
   /**
@@ -59,6 +114,18 @@ export class CostTracker {
     };
 
     this.costs.push(record);
+
+    // Persist to SQLite if repository available
+    if (this.repository) {
+      try {
+        this.repository.save(record);
+      } catch (error) {
+        logger.warn('Failed to persist cost record to SQLite', {
+          taskId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
 
     // 檢查是否超過預算警告閾值
     this.checkBudgetAlert();

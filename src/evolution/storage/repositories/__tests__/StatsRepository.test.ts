@@ -60,6 +60,69 @@ describe('StatsRepository', () => {
       )
     `);
 
+    // Create execution_metrics table for getStats computation
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS execution_metrics (
+        id TEXT PRIMARY KEY,
+        agent_id TEXT NOT NULL,
+        task_type TEXT NOT NULL,
+        success INTEGER NOT NULL,
+        duration_ms REAL NOT NULL,
+        timestamp DATETIME NOT NULL,
+        cost REAL,
+        quality_score REAL,
+        user_satisfaction REAL,
+        error_message TEXT,
+        config_snapshot TEXT NOT NULL,
+        metadata TEXT,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create patterns table for getStats computation
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS patterns (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        confidence REAL NOT NULL,
+        occurrences INTEGER NOT NULL DEFAULT 1,
+        pattern_data TEXT NOT NULL,
+        source_metric_ids TEXT,
+        agent_id TEXT,
+        task_type TEXT,
+        applies_to_skill TEXT,
+        applies_to_task_type TEXT,
+        first_observed DATETIME NOT NULL,
+        last_observed DATETIME NOT NULL,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create adaptations table for getStats computation
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS adaptations (
+        id TEXT PRIMARY KEY,
+        pattern_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        before_config TEXT NOT NULL,
+        after_config TEXT NOT NULL,
+        applied_to_agent_id TEXT,
+        applied_to_task_type TEXT,
+        applied_at DATETIME NOT NULL,
+        success_count INTEGER NOT NULL DEFAULT 0,
+        failure_count INTEGER NOT NULL DEFAULT 0,
+        avg_improvement REAL NOT NULL DEFAULT 0,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        deactivated_at DATETIME,
+        deactivation_reason TEXT,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     repo = new StatsRepository(db);
   });
 

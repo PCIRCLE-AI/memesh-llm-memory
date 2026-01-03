@@ -350,3 +350,35 @@ export function isArray(value: unknown): value is unknown[] {
 export function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === 'string');
 }
+
+/**
+ * Safely stringify an object to JSON
+ *
+ * Returns fallback value if serialization fails.
+ * Useful for logging and storing complex objects.
+ *
+ * @param value - Value to stringify
+ * @param fallback - Fallback value if stringify fails (default: '{}')
+ * @returns JSON string or fallback value
+ *
+ * @example
+ * ```typescript
+ * const json = safeJsonStringify({ name: 'test' });
+ * // Returns '{"name":"test"}'
+ *
+ * const circular: Record<string, unknown> = {};
+ * circular.self = circular;
+ * const safe = safeJsonStringify(circular, 'null');
+ * // Returns 'null' (fallback) because of circular reference
+ * ```
+ */
+export function safeJsonStringify(value: unknown, fallback: string = '{}'): string {
+  try {
+    return JSON.stringify(value);
+  } catch (error) {
+    logger.warn('JSON stringify error:', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return fallback;
+  }
+}

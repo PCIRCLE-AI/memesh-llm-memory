@@ -321,8 +321,7 @@ export class KnowledgeAgent {
   }
 
   /**
-   * Record a decision in the knowledge graph (STUB)
-   * TODO: Implement using createEntities with type 'decision' - See issue #9
+   * Record a decision in the knowledge graph
    */
   async recordDecision(decision: {
     name: string;
@@ -331,14 +330,35 @@ export class KnowledgeAgent {
     tradeoffs: string[];
     outcome: string;
     tags: string[];
-  }): Promise<void> {
-    // Stub: no-op
-    logger.warn('recordDecision is a stub method - use createEntities instead');
+  }): Promise<Entity> {
+    this.ensureInitialized();
+
+    const observations = [
+      `reason: ${decision.reason}`,
+      `outcome: ${decision.outcome}`,
+      ...decision.alternatives.map(alt => `alternative: ${alt}`),
+      ...decision.tradeoffs.map(t => `tradeoff: ${t}`),
+      ...decision.tags.map(tag => `tag: ${tag}`),
+    ];
+
+    const [entity] = await this.createEntities([{
+      name: decision.name,
+      entityType: 'decision',
+      observations,
+      metadata: {
+        alternatives: decision.alternatives,
+        tradeoffs: decision.tradeoffs,
+        tags: decision.tags,
+        recordedAt: new Date().toISOString(),
+      },
+    }]);
+
+    logger.info(`Recorded decision: ${decision.name}`);
+    return entity;
   }
 
   /**
-   * Record a feature implementation (STUB)
-   * TODO: Implement using createEntities with type 'feature' - See issue #9
+   * Record a feature implementation in the knowledge graph
    */
   async recordFeature(feature: {
     name: string;
@@ -346,14 +366,33 @@ export class KnowledgeAgent {
     implementation: string;
     challenges?: string[];
     tags: string[];
-  }): Promise<void> {
-    // Stub: no-op
-    logger.warn('recordFeature is a stub method - use createEntities instead');
+  }): Promise<Entity> {
+    this.ensureInitialized();
+
+    const observations = [
+      `description: ${feature.description}`,
+      `implementation: ${feature.implementation}`,
+      ...(feature.challenges || []).map(c => `challenge: ${c}`),
+      ...feature.tags.map(tag => `tag: ${tag}`),
+    ];
+
+    const [entity] = await this.createEntities([{
+      name: feature.name,
+      entityType: 'feature',
+      observations,
+      metadata: {
+        challenges: feature.challenges || [],
+        tags: feature.tags,
+        recordedAt: new Date().toISOString(),
+      },
+    }]);
+
+    logger.info(`Recorded feature: ${feature.name}`);
+    return entity;
   }
 
   /**
-   * Record a bug fix (STUB)
-   * TODO: Implement using createEntities with type 'bug_fix' - See issue #9
+   * Record a bug fix in the knowledge graph
    */
   async recordBugFix(bugFix: {
     name: string;
@@ -361,14 +400,35 @@ export class KnowledgeAgent {
     solution: string;
     prevention: string;
     tags: string[];
-  }): Promise<void> {
-    // Stub: no-op
-    logger.warn('recordBugFix is a stub method - use createEntities instead');
+  }): Promise<Entity> {
+    this.ensureInitialized();
+
+    const observations = [
+      `root_cause: ${bugFix.rootCause}`,
+      `solution: ${bugFix.solution}`,
+      `prevention: ${bugFix.prevention}`,
+      ...bugFix.tags.map(tag => `tag: ${tag}`),
+    ];
+
+    const [entity] = await this.createEntities([{
+      name: bugFix.name,
+      entityType: 'bug_fix',
+      observations,
+      metadata: {
+        rootCause: bugFix.rootCause,
+        solution: bugFix.solution,
+        prevention: bugFix.prevention,
+        tags: bugFix.tags,
+        recordedAt: new Date().toISOString(),
+      },
+    }]);
+
+    logger.info(`Recorded bug fix: ${bugFix.name}`);
+    return entity;
   }
 
   /**
-   * Record a best practice (STUB)
-   * TODO: Implement using createEntities with type 'best_practice' - See issue #9
+   * Record a best practice in the knowledge graph
    */
   async recordBestPractice(practice: {
     name: string;
@@ -376,9 +436,30 @@ export class KnowledgeAgent {
     why: string;
     example?: string;
     tags?: string[];
-  }): Promise<void> {
-    // Stub: no-op
-    logger.warn('recordBestPractice is a stub method - use createEntities instead');
+  }): Promise<Entity> {
+    this.ensureInitialized();
+
+    const observations = [
+      `description: ${practice.description}`,
+      `why: ${practice.why}`,
+      ...(practice.example ? [`example: ${practice.example}`] : []),
+      ...(practice.tags || []).map(tag => `tag: ${tag}`),
+    ];
+
+    const [entity] = await this.createEntities([{
+      name: practice.name,
+      entityType: 'best_practice',
+      observations,
+      metadata: {
+        why: practice.why,
+        example: practice.example,
+        tags: practice.tags || [],
+        recordedAt: new Date().toISOString(),
+      },
+    }]);
+
+    logger.info(`Recorded best practice: ${practice.name}`);
+    return entity;
   }
 }
 

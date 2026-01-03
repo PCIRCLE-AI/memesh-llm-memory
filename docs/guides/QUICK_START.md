@@ -95,7 +95,7 @@ Add Claude Code Buddy as an MCP server to Claude Code:
 
 ```bash
 # Edit Claude Code config
-nano ~/.claude/config.json
+nano ~/.claude.json
 ```
 
 #### Windows
@@ -262,7 +262,7 @@ Now that you're up and running, explore more:
 1. Verify `config.json` path is correct:
    ```bash
    # Check file exists
-   cat ~/.claude/config.json
+   cat ~/.claude.json
    ```
 
 2. Ensure absolute path is used:

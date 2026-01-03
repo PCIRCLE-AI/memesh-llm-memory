@@ -209,13 +209,10 @@ echo ""
 # Step 7: Configure MCP
 print_step "Step 7/11: Configuring MCP integration..."
 
-MCP_CONFIG="$HOME/.claude/config.json"
+MCP_CONFIG="$HOME/.claude.json"
 CCB_PATH="$(pwd)/dist/mcp/server.js"
 
-# Create ~/.claude directory if it doesn't exist
-mkdir -p "$HOME/.claude"
-
-# Check if config.json exists
+# Check if .claude.json exists (Claude Code's main config file)
 if [ ! -f "$MCP_CONFIG" ]; then
     echo '{"mcpServers": {}}' > "$MCP_CONFIG"
     print_success "Created $MCP_CONFIG"

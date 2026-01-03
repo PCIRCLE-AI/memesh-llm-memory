@@ -415,6 +415,32 @@ export class DevelopmentButler {
     // Get workflow guidance
     const guidance = this.guidanceEngine.analyzeWorkflow(context);
 
+    // Handle empty recommendations case
+    if (!guidance.recommendations || guidance.recommendations.length === 0) {
+      const noRecommendationsMessage = `
+═══════════════════════════════════════════════════
+🔄 Workflow Guidance
+═══════════════════════════════════════════════════
+
+ℹ️ No specific recommendations at this time.
+Current phase: ${context.phase}
+
+Continue with your current workflow.
+═══════════════════════════════════════════════════
+      `.trim();
+
+      const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      this.activeRequests.set(requestId, guidance);
+      const sessionHealth = this.contextMonitor.checkSessionHealth();
+
+      return {
+        guidance,
+        formattedRequest: noRecommendationsMessage,
+        requestId,
+        sessionHealth,
+      };
+    }
+
     // Format as non-blocking confirmation request
     const topRecommendation = guidance.recommendations[0];
     const alternatives = guidance.recommendations.slice(1, 4);

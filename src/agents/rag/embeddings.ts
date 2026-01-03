@@ -5,6 +5,7 @@
 import OpenAI from 'openai';
 import { appConfig } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
+import { retryWithBackoff } from '../../utils/retry.js';
 import type { CostTracker } from './types.js';
 import { ConfigurationError, OperationError, ValidationError } from '../../errors/index.js';
 
@@ -88,11 +89,19 @@ export class EmbeddingService {
     const client = await this.ensureClient();
 
     try {
-      const response = await client.embeddings.create({
-        model: this.model,
-        input: text,
-        encoding_format: 'float',
-      });
+      const response = await retryWithBackoff(
+        () => client.embeddings.create({
+          model: this.model,
+          input: text,
+          encoding_format: 'float',
+        }),
+        {
+          maxRetries: 3,
+          baseDelay: 1000,
+          operationName: 'OpenAI Embedding',
+          retryableStatusCodes: [429, 500, 502, 503, 504],
+        }
+      );
 
       // 更新成本追蹤
       const tokens = response.usage.total_tokens;
@@ -131,11 +140,19 @@ export class EmbeddingService {
 
     for (const batch of batches) {
       try {
-        const response = await client.embeddings.create({
-          model: this.model,
-          input: batch,
-          encoding_format: 'float',
-        });
+        const response = await retryWithBackoff(
+          () => client.embeddings.create({
+            model: this.model,
+            input: batch,
+            encoding_format: 'float',
+          }),
+          {
+            maxRetries: 3,
+            baseDelay: 1000,
+            operationName: 'OpenAI Batch Embedding',
+            retryableStatusCodes: [429, 500, 502, 503, 504],
+          }
+        );
 
         // 更新成本追蹤
         const tokens = response.usage.total_tokens;

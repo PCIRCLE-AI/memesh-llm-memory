@@ -9,6 +9,7 @@
 
 import { IEmbeddingProvider, ModelInfo } from '../types';
 import { logger } from '../../../utils/logger.js';
+import { retryWithBackoff } from '../../../utils/retry.js';
 
 /**
  * Default model configurations
@@ -66,26 +67,40 @@ export class HuggingFaceProvider implements IEmbeddingProvider {
    */
   async embed(text: string): Promise<number[]> {
     try {
-      // Use OpenAI-compatible embeddings endpoint
-      const response = await fetch(
-        `${this.baseUrl}/v1/embeddings`,
+      // Use OpenAI-compatible embeddings endpoint with retry
+      const response = await retryWithBackoff(
+        async () => {
+          const res = await fetch(
+            `${this.baseUrl}/v1/embeddings`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${this.apiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: this.model,
+                input: text,
+              }),
+            }
+          );
+
+          if (!res.ok) {
+            const errorText = await res.text();
+            const error = new Error(`Hugging Face API error: ${res.status} - ${errorText}`);
+            (error as any).status = res.status;
+            throw error;
+          }
+
+          return res;
+        },
         {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: this.model,
-            input: text,
-          }),
+          maxRetries: 3,
+          baseDelay: 1000,
+          operationName: 'HuggingFace Embedding',
+          retryableStatusCodes: [429, 500, 502, 503, 504],
         }
       );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Hugging Face API error: ${response.status} - ${errorText}`);
-      }
 
       const result = (await response.json()) as { data?: Array<{ embedding?: number[] }> };
 
@@ -132,26 +147,40 @@ export class HuggingFaceProvider implements IEmbeddingProvider {
       const batch = texts.slice(i, i + this.batchSize);
 
       try {
-        // Use OpenAI-compatible embeddings endpoint
-        const response = await fetch(
-          `${this.baseUrl}/v1/embeddings`,
+        // Use OpenAI-compatible embeddings endpoint with retry
+        const response = await retryWithBackoff(
+          async () => {
+            const res = await fetch(
+              `${this.baseUrl}/v1/embeddings`,
+              {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${this.apiKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  model: this.model,
+                  input: batch,
+                }),
+              }
+            );
+
+            if (!res.ok) {
+              const errorText = await res.text();
+              const error = new Error(`Hugging Face API error: ${res.status} - ${errorText}`);
+              (error as any).status = res.status;
+              throw error;
+            }
+
+            return res;
+          },
           {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${this.apiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: this.model,
-              input: batch,
-            }),
+            maxRetries: 3,
+            baseDelay: 1000,
+            operationName: 'HuggingFace Batch Embedding',
+            retryableStatusCodes: [429, 500, 502, 503, 504],
           }
         );
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Hugging Face API error: ${response.status} - ${errorText}`);
-        }
 
         const result = (await response.json()) as { data?: Array<{ embedding?: number[] }> };
 

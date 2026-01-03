@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { HealthChecker, getHealthStatus } from '../../core/HealthCheck.js';
+import { HealthChecker, formatHealthStatus } from '../../core/HealthCheck.js';
 import { logger } from '../../utils/logger.js';
 
 export const HealthCheckInputSchema = z.object({
@@ -39,10 +39,8 @@ export async function executeHealthCheck(
       includeOptional: input.includeOptional,
     });
 
-    // Format health status for display
-    const formattedStatus = await getHealthStatus({
-      includeOptional: input.includeOptional,
-    });
+    // Format health status for display (using pre-computed health - no redundant call)
+    const formattedStatus = formatHealthStatus(health);
 
     logger.debug('Health check completed', {
       status: health.status,

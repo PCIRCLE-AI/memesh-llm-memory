@@ -207,7 +207,13 @@ export class EmbeddingService {
       normB += b[i] * b[i];
     }
 
-    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+    // Guard against zero-magnitude vectors (division by zero)
+    const magnitude = Math.sqrt(normA) * Math.sqrt(normB);
+    if (magnitude === 0) {
+      return 0; // Zero vectors have no meaningful similarity
+    }
+
+    return dotProduct / magnitude;
   }
 
   /**

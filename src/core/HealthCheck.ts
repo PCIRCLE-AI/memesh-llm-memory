@@ -379,12 +379,9 @@ export async function isSystemHealthy(options?: HealthCheckOptions): Promise<boo
 }
 
 /**
- * Get formatted health status for display
+ * Format health status for display (uses pre-computed health or runs check)
  */
-export async function getHealthStatus(options?: HealthCheckOptions): Promise<string> {
-  const checker = new HealthChecker();
-  const health = await checker.checkAll(options);
-
+export function formatHealthStatus(health: SystemHealth): string {
   const lines: string[] = [];
   lines.push('');
   lines.push('╭─────────────────────────────────────────────────────╮');
@@ -420,6 +417,15 @@ export async function getHealthStatus(options?: HealthCheckOptions): Promise<str
   lines.push('');
 
   return lines.join('\n');
+}
+
+/**
+ * Get formatted health status for display (convenience function)
+ */
+export async function getHealthStatus(options?: HealthCheckOptions): Promise<string> {
+  const checker = new HealthChecker();
+  const health = await checker.checkAll(options);
+  return formatHealthStatus(health);
 }
 
 // ============================================================================

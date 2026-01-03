@@ -1,7 +1,8 @@
 /**
  * Performance Tracker - Agent Performance Monitoring
  *
- * Tracks agent execution metrics to identify improvement opportunities
+ * Tracks agent execution metrics to identify improvement opportunities.
+ * NOW WITH SQLITE PERSISTENCE - Metrics survive server restarts!
  */
 
 import { logger } from '../utils/logger.js';
@@ -9,6 +10,7 @@ import { MinHeap } from '../utils/MinHeap.js';
 import type { PerformanceMetrics, EvolutionStats } from './types.js';
 import { v4 as uuidv4 } from 'uuid';
 import { ValidationError } from '../errors/index.js';
+import { PerformanceMetricsRepository } from './storage/repositories/PerformanceMetricsRepository.js';
 
 /**
  * Heap entry for tracking oldest metrics across agents
@@ -25,19 +27,73 @@ export class PerformanceTracker {
   private totalMetricsCount: number = 0;
   // Min-heap for O(log N) eviction of oldest metrics
   private evictionHeap: MinHeap<HeapEntry>;
+  // SQLite persistence repository (optional - graceful degradation if not provided)
+  private repository?: PerformanceMetricsRepository;
 
-  constructor(config?: { maxMetricsPerAgent?: number; maxTotalMetrics?: number }) {
+  constructor(config?: {
+    maxMetricsPerAgent?: number;
+    maxTotalMetrics?: number;
+    repository?: PerformanceMetricsRepository;
+  }) {
     this.maxMetricsPerAgent = config?.maxMetricsPerAgent || 1000;
     this.maxTotalMetrics = config?.maxTotalMetrics || 10000;
+    this.repository = config?.repository;
 
     // Initialize min-heap with timestamp comparison (oldest first)
     this.evictionHeap = new MinHeap<HeapEntry>((a, b) => {
       return a.timestamp.getTime() - b.timestamp.getTime();
     });
 
-    logger.info('Performance tracker initialized', {
-      maxMetricsPerAgent: this.maxMetricsPerAgent,
-      maxTotalMetrics: this.maxTotalMetrics,
+    // If repository provided, ensure schema and load existing metrics
+    if (this.repository) {
+      try {
+        this.repository.ensureSchema();
+        this.loadFromRepository();
+        logger.info('Performance tracker initialized with SQLite persistence', {
+          maxMetricsPerAgent: this.maxMetricsPerAgent,
+          maxTotalMetrics: this.maxTotalMetrics,
+          loadedMetrics: this.totalMetricsCount,
+        });
+      } catch (error) {
+        logger.warn('Failed to initialize SQLite persistence, falling back to in-memory only', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        this.repository = undefined;
+      }
+    } else {
+      logger.info('Performance tracker initialized (in-memory only)', {
+        maxMetricsPerAgent: this.maxMetricsPerAgent,
+        maxTotalMetrics: this.maxTotalMetrics,
+      });
+    }
+  }
+
+  /**
+   * Load metrics from SQLite repository on startup
+   */
+  private loadFromRepository(): void {
+    if (!this.repository) return;
+
+    const agentIds = this.repository.getAgentIds();
+    for (const agentId of agentIds) {
+      const metrics = this.repository.getByAgentId(agentId, this.maxMetricsPerAgent);
+      if (metrics.length > 0) {
+        // Sort by timestamp ascending (oldest first)
+        metrics.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+        this.metrics.set(agentId, metrics);
+        this.totalMetricsCount += metrics.length;
+
+        // Add oldest metric to eviction heap
+        this.evictionHeap.push({
+          agentId,
+          timestamp: metrics[0].timestamp,
+        });
+      }
+    }
+
+    logger.debug('Loaded metrics from SQLite', {
+      agentCount: agentIds.length,
+      totalMetrics: this.totalMetricsCount,
     });
   }
 
@@ -138,6 +194,18 @@ export class PerformanceTracker {
     // Enforce global limit (O(log N) eviction using min-heap)
     this.enforceGlobalLimit();
 
+    // Persist to SQLite if repository available
+    if (this.repository) {
+      try {
+        this.repository.save(fullMetrics);
+      } catch (error) {
+        logger.warn('Failed to persist metric to SQLite', {
+          executionId: fullMetrics.executionId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
     logger.debug('Performance tracked', {
       agentId: metrics.agentId,
       taskType: metrics.taskType,
@@ -146,6 +214,7 @@ export class PerformanceTracker {
       cost: metrics.cost,
       qualityScore: metrics.qualityScore,
       totalMetrics: this.totalMetricsCount,
+      persisted: !!this.repository,
     });
 
     return fullMetrics;

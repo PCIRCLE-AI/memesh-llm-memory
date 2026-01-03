@@ -906,9 +906,135 @@ export class SQLiteStore implements EvolutionStore {
     periodStart: Date,
     periodEnd: Date
   ): Promise<EvolutionStats[]> {
-    // This would involve complex aggregation queries
-    // Placeholder for now
-    return [];
+    const startTime = periodStart.getTime();
+    const endTime = periodEnd.getTime();
+
+    // Query aggregated stats from spans
+    const stmt = this.db.prepare(`
+      SELECT
+        json_extract(resource, '$.agent.id') as agent_id,
+        COUNT(*) as total_executions,
+        SUM(CASE WHEN status_code = 'OK' THEN 1 ELSE 0 END) as successful_executions,
+        SUM(CASE WHEN status_code = 'ERROR' THEN 1 ELSE 0 END) as failed_executions,
+        AVG(duration_ms) as avg_duration_ms,
+        AVG(COALESCE(json_extract(attributes, '$.cost'), 0)) as avg_cost,
+        AVG(COALESCE(json_extract(attributes, '$.quality_score'), 0)) as avg_quality_score
+      FROM spans
+      WHERE start_time >= ? AND start_time <= ?
+      GROUP BY agent_id
+    `);
+
+    const rows = stmt.all(startTime, endTime) as {
+      agent_id: string | null;
+      total_executions: number;
+      successful_executions: number;
+      failed_executions: number;
+      avg_duration_ms: number | null;
+      avg_cost: number | null;
+      avg_quality_score: number | null;
+    }[];
+
+    // Get pattern and adaptation counts
+    const patternCount = this.db.prepare(`
+      SELECT COUNT(*) as count FROM patterns
+      WHERE first_observed >= ? AND first_observed <= ?
+    `).get(periodStart.toISOString(), periodEnd.toISOString()) as { count: number };
+
+    const adaptationCount = this.db.prepare(`
+      SELECT COUNT(*) as count FROM adaptations
+      WHERE applied_at >= ? AND applied_at <= ?
+    `).get(periodStart.toISOString(), periodEnd.toISOString()) as { count: number };
+
+    // Get skill usage info
+    const skillUsageStmt = this.db.prepare(`
+      SELECT
+        json_extract(attributes, '$.skill.name') as skill_name,
+        COUNT(*) as uses,
+        SUM(CASE WHEN status_code = 'OK' THEN 1 ELSE 0 END) as successes
+      FROM spans
+      WHERE start_time >= ? AND start_time <= ?
+        AND json_extract(attributes, '$.skill.name') IS NOT NULL
+      GROUP BY skill_name
+      ORDER BY uses DESC
+    `);
+
+    const skillRows = skillUsageStmt.all(startTime, endTime) as {
+      skill_name: string;
+      uses: number;
+      successes: number;
+    }[];
+
+    const skillsUsed: Record<string, number> = {};
+    let mostSuccessfulSkill: string | undefined;
+    let maxSuccessRate = 0;
+
+    for (const skill of skillRows) {
+      skillsUsed[skill.skill_name] = skill.uses;
+      const rate = skill.uses > 0 ? skill.successes / skill.uses : 0;
+      if (rate > maxSuccessRate) {
+        maxSuccessRate = rate;
+        mostSuccessfulSkill = skill.skill_name;
+      }
+    }
+
+    // Build stats for each agent
+    const stats: EvolutionStats[] = [];
+    const now = new Date();
+
+    for (const row of rows) {
+      const total = row.total_executions || 0;
+      const successful = row.successful_executions || 0;
+      const successRate = total > 0 ? successful / total : 0;
+
+      stats.push({
+        id: uuid(),
+        agent_id: row.agent_id ?? undefined,
+        period_start: periodStart,
+        period_end: periodEnd,
+        period_type: periodType,
+        total_executions: total,
+        successful_executions: successful,
+        failed_executions: row.failed_executions || 0,
+        success_rate: successRate,
+        avg_duration_ms: row.avg_duration_ms || 0,
+        avg_cost: row.avg_cost || 0,
+        avg_quality_score: row.avg_quality_score || 0,
+        patterns_discovered: patternCount.count,
+        adaptations_applied: adaptationCount.count,
+        improvement_rate: 0, // Would require historical comparison
+        skills_used: Object.keys(skillsUsed).length > 0 ? Object.keys(skillsUsed) : undefined,
+        most_successful_skill: mostSuccessfulSkill,
+        avg_skill_satisfaction: undefined,
+        created_at: now,
+        updated_at: now,
+      });
+    }
+
+    // If no agent-specific data, create a global stats entry
+    if (stats.length === 0) {
+      stats.push({
+        id: uuid(),
+        period_start: periodStart,
+        period_end: periodEnd,
+        period_type: periodType,
+        total_executions: 0,
+        successful_executions: 0,
+        failed_executions: 0,
+        success_rate: 0,
+        avg_duration_ms: 0,
+        avg_cost: 0,
+        avg_quality_score: 0,
+        patterns_discovered: patternCount.count,
+        adaptations_applied: adaptationCount.count,
+        improvement_rate: 0,
+        skills_used: Object.keys(skillsUsed).length > 0 ? Object.keys(skillsUsed) : undefined,
+        most_successful_skill: mostSuccessfulSkill,
+        created_at: now,
+        updated_at: now,
+      });
+    }
+
+    return stats;
   }
 
   // ========================================================================
@@ -1046,9 +1172,154 @@ export class SQLiteStore implements EvolutionStore {
     endDate?: Date;
     format: 'json' | 'csv';
   }): Promise<string> {
-    // Export functionality - would export spans, patterns, etc.
-    // Placeholder for now
-    return JSON.stringify({ message: 'Export not yet implemented' });
+    const { startDate, endDate, format } = filters;
+
+    // Build date filter conditions
+    const dateConditions: string[] = [];
+    const dateParams: SQLParams = [];
+
+    if (startDate) {
+      dateConditions.push('start_time >= ?');
+      dateParams.push(startDate.getTime());
+    }
+    if (endDate) {
+      dateConditions.push('start_time <= ?');
+      dateParams.push(endDate.getTime());
+    }
+
+    const whereClause = dateConditions.length > 0
+      ? `WHERE ${dateConditions.join(' AND ')}`
+      : '';
+
+    // Query spans
+    const spansStmt = this.db.prepare(`SELECT * FROM spans ${whereClause} ORDER BY start_time DESC`);
+    const spanRows = spansStmt.all(...dateParams) as SpanRow[];
+    const spans = spanRows.map(row => this.rowToSpan(row));
+
+    // Query patterns (using date string format for patterns table)
+    const patternDateParams: SQLParam[] = [];
+    const patternConditions: string[] = [];
+
+    if (startDate) {
+      patternConditions.push('first_observed >= ?');
+      patternDateParams.push(startDate.toISOString());
+    }
+    if (endDate) {
+      patternConditions.push('first_observed <= ?');
+      patternDateParams.push(endDate.toISOString());
+    }
+
+    const patternWhere = patternConditions.length > 0
+      ? `WHERE ${patternConditions.join(' AND ')}`
+      : '';
+
+    const patternsStmt = this.db.prepare(`SELECT * FROM patterns ${patternWhere} ORDER BY last_observed DESC`);
+    const patternRows = patternsStmt.all(...patternDateParams) as PatternRow[];
+    const patterns = patternRows.map(row => this.rowToPattern(row));
+
+    // Query adaptations
+    const adaptationDateParams: SQLParam[] = [];
+    const adaptationConditions: string[] = [];
+
+    if (startDate) {
+      adaptationConditions.push('applied_at >= ?');
+      adaptationDateParams.push(startDate.toISOString());
+    }
+    if (endDate) {
+      adaptationConditions.push('applied_at <= ?');
+      adaptationDateParams.push(endDate.toISOString());
+    }
+
+    const adaptationWhere = adaptationConditions.length > 0
+      ? `WHERE ${adaptationConditions.join(' AND ')}`
+      : '';
+
+    const adaptationsStmt = this.db.prepare(`SELECT * FROM adaptations ${adaptationWhere} ORDER BY applied_at DESC`);
+    const adaptationRows = adaptationsStmt.all(...adaptationDateParams) as AdaptationRow[];
+
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      filters: {
+        startDate: startDate?.toISOString(),
+        endDate: endDate?.toISOString(),
+      },
+      summary: {
+        totalSpans: spans.length,
+        totalPatterns: patterns.length,
+        totalAdaptations: adaptationRows.length,
+      },
+      spans,
+      patterns,
+      adaptations: adaptationRows.map(row => ({
+        id: row.id,
+        pattern_id: row.pattern_id,
+        type: row.type,
+        before_config: safeJsonParse(row.before_config, {}),
+        after_config: safeJsonParse(row.after_config, {}),
+        applied_to_agent_id: row.applied_to_agent_id,
+        applied_to_task_type: row.applied_to_task_type,
+        applied_to_skill: row.applied_to_skill,
+        applied_at: row.applied_at,
+        success_count: row.success_count,
+        failure_count: row.failure_count,
+        avg_improvement: row.avg_improvement,
+        is_active: row.is_active === 1,
+      })),
+    };
+
+    if (format === 'json') {
+      return JSON.stringify(exportData, null, 2);
+    }
+
+    // CSV format - flatten data for each table type
+    const csvLines: string[] = [];
+
+    // Spans CSV section
+    csvLines.push('# SPANS');
+    csvLines.push('span_id,trace_id,name,status_code,duration_ms,start_time');
+    for (const span of spans) {
+      csvLines.push([
+        span.span_id,
+        span.trace_id,
+        `"${span.name.replace(/"/g, '""')}"`,
+        span.status.code,
+        span.duration_ms ?? '',
+        new Date(span.start_time).toISOString(),
+      ].join(','));
+    }
+
+    csvLines.push('');
+    csvLines.push('# PATTERNS');
+    csvLines.push('id,type,confidence,occurrences,is_active,first_observed,last_observed');
+    for (const pattern of patterns) {
+      csvLines.push([
+        pattern.id,
+        pattern.type,
+        pattern.confidence,
+        pattern.occurrences,
+        pattern.is_active ? 1 : 0,
+        pattern.first_observed.toISOString(),
+        pattern.last_observed.toISOString(),
+      ].join(','));
+    }
+
+    csvLines.push('');
+    csvLines.push('# ADAPTATIONS');
+    csvLines.push('id,pattern_id,type,success_count,failure_count,avg_improvement,is_active,applied_at');
+    for (const row of adaptationRows) {
+      csvLines.push([
+        row.id,
+        row.pattern_id,
+        row.type,
+        row.success_count,
+        row.failure_count,
+        row.avg_improvement,
+        row.is_active,
+        row.applied_at,
+      ].join(','));
+    }
+
+    return csvLines.join('\n');
   }
 
   // ========================================================================

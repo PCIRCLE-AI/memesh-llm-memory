@@ -383,7 +383,7 @@ describe('GitHandlers', () => {
         existingGit: false,
       });
 
-      expect(result.content[0].text).toContain('❌ Git setup failed');
+      expect(result.content[0].text).toContain('❌ Failed to setup git');
     });
 
     it('should validate existingGit is a boolean', async () => {
@@ -391,7 +391,7 @@ describe('GitHandlers', () => {
         existingGit: 'yes' as any,
       });
 
-      expect(result.content[0].text).toContain('❌ Git setup failed');
+      expect(result.content[0].text).toContain('❌ Failed to setup git');
     });
   });
 

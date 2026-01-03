@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "claude-code-buddy",
-      "source": "/Users/ktseng/Developer/Projects/claude-code-buddy/.claude-plugin/claude-code-buddy"
+      "source": "./claude-code-buddy"
     }
   ]
 }

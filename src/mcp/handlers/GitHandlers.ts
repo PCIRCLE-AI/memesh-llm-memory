@@ -531,7 +531,7 @@ export class GitHandlers {
     timeAgo: string;
   }>, limit: number): string {
     if (versions.length === 0) {
-      return '📚 No versions found. This project may not have any commits yet.';
+      return '📚 No versions found.\n\nPossible reasons:\n• Not a git repository (run git-setup first)\n• Repository has no commits yet\n• Current directory is not the project root';
     }
 
     const lines: string[] = [];

@@ -96,6 +96,17 @@ export class FriendlyGitCommands {
    */
   async listVersions(limit: number = 10): Promise<VersionInfo[]> {
     try {
+      // First check if we're in a git repository
+      const gitCheck = await this.mcp.bash({
+        command: 'git rev-parse --git-dir 2>/dev/null',
+      });
+
+      const gitDir = gitCheck?.stdout?.trim() ?? '';
+      if (!gitDir || gitDir.includes('fatal') || gitDir.includes('not a git repository')) {
+        logger.info('📚 Not a git repository. Please initialize git first.');
+        return [];
+      }
+
       const result = await this.mcp.bash({
         command: `git log --format="%H|%s|%an|%ar|%at" -n ${limit}`,
       });
@@ -118,15 +129,25 @@ export class FriendlyGitCommands {
         const timeAgo = parts[3] ?? '';
         const timestamp = parts[4] ?? '0';
 
+        // Validate hash looks like a git commit hash (40 hex chars)
+        const isValidHash = /^[0-9a-f]{40}$/i.test(hash);
+        if (!isValidHash) {
+          // Skip invalid entries (likely error messages being parsed)
+          return null;
+        }
+
         return {
           number: index + 1,
-          hash: hash ? hash.substring(0, 8) : '(unknown)',
+          hash: hash.substring(0, 8),
           message,
           author,
           date: new Date(parseInt(timestamp) * 1000),
           timeAgo,
         };
-      });
+      }).filter((v): v is VersionInfo => v !== null);
+
+      // Re-number after filtering
+      versions.forEach((v, i) => { v.number = i + 1; });
 
       logger.info('📚 最近的版本：\n');
       versions.forEach(v => {

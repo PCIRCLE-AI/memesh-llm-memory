@@ -99,6 +99,7 @@ export class LoadingIndicator {
   private startTime: number = 0;
   private isRunning: boolean = false;
   private lastLineLength: number = 0;
+  private cleanupBound: () => void;
 
   constructor(message: string, options: LoadingOptions = {}) {
     this.message = message;
@@ -109,6 +110,8 @@ export class LoadingIndicator {
       useColors: options.useColors ?? true,
       stream: options.stream || process.stderr,
     };
+    // Bind cleanup for process exit handlers
+    this.cleanupBound = () => this.dispose();
   }
 
   /**
@@ -121,13 +124,38 @@ export class LoadingIndicator {
     this.startTime = Date.now();
     this.frameIndex = 0;
 
+    // Setup cleanup handlers to prevent memory leaks
+    process.on('exit', this.cleanupBound);
+    process.on('SIGINT', this.cleanupBound);
+    process.on('SIGTERM', this.cleanupBound);
+
     this.render();
     this.intervalId = setInterval(() => {
       this.frameIndex = (this.frameIndex + 1) % this.options.spinner.length;
       this.render();
     }, this.options.interval);
 
+    // Allow process to exit even if interval is running
+    if (this.intervalId.unref) {
+      this.intervalId.unref();
+    }
+
     return this;
+  }
+
+  /**
+   * Dispose of resources (cleanup method)
+   */
+  dispose(): void {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = undefined;
+    }
+    this.isRunning = false;
+    // Remove process handlers
+    process.removeListener('exit', this.cleanupBound);
+    process.removeListener('SIGINT', this.cleanupBound);
+    process.removeListener('SIGTERM', this.cleanupBound);
   }
 
   /**
@@ -185,12 +213,8 @@ export class LoadingIndicator {
   stop(symbol: string = '●', message?: string, color?: string): void {
     if (!this.isRunning) return;
 
-    this.isRunning = false;
-
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = undefined;
-    }
+    // Use dispose for cleanup (clears interval and removes handlers)
+    this.dispose();
 
     // Clear current line
     this.clearLine();

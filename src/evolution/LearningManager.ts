@@ -52,6 +52,12 @@ export interface LearningConfig {
    * Default: 100 (prevent unbounded memory growth)
    */
   maxPatternsPerAgent: number;
+
+  /**
+   * Maximum feedback entries to store per agent
+   * Default: 500 (prevent unbounded memory growth)
+   */
+  maxFeedbackPerAgent: number;
 }
 
 export class LearningManager {
@@ -103,6 +109,7 @@ export class LearningManager {
       successRateThreshold: config?.successRateThreshold || 0.8,
       failureRateThreshold: config?.failureRateThreshold || 0.3,
       maxPatternsPerAgent: config?.maxPatternsPerAgent || 100,
+      maxFeedbackPerAgent: config?.maxFeedbackPerAgent || 500,
     };
 
     // Phase 2: Initialize advanced learning components
@@ -414,6 +421,9 @@ export class LearningManager {
 
     this.feedback.get(feedback.agentId)!.push(fullFeedback);
 
+    // Cleanup old feedback to prevent unbounded memory growth
+    this.cleanupOldFeedback(feedback.agentId);
+
     logger.info('Feedback recorded', {
       agentId: feedback.agentId,
       type: feedback.type,
@@ -522,6 +532,28 @@ export class LearningManager {
       existing.sort((a, b) => b.confidence - a.confidence);
       this.patterns.set(agentId, existing.slice(0, this.config.maxPatternsPerAgent));
     }
+  }
+
+  /**
+   * Cleanup old feedback to prevent unbounded memory growth
+   * Keeps the most recent feedback entries (by timestamp)
+   */
+  private cleanupOldFeedback(agentId: string): void {
+    const feedbackList = this.feedback.get(agentId);
+    if (!feedbackList || feedbackList.length <= this.config.maxFeedbackPerAgent) {
+      return;
+    }
+
+    // Sort by timestamp (newest first) and keep only maxFeedbackPerAgent
+    feedbackList.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    const trimmed = feedbackList.slice(0, this.config.maxFeedbackPerAgent);
+    this.feedback.set(agentId, trimmed);
+
+    logger.debug('Feedback trimmed for agent', {
+      agentId,
+      kept: this.config.maxFeedbackPerAgent,
+      removed: feedbackList.length - this.config.maxFeedbackPerAgent,
+    });
   }
 
   private groupByTaskType(

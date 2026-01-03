@@ -354,6 +354,79 @@ export class ConnectionPool {
   }
 
   /**
+   * Validate that a connection is still functional
+   *
+   * Executes a simple query to verify the connection is responsive.
+   *
+   * @param db - Database connection to validate
+   * @returns true if connection is valid, false otherwise
+   *
+   * @private
+   */
+  private isConnectionValid(db: Database.Database): boolean {
+    try {
+      // Simple query to test connection is responsive
+      db.prepare('SELECT 1').get();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Get a valid connection from available pool, recycling invalid ones
+   *
+   * @returns ConnectionMetadata with valid connection, or undefined if none available
+   * @private
+   */
+  private getValidConnection(): ConnectionMetadata | undefined {
+    while (this.available.length > 0) {
+      const metadata = this.available.shift()!;
+
+      if (this.isConnectionValid(metadata.db)) {
+        return metadata;
+      }
+
+      // Connection is invalid - recycle it
+      logger.warn('Found invalid connection in pool - recycling', {
+        usageCount: metadata.usageCount,
+      });
+
+      try {
+        metadata.db.close();
+      } catch {
+        // Ignore close errors for invalid connections
+      }
+
+      // Create replacement connection
+      try {
+        const newDb = this.createConnection();
+        const newMetadata: ConnectionMetadata = {
+          db: newDb,
+          lastAcquired: 0,
+          lastReleased: Date.now(),
+          usageCount: 0,
+        };
+
+        // Replace in pool
+        const poolIndex = this.pool.indexOf(metadata);
+        if (poolIndex !== -1) {
+          this.pool[poolIndex] = newMetadata;
+        }
+
+        // Add replacement back to available and continue loop
+        this.available.push(newMetadata);
+        this.stats.totalRecycled++;
+      } catch (error) {
+        logger.error('Failed to create replacement connection:', error);
+        // Pool degradation - connection lost
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
    * Acquire a connection from the pool
    *
    * Returns an available connection or waits for one to become available.
@@ -381,8 +454,8 @@ export class ConnectionPool {
       throw new Error('Pool is shutting down');
     }
 
-    // Check for available connection
-    const metadata = this.available.shift();
+    // Check for available valid connection
+    const metadata = this.getValidConnection();
     if (metadata) {
       metadata.lastAcquired = Date.now();
       metadata.usageCount++;

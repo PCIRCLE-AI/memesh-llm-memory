@@ -228,13 +228,77 @@ echo ""
 
 # Step 8: Test installation
 print_step "Step 8/11: Testing installation..."
+echo ""
+echo "Running validation tests (this may take 30-60 seconds)..."
+echo ""
 
-# Run a simple test
-if npm test -- --run 2>&1 | grep -q "PASS"; then
-    print_success "Tests passed"
+# Progress bar function
+show_progress() {
+    local duration=$1
+    local width=40
+    local elapsed=0
+    local chars="█▓▒░"
+
+    while [ $elapsed -lt $duration ]; do
+        local progress=$((elapsed * width / duration))
+        local remaining=$((width - progress))
+
+        # Build progress bar
+        printf "\r  ["
+        for ((i=0; i<progress; i++)); do printf "█"; done
+        for ((i=0; i<remaining; i++)); do printf "░"; done
+        printf "] %3d%%" $((elapsed * 100 / duration))
+
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+    printf "\r  ["
+    for ((i=0; i<width; i++)); do printf "█"; done
+    printf "] 100%%\n"
+}
+
+# Run tests in background with progress indicator
+TEST_OUTPUT_FILE=$(mktemp)
+npm test -- --run > "$TEST_OUTPUT_FILE" 2>&1 &
+TEST_PID=$!
+
+# Animated spinner while tests run
+spin_chars='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+test_start=$(date +%s)
+echo -e "  ${CYAN}Running tests...${NC}"
+
+while kill -0 $TEST_PID 2>/dev/null; do
+    for ((i=0; i<${#spin_chars}; i++)); do
+        if ! kill -0 $TEST_PID 2>/dev/null; then
+            break 2
+        fi
+        elapsed=$(($(date +%s) - test_start))
+        printf "\r  ${spin_chars:$i:1} Testing... (%ds)" $elapsed
+        sleep 0.1
+    done
+done
+
+# Wait for test to complete and check result
+wait $TEST_PID
+TEST_EXIT_CODE=$?
+
+# Clear spinner line
+printf "\r                                    \r"
+
+# Show final result
+if [ $TEST_EXIT_CODE -eq 0 ]; then
+    elapsed=$(($(date +%s) - test_start))
+    print_success "All tests passed (${elapsed}s)"
 else
-    print_warning "Some tests failed (installation still successful)"
+    if grep -q "passed" "$TEST_OUTPUT_FILE"; then
+        PASS_COUNT=$(grep -oE "[0-9]+ passed" "$TEST_OUTPUT_FILE" | tail -1 | grep -oE "[0-9]+")
+        FAIL_COUNT=$(grep -oE "[0-9]+ failed" "$TEST_OUTPUT_FILE" | tail -1 | grep -oE "[0-9]+" || echo "0")
+        print_warning "Tests: ${PASS_COUNT:-?} passed, ${FAIL_COUNT:-some} failed (installation still successful)"
+    else
+        print_warning "Some tests failed (installation still successful)"
+    fi
 fi
+rm -f "$TEST_OUTPUT_FILE"
 
 # Step 9: Usage Demonstration
 print_step "Step 9/11: Basic Usage Demo"

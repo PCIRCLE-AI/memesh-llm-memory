@@ -186,11 +186,14 @@ export class GitHandlers {
 
       const versions = await this.gitAssistant.listVersions(validatedInput.limit);
 
+      // Format versions for human readability
+      const formattedVersions = this.formatVersionsList(versions, validatedInput.limit);
+
       return {
         content: [
           {
             type: 'text' as const,
-            text: JSON.stringify(versions, null, 2),
+            text: formattedVersions,
           },
         ],
       };
@@ -287,11 +290,14 @@ export class GitHandlers {
 
       const changes = await this.gitAssistant.showChanges(validatedInput.compareWith);
 
+      // Format changes for human readability
+      const formattedChanges = this.formatChangesSummary(changes);
+
       return {
         content: [
           {
             type: 'text' as const,
-            text: JSON.stringify(changes, null, 2),
+            text: formattedChanges,
           },
         ],
       };
@@ -553,5 +559,79 @@ export class GitHandlers {
         ],
       };
     }
+  }
+
+  // ==================== Formatting Helper Methods ====================
+
+  /**
+   * Format version list for human readability
+   *
+   * @param versions - Array of version info objects
+   * @param limit - Number of versions requested
+   * @returns Formatted string
+   */
+  private formatVersionsList(versions: Array<{
+    number: number;
+    hash: string;
+    message: string;
+    author: string;
+    date: Date;
+    timeAgo: string;
+  }>, limit: number): string {
+    if (versions.length === 0) {
+      return '📚 No versions found. This project may not have any commits yet.';
+    }
+
+    const lines: string[] = [];
+    lines.push(`📚 Recent Versions (${versions.length} of ${limit} requested):`);
+    lines.push('');
+
+    for (const v of versions) {
+      lines.push(`${v.number}. [${v.hash}] ${v.message}`);
+      lines.push(`   👤 ${v.author} | 🕐 ${v.timeAgo}`);
+      lines.push('');
+    }
+
+    lines.push('💡 Tip: Use git-go-back with version number (e.g., "2") or hash (e.g., "' + versions[0].hash + '") to restore');
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Format changes summary for human readability
+   *
+   * @param changes - Changes summary object
+   * @returns Formatted string
+   */
+  private formatChangesSummary(changes: {
+    addedLines: number;
+    removedLines: number;
+    modifiedFiles: string[];
+    summary: string;
+  }): string {
+    if (changes.modifiedFiles.length === 0 && changes.addedLines === 0 && changes.removedLines === 0) {
+      return '📊 No changes detected compared to the previous version.';
+    }
+
+    const lines: string[] = [];
+    lines.push('📊 Changes Summary:');
+    lines.push('');
+    lines.push(`✅ Added: ${changes.addedLines} lines`);
+    lines.push(`❌ Removed: ${changes.removedLines} lines`);
+    lines.push(`📁 Modified: ${changes.modifiedFiles.length} files`);
+
+    if (changes.modifiedFiles.length > 0) {
+      lines.push('');
+      lines.push('📝 Modified Files:');
+      const filesToShow = changes.modifiedFiles.slice(0, 10);
+      for (const file of filesToShow) {
+        lines.push(`  • ${file}`);
+      }
+      if (changes.modifiedFiles.length > 10) {
+        lines.push(`  ... and ${changes.modifiedFiles.length - 10} more files`);
+      }
+    }
+
+    return lines.join('\n');
   }
 }

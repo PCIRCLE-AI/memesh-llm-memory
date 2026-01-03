@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Claude Code Buddy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-4xl mx-auto px-4 py-12">
+        <div class="bg-white rounded-lg shadow-sm p-8 md:p-12">
+            <div class="mb-8">
+                <a href="index.html" class="text-blue-600 hover:text-blue-700 text-sm font-medium">&larr; Back to Home</a>
+            </div>
+
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
+            <p class="text-gray-600 mb-8">Last updated: January 3, 2026</p>
+
+            <div class="prose prose-lg max-w-none">
+                <section class="mb-8">
+                    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Overview</h2>
+                    <p class="text-gray-700 leading-relaxed">
+                        Claude Code Buddy (CCB) is an open-source MCP server that runs entirely on your local machine. Your privacy is paramount - we designed CCB to keep your data under your control.
+                    </p>
+                </section>
+
+                <section class="mb-8">
+                    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Data Storage</h2>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        <strong>Local Storage Only:</strong> All CCB data is stored locally on your machine in:
+                    </p>
+                    <ul class="list-disc list-inside text-gray-700 leading-relaxed space-y-2 mb-4">
+                        <li><code class="bg-gray-100 px-2 py-1 rounded text-sm">data/knowledge-graph.db</code> - Your project knowledge and memory</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded text-sm">data/vectorstore/</code> - Embeddings for semantic search</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded text-sm">logs/</code> - Debug and performance logs</li>
+                    </ul>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        <strong>You own your data:</strong> CCB never sends your code, project data, or knowledge graph to external servers. Everything stays on your computer.
+                    </p>
+                    <p class="text-gray-700 leading-relaxed">
+                        <strong>Claude API:</strong> When CCB routes tasks to specialized agents, it communicates with Claude through your existing Claude Code subscription. This is governed by <a href="https://www.anthropic.com/legal/privacy" target="_blank" class="text-blue-600 hover:underline">Anthropic's Privacy Policy</a>.
+                    </p>
+                </section>
+
+                <section class="mb-8">
+                    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Website (ccb.pcircle.ai)</h2>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        <strong>No Analytics:</strong> Our documentation website does not use tracking, analytics, or cookies.
+                    </p>
+                    <p class="text-gray-700 leading-relaxed">
+                        <strong>Google Fonts:</strong> The website uses Google Fonts for typography. Google may collect your IP address as part of font delivery. See <a href="https://policies.google.com/privacy" target="_blank" class="text-blue-600 hover:underline">Google's Privacy Policy</a>.
+                    </p>
+                </section>
+
+                <section class="mb-8">
+                    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Optional Features</h2>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        <strong>RAG (Retrieval-Augmented Generation):</strong> If you enable RAG with HuggingFace or OpenAI embeddings:
+                    </p>
+                    <ul class="list-disc list-inside text-gray-700 leading-relaxed space-y-2">
+                        <li><strong>HuggingFace:</strong> Document embeddings are generated via HuggingFace API. See <a href="https://huggingface.co/privacy" target="_blank" class="text-blue-600 hover:underline">HuggingFace Privacy</a>.</li>
+                        <li><strong>OpenAI:</strong> Document embeddings are generated via OpenAI API. See <a href="https://openai.com/policies/privacy-policy" target="_blank" class="text-blue-600 hover:underline">OpenAI Privacy</a>.</li>
+                        <li>RAG is <strong>disabled by default</strong> - you explicitly choose to enable it.</li>
+                    </ul>
+                </section>
+
+                <section class="mb-8">
+                    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Your Control</h2>
+                    <ul class="list-disc list-inside text-gray-700 leading-relaxed space-y-2">
+                        <li>Delete CCB data anytime by removing the <code class="bg-gray-100 px-2 py-1 rounded text-sm">data/</code> directory</li>
+                        <li>All data processing happens locally on your machine</li>
+                        <li>Open-source code means full transparency - <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" target="_blank" class="text-blue-600 hover:underline">review the source</a></li>
+                    </ul>
+                </section>
+
+                <section class="mb-8">
+                    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Contact</h2>
+                    <p class="text-gray-700 leading-relaxed">
+                        Questions? Open an issue on <a href="https://github.com/PCIRCLE-AI/claude-code-buddy/issues" target="_blank" class="text-blue-600 hover:underline">GitHub</a>.
+                    </p>
+                </section>
+
+                <section>
+                    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Updates</h2>
+                    <p class="text-gray-700 leading-relaxed">
+                        We may update this policy. Changes will be posted here with an updated date.
+                    </p>
+                </section>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -79,14 +79,14 @@ Claude: [Specific optimization for YOUR database setup, with actual query exampl
 
 ### ✨ Automatic Expertise Routing
 
-**34 specialized agents** automatically selected based on your task:
+**36 specialized agents** automatically selected based on your task:
 
-**Types:** 9 real implementations + 24 enhanced prompts + 1 optional (RAG)
+**Types:** 9 real implementations + 26 enhanced prompts + 1 optional (RAG)
 
 **You don't choose the agent - CCB picks the right one for your task automatically.**
 
 <details>
-<summary><b>📋 View All 34 Agents</b></summary>
+<summary><b>📋 View All 36 Agents</b></summary>
 
 #### 🔧 Real Implementation Agents (9)
 These agents have actual code implementations with MCP tool integration:
@@ -101,10 +101,10 @@ These agents have actual code implementations with MCP tool integration:
 - **opal-automation** - Google Opal browser automation, natural language workflow creation, AI-powered prototypes
 - **n8n-workflow** - n8n workflow API integration, production workflow management, multi-system integration
 
-#### 💬 Enhanced Prompt Agents (24)
+#### 💬 Enhanced Prompt Agents (26)
 These agents use specialized prompts without MCP tool integration:
 
-**Development (11 agents)**
+**Development (13 agents)**
 - **frontend-developer** - Frontend development expert, React/Vue/Angular specialist
 - **backend-developer** - Backend development expert, API and server-side specialist
 - **frontend-specialist** - Frontend architecture, performance optimization, modern frameworks expert
@@ -345,7 +345,7 @@ System learns from your choices (when you override recommendations)
 ```
 
 **Under the hood:**
-- **34 total agents**: 9 real implementations (RAG, Knowledge Graph, Test Writer, DevOps Engineer, etc.) + 24 enhanced prompts + 1 optional
+- **36 total agents**: 9 real implementations (Test Writer, DevOps Engineer, Workflow Orchestrator, etc.) + 26 enhanced prompts + 1 optional (RAG)
 - **Smart routing** analyzes task complexity and automatically selects the right agent and Claude model
 - **Evolution system** learns from your choices and continuously improves recommendations
 

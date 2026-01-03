@@ -100,13 +100,27 @@ export class FriendlyGitCommands {
         command: `git log --format="%H|%s|%an|%ar|%at" -n ${limit}`,
       });
 
-      const commits = result.stdout.trim().split('\n').filter(line => line.length > 0);
+      // Defensive check for undefined/null stdout
+      const stdout = result?.stdout ?? '';
+      if (!stdout.trim()) {
+        logger.info('📚 No versions found (repository may be empty or not initialized)');
+        return [];
+      }
+
+      const commits = stdout.trim().split('\n').filter(line => line.length > 0);
 
       const versions: VersionInfo[] = commits.map((commit, index) => {
-        const [hash, message, author, timeAgo, timestamp] = commit.split('|');
+        const parts = commit.split('|');
+        // Defensive destructuring with defaults
+        const hash = parts[0] ?? '';
+        const message = parts[1] ?? '(no message)';
+        const author = parts[2] ?? 'Unknown';
+        const timeAgo = parts[3] ?? '';
+        const timestamp = parts[4] ?? '0';
+
         return {
           number: index + 1,
-          hash: hash.substring(0, 8),
+          hash: hash ? hash.substring(0, 8) : '(unknown)',
           message,
           author,
           date: new Date(parseInt(timestamp) * 1000),

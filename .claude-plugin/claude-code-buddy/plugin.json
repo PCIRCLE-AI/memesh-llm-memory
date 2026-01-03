@@ -1,0 +1,23 @@
+{
+  "name": "claude-code-buddy",
+  "description": "Your friendly AI companion for Claude Code - smart routing, prompt enhancement, and project memory",
+  "author": {
+    "name": "PCIRCLE AI"
+  },
+  "version": "2.0.0",
+  "homepage": "https://github.com/PCIRCLE-AI/claude-code-buddy",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PCIRCLE-AI/claude-code-buddy.git"
+  },
+  "license": "AGPL-3.0",
+  "mcpServers": {
+    "claude-code-buddy": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/mcp/server.js"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}

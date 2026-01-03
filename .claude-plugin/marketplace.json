@@ -1,0 +1,14 @@
+{
+  "name": "pcircle-ai",
+  "owner": {
+    "name": "PCIRCLE AI"
+  },
+  "description": "PCIRCLE AI Claude Code Plugin Marketplace - High-quality plugins for productivity and AI-powered development",
+  "version": "1.0.0",
+  "plugins": [
+    {
+      "name": "claude-code-buddy",
+      "source": "/Users/ktseng/Developer/Projects/claude-code-buddy/.claude-plugin/claude-code-buddy"
+    }
+  ]
+}

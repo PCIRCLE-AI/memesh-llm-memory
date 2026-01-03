@@ -289,10 +289,12 @@ export class FriendlyGitCommands {
    * backup-now
    */
   async createLocalBackup(): Promise<string> {
+    // Sanitize directory name to prevent path traversal attacks
+    const safeDirName = path.basename(process.cwd()).replace(/[^a-zA-Z0-9_-]/g, '_');
     const backupDir = path.join(
       os.homedir(),
       '.claude-code-buddy-backups',
-      path.basename(process.cwd())
+      safeDirName
     );
 
     const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
@@ -432,8 +434,20 @@ export class FriendlyGitCommands {
 
   // ==================== Utility Methods ====================
 
+  /**
+   * Escape a string for safe use in shell double-quoted arguments.
+   * Prevents command injection by escaping all dangerous characters.
+   */
   private escapeShellArg(arg: string): string {
-    return arg.replace(/"/g, '\\"');
+    // Escape backslashes first (must be done before other escapes)
+    // Then escape: $ ` " ! and newlines
+    return arg
+      .replace(/\\/g, '\\\\')     // Backslash
+      .replace(/\$/g, '\\$')      // Variable expansion
+      .replace(/`/g, '\\`')       // Command substitution
+      .replace(/"/g, '\\"')       // Double quotes
+      .replace(/!/g, '\\!')       // History expansion (bash)
+      .replace(/\n/g, '\\n');     // Newlines
   }
 
   /**

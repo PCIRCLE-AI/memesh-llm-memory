@@ -309,12 +309,14 @@ export class KnowledgeGraphSQLite {
     const params: SQLParams = [];
 
     // Search in name, entity_type, or observations
+    // Escape LIKE special characters (%, _, \) to prevent pattern injection
     sql += ` AND (
-      LOWER(e.name) LIKE ? OR
-      LOWER(e.entity_type) LIKE ? OR
-      LOWER(o.observation) LIKE ?
+      LOWER(e.name) LIKE ? ESCAPE '\\' OR
+      LOWER(e.entity_type) LIKE ? ESCAPE '\\' OR
+      LOWER(o.observation) LIKE ? ESCAPE '\\'
     )`;
-    const searchPattern = `%${lowerQuery}%`;
+    const escapedQuery = lowerQuery.replace(/[%_\\]/g, '\\$&');
+    const searchPattern = `%${escapedQuery}%`;
     params.push(searchPattern, searchPattern, searchPattern);
 
     // Filter by entity type

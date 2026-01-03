@@ -1,0 +1,1 @@
+{"version":3,"file":"ci-templates.d.ts","sourceRoot":"","sources":["../../../src/agents/templates/ci-templates.ts"],"names":[],"mappings":"AAEA,eAAO,MAAM,qBAAqB,ghBA6BjC,CAAC;AAEF,eAAO,MAAM,gBAAgB,wCAAwC,CAAC;AAEtE,wBAAgB,gBAAgB,CAAC,OAAO,EAAE;IACxC,QAAQ,EAAE,gBAAgB,GAAG,WAAW,CAAC;IACzC,WAAW,EAAE,MAAM,CAAC;IACpB,YAAY,EAAE,MAAM,CAAC;CACtB,GAAG,MAAM,CAiBT"}

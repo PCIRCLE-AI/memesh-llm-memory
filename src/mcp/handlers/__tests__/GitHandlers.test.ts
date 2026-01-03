@@ -20,27 +20,33 @@ describe('GitHandlers', () => {
 
   beforeEach(() => {
     // Create mock GitAssistantIntegration
+    // Mock data matches the VersionInfo and ChangesSummary interfaces
     mockGitAssistant = {
       saveWork: vi.fn().mockResolvedValue(undefined),
       listVersions: vi.fn().mockResolvedValue([
         {
-          hash: 'abc123',
+          number: 1,
+          hash: 'abc12345',
           message: 'Initial commit',
           author: 'Test Author',
-          date: '2025-01-01',
+          date: new Date('2025-01-01'),
+          timeAgo: '2 days ago',
         },
         {
-          hash: 'def456',
+          number: 2,
+          hash: 'def45678',
           message: 'Add feature',
           author: 'Test Author',
-          date: '2025-01-02',
+          date: new Date('2025-01-02'),
+          timeAgo: '1 day ago',
         },
       ]),
       status: vi.fn().mockResolvedValue(undefined),
       showChanges: vi.fn().mockResolvedValue({
-        files: ['src/index.ts', 'README.md'],
-        additions: 10,
-        deletions: 5,
+        addedLines: 10,
+        removedLines: 5,
+        modifiedFiles: ['src/index.ts', 'README.md'],
+        summary: '✅ Added: 10 lines\n❌ Removed: 5 lines',
       }),
       goBackTo: vi.fn().mockResolvedValue(undefined),
       createBackup: vi.fn().mockResolvedValue('/backups/backup-2025-01-01.tar.gz'),
@@ -119,10 +125,14 @@ describe('GitHandlers', () => {
       expect(mockGitAssistant.listVersions).toHaveBeenCalledWith(10); // Default from schema
       expect(result.content).toHaveLength(1);
 
-      const versions = JSON.parse(result.content[0].text);
-      expect(versions).toHaveLength(2);
-      expect(versions[0].hash).toBe('abc123');
-      expect(versions[1].hash).toBe('def456');
+      // Check for human-readable format
+      const text = result.content[0].text;
+      expect(text).toContain('📚 Recent Versions');
+      expect(text).toContain('[abc12345]');
+      expect(text).toContain('Initial commit');
+      expect(text).toContain('[def45678]');
+      expect(text).toContain('Add feature');
+      expect(text).toContain('Test Author');
     });
 
     it('should list versions with custom limit', async () => {
@@ -147,8 +157,7 @@ describe('GitHandlers', () => {
 
       const result = await gitHandlers.handleGitListVersions({});
 
-      const versions = JSON.parse(result.content[0].text);
-      expect(versions).toHaveLength(0);
+      expect(result.content[0].text).toContain('No versions found');
     });
 
     it('should validate limit is a number', async () => {
@@ -193,10 +202,13 @@ describe('GitHandlers', () => {
 
       expect(mockGitAssistant.showChanges).toHaveBeenCalledWith(undefined);
 
-      const changes = JSON.parse(result.content[0].text);
-      expect(changes.files).toContain('src/index.ts');
-      expect(changes.additions).toBe(10);
-      expect(changes.deletions).toBe(5);
+      // Check for human-readable format
+      const text = result.content[0].text;
+      expect(text).toContain('📊 Changes Summary');
+      expect(text).toContain('Added: 10 lines');
+      expect(text).toContain('Removed: 5 lines');
+      expect(text).toContain('src/index.ts');
+      expect(text).toContain('README.md');
     });
 
     it('should show changes compared to specific commit', async () => {
@@ -234,6 +246,19 @@ describe('GitHandlers', () => {
       });
 
       expect(result.content[0].text).toContain('❌ Failed to show changes');
+    });
+
+    it('should handle empty changes', async () => {
+      vi.mocked(mockGitAssistant.showChanges).mockResolvedValue({
+        addedLines: 0,
+        removedLines: 0,
+        modifiedFiles: [],
+        summary: '',
+      });
+
+      const result = await gitHandlers.handleGitShowChanges({});
+
+      expect(result.content[0].text).toContain('No changes detected');
     });
   });
 

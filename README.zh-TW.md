@@ -79,14 +79,14 @@ Claude：[針對你的資料庫設定的具體優化建議，包含實際查詢�
 
 ### ✨ 自動專業知識路由
 
-**34 個專業 Agents** 根據任務類型自動選擇：
+**36 個專業 Agents** 根據任務類型自動選擇：
 
-**類型：** 9 個真實實作 + 24 個增強提示 + 1 個可選功能（RAG）
+**類型：** 9 個真實實作 + 26 個增強提示 + 1 個可選功能（RAG）
 
 **你不需要選擇 agent - CCB 會自動為你的任務選擇正確的 agent。**
 
 <details>
-<summary><b>📋 查看全部 34 個 Agents</b></summary>
+<summary><b>📋 查看全部 36 個 Agents</b></summary>
 
 #### 🔧 真實實作 Agents（9 個）
 這些 agents 具有實際程式碼實作並整合 MCP 工具：
@@ -101,10 +101,10 @@ Claude：[針對你的資料庫設定的具體優化建議，包含實際查詢�
 - **opal-automation** - Google Opal 瀏覽器自動化、自然語言工作流程創建、AI 驅動的原型
 - **n8n-workflow** - n8n 工作流程 API 整合、生產工作流程管理、多系統整合
 
-#### 💬 增強提示 Agents（24 個）
+#### 💬 增強提示 Agents（26 個）
 這些 agents 使用專業提示，無需 MCP 工具整合：
 
-**開發類（11 個 agents）**
+**開發類（13 個 agents）**
 - **frontend-developer** - 前端開發專家、React/Vue/Angular 專家
 - **backend-developer** - 後端開發專家、API 和伺服器端專家
 - **frontend-specialist** - 前端架構、性能優化、現代框架專家
@@ -345,7 +345,7 @@ Claude Code 用你的訂閱執行
 ```
 
 **幕後：**
-- **34 個 agent 總數**：9 個真實實作（RAG、知識圖譜、測試撰寫器、DevOps 工程師等）+ 24 個增強提示 + 1 個可選功能
+- **36 個 agent 總數**：9 個真實實作（測試撰寫器、DevOps 工程師、工作流程編排器等）+ 26 個增強提示 + 1 個可選功能（RAG）
 - **智能路由**分析任務複雜度並自動選擇最佳 agent 和 Claude 模型
 - **演化系統**從你的選擇中學習並持續改進建議
 

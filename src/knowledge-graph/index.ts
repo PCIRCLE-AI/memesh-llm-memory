@@ -203,7 +203,7 @@ export class KnowledgeGraph {
 
     const result = stmt.run(
       entity.name,
-      entity.type,
+      entity.entityType,
       JSON.stringify(entity.metadata || {})
     );
 
@@ -247,7 +247,7 @@ export class KnowledgeGraph {
     // Invalidate cache for entity queries
     this.queryCache.invalidatePattern(/^entities:/);
 
-    logger.info(`[KG] Created entity: ${entity.name} (type: ${entity.type})`);
+    logger.info(`[KG] Created entity: ${entity.name} (type: ${entity.entityType})`);
     return actualId;
   }
 
@@ -324,9 +324,9 @@ export class KnowledgeGraph {
 
     const params: SQLParams = [];
 
-    if (query.type) {
+    if (query.entityType) {
       sql += ' AND e.type = ?';
-      params.push(query.type);
+      params.push(query.entityType);
     }
 
     if (query.tag) {
@@ -382,7 +382,7 @@ export class KnowledgeGraph {
       entities[i] = {
         id: r.id,
         name: r.name,
-        type: r.type as EntityType,
+        entityType: r.type as EntityType,
         observations: r.observations ? r.observations.split('|||') : [],
         tags,
         metadata: r.metadata ? JSON.parse(r.metadata) : {},

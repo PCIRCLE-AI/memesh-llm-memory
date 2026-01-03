@@ -38,7 +38,7 @@ describe('Project Memory System - Integration', () => {
           for (const entity of args.entities) {
             kg.createEntity({
               name: entity.name,
-              type: entity.entityType,
+              entityType: entity.entityType,
               observations: entity.observations,
             });
           }
@@ -69,7 +69,7 @@ describe('Project Memory System - Integration', () => {
     const memories = await manager.recallRecentWork({ limit: 5 });
 
     expect(memories.length).toBeGreaterThan(0);
-    expect(memories[0].type).toBe('code_change');
+    expect(memories[0].entityType).toBe('code_change');
 
     // Verify observations contain file information
     const hasFileInfo = memories[0].observations?.some(
@@ -99,7 +99,7 @@ describe('Project Memory System - Integration', () => {
     });
 
     expect(memories.length).toBeGreaterThan(0);
-    expect(memories[0].type).toBe('project_snapshot');
+    expect(memories[0].entityType).toBe('project_snapshot');
 
     // Verify snapshot contains token count
     const hasTokenInfo = memories[0].observations?.some((obs) =>
@@ -135,7 +135,7 @@ describe('Project Memory System - Integration', () => {
 
     expect(allMemories.length).toBeGreaterThanOrEqual(3);
 
-    const types = new Set(allMemories.map((m) => m.type));
+    const types = new Set(allMemories.map((m) => m.entityType));
     expect(types.has('code_change')).toBe(true);
     expect(types.has('test_result')).toBe(true);
     expect(types.has('project_snapshot')).toBe(true);

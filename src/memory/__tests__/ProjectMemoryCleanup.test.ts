@@ -21,11 +21,11 @@ describe('ProjectMemoryCleanup', () => {
 
     // Mock should return entity only for code_change type
     (mockKG.searchEntities as any).mockImplementation((query: any) => {
-      if (query.type === 'code_change') {
+      if (query.entityType === 'code_change') {
         return [
           {
             name: 'CodeChange-old',
-            type: 'code_change',
+            entityType: 'code_change',
             observations: [`Timestamp: ${oldDate.toISOString()}`]
           }
         ];
@@ -48,7 +48,7 @@ describe('ProjectMemoryCleanup', () => {
     (mockKG.searchEntities as any).mockReturnValue([
       {
         name: 'CodeChange-recent',
-        type: 'code_change',
+        entityType: 'code_change',
         observations: [`Timestamp: ${recentDate.toISOString()}`]
       }
     ]);
@@ -63,7 +63,7 @@ describe('ProjectMemoryCleanup', () => {
     (mockKG.searchEntities as any).mockReturnValue([
       {
         name: 'Entity-no-timestamp',
-        type: 'code_change',
+        entityType: 'code_change',
         observations: ['Some observation without timestamp']
       }
     ]);
@@ -88,7 +88,7 @@ describe('ProjectMemoryCleanup', () => {
         return [
           {
             name: 'CodeChange-old',
-            type: 'code_change',
+            entityType: 'code_change',
             observations: [`Timestamp: ${oldDate.toISOString()}`]
           }
         ];
@@ -97,7 +97,7 @@ describe('ProjectMemoryCleanup', () => {
         return [
           {
             name: 'TestResult-old',
-            type: 'test_result',
+            entityType: 'test_result',
             observations: [`Timestamp: ${oldDate.toISOString()}`]
           }
         ];
@@ -106,7 +106,7 @@ describe('ProjectMemoryCleanup', () => {
         return [
           {
             name: 'Snapshot-old',
-            type: 'session_snapshot',
+            entityType: 'session_snapshot',
             observations: [`Timestamp: ${oldDate.toISOString()}`]
           }
         ];
@@ -131,16 +131,16 @@ describe('ProjectMemoryCleanup', () => {
 
     // Mock should return both entities only for code_change type
     (mockKG.searchEntities as any).mockImplementation((query: any) => {
-      if (query.type === 'code_change') {
+      if (query.entityType === 'code_change') {
         return [
           {
             name: 'Entity-old',
-            type: 'code_change',
+            entityType: 'code_change',
             observations: [`Timestamp: ${oldDate.toISOString()}`]
           },
           {
             name: 'Entity-recent',
-            type: 'code_change',
+            entityType: 'code_change',
             observations: [`Timestamp: ${recentDate.toISOString()}`]
           }
         ];

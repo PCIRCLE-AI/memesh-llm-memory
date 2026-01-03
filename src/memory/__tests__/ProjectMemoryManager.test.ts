@@ -26,7 +26,7 @@ describe('ProjectMemoryManager', () => {
     it('should recall recent work from last session', async () => {
       const mockEntity: Entity = {
         name: 'Code Change 2025-12-30 123',
-        type: 'code_change' as any, // Using 'code_change' as per spec
+        entityType: 'code_change' as any, // Using 'code_change' as per spec
         observations: [
           'Files modified: 2',
           '  - src/test.ts',
@@ -41,7 +41,7 @@ describe('ProjectMemoryManager', () => {
 
       // Mock searchEntities to return the entity only for 'code_change' type
       (mockKG.searchEntities as any).mockImplementation((query: any) => {
-        if (query.type === 'code_change') {
+        if (query.entityType === 'code_change') {
           return [mockEntity];
         }
         return [];
@@ -50,7 +50,7 @@ describe('ProjectMemoryManager', () => {
       const recent = await manager.recallRecentWork({ limit: 5 });
 
       expect(recent).toHaveLength(1);
-      expect(recent[0].type).toBe('code_change');
+      expect(recent[0].entityType).toBe('code_change');
       expect(recent[0].name).toContain('Code Change');
     });
 
@@ -58,7 +58,7 @@ describe('ProjectMemoryManager', () => {
       const mockEntities: Entity[] = [
         {
           name: 'Entity 1',
-          type: 'code_change' as any,
+          entityType: 'code_change' as any,
           observations: ['obs1'],
           tags: [],
           metadata: {},
@@ -66,7 +66,7 @@ describe('ProjectMemoryManager', () => {
         },
         {
           name: 'Entity 2',
-          type: 'test_result' as any,
+          entityType: 'test_result' as any,
           observations: ['obs2'],
           tags: [],
           metadata: {},
@@ -74,7 +74,7 @@ describe('ProjectMemoryManager', () => {
         },
         {
           name: 'Entity 3',
-          type: 'session_snapshot' as any,
+          entityType: 'session_snapshot' as any,
           observations: ['obs3'],
           tags: [],
           metadata: {},
@@ -84,7 +84,7 @@ describe('ProjectMemoryManager', () => {
 
       // Mock returns one entity per type
       (mockKG.searchEntities as any).mockImplementation((query: any) => {
-        return mockEntities.filter(e => e.type === query.type);
+        return mockEntities.filter(e => e.entityType === query.entityType);
       });
 
       const recent = await manager.recallRecentWork({ limit: 2 });
@@ -96,7 +96,7 @@ describe('ProjectMemoryManager', () => {
       const mockFeatures: Entity[] = [
         {
           name: 'Feature 1',
-          type: 'code_change' as any,
+          entityType: 'code_change' as any,
           observations: ['feature obs'],
           tags: [],
           metadata: {},
@@ -111,7 +111,7 @@ describe('ProjectMemoryManager', () => {
       });
 
       expect(mockKG.searchEntities).toHaveBeenCalledWith({
-        type: 'code_change',
+        entityType: 'code_change',
         limit: 10,
       });
     });

@@ -8,7 +8,7 @@
 export interface Entity {
   id?: number;
   name: string;
-  type: EntityType;
+  entityType: EntityType;
   observations: string[];
   tags?: string[];
   metadata?: Record<string, any>;
@@ -46,7 +46,7 @@ export type RelationType =
   | 'evolved_from';     // A evolved from B
 
 export interface SearchQuery {
-  type?: EntityType;
+  entityType?: EntityType;
   tag?: string;
   namePattern?: string;
   limit?: number;

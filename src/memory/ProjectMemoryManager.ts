@@ -54,7 +54,7 @@ export class ProjectMemoryManager {
     // Query each type separately
     for (const type of types) {
       const entities = this.knowledgeGraph.searchEntities({
-        type: type as any, // Type assertion needed since KG uses EntityType union
+        entityType: type as any, // Type assertion needed since KG uses EntityType union
         limit: Math.ceil(limit / types.length),
       });
       results.push(...entities);

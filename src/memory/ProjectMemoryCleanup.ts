@@ -28,7 +28,7 @@ export class ProjectMemoryCleanup {
     let deletedCount = 0;
 
     for (const type of memoryTypes) {
-      const entities = this.knowledgeGraph.searchEntities({ type: type as any });
+      const entities = this.knowledgeGraph.searchEntities({ entityType: type as any });
 
       for (const entity of entities) {
         const timestamp = this.extractTimestamp(entity);

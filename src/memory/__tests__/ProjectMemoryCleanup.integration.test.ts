@@ -38,7 +38,7 @@ describe('ProjectMemoryCleanup Integration', () => {
 
     kg.createEntity({
       name: 'OldCodeChange',
-      type: 'code_change',
+      entityType: 'code_change',
       observations: [
         'Files modified: 2',
         'src/test.ts',
@@ -52,7 +52,7 @@ describe('ProjectMemoryCleanup Integration', () => {
 
     kg.createEntity({
       name: 'RecentCodeChange',
-      type: 'code_change',
+      entityType: 'code_change',
       observations: [
         'Files modified: 1',
         'src/new.ts',
@@ -61,7 +61,7 @@ describe('ProjectMemoryCleanup Integration', () => {
     });
 
     // Verify both entities exist
-    const beforeCleanup = kg.searchEntities({ type: 'code_change' });
+    const beforeCleanup = kg.searchEntities({ entityType: 'code_change' });
     expect(beforeCleanup).toHaveLength(2);
 
     // Run cleanup
@@ -71,7 +71,7 @@ describe('ProjectMemoryCleanup Integration', () => {
     expect(deleted).toBe(1);
 
     // Verify only recent entity remains
-    const afterCleanup = kg.searchEntities({ type: 'code_change' });
+    const afterCleanup = kg.searchEntities({ entityType: 'code_change' });
     expect(afterCleanup).toHaveLength(1);
     expect(afterCleanup[0].name).toBe('RecentCodeChange');
   });
@@ -83,19 +83,19 @@ describe('ProjectMemoryCleanup Integration', () => {
     // Create old entities of different types
     kg.createEntity({
       name: 'OldCodeChange',
-      type: 'code_change',
+      entityType: 'code_change',
       observations: [`Timestamp: ${oldDate.toISOString()}`]
     });
 
     kg.createEntity({
       name: 'OldTestResult',
-      type: 'test_result',
+      entityType: 'test_result',
       observations: [`Timestamp: ${oldDate.toISOString()}`]
     });
 
     kg.createEntity({
       name: 'OldSnapshot',
-      type: 'session_snapshot',
+      entityType: 'session_snapshot',
       observations: [`Timestamp: ${oldDate.toISOString()}`]
     });
 
@@ -114,7 +114,7 @@ describe('ProjectMemoryCleanup Integration', () => {
     // Create entity without timestamp
     kg.createEntity({
       name: 'EntityNoTimestamp',
-      type: 'code_change',
+      entityType: 'code_change',
       observations: ['Some observation without timestamp']
     });
 
@@ -124,7 +124,7 @@ describe('ProjectMemoryCleanup Integration', () => {
     // Should not delete entity without timestamp
     expect(deleted).toBe(0);
 
-    const entities = kg.searchEntities({ type: 'code_change' });
+    const entities = kg.searchEntities({ entityType: 'code_change' });
     expect(entities).toHaveLength(1);
   });
 });

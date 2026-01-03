@@ -79,7 +79,7 @@ export const addObservationsTool = {
         // (createEntity handles updates via ON CONFLICT)
         await knowledgeGraph.createEntity({
           name: entity.name,
-          type: entity.type,
+          entityType: entity.entityType,
           observations: [...entity.observations, ...obs.contents],
           metadata: entity.metadata,
         });

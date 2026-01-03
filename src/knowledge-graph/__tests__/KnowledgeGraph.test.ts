@@ -28,7 +28,7 @@ describe('KnowledgeGraph', () => {
       // Create an entity
       kg.createEntity({
         name: 'TestEntity',
-        type: 'test_type',
+        entityType: 'test_type',
         observations: ['observation1']
       });
 
@@ -48,12 +48,12 @@ describe('KnowledgeGraph', () => {
       // Create entities
       kg.createEntity({
         name: 'Entity1',
-        type: 'test_type',
+        entityType: 'test_type',
         observations: ['obs1']
       });
       kg.createEntity({
         name: 'Entity2',
-        type: 'test_type',
+        entityType: 'test_type',
         observations: ['obs2']
       });
 

@@ -1,43 +1,57 @@
 /**
- * Create Relations Tool
+ * MCP Tool: create-relations
  *
  * Creates relations between entities in the Knowledge Graph.
+ * Allows linking entities to show dependencies, causation, and other relationships.
  */
 
-import { z } from 'zod';
-import { KnowledgeGraph } from '../../knowledge-graph/index.js';
+import type { KnowledgeGraph } from '../../knowledge-graph/index.js';
 
+export interface CreateRelationsArgs {
+  /** Array of relations to create */
+  relations: Array<{
+    /** Source entity name */
+    from: string;
+    /** Target entity name */
+    to: string;
+    /** Relation type (e.g., 'depends_on', 'caused_by', 'implements', 'fixes') */
+    relationType: string;
+    /** Optional metadata */
+    metadata?: Record<string, unknown>;
+  }>;
+}
+
+/**
+ * MCP Tool definition for creating relations
+ */
 export const createRelationsTool = {
-  name: 'create_relations',
-  description:
-    '🔗 Knowledge Graph: Create relations between existing entities. ' +
-    'Use this to connect related knowledge, show dependencies, or build a knowledge network. ' +
-    'Both entities must already exist in the Knowledge Graph.',
+  name: 'create-relations',
+  description: 'Create relations between entities in the Knowledge Graph. Link entities to show dependencies, causation, implementation, and other relationships.',
+
   inputSchema: {
     type: 'object' as const,
     properties: {
       relations: {
-        type: 'array' as const,
-        description: 'Array of relations to create',
+        type: 'array',
+        description: 'Array of relations to create between entities',
         items: {
-          type: 'object' as const,
+          type: 'object',
           properties: {
             from: {
-              type: 'string' as const,
-              description: 'Name of the source entity',
+              type: 'string',
+              description: 'Source entity name (where the relation starts)',
             },
             to: {
-              type: 'string' as const,
-              description: 'Name of the target entity',
+              type: 'string',
+              description: 'Target entity name (where the relation ends)',
             },
             relationType: {
-              type: 'string' as const,
-              description:
-                'Type of relation (e.g., "depends_on", "related_to", "caused_by")',
+              type: 'string',
+              description: 'Relation type (e.g., "depends_on", "caused_by", "implements", "fixes", "related_to")',
             },
             metadata: {
-              type: 'object' as const,
-              description: 'Optional metadata for the relation',
+              type: 'object',
+              description: 'Optional metadata',
             },
           },
           required: ['from', 'to', 'relationType'],
@@ -47,66 +61,68 @@ export const createRelationsTool = {
     required: ['relations'],
   },
 
-  handler: (
-    input: {
-      relations: Array<{
-        from: string;
-        to: string;
-        relationType: string;
-        metadata?: Record<string, unknown>;
-      }>;
-    },
+  /**
+   * Handler for create-relations tool
+   *
+   * @param args - Tool arguments
+   * @param knowledgeGraph - KnowledgeGraph instance
+   * @returns Summary of created relations
+   */
+  async handler(
+    args: CreateRelationsArgs,
     knowledgeGraph: KnowledgeGraph
-  ): {
-    count: number;
-    created: Array<{ from: string; to: string; type: string }>;
-    missingEntities?: string[];
-    errors?: Array<{ from: string; to: string; relation: string; error: string }>;
-  } => {
+  ) {
     const created: Array<{ from: string; to: string; type: string }> = [];
-    const missingEntities: Set<string> = new Set();
-    const errors: Array<{ from: string; to: string; relation: string; error: string }> = [];
+    const missingEntities: string[] = [];
+    const errors: Array<{ from: string; to: string; error: string }> = [];
 
-    for (const relation of input.relations) {
+    for (const rel of args.relations) {
       try {
-        knowledgeGraph.createRelation({
-          from: relation.from,
-          to: relation.to,
-          relationType: relation.relationType as any,
-          metadata: relation.metadata || {},
-        });
-        created.push({
-          from: relation.from,
-          to: relation.to,
-          type: relation.relationType,
-        });
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
+        // Verify both entities exist
+        const fromEntity = await knowledgeGraph.getEntity(rel.from);
+        const toEntity = await knowledgeGraph.getEntity(rel.to);
 
-        // Check if error is due to missing entity
-        if (errorMsg.includes('Entity not found')) {
-          if (errorMsg.includes(relation.from)) {
-            missingEntities.add(relation.from);
+        if (!fromEntity) {
+          if (!missingEntities.includes(rel.from)) {
+            missingEntities.push(rel.from);
           }
-          if (errorMsg.includes(relation.to)) {
-            missingEntities.add(relation.to);
-          }
+          continue;
         }
 
+        if (!toEntity) {
+          if (!missingEntities.includes(rel.to)) {
+            missingEntities.push(rel.to);
+          }
+          continue;
+        }
+
+        // Create relation
+        await knowledgeGraph.createRelation({
+          from: rel.from,
+          to: rel.to,
+          relationType: rel.relationType as any,
+          metadata: rel.metadata,
+        });
+
+        created.push({
+          from: rel.from,
+          to: rel.to,
+          type: rel.relationType,
+        });
+      } catch (error) {
         errors.push({
-          from: relation.from,
-          to: relation.to,
-          relation: `${relation.from} -> ${relation.to}`,
-          error: errorMsg,
+          from: rel.from,
+          to: rel.to,
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     }
 
     return {
-      count: created.length,
       created,
-      ...(missingEntities.size > 0 && { missingEntities: Array.from(missingEntities) }),
-      ...(errors.length > 0 && { errors }),
+      count: created.length,
+      missingEntities: missingEntities.length > 0 ? missingEntities : undefined,
+      errors: errors.length > 0 ? errors : undefined,
     };
   },
 };

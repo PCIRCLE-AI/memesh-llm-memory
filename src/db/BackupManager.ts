@@ -140,7 +140,11 @@ export class BackupManager {
     // Create backup directory structure (YYYY-MM-DD format)
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
-    const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-'); // HH-MM-SS
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const seconds = now.getSeconds().toString().padStart(2, '0');
+    const milliseconds = now.getMilliseconds().toString().padStart(3, '0');
+    const timeStr = `${hours}-${minutes}-${seconds}-${milliseconds}`; // HH-MM-SS-mmm
     const dateDirPath = join(backupDir, dateStr);
 
     await fs.mkdir(dateDirPath, { recursive: true });

@@ -1,75 +1,105 @@
 /**
- * Create Workflow Tool
+ * MCP Tool: workflow-create
  *
- * Creates automated workflows on Google Opal or n8n platforms.
- * Intelligently chooses the best platform based on the workflow description.
+ * Create automated workflows using Google Opal or n8n.
+ * Automatically selects the best platform based on your description.
  */
 
-import { z } from 'zod';
-import { WorkflowOrchestrator, WorkflowRequest } from '../../agents/WorkflowOrchestrator.js';
+import type { WorkflowOrchestrator } from '../../agents/WorkflowOrchestrator.js';
 
+export interface CreateWorkflowArgs {
+  /** Natural language description of the workflow */
+  description: string;
+  /** Platform to use ('opal', 'n8n', or 'auto' for automatic selection) */
+  platform?: 'opal' | 'n8n' | 'auto';
+  /** Priority: 'speed' for fast prototypes, 'production' for reliable workflows */
+  priority?: 'speed' | 'production';
+}
+
+/**
+ * MCP Tool definition for creating workflows
+ */
 export const createWorkflowTool = {
-  name: 'workflow_create',
-  description:
-    '🔄 Workflow Automation: Create automated workflows on Google Opal or n8n platforms. ' +
-    'Simply describe what you want to automate, and the system will intelligently choose the best platform ' +
-    'and create the workflow for you. Supports AI-powered workflows (Opal) and production-grade integrations (n8n).',
+  name: 'workflow-create',
+  description: 'Create automated workflows using Google Opal or n8n. Automatically selects the best platform (Opal for AI prototypes, n8n for production workflows) based on your description.',
+
   inputSchema: {
     type: 'object' as const,
     properties: {
       description: {
-        type: 'string' as const,
-        description:
-          'Natural language description of what you want to automate (e.g., "Summarize daily emails and post to Slack")',
+        type: 'string',
+        description: 'Natural language description of what the workflow should do (e.g., "Call API and send results via email", "AI-powered data processing pipeline")',
       },
       platform: {
-        type: 'string' as const,
+        type: 'string',
         enum: ['opal', 'n8n', 'auto'],
-        description:
-          'Platform to use: "opal" (AI-powered, fast prototyping), "n8n" (production-grade, integrations), "auto" (intelligent selection)',
+        description: 'Platform to use: "opal" (fast AI prototypes), "n8n" (production workflows), or "auto" (automatic selection, default)',
       },
       priority: {
-        type: 'string' as const,
+        type: 'string',
         enum: ['speed', 'production'],
-        description:
-          'Priority: "speed" (quick prototype), "production" (reliable, scalable)',
+        description: 'Priority: "speed" (fast prototyping), "production" (reliability and integration)',
       },
     },
     required: ['description'],
   },
 
-  handler: async (
-    input: {
-      description: string;
-      platform?: 'opal' | 'n8n' | 'auto';
-      priority?: 'speed' | 'production';
-    },
-    workflowOrchestrator?: WorkflowOrchestrator
-  ): Promise<{
-    success: boolean;
-    platform: 'opal' | 'n8n';
-    workflowUrl?: string;
-    workflowId?: string;
-    screenshot?: string;
-    error?: string;
-    reasoning?: string;
-  }> => {
-    if (!workflowOrchestrator) {
+  /**
+   * Handler for workflow-create tool
+   *
+   * @param args - Tool arguments
+   * @param workflowOrchestrator - WorkflowOrchestrator instance
+   * @returns Workflow creation result
+   */
+  async handler(
+    args: CreateWorkflowArgs,
+    workflowOrchestrator: WorkflowOrchestrator
+  ) {
+    try {
+      const result = await workflowOrchestrator.createWorkflow({
+        description: args.description,
+        platform: args.platform || 'auto',
+        priority: args.priority,
+      });
+
+      if (!result.success) {
+        return {
+          success: false,
+          error: result.error || 'Workflow creation failed',
+        };
+      }
+
+      return {
+        success: true,
+        platform: result.platform,
+        workflowUrl: result.workflowUrl,
+        workflowId: result.workflowId,
+        screenshot: result.screenshot,
+        reasoning: result.reasoning,
+        message: `✅ Workflow created on ${result.platform.toUpperCase()}!`,
+        nextSteps: `
+Next steps:
+
+1. Open the workflow:
+   ${result.workflowUrl}
+
+${result.screenshot ? `2. View screenshot:
+   ${result.screenshot}
+` : ''}
+${result.platform === 'opal' ? `3. Edit in natural language at opal.withgoogle.com
+` : `3. Configure nodes and connections at n8n dashboard
+`}
+4. Test the workflow with sample data
+5. Activate for production use
+
+Why ${result.platform}? ${result.reasoning}
+`.trim(),
+      };
+    } catch (error) {
       return {
         success: false,
-        platform: 'opal',
-        error: 'WorkflowOrchestrator not available',
+        error: error instanceof Error ? error.message : String(error),
       };
     }
-
-    const request: WorkflowRequest = {
-      description: input.description,
-      platform: input.platform,
-      priority: input.priority,
-    };
-
-    const result = await workflowOrchestrator.createWorkflow(request);
-
-    return result;
   },
 };

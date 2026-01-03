@@ -29,7 +29,7 @@ describe('Project Memory System - Integration', () => {
     }
 
     // Create real Knowledge Graph for integration test
-    kg = new KnowledgeGraph(testDbPath);
+    kg = KnowledgeGraph.createSync(testDbPath);
 
     // Create mock MCP that writes to real KG
     mockMCP = {

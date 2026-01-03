@@ -78,22 +78,99 @@ export type AgentType =
  * Task Capability Requirements (for Agent Routing)
  */
 export type TaskCapability =
+  // Core development capabilities
   | 'code-review'
   | 'code-generation'
+  | 'code-quality'
   | 'testing'
+  | 'test-generation'
   | 'e2e-testing'
+  | 'coverage'
   | 'auto-healing'
   | 'debugging'
+  | 'root-cause-analysis'
   | 'refactoring'
+  | 'design-patterns'
+  | 'best-practices'
+  // Security & compliance
+  | 'security'
+  | 'security-audit'
+  | 'vulnerability-assessment'
+  | 'compliance'
+  // API & integration
+  | 'api'
   | 'api-design'
-  | 'rag-search'
-  | 'research'
+  | 'api-docs'
+  | 'api-integration'
+  | 'rest'
+  | 'graphql'
+  | 'sdk'
+  | 'third-party'
+  // Architecture & performance
   | 'architecture'
+  | 'performance'
+  | 'profiling'
+  | 'optimization'
+  | 'scalability'
+  | 'cache'
+  // Data & analysis
   | 'data-analysis'
+  | 'database'
+  | 'schema'
+  | 'query'
+  | 'query-tuning'
+  | 'statistics'
+  | 'business-intelligence'
+  // Research & knowledge
+  | 'research'
+  | 'user-research'
+  | 'rag-search'
   | 'knowledge-query'
+  | 'knowledge-management'
+  | 'information-retrieval'
+  | 'feasibility-analysis'
+  | 'evaluation'
+  // Frontend & UI/UX
+  | 'frontend'
+  | 'ui'
+  | 'ui-design'
+  | 'ux-design'
+  | 'component'
+  | 'browser-automation'
+  | 'natural-language-ui'
+  // Backend & infrastructure
+  | 'backend'
+  | 'server'
+  | 'maintenance'
+  | 'migration'
+  | 'modernization'
+  | 'upgrade'
+  | 'technical-debt'
+  // ML & AI
+  | 'machine-learning'
+  | 'ml-pipeline'
+  | 'model-training'
+  | 'intelligent-platform-selection'
+  // Documentation & communication
   | 'documentation'
+  | 'technical-writing'
+  // Workflow & automation
+  | 'workflow'
   | 'workflow-automation'
-  | 'general';
+  | 'automation'
+  | 'opal'
+  | 'opal-workflows'
+  | 'n8n'
+  | 'n8n-integration'
+  // Product & business
+  | 'product-management'
+  | 'prioritization'
+  | 'marketing'
+  | 'strategy'
+  | 'growth'
+  // General
+  | 'general'
+  | 'problem-solving';
 
 /**
  * Task Definition

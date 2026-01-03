@@ -15,6 +15,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
+    "build:plugin": "npm run build && npm run prepare:plugin",
+    "prepare:plugin": "node scripts/prepare-plugin.js",
     "start": "node dist/index.js",
     "test": "vitest",
     "test:coverage": "vitest --coverage",

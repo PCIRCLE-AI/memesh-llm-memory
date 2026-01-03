@@ -1,6 +1,43 @@
 # 🚀 Claude Code Buddy Setup Guide (V2.0 MCP Server Pattern)
 
-## V2.0 MCP Server Setup (Current Implementation)
+## Quick Installation (Recommended)
+
+**The easiest way to install Claude Code Buddy is using the automated installer:**
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
+cd claude-code-buddy
+
+# 2. Run the interactive installer
+./scripts/install.sh
+```
+
+The installer will guide you through **11 interactive steps**:
+
+**Core Setup (Steps 1-8)**:
+- ✓ Check prerequisites (Node.js 18+, npm, git)
+- ✓ Install dependencies
+- ✓ Build the project
+- ✓ Check system resources
+- ✓ Configure environment
+- ✓ **Optional RAG Setup**: Choose HuggingFace (FREE) or OpenAI (paid)
+- ✓ Configure Claude Code MCP integration
+- ✓ Test installation
+
+**Interactive Demos (Steps 9-10)**:
+- 📚 **Step 9**: Basic Usage Demo
+- 📁 **Step 10**: RAG Feature Demo (if enabled)
+
+**No API keys needed for core features** - uses your Claude Code subscription.
+
+**After installation**: Restart Claude Code and start using CCB!
+
+---
+
+## Advanced Manual Installation
+
+If you prefer manual control over the installation process, follow these steps:
 
 ### Step 1: Install Dependencies
 

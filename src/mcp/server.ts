@@ -98,6 +98,15 @@ class ClaudeCodeBuddyMCPServer {
   }
 
   /**
+   * Get Development Butler module (exposed for testing)
+   *
+   * @returns DevelopmentButler instance
+   */
+  public get developmentButler() {
+    return this.components.developmentButler;
+  }
+
+  /**
    * Create a new MCP server instance
    *
    * Initializes all server components including:

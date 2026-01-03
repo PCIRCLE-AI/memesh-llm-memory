@@ -19,7 +19,7 @@ describe('ProjectMemoryCleanup Integration', () => {
     if (existsSync(testDbPath)) {
       unlinkSync(testDbPath);
     }
-    kg = new KnowledgeGraph(testDbPath);
+    kg = KnowledgeGraph.createSync(testDbPath);
     cleanup = new ProjectMemoryCleanup(kg);
   });
 

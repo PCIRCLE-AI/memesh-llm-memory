@@ -1,46 +1,58 @@
 /**
- * Create Entities Tool
+ * MCP Tool: create-entities
  *
- * Creates new entities in the Knowledge Graph for manual knowledge recording.
+ * Creates new entities in the Knowledge Graph.
+ * Allows manual recording of decisions, features, bug fixes, and other knowledge.
  */
 
-import { z } from 'zod';
-import { KnowledgeGraph } from '../../knowledge-graph/index.js';
+import type { KnowledgeGraph } from '../../knowledge-graph/index.js';
 
+export interface CreateEntitiesArgs {
+  /** Array of entities to create */
+  entities: Array<{
+    /** Entity name (unique identifier) */
+    name: string;
+    /** Entity type (e.g., 'decision', 'feature', 'bug_fix', 'code_change', 'test_result') */
+    entityType: string;
+    /** Array of observations (facts, notes, details) */
+    observations: string[];
+    /** Optional metadata */
+    metadata?: Record<string, unknown>;
+  }>;
+}
+
+/**
+ * MCP Tool definition for creating entities
+ */
 export const createEntitiesTool = {
-  name: 'create_entities',
-  description:
-    '📝 Knowledge Graph: Create new entities in the Knowledge Graph. ' +
-    'Use this to manually record important knowledge, architecture decisions, or lessons learned. ' +
-    'Each entity can have multiple observations (facts) attached to it.',
+  name: 'create-entities',
+  description: 'Create new entities in the Knowledge Graph. Record decisions, features, bug fixes, code changes, and other knowledge for future recall.',
+
   inputSchema: {
     type: 'object' as const,
     properties: {
       entities: {
-        type: 'array' as const,
+        type: 'array',
         description: 'Array of entities to create',
         items: {
-          type: 'object' as const,
+          type: 'object',
           properties: {
             name: {
-              type: 'string' as const,
-              description: 'Unique name for the entity',
+              type: 'string',
+              description: 'Entity name (unique identifier, e.g., "OAuth Integration 2026-01-03")',
             },
             entityType: {
-              type: 'string' as const,
-              description:
-                'Type of entity (e.g., "lesson_learned", "architecture_decision", "project_milestone")',
+              type: 'string',
+              description: 'Entity type (e.g., "decision", "feature", "bug_fix", "code_change", "test_result", "architecture_decision")',
             },
             observations: {
-              type: 'array' as const,
-              description: 'Array of facts/observations about this entity',
-              items: {
-                type: 'string' as const,
-              },
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Array of observations (facts, notes, details about this entity)',
             },
             metadata: {
-              type: 'object' as const,
-              description: 'Optional metadata for the entity',
+              type: 'object',
+              description: 'Optional metadata',
             },
           },
           required: ['name', 'entityType', 'observations'],
@@ -50,32 +62,27 @@ export const createEntitiesTool = {
     required: ['entities'],
   },
 
-  handler: (
-    input: {
-      entities: Array<{
-        name: string;
-        entityType: string;
-        observations: string[];
-        metadata?: Record<string, unknown>;
-      }>;
-    },
+  /**
+   * Handler for create-entities tool
+   *
+   * @param args - Tool arguments
+   * @param knowledgeGraph - KnowledgeGraph instance
+   * @returns Summary of created entities
+   */
+  async handler(
+    args: CreateEntitiesArgs,
     knowledgeGraph: KnowledgeGraph
-  ): {
-    count: number;
-    created: string[];
-    errors?: Array<{ name: string; error: string }>;
-  } => {
+  ) {
     const created: string[] = [];
     const errors: Array<{ name: string; error: string }> = [];
 
-    for (const entity of input.entities) {
+    for (const entity of args.entities) {
       try {
-        knowledgeGraph.createEntity({
+        await knowledgeGraph.createEntity({
           name: entity.name,
           type: entity.entityType as any,
           observations: entity.observations,
-          tags: [],
-          metadata: entity.metadata || {},
+          metadata: entity.metadata,
         });
         created.push(entity.name);
       } catch (error) {
@@ -87,9 +94,9 @@ export const createEntitiesTool = {
     }
 
     return {
-      count: created.length,
       created,
-      ...(errors.length > 0 && { errors }),
+      count: created.length,
+      errors: errors.length > 0 ? errors : undefined,
     };
   },
 };

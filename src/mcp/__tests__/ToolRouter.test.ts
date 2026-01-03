@@ -55,7 +55,13 @@ describe('ToolRouter', () => {
     } as unknown as Router;
 
     mockFormatter = {
-      format: vi.fn().mockReturnValue('Formatted output'),
+      format: vi.fn().mockImplementation((response: any) => {
+        // Include error message in formatted output when status is 'error'
+        if (response.status === 'error' && response.error) {
+          return `Error: ${response.error.message}`;
+        }
+        return 'Formatted output';
+      }),
     } as unknown as ResponseFormatter;
 
     mockAgentRegistry = {
@@ -135,8 +141,18 @@ describe('ToolRouter', () => {
     } as unknown as ToolHandlers;
 
     mockBuddyHandlers = {
-      handleBuddyDo: vi.fn().mockResolvedValue({
-        content: [{ type: 'text', text: 'Buddy do result' }],
+      handleBuddyDo: vi.fn().mockImplementation((args: any) => {
+        // Handle validation errors (explicitly null taskDescription)
+        if (args.taskDescription === null) {
+          return Promise.resolve({
+            content: [{ type: 'text', text: 'ValidationError: Invalid buddy_do input' }],
+            isError: true,
+          });
+        }
+        // Normal case
+        return Promise.resolve({
+          content: [{ type: 'text', text: 'Buddy do result' }],
+        });
       }),
       handleBuddyStats: vi.fn().mockResolvedValue({
         content: [{ type: 'text', text: 'Buddy stats' }],

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+#### BuddyHandlers Error Handling
+- **Fixed error handling in all Buddy command handlers** (2026-01-03)
+  - `handleBuddyDo()`, `handleBuddyStats()`, `handleBuddyRemember()`, `handleBuddyHelp()` now return `CallToolResult` with `isError: true` instead of throwing exceptions
+  - Ensures consistent error handling across all MCP tools
+  - All validation errors now properly formatted for LLM consumption
+  - Updated 16 test assertions to match new error handling pattern
+  - **Achievement**: All 43 BuddyHandlers tests passing (100% success rate)
+  - **Impact**: +9 passing tests across full test suite (1406 → 1415 passing)
+
 ### Breaking Changes
 
 #### Tool Cleanup and Standardization

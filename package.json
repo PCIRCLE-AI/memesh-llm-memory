@@ -8,7 +8,6 @@
     "claude-code-buddy": "dist/mcp/server.js"
   },
   "files": [
-    "dist/",
     ".claude-plugin/",
     "README.md",
     "LICENSE"

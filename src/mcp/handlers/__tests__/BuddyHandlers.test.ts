@@ -3,10 +3,10 @@
  *
  * Comprehensive tests for Buddy Command handlers.
  * Tests cover:
- * - Natural language task execution (buddy_do)
- * - Performance stats (buddy_stats)
- * - Memory recall (buddy_remember)
- * - Help system (buddy_help)
+ * - Natural language task execution (buddy-do)
+ * - Performance stats (buddy-stats)
+ * - Memory recall (buddy-remember)
+ * - Help system (buddy-help)
  * - Input validation
  * - Error handling
  */
@@ -310,14 +310,14 @@ describe('BuddyHandlers', () => {
 
     it('should show help for specific command', async () => {
       const result = await buddyHandlers.handleBuddyHelp({
-        command: 'buddy_do',
+        command: 'buddy-do',
       });
 
       expect(result.content).toHaveLength(1);
     });
 
     it('should accept all buddy commands', async () => {
-      const validCommands = ['buddy_do', 'buddy_stats', 'buddy_remember', 'buddy_help'];
+      const validCommands = ['buddy-do', 'buddy-stats', 'buddy-remember', 'buddy-help'];
 
       for (const command of validCommands) {
         const result = await buddyHandlers.handleBuddyHelp({ command });
@@ -398,7 +398,7 @@ describe('BuddyHandlers', () => {
   });
 
   describe('Integration Scenarios', () => {
-    it('should handle complete buddy_do workflow', async () => {
+    it('should handle complete buddy-do workflow', async () => {
       const result = await buddyHandlers.handleBuddyDo({
         task: 'Create user authentication system',
       });
@@ -408,7 +408,7 @@ describe('BuddyHandlers', () => {
       expect(result.content[0].text).toBeDefined();
     });
 
-    it('should handle complete buddy_remember workflow', async () => {
+    it('should handle complete buddy-remember workflow', async () => {
       const result = await buddyHandlers.handleBuddyRemember({
         query: 'previous authentication work',
       });

@@ -145,7 +145,7 @@ describe('ToolRouter', () => {
         // Handle validation errors (explicitly null taskDescription)
         if (args.taskDescription === null) {
           return Promise.resolve({
-            content: [{ type: 'text', text: 'ValidationError: Invalid buddy_do input' }],
+            content: [{ type: 'text', text: 'ValidationError: Invalid buddy-do input' }],
             isError: true,
           });
         }
@@ -202,7 +202,7 @@ describe('ToolRouter', () => {
 
       await expect(async () => {
         await toolRouter.routeToolCall({
-          name: 'buddy_do',
+          name: 'buddy-do',
           arguments: { taskDescription: 'test' },
         });
       }).rejects.toThrow(OperationError);
@@ -210,7 +210,7 @@ describe('ToolRouter', () => {
 
     it('should route valid tool calls', async () => {
       const result = await toolRouter.routeToolCall({
-        name: 'buddy_do',
+        name: 'buddy-do',
         arguments: { taskDescription: 'Create a component' },
       });
 
@@ -220,9 +220,9 @@ describe('ToolRouter', () => {
   });
 
   describe('Buddy Tools', () => {
-    it('should route buddy_agents', async () => {
+    it('should route buddy-agents', async () => {
       const result = await toolRouter.routeToolCall({
-        name: 'buddy_agents',
+        name: 'buddy-agents',
         arguments: {},
       });
 
@@ -230,9 +230,9 @@ describe('ToolRouter', () => {
       expect(result.content[0].text).toBe('Agents list');
     });
 
-    it('should route buddy_skills', async () => {
+    it('should route buddy-skills', async () => {
       const result = await toolRouter.routeToolCall({
-        name: 'buddy_skills',
+        name: 'buddy-skills',
         arguments: { filter: 'all' },
       });
 
@@ -240,9 +240,9 @@ describe('ToolRouter', () => {
       expect(result.content[0].text).toBe('Skills list');
     });
 
-    it('should route buddy_uninstall', async () => {
+    it('should route buddy-uninstall', async () => {
       const result = await toolRouter.routeToolCall({
-        name: 'buddy_uninstall',
+        name: 'buddy-uninstall',
         arguments: {},
       });
 
@@ -252,9 +252,9 @@ describe('ToolRouter', () => {
   });
 
   describe('Buddy Commands', () => {
-    it('should route buddy_do', async () => {
+    it('should route buddy-do', async () => {
       const result = await toolRouter.routeToolCall({
-        name: 'buddy_do',
+        name: 'buddy-do',
         arguments: { task: 'Create feature' },
       });
 
@@ -262,9 +262,9 @@ describe('ToolRouter', () => {
       expect(result.content[0].text).toBe('Buddy do result');
     });
 
-    it('should route buddy_stats', async () => {
+    it('should route buddy-stats', async () => {
       const result = await toolRouter.routeToolCall({
-        name: 'buddy_stats',
+        name: 'buddy-stats',
         arguments: {},
       });
 
@@ -272,9 +272,9 @@ describe('ToolRouter', () => {
       expect(result.content[0].text).toBe('Buddy stats');
     });
 
-    it('should route buddy_remember', async () => {
+    it('should route buddy-remember', async () => {
       const result = await toolRouter.routeToolCall({
-        name: 'buddy_remember',
+        name: 'buddy-remember',
         arguments: { query: 'authentication' },
       });
 
@@ -282,9 +282,9 @@ describe('ToolRouter', () => {
       expect(result.content[0].text).toBe('Buddy remember result');
     });
 
-    it('should route buddy_help', async () => {
+    it('should route buddy-help', async () => {
       const result = await toolRouter.routeToolCall({
-        name: 'buddy_help',
+        name: 'buddy-help',
         arguments: {},
       });
 
@@ -509,7 +509,7 @@ describe('ToolRouter', () => {
 
       await expect(async () => {
         await toolRouter.routeToolCall({
-          name: 'buddy_agents',
+          name: 'buddy-agents',
           arguments: {},
         });
       }).rejects.toThrow('Handler error');
@@ -518,7 +518,7 @@ describe('ToolRouter', () => {
     it('should handle invalid JSON in arguments', async () => {
       await expect(async () => {
         await toolRouter.routeToolCall({
-          name: 'buddy_do',
+          name: 'buddy-do',
           arguments: 'invalid' as any,
         });
       }).rejects.toThrow();
@@ -572,7 +572,7 @@ describe('ToolRouter', () => {
 
     it('should handle null in arguments', async () => {
       const result = await toolRouter.routeToolCall({
-        name: 'buddy_do',
+        name: 'buddy-do',
         arguments: { taskDescription: null } as any,
       });
 

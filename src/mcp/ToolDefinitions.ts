@@ -63,11 +63,11 @@ export interface MCPToolDefinition {
  */
 export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefinition[] {
   // ========================================
-  // Buddy Tools (buddy_* prefix - standard naming)
+  // Buddy Tools (buddy-* prefix - kebab-case naming)
   // ========================================
 
   const buddyAgentsTool: MCPToolDefinition = {
-    name: 'buddy_agents',
+    name: 'buddy-agents',
     description: '📋 Claude Code Buddy: List all 22 specialized agents with their capabilities and specializations.',
     inputSchema: {
       type: 'object' as const,
@@ -76,7 +76,7 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
   };
 
   const buddySkillsTool: MCPToolDefinition = {
-    name: 'buddy_skills',
+    name: 'buddy-skills',
     description: '🎓 Claude Code Buddy: List all skills, differentiate sa: prefixed skills from user skills.',
     inputSchema: {
       type: 'object' as const,
@@ -91,7 +91,7 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
   };
 
   const buddyUninstallTool: MCPToolDefinition = {
-    name: 'buddy_uninstall',
+    name: 'buddy-uninstall',
     description: '🗑️ Claude Code Buddy: Uninstall Claude Code Buddy and clean up files with control over data retention.',
     inputSchema: {
       type: 'object' as const,
@@ -117,7 +117,7 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
   // ========================================
 
   const buddyDoTool: MCPToolDefinition = {
-    name: 'buddy_do',
+    name: 'buddy-do',
     description: '🤖 CCB: Execute a task with smart routing. Analyzes complexity and routes to Ollama (fast & free) or Claude (high quality).',
     inputSchema: {
       type: 'object' as const,
@@ -132,7 +132,7 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
   };
 
   const buddyStatsTool: MCPToolDefinition = {
-    name: 'buddy_stats',
+    name: 'buddy-stats',
     description: '📊 CCB: View performance dashboard showing token usage, cost savings, and model routing decisions.',
     inputSchema: {
       type: 'object' as const,
@@ -147,7 +147,7 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
   };
 
   const buddyRememberTool: MCPToolDefinition = {
-    name: 'buddy_remember',
+    name: 'buddy-remember',
     description: '🧠 CCB: Recall project memory - past decisions, API design, bug fixes, and patterns.',
     inputSchema: {
       type: 'object' as const,
@@ -168,7 +168,7 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
   };
 
   const buddyHelpTool: MCPToolDefinition = {
-    name: 'buddy_help',
+    name: 'buddy-help',
     description: '📖 CCB: Get help for all buddy commands or a specific command.',
     inputSchema: {
       type: 'object' as const,
@@ -440,7 +440,7 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
   // ========================================
 
   const createDatabaseBackupTool: MCPToolDefinition = {
-    name: 'create_database_backup',
+    name: 'create-database-backup',
     description: '💾 Database Backup: Create a manual backup of a SQLite database with compression and verification.',
     inputSchema: {
       type: 'object' as const,
@@ -466,7 +466,7 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
   };
 
   const listDatabaseBackupsTool: MCPToolDefinition = {
-    name: 'list_database_backups',
+    name: 'list-database-backups',
     description: '📋 Database Backup: List all available backups for a database.',
     inputSchema: {
       type: 'object' as const,
@@ -480,7 +480,7 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
   };
 
   const restoreDatabaseBackupTool: MCPToolDefinition = {
-    name: 'restore_database_backup',
+    name: 'restore-database-backup',
     description: '♻️ Database Backup: Restore database from a backup. WARNING: Creates backup of current database before restoring.',
     inputSchema: {
       type: 'object' as const,
@@ -503,7 +503,7 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
   };
 
   const cleanDatabaseBackupsTool: MCPToolDefinition = {
-    name: 'clean_database_backups',
+    name: 'clean-database-backups',
     description: '🧹 Database Backup: Clean old backups based on retention policy (7 daily, 4 weekly, 12 monthly by default).',
     inputSchema: {
       type: 'object' as const,
@@ -529,7 +529,7 @@ export function getAllToolDefinitions(allAgents: AgentMetadata[]): MCPToolDefini
   };
 
   const getBackupStatsTool: MCPToolDefinition = {
-    name: 'get_backup_stats',
+    name: 'get-backup-stats',
     description: '📊 Database Backup: Get backup statistics for a database (total backups, size, age).',
     inputSchema: {
       type: 'object' as const,

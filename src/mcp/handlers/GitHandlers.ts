@@ -26,7 +26,7 @@ import { z } from 'zod';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { GitAssistantIntegration } from '../../integrations/GitAssistantIntegration.js';
 import { ValidationError } from '../../errors/index.js';
-import { handleError, logError, formatMCPError } from '../../utils/errorHandler.js';
+import { logError, formatErrorWithSuggestion } from '../../utils/errorHandler.js';
 import {
   GitSaveWorkInputSchema,
   GitListVersionsInputSchema,
@@ -142,17 +142,11 @@ export class GitHandlers {
         data: { args },
       });
 
-      const handled = handleError(error, {
-        component: 'GitHandlers',
-        method: 'handleGitSaveWork',
-        operation: 'saving work',
-      });
-
       return {
         content: [
           {
             type: 'text' as const,
-            text: `❌ Failed to save work: ${handled.message}`,
+            text: formatErrorWithSuggestion(error, 'save work'),
           },
         ],
       };
@@ -205,17 +199,11 @@ export class GitHandlers {
         data: { args },
       });
 
-      const handled = handleError(error, {
-        component: 'GitHandlers',
-        method: 'handleGitListVersions',
-        operation: 'listing versions',
-      });
-
       return {
         content: [
           {
             type: 'text' as const,
-            text: `❌ Failed to list versions: ${handled.message}`,
+            text: formatErrorWithSuggestion(error, 'list versions'),
           },
         ],
       };
@@ -246,17 +234,11 @@ export class GitHandlers {
         operation: 'getting git status',
       });
 
-      const handled = handleError(error, {
-        component: 'GitHandlers',
-        method: 'handleGitStatus',
-        operation: 'getting git status',
-      });
-
       return {
         content: [
           {
             type: 'text' as const,
-            text: `❌ Failed to get status: ${handled.message}`,
+            text: formatErrorWithSuggestion(error, 'get status'),
           },
         ],
       };
@@ -309,17 +291,11 @@ export class GitHandlers {
         data: { args },
       });
 
-      const handled = handleError(error, {
-        component: 'GitHandlers',
-        method: 'handleGitShowChanges',
-        operation: 'showing changes',
-      });
-
       return {
         content: [
           {
             type: 'text' as const,
-            text: `❌ Failed to show changes: ${handled.message}`,
+            text: formatErrorWithSuggestion(error, 'show changes'),
           },
         ],
       };
@@ -398,17 +374,11 @@ export class GitHandlers {
         data: { args },
       });
 
-      const handled = handleError(error, {
-        component: 'GitHandlers',
-        method: 'handleGitGoBack',
-        operation: 'going back to version',
-      });
-
       return {
         content: [
           {
             type: 'text' as const,
-            text: `❌ Failed to go back: ${handled.message}`,
+            text: formatErrorWithSuggestion(error, 'go back to version'),
           },
         ],
       };
@@ -439,17 +409,11 @@ export class GitHandlers {
         operation: 'creating backup',
       });
 
-      const handled = handleError(error, {
-        component: 'GitHandlers',
-        method: 'handleGitCreateBackup',
-        operation: 'creating backup',
-      });
-
       return {
         content: [
           {
             type: 'text' as const,
-            text: `❌ Failed to create backup: ${handled.message}`,
+            text: formatErrorWithSuggestion(error, 'create backup'),
           },
         ],
       };
@@ -503,17 +467,11 @@ export class GitHandlers {
         data: { args },
       });
 
-      const handled = handleError(error, {
-        component: 'GitHandlers',
-        method: 'handleGitSetup',
-        operation: 'setting up git',
-      });
-
       return {
         content: [
           {
             type: 'text' as const,
-            text: `❌ Git setup failed: ${handled.message}`,
+            text: formatErrorWithSuggestion(error, 'setup git'),
           },
         ],
       };
@@ -544,17 +502,11 @@ export class GitHandlers {
         operation: 'showing help',
       });
 
-      const handled = handleError(error, {
-        component: 'GitHandlers',
-        method: 'handleGitHelp',
-        operation: 'showing help',
-      });
-
       return {
         content: [
           {
             type: 'text' as const,
-            text: `❌ Failed to show help: ${handled.message}`,
+            text: formatErrorWithSuggestion(error, 'show help'),
           },
         ],
       };

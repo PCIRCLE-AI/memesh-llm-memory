@@ -68,16 +68,79 @@ Claude: [Specific optimization for YOUR database setup, with actual query exampl
 
 ### ✨ Automatic Expertise Routing
 
-34 specialized agents for different tasks:
-- **code-reviewer** - Security checks, quality standards, anti-patterns
-- **debugger** - Systematic debugging, error pattern recognition
-- **frontend-specialist** - UI/UX, accessibility, responsive design
-- **backend-specialist** - API design, database optimization, security
-- **api-designer**, **db-optimizer**, **refactorer**, **test-writer**... and more
+**34 specialized agents** automatically selected based on your task:
 
 **Types:** 9 real implementations + 24 enhanced prompts + 1 optional (RAG)
 
 **You don't choose the agent - CCB picks the right one for your task automatically.**
+
+<details>
+<summary><b>📋 View All 34 Agents</b></summary>
+
+#### 🔧 Real Implementation Agents (9)
+These agents have actual code implementations with MCP tool integration:
+
+- **development-butler** - Event-driven workflow automation, code maintenance, testing, dependency management, git workflow, build automation
+- **test-writer** - Test automation specialist, TDD expert, coverage analysis
+- **e2e-healing-agent** - End-to-end test automation with self-healing capabilities, Playwright-powered browser testing, automatic failure analysis and code fixing
+- **devops-engineer** - DevOps, CI/CD, infrastructure automation, deployment expert
+- **project-manager** - Project planning, task management, milestone tracking, team coordination
+- **data-engineer** - Data pipeline development, ETL processes, data quality management
+- **workflow-orchestrator** - Intelligent workflow platform selector (Opal vs n8n), workflow automation orchestration
+- **opal-automation** - Google Opal browser automation, natural language workflow creation, AI-powered prototypes
+- **n8n-workflow** - n8n workflow API integration, production workflow management, multi-system integration
+
+#### 💬 Enhanced Prompt Agents (24)
+These agents use specialized prompts without MCP tool integration:
+
+**Development (11 agents)**
+- **frontend-developer** - Frontend development expert, React/Vue/Angular specialist
+- **backend-developer** - Backend development expert, API and server-side specialist
+- **frontend-specialist** - Frontend architecture, performance optimization, modern frameworks expert
+- **backend-specialist** - Backend architecture, scalability, microservices expert
+- **database-administrator** - Database expert, schema design, query optimization specialist
+- **db-optimizer** - Database optimization, query tuning, index design specialist
+- **performance-engineer** - Performance optimization expert, bottleneck analysis, caching specialist
+- **performance-profiler** - Performance profiling, bottleneck identification, optimization analysis
+- **code-reviewer** - Expert code review, security analysis, and best practices validation
+- **debugger** - Advanced debugging, root cause analysis, systematic problem solving
+- **refactorer** - Code refactoring, technical debt reduction, code quality improvement
+- **api-designer** - API design, REST/GraphQL architecture, API documentation expert
+- **test-automator** - Test automation specialist, automated testing expert
+
+**Analysis & Research (4 agents)**
+- **architecture-agent** - System architecture expert, design patterns, scalability analysis
+- **research-agent** - Technical research, feasibility analysis, technology evaluation
+- **data-analyst** - Data analysis, statistical modeling, business intelligence expert
+- **knowledge-agent** - Knowledge management, information retrieval, documentation organization
+
+**Operations & Security (1 agent)**
+- **security-auditor** - Security auditing, vulnerability assessment, compliance expert
+
+**Management (1 agent)**
+- **product-manager** - Product strategy, user research, feature prioritization expert
+
+**Creative (2 agents)**
+- **ui-designer** - UI/UX design, user experience, interface design specialist
+- **technical-writer** - Technical documentation, API documentation, user guides expert
+
+**Business (1 agent)**
+- **marketing-strategist** - Marketing strategy, brand positioning, growth hacking expert
+
+**Engineering (1 agent)**
+- **ml-engineer** - Machine learning engineering, model training, ML pipeline expert
+
+**Utility (3 agents)**
+- **migration-assistant** - Migration planning, version upgrades, legacy system modernization
+- **api-integrator** - API integration, third-party services, SDK implementation expert
+- **general-agent** - General purpose agent for miscellaneous tasks and fallback scenarios
+
+#### 🎯 Optional Feature Agents (1)
+Requires external dependencies (ChromaDB + OpenAI):
+
+- **rag-agent** - Knowledge retrieval, vector search, embedding-based context search
+
+</details>
 
 ### 💾 Three Types of Memory
 

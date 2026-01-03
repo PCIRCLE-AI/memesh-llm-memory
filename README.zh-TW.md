@@ -68,16 +68,79 @@ Claude：[針對你的資料庫設定的具體優化建議，包含實際查詢�
 
 ### ✨ 自動專業知識路由
 
-34 種專業 agent 應對不同任務：
-- **code-reviewer** - 安全檢查、品質標準、反模式
-- **debugger** - 系統化除錯、錯誤模式識別
-- **frontend-specialist** - UI/UX、無障礙性、響應式設計
-- **backend-specialist** - API 設計、資料庫優化、安全性
-- **api-designer**、**db-optimizer**、**refactorer**、**test-writer**... 等等
+**34 個專業 Agents** 根據任務類型自動選擇：
 
 **類型：** 9 個真實實作 + 24 個增強提示 + 1 個可選功能（RAG）
 
 **你不需要選擇 agent - CCB 會自動為你的任務選擇正確的 agent。**
+
+<details>
+<summary><b>📋 查看全部 34 個 Agents</b></summary>
+
+#### 🔧 真實實作 Agents（9 個）
+這些 agents 具有實際程式碼實作並整合 MCP 工具：
+
+- **development-butler** - 事件驅動工作流程自動化、程式碼維護、測試、依賴管理、git 工作流程、建置自動化
+- **test-writer** - 測試自動化專家、TDD 專家、覆蓋率分析
+- **e2e-healing-agent** - 端到端測試自動化並具自我修復能力、Playwright 驅動的瀏覽器測試、自動失敗分析和程式碼修復
+- **devops-engineer** - DevOps、CI/CD、基礎設施自動化、部署專家
+- **project-manager** - 專案規劃、任務管理、里程碑追蹤、團隊協調
+- **data-engineer** - 資料管道開發、ETL 流程、資料品質管理
+- **workflow-orchestrator** - 智能工作流程平台選擇器（Opal vs n8n）、工作流程自動化編排
+- **opal-automation** - Google Opal 瀏覽器自動化、自然語言工作流程創建、AI 驅動的原型
+- **n8n-workflow** - n8n 工作流程 API 整合、生產工作流程管理、多系統整合
+
+#### 💬 增強提示 Agents（24 個）
+這些 agents 使用專業提示，無需 MCP 工具整合：
+
+**開發類（11 個 agents）**
+- **frontend-developer** - 前端開發專家、React/Vue/Angular 專家
+- **backend-developer** - 後端開發專家、API 和伺服器端專家
+- **frontend-specialist** - 前端架構、性能優化、現代框架專家
+- **backend-specialist** - 後端架構、可擴展性、微服務專家
+- **database-administrator** - 資料庫專家、schema 設計、查詢優化專家
+- **db-optimizer** - 資料庫優化、查詢調校、索引設計專家
+- **performance-engineer** - 性能優化專家、瓶頸分析、快取專家
+- **performance-profiler** - 性能分析、瓶頸識別、優化分析
+- **code-reviewer** - 專業程式碼審查、安全分析、最佳實踐驗證
+- **debugger** - 進階除錯、根本原因分析、系統化問題解決
+- **refactorer** - 程式碼重構、技術債務削減、程式碼品質改進
+- **api-designer** - API 設計、REST/GraphQL 架構、API 文檔專家
+- **test-automator** - 測試自動化專家、自動化測試專家
+
+**分析與研究（4 個 agents）**
+- **architecture-agent** - 系統架構專家、設計模式、可擴展性分析
+- **research-agent** - 技術研究、可行性分析、技術評估
+- **data-analyst** - 資料分析、統計建模、商業智能專家
+- **knowledge-agent** - 知識管理、資訊檢索、文檔組織
+
+**營運與安全（1 個 agent）**
+- **security-auditor** - 安全審計、漏洞評估、合規專家
+
+**管理（1 個 agent）**
+- **product-manager** - 產品策略、用戶研究、功能優先順序專家
+
+**創意（2 個 agents）**
+- **ui-designer** - UI/UX 設計、用戶體驗、介面設計專家
+- **technical-writer** - 技術文檔、API 文檔、用戶指南專家
+
+**商業（1 個 agent）**
+- **marketing-strategist** - 行銷策略、品牌定位、增長駭客專家
+
+**工程（1 個 agent）**
+- **ml-engineer** - 機器學習工程、模型訓練、ML 管道專家
+
+**工具類（3 個 agents）**
+- **migration-assistant** - 遷移規劃、版本升級、傳統系統現代化
+- **api-integrator** - API 整合、第三方服務、SDK 實作專家
+- **general-agent** - 通用型 agent，用於雜項任務和備援情境
+
+#### 🎯 可選功能 Agents（1 個）
+需要外部依賴（ChromaDB + OpenAI）：
+
+- **rag-agent** - 知識檢索、向量搜尋、基於嵌入的上下文搜尋
+
+</details>
 
 ### 💾 三種記憶類型
 

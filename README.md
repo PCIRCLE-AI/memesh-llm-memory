@@ -68,14 +68,14 @@ Claude: [Specific optimization for YOUR database setup, with actual query exampl
 
 ### ✨ Automatic Expertise Routing
 
-22 specialized agents for different tasks:
+34 specialized agents for different tasks:
 - **code-reviewer** - Security checks, quality standards, anti-patterns
 - **debugger** - Systematic debugging, error pattern recognition
 - **frontend-specialist** - UI/UX, accessibility, responsive design
 - **backend-specialist** - API design, database optimization, security
 - **api-designer**, **db-optimizer**, **refactorer**, **test-writer**... and more
 
-**Types:** 6 real implementations + 16 enhanced prompts + 1 optional (RAG)
+**Types:** 9 real implementations + 24 enhanced prompts + 1 optional (RAG)
 
 **You don't choose the agent - CCB picks the right one for your task automatically.**
 
@@ -256,8 +256,9 @@ System learns from your choices (when you override recommendations)
 ```
 
 **Under the hood:**
-- **22 total agents**: 6 real implementations (RAG, Knowledge Graph, Test Writer, DevOps Engineer, etc.) + 16 enhanced prompts + 1 optional
+- **34 total agents**: 9 real implementations (RAG, Knowledge Graph, Test Writer, DevOps Engineer, etc.) + 24 enhanced prompts + 1 optional
 - **Smart routing** analyzes task complexity and automatically selects the right agent and Claude model
+- **Evolution system** learns from your choices and continuously improves recommendations
 
 **Technical deep dive:** See [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
@@ -273,6 +274,8 @@ System learns from your choices (when you override recommendations)
 - **Learns from your choices** when you override agent recommendations
 - **Guides your workflow** with intelligent next-step recommendations
 - **Coordinates complex workflows** across multiple steps
+- **Cross-platform support** works seamlessly on Windows, macOS, and Linux
+- **Production-ready** with comprehensive testing, security hardening, and resource protection
 
 ## Honest Limitations ⚠️
 
@@ -350,7 +353,7 @@ System learns from your choices (when you override recommendations)
 ## Development
 
 ```bash
-# Run tests (722 tests covering core functionality)
+# Run tests (292 test files covering core functionality)
 npm test
 
 # Development mode with auto-reload

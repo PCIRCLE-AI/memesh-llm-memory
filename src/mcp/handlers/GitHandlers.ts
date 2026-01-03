@@ -544,7 +544,10 @@ export class GitHandlers {
       lines.push('');
     }
 
-    lines.push('💡 Tip: Use git-go-back with version number (e.g., "2") or hash (e.g., "' + versions[0].hash + '") to restore');
+    // Only show tip with example if we have versions
+    if (versions.length > 0) {
+      lines.push('💡 Tip: Use git-go-back with version number (e.g., "2") or hash (e.g., "' + versions[0].hash + '") to restore');
+    }
 
     return lines.join('\n');
   }

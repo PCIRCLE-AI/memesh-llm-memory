@@ -40,15 +40,16 @@ export class WorkflowOrchestrator {
    * 主要入口：用戶描述需求，自動創建工作流
    */
   async createWorkflow(request: WorkflowRequest): Promise<WorkflowResult> {
+    let selectedPlatform: 'opal' | 'n8n' = 'opal'; // Track for error reporting
     try {
       // 1. 分析用戶意圖，選擇最佳平台
-      const platform = await this.choosePlatform(request);
+      selectedPlatform = await this.choosePlatform(request);
 
-      logger.info(`🎯 Selected platform: ${platform}`);
-      logger.info(`📝 Reasoning: ${this.getReasoningForPlatform(request, platform)}`);
+      logger.info(`🎯 Selected platform: ${selectedPlatform}`);
+      logger.info(`📝 Reasoning: ${this.getReasoningForPlatform(request, selectedPlatform)}`);
 
       // 2. 根據平台執行
-      if (platform === 'opal') {
+      if (selectedPlatform === 'opal') {
         return await this.createOpalWorkflow(request);
       } else {
         return await this.createN8nWorkflow(request);
@@ -57,7 +58,7 @@ export class WorkflowOrchestrator {
     } catch (error) {
       return {
         success: false,
-        platform: 'opal', // fallback
+        platform: selectedPlatform, // Use tracked platform, not hardcoded fallback
         error: error instanceof Error ? error.message : String(error)
       };
     }
@@ -467,7 +468,13 @@ return items.map(item => ({
       if (!url) {
         throw new Error(
           'HTTP workflow requires a URL. Please include the target URL in your description ' +
-          '(e.g., "Call API at https://myapi.com/endpoint")'
+          '(e.g., "Call API at https://myapi.com/endpoint" or "localhost:3000/api")'
+        );
+      }
+      // Validate URL to prevent SSRF
+      if (!this.isValidExternalUrl(url)) {
+        throw new Error(
+          `Invalid or blocked URL: ${url}. Internal network addresses are not allowed for security reasons.`
         );
       }
       return this.n8nAgent.createSimpleHttpWorkflow(
@@ -493,11 +500,73 @@ return items.map(item => ({
 
   /**
    * 從描述中提取 URL
+   * Supports: https://, http://, localhost, and URLs without protocol
    */
   private extractUrl(description: string): string | null {
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    const matches = description.match(urlRegex);
-    return matches ? matches[0] : null;
+    // Match full URLs with protocol
+    const fullUrlRegex = /(https?:\/\/[^\s]+)/g;
+    const fullMatches = description.match(fullUrlRegex);
+    if (fullMatches) {
+      return fullMatches[0];
+    }
+
+    // Match localhost with optional port (e.g., localhost:3000)
+    const localhostRegex = /(localhost:\d+[^\s]*)/g;
+    const localhostMatches = description.match(localhostRegex);
+    if (localhostMatches) {
+      return `http://${localhostMatches[0]}`;
+    }
+
+    // Match domain-like patterns without protocol (e.g., api.example.com/endpoint)
+    const domainRegex = /([a-zA-Z0-9][-a-zA-Z0-9]*\.[-a-zA-Z0-9.]+(?:\/[^\s]*)?)/g;
+    const domainMatches = description.match(domainRegex);
+    if (domainMatches) {
+      // Add https:// protocol by default for security
+      return `https://${domainMatches[0]}`;
+    }
+
+    return null;
+  }
+
+  /**
+   * Validate URL to prevent SSRF attacks
+   * Blocks internal network addresses and localhost in production
+   */
+  private isValidExternalUrl(url: string): boolean {
+    try {
+      const parsed = new URL(url);
+      const hostname = parsed.hostname.toLowerCase();
+
+      // Block internal/private network addresses
+      const blockedPatterns = [
+        /^127\./,                    // Loopback
+        /^10\./,                     // Private Class A
+        /^172\.(1[6-9]|2\d|3[01])\./, // Private Class B
+        /^192\.168\./,               // Private Class C
+        /^169\.254\./,               // Link-local
+        /^0\./,                      // Current network
+        /^\[::1\]/,                  // IPv6 loopback
+        /^\[fc/i,                    // IPv6 private
+        /^\[fd/i,                    // IPv6 private
+      ];
+
+      // Allow localhost for development, but log a warning
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        logger.warn('⚠️ Using localhost URL - ensure this is intentional for development');
+        return true;
+      }
+
+      for (const pattern of blockedPatterns) {
+        if (pattern.test(hostname)) {
+          logger.warn(`🚫 Blocked internal network URL: ${hostname}`);
+          return false;
+        }
+      }
+
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**

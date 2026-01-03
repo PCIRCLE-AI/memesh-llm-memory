@@ -11,11 +11,12 @@ export interface Entity {
   entityType: EntityType;
   observations: string[];
   tags?: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt?: Date;
 }
 
 export type EntityType =
+  // Knowledge types
   | 'decision'           // Architecture/technical decisions
   | 'bug_fix'           // Bug fixes and their root causes
   | 'feature'           // Feature implementations
@@ -24,14 +25,19 @@ export type EntityType =
   | 'problem_solution'  // Problem-solution pairs
   | 'technical_debt'    // Technical debt items
   | 'optimization'      // Performance optimizations
-  | 'refactoring';      // Refactoring decisions
+  | 'refactoring'       // Refactoring decisions
+  // Memory/tracking types
+  | 'code_change'       // Code change events
+  | 'test_result'       // Test execution results
+  | 'session_snapshot'  // Session state snapshots
+  | 'project_snapshot'; // Project state snapshots
 
 export interface Relation {
   id?: number;
   from: string;         // Entity name (from)
   to: string;           // Entity name (to)
   relationType: RelationType;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt?: Date;
 }
 
@@ -59,7 +65,7 @@ export interface RelationTrace {
     from: string;
     to: string;
     relationType: RelationType;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }>;
   depth?: number;
 }

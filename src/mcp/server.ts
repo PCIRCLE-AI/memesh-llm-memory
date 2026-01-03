@@ -253,7 +253,7 @@ class ClaudeCodeBuddyMCPServer {
             try {
               this.components.knowledgeGraph.createEntity({
                 name: `RAG Indexed File: ${fileName} (${new Date().toISOString().split('T')[0]})`,
-                type: 'rag_indexed_file' as any,
+                entityType: 'code_change',  // Using code_change as closest match for indexed files
                 observations: [
                   `File path: ${filePath}`,
                   `Indexed at: ${timestamp}`,

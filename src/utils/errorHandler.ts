@@ -211,7 +211,7 @@ export function getErrorStack(error: unknown): string | undefined {
  * Maps error patterns to helpful recovery suggestions
  */
 const RECOVERY_SUGGESTIONS: Array<{
-  pattern: RegExp | string;
+  pattern: RegExp;
   suggestion: string;
   category: string;
 }> = [
@@ -338,11 +338,7 @@ export function getRecoverySuggestion(error: unknown): string | undefined {
   const errorMessage = getErrorMessage(error);
 
   for (const { pattern, suggestion } of RECOVERY_SUGGESTIONS) {
-    if (typeof pattern === 'string') {
-      if (errorMessage.toLowerCase().includes(pattern.toLowerCase())) {
-        return suggestion;
-      }
-    } else if (pattern.test(errorMessage)) {
+    if (pattern.test(errorMessage)) {
       return suggestion;
     }
   }

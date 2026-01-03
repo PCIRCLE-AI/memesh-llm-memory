@@ -1,0 +1,1 @@
+{"version":3,"file":"ProjectMemoryCleanup.d.ts","sourceRoot":"","sources":["../../src/memory/ProjectMemoryCleanup.ts"],"names":[],"mappings":"AAOA,OAAO,KAAK,EAAE,cAAc,EAAE,MAAM,6BAA6B,CAAC;AAGlE,qBAAa,oBAAoB;IAC/B,OAAO,CAAC,cAAc,CAAiB;IACvC,OAAO,CAAC,QAAQ,CAAC,cAAc,CAAM;gBAEzB,cAAc,EAAE,cAAc;IAQpC,kBAAkB,IAAI,OAAO,CAAC,MAAM,CAAC;IA+B3C,OAAO,CAAC,gBAAgB;CAgBzB"}

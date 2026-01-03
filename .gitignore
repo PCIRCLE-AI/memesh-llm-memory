@@ -40,6 +40,9 @@ build/
 out/
 .next/
 
+# Exception: Include dist/ in Claude Code plugin packages
+!.claude-plugin/*/dist/
+
 # ChromaDB data
 chroma_db/
 *.db

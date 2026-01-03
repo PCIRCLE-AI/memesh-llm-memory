@@ -55,7 +55,7 @@ npm install
 npm run build
 
 # Configure MCP server (edit Claude Code config)
-# Add to ~/.claude/config.json:
+# Add to ~/.claude.json:
 {
   "mcpServers": {
     "claude-code-buddy": {
@@ -895,7 +895,7 @@ EVOLUTION_DB_PATH=/path/to/evolution.db
 
 ### MCP Server Configuration
 
-**Add to Claude Code config** (`~/.claude/config.json`):
+**Add to Claude Code config** (`~/.claude.json`):
 ```json
 {
   "mcpServers": {

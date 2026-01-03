@@ -7,22 +7,30 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
- * Add CCB to MCP config.json
+ * Add CCB to MCP config in ~/.claude.json
+ * This is Claude Code's main configuration file for MCP servers
  */
 function addToMcpConfig(ccbPath) {
-  const configPath = path.join(process.env.HOME, '.claude', 'config.json');
+  // IMPORTANT: Claude Code reads MCP config from ~/.claude.json (not ~/.claude/config.json)
+  const configPath = path.join(process.env.HOME, '.claude.json');
 
   let config = {};
   if (fs.existsSync(configPath)) {
-    config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    try {
+      config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    } catch (e) {
+      console.error('Warning: Could not parse existing .claude.json, will merge carefully');
+      config = {};
+    }
   }
 
   if (!config.mcpServers) {
     config.mcpServers = {};
   }
 
-  // Add or update CCB entry - use 'claude-code-buddy' for consistency
+  // Add or update CCB entry with required 'type' field
   config.mcpServers['claude-code-buddy'] = {
+    type: 'stdio',  // Required field for Claude Code MCP servers
     command: 'node',
     args: [ccbPath],
     env: {
@@ -31,7 +39,7 @@ function addToMcpConfig(ccbPath) {
   };
 
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-  console.log('✓ Added CCB to MCP configuration');
+  console.log('✓ Added CCB to MCP configuration at ~/.claude.json');
 }
 
 /**

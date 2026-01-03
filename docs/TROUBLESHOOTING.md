@@ -32,7 +32,7 @@ This guide helps you diagnose and resolve common issues with Claude Code Buddy.
 1. **Check if server is configured**:
 ```bash
 # Check Claude Code config
-cat ~/.claude/config.json | grep claude-code-buddy
+cat ~/.claude.json | grep claude-code-buddy
 ```
 
 2. **Verify installation**:
@@ -309,7 +309,7 @@ export OPENAI_API_KEY="sk-..."
 echo "OPENAI_API_KEY=sk-..." >> .env
 
 # Option 3: Claude Code config
-# Edit ~/.claude/config.json:
+# Edit ~/.claude.json:
 {
   "mcpServers": {
     "claude-code-buddy": {
@@ -442,7 +442,7 @@ kill <PID>
 
 3. **Check MCP server configuration**:
 ```bash
-cat ~/.claude/config.json
+cat ~/.claude.json
 ```
 
 4. **Verify required tools**:
@@ -752,7 +752,7 @@ npm run build
 ls dist/mcp/server.js
 
 # MCP configuration
-cat ~/.claude/config.json | grep -A 10 claude-code-buddy
+cat ~/.claude.json | grep -A 10 claude-code-buddy
 
 # Logs
 tail -50 ~/.claude/logs/claude-code-buddy.log

@@ -378,7 +378,7 @@ If buddy commands aren't recognized:
 1. **Verify MCP Integration:**
    ```bash
    # Check Claude Code config
-   cat ~/.claude/config.json
+   cat ~/.claude.json
    ```
 
 2. **Restart Claude Code:**

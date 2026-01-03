@@ -6,6 +6,7 @@
  */
 
 import type { KnowledgeGraph } from '../../knowledge-graph/index.js';
+import type { EntityType } from '../../knowledge-graph/types.js';
 
 export interface CreateEntitiesArgs {
   /** Array of entities to create */
@@ -80,7 +81,7 @@ export const createEntitiesTool = {
       try {
         await knowledgeGraph.createEntity({
           name: entity.name,
-          type: entity.entityType as any,
+          entityType: entity.entityType as EntityType,  // Cast from MCP string input
           observations: entity.observations,
           metadata: entity.metadata,
         });

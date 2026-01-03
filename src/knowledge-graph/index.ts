@@ -112,12 +112,14 @@ export class KnowledgeGraph {
   private initialize() {
 
     // Create schema
+    // Note: DB column is named `type` for brevity, but maps to TypeScript `entityType`
+    // to avoid confusion with reserved keywords and improve type safety
     const schema = `
       -- Entities table
       CREATE TABLE IF NOT EXISTS entities (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,
-        type TEXT NOT NULL,
+        type TEXT NOT NULL,  -- Maps to TypeScript 'entityType' field
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         metadata JSON
       );

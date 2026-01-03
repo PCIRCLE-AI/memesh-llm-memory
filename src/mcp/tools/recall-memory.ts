@@ -53,7 +53,7 @@ export const recallMemoryTool = {
 
     return {
       memories: memories.map(m => ({
-        type: m.type,
+        type: m.entityType,  // Map entityType back to 'type' for API response
         observations: m.observations,
         timestamp: m.metadata?.timestamp,
       })),

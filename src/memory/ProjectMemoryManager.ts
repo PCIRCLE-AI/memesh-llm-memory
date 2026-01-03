@@ -6,8 +6,11 @@
  */
 
 import type { KnowledgeGraph } from '../knowledge-graph/index.js';
-import type { Entity } from '../knowledge-graph/types.js';
+import type { Entity, EntityType } from '../knowledge-graph/types.js';
 import { logger } from '../utils/logger.js';
+
+/** Memory-related entity types for project tracking */
+export type MemoryEntityType = 'code_change' | 'test_result' | 'session_snapshot' | 'project_snapshot';
 
 /**
  * Options for recalling recent work
@@ -15,8 +18,8 @@ import { logger } from '../utils/logger.js';
 export interface RecallOptions {
   /** Maximum number of entities to return (default: 10) */
   limit?: number;
-  /** Filter by specific entity types */
-  types?: string[];
+  /** Filter by specific entity types (must be valid EntityType values) */
+  types?: EntityType[];
   /** Filter by date range (not implemented yet) */
   since?: Date;
 }
@@ -46,15 +49,15 @@ export class ProjectMemoryManager {
   async recallRecentWork(options: RecallOptions = {}): Promise<Entity[]> {
     const {
       limit = 10,
-      types = ['code_change', 'test_result', 'session_snapshot'],
+      types = ['code_change', 'test_result', 'session_snapshot'] as EntityType[],
     } = options;
 
     const results: Entity[] = [];
 
     // Query each type separately
-    for (const type of types) {
+    for (const entityType of types) {
       const entities = this.knowledgeGraph.searchEntities({
-        entityType: type as any, // Type assertion needed since KG uses EntityType union
+        entityType,
         limit: Math.ceil(limit / types.length),
       });
       results.push(...entities);

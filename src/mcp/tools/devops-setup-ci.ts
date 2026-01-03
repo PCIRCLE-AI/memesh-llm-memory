@@ -1,128 +1,106 @@
 /**
- * Setup CI Tool
+ * MCP Tool: devops-setup-ci
  *
  * Complete CI/CD setup that generates config, writes to file, and records to Knowledge Graph.
+ * One-command setup for GitHub Actions or GitLab CI.
  */
 
-import { z } from 'zod';
-import { promises as fs } from 'fs';
-import { dirname } from 'path';
-import { generateCIConfigTool } from './devops-generate-ci-config.js';
-import { KnowledgeGraph } from '../../knowledge-graph/index.js';
+import type { DevOpsEngineerAgent } from '../../agents/DevOpsEngineerAgent.js';
 
+export interface SetupCIArgs {
+  /** CI/CD platform */
+  platform: 'github-actions' | 'gitlab-ci';
+  /** Test command to run (e.g., 'npm test') */
+  testCommand: string;
+  /** Build command to run (e.g., 'npm run build') */
+  buildCommand: string;
+}
+
+/**
+ * MCP Tool definition for complete CI/CD setup
+ */
 export const setupCITool = {
-  name: 'devops_setup_ci',
-  description:
-    '⚙️ DevOps: Complete CI/CD setup that generates configuration, writes it to the appropriate file, ' +
-    'and records the setup in the Knowledge Graph for future reference.',
+  name: 'devops-setup-ci',
+  description: 'Complete CI/CD setup in one command. Generates config, writes to file, and records to Knowledge Graph. Ready-to-commit CI/CD configuration.',
+
   inputSchema: {
     type: 'object' as const,
     properties: {
       platform: {
-        type: 'string' as const,
+        type: 'string',
         enum: ['github-actions', 'gitlab-ci'],
         description: 'CI/CD platform to set up',
       },
       testCommand: {
-        type: 'string' as const,
-        description: 'Command to run tests (e.g., "npm test")',
+        type: 'string',
+        description: 'Command to run tests (e.g., "npm test", "pytest")',
       },
       buildCommand: {
-        type: 'string' as const,
-        description: 'Command to build the project (e.g., "npm run build")',
-      },
-      projectPath: {
-        type: 'string' as const,
-        description: 'Path to the project root directory (default: current directory)',
+        type: 'string',
+        description: 'Command to build the project (e.g., "npm run build", "make")',
       },
     },
     required: ['platform', 'testCommand', 'buildCommand'],
   },
 
-  handler: async (
-    input: {
-      platform: 'github-actions' | 'gitlab-ci';
-      testCommand: string;
-      buildCommand: string;
-      projectPath?: string;
-    },
-    knowledgeGraph?: KnowledgeGraph
-  ): Promise<{
-    success: boolean;
-    message: string;
-    nextSteps: string;
-    details?: {
-      configFile?: string;
-      testCommand?: string;
-      buildCommand?: string;
-    };
-    configFileName?: string;
-    filePath?: string;
-    configContent?: string;
-    recorded?: boolean;
-    error?: string;
-  }> => {
+  /**
+   * Handler for devops-setup-ci tool
+   *
+   * @param args - Tool arguments
+   * @param devopsEngineer - DevOpsEngineerAgent instance
+   * @returns Setup result with file path and instructions
+   */
+  async handler(
+    args: SetupCIArgs,
+    devopsEngineer: DevOpsEngineerAgent
+  ) {
     try {
-      // Generate CI config
-      const generated = generateCIConfigTool.handler({
-        platform: input.platform,
-        testCommand: input.testCommand,
-        buildCommand: input.buildCommand,
+      // This calls setupCI() which:
+      // 1. Generates the config
+      // 2. Writes to file
+      // 3. Records to Knowledge Graph
+      await devopsEngineer.setupCI({
+        platform: args.platform,
+        testCommand: args.testCommand,
+        buildCommand: args.buildCommand,
       });
 
-      // Determine file path
-      const projectPath = input.projectPath || process.cwd();
-      const filePath = `${projectPath}/${generated.filename}`;
-
-      // Ensure directory exists
-      await fs.mkdir(dirname(filePath), { recursive: true });
-
-      // Write config file
-      await fs.writeFile(filePath, generated.config, 'utf-8');
-
-      // Record to Knowledge Graph if available
-      let recorded = false;
-      if (knowledgeGraph) {
-        try {
-          knowledgeGraph.createEntity({
-            name: `CI/CD Setup - ${input.platform}`,
-            type: 'devops_config' as any,
-            observations: [
-              `Platform: ${input.platform}`,
-              `Test Command: ${input.testCommand}`,
-              `Build Command: ${input.buildCommand}`,
-              `Config File: ${generated.filename}`,
-              `Setup Date: ${new Date().toISOString()}`,
-            ],
-            tags: [],
-            metadata: {},
-          });
-          recorded = true;
-        } catch (error) {
-          // Knowledge Graph recording is optional, don't fail if it errors
-          console.warn('Failed to record CI setup in Knowledge Graph:', error);
-        }
-      }
+      const configFileName = args.platform === 'github-actions'
+        ? '.github/workflows/ci.yml'
+        : '.gitlab-ci.yml';
 
       return {
         success: true,
-        message: `✅ CI/CD setup complete for ${input.platform}!`,
-        nextSteps: generated.instructions,
+        platform: args.platform,
+        configFileName,
+        message: `✅ CI/CD setup complete!`,
         details: {
-          configFile: generated.filename,
-          testCommand: input.testCommand,
-          buildCommand: input.buildCommand,
+          configFile: configFileName,
+          testCommand: args.testCommand,
+          buildCommand: args.buildCommand,
         },
-        configFileName: generated.filename,
-        filePath,
-        configContent: generated.config,
-        recorded,
+        nextSteps: `
+Next steps:
+
+1. Review the generated config:
+   cat ${configFileName}
+
+2. Commit and push:
+   git add ${configFileName}
+   git commit -m "ci: add ${args.platform} configuration"
+   git push
+
+3. Monitor the pipeline:
+   ${args.platform === 'github-actions'
+     ? 'Visit: https://github.com/<owner>/<repo>/actions'
+     : 'Visit: https://gitlab.com/<namespace>/<project>/-/pipelines'}
+
+The configuration has been recorded to Knowledge Graph for future reference.
+`.trim(),
       };
     } catch (error) {
       return {
         success: false,
-        message: 'CI/CD setup failed',
-        nextSteps: 'Please check the error details and try again',
         error: error instanceof Error ? error.message : String(error),
       };
     }

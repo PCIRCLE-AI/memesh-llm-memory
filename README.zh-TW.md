@@ -279,13 +279,28 @@ cd claude-code-buddy
 ./scripts/install.sh
 ```
 
-安裝程式會：
+安裝程式會引導你完成 **11 個互動式步驟**：
+
+**核心設定（步驟 1-8）**：
+- ✓ 檢查前置需求（Node.js 18+、npm、git）
 - ✓ 安裝相依性
 - ✓ 建構專案
+- ✓ 檢查系統資源
+- ✓ 設定環境
+- ✓ **選用 RAG 設定**：選擇 HuggingFace（免費）或 OpenAI（付費）以增強知識檢索
 - ✓ 設定 Claude Code MCP 整合
-- ✓ 測試設定
+- ✓ 測試安裝
 
-**不需要 API 金鑰** - 使用你現有的 Claude Code 訂閱。
+**互動式展示（步驟 9-10）**：
+- 📚 **步驟 9：基本使用展示** - 了解 CCB 的智能路由、範例提示、記憶類型和成本節省
+- 📁 **步驟 10：RAG 功能展示**（如果啟用）- 探索 Drop Inbox 的魔力與範例文件
+
+**核心功能不需要 API 金鑰** - 使用你現有的 Claude Code 訂閱。
+
+**選用 RAG 功能**：
+- **免費選項**：HuggingFace 嵌入（無需 API 金鑰成本）
+- **付費選項**：OpenAI 嵌入（自備 API 金鑰）
+- **Drop Inbox**：每 5 秒自動索引 `~/Documents/claude-code-buddy-knowledge/` 目錄中的檔案
 
 ### 開始使用
 

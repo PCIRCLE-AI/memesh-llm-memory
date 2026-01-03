@@ -1,121 +1,93 @@
 /**
- * Analyze Deployment Tool
+ * MCP Tool: devops-analyze-deployment
  *
  * Analyzes deployment readiness by running tests, build, and checking git status.
+ * Provides a comprehensive pre-deployment checklist with blockers identified.
  */
 
-import { z } from 'zod';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import type { DevOpsEngineerAgent } from '../../agents/DevOpsEngineerAgent.js';
 
-const execAsync = promisify(exec);
+export interface AnalyzeDeploymentArgs {
+  /** Optional custom test command (default: 'npm test') */
+  testCommand?: string;
+  /** Optional custom build command (default: 'npm run build') */
+  buildCommand?: string;
+}
 
+/**
+ * MCP Tool definition for analyzing deployment readiness
+ */
 export const analyzeDeploymentTool = {
-  name: 'devops_analyze_deployment',
-  description:
-    '🔍 DevOps: Analyze deployment readiness by running tests, build checks, and git status verification. ' +
-    'Ensures the project is in a deployable state before pushing to production.',
+  name: 'devops-analyze-deployment',
+  description: 'Analyze deployment readiness by running tests, build, and checking git status. Identifies blockers and provides a go/no-go decision for deployment.',
+
   inputSchema: {
     type: 'object' as const,
     properties: {
       testCommand: {
-        type: 'string' as const,
-        description: 'Command to run tests (default: "npm test")',
+        type: 'string',
+        description: 'Custom test command to run (default: "npm test")',
       },
       buildCommand: {
-        type: 'string' as const,
-        description: 'Command to build the project (default: "npm run build")',
+        type: 'string',
+        description: 'Custom build command to run (default: "npm run build")',
       },
     },
   },
 
-  handler: async (
-    input: {
-      testCommand?: string;
-      buildCommand?: string;
-    },
-    devopsEngineer?: any
-  ): Promise<{
-    success: boolean;
-    ready: boolean;
-    summary: string;
-    checks: {
-      git: { clean: boolean; branch: string };
-      tests: { passed: boolean; output?: string };
-      build: { passed: boolean; output?: string };
-    };
-    issues: string[];
-    error?: string;
-  }> => {
-    const testCmd = input.testCommand || 'npm test';
-    const buildCmd = input.buildCommand || 'npm run build';
-    const issues: string[] = [];
-
-    // Check git status
-    let gitClean = false;
-    let gitBranch = 'unknown';
+  /**
+   * Handler for devops-analyze-deployment tool
+   *
+   * @param args - Tool arguments
+   * @param devopsEngineer - DevOpsEngineerAgent instance
+   * @returns Deployment readiness analysis
+   */
+  async handler(
+    args: AnalyzeDeploymentArgs,
+    devopsEngineer: DevOpsEngineerAgent
+  ) {
     try {
-      const { stdout: statusOutput } = await execAsync('git status --porcelain');
-      gitClean = statusOutput.trim() === '';
+      const analysis = await devopsEngineer.analyzeDeploymentReadiness({
+        testCommand: args.testCommand,
+        buildCommand: args.buildCommand,
+      });
 
-      const { stdout: branchOutput } = await execAsync(
-        'git rev-parse --abbrev-ref HEAD'
-      );
-      gitBranch = branchOutput.trim();
+      // Format the response
+      const statusEmoji = analysis.readyToDeploy ? '✅' : '❌';
+      const decision = analysis.readyToDeploy ? 'READY TO DEPLOY' : 'NOT READY - BLOCKERS FOUND';
 
-      if (!gitClean) {
-        issues.push('Git working directory has uncommitted changes');
-      }
+      return {
+        success: true,
+        decision,
+        readyToDeploy: analysis.readyToDeploy,
+        checks: {
+          testsPass: analysis.testsPass ? '✅ Tests passing' : '❌ Tests failing',
+          buildSuccessful: analysis.buildSuccessful ? '✅ Build successful' : '❌ Build failed',
+          noUncommittedChanges: analysis.noUncommittedChanges ? '✅ No uncommitted changes' : '⚠️ Uncommitted changes found',
+        },
+        blockers: analysis.blockers.length > 0 ? analysis.blockers : undefined,
+        summary: `
+${statusEmoji} Deployment Status: ${decision}
+
+Pre-Deployment Checklist:
+${analysis.testsPass ? '✅' : '❌'} Tests: ${analysis.testsPass ? 'Passing' : 'FAILING'}
+${analysis.buildSuccessful ? '✅' : '❌'} Build: ${analysis.buildSuccessful ? 'Successful' : 'FAILED'}
+${analysis.noUncommittedChanges ? '✅' : '⚠️'} Git Status: ${analysis.noUncommittedChanges ? 'Clean' : 'Uncommitted changes'}
+
+${analysis.blockers.length > 0 ? `
+🚫 Blockers:
+${analysis.blockers.map(b => `  - ${b}`).join('\n')}
+
+Fix these issues before deploying.
+` : '✅ All checks passed. Ready to deploy!'}
+`.trim(),
+      };
     } catch (error) {
-      issues.push('Failed to check git status');
+      return {
+        success: false,
+        readyToDeploy: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
     }
-
-    // Run tests
-    let testsPassed = false;
-    let testOutput = '';
-    try {
-      const { stdout } = await execAsync(testCmd);
-      testsPassed = true;
-      testOutput = stdout;
-    } catch (error: any) {
-      testOutput = error.stdout || error.message;
-      issues.push('Tests failed');
-    }
-
-    // Run build
-    let buildPassed = false;
-    let buildOutput = '';
-    try {
-      const { stdout } = await execAsync(buildCmd);
-      buildPassed = true;
-      buildOutput = stdout;
-    } catch (error: any) {
-      buildOutput = error.stdout || error.message;
-      issues.push('Build failed');
-    }
-
-    const ready = gitClean && testsPassed && buildPassed;
-
-    // Generate summary
-    const statusIcon = ready ? '✅' : '❌';
-    const summary = `${statusIcon} Deployment Readiness: ${ready ? 'READY' : 'NOT READY'}
-
-Git Status: ${gitClean ? '✅ Clean' : '❌ Uncommitted changes'} (branch: ${gitBranch})
-Tests: ${testsPassed ? '✅ Passed' : '❌ Failed'}
-Build: ${buildPassed ? '✅ Passed' : '❌ Failed'}
-
-${issues.length > 0 ? `Issues:\n${issues.map(i => `  - ${i}`).join('\n')}` : 'No issues found'}`;
-
-    return {
-      success: true,
-      ready,
-      summary,
-      checks: {
-        git: { clean: gitClean, branch: gitBranch },
-        tests: { passed: testsPassed, output: testOutput },
-        build: { passed: buildPassed, output: buildOutput },
-      },
-      issues,
-    };
   },
 };

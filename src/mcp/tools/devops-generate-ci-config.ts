@@ -1,179 +1,96 @@
 /**
- * Generate CI Config Tool
+ * MCP Tool: devops-generate-ci-config
  *
  * Generates CI/CD configuration files for GitHub Actions or GitLab CI.
+ * Supports test execution, build steps, deployment, and caching.
  */
 
-import { z } from 'zod';
+import type { DevOpsEngineerAgent } from '../../agents/DevOpsEngineerAgent.js';
 
+export interface GenerateCIConfigArgs {
+  /** CI/CD platform */
+  platform: 'github-actions' | 'gitlab-ci';
+  /** Test command to run (e.g., 'npm test') */
+  testCommand: string;
+  /** Build command to run (e.g., 'npm run build') */
+  buildCommand: string;
+}
+
+/**
+ * MCP Tool definition for generating CI/CD config
+ */
 export const generateCIConfigTool = {
-  name: 'devops_generate_ci_config',
-  description:
-    '🚀 DevOps: Generate CI/CD configuration files for GitHub Actions or GitLab CI. ' +
-    'Creates production-ready pipeline configurations with testing, building, and optional deployment steps.',
+  name: 'devops-generate-ci-config',
+  description: 'Generate CI/CD configuration files for GitHub Actions or GitLab CI. Creates ready-to-use pipeline configs with test, build, and optional deployment steps.',
+
   inputSchema: {
     type: 'object' as const,
     properties: {
       platform: {
-        type: 'string' as const,
+        type: 'string',
         enum: ['github-actions', 'gitlab-ci'],
         description: 'CI/CD platform to generate config for',
       },
       testCommand: {
-        type: 'string' as const,
-        description: 'Command to run tests (e.g., "npm test")',
+        type: 'string',
+        description: 'Command to run tests (e.g., "npm test", "pytest")',
       },
       buildCommand: {
-        type: 'string' as const,
-        description: 'Command to build the project (e.g., "npm run build")',
-      },
-      deployCommand: {
-        type: 'string' as const,
-        description: 'Optional deployment command',
-      },
-      nodeVersion: {
-        type: 'string' as const,
-        description: 'Node.js version to use (default: "18")',
-      },
-      enableCaching: {
-        type: 'boolean' as const,
-        description: 'Enable dependency caching for faster builds (default: true)',
+        type: 'string',
+        description: 'Command to build the project (e.g., "npm run build", "make")',
       },
     },
     required: ['platform', 'testCommand', 'buildCommand'],
   },
 
-  handler: (
-    input: {
-      platform: 'github-actions' | 'gitlab-ci';
-      testCommand: string;
-      buildCommand: string;
-      deployCommand?: string;
-      nodeVersion?: string;
-      enableCaching?: boolean;
-    },
-    devopsEngineer?: any
-  ): {
-    success: boolean;
-    config: string;
-    filename: string;
-    configFileName: string;
-    platform: string;
-    instructions: string;
-    error?: string;
-  } => {
-    const nodeVer = input.nodeVersion || '18';
-    const caching = input.enableCaching !== false;
+  /**
+   * Handler for devops-generate-ci-config tool
+   *
+   * @param args - Tool arguments
+   * @param devopsEngineer - DevOpsEngineerAgent instance
+   * @returns Generated CI/CD configuration content
+   */
+  async handler(
+    args: GenerateCIConfigArgs,
+    devopsEngineer: DevOpsEngineerAgent
+  ) {
+    try {
+      const config = await devopsEngineer.generateCIConfig({
+        platform: args.platform,
+        testCommand: args.testCommand,
+        buildCommand: args.buildCommand,
+      });
 
-    let config: string;
-    let filename: string;
+      const configFileName = args.platform === 'github-actions'
+        ? '.github/workflows/ci.yml'
+        : '.gitlab-ci.yml';
 
-    if (input.platform === 'github-actions') {
-      filename = '.github/workflows/ci.yml';
-      config = `name: CI
+      return {
+        success: true,
+        platform: args.platform,
+        configFileName,
+        config,
+        instructions: `
+Save this configuration to ${configFileName}:
 
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+1. Create the file:
+   ${args.platform === 'github-actions' ? 'mkdir -p .github/workflows' : ''}
 
-jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
+2. Save the config to ${configFileName}
 
-    steps:
-      - uses: actions/checkout@v3
+3. Commit and push:
+   git add ${configFileName}
+   git commit -m "ci: add ${args.platform} configuration"
+   git push
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '${nodeVer}'${caching ? '\n          cache: \'npm\'' : ''}
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: ${input.testCommand}
-
-      - name: Build project
-        run: ${input.buildCommand}
-${
-  input.deployCommand
-    ? `
-      - name: Deploy
-        if: github.ref == 'refs/heads/main'
-        run: ${input.deployCommand}
-        env:
-          DEPLOY_TOKEN: \${{ secrets.DEPLOY_TOKEN }}
-`
-    : ''
-}`;
-    } else {
-      // GitLab CI
-      filename = '.gitlab-ci.yml';
-      config = `stages:
-  - test
-  - build${input.deployCommand ? '\n  - deploy' : ''}
-
-variables:
-  NODE_VERSION: "${nodeVer}"
-
-${
-  caching
-    ? `cache:
-  paths:
-    - node_modules/
-    - .npm/
-
-`
-    : ''
-}test:
-  stage: test
-  image: node:\${NODE_VERSION}
-  script:
-    - npm ci
-    - ${input.testCommand}
-
-build:
-  stage: build
-  image: node:\${NODE_VERSION}
-  script:
-    - npm ci
-    - ${input.buildCommand}
-  artifacts:
-    paths:
-      - dist/
-    expire_in: 1 week
-${
-  input.deployCommand
-    ? `
-deploy:
-  stage: deploy
-  image: node:\${NODE_VERSION}
-  script:
-    - ${input.deployCommand}
-  only:
-    - main
-  environment:
-    name: production
-`
-    : ''
-}`;
+4. The pipeline will run automatically on push
+`.trim(),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
     }
-
-    const instructions =
-      input.platform === 'github-actions'
-        ? '1. Commit and push the generated file to your repository\n2. GitHub will automatically detect the workflow file\n3. The CI pipeline will run on pushes and pull requests to main/develop branches'
-        : '1. Commit and push the .gitlab-ci.yml file to your repository\n2. GitLab CI will automatically detect and run the pipeline\n3. Check the CI/CD > Pipelines page in your GitLab project';
-
-    return {
-      success: true,
-      config,
-      filename,
-      configFileName: filename,
-      platform: input.platform,
-      instructions,
-    };
   },
 };

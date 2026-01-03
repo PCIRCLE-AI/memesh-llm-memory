@@ -3,7 +3,7 @@ import type { ProjectMemoryManager } from '../../memory/ProjectMemoryManager.js'
 import type { ResponseFormatter } from '../../ui/ResponseFormatter.js';
 
 export const BuddyRememberInputSchema = z.object({
-  query: z.string().min(1).describe('What to remember/recall from project memory'),
+  query: z.string().trim().min(1).describe('What to remember/recall from project memory'),
   limit: z
     .number()
     .int()

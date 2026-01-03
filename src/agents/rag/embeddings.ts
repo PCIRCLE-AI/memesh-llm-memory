@@ -278,7 +278,7 @@ export class EmbeddingService {
    */
   getModelInfo(): { provider: string; model: string; dimensions: number } {
     return {
-      provider: 'OpenAI',
+      provider: 'openai',
       model: this.model,
       dimensions: this.getModelDimension(),
     };

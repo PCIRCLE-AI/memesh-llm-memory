@@ -1,37 +1,46 @@
 /**
- * Add Observations Tool
+ * MCP Tool: add-observations
  *
  * Adds new observations to existing entities in the Knowledge Graph.
+ * Allows updating entities with additional information.
  */
 
-import { z } from 'zod';
-import { KnowledgeGraph } from '../../knowledge-graph/index.js';
+import type { KnowledgeGraph } from '../../knowledge-graph/index.js';
 
+export interface AddObservationsArgs {
+  /** Array of observations to add */
+  observations: Array<{
+    /** Entity name to add observations to */
+    entityName: string;
+    /** Array of observation contents to add */
+    contents: string[];
+  }>;
+}
+
+/**
+ * MCP Tool definition for adding observations
+ */
 export const addObservationsTool = {
-  name: 'add_observations',
-  description:
-    '➕ Knowledge Graph: Add new observations (facts) to existing entities. ' +
-    'Use this to update entities with new information or learnings. ' +
-    'The entity must already exist in the Knowledge Graph.',
+  name: 'add-observations',
+  description: 'Add new observations to existing entities in the Knowledge Graph. Update entities with additional information, notes, or findings.',
+
   inputSchema: {
     type: 'object' as const,
     properties: {
       observations: {
-        type: 'array' as const,
-        description: 'Array of observations to add to entities',
+        type: 'array',
+        description: 'Array of observations to add to existing entities',
         items: {
-          type: 'object' as const,
+          type: 'object',
           properties: {
             entityName: {
-              type: 'string' as const,
-              description: 'Name of the existing entity to update',
+              type: 'string',
+              description: 'Name of the entity to add observations to',
             },
             contents: {
-              type: 'array' as const,
-              description: 'Array of new observations to add',
-              items: {
-                type: 'string' as const,
-              },
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Array of observation contents to add',
             },
           },
           required: ['entityName', 'contents'],
@@ -41,47 +50,38 @@ export const addObservationsTool = {
     required: ['observations'],
   },
 
-  handler: (
-    input: {
-      observations: Array<{
-        entityName: string;
-        contents: string[];
-      }>;
-    },
+  /**
+   * Handler for add-observations tool
+   *
+   * @param args - Tool arguments
+   * @param knowledgeGraph - KnowledgeGraph instance
+   * @returns Summary of updated entities
+   */
+  async handler(
+    args: AddObservationsArgs,
     knowledgeGraph: KnowledgeGraph
-  ): {
-    count: number;
-    updated: string[];
-    notFound?: string[];
-    errors?: Array<{ entityName: string; error: string }>;
-  } => {
+  ) {
     const updated: string[] = [];
     const notFound: string[] = [];
     const errors: Array<{ entityName: string; error: string }> = [];
 
-    for (const obs of input.observations) {
+    for (const obs of args.observations) {
       try {
         // Get existing entity
-        const entity = knowledgeGraph.getEntity(obs.entityName);
+        const entity = await knowledgeGraph.getEntity(obs.entityName);
 
         if (!entity) {
           notFound.push(obs.entityName);
           continue;
         }
 
-        // Merge new observations with existing ones
-        const mergedObservations = [
-          ...(entity.observations || []),
-          ...obs.contents,
-        ];
-
-        // Update the entity with merged observations
-        knowledgeGraph.createEntity({
+        // Update entity with new observations by re-creating it
+        // (createEntity handles updates via ON CONFLICT)
+        await knowledgeGraph.createEntity({
           name: entity.name,
           type: entity.type,
-          observations: mergedObservations,
-          tags: entity.tags || [],
-          metadata: entity.metadata || {},
+          observations: [...entity.observations, ...obs.contents],
+          metadata: entity.metadata,
         });
 
         updated.push(obs.entityName);
@@ -94,10 +94,10 @@ export const addObservationsTool = {
     }
 
     return {
-      count: updated.length,
       updated,
-      ...(notFound.length > 0 && { notFound }),
-      ...(errors.length > 0 && { errors }),
+      count: updated.length,
+      notFound: notFound.length > 0 ? notFound : undefined,
+      errors: errors.length > 0 ? errors : undefined,
     };
   },
 };

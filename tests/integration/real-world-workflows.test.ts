@@ -326,11 +326,12 @@ export function safeDivide(a: number, b: number): number | null {
       }
 
       // 1. Initialize RAGAgent
-      const agent = new RAGAgent({
-        embeddingProvider: 'openai',
-        openaiApiKey: process.env.OPENAI_API_KEY,
-      });
+      const agent = new RAGAgent();
       await agent.initialize();
+      await agent.enableRAG({
+        provider: 'openai',
+        apiKey: process.env.OPENAI_API_KEY,
+      });
 
       // 2. Add documents to index
       await agent.indexDocuments([
@@ -372,11 +373,12 @@ export function safeDivide(a: number, b: number): number | null {
         return;
       }
 
-      const agent = new RAGAgent({
-        embeddingProvider: 'openai',
-        openaiApiKey: process.env.OPENAI_API_KEY,
-      });
+      const agent = new RAGAgent();
       await agent.initialize();
+      await agent.enableRAG({
+        provider: 'openai',
+        apiKey: process.env.OPENAI_API_KEY,
+      });
 
       // Add initial document
       await agent.indexDocuments([
@@ -418,11 +420,12 @@ export function safeDivide(a: number, b: number): number | null {
 
       // 1. RAG: Find relevant docs
       if (process.env.OPENAI_API_KEY) {
-        const ragAgent = new RAGAgent({
-          embeddingProvider: 'openai',
-          openaiApiKey: process.env.OPENAI_API_KEY,
-        });
+        const ragAgent = new RAGAgent();
         await ragAgent.initialize();
+        await ragAgent.enableRAG({
+          provider: 'openai',
+          apiKey: process.env.OPENAI_API_KEY,
+        });
 
         await ragAgent.indexDocuments([
           {

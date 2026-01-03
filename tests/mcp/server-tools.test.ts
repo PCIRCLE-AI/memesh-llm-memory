@@ -9,11 +9,11 @@ import { AgentRegistry } from '../../src/core/AgentRegistry.js';
 
 describe('MCP Server Tools', () => {
   describe('AgentRegistry', () => {
-    it('should register all 23 agents', () => {
+    it('should register all 36 agents', () => {
       const registry = new AgentRegistry();
       const allAgents = registry.getAllAgents();
 
-      expect(allAgents.length).toBe(23);
+      expect(allAgents.length).toBe(36); // 9 real + 26 enhanced + 1 optional
     });
 
     it('should have agents from all categories', () => {

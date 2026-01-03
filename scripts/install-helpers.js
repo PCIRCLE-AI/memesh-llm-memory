@@ -21,8 +21,8 @@ function addToMcpConfig(ccbPath) {
     config.mcpServers = {};
   }
 
-  // Add or update CCB entry
-  config.mcpServers.ccb = {
+  // Add or update CCB entry - use 'claude-code-buddy' for consistency
+  config.mcpServers['claude-code-buddy'] = {
     command: 'node',
     args: [ccbPath],
     env: {

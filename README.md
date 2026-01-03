@@ -279,13 +279,28 @@ cd claude-code-buddy
 ./scripts/install.sh
 ```
 
-The installer will:
+The installer guides you through **11 interactive steps**:
+
+**Core Setup (Steps 1-8)**:
+- ✓ Check prerequisites (Node.js 18+, npm, git)
 - ✓ Install dependencies
 - ✓ Build the project
+- ✓ Check system resources
+- ✓ Configure environment
+- ✓ **Optional RAG Setup**: Choose between HuggingFace (FREE) or OpenAI (paid) for enhanced knowledge retrieval
 - ✓ Configure Claude Code MCP integration
-- ✓ Test the setup
+- ✓ Test installation
 
-**No API keys needed** - uses your existing Claude Code subscription.
+**Interactive Demos (Steps 9-10)**:
+- 📚 **Step 9: Basic Usage Demo** - Learn about CCB's smart routing, example prompts, memory types, and cost savings
+- 📁 **Step 10: RAG Feature Demo** (if enabled) - Discover the Drop Inbox magic with a sample document
+
+**No API keys needed for core features** - uses your existing Claude Code subscription.
+
+**Optional RAG Feature**:
+- **FREE option**: HuggingFace embeddings (no API key cost)
+- **Paid option**: OpenAI embeddings (bring your own API key)
+- **Drop Inbox**: Auto-indexes files from `~/Documents/claude-code-buddy-knowledge/` every 5 seconds
 
 ### Start Using It
 

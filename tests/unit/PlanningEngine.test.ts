@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PlanningEngine } from '../../src/planning/PlanningEngine.js';
 import type { AgentRegistry } from '../../src/orchestrator/AgentRegistry.js';
+import { logger } from '../../src/utils/logger.js';
 
 describe('PlanningEngine', () => {
   let engine: PlanningEngine;
@@ -129,7 +130,7 @@ describe('PlanningEngine', () => {
   // PRIORITY 1 FIX: Telemetry for silent failures
   describe('Error Handling', () => {
     it('should log error when learned patterns retrieval fails', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const loggerErrorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
       const mockError = new Error('Database connection failed');
 
       const mockLearningManager = {
@@ -149,12 +150,12 @@ describe('PlanningEngine', () => {
       expect(plan.tasks).toBeDefined();
 
       // Verify error was logged for observability
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
         '[PlanningEngine] Failed to retrieve learned patterns:',
         mockError
       );
 
-      consoleErrorSpy.mockRestore();
+      loggerErrorSpy.mockRestore();
     });
   });
 });

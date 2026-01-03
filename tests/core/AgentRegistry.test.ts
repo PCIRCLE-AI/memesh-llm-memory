@@ -15,13 +15,13 @@ describe('AgentRegistry - Agent Classification', () => {
       const enhancedPrompts = registry.getEnhancedPrompts();
       const optionalAgents = registry.getOptionalAgents();
 
-      // According to the plan:
-      // Real Implementations: 5 (development-butler, test-writer, devops-engineer, project-manager, data-engineer)
-      // Enhanced Prompts: 17 (original 12 + 5 new planning agents)
+      // Current agent counts (as of AgentRegistry implementation):
+      // Real Implementations: 9 (development-butler, test-writer, e2e-healing-agent, devops-engineer, project-manager, data-engineer, workflow-orchestrator, opal-automation, n8n-workflow)
+      // Enhanced Prompts: 26 (all prompt-based agents)
       // Optional: 1 (rag-agent)
 
-      expect(realImplementations).toHaveLength(5);
-      expect(enhancedPrompts).toHaveLength(17);
+      expect(realImplementations).toHaveLength(9);
+      expect(enhancedPrompts).toHaveLength(26);
       expect(optionalAgents).toHaveLength(1);
     });
 
@@ -31,9 +31,13 @@ describe('AgentRegistry - Agent Classification', () => {
 
       expect(realNames).toContain('development-butler');
       expect(realNames).toContain('test-writer');
+      expect(realNames).toContain('e2e-healing-agent');
       expect(realNames).toContain('devops-engineer');
       expect(realNames).toContain('project-manager');
       expect(realNames).toContain('data-engineer');
+      expect(realNames).toContain('workflow-orchestrator');
+      expect(realNames).toContain('opal-automation');
+      expect(realNames).toContain('n8n-workflow');
     });
 
     it('should return correct agent types for enhanced prompts', () => {
@@ -107,10 +111,10 @@ describe('AgentRegistry - Agent Classification', () => {
   });
 
   describe('getAllAgents should return all agents', () => {
-    it('should return total of 23 agents (5 real + 17 enhanced + 1 optional)', () => {
+    it('should return total of 36 agents (9 real + 26 enhanced + 1 optional)', () => {
       const allAgents = registry.getAllAgents();
 
-      expect(allAgents).toHaveLength(23);
+      expect(allAgents).toHaveLength(36);
     });
   });
 
@@ -141,9 +145,9 @@ describe('AgentRegistry - Agent Classification', () => {
       expect(dataAnalyst?.classification).toBe(AgentClassification.ENHANCED_PROMPT);
     });
 
-    it('should update total enhanced prompts count to 17', () => {
+    it('should update total enhanced prompts count to 26', () => {
       const enhancedPrompts = registry.getEnhancedPrompts();
-      expect(enhancedPrompts).toHaveLength(17); // 7 existing + 5 new + 5 planning = 17
+      expect(enhancedPrompts).toHaveLength(26); // All enhanced prompt agents
     });
   });
 });

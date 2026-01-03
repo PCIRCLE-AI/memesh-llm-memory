@@ -122,6 +122,7 @@ export class ToolRouter {
       typeof params !== 'object' ||
       !('name' in params) ||
       typeof params.name !== 'string' ||
+      params.name.trim() === '' || // Check for empty tool name
       !('arguments' in params) ||
       !params.arguments ||
       typeof params.arguments !== 'object'
@@ -132,7 +133,7 @@ export class ToolRouter {
           component: 'ToolRouter',
           method: 'routeToolCall',
           providedParams: params,
-          requiredFields: ['name (string)', 'arguments (object)'],
+          requiredFields: ['name (string, non-empty)', 'arguments (object)'],
         }
       );
     }
@@ -448,7 +449,9 @@ export class ToolRouter {
           operation: 'validating task input schema',
           data: { agentName, schema: 'TaskInputSchema' },
         });
-        throw new ValidationError(
+        console.error('ToolRouter validation error:', error.message);
+
+        const validationError = new ValidationError(
           formatValidationError(error),
           {
             component: 'ToolRouter',
@@ -457,6 +460,26 @@ export class ToolRouter {
             providedArgs: args,
           }
         );
+
+        // Return formatted validation error instead of throwing
+        const errorResponse: AgentResponse = {
+          agentType: agentName as AgentType,
+          taskDescription: 'Invalid input',
+          status: 'error',
+          error: validationError,
+        };
+
+        const formattedError = this.formatter.format(errorResponse);
+
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: formattedError,
+            },
+          ],
+          isError: true,
+        };
       }
       // Log unexpected error
       logError(error, {
@@ -465,6 +488,7 @@ export class ToolRouter {
         operation: 'parsing task input',
         data: { agentName },
       });
+      console.error('ToolRouter unexpected error:', error);
       throw error;
     }
 
@@ -533,6 +557,7 @@ export class ToolRouter {
         operation: `routing task to agent: ${agentName}`,
         data: { agentName, taskDescription: taskDescription.substring(0, 100) },
       });
+      console.error('ToolRouter routing error:', error);
 
       // Error handling - format error response
       // Safe cast: agentName has been validated by isValidAgent

@@ -5,6 +5,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { FriendlyGitCommands } from './FriendlyGitCommands.js';
 import { MCPToolInterface } from '../core/MCPToolInterface.js';
+import { logger } from '../utils/logger.js';
 
 describe('FriendlyGitCommands', () => {
   let friendlyCommands: FriendlyGitCommands;
@@ -136,15 +137,15 @@ e5f6g7h8|fix: bug fix|Jane Smith|1 day ago|1735603200`;
         stderr: ''
       });
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const loggerSpy = vi.spyOn(logger, 'info').mockImplementation(() => {});
 
       await friendlyCommands.status();
 
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(loggerSpy).toHaveBeenCalledWith(
         expect.stringContaining('沒有未儲存的變更')
       );
 
-      consoleSpy.mockRestore();
+      loggerSpy.mockRestore();
     });
 
     it('should categorize file changes correctly', async () => {
@@ -167,19 +168,19 @@ e5f6g7h8|fix: bug fix|Jane Smith|1 day ago|1735603200`;
         stderr: ''
       });
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const loggerSpy = vi.spyOn(logger, 'info').mockImplementation(() => {});
 
       await friendlyCommands.status();
 
       // Verify different file states are detected
-      const output = consoleSpy.mock.calls.map(call => call[0]).join('\n');
+      const output = loggerSpy.mock.calls.map(call => call[0]).join('\n');
 
       expect(output).toContain('已修改');
       expect(output).toContain('已新增');
       expect(output).toContain('已刪除');
       expect(output).toContain('未追蹤');
 
-      consoleSpy.mockRestore();
+      loggerSpy.mockRestore();
     });
   });
 

@@ -5,7 +5,7 @@
 
 ## 📖 Overview
 
-Claude Code Buddy is an intelligent multi-agent system with 22 specialized agents designed to handle diverse software development tasks. The system automatically routes your tasks to the most appropriate agent based on task analysis and learned patterns.
+Claude Code Buddy is an intelligent multi-agent system with 36 specialized agents designed to handle diverse software development tasks. The system automatically routes your tasks to the most appropriate agent based on task analysis and learned patterns.
 
 ## 🎯 Quick Start
 
@@ -27,7 +27,7 @@ The system will:
 buddy_agents
 ```
 
-## 📋 All 22 Specialized Agents
+## 📋 All 36 Specialized Agents
 
 ### 💻 Development Agents (9)
 

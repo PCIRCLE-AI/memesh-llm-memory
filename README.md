@@ -1,6 +1,6 @@
 # Claude Code Buddy (CCB)
 
-**Languages:** English | [繁體中文](README.zh-TW.md)
+🌐 **Website:** [ccb.pcircle.ai](https://ccb.pcircle.ai) | **Languages:** English | [繁體中文](README.zh-TW.md)
 
 ---
 

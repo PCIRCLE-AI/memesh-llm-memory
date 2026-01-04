@@ -69,6 +69,137 @@ Claude: [Specific optimization for YOUR database setup, with actual query exampl
 
 ---
 
+## How to Use CCB
+
+After installation, CCB works **two ways**:
+
+### 🔄 Automatic Mode (Just Talk Normally)
+
+CCB enhances your requests automatically in the background. No special commands needed:
+
+```
+You: "Review this code for security issues"
+     ↓
+CCB automatically:
+  • Detects task type → code review
+  • Routes to → code-reviewer agent
+  • Enhances prompt with → security checklist, best practices
+     ↓
+Claude responds with specialized security expertise
+```
+
+**Just use Claude Code as usual** - CCB works invisibly to improve responses.
+
+### 🎮 Buddy Commands (Explicit Control)
+
+Use these commands when you want specific CCB features:
+
+| Command | What It Does | Example |
+|---------|--------------|---------|
+| `buddy-do` | Execute task with smart routing | `buddy-do "setup user authentication"` |
+| `buddy-remember` | Search project memory | `buddy-remember "why did we choose PostgreSQL"` |
+| `buddy-stats` | View performance dashboard | `buddy-stats week` |
+| `buddy-help` | Get help on any command | `buddy-help remember` |
+
+### 💾 Memory Commands (Store & Recall Knowledge)
+
+**Save decisions and patterns:**
+```
+create-entities [{
+  name: "Auth Decision Jan 2024",
+  entityType: "decision",
+  observations: [
+    "Chose JWT over sessions for stateless API",
+    "Using RS256 for token signing",
+    "Refresh tokens stored in httpOnly cookies"
+  ]
+}]
+```
+
+**Recall from memory:**
+```
+recall-memory "authentication decisions"
+buddy-remember "API design patterns we discussed"
+```
+
+**Add to existing knowledge:**
+```
+add-observations [{
+  entityName: "Auth Decision Jan 2024",
+  contents: ["Added rate limiting: 100 req/min per user"]
+}]
+```
+
+### 📚 RAG Feature (Search Your Knowledge Base)
+
+If you enabled RAG during installation:
+
+**Step 1: Drop files to index** (auto-indexed every 5 seconds):
+```bash
+~/Documents/claude-code-buddy-knowledge/
+  ├── architecture.md      # Your system design docs
+  ├── api-spec.json        # API specifications
+  ├── meeting-notes.txt    # Team decisions
+  └── onboarding.pdf       # Any .md, .txt, .json, .pdf, .docx
+```
+
+**Step 2: Ask questions naturally:**
+```
+You: "How does authentication work in this project?"
+CCB: [Searches your indexed files, returns relevant context]
+
+You: "What did we decide about the database schema?"
+CCB: [Finds your architecture.md, shows the relevant sections]
+```
+
+### 🔧 Git Commands (No Git Knowledge Needed)
+
+| Command | What It Does | Example |
+|---------|--------------|---------|
+| `git-save-work` | Stage all + commit | `git-save-work "added login feature"` |
+| `git-list-versions` | Show recent commits | `git-list-versions` |
+| `git-go-back` | Checkout previous version | `git-go-back 3` |
+| `git-status` | Current status (friendly) | `git-status` |
+| `git-show-changes` | Show what changed | `git-show-changes` |
+| `git-create-backup` | Create local backup | `git-create-backup` |
+
+### 📋 Quick Reference Card
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  CCB QUICK REFERENCE                                        │
+├─────────────────────────────────────────────────────────────┤
+│  🔄 AUTOMATIC (just talk normally)                          │
+│     • "Review this code" → routes to code-reviewer          │
+│     • "Debug this error" → routes to debugger               │
+│     • "Design a component" → routes to frontend-specialist  │
+├─────────────────────────────────────────────────────────────┤
+│  🎮 BUDDY COMMANDS                                          │
+│     buddy-do "task"         Execute with smart routing      │
+│     buddy-remember "query"  Search project memory           │
+│     buddy-stats [period]    View performance dashboard      │
+│     buddy-help [command]    Get help                        │
+├─────────────────────────────────────────────────────────────┤
+│  💾 MEMORY COMMANDS                                         │
+│     create-entities         Save decisions/patterns         │
+│     recall-memory           Retrieve past work              │
+│     add-observations        Update existing knowledge       │
+│     create-relations        Link related entities           │
+├─────────────────────────────────────────────────────────────┤
+│  📚 RAG (if enabled)                                        │
+│     Drop files to: ~/Documents/claude-code-buddy-knowledge/ │
+│     Then just ask: "How does X work in this project?"       │
+├─────────────────────────────────────────────────────────────┤
+│  🔧 GIT (beginner-friendly)                                 │
+│     git-save-work "msg"     Commit all changes              │
+│     git-list-versions       Show history                    │
+│     git-go-back N           Revert to version N             │
+│     git-status              Current status                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Key Features
 
 ### ✨ Automatic Expertise Routing

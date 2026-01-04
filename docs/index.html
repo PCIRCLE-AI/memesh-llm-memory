@@ -206,6 +206,7 @@
                 <div class="hidden md:flex items-center space-x-8">
                     <a href="#features" class="text-gray-700 hover:text-blue-600 transition font-medium">Features</a>
                     <a href="#quickstart" class="text-gray-700 hover:text-blue-600 transition font-medium">Quick Start</a>
+                    <a href="#how-to-use" class="text-gray-700 hover:text-blue-600 transition font-medium">How to Use</a>
                     <a href="index-zh.html" class="text-sm font-semibold text-gray-700 hover:text-blue-600">繁體中文</a>
                     <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="btn-primary px-6 py-2.5 rounded-lg font-semibold inline-flex items-center space-x-2">
                         <span>⭐</span>
@@ -563,6 +564,153 @@ cd claude-code-buddy
                 <p class="text-gray-600 text-sm">
                     <em>Optional:</em> RAG feature requires OpenAI API key (BYOK model, ~$0.10-$1/mo)
                 </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- How to Use Section -->
+    <section id="how-to-use" class="py-20 bg-white">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">How to Use CCB</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Two ways to use: <strong>Automatic</strong> (just talk normally) or <strong>Buddy Commands</strong> (explicit control)
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8 mb-12">
+                <!-- Automatic Mode -->
+                <div class="glass-card rounded-2xl p-8">
+                    <div class="text-4xl mb-4">🔄</div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Automatic Mode</h3>
+                    <p class="text-gray-600 mb-4">Just use Claude Code normally. CCB enhances your requests in the background:</p>
+                    <div class="bg-gray-900 rounded-lg p-4 text-sm">
+                        <pre class="text-gray-300"><code>You: "Review this code for security"
+     ↓
+CCB: Detects → code review task
+CCB: Routes → code-reviewer agent
+CCB: Enhances → security checklist
+     ↓
+Claude: Expert security review</code></pre>
+                    </div>
+                </div>
+
+                <!-- Buddy Commands -->
+                <div class="glass-card rounded-2xl p-8">
+                    <div class="text-4xl mb-4">🎮</div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Buddy Commands</h3>
+                    <p class="text-gray-600 mb-4">Use explicit commands for specific features:</p>
+                    <div class="space-y-3">
+                        <div class="warm-gradient-blue rounded-lg p-3">
+                            <code class="text-blue-800 font-mono text-sm">buddy-do "setup authentication"</code>
+                            <p class="text-gray-600 text-xs mt-1">Execute with smart routing</p>
+                        </div>
+                        <div class="warm-gradient-orange rounded-lg p-3">
+                            <code class="text-orange-800 font-mono text-sm">buddy-remember "API decisions"</code>
+                            <p class="text-gray-600 text-xs mt-1">Search project memory</p>
+                        </div>
+                        <div class="warm-gradient-blue rounded-lg p-3">
+                            <code class="text-blue-800 font-mono text-sm">buddy-stats week</code>
+                            <p class="text-gray-600 text-xs mt-1">View performance dashboard</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8 mb-12">
+                <!-- Memory Commands -->
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="text-3xl mb-3">💾</div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Memory Commands</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="bg-gray-100 rounded p-2">
+                            <code class="text-gray-800">create-entities</code>
+                            <span class="text-gray-500 text-xs block">Save decisions & patterns</span>
+                        </div>
+                        <div class="bg-gray-100 rounded p-2">
+                            <code class="text-gray-800">recall-memory</code>
+                            <span class="text-gray-500 text-xs block">Retrieve past work</span>
+                        </div>
+                        <div class="bg-gray-100 rounded p-2">
+                            <code class="text-gray-800">add-observations</code>
+                            <span class="text-gray-500 text-xs block">Update existing knowledge</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RAG Feature -->
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="text-3xl mb-3">📚</div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">RAG Feature</h3>
+                    <p class="text-gray-600 text-sm mb-3">Drop files to auto-index:</p>
+                    <div class="bg-gray-900 rounded-lg p-3 text-xs">
+                        <pre class="text-gray-300"><code>~/Documents/claude-code-buddy-knowledge/
+├── architecture.md
+├── api-spec.json
+└── meeting-notes.txt</code></pre>
+                    </div>
+                    <p class="text-gray-500 text-xs mt-2">Then ask: "How does auth work?"</p>
+                </div>
+
+                <!-- Git Commands -->
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="text-3xl mb-3">🔧</div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Git Commands</h3>
+                    <p class="text-gray-600 text-sm mb-3">No Git knowledge needed:</p>
+                    <div class="space-y-2 text-sm">
+                        <div class="bg-gray-100 rounded p-2">
+                            <code class="text-gray-800">git-save-work "msg"</code>
+                            <span class="text-gray-500 text-xs block">Commit all changes</span>
+                        </div>
+                        <div class="bg-gray-100 rounded p-2">
+                            <code class="text-gray-800">git-list-versions</code>
+                            <span class="text-gray-500 text-xs block">Show history</span>
+                        </div>
+                        <div class="bg-gray-100 rounded p-2">
+                            <code class="text-gray-800">git-go-back 3</code>
+                            <span class="text-gray-500 text-xs block">Revert to version 3</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Reference -->
+            <div class="bg-gray-900 rounded-2xl p-8 text-white">
+                <h3 class="text-2xl font-bold mb-6 text-center">📋 Quick Reference Card</h3>
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
+                    <div>
+                        <h4 class="font-bold text-blue-400 mb-3">🔄 Automatic</h4>
+                        <ul class="space-y-1 text-gray-300">
+                            <li>• "Review this code"</li>
+                            <li>• "Debug this error"</li>
+                            <li>• "Design a component"</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-orange-400 mb-3">🎮 Buddy</h4>
+                        <ul class="space-y-1 text-gray-300">
+                            <li>• buddy-do "task"</li>
+                            <li>• buddy-remember "query"</li>
+                            <li>• buddy-stats</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-green-400 mb-3">💾 Memory</h4>
+                        <ul class="space-y-1 text-gray-300">
+                            <li>• create-entities</li>
+                            <li>• recall-memory</li>
+                            <li>• add-observations</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-purple-400 mb-3">🔧 Git</h4>
+                        <ul class="space-y-1 text-gray-300">
+                            <li>• git-save-work "msg"</li>
+                            <li>• git-list-versions</li>
+                            <li>• git-go-back N</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </section>

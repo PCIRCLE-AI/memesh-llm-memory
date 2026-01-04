@@ -212,6 +212,7 @@
                     <a href="#problems" class="text-gray-700 hover:text-blue-600 transition font-medium">問題與解決</a>
                     <a href="#features" class="text-gray-700 hover:text-blue-600 transition font-medium">功能特色</a>
                     <a href="#quickstart" class="text-gray-700 hover:text-blue-600 transition font-medium">快速開始</a>
+                    <a href="#how-to-use" class="text-gray-700 hover:text-blue-600 transition font-medium">如何使用</a>
                     <div class="lang-switcher">
                         <a href="index.html" class="text-sm font-semibold text-gray-700 hover:text-blue-600">EN</a>
                         <span class="text-gray-400 mx-1">/</span>
@@ -638,6 +639,165 @@ node --version  <span class="comment"># 應為 v18 或更高</span></code></pre>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How to Use Section -->
+    <section id="how-to-use" class="py-20 bg-white bg-opacity-60">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">如何使用 CCB</h2>
+                <p class="text-xl text-gray-600">安裝完成後，CCB 透過兩種方式運作</p>
+            </div>
+
+            <!-- Two Usage Modes -->
+            <div class="grid md:grid-cols-2 gap-8 mb-12">
+                <!-- Automatic Mode -->
+                <div class="glass-card rounded-2xl p-8">
+                    <div class="text-4xl mb-4">🤖</div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">自動模式</h3>
+                    <p class="text-gray-700 mb-4 leading-relaxed">
+                        CCB 在背景自動工作。像平常一樣使用 Claude Code，CCB 會根據你的任務自動路由到專業 Agents。
+                    </p>
+                    <div class="warm-gradient-blue rounded-xl p-5">
+                        <p class="text-gray-700 text-sm">
+                            <strong>範例：</strong>當你請 Claude「審查這段程式碼」，CCB 自動路由到 code-reviewer agent 提供安全分析。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Explicit Mode -->
+                <div class="glass-card rounded-2xl p-8">
+                    <div class="text-4xl mb-4">💬</div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">明確指令模式</h3>
+                    <p class="text-gray-700 mb-4 leading-relaxed">
+                        使用 <code class="inline-code">buddy</code> 指令直接與 CCB 互動，獲取記憶管理、統計數據等功能。
+                    </p>
+                    <div class="warm-gradient-orange rounded-xl p-5">
+                        <p class="text-gray-700 text-sm">
+                            <strong>範例：</strong><code class="text-orange-700">buddy remember 我們為什麼選擇 PostgreSQL？</code>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Command Categories -->
+            <div class="grid md:grid-cols-3 gap-6 mb-12">
+                <!-- Buddy Commands -->
+                <div class="glass-card rounded-2xl p-6">
+                    <h4 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                        <span class="mr-2">🎯</span> Buddy 指令
+                    </h4>
+                    <div class="space-y-3">
+                        <div class="bg-white bg-opacity-60 rounded-lg p-3">
+                            <code class="text-blue-700 font-semibold text-sm">buddy do [任務]</code>
+                            <p class="text-gray-600 text-xs mt-1">智能執行任務並路由到合適的 agent</p>
+                        </div>
+                        <div class="bg-white bg-opacity-60 rounded-lg p-3">
+                            <code class="text-blue-700 font-semibold text-sm">buddy remember [問題]</code>
+                            <p class="text-gray-600 text-xs mt-1">從專案記憶中召回相關資訊</p>
+                        </div>
+                        <div class="bg-white bg-opacity-60 rounded-lg p-3">
+                            <code class="text-blue-700 font-semibold text-sm">buddy stats</code>
+                            <p class="text-gray-600 text-xs mt-1">查看 token 使用量和成本節省統計</p>
+                        </div>
+                        <div class="bg-white bg-opacity-60 rounded-lg p-3">
+                            <code class="text-blue-700 font-semibold text-sm">buddy help</code>
+                            <p class="text-gray-600 text-xs mt-1">顯示所有可用指令的說明</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Memory Commands -->
+                <div class="glass-card rounded-2xl p-6">
+                    <h4 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                        <span class="mr-2">🧠</span> 記憶指令
+                    </h4>
+                    <div class="space-y-3">
+                        <div class="bg-white bg-opacity-60 rounded-lg p-3">
+                            <code class="text-blue-700 font-semibold text-sm">create-entities</code>
+                            <p class="text-gray-600 text-xs mt-1">儲存決策、解決方案到知識圖譜</p>
+                        </div>
+                        <div class="bg-white bg-opacity-60 rounded-lg p-3">
+                            <code class="text-blue-700 font-semibold text-sm">recall-memory</code>
+                            <p class="text-gray-600 text-xs mt-1">從知識圖譜檢索過去的記憶</p>
+                        </div>
+                        <div class="bg-white bg-opacity-60 rounded-lg p-3">
+                            <code class="text-blue-700 font-semibold text-sm">add-observations</code>
+                            <p class="text-gray-600 text-xs mt-1">為現有實體新增觀察記錄</p>
+                        </div>
+                        <div class="bg-white bg-opacity-60 rounded-lg p-3">
+                            <code class="text-blue-700 font-semibold text-sm">create-relations</code>
+                            <p class="text-gray-600 text-xs mt-1">建立實體之間的關聯</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RAG & Git -->
+                <div class="glass-card rounded-2xl p-6">
+                    <h4 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                        <span class="mr-2">📚</span> RAG 和 Git
+                    </h4>
+                    <div class="space-y-3">
+                        <div class="bg-white bg-opacity-60 rounded-lg p-3">
+                            <p class="text-gray-700 text-sm font-semibold">RAG 文件收件匣</p>
+                            <p class="text-gray-600 text-xs mt-1">將檔案拖放到 <code class="text-xs">~/Documents/claude-code-buddy-knowledge/</code></p>
+                            <p class="text-gray-500 text-xs">每 5 秒自動索引</p>
+                        </div>
+                        <div class="bg-white bg-opacity-60 rounded-lg p-3">
+                            <code class="text-blue-700 font-semibold text-sm">git-save-work "訊息"</code>
+                            <p class="text-gray-600 text-xs mt-1">儲存你的工作（友善的 commit）</p>
+                        </div>
+                        <div class="bg-white bg-opacity-60 rounded-lg p-3">
+                            <code class="text-blue-700 font-semibold text-sm">git-list-versions</code>
+                            <p class="text-gray-600 text-xs mt-1">列出所有版本（友善的 log）</p>
+                        </div>
+                        <div class="bg-white bg-opacity-60 rounded-lg p-3">
+                            <code class="text-blue-700 font-semibold text-sm">git-go-back [版本號]</code>
+                            <p class="text-gray-600 text-xs mt-1">回到指定版本</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Reference Card -->
+            <div class="glass-card rounded-2xl p-8 border-2 border-blue-200">
+                <h3 class="text-2xl font-bold text-gray-900 mb-6 text-center">🚀 快速參考卡</h3>
+                <div class="grid md:grid-cols-4 gap-6">
+                    <div>
+                        <h5 class="font-bold text-gray-900 mb-3 text-blue-600">任務執行</h5>
+                        <ul class="text-sm space-y-2 text-gray-700">
+                            <li><code class="text-xs bg-gray-100 px-1 rounded">buddy do 除錯登入</code></li>
+                            <li><code class="text-xs bg-gray-100 px-1 rounded">buddy do 審查程式碼</code></li>
+                            <li><code class="text-xs bg-gray-100 px-1 rounded">buddy do 設計 API</code></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h5 class="font-bold text-gray-900 mb-3 text-green-600">記憶操作</h5>
+                        <ul class="text-sm space-y-2 text-gray-700">
+                            <li><code class="text-xs bg-gray-100 px-1 rounded">buddy remember 架構</code></li>
+                            <li><code class="text-xs bg-gray-100 px-1 rounded">recall-memory 決策</code></li>
+                            <li><code class="text-xs bg-gray-100 px-1 rounded">create-entities</code></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h5 class="font-bold text-gray-900 mb-3 text-orange-600">RAG 搜尋</h5>
+                        <ul class="text-sm space-y-2 text-gray-700">
+                            <li>拖放 .md/.txt/.pdf</li>
+                            <li>自動索引（5秒）</li>
+                            <li><code class="text-xs bg-gray-100 px-1 rounded">buddy remember 文件名</code></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h5 class="font-bold text-gray-900 mb-3 text-purple-600">版本控制</h5>
+                        <ul class="text-sm space-y-2 text-gray-700">
+                            <li><code class="text-xs bg-gray-100 px-1 rounded">git-save-work</code></li>
+                            <li><code class="text-xs bg-gray-100 px-1 rounded">git-list-versions</code></li>
+                            <li><code class="text-xs bg-gray-100 px-1 rounded">git-go-back 3</code></li>
+                        </ul>
                     </div>
                 </div>
             </div>

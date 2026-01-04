@@ -20,6 +20,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
     <style>
         /* ================================
            Warm Glassmorphism Design System
@@ -192,6 +195,29 @@
             -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.3);
         }
+
+        /* Lucide Icon Styles */
+        .icon-wrapper {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-sm { width: 1rem; height: 1rem; }
+        .icon-md { width: 1.25rem; height: 1.25rem; }
+        .icon-lg { width: 1.5rem; height: 1.5rem; }
+        .icon-xl { width: 2rem; height: 2rem; }
+        .icon-2xl { width: 2.5rem; height: 2.5rem; }
+
+        /* Quick Reference Card - Enhanced Text Visibility */
+        .quick-ref-code {
+            background: rgba(30, 41, 59, 0.9);
+            color: #F1F5F9;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -209,7 +235,7 @@
                     <a href="#how-to-use" class="text-gray-700 hover:text-blue-600 transition font-medium">How to Use</a>
                     <a href="index-zh.html" class="text-sm font-semibold text-gray-700 hover:text-blue-600">繁體中文</a>
                     <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="btn-primary px-6 py-2.5 rounded-lg font-semibold inline-flex items-center space-x-2">
-                        <span>⭐</span>
+                        <i data-lucide="star" class="icon-md"></i>
                         <span>Star on GitHub</span>
                     </a>
                 </div>
@@ -240,11 +266,11 @@
 
                 <div class="flex flex-col sm:flex-row justify-center gap-4 mb-12">
                     <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="btn-primary px-10 py-4 rounded-lg font-semibold text-lg inline-flex items-center justify-center space-x-2">
-                        <span>🚀</span>
+                        <i data-lucide="rocket" class="icon-lg"></i>
                         <span>Get Started Free</span>
                     </a>
                     <a href="#quickstart" class="btn-secondary px-10 py-4 rounded-lg text-lg font-semibold inline-flex items-center justify-center space-x-2">
-                        <span>📖</span>
+                        <i data-lucide="book-open" class="icon-lg"></i>
                         <span>View Documentation</span>
                     </a>
                 </div>
@@ -281,7 +307,7 @@
                 <!-- Problem 1 -->
                 <div class="glass-card rounded-2xl p-8">
                     <div class="flex items-start mb-4">
-                        <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center text-2xl mr-4 flex-shrink-0">❌</div>
+                        <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0"><i data-lucide="x-circle" class="icon-xl text-red-500"></i></div>
                         <div>
                             <h3 class="text-2xl font-bold text-gray-900 mb-2">Problem: Context Loss</h3>
                             <p class="text-gray-600">
@@ -291,7 +317,7 @@
                     </div>
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <div class="flex items-start">
-                            <div class="w-12 h-12 icon-blue rounded-xl flex items-center justify-center text-2xl mr-4 flex-shrink-0">🧠</div>
+                            <div class="w-12 h-12 icon-blue rounded-xl flex items-center justify-center mr-4 flex-shrink-0"><i data-lucide="brain" class="icon-xl"></i></div>
                             <div>
                                 <h4 class="text-xl font-bold text-blue-600 mb-2">Solution: Project Memory</h4>
                                 <p class="text-gray-700">
@@ -305,7 +331,7 @@
                 <!-- Problem 2 -->
                 <div class="glass-card rounded-2xl p-8">
                     <div class="flex items-start mb-4">
-                        <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center text-2xl mr-4 flex-shrink-0">❌</div>
+                        <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0"><i data-lucide="x-circle" class="icon-xl text-red-500"></i></div>
                         <div>
                             <h3 class="text-2xl font-bold text-gray-900 mb-2">Problem: Generic Responses</h3>
                             <p class="text-gray-600">
@@ -315,7 +341,7 @@
                     </div>
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <div class="flex items-start">
-                            <div class="w-12 h-12 icon-orange rounded-xl flex items-center justify-center text-2xl mr-4 flex-shrink-0">🎯</div>
+                            <div class="w-12 h-12 icon-orange rounded-xl flex items-center justify-center mr-4 flex-shrink-0"><i data-lucide="target" class="icon-xl"></i></div>
                             <div>
                                 <h4 class="text-xl font-bold text-orange-600 mb-2">Solution: Smart Routing</h4>
                                 <p class="text-gray-700">
@@ -329,7 +355,7 @@
                 <!-- Problem 3 -->
                 <div class="glass-card rounded-2xl p-8">
                     <div class="flex items-start mb-4">
-                        <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center text-2xl mr-4 flex-shrink-0">❌</div>
+                        <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0"><i data-lucide="x-circle" class="icon-xl text-red-500"></i></div>
                         <div>
                             <h3 class="text-2xl font-bold text-gray-900 mb-2">Problem: Expensive Token Costs</h3>
                             <p class="text-gray-600">
@@ -339,7 +365,7 @@
                     </div>
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <div class="flex items-start">
-                            <div class="w-12 h-12 icon-green rounded-xl flex items-center justify-center text-2xl mr-4 flex-shrink-0">💰</div>
+                            <div class="w-12 h-12 icon-green rounded-xl flex items-center justify-center mr-4 flex-shrink-0"><i data-lucide="coins" class="icon-xl text-green-600"></i></div>
                             <div>
                                 <h4 class="text-xl font-bold text-green-600 mb-2">Solution: Smart Model Selection</h4>
                                 <p class="text-gray-700">
@@ -353,7 +379,7 @@
                 <!-- Problem 4 -->
                 <div class="glass-card rounded-2xl p-8">
                     <div class="flex items-start mb-4">
-                        <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center text-2xl mr-4 flex-shrink-0">❌</div>
+                        <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0"><i data-lucide="x-circle" class="icon-xl text-red-500"></i></div>
                         <div>
                             <h3 class="text-2xl font-bold text-gray-900 mb-2">Problem: Repetitive Context</h3>
                             <p class="text-gray-600">
@@ -363,7 +389,7 @@
                     </div>
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <div class="flex items-start">
-                            <div class="w-12 h-12 icon-purple rounded-xl flex items-center justify-center text-2xl mr-4 flex-shrink-0">📂</div>
+                            <div class="w-12 h-12 icon-purple rounded-xl flex items-center justify-center mr-4 flex-shrink-0"><i data-lucide="folder" class="icon-xl text-purple-600"></i></div>
                             <div>
                                 <h4 class="text-xl font-bold text-purple-600 mb-2">Solution: RAG + Drop Inbox</h4>
                                 <p class="text-gray-700">
@@ -389,7 +415,7 @@
                 <!-- 36 Specialized Agents -->
                 <div class="glass-card rounded-2xl p-8 md:col-span-2">
                     <h3 class="text-3xl font-bold text-gray-900 mb-6 flex items-center">
-                        <span class="w-12 h-12 icon-orange rounded-lg flex items-center justify-center text-2xl mr-4">⚡</span>
+                        <span class="w-12 h-12 icon-orange rounded-lg flex items-center justify-center mr-4"><i data-lucide="zap" class="icon-xl"></i></span>
                         36 Specialized Agents
                     </h3>
                     <p class="text-gray-600 mb-6 text-lg">
@@ -419,7 +445,7 @@
                 <!-- Three Memory Systems -->
                 <div class="glass-card rounded-2xl p-8">
                     <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                        <span class="w-12 h-12 icon-blue rounded-lg flex items-center justify-center text-2xl mr-3">💾</span>
+                        <span class="w-12 h-12 icon-blue rounded-lg flex items-center justify-center mr-3"><i data-lucide="hard-drive" class="icon-xl"></i></span>
                         Memory Systems
                     </h3>
                     <div class="space-y-5">
@@ -441,7 +467,7 @@
                 <!-- Beginner-Friendly Git -->
                 <div class="glass-card rounded-2xl p-8">
                     <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                        <span class="w-12 h-12 icon-blue rounded-lg flex items-center justify-center text-2xl mr-3">🔧</span>
+                        <span class="w-12 h-12 icon-blue rounded-lg flex items-center justify-center mr-3"><i data-lucide="git-branch" class="icon-xl"></i></span>
                         Beginner-Friendly Git
                     </h3>
                     <p class="text-gray-600 mb-5">
@@ -459,7 +485,7 @@ git-list-versions</code></pre>
                 <!-- Smart Model Selection -->
                 <div class="glass-card rounded-2xl p-8 md:col-span-2">
                     <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                        <span class="w-12 h-12 icon-orange rounded-lg flex items-center justify-center text-2xl mr-3">💰</span>
+                        <span class="w-12 h-12 icon-orange rounded-lg flex items-center justify-center mr-3"><i data-lucide="coins" class="icon-xl"></i></span>
                         Smart Model Selection
                     </h3>
                     <p class="text-gray-600 mb-5">
@@ -581,7 +607,7 @@ cd claude-code-buddy
             <div class="grid md:grid-cols-2 gap-8 mb-12">
                 <!-- Automatic Mode -->
                 <div class="glass-card rounded-2xl p-8">
-                    <div class="text-4xl mb-4">🔄</div>
+                    <div class="text-4xl mb-4"><i data-lucide="bot" class="icon-2xl text-blue-600"></i></div>
                     <h3 class="text-2xl font-bold text-gray-900 mb-4">Automatic Mode</h3>
                     <p class="text-gray-600 mb-4">Just use Claude Code normally. CCB enhances your requests in the background:</p>
                     <div class="bg-gray-900 rounded-lg p-4 text-sm">
@@ -597,7 +623,7 @@ Claude: Expert security review</code></pre>
 
                 <!-- Buddy Commands -->
                 <div class="glass-card rounded-2xl p-8">
-                    <div class="text-4xl mb-4">🎮</div>
+                    <div class="text-4xl mb-4"><i data-lucide="message-square" class="icon-2xl text-orange-600"></i></div>
                     <h3 class="text-2xl font-bold text-gray-900 mb-4">Buddy Commands</h3>
                     <p class="text-gray-600 mb-4">Use explicit commands for specific features:</p>
                     <div class="space-y-3">
@@ -620,7 +646,7 @@ Claude: Expert security review</code></pre>
             <div class="grid md:grid-cols-3 gap-8 mb-12">
                 <!-- Memory Commands -->
                 <div class="glass-card rounded-2xl p-6">
-                    <div class="text-3xl mb-3">💾</div>
+                    <div class="text-3xl mb-3"><i data-lucide="brain" class="icon-xl text-blue-600"></i></div>
                     <h3 class="text-xl font-bold text-gray-900 mb-3">Memory Commands</h3>
                     <div class="space-y-2 text-sm">
                         <div class="bg-gray-100 rounded p-2">
@@ -640,7 +666,7 @@ Claude: Expert security review</code></pre>
 
                 <!-- RAG Feature -->
                 <div class="glass-card rounded-2xl p-6">
-                    <div class="text-3xl mb-3">📚</div>
+                    <div class="text-3xl mb-3"><i data-lucide="folder-search" class="icon-xl text-purple-600"></i></div>
                     <h3 class="text-xl font-bold text-gray-900 mb-3">RAG Feature</h3>
                     <p class="text-gray-600 text-sm mb-3">Drop files to auto-index:</p>
                     <div class="bg-gray-900 rounded-lg p-3 text-xs">
@@ -654,7 +680,7 @@ Claude: Expert security review</code></pre>
 
                 <!-- Git Commands -->
                 <div class="glass-card rounded-2xl p-6">
-                    <div class="text-3xl mb-3">🔧</div>
+                    <div class="text-3xl mb-3"><i data-lucide="git-branch" class="icon-xl text-green-600"></i></div>
                     <h3 class="text-xl font-bold text-gray-900 mb-3">Git Commands</h3>
                     <p class="text-gray-600 text-sm mb-3">No Git knowledge needed:</p>
                     <div class="space-y-2 text-sm">
@@ -676,38 +702,38 @@ Claude: Expert security review</code></pre>
 
             <!-- Quick Reference -->
             <div class="bg-gray-900 rounded-2xl p-8 text-white">
-                <h3 class="text-2xl font-bold mb-6 text-center">📋 Quick Reference Card</h3>
+                <h3 class="text-2xl font-bold mb-6 text-center flex items-center justify-center gap-2"><i data-lucide="zap" class="icon-lg text-yellow-400"></i> Quick Reference Card</h3>
                 <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
                     <div>
-                        <h4 class="font-bold text-blue-400 mb-3">🔄 Automatic</h4>
-                        <ul class="space-y-1 text-gray-300">
-                            <li>• "Review this code"</li>
-                            <li>• "Debug this error"</li>
-                            <li>• "Design a component"</li>
+                        <h4 class="font-bold text-blue-400 mb-3 flex items-center gap-2"><i data-lucide="bot" class="icon-sm"></i> Automatic</h4>
+                        <ul class="space-y-1">
+                            <li class="quick-ref-code">buddy do debug login</li>
+                            <li class="quick-ref-code mt-1">buddy do review code</li>
+                            <li class="quick-ref-code mt-1">buddy do design API</li>
                         </ul>
                     </div>
                     <div>
-                        <h4 class="font-bold text-orange-400 mb-3">🎮 Buddy</h4>
-                        <ul class="space-y-1 text-gray-300">
-                            <li>• buddy-do "task"</li>
-                            <li>• buddy-remember "query"</li>
-                            <li>• buddy-stats</li>
+                        <h4 class="font-bold text-orange-400 mb-3 flex items-center gap-2"><i data-lucide="target" class="icon-sm"></i> Buddy</h4>
+                        <ul class="space-y-1">
+                            <li class="quick-ref-code">buddy-do "task"</li>
+                            <li class="quick-ref-code mt-1">buddy-remember "query"</li>
+                            <li class="quick-ref-code mt-1">buddy-stats</li>
                         </ul>
                     </div>
                     <div>
-                        <h4 class="font-bold text-green-400 mb-3">💾 Memory</h4>
-                        <ul class="space-y-1 text-gray-300">
-                            <li>• create-entities</li>
-                            <li>• recall-memory</li>
-                            <li>• add-observations</li>
+                        <h4 class="font-bold text-green-400 mb-3 flex items-center gap-2"><i data-lucide="brain" class="icon-sm"></i> Memory</h4>
+                        <ul class="space-y-1">
+                            <li class="quick-ref-code">create-entities</li>
+                            <li class="quick-ref-code mt-1">recall-memory</li>
+                            <li class="quick-ref-code mt-1">add-observations</li>
                         </ul>
                     </div>
                     <div>
-                        <h4 class="font-bold text-purple-400 mb-3">🔧 Git</h4>
-                        <ul class="space-y-1 text-gray-300">
-                            <li>• git-save-work "msg"</li>
-                            <li>• git-list-versions</li>
-                            <li>• git-go-back N</li>
+                        <h4 class="font-bold text-purple-400 mb-3 flex items-center gap-2"><i data-lucide="git-branch" class="icon-sm"></i> Git</h4>
+                        <ul class="space-y-1">
+                            <li class="quick-ref-code">git-save-work "msg"</li>
+                            <li class="quick-ref-code mt-1">git-list-versions</li>
+                            <li class="quick-ref-code mt-1">git-go-back N</li>
                         </ul>
                     </div>
                 </div>
@@ -724,11 +750,11 @@ Claude: Expert security review</code></pre>
             </p>
             <div class="flex flex-col sm:flex-row justify-center gap-4">
                 <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="btn-primary px-10 py-4 rounded-lg text-lg font-bold inline-flex items-center justify-center space-x-2">
-                    <span>🚀</span>
+                    <i data-lucide="rocket" class="icon-lg"></i>
                     <span>Get Started Free</span>
                 </a>
                 <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="btn-secondary px-10 py-4 rounded-lg text-lg font-bold inline-flex items-center justify-center space-x-2">
-                    <span>⭐</span>
+                    <i data-lucide="star" class="icon-lg"></i>
                     <span>Star on GitHub</span>
                 </a>
             </div>
@@ -800,5 +826,10 @@ Claude: Expert security review</code></pre>
             </div>
         </div>
     </footer>
+
+    <!-- Initialize Lucide Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
 </body>
 </html>

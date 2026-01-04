@@ -92,10 +92,26 @@ export class AgentRouter {
 
   /**
    * 檢查記憶體是否足夠
+   *
+   * Note: On macOS, os.freemem() returns very low values because macOS
+   * aggressively caches files. The "free" memory is misleading - macOS
+   * will reclaim cached memory when needed. For MCP Server pattern
+   * (prompt enhancement only, no local models), we use minimal thresholds.
    */
   private hasEnoughMemory(resources: SystemResources, analysis: TaskAnalysis): boolean {
     const requiredMemoryMB = this.estimateRequiredMemory(analysis);
+    const platform = process.platform;
 
+    // On macOS, os.freemem() is misleading due to aggressive file caching
+    // Use total memory check instead - if system has >= 4GB, we're fine
+    if (platform === 'darwin') {
+      if (resources.totalMemoryMB >= 4096) {
+        return true; // macOS with 4GB+ can handle MCP routing tasks
+      }
+    }
+
+    // For other platforms or low-memory macs, use the original check
+    // but with much lower thresholds since MCP Server only does prompt enhancement
     if (resources.availableMemoryMB < requiredMemoryMB) {
       logger.warn(
         `⚠️  Insufficient memory: Available ${resources.availableMemoryMB}MB, ` +
@@ -109,12 +125,16 @@ export class AgentRouter {
 
   /**
    * 估算任務所需記憶體 (MB)
+   *
+   * MCP Server Pattern: We only do prompt enhancement and routing,
+   * not running local models. Memory requirements are minimal.
    */
   private estimateRequiredMemory(analysis: TaskAnalysis): number {
+    // Much lower thresholds for MCP Server pattern (prompt enhancement only)
     const baseMemory = {
-      simple: 100,
-      medium: 500,
-      complex: 1000,
+      simple: 50,
+      medium: 100,
+      complex: 200,
     };
 
     return baseMemory[analysis.complexity];

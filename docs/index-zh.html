@@ -20,6 +20,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
     <style>
         * {
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -198,6 +201,48 @@
             color: #3B82F6;
             font-weight: 700;
         }
+
+        /* Lucide Icon Styles */
+        .icon-wrapper {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-sm {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        .icon-md {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        .icon-lg {
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+
+        .icon-xl {
+            width: 2rem;
+            height: 2rem;
+        }
+
+        .icon-2xl {
+            width: 2.5rem;
+            height: 2.5rem;
+        }
+
+        /* Quick Reference Card - Enhanced Text Visibility */
+        .quick-ref-code {
+            background: rgba(30, 41, 59, 0.9);
+            color: #F1F5F9;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -206,7 +251,8 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-3">
-                    <span class="text-2xl font-bold text-gray-900">🤖 Claude Code Buddy</span>
+                    <i data-lucide="bot" class="icon-lg text-blue-600"></i>
+                    <span class="text-2xl font-bold text-gray-900">Claude Code Buddy</span>
                 </div>
                 <div class="hidden md:flex items-center space-x-6">
                     <a href="#problems" class="text-gray-700 hover:text-blue-600 transition font-medium">問題與解決</a>
@@ -219,7 +265,7 @@
                         <span class="text-sm font-semibold lang-active">繁中</span>
                     </div>
                     <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="btn-primary inline-flex items-center space-x-2">
-                        <span>⭐</span>
+                        <i data-lucide="star" class="icon-md"></i>
                         <span>GitHub 星標</span>
                     </a>
                 </div>
@@ -233,7 +279,8 @@
             <div class="text-center">
                 <!-- Badge -->
                 <div class="inline-flex items-center space-x-2 bg-white bg-opacity-40 backdrop-blur-md px-6 py-3 rounded-full mb-8 border border-white border-opacity-30">
-                    <span class="text-green-600 font-bold text-sm">🎉 免費開源</span>
+                    <i data-lucide="party-popper" class="icon-sm text-green-600"></i>
+                    <span class="text-green-600 font-bold text-sm">免費開源</span>
                     <span class="text-gray-400">•</span>
                     <span class="text-blue-600 font-semibold text-sm">AGPL-3.0 授權</span>
                 </div>
@@ -251,11 +298,11 @@
                 <!-- CTA Buttons -->
                 <div class="flex flex-col sm:flex-row justify-center gap-4 mb-12">
                     <a href="#quickstart" class="btn-primary inline-flex items-center justify-center space-x-2">
-                        <span>🚀</span>
+                        <i data-lucide="rocket" class="icon-md"></i>
                         <span>免費開始使用</span>
                     </a>
                     <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="btn-secondary inline-flex items-center justify-center space-x-2">
-                        <span>📖</span>
+                        <i data-lucide="book-open" class="icon-md"></i>
                         <span>查看文檔</span>
                     </a>
                 </div>
@@ -316,7 +363,7 @@
                 <!-- Problem 1: Context Loss → Project Memory -->
                 <div class="glass-card rounded-2xl p-8">
                     <div class="flex items-start mb-4">
-                        <div class="icon-red mr-6">❌</div>
+                        <div class="icon-red mr-6"><i data-lucide="x-circle" class="icon-xl text-white"></i></div>
                         <div class="flex-1">
                             <h3 class="text-2xl font-bold text-gray-900 mb-3">問題：上下文遺失</h3>
                             <p class="text-gray-700 text-lg leading-relaxed">
@@ -327,7 +374,7 @@
 
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <div class="flex items-start">
-                            <div class="icon-blue mr-6">🧠</div>
+                            <div class="icon-blue mr-6"><i data-lucide="brain" class="icon-xl text-white"></i></div>
                             <div class="flex-1">
                                 <h4 class="text-xl font-bold text-gray-900 mb-3">解決方案：專案記憶</h4>
                                 <p class="text-gray-700 mb-4 leading-relaxed">
@@ -346,7 +393,7 @@
                 <!-- Problem 2: Generic Responses → Smart Routing -->
                 <div class="glass-card rounded-2xl p-8">
                     <div class="flex items-start mb-4">
-                        <div class="icon-red mr-6">❌</div>
+                        <div class="icon-red mr-6"><i data-lucide="x-circle" class="icon-xl text-white"></i></div>
                         <div class="flex-1">
                             <h3 class="text-2xl font-bold text-gray-900 mb-3">問題：泛化的回應</h3>
                             <p class="text-gray-700 text-lg leading-relaxed">
@@ -357,7 +404,7 @@
 
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <div class="flex items-start">
-                            <div class="icon-blue mr-6">🎯</div>
+                            <div class="icon-blue mr-6"><i data-lucide="target" class="icon-xl text-white"></i></div>
                             <div class="flex-1">
                                 <h4 class="text-xl font-bold text-gray-900 mb-3">解決方案：智能任務路由</h4>
                                 <p class="text-gray-700 mb-4 leading-relaxed">
@@ -376,7 +423,7 @@
                 <!-- Problem 3: Expensive Token Costs → Smart Model Selection -->
                 <div class="glass-card rounded-2xl p-8">
                     <div class="flex items-start mb-4">
-                        <div class="icon-red mr-6">❌</div>
+                        <div class="icon-red mr-6"><i data-lucide="x-circle" class="icon-xl text-white"></i></div>
                         <div class="flex-1">
                             <h3 class="text-2xl font-bold text-gray-900 mb-3">問題：昂貴的 Token 成本</h3>
                             <p class="text-gray-700 text-lg leading-relaxed">
@@ -387,7 +434,7 @@
 
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <div class="flex items-start">
-                            <div class="icon-blue mr-6">💰</div>
+                            <div class="icon-blue mr-6"><i data-lucide="coins" class="icon-xl text-white"></i></div>
                             <div class="flex-1">
                                 <h4 class="text-xl font-bold text-gray-900 mb-3">解決方案：智能模型選擇</h4>
                                 <p class="text-gray-700 mb-4 leading-relaxed">
@@ -406,7 +453,7 @@
                 <!-- Problem 4: Repetitive Context → RAG + Drop Inbox -->
                 <div class="glass-card rounded-2xl p-8">
                     <div class="flex items-start mb-4">
-                        <div class="icon-red mr-6">❌</div>
+                        <div class="icon-red mr-6"><i data-lucide="x-circle" class="icon-xl text-white"></i></div>
                         <div class="flex-1">
                             <h3 class="text-2xl font-bold text-gray-900 mb-3">問題：重複的上下文說明</h3>
                             <p class="text-gray-700 text-lg leading-relaxed">
@@ -417,7 +464,7 @@
 
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <div class="flex items-start">
-                            <div class="icon-blue mr-6">📚</div>
+                            <div class="icon-blue mr-6"><i data-lucide="library" class="icon-xl text-white"></i></div>
                             <div class="flex-1">
                                 <h4 class="text-xl font-bold text-gray-900 mb-3">解決方案：RAG + Drop Inbox</h4>
                                 <p class="text-gray-700 mb-4 leading-relaxed">
@@ -447,7 +494,9 @@
             <div class="grid md:grid-cols-2 gap-8">
                 <!-- Feature 1: 36 Specialized Agents -->
                 <div class="glass-card rounded-2xl p-8">
-                    <div class="text-4xl mb-6">👥</div>
+                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center mb-6">
+                        <i data-lucide="users" class="icon-xl text-white"></i>
+                    </div>
                     <h3 class="text-2xl font-bold text-gray-900 mb-4">36 個專業 Agents</h3>
                     <p class="text-gray-700 mb-6 leading-relaxed">
                         根據任務類型自動路由到專業 Agents。每個 Agent 都針對特定開發場景進行訓練。
@@ -475,7 +524,9 @@
 
                 <!-- Feature 2: Knowledge Graph Memory -->
                 <div class="glass-card rounded-2xl p-8">
-                    <div class="text-4xl mb-6">🧠</div>
+                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center mb-6">
+                        <i data-lucide="brain" class="icon-xl text-white"></i>
+                    </div>
                     <h3 class="text-2xl font-bold text-gray-900 mb-4">知識圖譜記憶</h3>
                     <p class="text-gray-700 mb-6 leading-relaxed">
                         永久記住決策、替代方案和權衡分析。跨越所有 session 保持一致。
@@ -498,7 +549,9 @@
 
                 <!-- Feature 3: Git Tools for Beginners -->
                 <div class="glass-card rounded-2xl p-8">
-                    <div class="text-4xl mb-6">🔧</div>
+                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center mb-6">
+                        <i data-lucide="git-branch" class="icon-xl text-white"></i>
+                    </div>
                     <h3 class="text-2xl font-bold text-gray-900 mb-4">新手友善的 Git</h3>
                     <p class="text-gray-700 mb-4 leading-relaxed">
                         8 個使用簡單語言的 Git 工具。無需複雜的 Git 命令。
@@ -518,7 +571,9 @@ git-go-back 3</code></pre>
                 <!-- Feature 4: RAG Codebase Search -->
                 <div class="glass-card rounded-2xl p-8 border-2 border-orange-200">
                     <span class="badge badge-orange mb-3">選配增強功能</span>
-                    <div class="text-4xl mb-4">🔍</div>
+                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center mb-6">
+                        <i data-lucide="search" class="icon-xl text-white"></i>
+                    </div>
                     <h3 class="text-2xl font-bold text-gray-900 mb-4">RAG - 程式碼庫搜尋</h3>
                     <div class="flex items-baseline mb-4">
                         <span class="text-3xl font-bold text-gray-900">免費</span>
@@ -545,7 +600,9 @@ git-go-back 3</code></pre>
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="glass-card rounded-2xl p-8 border-l-4 border-blue-500">
                 <div class="flex items-start space-x-4">
-                    <div class="text-4xl">💡</div>
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="lightbulb" class="icon-lg text-white"></i>
+                    </div>
                     <div>
                         <h3 class="text-xl font-bold text-gray-900 mb-3">核心功能無需 API Key</h3>
                         <p class="text-gray-700 mb-4 leading-relaxed">
@@ -657,7 +714,9 @@ node --version  <span class="comment"># 應為 v18 或更高</span></code></pre>
             <div class="grid md:grid-cols-2 gap-8 mb-12">
                 <!-- Automatic Mode -->
                 <div class="glass-card rounded-2xl p-8">
-                    <div class="text-4xl mb-4">🤖</div>
+                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center mb-4">
+                        <i data-lucide="bot" class="icon-xl text-white"></i>
+                    </div>
                     <h3 class="text-2xl font-bold text-gray-900 mb-4">自動模式</h3>
                     <p class="text-gray-700 mb-4 leading-relaxed">
                         CCB 在背景自動工作。像平常一樣使用 Claude Code，CCB 會根據你的任務自動路由到專業 Agents。
@@ -671,7 +730,9 @@ node --version  <span class="comment"># 應為 v18 或更高</span></code></pre>
 
                 <!-- Explicit Mode -->
                 <div class="glass-card rounded-2xl p-8">
-                    <div class="text-4xl mb-4">💬</div>
+                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center mb-4">
+                        <i data-lucide="message-square" class="icon-xl text-white"></i>
+                    </div>
                     <h3 class="text-2xl font-bold text-gray-900 mb-4">明確指令模式</h3>
                     <p class="text-gray-700 mb-4 leading-relaxed">
                         使用 <code class="inline-code">buddy</code> 指令直接與 CCB 互動，獲取記憶管理、統計數據等功能。
@@ -689,7 +750,7 @@ node --version  <span class="comment"># 應為 v18 或更高</span></code></pre>
                 <!-- Buddy Commands -->
                 <div class="glass-card rounded-2xl p-6">
                     <h4 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                        <span class="mr-2">🎯</span> Buddy 指令
+                        <i data-lucide="target" class="icon-md text-blue-600 mr-2"></i> Buddy 指令
                     </h4>
                     <div class="space-y-3">
                         <div class="bg-white bg-opacity-60 rounded-lg p-3">
@@ -714,7 +775,7 @@ node --version  <span class="comment"># 應為 v18 或更高</span></code></pre>
                 <!-- Memory Commands -->
                 <div class="glass-card rounded-2xl p-6">
                     <h4 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                        <span class="mr-2">🧠</span> 記憶指令
+                        <i data-lucide="brain" class="icon-md text-purple-600 mr-2"></i> 記憶指令
                     </h4>
                     <div class="space-y-3">
                         <div class="bg-white bg-opacity-60 rounded-lg p-3">
@@ -739,7 +800,7 @@ node --version  <span class="comment"># 應為 v18 或更高</span></code></pre>
                 <!-- RAG & Git -->
                 <div class="glass-card rounded-2xl p-6">
                     <h4 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                        <span class="mr-2">📚</span> RAG 和 Git
+                        <i data-lucide="folder-search" class="icon-md text-green-600 mr-2"></i> RAG 和 Git
                     </h4>
                     <div class="space-y-3">
                         <div class="bg-white bg-opacity-60 rounded-lg p-3">
@@ -765,22 +826,24 @@ node --version  <span class="comment"># 應為 v18 或更高</span></code></pre>
 
             <!-- Quick Reference Card -->
             <div class="glass-card rounded-2xl p-8 border-2 border-blue-200">
-                <h3 class="text-2xl font-bold text-gray-900 mb-6 text-center">🚀 快速參考卡</h3>
+                <h3 class="text-2xl font-bold text-gray-900 mb-6 text-center flex items-center justify-center">
+                    <i data-lucide="zap" class="icon-lg text-blue-600 mr-2"></i> 快速參考卡
+                </h3>
                 <div class="grid md:grid-cols-4 gap-6">
                     <div>
                         <h5 class="font-bold text-gray-900 mb-3 text-blue-600">任務執行</h5>
-                        <ul class="text-sm space-y-2 text-gray-700">
-                            <li><code class="text-xs bg-gray-100 px-1 rounded">buddy do 除錯登入</code></li>
-                            <li><code class="text-xs bg-gray-100 px-1 rounded">buddy do 審查程式碼</code></li>
-                            <li><code class="text-xs bg-gray-100 px-1 rounded">buddy do 設計 API</code></li>
+                        <ul class="text-sm space-y-2">
+                            <li><code class="quick-ref-code">buddy do 除錯登入</code></li>
+                            <li><code class="quick-ref-code">buddy do 審查程式碼</code></li>
+                            <li><code class="quick-ref-code">buddy do 設計 API</code></li>
                         </ul>
                     </div>
                     <div>
                         <h5 class="font-bold text-gray-900 mb-3 text-green-600">記憶操作</h5>
-                        <ul class="text-sm space-y-2 text-gray-700">
-                            <li><code class="text-xs bg-gray-100 px-1 rounded">buddy remember 架構</code></li>
-                            <li><code class="text-xs bg-gray-100 px-1 rounded">recall-memory 決策</code></li>
-                            <li><code class="text-xs bg-gray-100 px-1 rounded">create-entities</code></li>
+                        <ul class="text-sm space-y-2">
+                            <li><code class="quick-ref-code">buddy remember 架構</code></li>
+                            <li><code class="quick-ref-code">recall-memory 決策</code></li>
+                            <li><code class="quick-ref-code">create-entities</code></li>
                         </ul>
                     </div>
                     <div>
@@ -788,15 +851,15 @@ node --version  <span class="comment"># 應為 v18 或更高</span></code></pre>
                         <ul class="text-sm space-y-2 text-gray-700">
                             <li>拖放 .md/.txt/.pdf</li>
                             <li>自動索引（5秒）</li>
-                            <li><code class="text-xs bg-gray-100 px-1 rounded">buddy remember 文件名</code></li>
+                            <li><code class="quick-ref-code">buddy remember 文件名</code></li>
                         </ul>
                     </div>
                     <div>
                         <h5 class="font-bold text-gray-900 mb-3 text-purple-600">版本控制</h5>
-                        <ul class="text-sm space-y-2 text-gray-700">
-                            <li><code class="text-xs bg-gray-100 px-1 rounded">git-save-work</code></li>
-                            <li><code class="text-xs bg-gray-100 px-1 rounded">git-list-versions</code></li>
-                            <li><code class="text-xs bg-gray-100 px-1 rounded">git-go-back 3</code></li>
+                        <ul class="text-sm space-y-2">
+                            <li><code class="quick-ref-code">git-save-work</code></li>
+                            <li><code class="quick-ref-code">git-list-versions</code></li>
+                            <li><code class="quick-ref-code">git-go-back 3</code></li>
                         </ul>
                     </div>
                 </div>
@@ -813,11 +876,11 @@ node --version  <span class="comment"># 應為 v18 或更高</span></code></pre>
             </p>
             <div class="flex flex-col sm:flex-row justify-center gap-4">
                 <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="bg-white text-blue-600 px-10 py-4 rounded-xl text-lg font-bold hover:bg-gray-100 transition inline-flex items-center justify-center space-x-2 shadow-xl">
-                    <span>🚀</span>
+                    <i data-lucide="rocket" class="icon-md"></i>
                     <span>免費開始使用</span>
                 </a>
                 <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" class="bg-orange-500 hover:bg-orange-600 text-white px-10 py-4 rounded-xl text-lg font-bold transition inline-flex items-center justify-center space-x-2 shadow-xl">
-                    <span>⭐</span>
+                    <i data-lucide="star" class="icon-md"></i>
                     <span>GitHub 星標</span>
                 </a>
             </div>
@@ -892,5 +955,10 @@ node --version  <span class="comment"># 應為 v18 或更高</span></code></pre>
             </div>
         </div>
     </footer>
+
+    <!-- Initialize Lucide Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
 </body>
 </html>

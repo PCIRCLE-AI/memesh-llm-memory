@@ -6,7 +6,7 @@
 
 > **讓 Claude Code 記住你的專案、從你的回饋中學習，並提供專家級的回應,無需專家級的提示。**
 
-Claude Code Buddy 是一個 MCP 伺服器，為 Claude Code 增加智能、記憶和任務路由功能 - 將它從強大的助手轉變為具備專案意識的 AI 團隊成員。
+Claude Code Buddy 是一個 Claude Code plugin，為 Claude Code 增加智能、記憶和任務路由功能 - 將它從強大的助手轉變為具備專案意識的 AI 團隊成員。
 
 ---
 

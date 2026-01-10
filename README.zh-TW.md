@@ -6,7 +6,7 @@
 
 > **讓 Claude Code 記住你的專案、從你的回饋中學習，並提供專家級的回應,無需專家級的提示。**
 
-Claude Code Buddy 是一個 Claude Code plugin，為 Claude Code 增加智能、記憶和任務路由功能 - 將它從強大的助手轉變為具備專案意識的 AI 團隊成員。
+Claude Code Buddy 是一個 Claude Code Plugin，為 Claude Code 增加智能、記憶和任務路由功能 - 將它從強大的助手轉變為具備專案意識的 AI 團隊成員。
 
 ---
 
@@ -28,13 +28,17 @@ Claude Code Buddy 是一個 Claude Code plugin，為 Claude Code 增加智能、
 Claude Code Buddy 位於你和 Claude Code 之間，增加三項超能力：
 
 ### 1. 🧠 **專案記憶**
+
 CCB 記住你的架構決策、編碼模式和過去的解決方案。問「為什麼我們選擇 PostgreSQL？」，你會得到實際的決策理由 - 而不是泛泛的比較。
 
 ### 2. 🎯 **智能任務路由**
+
 你的請求會被分析並路由到正確的「專家模式」 - 程式碼審查任務獲得程式碼審查專業知識，除錯獲得系統化除錯方法，前端獲得 UI/UX 最佳實踐。
 
 ### 3. 💰 **智能模型選擇**
+
 根據複雜度路由任務到正確的 Claude 模型：
+
 - **Haiku**（簡單任務）- 快速便宜
 - **Sonnet**（中等任務）- 平衡效能
 - **Opus**（複雜任務）- 最大能力
@@ -43,17 +47,44 @@ CCB 記住你的架構決策、編碼模式和過去的解決方案。問「為�
 
 **結果：** 專家級回應無需專家級提示。持續的上下文。高成本效益的智能，永不遺忘。
 
+### CCB 所謂的「隨你的專案演化」究竟是什麼意思？
+
+CCB 不會重訓模型或修改 Claude 本身。
+
+相反地，演化來自於 Claude Code Plugin 內部的 **持久化系統層**：
+
+• **專案記憶累積**
+架構決策、慣例和已解決的討論都被儲存為結構化的上下文。
+
+• **模式強化**
+重複的批准、重構和偏好的解決方案逐漸塑造未來提示詞的建構方式。
+
+• **任務類型區分**
+審查、除錯、重構和設計任務使用不同的內部提示策略處理。
+
+• **上下文重用，而非重複**
+選擇性地注入相關記憶，避免提示詞過其臃腫，同時保持連續性。
+
+隨著時間推移，Claude Code 的回應變得：
+• 更符合你的慣例
+• 跨會話更一致
+• 較少依賴冗長的提示詞
+
+這是一種 *透過系統記憶和路由的行為演化*，而非模型微調。
+
 ---
 
 ## 實際運作
 
 **沒有 CCB：**
+
 ```
 你：「優化這個資料庫查詢」
 Claude：[關於索引和查詢結構的泛化建議]
 ```
 
 **有了 CCB：**
+
 ```
 你：「優化這個資料庫查詢」
 
@@ -104,6 +135,7 @@ Claude 回應專業的安全審查結果
 ### 💾 記憶指令（儲存與召回知識）
 
 **儲存決策和模式：**
+
 ```
 create-entities [{
   name: "認證決策 2024年1月",
@@ -117,12 +149,14 @@ create-entities [{
 ```
 
 **召回記憶：**
+
 ```
 recall-memory "認證相關決策"
 buddy-remember "我們討論過的 API 設計模式"
 ```
 
 **新增到現有知識：**
+
 ```
 add-observations [{
   entityName: "認證決策 2024年1月",
@@ -135,6 +169,7 @@ add-observations [{
 如果你在安裝時啟用了 RAG：
 
 **步驟 1：放入檔案進行索引**（每 5 秒自動索引）：
+
 ```bash
 ~/Documents/claude-code-buddy-knowledge/
   ├── architecture.md      # 你的系統設計文件
@@ -144,6 +179,7 @@ add-observations [{
 ```
 
 **步驟 2：自然地提問：**
+
 ```
 你：「這個專案的認證機制是怎麼運作的？」
 CCB：[搜尋你的索引檔案，回傳相關內容]
@@ -214,6 +250,7 @@ CCB：[找到你的 architecture.md，顯示相關章節]
 <summary><b>📋 查看全部 36 個 Agents</b></summary>
 
 #### 🔧 真實實作 Agents（9 個）
+
 這些 agents 具有實際程式碼實作並整合 MCP 工具：
 
 - **development-butler** - 事件驅動工作流程自動化、程式碼維護、測試、依賴管理、git 工作流程、建置自動化
@@ -227,9 +264,11 @@ CCB：[找到你的 architecture.md，顯示相關章節]
 - **n8n-workflow** - n8n 工作流程 API 整合、生產工作流程管理、多系統整合
 
 #### 💬 增強提示 Agents（26 個）
+
 這些 agents 使用專業提示，無需 MCP 工具整合：
 
 **開發類（13 個 agents）**
+
 - **frontend-developer** - 前端開發專家、React/Vue/Angular 專家
 - **backend-developer** - 後端開發專家、API 和伺服器端專家
 - **frontend-specialist** - 前端架構、性能優化、現代框架專家
@@ -245,33 +284,41 @@ CCB：[找到你的 architecture.md，顯示相關章節]
 - **test-automator** - 測試自動化專家、自動化測試專家
 
 **分析與研究（4 個 agents）**
+
 - **architecture-agent** - 系統架構專家、設計模式、可擴展性分析
 - **research-agent** - 技術研究、可行性分析、技術評估
 - **data-analyst** - 資料分析、統計建模、商業智能專家
 - **knowledge-agent** - 知識管理、資訊檢索、文檔組織
 
 **營運與安全（1 個 agent）**
+
 - **security-auditor** - 安全審計、漏洞評估、合規專家
 
 **管理（1 個 agent）**
+
 - **product-manager** - 產品策略、用戶研究、功能優先順序專家
 
 **創意（2 個 agents）**
+
 - **ui-designer** - UI/UX 設計、用戶體驗、介面設計專家
 - **technical-writer** - 技術文檔、API 文檔、用戶指南專家
 
 **商業（1 個 agent）**
+
 - **marketing-strategist** - 行銷策略、品牌定位、增長駭客專家
 
 **工程（1 個 agent）**
+
 - **ml-engineer** - 機器學習工程、模型訓練、ML 管道專家
 
 **工具類（3 個 agents）**
+
 - **migration-assistant** - 遷移規劃、版本升級、傳統系統現代化
 - **api-integrator** - API 整合、第三方服務、SDK 實作專家
 - **general-agent** - 通用型 agent，用於雜項任務和備援情境
 
 #### 🎯 可選功能 Agents（1 個）
+
 需要外部依賴（ChromaDB + OpenAI）：
 
 - **rag-agent** - 知識檢索、向量搜尋、基於嵌入的上下文搜尋
@@ -281,24 +328,28 @@ CCB：[找到你的 architecture.md，顯示相關章節]
 ### 💾 三種記憶類型
 
 **RAG（檢索增強生成）與 Drop Inbox**
+
 ```
 你：「顯示這個專案中的身份驗證如何運作」
 CCB：[搜尋你的程式碼庫，找到實際的身份驗證檔案，展示模式]
 ```
 
 **Drop Inbox 魔法：**
+
 - 將檔案放入 `~/Documents/claude-code-buddy-knowledge/`
 - CCB 每 5 秒自動索引
 - 支援：.md、.txt、.json、.pdf、.docx
 - 不需要命令 - 只要放入即可！
 
 **知識圖譜**
+
 ```
 你：「為什麼我們選擇這個架構？」
 CCB：[回憶決策、考慮過的替代方案和權衡]
 ```
 
 **專案上下文**
+
 ```
 CCB 記住：
 - 你的編碼標準
@@ -351,6 +402,7 @@ git-show-changes
 ```
 
 **8 個說人話的 Git 工具：**
+
 - `git-save-work` - 用友善的提交訊息儲存
 - `git-list-versions` - 列出最近的版本
 - `git-status` - 以可讀格式顯示目前狀態
@@ -373,6 +425,7 @@ git-show-changes
 ```
 
 **4 個工作流程工具：**
+
 - `get-workflow-guidance` - 獲得下一步建議
 - `get-session-health` - 檢查 session 健康狀態
 - `reload-context` - 需要時重載 CLAUDE.md
@@ -394,6 +447,7 @@ CCB：[生成逐步計畫，包含：
 ```
 
 **規劃工具：**
+
 - `generate-smart-plan` - 創建智能實作計畫
 
 ---
@@ -401,6 +455,7 @@ CCB：[生成逐步計畫，包含：
 ## 快速開始（2 分鐘）
 
 ### 前置需求
+
 - Node.js 18+ ([下載](https://nodejs.org/))
 - Claude Code 已安裝 ([在這裡取得](https://claude.com/claude-code))
 
@@ -418,6 +473,7 @@ cd claude-code-buddy
 安裝程式會引導你完成 **11 個互動式步驟**：
 
 **核心設定（步驟 1-8）**：
+
 - ✓ 檢查前置需求（Node.js 18+、npm、git）
 - ✓ 安裝相依性
 - ✓ 建構專案
@@ -428,12 +484,14 @@ cd claude-code-buddy
 - ✓ 測試安裝
 
 **互動式展示（步驟 9-10）**：
+
 - 📚 **步驟 9：基本使用展示** - 了解 CCB 的智能路由、範例提示、記憶類型和成本節省
 - 📁 **步驟 10：RAG 功能展示**（如果啟用）- 探索 Drop Inbox 的魔力與範例文件
 
 **核心功能不需要 API 金鑰** - 使用你現有的 Claude Code 訂閱。
 
 **選用 RAG 功能**：
+
 - **免費選項**：HuggingFace 嵌入（無需 API 金鑰成本）
 - **付費選項**：OpenAI 嵌入（自備 API 金鑰）
 - **Drop Inbox**：每 5 秒自動索引 `~/Documents/claude-code-buddy-knowledge/` 目錄中的檔案
@@ -470,6 +528,7 @@ Claude Code 用你的訂閱執行
 ```
 
 **幕後：**
+
 - **36 個 agent 總數**：9 個真實實作（測試撰寫器、DevOps 工程師、工作流程編排器等）+ 26 個增強提示 + 1 個可選功能（RAG）
 - **智能路由**分析任務複雜度並自動選擇最佳 agent 和 Claude 模型
 - **演化系統**從你的選擇中學習並持續改進建議
@@ -509,6 +568,7 @@ Claude Code 用你的訂閱執行
 ## 使用案例
 
 ### 程式碼審查
+
 ```
 「審查這個 PR 是否有安全漏洞和程式碼品質問題」
 → 路由到 code-reviewer
@@ -517,6 +577,7 @@ Claude Code 用你的訂閱執行
 ```
 
 ### 除錯
+
 ```
 「這個函式在 undefined 時崩潰，幫助除錯」
 → 路由到 debugger
@@ -525,6 +586,7 @@ Claude Code 用你的訂閱執行
 ```
 
 ### 前端設計
+
 ```
 「設計一個具有深色模式的響應式儀表板」
 → 路由到 frontend-specialist
@@ -533,6 +595,7 @@ Claude Code 用你的訂閱執行
 ```
 
 ### 資料庫優化
+
 ```
 「這個 Prisma 查詢需要 2 秒，優化它」
 → 路由到 db-optimizer
@@ -585,6 +648,7 @@ npm run dashboard
 **貢獻：** 我們歡迎貢獻！參見 [CONTRIBUTING.md](docs/CONTRIBUTING.md) 了解指南。
 
 **完整文檔：**
+
 - 📐 [系統架構](docs/ARCHITECTURE.md) - 高階架構總覽、設計原則、技術堆疊
 - 🔧 [組件指南](docs/COMPONENT_GUIDE.md) - 詳細組件參考與 API 文檔
 - 🔄 [數據流程](docs/DATA_FLOW.md) - 請求生命週期、事務模式、錯誤傳播

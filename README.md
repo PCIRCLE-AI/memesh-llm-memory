@@ -6,7 +6,7 @@
 
 > **Make Claude Code remember your project, learn from your feedback, and give you expert-level responses without expert-level prompts.**
 
-Claude Code Buddy is an Claude Code Plugin that adds intelligence, memory, and task routing to Claude Code - turning it from a powerful assistant into a project-aware AI teammate.
+Claude Code Buddy is a Claude Code Plugin that adds intelligence, memory, and task routing to Claude Code - turning it from a powerful assistant into a project-aware AI teammate.
 
 ---
 
@@ -28,13 +28,17 @@ You're using Claude Code to build your project, but you keep hitting the same fr
 Claude Code Buddy sits between you and Claude Code, adding three superpowers:
 
 ### 1. 🧠 **Project Memory**
+
 CCB remembers your architecture decisions, coding patterns, and past solutions. Ask "Why did we choose PostgreSQL?" and get the actual decision rationale - not a generic comparison.
 
 ### 2. 🎯 **Smart Task Routing**
+
 Your request gets analyzed and routed to the right "expert mode" - code review tasks get code review expertise, debugging gets systematic debugging methodology, frontend gets UI/UX best practices.
 
 ### 3. 💰 **Smart Model Selection**
+
 Routes tasks to the right Claude model based on complexity:
+
 - **Haiku** (simple tasks) - Fast & cheap
 - **Sonnet** (medium tasks) - Balanced performance
 - **Opus** (complex tasks) - Maximum capability
@@ -43,17 +47,44 @@ Saves ~40% on token costs by using smaller models for simpler tasks.
 
 **Result:** Expert responses without expert prompts. Context that persists. Cost-effective intelligence that never forgets.
 
+### What does "evolves with your project" actually mean?
+
+CCB does not retrain models or modify Claude itself.
+
+Instead, evolution comes from a **persistent system layer** inside the Claude Code plugin:
+
+• **Project memory accumulation**
+Architectural decisions, conventions, and resolved discussions are stored as structured context.
+
+• **Pattern reinforcement**
+Repeated approvals, refactors, and preferred solutions gradually shape how future prompts are constructed.
+
+• **Task-type differentiation**
+Review, debugging, refactoring, and design tasks are handled with different internal prompting strategies.
+
+• **Context reuse, not repetition**
+Relevant memory is selectively injected, avoiding prompt bloat while preserving continuity.
+
+Over time, Claude Code responses become:
+• more aligned with your conventions
+• more consistent across sessions
+• less dependent on verbose prompts
+
+This is *behavioral evolution through system memory and routing*, not model fine-tuning.
+
 ---
 
 ## See It In Action
 
 **Without CCB:**
+
 ```
 You: "Optimize this database query"
 Claude: [Generic advice about indexes and query structure]
 ```
 
 **With CCB:**
+
 ```
 You: "Optimize this database query"
 
@@ -104,6 +135,7 @@ Use these commands when you want specific CCB features:
 ### 💾 Memory Commands (Store & Recall Knowledge)
 
 **Save decisions and patterns:**
+
 ```
 create-entities [{
   name: "Auth Decision Jan 2024",
@@ -117,12 +149,14 @@ create-entities [{
 ```
 
 **Recall from memory:**
+
 ```
 recall-memory "authentication decisions"
 buddy-remember "API design patterns we discussed"
 ```
 
 **Add to existing knowledge:**
+
 ```
 add-observations [{
   entityName: "Auth Decision Jan 2024",
@@ -135,6 +169,7 @@ add-observations [{
 If you enabled RAG during installation:
 
 **Step 1: Drop files to index** (auto-indexed every 5 seconds):
+
 ```bash
 ~/Documents/claude-code-buddy-knowledge/
   ├── architecture.md      # Your system design docs
@@ -144,6 +179,7 @@ If you enabled RAG during installation:
 ```
 
 **Step 2: Ask questions naturally:**
+
 ```
 You: "How does authentication work in this project?"
 CCB: [Searches your indexed files, returns relevant context]
@@ -214,6 +250,7 @@ CCB: [Finds your architecture.md, shows the relevant sections]
 <summary><b>📋 View All 36 Agents</b></summary>
 
 #### 🔧 Real Implementation Agents (9)
+
 These agents have actual code implementations with MCP tool integration:
 
 - **development-butler** - Event-driven workflow automation, code maintenance, testing, dependency management, git workflow, build automation
@@ -227,9 +264,11 @@ These agents have actual code implementations with MCP tool integration:
 - **n8n-workflow** - n8n workflow API integration, production workflow management, multi-system integration
 
 #### 💬 Enhanced Prompt Agents (26)
+
 These agents use specialized prompts without MCP tool integration:
 
 **Development (13 agents)**
+
 - **frontend-developer** - Frontend development expert, React/Vue/Angular specialist
 - **backend-developer** - Backend development expert, API and server-side specialist
 - **frontend-specialist** - Frontend architecture, performance optimization, modern frameworks expert
@@ -245,33 +284,41 @@ These agents use specialized prompts without MCP tool integration:
 - **test-automator** - Test automation specialist, automated testing expert
 
 **Analysis & Research (4 agents)**
+
 - **architecture-agent** - System architecture expert, design patterns, scalability analysis
 - **research-agent** - Technical research, feasibility analysis, technology evaluation
 - **data-analyst** - Data analysis, statistical modeling, business intelligence expert
 - **knowledge-agent** - Knowledge management, information retrieval, documentation organization
 
 **Operations & Security (1 agent)**
+
 - **security-auditor** - Security auditing, vulnerability assessment, compliance expert
 
 **Management (1 agent)**
+
 - **product-manager** - Product strategy, user research, feature prioritization expert
 
 **Creative (2 agents)**
+
 - **ui-designer** - UI/UX design, user experience, interface design specialist
 - **technical-writer** - Technical documentation, API documentation, user guides expert
 
 **Business (1 agent)**
+
 - **marketing-strategist** - Marketing strategy, brand positioning, growth hacking expert
 
 **Engineering (1 agent)**
+
 - **ml-engineer** - Machine learning engineering, model training, ML pipeline expert
 
 **Utility (3 agents)**
+
 - **migration-assistant** - Migration planning, version upgrades, legacy system modernization
 - **api-integrator** - API integration, third-party services, SDK implementation expert
 - **general-agent** - General purpose agent for miscellaneous tasks and fallback scenarios
 
 #### 🎯 Optional Feature Agents (1)
+
 Requires external dependencies (ChromaDB + OpenAI):
 
 - **rag-agent** - Knowledge retrieval, vector search, embedding-based context search
@@ -281,24 +328,28 @@ Requires external dependencies (ChromaDB + OpenAI):
 ### 💾 Three Types of Memory
 
 **RAG (Retrieval-Augmented Generation) with Drop Inbox**
+
 ```
 You: "Show me how authentication works in this project"
 CCB: [Searches your codebase, finds actual auth files, shows you the patterns]
 ```
 
 **Drop Inbox Magic:**
+
 - Drop files into `~/Documents/claude-code-buddy-knowledge/`
 - CCB automatically indexes them every 5 seconds
 - Supports: .md, .txt, .json, .pdf, .docx
 - No commands needed - just drop and done!
 
 **Knowledge Graph**
+
 ```
 You: "Why did we choose this architecture?"
 CCB: [Recalls the decision, the alternatives considered, and the tradeoffs]
 ```
 
 **Project Context**
+
 ```
 CCB remembers:
 - Your coding standards
@@ -351,6 +402,7 @@ git-show-changes
 ```
 
 **8 Git tools that speak human:**
+
 - `git-save-work` - Save with friendly commit message
 - `git-list-versions` - List recent versions
 - `git-status` - Current status in readable format
@@ -373,6 +425,7 @@ Review done → CCB: "Review complete! Commit and push?"
 ```
 
 **4 workflow tools:**
+
 - `get-workflow-guidance` - Get next-step recommendations
 - `get-session-health` - Check session health status
 - `reload-context` - Reload CLAUDE.md when needed
@@ -394,6 +447,7 @@ CCB: [Generates step-by-step plan with:
 ```
 
 **Planning tool:**
+
 - `generate-smart-plan` - Create intelligent implementation plans
 
 ---
@@ -401,6 +455,7 @@ CCB: [Generates step-by-step plan with:
 ## Quick Start (2 Minutes)
 
 ### Prerequisites
+
 - Node.js 18+ ([download](https://nodejs.org/))
 - Claude Code installed ([get it here](https://claude.com/claude-code))
 
@@ -418,6 +473,7 @@ cd claude-code-buddy
 The installer guides you through **11 interactive steps**:
 
 **Core Setup (Steps 1-8)**:
+
 - ✓ Check prerequisites (Node.js 18+, npm, git)
 - ✓ Install dependencies
 - ✓ Build the project
@@ -428,12 +484,14 @@ The installer guides you through **11 interactive steps**:
 - ✓ Test installation
 
 **Interactive Demos (Steps 9-10)**:
+
 - 📚 **Step 9: Basic Usage Demo** - Learn about CCB's smart routing, example prompts, memory types, and cost savings
 - 📁 **Step 10: RAG Feature Demo** (if enabled) - Discover the Drop Inbox magic with a sample document
 
 **No API keys needed for core features** - uses your existing Claude Code subscription.
 
 **Optional RAG Feature**:
+
 - **FREE option**: HuggingFace embeddings (no API key cost)
 - **Paid option**: OpenAI embeddings (bring your own API key)
 - **Drop Inbox**: Auto-indexes files from `~/Documents/claude-code-buddy-knowledge/` every 5 seconds
@@ -470,6 +528,7 @@ System learns from your choices (when you override recommendations)
 ```
 
 **Under the hood:**
+
 - **36 total agents**: 9 real implementations (Test Writer, DevOps Engineer, Workflow Orchestrator, etc.) + 26 enhanced prompts + 1 optional (RAG)
 - **Smart routing** analyzes task complexity and automatically selects the right agent and Claude model
 - **Evolution system** learns from your choices and continuously improves recommendations
@@ -507,6 +566,7 @@ System learns from your choices (when you override recommendations)
 ## Use Cases
 
 ### Code Review
+
 ```
 "Review this PR for security vulnerabilities and code quality"
 → Routes to code-reviewer
@@ -515,6 +575,7 @@ System learns from your choices (when you override recommendations)
 ```
 
 ### Debugging
+
 ```
 "This function crashes with undefined, help debug"
 → Routes to debugger
@@ -523,6 +584,7 @@ System learns from your choices (when you override recommendations)
 ```
 
 ### Frontend Design
+
 ```
 "Design a responsive dashboard with dark mode"
 → Routes to frontend-specialist
@@ -531,6 +593,7 @@ System learns from your choices (when you override recommendations)
 ```
 
 ### Database Optimization
+
 ```
 "This Prisma query takes 2 seconds, optimize it"
 → Routes to db-optimizer

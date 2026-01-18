@@ -55,7 +55,7 @@ export const BANNED_FIELDS = [
  */
 const SENSITIVE_PATTERNS = [
   // API Keys and Tokens
-  /sk-[a-zA-Z0-9-_]+/,           // OpenAI API keys
+  /sk-[a-zA-Z0-9-_]+/,           // Common API key prefix
   /Bearer\s+[a-zA-Z0-9-_\.]+/,   // Bearer tokens
   /ghp_[a-zA-Z0-9]{36}/,         // GitHub Personal Access Tokens
   /gho_[a-zA-Z0-9]{36}/,         // GitHub OAuth tokens

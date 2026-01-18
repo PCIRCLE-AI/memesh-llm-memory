@@ -1,15 +1,13 @@
 /**
  * AI Model Configuration
  *
- * Configuration for Claude and OpenAI models including model identifiers,
+ * Configuration for Claude models including model identifiers,
  * pricing information, and model selection utilities.
  *
  * Features:
  * - Claude model family (Sonnet, Opus, Haiku)
- * - OpenAI models (Whisper, TTS, Embeddings)
  * - Cost tracking per model
  * - Automatic model selection by task complexity
- * - TTS voice options
  *
  * @example
  * ```typescript
@@ -54,59 +52,12 @@ export const CLAUDE_MODELS = {
   HAIKU_4: 'claude-haiku-4-20250514',
 } as const;
 
-/**
- * OpenAI model identifiers
- *
- * Includes speech-to-text, text-to-speech, embeddings, and GPT models.
- */
-export const OPENAI_MODELS = {
-  /** Whisper - Speech-to-text transcription */
-  WHISPER: 'whisper-1',
-
-  /** TTS - Standard quality text-to-speech */
-  TTS: 'tts-1',
-  /** TTS HD - High-definition text-to-speech */
-  TTS_HD: 'tts-1-hd',
-
-  /** Text Embedding 3 Small - Efficient embeddings for semantic search */
-  EMBEDDING_SMALL: 'text-embedding-3-small',
-  /** Text Embedding 3 Large - High-quality embeddings for complex tasks */
-  EMBEDDING_LARGE: 'text-embedding-3-large',
-
-  /** GPT-4 Turbo - Fallback language model */
-  GPT4: 'gpt-4-turbo-preview',
-  /** GPT-4 Vision - Multimodal model with vision capabilities */
-  GPT4_VISION: 'gpt-4-vision-preview',
-} as const;
-
-/**
- * Text-to-speech voice options
- *
- * Each voice has distinct characteristics:
- * - ALLOY: Neutral and balanced
- * - ECHO: Clear and articulate
- * - FABLE: Warm and expressive
- * - ONYX: Deep and authoritative
- * - NOVA: Energetic and friendly
- * - SHIMMER: Soft and gentle
- */
-export const TTS_VOICES = {
-  ALLOY: 'alloy',
-  ECHO: 'echo',
-  FABLE: 'fable',
-  ONYX: 'onyx',
-  NOVA: 'nova',
-  SHIMMER: 'shimmer',
-} as const;
 
 /**
  * Model pricing in USD per 1M tokens
  *
  * Pricing structure varies by model:
  * - Claude: Separate input/output token pricing
- * - Whisper: Price per minute of audio
- * - TTS: Price per 1,000 characters
- * - Embeddings: Price per 1M input tokens
  *
  * @example
  * ```typescript
@@ -147,15 +98,6 @@ export const MODEL_COSTS = {
     input: 0.80,  // Claude Haiku 4 pricing
     output: 4.0,
   },
-  [OPENAI_MODELS.WHISPER]: {
-    perMinute: 0.006,
-  },
-  [OPENAI_MODELS.TTS]: {
-    per1KChars: 0.015,
-  },
-  [OPENAI_MODELS.EMBEDDING_SMALL]: {
-    input: 0.02,
-  },
 } as const;
 
 /**
@@ -175,5 +117,3 @@ export function selectClaudeModel(complexity: 'simple' | 'medium' | 'complex'): 
 }
 
 export type ClaudeModel = typeof CLAUDE_MODELS[keyof typeof CLAUDE_MODELS];
-export type OpenAIModel = typeof OPENAI_MODELS[keyof typeof OPENAI_MODELS];
-export type TTSVoice = typeof TTS_VOICES[keyof typeof TTS_VOICES];

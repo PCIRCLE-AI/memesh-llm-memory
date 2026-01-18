@@ -28,7 +28,7 @@ Advanced capability routing and self-learning systems.
 API documentation for claude-code-buddy MCP server.
 
 - **[API Reference](./api/API_REFERENCE.md)** - Complete API documentation
-- **[Model Configuration](./api/MODELS.md)** - AI model provider setup
+- **[Model Configuration](./api/MODELS.md)** - Model recommendations and cost estimates
 
 ### 📖 [Guides](./guides/)
 

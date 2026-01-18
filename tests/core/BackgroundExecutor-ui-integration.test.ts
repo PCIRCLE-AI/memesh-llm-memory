@@ -2,17 +2,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BackgroundExecutor } from '../../src/core/BackgroundExecutor.js';
 import { UIEventBus } from '../../src/ui/UIEventBus.js';
-import { ResourceMonitor } from '../../src/core/ResourceMonitor.js';
+import { TestResourceMonitor } from '../helpers/TestResourceMonitor.js';
 import type { ExecutionConfig } from '../../src/core/types.js';
 import type { ProgressIndicator } from '../../src/ui/types.js';
 
 describe('BackgroundExecutor UI Integration', () => {
   let executor: BackgroundExecutor;
-  let resourceMonitor: ResourceMonitor;
+  let resourceMonitor: TestResourceMonitor;
   let eventBus: UIEventBus;
 
   beforeEach(() => {
-    resourceMonitor = new ResourceMonitor();
+    resourceMonitor = new TestResourceMonitor();
     eventBus = UIEventBus.getInstance();
     eventBus.removeAllListeners();
 

@@ -18,7 +18,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { BackgroundExecutor } from '../../src/core/BackgroundExecutor.js';
-import { ResourceMonitor } from '../../src/core/ResourceMonitor.js';
+import { TestResourceMonitor } from '../helpers/TestResourceMonitor.js';
 import { UIEventBus } from '../../src/ui/UIEventBus.js';
 import {
   ExecutionConfig,
@@ -138,11 +138,11 @@ async function waitForAllTasks(
 
 describe('BackgroundExecutor Integration Tests', () => {
   let executor: BackgroundExecutor;
-  let resourceMonitor: ResourceMonitor;
+  let resourceMonitor: TestResourceMonitor;
   let eventBus: UIEventBus;
 
   beforeEach(() => {
-    resourceMonitor = new ResourceMonitor();
+    resourceMonitor = new TestResourceMonitor();
 
     // Mock ResourceMonitor to always allow task execution for tests
     vi.spyOn(resourceMonitor, 'canRunBackgroundTask').mockReturnValue({

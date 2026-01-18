@@ -56,7 +56,7 @@ const DEFAULT_RETRYABLE_STATUS_CODES = [429, 503];
  *
  * Determines if an error should trigger a retry attempt based on:
  * - Custom retry check function (if provided)
- * - HTTP status codes (OpenAI SDK, Axios errors)
+ * - HTTP status codes (SDK or Axios errors)
  * - Network errors (ECONNRESET, ETIMEDOUT, etc.)
  * - Fetch API network errors
  *
@@ -80,7 +80,7 @@ function isRetryableError(
 
   // HTTP errors with retryable status codes
   if (error && typeof error === 'object') {
-    // OpenAI SDK errors
+    // SDK errors with status codes
     if ('status' in error && typeof error.status === 'number') {
       return retryableStatusCodes.includes(error.status);
     }
@@ -205,18 +205,18 @@ function getErrorMessage(error: unknown): string {
  * ```typescript
  * // Basic retry with defaults (3 retries, 1s base delay)
  * const result = await retryWithBackoff(
- *   () => client.audio.transcriptions.create({ file, model: 'whisper-1' })
+ *   () => apiClient.request({ endpoint: '/tasks', method: 'POST' })
  * );
  *
  * // Custom retry configuration
  * const result = await retryWithBackoff(
- *   () => client.audio.transcriptions.create({ ... }),
+ *   () => apiClient.request({ endpoint: '/tasks', method: 'POST' }),
  *   {
  *     maxRetries: 3,
  *     baseDelay: 1000,
  *     enableJitter: true,
  *     retryableStatusCodes: [429, 503],
- *     operationName: 'Whisper Transcription'
+ *     operationName: 'Task Submission'
  *   }
  * );
  *
@@ -313,8 +313,8 @@ export async function retryWithBackoff<T>(
  * @example
  * ```typescript
  * const result = await retryWithBackoffDetailed(
- *   () => client.audio.speech.create({ ... }),
- *   { operationName: 'TTS Generation' }
+ *   () => apiClient.request({ endpoint: '/tasks', method: 'POST' }),
+ *   { operationName: 'Task Submission' }
  * );
  *
  * if (result.success) {

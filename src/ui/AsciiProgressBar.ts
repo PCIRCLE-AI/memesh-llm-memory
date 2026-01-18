@@ -141,8 +141,8 @@ export function progressBar(value: number, options: ProgressBarOptions = {}): st
  *
  * @example
  * ```typescript
- * ratioBar(70, 30, { labels: ['Ollama', 'Claude'] });
- * // Returns: "██████████████▓▓▓▓▓▓ Ollama: 70% | Claude: 30%"
+ * ratioBar(70, 30, { labels: ['Fast', 'Deep'] });
+ * // Returns: "██████████████▓▓▓▓▓▓ Fast: 70% | Deep: 30%"
  * ```
  */
 export function ratioBar(
@@ -197,7 +197,7 @@ export function ratioBar(
  *
  * @example
  * ```typescript
- * distributionBar({ ollama: 50, claude: 30, hybrid: 20 });
+ * distributionBar({ fast: 50, deep: 30, balanced: 20 });
  * // Returns multi-colored bar with legend
  * ```
  */

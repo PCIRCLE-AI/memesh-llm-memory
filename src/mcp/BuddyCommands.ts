@@ -104,9 +104,8 @@ export class BuddyCommands {
       do: `
 buddy do <task>
 
-Execute tasks with smart routing. CCB analyzes complexity and routes to:
-- Ollama (simple tasks, fast & free)
-- Claude (complex tasks, high quality)
+Execute tasks with smart routing. CCB analyzes complexity and applies
+capability-focused prompt enhancement.
 
 Examples:
   buddy do setup authentication
@@ -163,7 +162,7 @@ Examples:
   buddy do setup authentication
   buddy remember api design decisions
 
-For more info: https://github.com/yourusername/claude-code-buddy
+For more info: https://github.com/PCIRCLE-AI/claude-code-buddy
 `;
   }
 }

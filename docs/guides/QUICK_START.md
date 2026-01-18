@@ -6,7 +6,7 @@ Get started with Claude Code Buddy in 15 minutes - from zero to your first enhan
 
 Before you begin, ensure you have:
 
-- **Node.js 18+** installed ([download here](https://nodejs.org/))
+- **Node.js 20+** installed ([download here](https://nodejs.org/))
 - **Claude Code CLI** installed and configured
 - **Anthropic API key** (optional if using MCP Server Mode) - [get one here](https://console.anthropic.com/)
 
@@ -30,7 +30,7 @@ cd claude-code-buddy
 ```
 
 **The setup script will:**
-- ✅ Check Node.js version (18+ required)
+- ✅ Check Node.js version (20+ required)
 - ✅ Install npm dependencies
 - ✅ Create `.env` file from template
 - ✅ Run tests to verify installation
@@ -42,7 +42,7 @@ cd claude-code-buddy
 🚀 Claude Code Buddy - Automated Setup
 ==================================
 
-✅ Node.js version: v18.x.x
+✅ Node.js version: v20.x.x
 ✅ npm is installed
 📦 Installing dependencies...
 ✅ Dependencies installed
@@ -77,12 +77,9 @@ NODE_ENV=development
 PORT=3000
 LOG_LEVEL=info
 
-# Optional: OpenAI API key for RAG features
-# OPENAI_API_KEY=sk-proj-your-key-here
 ```
 
 **When to add API keys:**
-- **OpenAI API Key** (optional): Required only if you want to use RAG (Retrieval-Augmented Generation) features
 - **Anthropic API Key** (optional): Only needed if you set `MCP_SERVER_MODE=false` for standalone usage
 
 ---
@@ -146,11 +143,10 @@ claude mcp list
 **Expected output:**
 ```
 Connected MCP Servers:
-✅ claude-code-buddy (13 agents available)
-   - Code Reviewer, Debugger, Refactorer
-   - API Designer, RAG Agent, Evolution Agent
-   - Knowledge Graph, Butler, Test Writer
-   - Research, Architecture, Data Analyst, Knowledge
+✅ claude-code-buddy (7 tools available)
+   - buddy-do, buddy-help, buddy-remember
+   - get-session-health, get-workflow-guidance
+   - generate-smart-plan, hook-tool-use
 ```
 
 ---
@@ -166,21 +162,15 @@ Verify Claude Code Buddy is working by checking available capabilities:
 
 **Expected response:**
 ```
-Claude Code Buddy provides 13 specialized capabilities:
+Claude Code Buddy provides 7 tools:
 
-1. Code Review (code-reviewer) - Security, performance, best practices
-2. Debugging (debugger) - Systematic error diagnosis
-3. Refactoring (refactorer) - Code improvement and optimization
-4. API Design (api-designer) - RESTful API architecture
-5. RAG Search (rag) - Vector-based documentation search
-6. Evolution (evolution) - Learning from successful patterns
-7. Knowledge Graph (knowledge-graph) - Relationship mapping
-8. Butler (butler) - Task orchestration
-9. Test Writer (test-writer) - Comprehensive test generation
-10. Research (research) - Technical investigation
-11. Architecture (architect) - System design review
-12. Data Analysis (data-analyst) - Data insights
-13. Knowledge (knowledge) - Information synthesis
+1. buddy-do - Route any task to the right capability
+2. buddy-help - Command reference and examples
+3. buddy-remember - Recall project memory
+4. get-session-health - Session health snapshot
+5. get-workflow-guidance - Next-step suggestions
+6. generate-smart-plan - Implementation planning
+7. hook-tool-use - Internal hook ingestion (automatic)
 ```
 
 ---
@@ -208,7 +198,7 @@ function login(username, password) {
 
 **What happens:**
 1. Claude Code Buddy detects "code review" capability needed
-2. Routes to Code Reviewer agent
+2. Routes to code review capability
 3. Enhances prompt with security best practices checklist
 4. Claude Code receives enhanced prompt with context
 5. Returns comprehensive security review identifying:
@@ -218,25 +208,19 @@ function login(username, password) {
 
 ---
 
-### Example 2: RAG Search (Real Implementation)
+### Example 2: Workflow Guidance
 
-Search documentation using vector embeddings:
+Ask for next-step suggestions based on your current phase:
 
 ```bash
 # In Claude Code, ask:
-"Search our project documentation for authentication implementation examples"
+"What's the next step after finishing my tests?"
 ```
 
 **What happens:**
-1. Claude Code Buddy routes to RAG Agent (real implementation)
-2. RAG Agent performs vector search across indexed documentation
-3. Retrieves top-3 most relevant documentation chunks
-4. Claude Code receives context-enriched results
-5. Returns specific examples with file paths and code snippets
-
-**Prerequisites for RAG:**
-- OpenAI API key configured in `.env`
-- Documentation indexed (see [RAG Deployment Guide](RAG_DEPLOYMENT.md))
+1. Claude Code Buddy evaluates your workflow context
+2. Provides actionable next steps (tests, review, commit)
+3. Suggests the most relevant tool to use next
 
 ---
 
@@ -244,11 +228,10 @@ Search documentation using vector embeddings:
 
 Now that you're up and running, explore more:
 
-- **📚 Agent Reference:** Learn about all 13 agents - [AGENT_REFERENCE.md](../AGENT_REFERENCE.md)
+- **📚 Capability Reference:** Learn about available capabilities - [USER_GUIDE.md](../USER_GUIDE.md)
 - **🏗️ Architecture:** Understand the system design - [ARCHITECTURE.md](../ARCHITECTURE.md)
-- **🧪 Testing Guide:** Write tests and validate agents - [TESTING.md](TESTING.md)
+- **🧪 Testing Guide:** Write tests and validate core features - [TESTING.md](TESTING.md)
 - **🔧 MCP Integration:** Advanced configuration - [MCP_INTEGRATION.md](../MCP_INTEGRATION.md)
-- **🎨 RAG Deployment:** Set up vector search - [RAG_DEPLOYMENT.md](RAG_DEPLOYMENT.md)
 
 ---
 
@@ -291,18 +274,6 @@ Now that you're up and running, explore more:
 
 **Solutions:**
 
-**For OpenAI (RAG features):**
-1. Check `.env` has correct format:
-   ```env
-   OPENAI_API_KEY=sk-proj-xxxxx
-   ```
-2. Verify key starts with `sk-proj-` or `sk-`
-3. Test key validity:
-   ```bash
-   curl https://api.openai.com/v1/models \
-     -H "Authorization: Bearer $OPENAI_API_KEY"
-   ```
-
 **For Anthropic (standalone mode):**
 1. Only needed if `MCP_SERVER_MODE=false` in `.env`
 2. Verify key starts with `sk-ant-api03-`
@@ -338,8 +309,8 @@ Now that you're up and running, explore more:
 
 4. **Run specific test suites:**
    ```bash
-   # Unit tests only
-   npm test -- --run src/agents/__tests__/
+   # MCP-related tests
+   npm test -- --run tests/mcp/
 
    # E2E tests (requires API keys)
    npm run test:e2e:safe
@@ -347,7 +318,6 @@ Now that you're up and running, explore more:
 
 5. **Check API keys for E2E tests:**
    - E2E tests require valid API keys
-   - Set `OPENAI_API_KEY` in `.env` for RAG tests
    - Set `ANTHROPIC_API_KEY` for orchestrator tests
 
 ---
@@ -378,9 +348,9 @@ Now that you're up and running, explore more:
 
 ---
 
-### "MCP server starts but agents not available"
+### "MCP server starts but tools not available"
 
-**Symptom:** Server connects but Claude Code doesn't see agents
+**Symptom:** Server connects but Claude Code doesn't see tools
 
 **Solutions:**
 
@@ -397,42 +367,10 @@ Now that you're up and running, explore more:
    # Restart server and check output
    ```
 
-3. **Validate agent registry:**
+3. **Validate tool definitions:**
    ```bash
-   # Test agent detection
-   npm run test -- --run src/agents/__tests__/agent-factory.test.ts
-   ```
-
----
-
-### "RAG search not working"
-
-**Symptom:** RAG queries fail or return no results
-
-**Solutions:**
-
-1. **Check OpenAI API key:**
-   ```bash
-   # Verify in .env
-   cat .env | grep OPENAI_API_KEY
-   ```
-
-2. **Verify vector index exists:**
-   ```bash
-   # Check default location
-   ls -la ~/.claude-code-buddy/vectra/
-   # Or custom path from .env
-   ```
-
-3. **Re-index documentation:**
-   ```bash
-   # Follow RAG setup guide
-   # See docs/guides/RAG_DEPLOYMENT.md
-   ```
-
-4. **Test RAG agent directly:**
-   ```bash
-   npm run test -- --run src/agents/__tests__/rag-agent.test.ts
+   # Validate MCP tool wiring
+   npm test -- --run tests/mcp/
    ```
 
 ---
@@ -476,24 +414,19 @@ If you're still stuck after trying the troubleshooting steps:
 
 You've successfully set up Claude Code Buddy! Here are recommended next steps:
 
-1. **Try Different Agents:**
+1. **Try Different Capabilities:**
    - Code review with security focus
    - API design for RESTful endpoints
    - Refactoring for performance
    - Debugging systematic errors
 
-2. **Enable RAG Features:**
-   - Follow [RAG Deployment Guide](RAG_DEPLOYMENT.md)
-   - Index your project documentation
-   - Enable semantic search
-
-3. **Explore Advanced Features:**
+2. **Explore Advanced Features:**
    - Evolution system for learning patterns
    - Knowledge graph for relationship mapping
    - Cost tracking and performance monitoring
 
-4. **Customize Configuration:**
-   - Adjust agent behaviors
+3. **Customize Configuration:**
+- Adjust capability routing rules
    - Configure logging and metrics
    - Set up custom routing rules
 

@@ -4,7 +4,6 @@
  * Responsible for:
  * - Initializing all server components
  * - Setting up evolution monitoring
- * - Configuring RAG if enabled
  * - Creating handler modules
  */
 
@@ -20,16 +19,15 @@ import { SkillManager } from '../skills/index.js';
 import { UninstallManager } from '../management/index.js';
 import { DevelopmentButler } from '../agents/DevelopmentButler.js';
 import { CheckpointDetector } from '../core/CheckpointDetector.js';
+import { HookIntegration } from '../core/HookIntegration.js';
 import { MCPToolInterface } from '../core/MCPToolInterface.js';
 import { PlanningEngine } from '../planning/PlanningEngine.js';
-import { GitAssistantIntegration } from '../integrations/GitAssistantIntegration.js';
 import { KnowledgeGraph } from '../knowledge-graph/index.js';
+import type { EntityType } from '../knowledge-graph/types.js';
 import { ProjectMemoryManager } from '../memory/ProjectMemoryManager.js';
 import { ProjectAutoTracker } from '../memory/ProjectAutoTracker.js';
 import { RateLimiter } from '../utils/RateLimiter.js';
-import { GitHandlers, ToolHandlers, BuddyHandlers } from './handlers/index.js';
-import { DevOpsEngineerAgent } from '../agents/DevOpsEngineerAgent.js';
-import { WorkflowOrchestrator } from '../agents/WorkflowOrchestrator.js';
+import { ToolHandlers, BuddyHandlers } from './handlers/index.js';
 
 /**
  * Initialized Server Components
@@ -54,26 +52,21 @@ export interface ServerComponents {
   // DevelopmentButler
   developmentButler: DevelopmentButler;
   checkpointDetector: CheckpointDetector;
+  hookIntegration: HookIntegration;
   toolInterface: MCPToolInterface;
 
-  // Planning & Git
+  // Planning
   planningEngine: PlanningEngine;
-  gitAssistant: GitAssistantIntegration;
 
   // Memory & Knowledge
   knowledgeGraph: KnowledgeGraph;
   projectMemoryManager: ProjectMemoryManager;
   projectAutoTracker: ProjectAutoTracker;
 
-  // Agents
-  devopsEngineer: DevOpsEngineerAgent;
-  workflowOrchestrator: WorkflowOrchestrator;
-
   // Rate limiting
   rateLimiter: RateLimiter;
 
   // Handler modules
-  gitHandlers: GitHandlers;
   toolHandlers: ToolHandlers;
   buddyHandlers: BuddyHandlers;
 }
@@ -92,9 +85,10 @@ export interface ServerComponents {
  * The initialization order is critical:
  * 1. Core components (Router, Formatter, Registry)
  * 2. Evolution system (Performance, Learning, Monitoring)
- * 3. Development tools (Butler, Planning, Git)
+ * 3. Development tools (Butler, Planning)
  * 4. Memory systems (Knowledge Graph, Project Memory)
- * 5. Handler modules (Git, Tool, Buddy)
+ * 5. Hook integration
+ * 6. Handler modules (Tool, Buddy)
  */
 export class ServerInitializer {
   /**
@@ -106,9 +100,10 @@ export class ServerInitializer {
    * **Initialization Phases**:
    * 1. **Core Infrastructure**: Router, Formatter, AgentRegistry, UI
    * 2. **Evolution System**: Performance tracking, learning, adaptation
-   * 3. **Development Tools**: DevelopmentButler, PlanningEngine, GitAssistant
+   * 3. **Development Tools**: DevelopmentButler, PlanningEngine
    * 4. **Memory Systems**: KnowledgeGraph, ProjectMemoryManager, ProjectAutoTracker
-   * 5. **Handler Modules**: GitHandlers, ToolHandlers, BuddyHandlers
+   * 5. **Hook Integration**: HookIntegration
+   * 6. **Handler Modules**: ToolHandlers, BuddyHandlers
    *
    * @returns ServerComponents - Fully initialized and wired components
    *
@@ -158,21 +153,36 @@ export class ServerInitializer {
       router.getLearningManager()
     );
 
-    // Initialize Git Assistant
-    const gitAssistant = new GitAssistantIntegration(toolInterface);
-
     // Initialize Project Memory System
     const knowledgeGraph = KnowledgeGraph.createSync();
     const projectMemoryManager = new ProjectMemoryManager(knowledgeGraph);
+    toolInterface.attachMemoryProvider({
+      createEntities: async ({ entities }) => {
+        for (const entity of entities) {
+          knowledgeGraph.createEntity({
+            name: entity.name,
+            entityType: entity.entityType as EntityType,
+            observations: entity.observations,
+            metadata: entity.metadata,
+          });
+        }
+      },
+      searchNodes: async (query: string) => {
+        return knowledgeGraph.searchEntities({
+          namePattern: query,
+          limit: 10,
+        });
+      },
+    });
 
     // Initialize ProjectAutoTracker (automatic knowledge tracking)
     const projectAutoTracker = new ProjectAutoTracker(toolInterface);
 
-    // Initialize DevOps Engineer Agent
-    const devopsEngineer = new DevOpsEngineerAgent(toolInterface);
-
-    // Initialize Workflow Orchestrator (Opal + n8n)
-    const workflowOrchestrator = new WorkflowOrchestrator(toolInterface);
+    // Initialize Hook Integration (bridges Claude Code hooks to checkpoints)
+    const hookIntegration = new HookIntegration(
+      checkpointDetector,
+      developmentButler
+    );
 
     // Initialize Rate Limiter (30 requests per minute)
     const rateLimiter = new RateLimiter({
@@ -180,8 +190,6 @@ export class ServerInitializer {
     });
 
     // Initialize handler modules
-    const gitHandlers = new GitHandlers(gitAssistant);
-
     const toolHandlers = new ToolHandlers(
       router,
       agentRegistry,
@@ -193,12 +201,11 @@ export class ServerInitializer {
       uninstallManager,
       developmentButler,
       checkpointDetector,
+      hookIntegration,
       planningEngine,
       projectMemoryManager,
       knowledgeGraph,
-      ui,
-      devopsEngineer,
-      workflowOrchestrator
+      ui
     );
 
     const buddyHandlers = new BuddyHandlers(
@@ -221,16 +228,13 @@ export class ServerInitializer {
       uninstallManager,
       developmentButler,
       checkpointDetector,
+      hookIntegration,
       toolInterface,
       planningEngine,
-      gitAssistant,
       knowledgeGraph,
       projectMemoryManager,
       projectAutoTracker,
-      devopsEngineer,
-      workflowOrchestrator,
       rateLimiter,
-      gitHandlers,
       toolHandlers,
       buddyHandlers,
     };

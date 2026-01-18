@@ -10,7 +10,13 @@ import type { Entity, EntityType } from '../knowledge-graph/types.js';
 import { logger } from '../utils/logger.js';
 
 /** Memory-related entity types for project tracking */
-export type MemoryEntityType = 'code_change' | 'test_result' | 'session_snapshot' | 'project_snapshot';
+export type MemoryEntityType =
+  | 'code_change'
+  | 'test_result'
+  | 'session_snapshot'
+  | 'project_snapshot'
+  | 'workflow_checkpoint'
+  | 'commit';
 
 /**
  * Options for recalling recent work
@@ -49,7 +55,7 @@ export class ProjectMemoryManager {
   async recallRecentWork(options: RecallOptions = {}): Promise<Entity[]> {
     const {
       limit = 10,
-      types = ['code_change', 'test_result', 'session_snapshot'] as EntityType[],
+      types = ['code_change', 'test_result', 'workflow_checkpoint', 'commit', 'session_snapshot'] as EntityType[],
     } = options;
 
     const results: Entity[] = [];

@@ -17,7 +17,7 @@
 import os from 'os';
 import { TaskAnalysis, RoutingDecision, AgentType, SystemResources, TaskCapability, Task } from './types.js';
 import { PromptEnhancer } from '../core/PromptEnhancer.js';
-import { toDollars } from '../utils/money.js';
+import { toDollars, type MicroDollars } from '../utils/money.js';
 import { logger } from '../utils/logger.js';
 
 export class AgentRouter {
@@ -45,8 +45,10 @@ export class AgentRouter {
     // 建立 Task 物件用於 Prompt Enhancement
     const task: Task = {
       id: analysis.taskId,
-      description: `Task requiring ${analysis.requiredAgents.join(', ')} capabilities`,
-      requiredCapabilities: this.getCapabilitiesForAgent(selectedAgent),
+      description: `Task requiring ${analysis.requiredCapabilities.join(', ')} capabilities`,
+      requiredCapabilities: analysis.requiredCapabilities.length > 0
+        ? analysis.requiredCapabilities
+        : this.getCapabilitiesForAgent(selectedAgent),
       metadata: {
         complexity: analysis.complexity,
         estimatedTokens: analysis.estimatedTokens,
@@ -144,8 +146,8 @@ export class AgentRouter {
    * 選擇最佳 Agent（基於能力需求）
    */
   private selectAgent(analysis: TaskAnalysis): AgentType {
-    // 根據 requiredAgents 包含的能力選擇對應的專業 Agent
-    const requiredAgents = analysis.requiredAgents;
+    // 根據 requiredCapabilities 包含的能力選擇對應的專業 Agent
+    const requiredCapabilities = analysis.requiredCapabilities;
 
     // 能力到 Agent 的映射
     const capabilityToAgent: Record<string, AgentType> = {
@@ -155,7 +157,6 @@ export class AgentRouter {
       'debugging': 'debugger',
       'refactoring': 'refactorer',
       'api-design': 'api-designer',
-      'rag-search': 'rag-agent',
       'research': 'research-agent',
       'architecture': 'architecture-agent',
       'data-analysis': 'data-analyst',
@@ -163,10 +164,11 @@ export class AgentRouter {
       'documentation': 'technical-writer',
     };
 
-    // 嘗試從 requiredAgents 映射到 AgentType
-    for (const required of requiredAgents) {
-      if (capabilityToAgent[required]) {
-        return capabilityToAgent[required];
+    // 嘗試從 requiredCapabilities 映射到 AgentType
+    for (const required of requiredCapabilities) {
+      const mappedAgent = capabilityToAgent[required];
+      if (mappedAgent) {
+        return mappedAgent;
       }
     }
 
@@ -186,7 +188,6 @@ export class AgentRouter {
       'debugger': ['debugging'],
       'refactorer': ['refactoring'], // Code generation is implicit in refactoring
       'api-designer': ['api-design'], // Code generation is implicit in API design
-      'rag-agent': ['rag-search'],
       'research-agent': ['research'],
       'architecture-agent': ['architecture'],
       'data-analyst': ['data-analysis'],
@@ -200,7 +201,6 @@ export class AgentRouter {
       'development-butler': ['general'],
       'performance-profiler': ['general'],
       'performance-engineer': ['general'],
-      'devops-engineer': ['general'],
       'security-auditor': ['general'],
       'technical-writer': ['general'],
       'ui-designer': ['general'],
@@ -212,9 +212,6 @@ export class AgentRouter {
       'data-engineer': ['data-analysis'],
       'ml-engineer': ['data-analysis'],
       'marketing-strategist': ['general'],
-      'workflow-orchestrator': ['workflow-automation'],
-      'opal-automation': ['workflow-automation'],
-      'n8n-workflow': ['workflow-automation'],
     };
 
     return agentCapabilities[agent] || ['general'];
@@ -236,7 +233,6 @@ export class AgentRouter {
       'api-designer': 'general-agent',
 
       // 分析類 Agent fallback
-      'rag-agent': 'research-agent',
       'research-agent': 'general-agent',
       'architecture-agent': 'general-agent',
       'data-analyst': 'general-agent',
@@ -253,7 +249,6 @@ export class AgentRouter {
       'database-administrator': 'db-optimizer',
       'performance-profiler': 'general-agent',
       'performance-engineer': 'performance-profiler',
-      'devops-engineer': 'general-agent',
       'security-auditor': 'general-agent',
       'technical-writer': 'general-agent',
       'ui-designer': 'general-agent',
@@ -264,11 +259,6 @@ export class AgentRouter {
       'data-engineer': 'data-analyst',
       'ml-engineer': 'data-analyst',
       'marketing-strategist': 'general-agent',
-
-      // Workflow Automation Agents
-      'workflow-orchestrator': 'general-agent',
-      'opal-automation': 'general-agent',
-      'n8n-workflow': 'general-agent',
 
       // general-agent 沒有 fallback
       'general-agent': undefined,
@@ -301,7 +291,6 @@ export class AgentRouter {
       'debugger': 'Specialized in root cause analysis and debugging',
       'refactorer': 'Expert in code refactoring and design patterns',
       'api-designer': 'Specialized in API design and RESTful principles',
-      'rag-agent': 'Expert in knowledge retrieval and context search',
       'research-agent': 'Specialized in research and information gathering',
       'architecture-agent': 'Expert in system architecture and design',
       'data-analyst': 'Specialized in data analysis and visualization',
@@ -315,7 +304,6 @@ export class AgentRouter {
       'database-administrator': 'Database administration, schema design, performance tuning, backup and recovery',
       'performance-profiler': 'Performance profiling, optimization, bottleneck identification',
       'performance-engineer': 'End-to-end performance engineering, scalability, load testing',
-      'devops-engineer': 'DevOps, CI/CD, infrastructure automation, deployment expert',
       'security-auditor': 'Security auditing, vulnerability assessment, compliance expert',
       'technical-writer': 'Technical writing, documentation, user guides, API docs expert',
       'ui-designer': 'UI/UX design, user experience, interface design specialist',
@@ -327,9 +315,6 @@ export class AgentRouter {
       'data-engineer': 'Data pipeline engineering, ETL/ELT, data infrastructure, data quality',
       'ml-engineer': 'Machine learning engineering, model development, ML ops, deployment',
       'marketing-strategist': 'Marketing strategy, campaign planning, growth, customer acquisition',
-      'workflow-orchestrator': 'Intelligent workflow platform selector, delegates to Opal and n8n based on requirements',
-      'opal-automation': 'Google Opal browser automation using Playwright, workflow recording and execution',
-      'n8n-workflow': 'n8n workflow API integration, workflow creation and management via CLI',
     };
 
     if (agentDescriptions[selectedAgent]) {
@@ -441,12 +426,15 @@ export class AgentRouter {
     }
 
     // 如果總成本不高，且系統資源充足，可以平行執行
-    const totalCost = decisions.reduce((sum, d) => sum + d.estimatedCost, 0);
+    const totalCost = decisions.reduce(
+      (sum, d) => (sum + d.estimatedCost) as MicroDollars,
+      0 as MicroDollars
+    );
     const systemResources = await this.getSystemResources();
 
     // 檢查記憶體和成本
     const hasEnoughMemory = systemResources.memoryUsagePercent < 80;
-    const costReasonable = totalCost < 0.1; // 總成本低於 $0.1
+    const costReasonable = toDollars(totalCost) < 0.1; // 總成本低於 $0.1
 
     return hasEnoughMemory && costReasonable;
   }

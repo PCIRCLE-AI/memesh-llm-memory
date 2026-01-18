@@ -8,14 +8,15 @@
  *
  * Environment Variables:
  * - CLAUDE_MODEL: Claude AI model name (default: claude-sonnet-4-5-20250929)
- * - OPENAI_API_KEY: OpenAI API Key (for RAG, optional)
- * - VECTRA_INDEX_PATH: Vectra vector index path (default: ~/.claude-code-buddy/vectra)
  * - DATABASE_PATH: SQLite database path (default: ~/.claude-code-buddy/database.db)
  * - NODE_ENV: Environment (development/production/test)
  * - LOG_LEVEL: Log level (debug/info/warn/error, default: info)
  */
 
 import { logger } from '../utils/logger.js';
+import path from 'path';
+import { existsSync, mkdirSync } from 'fs';
+import { expandHome, getHomeDir, resolveUserPath } from '../utils/paths.js';
 
 /**
  * Simplified Configuration Class - All configuration read from environment variables
@@ -55,7 +56,7 @@ import { logger } from '../utils/logger.js';
  *
  * // Use OpenAI API key if available
  * if (SimpleConfig.OPENAI_API_KEY) {
- *   // Initialize RAG agent with OpenAI
+ *   // Initialize optional external integrations
  * }
  * ```
  */
@@ -81,55 +82,6 @@ export class SimpleConfig {
   }
 
   /**
-   * OpenAI API Key for RAG agent vector search
-   *
-   * Optional API key for RAG (Retrieval-Augmented Generation) agent that needs
-   * OpenAI embeddings for vector search operations. Not all agents require this.
-   *
-   * **Environment Variable**: `OPENAI_API_KEY`
-   * **Default**: Empty string (optional configuration)
-   * **Purpose**: Enable RAG agent with OpenAI vector search
-   * **Security**: Masked when retrieving via getAll()
-   *
-   * @example
-   * ```typescript
-   * // Check if OpenAI integration is available
-   * if (SimpleConfig.OPENAI_API_KEY) {
-   *   console.log('OpenAI API key configured - RAG agent available');
-   *   // Initialize RAG agent with vector search
-   * } else {
-   *   console.log('OpenAI API key not set - RAG agent unavailable');
-   * }
-   * ```
-   */
-  static get OPENAI_API_KEY(): string {
-    return process.env.OPENAI_API_KEY || '';
-  }
-
-  /**
-   * Vectra vector index storage path
-   *
-   * Directory path where Vectra stores the knowledge graph vector index for
-   * semantic search operations.
-   *
-   * **Environment Variable**: `VECTRA_INDEX_PATH`
-   * **Default**: `~/.claude-code-buddy/vectra`
-   * **Purpose**: Vector index storage for knowledge graph
-   *
-   * @example
-   * ```typescript
-   * const indexPath = SimpleConfig.VECTRA_INDEX_PATH;
-   * console.log(indexPath); // '/Users/username/.claude-code-buddy/vectra'
-   *
-   * // Custom path via environment variable
-   * // export VECTRA_INDEX_PATH=/custom/path/to/vectra
-   * ```
-   */
-  static get VECTRA_INDEX_PATH(): string {
-    return process.env.VECTRA_INDEX_PATH || `${process.env.HOME}/.claude-code-buddy/vectra`;
-  }
-
-  /**
    * SQLite database file path
    *
    * Path to the SQLite database file used for persistent storage of agent data,
@@ -149,7 +101,9 @@ export class SimpleConfig {
    * ```
    */
   static get DATABASE_PATH(): string {
-    return process.env.DATABASE_PATH || `${process.env.HOME}/.claude-code-buddy/database.db`;
+    const raw = process.env.DATABASE_PATH
+      || path.join(getHomeDir(), '.claude-code-buddy', 'database.db');
+    return expandHome(raw);
   }
 
   /**
@@ -279,8 +233,7 @@ export class SimpleConfig {
    *
    * Checks if all critical configuration values are set. In the current MCP server mode,
    * no configuration is strictly required since all values have sensible defaults:
-   * - VECTRA_INDEX_PATH and DATABASE_PATH have default paths
-   * - OPENAI_API_KEY is optional (only needed for RAG agent)
+   * - DATABASE_PATH has a default path
    * - CLAUDE_MODEL has a default value
    *
    * This method is provided for future extensibility when required configuration is added.
@@ -304,8 +257,7 @@ export class SimpleConfig {
   static validateRequired(): string[] {
     const missing: string[] = [];
 
-    // VECTRA_INDEX_PATH and DATABASE_PATH have default values, no validation needed
-    // OPENAI_API_KEY is optional, no validation needed
+    // DATABASE_PATH has a default value, no validation needed
 
     // Currently no absolutely required configuration (under MCP server mode)
     return missing;
@@ -330,8 +282,6 @@ export class SimpleConfig {
    *   console.log('Configuration:', SimpleConfig.getAll());
    *   // {
    *   //   CLAUDE_MODEL: 'claude-sonnet-4-5-20250929',
-   *   //   OPENAI_API_KEY: '***masked***',  // or '' if not set
-   *   //   VECTRA_INDEX_PATH: '/Users/username/.claude-code-buddy/vectra',
    *   //   DATABASE_PATH: '/Users/username/.claude-code-buddy/database.db',
    *   //   NODE_ENV: 'development',
    *   //   LOG_LEVEL: 'info',
@@ -349,8 +299,6 @@ export class SimpleConfig {
   static getAll(): Record<string, string | boolean> {
     return {
       CLAUDE_MODEL: this.CLAUDE_MODEL,
-      OPENAI_API_KEY: this.OPENAI_API_KEY ? '***masked***' : '',
-      VECTRA_INDEX_PATH: this.VECTRA_INDEX_PATH,
       DATABASE_PATH: this.DATABASE_PATH,
       NODE_ENV: this.NODE_ENV,
       LOG_LEVEL: this.LOG_LEVEL,
@@ -493,6 +441,7 @@ export class SimpleDatabaseFactory {
    */
   private static createDatabase(path: string, isTest: boolean = false): Database.Database {
     try {
+      this.ensureDirectoryExists(path);
       const db = new Database(path, {
         verbose: SimpleConfig.isDevelopment ? ((msg: unknown) => logger.debug('SQLite', { message: msg })) : undefined,
       });
@@ -502,7 +451,16 @@ export class SimpleDatabaseFactory {
 
       // Enable WAL mode for better performance (except test environment)
       if (!isTest) {
-        db.pragma('journal_mode = WAL');
+        try {
+          db.pragma('journal_mode = WAL');
+        } catch (error) {
+          logger.warn(`WAL mode unavailable for ${path}. Falling back to default journal mode.`, {
+            component: 'SimpleDatabaseFactory',
+            method: 'createDatabase',
+            path,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
         // Increase cache size for better query performance (10MB)
         db.pragma('cache_size = -10000');
         // Enable memory-mapped I/O (128MB)
@@ -516,6 +474,33 @@ export class SimpleDatabaseFactory {
     } catch (error) {
       logger.error(`Failed to create database at ${path}:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Normalize database paths to prevent duplicate instances and handle "~".
+   */
+  private static normalizeDbPath(path?: string): string {
+    const rawPath = path || SimpleConfig.DATABASE_PATH;
+
+    if (rawPath === ':memory:' || rawPath.startsWith('file:')) {
+      return rawPath;
+    }
+
+    return resolveUserPath(rawPath);
+  }
+
+  /**
+   * Ensure the database directory exists before opening a connection.
+   */
+  private static ensureDirectoryExists(dbPath: string): void {
+    if (dbPath === ':memory:' || dbPath.startsWith('file:')) {
+      return;
+    }
+
+    const dir = path.dirname(dbPath);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
     }
   }
 
@@ -555,7 +540,7 @@ export class SimpleDatabaseFactory {
    * ```
    */
   static getInstance(path?: string): Database.Database {
-    const dbPath = path || SimpleConfig.DATABASE_PATH;
+    const dbPath = this.normalizeDbPath(path);
     const existingDb = this.instances.get(dbPath);
 
     // If database exists and is open, return it
@@ -644,10 +629,12 @@ export class SimpleDatabaseFactory {
    * ```
    */
   static getPool(path?: string): ConnectionPool {
-    const dbPath = path || SimpleConfig.DATABASE_PATH;
+    const dbPath = this.normalizeDbPath(path);
     let pool = this.pools.get(dbPath);
 
     if (!pool) {
+      this.ensureDirectoryExists(dbPath);
+
       // Read pool configuration from environment variables with fallback to defaults
       const maxConnections = parseInt(process.env.DB_POOL_SIZE || '5', 10) || 5;
       const connectionTimeout = parseInt(process.env.DB_POOL_TIMEOUT || '5000', 10) || 5000;
@@ -718,7 +705,7 @@ export class SimpleDatabaseFactory {
    * ```
    */
   static releasePooledConnection(db: Database.Database, path?: string): void {
-    const dbPath = path || SimpleConfig.DATABASE_PATH;
+    const dbPath = this.normalizeDbPath(path);
     const pool = this.pools.get(dbPath);
 
     if (!pool) {
@@ -746,7 +733,7 @@ export class SimpleDatabaseFactory {
    * ```
    */
   static getPoolStats(path?: string): PoolStats | null {
-    const dbPath = path || SimpleConfig.DATABASE_PATH;
+    const dbPath = this.normalizeDbPath(path);
     const pool = this.pools.get(dbPath);
     return pool ? pool.getStats() : null;
   }
@@ -840,7 +827,7 @@ export class SimpleDatabaseFactory {
    * ```
    */
   static async close(path?: string): Promise<void> {
-    const dbPath = path || SimpleConfig.DATABASE_PATH;
+    const dbPath = this.normalizeDbPath(path);
 
     // Close singleton instance
     const db = this.instances.get(dbPath);

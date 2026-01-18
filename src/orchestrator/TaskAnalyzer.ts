@@ -8,7 +8,7 @@
  * - 計算預估成本
  */
 
-import { Task, TaskAnalysis, TaskComplexity, ExecutionMode, AgentType } from './types.js';
+import { Task, TaskAnalysis, TaskComplexity, ExecutionMode, TaskCapability } from './types.js';
 import { MODEL_COSTS, CLAUDE_MODELS } from '../config/models.js';
 import { type MicroDollars, calculateTokenCost, addCosts } from '../utils/money.js';
 
@@ -87,7 +87,7 @@ export class TaskAnalyzer {
   async analyze(task: Task): Promise<TaskAnalysis> {
     const complexity = this.determineComplexity(task);
     const estimatedTokens = this.estimateTokens(task, complexity);
-    const requiredAgents = this.detectRequiredCapabilities(task, complexity);
+    const requiredCapabilities = this.detectRequiredCapabilities(task, complexity);
     const executionMode = this.determineExecutionMode(task);
     const estimatedCost = this.calculateEstimatedCost(estimatedTokens, complexity);
     const reasoning = this.generateReasoning(task, complexity, estimatedTokens);
@@ -98,7 +98,7 @@ export class TaskAnalyzer {
       complexity,
       estimatedTokens,
       estimatedCost,
-      requiredAgents,
+      requiredCapabilities,
       executionMode,
       reasoning,
     };
@@ -173,70 +173,59 @@ export class TaskAnalyzer {
    * 檢測任務所需能力（基於任務描述關鍵字分析）
    * 改進：不再僅基於複雜度，而是分析任務內容來檢測實際需要的能力
    */
-  private detectRequiredCapabilities(task: Task, complexity: TaskComplexity): AgentType[] {
+  private detectRequiredCapabilities(task: Task, complexity: TaskComplexity): TaskCapability[] {
     const description = task.description.toLowerCase();
-    const detectedAgents: AgentType[] = [];
+    const detectedCapabilities: TaskCapability[] = [];
 
     // 關鍵字到 Agent 的映射
-    const keywordToAgent: Record<string, { keywords: string[]; agent: AgentType }> = {
+    const keywordToAgent: Partial<Record<TaskCapability, { keywords: string[] }>> = {
       'code-review': {
         keywords: ['review', 'code review', 'check code', 'audit', 'quality', 'best practices'],
-        agent: 'code-reviewer',
       },
       'testing': {
         keywords: ['test', 'testing', 'unit test', 'integration test', 'e2e', 'tdd', 'coverage'],
-        agent: 'test-writer',
       },
       'debugging': {
         keywords: ['debug', 'bug', 'fix', 'error', 'issue', 'troubleshoot', 'investigate'],
-        agent: 'debugger',
       },
       'refactoring': {
         keywords: ['refactor', 'improve', 'optimize', 'clean up', 'restructure', 'simplify'],
-        agent: 'refactorer',
       },
       'api-design': {
         keywords: ['api', 'endpoint', 'rest', 'graphql', 'interface design'],
-        agent: 'api-designer',
-      },
-      'rag-search': {
-        keywords: ['search', 'retrieve', 'knowledge', 'vector', 'embedding', 'query'],
-        agent: 'rag-agent',
       },
       'research': {
-        keywords: ['research', 'investigate', 'study', 'analyze', 'compare', 'survey'],
-        agent: 'research-agent',
+        keywords: ['research', 'investigate', 'study', 'compare', 'survey'],
       },
       'architecture': {
         keywords: ['architecture', 'design system', 'structure', 'architecture pattern', 'system design'],
-        agent: 'architecture-agent',
       },
       'data-analysis': {
         keywords: ['data analysis', 'statistics', 'metrics', 'analytics', 'visualization'],
-        agent: 'data-analyst',
       },
       'documentation': {
         keywords: ['document', 'documentation', 'readme', 'api docs', 'guide', 'tutorial'],
-        agent: 'technical-writer',
       },
     };
 
     // 檢測任務描述中的關鍵字
-    for (const [capability, { keywords, agent }] of Object.entries(keywordToAgent)) {
+    for (const [capability, config] of Object.entries(keywordToAgent)) {
+      if (!config) continue;
+      const { keywords } = config;
       if (keywords.some(keyword => description.includes(keyword))) {
-        detectedAgents.push(agent);
+        detectedCapabilities.push(capability as TaskCapability);
       }
     }
 
     // 如果沒有檢測到特定能力，根據複雜度返回默認 Agent
-    if (detectedAgents.length === 0) {
+    if (detectedCapabilities.length === 0) {
       if (complexity === 'complex') {
-        return ['general-agent', 'architecture-agent'];
+        return ['architecture', 'general'];
       }
-      return ['general-agent'];
+      return ['general'];
     }
 
-    return detectedAgents;
+    return detectedCapabilities;
   }
 
   /**

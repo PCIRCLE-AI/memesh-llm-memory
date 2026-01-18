@@ -33,7 +33,6 @@ export type AgentType =
   | 'development-butler'
 
   // Analysis Agents
-  | 'rag-agent'
   | 'research-agent'
   | 'architecture-agent'
   | 'data-analyst'
@@ -44,7 +43,6 @@ export type AgentType =
   | 'knowledge-agent'
 
   // Operations Agents
-  | 'devops-engineer'
   | 'security-auditor'
 
   // Creative Agents
@@ -65,11 +63,6 @@ export type AgentType =
 
   // Marketing Agents
   | 'marketing-strategist'
-
-  // Workflow Automation Agents
-  | 'workflow-orchestrator'
-  | 'opal-automation'
-  | 'n8n-workflow'
 
   // General Agent (fallback)
   | 'general-agent';
@@ -124,7 +117,6 @@ export type TaskCapability =
   // Research & knowledge
   | 'research'
   | 'user-research'
-  | 'rag-search'
   | 'knowledge-query'
   | 'knowledge-management'
   | 'information-retrieval'
@@ -150,18 +142,12 @@ export type TaskCapability =
   | 'machine-learning'
   | 'ml-pipeline'
   | 'model-training'
-  | 'intelligent-platform-selection'
   // Documentation & communication
   | 'documentation'
   | 'technical-writing'
   // Workflow & automation
   | 'workflow'
-  | 'workflow-automation'
   | 'automation'
-  | 'opal'
-  | 'opal-workflows'
-  | 'n8n'
-  | 'n8n-integration'
   // Product & business
   | 'product-management'
   | 'prioritization'
@@ -193,7 +179,7 @@ export interface TaskAnalysis {
   estimatedTokens: number;
   /** Estimated cost in micro-dollars (μUSD) - integer for precision */
   estimatedCost: MicroDollars;
-  requiredAgents: AgentType[];
+  requiredCapabilities: TaskCapability[];
   executionMode: ExecutionMode;
   reasoning: string;
 }

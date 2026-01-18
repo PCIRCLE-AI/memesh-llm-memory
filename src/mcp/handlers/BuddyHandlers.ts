@@ -6,7 +6,6 @@
  *
  * **Available Commands**:
  * - **buddy_do**: Execute tasks with smart routing (replaces smart_route_task/sa_task)
- * - **buddy_stats**: View performance dashboard (replaces evolution_dashboard/sa_dashboard)
  * - **buddy_remember**: Recall project memory (search knowledge graph)
  * - **buddy_help**: Get help and usage instructions
  *
@@ -34,11 +33,6 @@ import {
   type ValidatedBuddyDoInput,
 } from '../tools/buddy-do.js';
 import {
-  executeBuddyStats,
-  BuddyStatsInputSchema,
-  type ValidatedBuddyStatsInput,
-} from '../tools/buddy-stats.js';
-import {
   executeBuddyRemember,
   BuddyRememberInputSchema,
   type ValidatedBuddyRememberInput,
@@ -57,7 +51,6 @@ import {
  *
  * **Command Categories**:
  * - **Task Execution**: buddy_do (delegated to Router)
- * - **Monitoring**: buddy_stats (delegated to EvolutionMonitor)
  * - **Memory**: buddy_remember (delegated to ProjectMemoryManager)
  * - **Help**: buddy_help (contextual documentation)
  *
@@ -94,7 +87,7 @@ export class BuddyHandlers {
    * Handle buddy_do command - Execute tasks with smart routing
    *
    * Natural language interface for task execution. Automatically routes tasks
-   * to the most appropriate agent and returns enhanced prompts.
+   * to the most appropriate capability and returns enhanced prompts.
    *
    * This replaces smart_route_task/sa_task with:
    * - More forgiving input validation
@@ -105,7 +98,7 @@ export class BuddyHandlers {
    * 1. Validate task description
    * 2. Route through main Router (TaskAnalyzer → AgentRouter)
    * 3. Format response with ResponseFormatter
-   * 4. Return enhanced prompt + agent recommendation
+   * 4. Return enhanced prompt + capability recommendation
    *
    * @param args - Buddy do arguments
    * @param args.task - Task description in natural language
@@ -175,64 +168,6 @@ export class BuddyHandlers {
         method: 'handleBuddyDo',
         operation: 'executing buddy_do command',
         data: { task: validatedInput.task },
-      });
-      throw error;
-    }
-  }
-
-  /**
-   * Handle buddy_stats command - Performance dashboard
-   */
-  async handleBuddyStats(
-    args: unknown
-  ): Promise<CallToolResult> {
-    // Validate input
-    let validatedInput: ValidatedBuddyStatsInput;
-    try {
-      validatedInput = BuddyStatsInputSchema.parse(args);
-    } catch (error) {
-      logError(error, {
-        component: 'BuddyHandlers',
-        method: 'handleBuddyStats',
-        operation: 'validating buddy_stats input',
-        data: { providedArgs: args },
-      });
-
-      if (error instanceof z.ZodError) {
-        const validationError = new ValidationError(
-          'Invalid buddy_stats input',
-          {
-            component: 'BuddyHandlers',
-            method: 'handleBuddyStats',
-            schema: 'BuddyStatsInputSchema',
-            providedArgs: args,
-          }
-        );
-
-        // Return formatted validation error instead of throwing
-        const errorText = `${validationError.name}: ${validationError.message}`;
-
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: errorText,
-            },
-          ],
-          isError: true,
-        };
-      }
-      throw error;
-    }
-
-    try {
-      return await executeBuddyStats(validatedInput, this.formatter);
-    } catch (error) {
-      logError(error, {
-        component: 'BuddyHandlers',
-        method: 'handleBuddyStats',
-        operation: 'executing buddy_stats command',
-        data: { period: validatedInput.period },
       });
       throw error;
     }

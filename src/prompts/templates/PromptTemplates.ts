@@ -98,22 +98,6 @@ When designing APIs, you:
 4. Plan for scalability and performance
 5. Document endpoints comprehensively`,
 
-  'rag-agent': `You are an expert RAG (Retrieval-Augmented Generation) Specialist.
-
-Your expertise includes:
-- Vector database search and retrieval
-- Embedding generation and optimization
-- Context relevance ranking
-- Knowledge base curation
-- Source attribution
-
-When performing RAG searches, you:
-1. Identify relevant knowledge sources
-2. Retrieve and rank context by relevance
-3. Synthesize information from multiple sources
-4. Cite sources accurately
-5. Handle conflicting information appropriately`,
-
   'research-agent': `You are an expert Research Analyst.
 
 Your expertise includes:
@@ -299,7 +283,6 @@ Key behaviors you MUST follow:
    - test-writer when new tests needed
    - debugger for complex failures
    - technical-writer for comprehensive documentation
-   - devops-engineer for deployment issues
 
 7. **Timing Intelligence**:
    - Immediate (< 100ms): Format, lint basic issues
@@ -373,31 +356,6 @@ When profiling and optimizing performance, you:
 6. Validate optimizations don't introduce bugs or regressions
 7. Document performance improvements with before/after metrics
 8. Set up monitoring to track performance over time`,
-  'devops-engineer': `You are an expert DevOps Engineer.
-
-Your expertise includes:
-- CI/CD pipeline design and optimization (GitHub Actions, GitLab CI, Jenkins)
-- Container orchestration (Kubernetes, Docker Swarm, ECS)
-- Infrastructure as Code (Terraform, CloudFormation, Pulumi)
-- Configuration management (Ansible, Chef, Puppet)
-- Cloud platforms (AWS, GCP, Azure) and multi-cloud strategies
-- Monitoring and observability (Prometheus, Grafana, ELK, Datadog)
-- Log aggregation and analysis
-- Deployment strategies (blue-green, canary, rolling updates)
-- Secret management (HashiCorp Vault, AWS Secrets Manager)
-- GitOps and declarative infrastructure
-- Performance optimization and auto-scaling
-- Disaster recovery and backup strategies
-
-When working on DevOps tasks, you:
-1. Automate repetitive processes and eliminate manual steps
-2. Design for reliability, scalability, and fault tolerance
-3. Implement comprehensive monitoring and alerting
-4. Follow infrastructure-as-code best practices
-5. Optimize for cost efficiency and resource utilization
-6. Ensure security best practices in deployment pipelines
-7. Document deployment procedures and runbooks
-8. Design for observability and troubleshooting`,
   'security-auditor': `You are an expert Security Auditor.
 
 Your expertise includes:
@@ -799,53 +757,6 @@ When optimizing performance, you:
 7. Optimize resource utilization
 8. Ensure SLA compliance`,
 
-  'workflow-orchestrator': `You are an expert Workflow Orchestrator specializing in intelligent platform selection and workflow automation.
-
-Your expertise includes:
-- Google Opal browser automation evaluation
-- n8n workflow platform evaluation
-- Workflow requirement analysis
-- Platform selection optimization
-- Workflow execution coordination
-
-When orchestrating workflows, you:
-1. Analyze workflow requirements (speed vs production)
-2. Select optimal platform (Opal for speed, n8n for production)
-3. Delegate to specialized agents (OpalAutomationAgent or N8nWorkflowAgent)
-4. Coordinate workflow execution
-5. Monitor and optimize workflow performance`,
-
-  'opal-automation': `You are an expert Google Opal Automation specialist.
-
-Your expertise includes:
-- Browser automation using Playwright
-- Google Opal workflow recording and playback
-- Workflow URL management
-- Visual workflow testing
-- Rapid prototyping
-
-When automating with Opal, you:
-1. Record browser interactions as workflows
-2. Generate shareable workflow URLs
-3. Execute workflows with Playwright
-4. Verify visual results
-5. Optimize for speed and simplicity`,
-
-  'n8n-workflow': `You are an expert n8n Workflow specialist.
-
-Your expertise includes:
-- n8n workflow API integration
-- Workflow creation via CLI
-- Production workflow management
-- Workflow version control
-- Enterprise workflow patterns
-
-When working with n8n, you:
-1. Create workflows via API/CLI
-2. Manage workflow lifecycle
-3. Ensure production readiness
-4. Implement error handling and monitoring
-5. Optimize for reliability and maintainability`,
 };
 
 /**
@@ -858,7 +769,6 @@ export const AGENT_TOOLS: Record<AgentType, string[]> = {
   'debugger': ['read_file', 'run_code', 'read_logs', 'profiler'],
   'refactorer': ['read_file', 'write_file', 'run_tests', 'dependency_graph'],
   'api-designer': ['read_file', 'write_file', 'api_spec_validator'],
-  'rag-agent': ['vector_search', 'knowledge_base_query', 'read_docs'],
   'research-agent': ['web_search', 'read_docs', 'summarize'],
   'architecture-agent': ['read_file', 'diagram_generator', 'dependency_graph'],
   'data-analyst': ['read_data', 'statistical_analysis', 'visualization'],
@@ -868,7 +778,6 @@ export const AGENT_TOOLS: Record<AgentType, string[]> = {
   'backend-specialist': ['read_file', 'write_file', 'run_tests', 'api_test'],
   'development-butler': ['formatter', 'linter', 'test_runner', 'dependency_installer', 'git_helper', 'build_system', 'file_watcher', 'performance_monitor'],
   'performance-profiler': ['profiler', 'benchmark', 'memory_analyzer', 'cpu_tracer'],
-  'devops-engineer': ['read_file', 'write_file', 'deploy', 'monitor'],
   'security-auditor': ['security_scan', 'dependency_check', 'read_file'],
   'technical-writer': ['read_file', 'write_file', 'diagram_generator'],
   'ui-designer': ['read_file', 'screenshot', 'accessibility_checker'],
@@ -886,9 +795,6 @@ export const AGENT_TOOLS: Record<AgentType, string[]> = {
   'backend-developer': ['read_file', 'write_file', 'run_tests', 'api_test', 'database', 'cache'],
   'database-administrator': ['database', 'query_analyzer', 'backup_tool', 'migration', 'index_optimizer'],
   'performance-engineer': ['profiler', 'benchmark', 'load_test', 'apm', 'memory_analyzer', 'cpu_tracer'],
-  'workflow-orchestrator': ['workflow_selector', 'platform_evaluator', 'requirement_analyzer'],
-  'opal-automation': ['playwright', 'opal_recorder', 'workflow_player', 'screenshot'],
-  'n8n-workflow': ['n8n_cli', 'workflow_api', 'bash', 'curl'],
 };
 
 /**
@@ -939,11 +845,6 @@ export const MODEL_SUGGESTIONS: Record<AgentType, ModelSuggestion> = {
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
-  'rag-agent': {
-    simple: 'claude-3-5-haiku-20241022',
-    medium: 'claude-sonnet-4-5-20250929',
-    complex: 'claude-sonnet-4-5-20250929',
-  },
   'research-agent': {
     simple: 'claude-sonnet-4-5-20250929',
     medium: 'claude-sonnet-4-5-20250929',
@@ -985,11 +886,6 @@ export const MODEL_SUGGESTIONS: Record<AgentType, ModelSuggestion> = {
     complex: 'claude-sonnet-4-5-20250929',
   },
   'performance-profiler': {
-    simple: 'claude-3-5-haiku-20241022',
-    medium: 'claude-sonnet-4-5-20250929',
-    complex: 'claude-sonnet-4-5-20250929',
-  },
-  'devops-engineer': {
     simple: 'claude-3-5-haiku-20241022',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
@@ -1079,21 +975,6 @@ export const MODEL_SUGGESTIONS: Record<AgentType, ModelSuggestion> = {
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-opus-4-5-20251101',
   },
-  'workflow-orchestrator': {
-    simple: 'claude-3-5-haiku-20241022',
-    medium: 'claude-sonnet-4-5-20250929',
-    complex: 'claude-sonnet-4-5-20250929',
-  },
-  'opal-automation': {
-    simple: 'claude-3-5-haiku-20241022',
-    medium: 'claude-3-5-haiku-20241022',
-    complex: 'claude-sonnet-4-5-20250929',
-  },
-  'n8n-workflow': {
-    simple: 'claude-3-5-haiku-20241022',
-    medium: 'claude-sonnet-4-5-20250929',
-    complex: 'claude-sonnet-4-5-20250929',
-  },
 };
 
 /**
@@ -1106,7 +987,6 @@ export const AGENT_INSTRUCTIONS: Record<AgentType, string> = {
   'debugger': 'Please provide:\n1. Root cause analysis\n2. Reproduction steps\n3. Proposed fix with verification',
   'refactorer': 'Please provide:\n1. Code smells identified\n2. Refactoring steps\n3. Impact analysis',
   'api-designer': 'Please provide:\n1. API endpoint definitions\n2. Request/response schemas\n3. Error handling strategy',
-  'rag-agent': 'Please provide:\n1. Relevant knowledge sources\n2. Key information extracted\n3. Source citations',
   'research-agent': 'Please provide:\n1. Research findings\n2. Source credibility analysis\n3. Actionable recommendations',
   'architecture-agent': 'Please provide:\n1. System design proposal\n2. Trade-offs analysis\n3. Implementation roadmap',
   'data-analyst': 'Please provide:\n1. Data insights and patterns\n2. Statistical analysis\n3. Visualization recommendations',
@@ -1116,7 +996,6 @@ export const AGENT_INSTRUCTIONS: Record<AgentType, string> = {
   'backend-specialist': 'Please provide:\n1. API implementation details\n2. Error handling strategy\n3. Security considerations',
   'development-butler': 'Please provide:\n1. Brief plan of automation actions\n2. Expected duration for each action\n3. User approval prompt (Proceed? [y/n/customize])',
   'performance-profiler': 'Please provide:\n1. Performance bottlenecks identified\n2. Optimization recommendations\n3. Before/after metrics',
-  'devops-engineer': 'Please provide:\n1. Deployment strategy\n2. Infrastructure requirements\n3. Monitoring setup',
   'security-auditor': 'Please provide:\n1. Security vulnerabilities (Critical/High/Medium/Low)\n2. Remediation steps\n3. Compliance considerations',
   'technical-writer': 'Please provide:\n1. Structured documentation\n2. Code examples\n3. Clear explanations',
   'ui-designer': 'Please provide:\n1. UI/UX design recommendations\n2. Accessibility guidelines\n3. Design system suggestions',
@@ -1134,7 +1013,4 @@ export const AGENT_INSTRUCTIONS: Record<AgentType, string> = {
   'backend-developer': 'Please provide:\n1. API and microservices implementation\n2. Database integration and caching strategy\n3. Security, error handling, and monitoring',
   'database-administrator': 'Please provide:\n1. Schema design and migration strategy\n2. Performance tuning and index optimization\n3. Backup, recovery, and high availability plan',
   'performance-engineer': 'Please provide:\n1. End-to-end performance analysis\n2. Scalability and load testing strategy\n3. Optimization recommendations with metrics',
-  'workflow-orchestrator': 'Please provide:\n1. Workflow requirement analysis (speed vs production)\n2. Platform recommendation (Opal vs n8n) with reasoning\n3. Workflow creation plan and execution strategy',
-  'opal-automation': 'Please provide:\n1. Opal workflow recording steps\n2. Workflow URL and playback instructions\n3. Visual verification results',
-  'n8n-workflow': 'Please provide:\n1. n8n workflow creation command\n2. Workflow structure and node configuration\n3. Production deployment checklist',
 };

@@ -17,15 +17,15 @@
  * import { SecureKeyStore } from './SecureKeyStore.js';
  *
  * // Store API keys
- * SecureKeyStore.set('openai', process.env.OPENAI_API_KEY!);
  * SecureKeyStore.set('anthropic', process.env.ANTHROPIC_API_KEY!);
+ * SecureKeyStore.set('internal', 'local-access-token');
  *
  * // Retrieve API keys
- * const openaiKey = SecureKeyStore.get('openai');
+ * const anthropicKey = SecureKeyStore.get('anthropic');
  *
  * // Check if key exists
- * if (SecureKeyStore.has('openai')) {
- *   // Use OpenAI API
+ * if (SecureKeyStore.has('anthropic')) {
+ *   // Use API
  * }
  *
  * // List providers (for debugging)
@@ -50,14 +50,14 @@ export class SecureKeyStore {
    * Provider names are normalized to lowercase for case-insensitive lookup.
    * Throws ValidationError if provider or key is empty.
    *
-   * @param provider - Provider name (e.g., 'openai', 'anthropic')
+   * @param provider - Provider name (e.g., 'anthropic', 'internal')
    * @param key - API key to store
    * @throws {ValidationError} If provider or key is empty
    *
    * @example
    * ```typescript
-   * SecureKeyStore.set('openai', process.env.OPENAI_API_KEY!);
-   * SecureKeyStore.set('ANTHROPIC', process.env.ANTHROPIC_API_KEY!); // Normalized to 'anthropic'
+   * SecureKeyStore.set('anthropic', process.env.ANTHROPIC_API_KEY!);
+   * SecureKeyStore.set('INTERNAL', 'local-access-token'); // Normalized to 'internal'
    * ```
    */
   static set(provider: string, key: string): void {
@@ -86,11 +86,11 @@ export class SecureKeyStore {
    *
    * @example
    * ```typescript
-   * const key = SecureKeyStore.get('openai');
+   * const key = SecureKeyStore.get('anthropic');
    * if (key) {
    *   // Use API key
    * } else {
-   *   console.error('OpenAI API key not configured');
+   *   console.error('API key not configured');
    * }
    * ```
    */
@@ -128,7 +128,7 @@ export class SecureKeyStore {
    *
    * @example
    * ```typescript
-   * SecureKeyStore.delete('openai'); // Remove OpenAI key
+   * SecureKeyStore.delete('anthropic'); // Remove key
    * ```
    */
   static delete(provider: string): void {
@@ -163,7 +163,7 @@ export class SecureKeyStore {
    * ```typescript
    * const providers = SecureKeyStore.listProviders();
    * console.log('Configured providers:', providers);
-   * // Output: ['openai', 'anthropic', 'huggingface']
+   * // Output: ['anthropic', 'internal']
    * ```
    */
   static listProviders(): string[] {

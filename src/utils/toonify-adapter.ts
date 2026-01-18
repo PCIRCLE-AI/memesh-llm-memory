@@ -10,7 +10,6 @@
  * Integration points:
  * - Memory MCP: Optimize stored content
  * - Knowledge Graph: Optimize observations and metadata
- * - RAG: Optimize document embeddings
  * - Credentials: Optimize metadata
  * - Orchestrator: Optimize task descriptions
  * - Skills Library: Optimize skill content
@@ -20,6 +19,7 @@ import type { LanguageProfile } from '../types/toonify.js';
 import { LRUCache } from './lru-cache.js';
 import { logger } from './logger.js';
 import { join } from 'path';
+import { getHomeDir } from './paths.js';
 
 export interface ToonifyConfig {
   enabled: boolean;
@@ -79,7 +79,7 @@ export class ToonifyAdapter {
     };
 
     // Initialize LRU cache with persistence
-    const homeDir = process.env.HOME || process.env.USERPROFILE || '/tmp';
+    const homeDir = getHomeDir();
     const cachePath = join(homeDir, '.claude-code-buddy', 'cache', 'toonify-cache.json');
 
     this.cache = new LRUCache<OptimizationResult>({

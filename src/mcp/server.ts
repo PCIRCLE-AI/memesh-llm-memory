@@ -2,7 +2,7 @@
  * Claude Code Buddy MCP Server
  *
  * Features:
- * - Exposes 12 specialized agents as MCP tools
+ * - Exposes 7 focused MCP tools
  * - Routes tasks through TaskAnalyzer → AgentRouter pipeline
  * - Returns enhanced prompts (Prompt Enhancement Mode)
  * - Formats responses using ResponseFormatter
@@ -27,11 +27,9 @@ import { ServerInitializer, ServerComponents } from './ServerInitializer.js';
 import { ToolRouter } from './ToolRouter.js';
 import { getAllToolDefinitions } from './ToolDefinitions.js';
 import { setupResourceHandlers } from './handlers/index.js';
-import { getRAGAgent } from '../agents/rag/index.js';
-import { FileWatcher } from '../agents/rag/FileWatcher.js';
+import { SessionBootstrapper } from './SessionBootstrapper.js';
 import { logger } from '../utils/logger.js';
 import { logError } from '../utils/errorHandler.js';
-import { validateAllApiKeys } from '../utils/apiKeyValidator.js';
 
 /**
  * Claude Code Buddy MCP Server
@@ -47,11 +45,9 @@ import { validateAllApiKeys } from '../utils/apiKeyValidator.js';
  * - ResponseFormatter ensures consistent output formatting
  *
  * Features:
- * - 12+ specialized development agents (frontend, backend, testing, etc.)
+ * - 7 focused development capabilities (routing, planning, memory, hooks)
  * - Smart task analysis and routing
  * - Evolution monitoring and continuous learning
- * - RAG-based knowledge retrieval
- * - Git integration for version control
  * - Project memory management
  *
  * @example
@@ -68,16 +64,8 @@ class ClaudeCodeBuddyMCPServer {
   private server: Server;
   private components: ServerComponents;
   private toolRouter: ToolRouter;
-  private fileWatcher?: FileWatcher;
-
-  /**
-   * Get Git handler module (exposed for testing)
-   *
-   * @returns GitHandlers instance
-   */
-  public get gitHandlers() {
-    return this.components.gitHandlers;
-  }
+  private sessionBootstrapper: SessionBootstrapper;
+  private isShuttingDown = false;
 
   /**
    * Get Tool handler module (exposed for testing)
@@ -113,7 +101,7 @@ class ClaudeCodeBuddyMCPServer {
    * - Core routing and orchestration
    * - Evolution monitoring system
    * - Knowledge graph and memory management
-   * - Handler modules for tools, Git, and buddy commands
+   * - Handler modules for tools and buddy commands
    *
    * The constructor follows a strict initialization order managed by ServerInitializer
    * to ensure all dependencies are properly set up.
@@ -138,41 +126,42 @@ class ClaudeCodeBuddyMCPServer {
 
     // Create ToolRouter
     this.toolRouter = new ToolRouter({
-      router: this.components.router,
-      formatter: this.components.formatter,
-      agentRegistry: this.components.agentRegistry,
       rateLimiter: this.components.rateLimiter,
-      gitHandlers: this.components.gitHandlers,
       toolHandlers: this.components.toolHandlers,
       buddyHandlers: this.components.buddyHandlers,
     });
+    this.components.toolInterface.attachToolDispatcher(this.toolRouter);
+    this.sessionBootstrapper = new SessionBootstrapper(
+      this.components.projectMemoryManager
+    );
 
     // Setup MCP request handlers
     this.setupHandlers();
     setupResourceHandlers(this.server);
+    this.setupSignalHandlers();
   }
 
   /**
    * Setup MCP request handlers
    *
    * Configures the MCP server to handle:
-   * - ListTools: Returns all available tools (agents + utilities)
+   * - ListTools: Returns all available tools (capabilities + utilities)
    * - CallTool: Routes tool execution requests to appropriate handlers
    *
    * @private
    */
   private setupHandlers(): void {
-    // List available tools (smart router + individual agents)
+    // List available tools (smart router + core capabilities)
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      const allAgents = this.components.agentRegistry.getAllAgents();
-      const tools = getAllToolDefinitions(allAgents);
+      const tools = getAllToolDefinitions();
 
       return { tools };
     });
 
     // Execute tool (route task to agent)
     this.server.setRequestHandler(CallToolRequestSchema, async request => {
-      return await this.toolRouter.routeToolCall(request.params);
+      const result = await this.toolRouter.routeToolCall(request.params);
+      return await this.sessionBootstrapper.maybePrepend(result);
     });
   }
 
@@ -180,7 +169,6 @@ class ClaudeCodeBuddyMCPServer {
    * Start the MCP server
    *
    * Initializes stdio transport and begins listening for MCP requests.
-   * Also auto-starts the RAG FileWatcher if OpenAI API key is configured.
    *
    * The server runs indefinitely until the process is terminated or an
    * unrecoverable error occurs.
@@ -198,91 +186,54 @@ class ClaudeCodeBuddyMCPServer {
     await this.server.connect(transport);
 
     // Server ready
-    logger.error('Claude Code Buddy MCP Server started');
-    logger.error(`Available agents: ${this.components.agentRegistry.getAgentCount()}`);
+    logger.info('Claude Code Buddy MCP Server started');
+    const agents = this.components.agentRegistry.getAllAgents();
+    const capabilityCount = new Set(
+      agents.flatMap(agent => agent.capabilities || [])
+    ).size;
+    logger.info(`Capabilities loaded: ${capabilityCount}`);
 
-    // Auto-start FileWatcher if RAG is enabled
-    await this.startFileWatcherIfEnabled();
-
-    logger.error('Waiting for requests...');
+    logger.info('Waiting for requests...');
   }
 
   /**
-   * Auto-start FileWatcher if RAG is enabled
-   *
-   * This method checks if RAG functionality is enabled (by checking OPENAI_API_KEY)
-   * and automatically starts the FileWatcher to monitor the watch directory for new files.
-   *
-   * Files dropped into ~/Documents/claude-code-buddy-knowledge/ will be automatically indexed.
+   * Setup process signal handlers for graceful shutdown
    */
-  private async startFileWatcherIfEnabled(): Promise<void> {
-    try {
-      // Check if OPENAI_API_KEY is configured
-      if (!process.env.OPENAI_API_KEY) {
-        logger.error('RAG File Watcher: Skipped (no OpenAI API key)');
-        return;
-      }
+  private setupSignalHandlers(): void {
+    this.server.onclose = () => {
+      logger.warn('MCP transport closed');
+    };
 
-      // Initialize RAG Agent
-      const rag = await getRAGAgent();
+    this.server.onerror = (error: Error) => {
+      logger.error('MCP server error:', error);
+    };
 
-      if (!rag.isRAGEnabled()) {
-        logger.error('RAG File Watcher: Skipped (RAG not enabled)');
-        return;
-      }
-
-      // Start FileWatcher
-      this.fileWatcher = new FileWatcher(rag, {
-        onIndexed: async (files) => {
-          if (files.length === 0) return;
-
-          // Detailed notification for each indexed file
-          logger.error('\n📥 New Files Indexed by RAG Agent:');
-          logger.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
-          for (const filePath of files) {
-            const fileName = filePath.split('/').pop() || filePath;
-            const timestamp = new Date().toLocaleString();
-
-            logger.error(`   📄 ${fileName}`);
-            logger.error(`      Path: ${filePath}`);
-            logger.error(`      Indexed at: ${timestamp}`);
-            logger.error('');
-
-            // Record to Knowledge Graph for later retrieval
-            try {
-              this.components.knowledgeGraph.createEntity({
-                name: `RAG Indexed File: ${fileName} (${new Date().toISOString().split('T')[0]})`,
-                entityType: 'code_change',  // Using code_change as closest match for indexed files
-                observations: [
-                  `File path: ${filePath}`,
-                  `Indexed at: ${timestamp}`,
-                  `File name: ${fileName}`,
-                  'Status: Successfully indexed and searchable'
-                ]
-              });
-            } catch (kgError) {
-              logger.error(`Failed to record indexed file to Knowledge Graph: ${kgError}`);
-            }
-          }
-
-          logger.error(`✅ Total: ${files.length} file(s) indexed and ready for search`);
-          logger.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-        },
-        onError: (error, file) => {
-          logger.error(`❌ RAG Indexing Error: ${file || 'unknown'} - ${error.message}`);
-        },
+    const signals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM'];
+    for (const signal of signals) {
+      process.on(signal, () => {
+        void this.shutdown(signal);
       });
+    }
+  }
 
-      await this.fileWatcher.start();
-      logger.error(`RAG File Watcher: Started monitoring ${this.fileWatcher.getWatchDir()}`);
+  /**
+   * Gracefully shutdown server resources
+   */
+  private async shutdown(reason: string): Promise<void> {
+    if (this.isShuttingDown) return;
+    this.isShuttingDown = true;
+
+    logger.warn(`Shutting down MCP server (${reason})...`);
+
+    try {
+      await this.server.close();
     } catch (error) {
       logError(error, {
         component: 'ClaudeCodeBuddyMCPServer',
-        method: 'startFileWatcherIfEnabled',
-        operation: 'starting RAG file watcher',
+        method: 'shutdown',
+        operation: 'closing MCP server',
       });
-      logger.error('RAG File Watcher: Failed to start:', error);
+      logger.error('Failed to close MCP server cleanly:', error);
     }
   }
 }
@@ -290,17 +241,10 @@ class ClaudeCodeBuddyMCPServer {
 /**
  * Main entry point for the MCP server
  *
- * Validates API keys and starts the server. API key validation is non-blocking
- * since OpenAI is optional (only needed for RAG features).
- *
  * @throws Error if server initialization or startup fails
  */
 async function main() {
   try {
-    // Validate API keys on startup
-    // Note: Invalid keys are logged but don't block startup (since OPENAI_API_KEY is optional)
-    validateAllApiKeys();
-
     const mcpServer = new ClaudeCodeBuddyMCPServer();
     await mcpServer.start();
   } catch (error) {

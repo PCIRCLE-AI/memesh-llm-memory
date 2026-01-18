@@ -23,31 +23,14 @@ async function main() {
   logger.info(`💰 Monthly Spend: $${status.costStats.monthlySpend.toFixed(4)} ($${status.costStats.remainingBudget.toFixed(2)} remaining)`);
   logger.info(`📊 ${status.recommendation}`);
 
-  // List available agents dynamically from registry
+  // Summarize capabilities instead of listing internal agents
   const registry = new AgentRegistry();
-  const realAgents = registry.getRealImplementations();
-  const enhancedAgents = registry.getEnhancedPrompts();
-  const optionalAgents = registry.getOptionalAgents();
+  const capabilities = new Set(
+    registry.getAllAgents().flatMap(agent => agent.capabilities || [])
+  );
 
   logger.info('\n✅ Claude Code Buddy ready!');
-  logger.info('\n📋 Available Agents:');
-
-  logger.info(`\n  Real Implementation Agents (${realAgents.length}):`);
-  realAgents.forEach(agent => {
-    logger.info(`   - ${agent.name}: ${agent.description}`);
-  });
-
-  logger.info(`\n  Enhanced Prompt Agents (${enhancedAgents.length}):`);
-  enhancedAgents.forEach(agent => {
-    logger.info(`   - ${agent.name}: ${agent.description}`);
-  });
-
-  logger.info(`\n  Optional Agents (${optionalAgents.length}):`);
-  optionalAgents.forEach(agent => {
-    logger.info(`   - ${agent.name}: ${agent.description}`);
-  });
-
-  logger.info('\n💡 Use Orchestrator to route tasks intelligently\n');
+  logger.info(`\n📋 Capabilities loaded: ${capabilities.size}\n`);
 
   // Future enhancements tracked in TECH_DEBT.md:
   // - API Server implementation
@@ -73,7 +56,6 @@ export { CheckpointDetector } from './core/CheckpointDetector.js';
 // Agent exports
 export { DevelopmentButler } from './agents/DevelopmentButler.js';
 export { TestWriterAgent } from './agents/TestWriterAgent.js';
-export { DevOpsEngineerAgent } from './agents/DevOpsEngineerAgent.js';
 
 // Type exports
 export type { ToolMetadata, ToolInvocationResult, ToolDependencyCheck } from './core/MCPToolInterface.js';

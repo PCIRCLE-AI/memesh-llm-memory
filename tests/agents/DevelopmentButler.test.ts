@@ -198,7 +198,7 @@ describe('DevelopmentButler', () => {
       expect(result.suggestedActions).toContain('Generate tests');
     });
 
-    it('should coordinate with devops-engineer for deployment tasks', async () => {
+    it('should coordinate with security-auditor for deployment tasks', async () => {
       const commitData = {
         branch: 'main',
         type: 'merge',
@@ -207,8 +207,8 @@ describe('DevelopmentButler', () => {
 
       const result = await butler.analyzeCommit(commitData);
 
-      expect(result.suggestedAgents).toContain('devops-engineer');
-      expect(result.suggestedActions).toContain('Prepare deployment');
+      expect(result.suggestedAgents).toContain('security-auditor');
+      expect(result.suggestedActions).toContain('Prepare deployment checklist');
     });
   });
 

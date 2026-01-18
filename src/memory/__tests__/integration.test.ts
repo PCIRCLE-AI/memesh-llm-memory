@@ -64,6 +64,7 @@ describe('Project Memory System - Integration', () => {
       ['src/test.ts', 'src/utils.ts'],
       'Added integration test'
     );
+    await tracker.flushPendingCodeChanges('test');
 
     // Recall recent work using real manager
     const memories = await manager.recallRecentWork({ limit: 5 });
@@ -114,6 +115,7 @@ describe('Project Memory System - Integration', () => {
       ['src/feature.ts'],
       'Implemented new feature'
     );
+    await tracker.flushPendingCodeChanges('test');
 
     // Record test result
     await tracker.recordTestResult({

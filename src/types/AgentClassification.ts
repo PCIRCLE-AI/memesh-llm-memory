@@ -7,7 +7,7 @@
 export enum AgentClassification {
   /**
    * Agents with full implementation (code, workflows, integrations)
-   * Example: development-butler, test-writer, devops-engineer
+   * Example: development-butler, test-writer, project-manager
    */
   REAL_IMPLEMENTATION = 'real-implementation',
 
@@ -19,7 +19,7 @@ export enum AgentClassification {
 
   /**
    * Agents that require external dependencies or services
-   * Example: rag-agent (requires ChromaDB + OpenAI)
+   * Example: knowledge-agent (requires local database)
    */
   OPTIONAL_FEATURE = 'optional-feature',
 }

@@ -22,10 +22,6 @@ const envSchema = z.object({
   CLAUDE_MODEL: z.string().default('claude-sonnet-4-5-20250929'),
   CLAUDE_OPUS_MODEL: z.string().default('claude-opus-4-5-20251101'),
 
-  // OpenAI API (for RAG embeddings only)
-  OPENAI_API_KEY: z.string().optional(),
-  OPENAI_EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
-
   // Quota Limits
   CLAUDE_DAILY_LIMIT: z.string().default('150'),
   CLAUDE_MONTHLY_LIMIT: z.string().default('4500'),
@@ -82,14 +78,6 @@ export const appConfig = {
     models: {
       sonnet: env.CLAUDE_MODEL,
       opus: env.CLAUDE_OPUS_MODEL,
-    },
-  },
-
-  // OpenAI (for RAG embeddings only)
-  openai: {
-    apiKey: env.OPENAI_API_KEY,
-    embeddings: {
-      model: env.OPENAI_EMBEDDING_MODEL,
     },
   },
 

@@ -527,6 +527,13 @@ export class ConnectionPool {
     metadata.lastReleased = Date.now();
     this.stats.totalReleased++;
 
+    // Guard against double release (prevents duplicate available entries)
+    const availableIndex = this.available.indexOf(metadata);
+    if (availableIndex !== -1) {
+      logger.warn('Connection already released - ignoring duplicate release');
+      return;
+    }
+
     // Check if there are waiting requests
     const waiting = this.waiting.shift();
     if (waiting) {

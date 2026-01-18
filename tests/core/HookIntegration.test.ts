@@ -5,7 +5,7 @@
  * with the Development Butler checkpoint detection.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { HookIntegration } from '../../src/core/HookIntegration.js';
 import { CheckpointDetector } from '../../src/core/CheckpointDetector.js';
 import { DevelopmentButler } from '../../src/agents/DevelopmentButler.js';
@@ -108,6 +108,27 @@ describe('HookIntegration', () => {
       expect(checkpoint?.name).toBe('commit-ready');
     });
 
+    it('should detect committed checkpoint when git commit is used', async () => {
+      const toolData = {
+        toolName: 'Bash',
+        arguments: {
+          command: 'git commit -m "feat: ship hooks"',
+        },
+        success: true,
+      };
+
+      const checkpoint = await hookIntegration.detectCheckpointFromToolUse(
+        toolData
+      );
+
+      expect(checkpoint).toBeDefined();
+      expect(checkpoint?.name).toBe('committed');
+      expect(checkpoint?.data).toMatchObject({
+        command: expect.stringContaining('git commit'),
+        message: 'feat: ship hooks',
+      });
+    });
+
     it('should return null for non-checkpoint tools', async () => {
       const toolData = {
         toolName: 'Read',
@@ -161,6 +182,27 @@ describe('HookIntegration', () => {
       await hookIntegration.processToolUse(toolData);
 
       expect(checkpointTriggered).toBe(true);
+    });
+
+    it('should auto-initialize project memory when supported', async () => {
+      const createEntities = vi.fn().mockResolvedValue(undefined);
+      toolInterface.attachMemoryProvider({
+        createEntities,
+        searchNodes: vi.fn().mockResolvedValue([]),
+      });
+
+      const toolData = {
+        toolName: 'Write',
+        arguments: {
+          file_path: '/path/to/file.ts',
+          content: 'export function test() {}',
+        },
+        success: true,
+      };
+
+      await hookIntegration.processToolUse(toolData);
+
+      expect(createEntities).toHaveBeenCalled();
     });
 
     it('should not trigger checkpoint for non-checkpoint tools', async () => {

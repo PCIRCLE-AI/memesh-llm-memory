@@ -18,7 +18,7 @@
     />
     <meta
       property="og:description"
-      content="Add memory, specialized agents, and intelligent task routing to Claude Code"
+      content="Add project memory, workflow guidance, and intelligent task routing to Claude Code"
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://ccb.pcircle.ai" />
@@ -507,9 +507,8 @@
                     Solution: Smart Routing
                   </h4>
                   <p class="text-gray-700">
-                    <strong>36 specialized agents</strong> automatically route
-                    requests to experts (code-reviewer, debugger,
-                    frontend-specialist) for context-aware responses.
+                    Smart routing classifies the task type and applies the right
+                    capability profile for context-aware responses.
                   </p>
                 </div>
               </div>
@@ -586,12 +585,11 @@
                 </div>
                 <div>
                   <h4 class="text-xl font-bold text-purple-600 mb-2">
-                    Solution: RAG + Drop Inbox
+                    Solution: Project Memory
                   </h4>
                   <p class="text-gray-700">
-                    Drop files into
-                    <strong>~/Documents/claude-code-buddy-knowledge/</strong> →
-                    Auto-indexed every 5 seconds →
+                    Record decisions and changes in the local knowledge graph →
+                    Recall with <strong>buddy-remember</strong> →
                     <strong>No repeated explanations</strong> needed.
                   </p>
                 </div>
@@ -715,22 +713,22 @@
         </div>
 
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <!-- 36 Specialized Agents -->
+          <!-- Focused Capabilities -->
           <div class="glass-card rounded-2xl p-8 md:col-span-2">
             <h3 class="text-3xl font-bold text-gray-900 mb-6 flex items-center">
               <span
                 class="w-12 h-12 icon-orange rounded-lg flex items-center justify-center mr-4"
                 ><i data-lucide="zap" class="icon-xl"></i
               ></span>
-              36 Specialized Agents
+              Focused Capabilities
             </h3>
             <p class="text-gray-600 mb-6 text-lg">
-              Automatic expertise routing based on task type
+              Automatic routing applies the right guidance profile per task.
             </p>
             <div class="grid md:grid-cols-2 gap-4">
               <div class="warm-gradient-blue rounded-lg p-4">
                 <code class="inline-code text-base font-semibold"
-                  >code-reviewer</code
+                  >code review</code
                 >
                 <p class="text-gray-600 text-sm mt-2">
                   Security, quality, anti-patterns
@@ -738,7 +736,7 @@
               </div>
               <div class="warm-gradient-orange rounded-lg p-4">
                 <code class="inline-code text-base font-semibold"
-                  >debugger</code
+                  >debugging</code
                 >
                 <p class="text-gray-600 text-sm mt-2">
                   Systematic debugging methodology
@@ -746,7 +744,7 @@
               </div>
               <div class="warm-gradient-blue rounded-lg p-4">
                 <code class="inline-code text-base font-semibold"
-                  >frontend-specialist</code
+                  >frontend UX</code
                 >
                 <p class="text-gray-600 text-sm mt-2">
                   UI/UX, accessibility, responsive
@@ -754,32 +752,29 @@
               </div>
               <div class="warm-gradient-orange rounded-lg p-4">
                 <code class="inline-code text-base font-semibold"
-                  >backend-specialist</code
+                  >backend systems</code
                 >
                 <p class="text-gray-600 text-sm mt-2">
                   API design, database optimization
                 </p>
               </div>
             </div>
-            <p class="text-gray-500 mt-4 italic">
-              ...and 32 more specialized agents
-            </p>
           </div>
 
-          <!-- Three Memory Systems -->
+          <!-- Project Memory -->
           <div class="glass-card rounded-2xl p-8">
             <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
               <span
                 class="w-12 h-12 icon-blue rounded-lg flex items-center justify-center mr-3"
                 ><i data-lucide="hard-drive" class="icon-xl"></i
               ></span>
-              Memory Systems
+              Project Memory
             </h3>
             <div class="space-y-5">
               <div>
-                <h4 class="font-bold text-gray-900 mb-2">RAG (Optional)</h4>
+                <h4 class="font-bold text-gray-900 mb-2">Change Timeline</h4>
                 <p class="text-gray-600 text-sm">
-                  Semantic codebase search with pattern detection
+                  Records code changes, tests, and milestones automatically
                 </p>
               </div>
               <div>
@@ -797,24 +792,24 @@
             </div>
           </div>
 
-          <!-- Beginner-Friendly Git -->
+          <!-- Workflow Guidance -->
           <div class="glass-card rounded-2xl p-8">
             <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
               <span
                 class="w-12 h-12 icon-blue rounded-lg flex items-center justify-center mr-3"
-                ><i data-lucide="git-branch" class="icon-xl"></i
+                ><i data-lucide="route" class="icon-xl"></i
               ></span>
-              Beginner-Friendly Git
+              Workflow Guidance
             </h3>
             <p class="text-gray-600 mb-5">
-              <strong>8 Git tools</strong> in plain language
+              Phase-aware recommendations based on your current work
             </p>
             <div class="glass-card rounded-lg p-5">
-              <pre><code><span class="comment"># Save your work</span>
-git-save-work <span class="string">"added login"</span>
+              <pre><code><span class="comment"># Ask for next steps</span>
+get-workflow-guidance <span class="string">{"phase":"code-written"}</span>
 
-<span class="comment"># See versions</span>
-git-list-versions</code></pre>
+<span class="comment"># Generate a plan</span>
+generate-smart-plan <span class="string">{"featureDescription":"Add login flow"}</span></code></pre>
             </div>
           </div>
 
@@ -889,7 +884,7 @@ git-list-versions</code></pre>
                   Prerequisites
                 </h3>
                 <p class="text-gray-600 mb-4">
-                  Node.js 18+ and Claude Code installed
+                  Node.js 20+ and Claude Code installed
                 </p>
                 <div class="glass-card rounded-lg p-5">
                   <pre><code><span class="comment"># Check Node.js version</span>
@@ -967,10 +962,6 @@ cd claude-code-buddy
             <strong>No API keys needed for core features</strong> - CCB uses
             your existing Claude Code subscription.
           </p>
-          <p class="text-gray-600 text-sm">
-            <em>Optional:</em> RAG feature requires OpenAI API key (BYOK model,
-            ~$0.10-$1/mo)
-          </p>
         </div>
       </div>
     </section>
@@ -1007,7 +998,7 @@ cd claude-code-buddy
               ><code>You: "Review this code for security"
      ↓
 CCB: Detects → code review task
-CCB: Routes → code-reviewer agent
+CCB: Applies → review guidance profile
 CCB: Enhances → security checklist
      ↓
 Claude: Expert security review</code></pre>
@@ -1045,10 +1036,10 @@ Claude: Expert security review</code></pre>
               </div>
               <div class="warm-gradient-blue rounded-lg p-3">
                 <code class="text-blue-800 font-mono text-sm"
-                  >buddy-stats week</code
+                  >get-session-health</code
                 >
                 <p class="text-gray-600 text-xs mt-1">
-                  View performance dashboard
+                  Check session health
                 </p>
               </div>
             </div>
@@ -1056,81 +1047,79 @@ Claude: Expert security review</code></pre>
         </div>
 
         <div class="grid md:grid-cols-3 gap-8 mb-12">
-          <!-- Memory Commands -->
+          <!-- Project Memory -->
           <div class="glass-card rounded-2xl p-6">
             <div class="text-3xl mb-3">
               <i data-lucide="brain" class="icon-xl text-blue-600"></i>
             </div>
             <h3 class="text-xl font-bold text-gray-900 mb-3">
-              Memory Commands
+              Project Memory
             </h3>
             <div class="space-y-2 text-sm">
               <div class="bg-gray-100 rounded p-2">
-                <code class="text-gray-800">create-entities</code>
+                <code class="text-gray-800">buddy-remember "API decisions"</code>
                 <span class="text-gray-500 text-xs block"
-                  >Save decisions & patterns</span
+                  >Recall design choices</span
                 >
               </div>
               <div class="bg-gray-100 rounded p-2">
-                <code class="text-gray-800">recall-memory</code>
+                <code class="text-gray-800">buddy-remember "test failures"</code>
                 <span class="text-gray-500 text-xs block"
-                  >Retrieve past work</span
+                  >Track recent issues</span
                 >
               </div>
               <div class="bg-gray-100 rounded p-2">
-                <code class="text-gray-800">add-observations</code>
+                <code class="text-gray-800">buddy-remember "naming conventions"</code>
                 <span class="text-gray-500 text-xs block"
-                  >Update existing knowledge</span
+                  >Stay consistent</span
                 >
               </div>
             </div>
           </div>
 
-          <!-- RAG Feature -->
+          <!-- Smart Planning -->
           <div class="glass-card rounded-2xl p-6">
             <div class="text-3xl mb-3">
-              <i
-                data-lucide="folder-search"
-                class="icon-xl text-purple-600"
-              ></i>
+              <i data-lucide="clipboard-list" class="icon-xl text-purple-600"></i>
             </div>
-            <h3 class="text-xl font-bold text-gray-900 mb-3">RAG Feature</h3>
-            <p class="text-gray-600 text-sm mb-3">Drop files to auto-index:</p>
+            <h3 class="text-xl font-bold text-gray-900 mb-3">Smart Planning</h3>
+            <p class="text-gray-600 text-sm mb-3">
+              Break down features into small, ordered steps:
+            </p>
             <div class="bg-gray-900 rounded-lg p-3 text-xs">
               <pre
                 class="text-gray-300"
-              ><code>~/Documents/claude-code-buddy-knowledge/
-├── architecture.md
-├── api-spec.json
-└── meeting-notes.txt</code></pre>
+              ><code>generate-smart-plan {"featureDescription":"OAuth login"}</code></pre>
             </div>
             <p class="text-gray-500 text-xs mt-2">
-              Then ask: "How does auth work?"
+              Includes tasks, dependencies, and testing guidance.
             </p>
           </div>
 
-          <!-- Git Commands -->
+          <!-- Session Health -->
           <div class="glass-card rounded-2xl p-6">
             <div class="text-3xl mb-3">
-              <i data-lucide="git-branch" class="icon-xl text-green-600"></i>
+              <i data-lucide="heart-pulse" class="icon-xl text-green-600"></i>
             </div>
-            <h3 class="text-xl font-bold text-gray-900 mb-3">Git Commands</h3>
-            <p class="text-gray-600 text-sm mb-3">No Git knowledge needed:</p>
+            <h3 class="text-xl font-bold text-gray-900 mb-3">Session Health</h3>
+            <p class="text-gray-600 text-sm mb-3">
+              Monitor context quality and token usage:
+            </p>
             <div class="space-y-2 text-sm">
               <div class="bg-gray-100 rounded p-2">
-                <code class="text-gray-800">git-save-work "msg"</code>
+                <code class="text-gray-800">get-session-health</code>
                 <span class="text-gray-500 text-xs block"
-                  >Commit all changes</span
+                  >Check token usage and warnings</span
                 >
               </div>
               <div class="bg-gray-100 rounded p-2">
-                <code class="text-gray-800">git-list-versions</code>
-                <span class="text-gray-500 text-xs block">Show history</span>
+                <code class="text-gray-800">buddy-remember "auth decisions"</code>
+                <span class="text-gray-500 text-xs block">Recall project memory</span>
               </div>
               <div class="bg-gray-100 rounded p-2">
-                <code class="text-gray-800">git-go-back 3</code>
+                <code class="text-gray-800">generate-smart-plan</code>
                 <span class="text-gray-500 text-xs block"
-                  >Revert to version 3</span
+                  >Break down the next feature</span
                 >
               </div>
             </div>
@@ -1165,29 +1154,29 @@ Claude: Expert security review</code></pre>
               <ul class="space-y-1">
                 <li class="quick-ref-code">buddy-do "task"</li>
                 <li class="quick-ref-code mt-1">buddy-remember "query"</li>
-                <li class="quick-ref-code mt-1">buddy-stats</li>
+                <li class="quick-ref-code mt-1">buddy-help</li>
               </ul>
             </div>
             <div>
               <h4 class="font-bold text-green-400 mb-3 flex items-center gap-2">
-                <i data-lucide="brain" class="icon-sm"></i> Memory
+                <i data-lucide="activity" class="icon-sm"></i> Workflow
               </h4>
               <ul class="space-y-1">
-                <li class="quick-ref-code">create-entities</li>
-                <li class="quick-ref-code mt-1">recall-memory</li>
-                <li class="quick-ref-code mt-1">add-observations</li>
+                <li class="quick-ref-code">get-workflow-guidance</li>
+                <li class="quick-ref-code mt-1">generate-smart-plan</li>
+                <li class="quick-ref-code mt-1">get-session-health</li>
               </ul>
             </div>
             <div>
               <h4
                 class="font-bold text-purple-400 mb-3 flex items-center gap-2"
               >
-                <i data-lucide="git-branch" class="icon-sm"></i> Git
+                <i data-lucide="brain" class="icon-sm"></i> Memory
               </h4>
               <ul class="space-y-1">
-                <li class="quick-ref-code">git-save-work "msg"</li>
-                <li class="quick-ref-code mt-1">git-list-versions</li>
-                <li class="quick-ref-code mt-1">git-go-back N</li>
+                <li class="quick-ref-code">buddy-remember "decisions"</li>
+                <li class="quick-ref-code mt-1">buddy-remember "api auth"</li>
+                <li class="quick-ref-code mt-1">buddy-remember "bug fixes"</li>
               </ul>
             </div>
           </div>

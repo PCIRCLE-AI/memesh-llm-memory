@@ -6,7 +6,7 @@ export const BuddyHelpInputSchema = z.object({
   command: z
     .string()
     .optional()
-    .describe('Specific command to get help for (e.g., "do", "stats", "remember")'),
+    .describe('Specific command to get help for (e.g., "do", "remember")'),
 });
 
 export type ValidatedBuddyHelpInput = z.infer<typeof BuddyHelpInputSchema>;
@@ -23,7 +23,6 @@ export type ValidatedBuddyHelpInput = z.infer<typeof BuddyHelpInputSchema>;
  * Examples:
  *   command: undefined  - Show all commands
  *   command: "do"       - Help for buddy_do
- *   command: "stats"    - Help for buddy_stats
  */
 export async function executeBuddyHelp(
   input: ValidatedBuddyHelpInput,

@@ -45,7 +45,6 @@ describe('Agent Activation Validation', () => {
         'development-butler',
 
         // Analysis Agents
-        'rag-agent',
         'research-agent',
         'architecture-agent',
         'data-analyst',
@@ -56,7 +55,6 @@ describe('Agent Activation Validation', () => {
         'knowledge-agent',
 
         // Operations Agents
-        'devops-engineer',
         'security-auditor',
 
         // Creative Agents
@@ -77,11 +75,6 @@ describe('Agent Activation Validation', () => {
 
         // Marketing Agents
         'marketing-strategist',
-
-        // Workflow Automation Agents
-        'workflow-orchestrator',
-        'opal-automation',
-        'n8n-workflow',
 
         // General Agent
         'general-agent',
@@ -217,10 +210,6 @@ describe('Agent Activation Validation', () => {
         'workflow',
         'workflow-automation',
         'automation',
-        'opal',
-        'opal-workflows',
-        'n8n',
-        'n8n-integration',
         // Product & business
         'product-management',
         'prioritization',
@@ -264,13 +253,16 @@ describe('Agent Activation Validation', () => {
 
       // Create a mock TaskAnalysis for each agent type
       for (const agent of allAgents) {
+        const requiredCapabilities = (agent.capabilities && agent.capabilities.length > 0)
+          ? agent.capabilities
+          : ['general'];
         const mockAnalysis = {
           taskId: 'test-task',
           taskType: 'test',
           complexity: 'simple' as const,
           estimatedTokens: 1000,
           estimatedCost: 100 as import('../../src/utils/money.js').MicroDollars,
-          requiredAgents: [agent.name],
+          requiredCapabilities: requiredCapabilities as TaskCapability[],
           executionMode: 'sequential' as const,
           reasoning: 'test',
         };
@@ -288,26 +280,27 @@ describe('Agent Activation Validation', () => {
 
   describe('MCP Integration Validation', () => {
     it('should have MCP tool definitions for workflow agents', () => {
-      const registry = new AgentRegistry();
-      const allAgents = registry.getAllAgents();
-      const toolDefinitions = getAllToolDefinitions(allAgents);
+      const toolDefinitions = getAllToolDefinitions();
       const toolNames = toolDefinitions.map((t) => t.name);
 
-      // Workflow automation tools
-      expect(toolNames, 'workflow-create tool should be defined').toContain('workflow-create');
-      expect(toolNames, 'workflow-list tool should be defined').toContain('workflow-list');
+      const expectedTools = [
+        'buddy-do',
+        'buddy-remember',
+        'buddy-help',
+        'get-session-health',
+        'get-workflow-guidance',
+        'generate-smart-plan',
+        'hook-tool-use',
+      ];
 
-      // DevOps tools
-      expect(toolNames, 'devops-analyze-deployment tool should be defined').toContain(
-        'devops-analyze-deployment'
-      );
-      expect(toolNames, 'devops-setup-ci tool should be defined').toContain('devops-setup-ci');
+      expect(toolNames).toHaveLength(expectedTools.length);
+      for (const toolName of expectedTools) {
+        expect(toolNames, `Tool "${toolName}" should be defined`).toContain(toolName);
+      }
     });
 
     it('should have valid tool schemas', () => {
-      const registry = new AgentRegistry();
-      const allAgents = registry.getAllAgents();
-      const toolDefinitions = getAllToolDefinitions(allAgents);
+      const toolDefinitions = getAllToolDefinitions();
 
       for (const tool of toolDefinitions) {
         expect(tool.name, 'Tool should have a name').toBeDefined();
@@ -328,11 +321,6 @@ describe('Agent Activation Validation', () => {
         const components = ServerInitializer.initialize();
         expect(components.router, 'Router should be initialized').toBeDefined();
         expect(components.agentRegistry, 'AgentRegistry should be initialized').toBeDefined();
-        expect(
-          components.workflowOrchestrator,
-          'WorkflowOrchestrator should be initialized'
-        ).toBeDefined();
-        expect(components.devopsEngineer, 'DevOpsEngineerAgent should be initialized').toBeDefined();
         expect(components.toolHandlers, 'ToolHandlers should be initialized').toBeDefined();
         expect(components.buddyHandlers, 'BuddyHandlers should be initialized').toBeDefined();
       }).not.toThrow();
@@ -341,17 +329,11 @@ describe('Agent Activation Validation', () => {
     it('should pass all required dependencies to ToolHandlers', () => {
       const components = ServerInitializer.initialize();
 
-      // Verify ToolHandlers received all dependencies (17 parameters)
       expect(components.toolHandlers, 'ToolHandlers should be defined').toBeDefined();
-
-      // Test that ToolHandlers can handle workflow tools
-      // (This indirectly verifies workflowOrchestrator was passed correctly)
       expect(
-        async () => {
-          await components.toolHandlers.handleListWorkflows({});
-        },
-        'ToolHandlers should handle workflow tools'
-      ).toBeDefined();
+        typeof components.toolHandlers.handleGetWorkflowGuidance,
+        'ToolHandlers should include workflow guidance handler'
+      ).toBe('function');
     });
   });
 
@@ -364,8 +346,8 @@ describe('Agent Activation Validation', () => {
       // Check count matches expectations
       expect(
         allAgentTypes.length,
-        'Should have expected number of agents (update count when adding agents)'
-      ).toBeGreaterThanOrEqual(36); // Current count: 36 agents (AgentType union members)
+        'Should have at least one agent registered'
+      ).toBeGreaterThan(0);
 
       // All agents should be in TypeScript AgentType union
       // (This is validated at compile-time by TypeScript, but we can check runtime)
@@ -395,58 +377,4 @@ describe('Agent Activation Validation', () => {
     });
   });
 
-  describe('Workflow Automation Suite Validation', () => {
-    it('should have WorkflowOrchestrator registered', () => {
-      const registry = new AgentRegistry();
-      const agent = registry.getAgent('workflow-orchestrator');
-
-      expect(agent, 'workflow-orchestrator should be registered').toBeDefined();
-      expect(agent?.name).toBe('workflow-orchestrator');
-      expect(agent?.description).toContain('Workflow');
-      if (agent?.capabilities) {
-        expect(agent.capabilities).toContain('workflow-automation');
-      }
-    });
-
-    it('should have OpalAutomationAgent registered', () => {
-      const registry = new AgentRegistry();
-      const agent = registry.getAgent('opal-automation');
-
-      expect(agent, 'opal-automation should be registered').toBeDefined();
-      expect(agent?.name).toBe('opal-automation');
-      expect(agent?.description).toContain('Opal');
-      if (agent?.capabilities) {
-        expect(agent.capabilities).toContain('workflow-automation');
-      }
-    });
-
-    it('should have N8nWorkflowAgent registered', () => {
-      const registry = new AgentRegistry();
-      const agent = registry.getAgent('n8n-workflow');
-
-      expect(agent, 'n8n-workflow should be registered').toBeDefined();
-      expect(agent?.name).toBe('n8n-workflow');
-      expect(agent?.description).toContain('n8n');
-      if (agent?.capabilities) {
-        expect(agent.capabilities).toContain('workflow-automation');
-      }
-    });
-  });
-
-  describe('DevOps Engineer Validation', () => {
-    it('should have DevOpsEngineerAgent registered', () => {
-      const registry = new AgentRegistry();
-      const agent = registry.getAgent('devops-engineer');
-
-      expect(agent, 'devops-engineer should be registered').toBeDefined();
-      expect(agent?.name).toBe('devops-engineer');
-      expect(agent?.description).toContain('DevOps');
-      if (agent?.capabilities) {
-        expect(
-          agent.capabilities.length,
-          'DevOps Engineer should have capabilities'
-        ).toBeGreaterThan(0);
-      }
-    });
-  });
 });

@@ -15,25 +15,18 @@ cd claude-code-buddy
 ./scripts/install.sh
 ```
 
-The installer guides you through **11 interactive steps**:
+The installer guides you through core setup and a quick usage demo:
 
-**Core Setup (Steps 1-8)**:
-- ✓ Prerequisites check (Node.js 18+, npm, git)
+- ✓ Prerequisites check (Node.js 20+, npm, git)
 - ✓ Install dependencies
 - ✓ Build the project
 - ✓ System resource check
 - ✓ Environment configuration
-- ✓ **Optional RAG Setup** (HuggingFace FREE or OpenAI)
 - ✓ Claude Code MCP integration
 - ✓ Installation testing
+- 📚 Basic usage demo (smart routing, prompts, memory)
 
-**Interactive Demos (Steps 9-10)**:
-- 📚 **Step 9**: Basic Usage Demo (smart routing, prompts, memory)
-- 📁 **Step 10**: RAG Feature Demo (Drop Inbox with sample doc)
-
-**No API keys needed** - uses your Claude Code subscription.
-
-**Optional RAG**: HuggingFace (FREE) or OpenAI embeddings
+**No API keys needed** - uses your Claude Code subscription for MCP usage.
 
 ---
 
@@ -47,12 +40,12 @@ Restart Claude Code - tools appear automatically.
 
 | Tool | Use Case |
 |------|----------|
-| `buddy_do` | Auto-route any task to best agent |
-| `development_butler` | Checkpoint-based dev automation |
-| `test_writer` | Generate unit/integration tests |
-| `devops_engineer` | CI/CD configuration |
-| `code_reviewer` | Code quality analysis |
-| `security_auditor` | Security vulnerability scan |
+| `buddy-do` | Auto-route any task to best capability |
+| `buddy-help` | Command reference and examples |
+| `buddy-remember` | Recall project memory |
+| `get-workflow-guidance` | Next-step suggestions |
+| `get-session-health` | Session health snapshot |
+| `generate-smart-plan` | Implementation plan and task breakdown |
 
 ---
 
@@ -79,7 +72,6 @@ npm run dashboard
 ```env
 # .env file
 ANTHROPIC_API_KEY=sk-ant-xxx  # Required for orchestrator
-OPENAI_API_KEY=sk-xxx         # Optional: for RAG agent
 ```
 
 ---
@@ -105,4 +97,4 @@ OPENAI_API_KEY=sk-xxx         # Optional: for RAG agent
 
 ---
 
-**Version**: 2.1.0 | **License**: MIT | **Node**: >= 18.0.0
+**Version**: 2.1.0 | **License**: MIT | **Node**: >= 20.0.0

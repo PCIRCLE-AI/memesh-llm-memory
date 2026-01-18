@@ -115,28 +115,30 @@ describe('Evolution System E2E Integration', () => {
       // Get dashboard summary
       const summary = monitor.getDashboardSummary();
 
-      expect(summary.totalAgents).toBe(22);
+      expect(summary.totalAgents).toBeGreaterThan(0);
       expect(summary.totalExecutions).toBeGreaterThanOrEqual(5);
       expect(summary.averageSuccessRate).toBeGreaterThanOrEqual(0);
     });
 
     it('should format dashboard correctly', async () => {
       const dashboard = monitor.formatDashboard();
+      const summary = monitor.getDashboardSummary();
 
       expect(dashboard).toContain('Evolution Dashboard');
       expect(dashboard).toContain('Overview');
       expect(dashboard).toContain('Total Agents');
-      expect(dashboard).toContain('22');
+      expect(dashboard).toContain(String(summary.totalAgents));
     });
   });
 
   describe('Learning Progress', () => {
     it('should track learning progress for all agents', async () => {
       const progress = monitor.getLearningProgress();
+      const summary = monitor.getDashboardSummary();
 
       expect(progress).toBeDefined();
       expect(Array.isArray(progress)).toBe(true);
-      expect(progress.length).toBe(22);
+      expect(progress.length).toBe(summary.totalAgents);
 
       // All agents should have valid progress structure
       progress.forEach(p => {

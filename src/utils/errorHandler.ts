@@ -218,7 +218,7 @@ const RECOVERY_SUGGESTIONS: Array<{
   // Git-related errors
   {
     pattern: /not a git repository/i,
-    suggestion: '💡 Try: Use git-setup to initialize Git, or navigate to a Git repository.',
+    suggestion: '💡 Try: Run `git init` in the project root or navigate to a Git repository.',
     category: 'git',
   },
   {
@@ -228,7 +228,7 @@ const RECOVERY_SUGGESTIONS: Array<{
   },
   {
     pattern: /invalid reference/i,
-    suggestion: '💡 Try: Use git-list-versions to see available versions and their hashes.',
+    suggestion: '💡 Try: Use `git log --oneline` to find a valid commit hash.',
     category: 'git',
   },
   {
@@ -331,7 +331,7 @@ const RECOVERY_SUGGESTIONS: Array<{
  * @example
  * ```typescript
  * const suggestion = getRecoverySuggestion(new Error('Not a git repository'));
- * // Returns: "💡 Try: Use git-setup to initialize Git..."
+ * // Returns: "💡 Try: Run `git init` in the project root..."
  * ```
  */
 export function getRecoverySuggestion(error: unknown): string | undefined {
@@ -365,7 +365,7 @@ export function getRecoverySuggestion(error: unknown): string | undefined {
  * // Returns:
  * // "❌ Failed to list versions: Not a git repository
  * //
- * // 💡 Try: Use git-setup to initialize Git..."
+ * // 💡 Try: Run `git init` in the project root..."
  * ```
  */
 export function formatErrorWithSuggestion(

@@ -38,13 +38,12 @@ export class AgentSDKAdapter {
       model: 'claude-sonnet-4-5-20250929',
       max_tokens: 4000,
       // Extended thinking mode for deeper analysis
-      // Type assertion needed until @anthropic-ai/sdk v0.30.1 types are updated
       ...(input.useExtendedThinking
         ? {
             thinking: {
               type: 'enabled',
               budget_tokens: 10000,
-            } as any,
+            },
           }
         : {}),
       messages: [
@@ -84,9 +83,8 @@ Identify the root cause of this failure.`,
           type: 'text' as const,
           text: 'You are an expert at fixing E2E test failures. Generate minimal code fixes.',
           // Prompt caching for cost optimization
-          // Type assertion needed until @anthropic-ai/sdk v0.30.1 types are updated
-          cache_control: { type: 'ephemeral' } as any,
-        } as any,
+          cache_control: { type: 'ephemeral' },
+        },
       ],
       messages: [
         {

@@ -1,7 +1,7 @@
 /**
  * Knowledge Agent - Knowledge Graph Service
  *
- * Pattern: Similar to RAGAgent - provides knowledge graph services
+ * Pattern: Similar to KnowledgeGraph - provides knowledge graph services
  * Used by: MCP tools in server.ts (not the other way around)
  */
 

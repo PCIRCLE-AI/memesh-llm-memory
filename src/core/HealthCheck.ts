@@ -3,7 +3,6 @@
  *
  * Provides health status for all CCB components:
  * - Database connectivity (SQLite)
- * - RAG system (embeddings, vector store)
  * - MCP server status
  * - External API availability
  * - File system access
@@ -20,12 +19,26 @@ import { existsSync } from 'fs';
 import { access, constants } from 'fs/promises';
 import path from 'path';
 import { logger } from '../utils/logger.js';
+import { SimpleConfig } from '../config/simple-config.js';
+import { resolveUserPath } from '../utils/paths.js';
 
-/**
- * Get the data directory path
- */
-function getDataDir(): string {
-  return path.join(process.cwd(), 'data');
+function normalizePath(rawPath: string): string {
+  if (rawPath === ':memory:' || rawPath.startsWith('file:')) {
+    return rawPath;
+  }
+  return resolveUserPath(rawPath);
+}
+
+function getDatabasePath(): string {
+  return normalizePath(SimpleConfig.DATABASE_PATH);
+}
+
+function getDatabaseDir(): string | null {
+  const dbPath = getDatabasePath();
+  if (dbPath === ':memory:' || dbPath.startsWith('file:')) {
+    return null;
+  }
+  return path.dirname(dbPath);
 }
 
 // ============================================================================
@@ -67,8 +80,6 @@ export interface SystemHealth {
 export interface HealthCheckOptions {
   /** Timeout for each check in ms (default: 5000) */
   timeout?: number;
-  /** Include optional components (default: false) */
-  includeOptional?: boolean;
   /** Skip specific components */
   skip?: string[];
 }
@@ -101,13 +112,6 @@ export class HealthChecker {
     if (!skip.has('database')) checks.push(() => this.checkDatabase(timeout));
     if (!skip.has('filesystem')) checks.push(() => this.checkFilesystem(timeout));
     if (!skip.has('memory')) checks.push(() => this.checkMemory(timeout));
-
-    // Optional components
-    if (options.includeOptional) {
-      if (!skip.has('rag')) checks.push(() => this.checkRAG(timeout));
-      if (!skip.has('ollama')) checks.push(() => this.checkOllama(timeout));
-      if (!skip.has('openai')) checks.push(() => this.checkOpenAI(timeout));
-    }
 
     // Run all checks in parallel
     const components = await Promise.all(checks.map(check => check()));
@@ -160,8 +164,11 @@ export class HealthChecker {
     const name = 'database';
 
     try {
-      const dataDir = getDataDir();
-      const dbPath = path.join(dataDir, 'knowledge-graph.db');
+      const dbPath = getDatabasePath();
+
+      if (dbPath === ':memory:' || dbPath.startsWith('file:')) {
+        return this.createHealth(name, 'healthy', 'Database running in memory', startTime, { path: dbPath });
+      }
 
       // Check if database file exists
       if (!existsSync(dbPath)) {
@@ -189,7 +196,10 @@ export class HealthChecker {
     const name = 'filesystem';
 
     try {
-      const dataDir = getDataDir();
+      const dataDir = getDatabaseDir();
+      if (!dataDir) {
+        return this.createHealth(name, 'healthy', 'Filesystem check skipped (in-memory database)', startTime);
+      }
 
       // Check if data directory exists
       if (!existsSync(dataDir)) {
@@ -242,83 +252,6 @@ export class HealthChecker {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return this.createHealth(name, 'unknown', `Memory check failed: ${message}`, startTime);
-    }
-  }
-
-  /**
-   * Check RAG system
-   */
-  async checkRAG(timeout: number): Promise<ComponentHealth> {
-    const startTime = Date.now();
-    const name = 'rag';
-
-    try {
-      const dataDir = getDataDir();
-      const vectorDbPath = path.join(dataDir, 'chroma');
-
-      // Check if vector DB directory exists
-      if (!existsSync(vectorDbPath)) {
-        return this.createHealth(name, 'degraded', 'RAG not initialized (optional)', startTime, { path: vectorDbPath });
-      }
-
-      return this.createHealth(name, 'healthy', 'RAG system ready', startTime, { path: vectorDbPath });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      return this.createHealth(name, 'degraded', `RAG check failed (optional): ${message}`, startTime);
-    }
-  }
-
-  /**
-   * Check Ollama availability
-   */
-  async checkOllama(timeout: number): Promise<ComponentHealth> {
-    const startTime = Date.now();
-    const name = 'ollama';
-
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-      const response = await fetch('http://localhost:11434/api/version', {
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data = await response.json() as { version?: string };
-        return this.createHealth(name, 'healthy', `Ollama available (v${data.version || 'unknown'})`, startTime, { version: data.version });
-      }
-
-      return this.createHealth(name, 'degraded', 'Ollama not responding (optional)', startTime);
-    } catch (error) {
-      return this.createHealth(name, 'degraded', 'Ollama not available (optional)', startTime);
-    }
-  }
-
-  /**
-   * Check OpenAI API
-   */
-  async checkOpenAI(timeout: number): Promise<ComponentHealth> {
-    const startTime = Date.now();
-    const name = 'openai';
-
-    try {
-      const apiKey = process.env.OPENAI_API_KEY;
-
-      if (!apiKey) {
-        return this.createHealth(name, 'degraded', 'OpenAI API key not configured (optional)', startTime);
-      }
-
-      // Just check if key format is valid (don't make actual API call)
-      if (apiKey.startsWith('sk-') && apiKey.length > 20) {
-        return this.createHealth(name, 'healthy', 'OpenAI API key configured', startTime, { keyPrefix: apiKey.substring(0, 7) + '...' });
-      }
-
-      return this.createHealth(name, 'degraded', 'OpenAI API key format invalid', startTime);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      return this.createHealth(name, 'degraded', `OpenAI check failed (optional): ${message}`, startTime);
     }
   }
 

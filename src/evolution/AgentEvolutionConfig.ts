@@ -221,18 +221,7 @@ const AGENT_CONFIGS: Map<AgentType, AgentEvolutionConfig> = new Map([
     },
   ],
 
-  // Research Agents (5)
-  [
-    'rag-agent',
-    {
-      agentId: 'rag-agent',
-      category: 'research',
-      evolutionEnabled: true,
-      confidenceThreshold: 0.7,
-      minObservationsForAdaptation: 12,
-      learningWeights: DEFAULT_WEIGHTS.research,
-    },
-  ],
+  // Research Agents (4)
   [
     'research-agent',
     {
@@ -291,18 +280,7 @@ const AGENT_CONFIGS: Map<AgentType, AgentEvolutionConfig> = new Map([
     },
   ],
 
-  // Operations Agents (2)
-  [
-    'devops-engineer',
-    {
-      agentId: 'devops-engineer',
-      category: 'operations',
-      evolutionEnabled: true,
-      confidenceThreshold: 0.8,
-      minObservationsForAdaptation: 20,
-      learningWeights: DEFAULT_WEIGHTS.operations,
-    },
-  ],
+  // Operations Agents (1)
   [
     'security-auditor',
     {

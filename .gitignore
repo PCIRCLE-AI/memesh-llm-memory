@@ -147,7 +147,6 @@ benchmarks/
 performance-reports/
 
 # Internal development scripts
-scripts/check-system-resources.js
 scripts/create-agent.sh
 scripts/find-console-statements.py
 scripts/migrate-to-logger.sh
@@ -157,6 +156,7 @@ scripts/user-acceptance-test.ts
 scripts/*-test.ts
 scripts/*-debug.*
 scripts/*-monitor.*
+!scripts/check-system-resources.js
 !scripts/e2e-resource-monitor.sh
 
 # Meeting notes and personal docs

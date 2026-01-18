@@ -107,7 +107,11 @@ echo ""
 # Step 4: Check system resources
 print_step "Step 4/9: Checking system resources..."
 echo ""
-node scripts/check-system-resources.js || true  # Don't fail on error
+if [ -f "scripts/check-system-resources.js" ]; then
+    node scripts/check-system-resources.js || true  # Don't fail on error
+else
+    print_warning "Resource check skipped (scripts/check-system-resources.js not found)"
+fi
 echo ""
 
 # Step 5: Configure environment (optional)
@@ -128,18 +132,28 @@ fi
 # Step 6: Configure MCP
 print_step "Step 6/9: Configuring MCP integration..."
 
-MCP_CONFIG="$HOME/.claude.json"
 CCB_PATH="$(pwd)/dist/mcp/server.js"
 
-# Check if .claude.json exists (Claude Code's main config file)
-if [ ! -f "$MCP_CONFIG" ]; then
-    echo '{"mcpServers": {}}' > "$MCP_CONFIG"
-    print_success "Created $MCP_CONFIG"
-fi
-
 # Add CCB to MCP config using Node.js helper
-node scripts/install-helpers.js add-to-mcp "$CCB_PATH"
-print_success "CCB added to Claude Code MCP configuration"
+if node scripts/install-helpers.js add-to-mcp "$CCB_PATH"; then
+    print_success "CCB added to Claude Code MCP configuration"
+else
+    print_warning "Could not update Claude Code config automatically."
+    echo ""
+    echo "Manual setup:"
+    echo "1. Open ~/.claude.json"
+    echo "2. Add this MCP server entry:"
+    echo "   {"
+    echo "     \"mcpServers\": {"
+    echo "       \"claude-code-buddy\": {"
+    echo "         \"type\": \"stdio\","
+    echo "         \"command\": \"node\","
+    echo "         \"args\": [\"$CCB_PATH\"],"
+    echo "         \"env\": { \"NODE_ENV\": \"production\" }"
+    echo "       }"
+    echo "     }"
+    echo "   }"
+fi
 
 echo ""
 print_info "💡 CCB is now registered with Claude Code - it will activate when you start Claude Code"
@@ -241,16 +255,30 @@ echo "${CYAN}📊 Project Memory:${NC}"
 echo "   CCB records decisions, changes, and test outcomes"
 echo "   into a local knowledge graph for future recall."
 echo ""
-echo "${CYAN}⚡ Smart Model Selection:${NC}"
-echo "   CCB saves ~40% on token costs by routing simple tasks"
-echo "   to efficient models, reserving Claude for complex work."
+echo "${CYAN}🎯 Capability Routing:${NC}"
+echo "   CCB tailors prompts based on task type and project context"
+echo "   to keep responses focused and actionable."
 echo ""
 
 # Step 9: Verify MCP server
 print_step "Step 9/9: Verifying MCP server..."
 
 # Try to start MCP server (timeout after 3 seconds)
-timeout 3 node dist/mcp/server.js &> /dev/null && print_success "MCP server starts successfully" || print_success "MCP server configured (will start when Claude Code connects)"
+if command -v timeout &> /dev/null; then
+    timeout 3 node dist/mcp/server.js &> /dev/null \
+        && print_success "MCP server starts successfully" \
+        || print_success "MCP server configured (will start when Claude Code connects)"
+else
+    node dist/mcp/server.js &> /dev/null &
+    MCP_PID=$!
+    sleep 3
+    if kill -0 $MCP_PID 2>/dev/null; then
+        kill $MCP_PID &> /dev/null || true
+        print_success "MCP server starts successfully"
+    else
+        print_success "MCP server configured (will start when Claude Code connects)"
+    fi
+fi
 
 # Installation complete
 echo ""

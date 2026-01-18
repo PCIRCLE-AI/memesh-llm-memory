@@ -112,12 +112,8 @@ Provide the fixed code in a TypeScript code block.`,
     const codeMatch = text.match(/```(?:typescript|tsx?)\n([\s\S]*?)```/);
     const code = codeMatch ? codeMatch[1] : text;
 
-    // Check for cache hit with runtime validation
-    // cache_read_input_tokens exists in API but not in SDK types yet
-    const cacheHit =
-      'cache_read_input_tokens' in response.usage &&
-      typeof (response.usage as any).cache_read_input_tokens === 'number' &&
-      (response.usage as any).cache_read_input_tokens > 0;
+    const cacheReadTokens = response.usage.cache_read_input_tokens ?? 0;
+    const cacheHit = cacheReadTokens > 0;
 
     return {
       code,

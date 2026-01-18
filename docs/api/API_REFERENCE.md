@@ -158,7 +158,7 @@ Common error codes:
 **Typical Response Times:**
 - Task analysis: ~100-200ms
 - Prompt enhancement: ~50-100ms
-- Agent routing: ~10-50ms
+- Capability routing: ~10-50ms
 - Evolution system lookup: ~20-40ms
 
 **Resource Usage:**

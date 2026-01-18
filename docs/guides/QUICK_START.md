@@ -151,7 +151,7 @@ Connected MCP Servers:
 
 ---
 
-### Step 5: Test Agent Integration (2 minutes)
+### Step 5: Test Capability Integration (2 minutes)
 
 Verify Claude Code Buddy is working by checking available capabilities:
 
@@ -177,7 +177,7 @@ Claude Code Buddy provides 7 tools:
 
 ## 🎯 First Usage Examples
 
-### Example 1: Code Review (Prompt-Enhanced Agent)
+### Example 1: Code Review (Prompt-Enhanced Capability)
 
 Ask Claude Code to review code with enhanced prompts:
 

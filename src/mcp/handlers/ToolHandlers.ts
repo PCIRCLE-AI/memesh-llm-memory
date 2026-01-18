@@ -1,8 +1,8 @@
 /**
  * Tool Handlers Module
  *
- * Handles all MCP tool operations except Git-related tools. Provides handlers for:
- * - Smart agent operations (task routing, dashboard, agent/skill listing)
+ * Handles all MCP tool operations. Provides handlers for:
+ * - Smart routing, workflow guidance, planning, memory, and hook integration
  * - Workflow guidance and session management
  * - Planning and decomposition
  * - Memory recall
@@ -15,6 +15,8 @@
  */
 
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
+import { ValidationError } from '../../errors/index.js';
 import { Router } from '../../orchestrator/router.js';
 import { AgentRegistry } from '../../core/AgentRegistry.js';
 import { FeedbackCollector } from '../../evolution/FeedbackCollector.js';
@@ -25,6 +27,7 @@ import { SkillManager } from '../../skills/index.js';
 import { UninstallManager } from '../../management/index.js';
 import { DevelopmentButler } from '../../agents/DevelopmentButler.js';
 import { CheckpointDetector } from '../../core/CheckpointDetector.js';
+import { HookIntegration } from '../../core/HookIntegration.js';
 import { PlanningEngine } from '../../planning/PlanningEngine.js';
 import { ProjectMemoryManager } from '../../memory/ProjectMemoryManager.js';
 import { KnowledgeGraph } from '../../knowledge-graph/index.js';
@@ -33,15 +36,31 @@ import { recallMemoryTool } from '../tools/recall-memory.js';
 import { createEntitiesTool } from '../tools/create-entities.js';
 import { addObservationsTool } from '../tools/add-observations.js';
 import { createRelationsTool } from '../tools/create-relations.js';
-import { generateCIConfigTool } from '../tools/devops-generate-ci-config.js';
-import { analyzeDeploymentTool } from '../tools/devops-analyze-deployment.js';
-import { setupCITool } from '../tools/devops-setup-ci.js';
-import { createWorkflowTool } from '../tools/workflow-create.js';
-import { listWorkflowsTool } from '../tools/workflow-list.js';
-import type { DevOpsEngineerAgent } from '../../agents/DevOpsEngineerAgent.js';
-import type { WorkflowOrchestrator } from '../../agents/WorkflowOrchestrator.js';
-import { Task, AgentType, TaskAnalysis, RoutingDecision } from '../../orchestrator/types.js';
-import { handleError, logError, formatMCPError } from '../../utils/errorHandler.js';
+import type { AgentType } from '../../orchestrator/types.js';
+import { handleError, logError } from '../../utils/errorHandler.js';
+import {
+  ListSkillsInputSchema,
+  UninstallInputSchema,
+  WorkflowGuidanceInputSchema,
+  RecordTokenUsageInputSchema,
+  HookToolUseInputSchema,
+  GenerateSmartPlanInputSchema,
+  RecallMemoryInputSchema,
+  CreateEntitiesInputSchema,
+  AddObservationsInputSchema,
+  CreateRelationsInputSchema,
+  formatValidationError,
+  type ValidatedListSkillsInput,
+  type ValidatedUninstallInput,
+  type ValidatedWorkflowGuidanceInput,
+  type ValidatedRecordTokenUsageInput,
+  type ValidatedHookToolUseInput,
+  type ValidatedGenerateSmartPlanInput,
+  type ValidatedRecallMemoryInput,
+  type ValidatedCreateEntitiesInput,
+  type ValidatedAddObservationsInput,
+  type ValidatedCreateRelationsInput,
+} from '../validation.js';
 
 /**
  * Tool Handlers Class
@@ -75,12 +94,11 @@ export class ToolHandlers {
    * @param uninstallManager - Uninstallation coordinator
    * @param developmentButler - Workflow guidance engine
    * @param checkpointDetector - Development checkpoint detection
+   * @param hookIntegration - Hook integration bridge
    * @param planningEngine - Task decomposition and planning
    * @param projectMemoryManager - Project-specific memory system
    * @param knowledgeGraph - Knowledge graph for entity/relation storage
    * @param ui - Human-in-loop UI formatter
-   * @param devopsEngineer - DevOps engineer agent for CI/CD automation
-   * @param workflowOrchestrator - Workflow orchestrator for Opal and n8n
    */
   constructor(
     private router: Router,
@@ -93,123 +111,37 @@ export class ToolHandlers {
     private uninstallManager: UninstallManager,
     private developmentButler: DevelopmentButler,
     private checkpointDetector: CheckpointDetector,
+    private hookIntegration: HookIntegration,
     private planningEngine: PlanningEngine,
     private projectMemoryManager: ProjectMemoryManager,
     private knowledgeGraph: KnowledgeGraph,
-    private ui: HumanInLoopUI,
-    private devopsEngineer: DevOpsEngineerAgent,
-    private workflowOrchestrator: WorkflowOrchestrator
+    private ui: HumanInLoopUI
   ) {}
-
-  /**
-   * Handle buddy_agents tool - List all available agents
-   *
-   * Returns a formatted list of all registered agents grouped by category.
-   * Each agent includes name, description, and category.
-   *
-   * **Agent Categories**:
-   * - code: Development agents (frontend, backend, etc.)
-   * - testing: Testing and QA agents
-   * - design: UI/UX design agents
-   * - analysis: Code analysis and review agents
-   * - documentation: Documentation generation agents
-   * - deployment: DevOps and deployment agents
-   * - general: General-purpose agents
-   *
-   * @returns Promise resolving to formatted agent list
-   *
-   * @example
-   * ```typescript
-   * const result = await handleListAgents();
-   * // Returns:
-   * // 🤖 Claude Code Buddy - Available Agents
-   * // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   * // Total: 12 specialized agents
-   * //
-   * // 💻 Code (4)
-   * //   • frontend-developer: Builds React/Vue/Angular components
-   * //   • backend-developer: Creates APIs and backend logic
-   * //   ...
-   * ```
-   */
-  async handleListAgents(): Promise<CallToolResult> {
-    try {
-      const agents = this.agentRegistry.getAllAgents();
-
-      // Group agents by category
-      const categories = new Map<string, typeof agents>();
-      agents.forEach(agent => {
-        const category = agent.category || 'general';
-        if (!categories.has(category)) {
-          categories.set(category, []);
-        }
-        categories.get(category)!.push(agent);
-      });
-
-      // Build output
-      let output = '🤖 Claude Code Buddy - Available Agents\n';
-      output += '━'.repeat(60) + '\n\n';
-      output += `**Total**: ${agents.length} specialized agents\n\n`;
-
-      // Category emojis
-      const categoryEmojis: Record<string, string> = {
-        code: '💻',
-        design: '🎨',
-        testing: '🧪',
-        analysis: '🔍',
-        documentation: '📚',
-        deployment: '🚀',
-        general: '🌐',
-      };
-
-      // List agents by category
-      categories.forEach((categoryAgents, category) => {
-        const emoji = categoryEmojis[category] || '📦';
-        output += `${emoji} **${category.charAt(0).toUpperCase() + category.slice(1)}** (${categoryAgents.length})\n\n`;
-
-        categoryAgents.forEach(agent => {
-          output += `  • **${agent.name}**\n`;
-          output += `    ${agent.description}\n\n`;
-        });
-      });
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: output,
-          },
-        ],
-      };
-    } catch (error) {
-      logError(error, {
-        component: 'ToolHandlers',
-        method: 'handleListAgents',
-        operation: 'listing available agents',
-      });
-
-      const handled = handleError(error, {
-        component: 'ToolHandlers',
-        method: 'handleListAgents',
-      });
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `❌ List agents failed: ${handled.message}`,
-          },
-        ],
-      };
-    }
-  }
 
   /**
    * Handle buddy_skills tool - List all skills
    */
-  async handleListSkills(input: { filter?: string }): Promise<CallToolResult> {
+  async handleListSkills(args: unknown): Promise<CallToolResult> {
     try {
-      const filter = input.filter || 'all';
+      let validatedInput: ValidatedListSkillsInput;
+      try {
+        validatedInput = ListSkillsInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'ToolHandlers',
+              method: 'handleListSkills',
+              schema: 'ListSkillsInputSchema',
+              providedArgs: args,
+            }
+          );
+        }
+        throw error;
+      }
+
+      const filter = validatedInput.filter || 'all';
 
       // Get skills based on filter
       let skills: string[];
@@ -297,7 +229,7 @@ export class ToolHandlers {
         component: 'ToolHandlers',
         method: 'handleListSkills',
         operation: 'listing skills',
-        data: { filter: input.filter },
+        data: { filter: (args as { filter?: string } | null)?.filter },
       });
 
       const handled = handleError(error, {
@@ -319,21 +251,28 @@ export class ToolHandlers {
   /**
    * Handle buddy_uninstall tool - Uninstall Claude Code Buddy
    */
-  async handleUninstall(input: {
-    keepData?: boolean;
-    keepConfig?: boolean;
-    dryRun?: boolean
-  }): Promise<CallToolResult> {
+  async handleUninstall(args: unknown): Promise<CallToolResult> {
     try {
-      // Extract uninstall options from validated input
-      const options = {
-        keepData: input.keepData,
-        keepConfig: input.keepConfig,
-        dryRun: input.dryRun,
-      };
+      let validatedInput: ValidatedUninstallInput;
+      try {
+        validatedInput = UninstallInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'ToolHandlers',
+              method: 'handleUninstall',
+              schema: 'UninstallInputSchema',
+              providedArgs: args,
+            }
+          );
+        }
+        throw error;
+      }
 
       // Perform uninstallation
-      const report = await this.uninstallManager.uninstall(options);
+      const report = await this.uninstallManager.uninstall(validatedInput);
 
       // Format report for display
       const formattedReport = this.uninstallManager.formatReport(report);
@@ -351,7 +290,7 @@ export class ToolHandlers {
         component: 'ToolHandlers',
         method: 'handleUninstall',
         operation: 'uninstalling Claude Code Buddy',
-        data: { options: input },
+        data: { options: args },
       });
 
       const handled = handleError(error, {
@@ -373,15 +312,45 @@ export class ToolHandlers {
   /**
    * Handle get-workflow-guidance tool
    */
-  async handleGetWorkflowGuidance(input: {
-    phase: string;
-    filesChanged?: string[];
-    testsPassing?: boolean
-  }): Promise<CallToolResult> {
+  async handleGetWorkflowGuidance(args: unknown): Promise<CallToolResult> {
     try {
+      let validatedInput: ValidatedWorkflowGuidanceInput;
+      try {
+        validatedInput = WorkflowGuidanceInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'ToolHandlers',
+              method: 'handleGetWorkflowGuidance',
+              schema: 'WorkflowGuidanceInputSchema',
+              providedArgs: args,
+            }
+          );
+        }
+        throw error;
+      }
+
+      const normalizedPhase = this.normalizeWorkflowPhase(validatedInput.phase);
+      if (!normalizedPhase) {
+        throw new ValidationError(
+          `Invalid workflow phase: ${validatedInput.phase}`,
+          {
+            component: 'ToolHandlers',
+            method: 'handleGetWorkflowGuidance',
+            validPhases: ['idle', 'code-written', 'test-complete', 'commit-ready', 'committed'],
+            providedPhase: validatedInput.phase,
+          }
+        );
+      }
+
       const result = await this.developmentButler.processCheckpoint(
-        input.phase,
-        input
+        normalizedPhase,
+        {
+          ...validatedInput,
+          phase: normalizedPhase,
+        }
       );
 
       return {
@@ -397,7 +366,7 @@ export class ToolHandlers {
         component: 'ToolHandlers',
         method: 'handleGetWorkflowGuidance',
         operation: 'processing workflow checkpoint',
-        data: { phase: input.phase },
+        data: { phase: (args as { phase?: string } | null)?.phase },
       });
 
       const handled = handleError(error, {
@@ -497,14 +466,29 @@ export class ToolHandlers {
   /**
    * Handle record-token-usage tool
    */
-  async handleRecordTokenUsage(input: {
-    inputTokens: number;
-    outputTokens: number
-  }): Promise<CallToolResult> {
+  async handleRecordTokenUsage(args: unknown): Promise<CallToolResult> {
     try {
+      let validatedInput: ValidatedRecordTokenUsageInput;
+      try {
+        validatedInput = RecordTokenUsageInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'ToolHandlers',
+              method: 'handleRecordTokenUsage',
+              schema: 'RecordTokenUsageInputSchema',
+              providedArgs: args,
+            }
+          );
+        }
+        throw error;
+      }
+
       this.developmentButler.getTokenTracker().recordUsage({
-        inputTokens: input.inputTokens,
-        outputTokens: input.outputTokens,
+        inputTokens: validatedInput.inputTokens,
+        outputTokens: validatedInput.outputTokens,
       });
 
       return {
@@ -520,7 +504,7 @@ export class ToolHandlers {
         component: 'ToolHandlers',
         method: 'handleRecordTokenUsage',
         operation: 'recording token usage',
-        data: { inputTokens: input.inputTokens, outputTokens: input.outputTokens },
+        data: { inputTokens: (args as { inputTokens?: number } | null)?.inputTokens, outputTokens: (args as { outputTokens?: number } | null)?.outputTokens },
       });
 
       const handled = handleError(error, {
@@ -540,19 +524,97 @@ export class ToolHandlers {
   }
 
   /**
+   * Handle hook-tool-use tool
+   */
+  async handleHookToolUse(args: unknown): Promise<CallToolResult> {
+    try {
+      let validatedInput: ValidatedHookToolUseInput;
+      try {
+        validatedInput = HookToolUseInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'ToolHandlers',
+              method: 'handleHookToolUse',
+              schema: 'HookToolUseInputSchema',
+              providedArgs: args,
+            }
+          );
+        }
+        throw error;
+      }
+
+      await this.hookIntegration.processToolUse({
+        toolName: validatedInput.toolName,
+        arguments: validatedInput.arguments,
+        success: validatedInput.success,
+        duration: validatedInput.duration,
+        tokensUsed: validatedInput.tokensUsed,
+        output: validatedInput.output,
+      });
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify({ success: true }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleHookToolUse',
+        operation: 'processing hook tool use',
+        data: { toolName: (args as { toolName?: string } | null)?.toolName },
+      });
+
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleHookToolUse',
+      });
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `❌ Hook processing failed: ${handled.message}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
    * Handle generate-smart-plan tool (Phase 2)
    */
-  async handleGenerateSmartPlan(input: {
-    featureDescription: string;
-    requirements?: string[];
-    constraints?: string[]
-  }): Promise<CallToolResult> {
+  async handleGenerateSmartPlan(args: unknown): Promise<CallToolResult> {
     try {
+      let validatedInput: ValidatedGenerateSmartPlanInput;
+      try {
+        validatedInput = GenerateSmartPlanInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'ToolHandlers',
+              method: 'handleGenerateSmartPlan',
+              schema: 'GenerateSmartPlanInputSchema',
+              providedArgs: args,
+            }
+          );
+        }
+        throw error;
+      }
+
       // Generate plan using PlanningEngine
       const plan = await this.planningEngine.generatePlan({
-        featureDescription: input.featureDescription,
-        requirements: input.requirements,
-        constraints: input.constraints,
+        featureDescription: validatedInput.featureDescription,
+        requirements: validatedInput.requirements,
+        constraints: validatedInput.constraints,
       });
 
       // Format plan as text
@@ -570,7 +632,10 @@ export class ToolHandlers {
         planText += `- **Estimated Duration**: ${task.estimatedDuration}\n`;
 
         if (task.suggestedAgent) {
-          planText += `- **Suggested Agent**: ${task.suggestedAgent}\n`;
+          const capabilityHint = this.describeCapabilities(task.suggestedAgent);
+          if (capabilityHint) {
+            planText += `- **Suggested Capability**: ${capabilityHint}\n`;
+          }
         }
 
         if (task.dependencies.length > 0) {
@@ -608,7 +673,7 @@ export class ToolHandlers {
         component: 'ToolHandlers',
         method: 'handleGenerateSmartPlan',
         operation: 'generating smart plan',
-        data: { featureDescription: input.featureDescription },
+        data: { featureDescription: (args as { featureDescription?: string } | null)?.featureDescription },
       });
 
       const handled = handleError(error, {
@@ -630,13 +695,28 @@ export class ToolHandlers {
   /**
    * Handle recall-memory tool
    */
-  async handleRecallMemory(input: {
-    query: string;
-    limit?: number
-  }): Promise<CallToolResult> {
+  async handleRecallMemory(args: unknown): Promise<CallToolResult> {
     try {
+      let validatedInput: ValidatedRecallMemoryInput;
+      try {
+        validatedInput = RecallMemoryInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'ToolHandlers',
+              method: 'handleRecallMemory',
+              schema: 'RecallMemoryInputSchema',
+              providedArgs: args,
+            }
+          );
+        }
+        throw error;
+      }
+
       const result = await recallMemoryTool.handler(
-        input,
+        validatedInput,
         this.projectMemoryManager
       );
 
@@ -680,7 +760,7 @@ export class ToolHandlers {
         component: 'ToolHandlers',
         method: 'handleRecallMemory',
         operation: 'recalling project memory',
-        data: { query: input.query, limit: input.limit },
+        data: { query: (args as { query?: string } | null)?.query, limit: (args as { limit?: number } | null)?.limit },
       });
 
       const handled = handleError(error, {
@@ -700,21 +780,44 @@ export class ToolHandlers {
   }
 
   /**
+   * Map an internal agent name to a short capability hint for user-facing output.
+   */
+  private describeCapabilities(agentName: string): string | undefined {
+    const agent = this.agentRegistry.getAgent(agentName as AgentType);
+    if (!agent || !agent.capabilities || agent.capabilities.length === 0) {
+      return undefined;
+    }
+
+    return agent.capabilities.slice(0, 3).join(', ');
+  }
+
+  /**
    * Handle create-entities tool
    *
    * Creates new entities in the Knowledge Graph for manual knowledge recording.
    */
-  async handleCreateEntities(input: {
-    entities: Array<{
-      name: string;
-      entityType: string;
-      observations: string[];
-      metadata?: Record<string, unknown>;
-    }>;
-  }): Promise<CallToolResult> {
+  async handleCreateEntities(args: unknown): Promise<CallToolResult> {
     try {
+      let validatedInput: ValidatedCreateEntitiesInput;
+      try {
+        validatedInput = CreateEntitiesInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'ToolHandlers',
+              method: 'handleCreateEntities',
+              schema: 'CreateEntitiesInputSchema',
+              providedArgs: args,
+            }
+          );
+        }
+        throw error;
+      }
+
       const result = await createEntitiesTool.handler(
-        input,
+        validatedInput,
         this.knowledgeGraph
       );
 
@@ -759,7 +862,7 @@ export class ToolHandlers {
         component: 'ToolHandlers',
         method: 'handleCreateEntities',
         operation: 'creating knowledge graph entities',
-        data: { entityCount: input.entities.length },
+        data: { entityCount: (args as { entities?: unknown[] } | null)?.entities?.length ?? 0 },
       });
 
       const handled = handleError(error, {
@@ -783,15 +886,28 @@ export class ToolHandlers {
    *
    * Adds new observations to existing entities in the Knowledge Graph.
    */
-  async handleAddObservations(input: {
-    observations: Array<{
-      entityName: string;
-      contents: string[];
-    }>;
-  }): Promise<CallToolResult> {
+  async handleAddObservations(args: unknown): Promise<CallToolResult> {
     try {
+      let validatedInput: ValidatedAddObservationsInput;
+      try {
+        validatedInput = AddObservationsInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'ToolHandlers',
+              method: 'handleAddObservations',
+              schema: 'AddObservationsInputSchema',
+              providedArgs: args,
+            }
+          );
+        }
+        throw error;
+      }
+
       const result = await addObservationsTool.handler(
-        input,
+        validatedInput,
         this.knowledgeGraph
       );
 
@@ -849,7 +965,7 @@ export class ToolHandlers {
         component: 'ToolHandlers',
         method: 'handleAddObservations',
         operation: 'adding observations to entities',
-        data: { observationCount: input.observations.length },
+        data: { observationCount: (args as { observations?: unknown[] } | null)?.observations?.length ?? 0 },
       });
 
       const handled = handleError(error, {
@@ -874,17 +990,28 @@ export class ToolHandlers {
    * Creates relations between entities in the Knowledge Graph.
    *
    */
-  async handleCreateRelations(input: {
-    relations: Array<{
-      from: string;
-      to: string;
-      relationType: string;
-      metadata?: Record<string, unknown>;
-    }>;
-  }): Promise<CallToolResult> {
+  async handleCreateRelations(args: unknown): Promise<CallToolResult> {
     try {
+      let validatedInput: ValidatedCreateRelationsInput;
+      try {
+        validatedInput = CreateRelationsInputSchema.parse(args);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new ValidationError(
+            formatValidationError(error),
+            {
+              component: 'ToolHandlers',
+              method: 'handleCreateRelations',
+              schema: 'CreateRelationsInputSchema',
+              providedArgs: args,
+            }
+          );
+        }
+        throw error;
+      }
+
       const result = await createRelationsTool.handler(
-        input,
+        validatedInput,
         this.knowledgeGraph
       );
 
@@ -942,7 +1069,7 @@ export class ToolHandlers {
         component: 'ToolHandlers',
         method: 'handleCreateRelations',
         operation: 'creating entity relations',
-        data: { relationCount: input.relations.length },
+        data: { relationCount: (args as { relations?: unknown[] } | null)?.relations?.length ?? 0 },
       });
 
       const handled = handleError(error, {
@@ -961,307 +1088,40 @@ export class ToolHandlers {
     }
   }
 
-  /**
-   * Handle devops-generate-ci-config tool
-   *
-   * Generates CI/CD configuration files for GitHub Actions or GitLab CI.
-   *
-   */
-  async handleGenerateCIConfig(input: {
-    platform: 'github-actions' | 'gitlab-ci';
-    testCommand: string;
-    buildCommand: string;
-    deployCommand?: string;
-    nodeVersion?: string;
-    enableCaching?: boolean;
-  }): Promise<CallToolResult> {
-    try {
-      const result = await generateCIConfigTool.handler(
-        input,
-        this.devopsEngineer
-      );
-
-      if (!result.success) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `❌ Failed to generate CI config: ${result.error}`,
-            },
-          ],
-        };
-      }
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `🚀 CI/CD Configuration Generated
-
-Platform: ${result.platform}
-Config File: ${result.configFileName}
-
-${result.instructions}
-
-──────────────────────────────────────
-Configuration Content:
-──────────────────────────────────────
-
-${result.config}
-`,
-          },
-        ],
-      };
-    } catch (error) {
-      logError(error, {
-        component: 'ToolHandlers',
-        method: 'handleGenerateCIConfig',
-        operation: 'generating CI/CD config',
-        data: { platform: input.platform },
-      });
-
-      const handled = handleError(error, {
-        component: 'ToolHandlers',
-        method: 'handleGenerateCIConfig',
-      });
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `❌ Failed to generate CI config: ${handled.message}`,
-          },
-        ],
-      };
+  private normalizeWorkflowPhase(phase: string): string | null {
+    const normalized = phase.trim().toLowerCase();
+    if (!normalized) {
+      return null;
     }
-  }
 
-  /**
-   * Handle devops-analyze-deployment tool
-   *
-   * Analyzes deployment readiness by running tests, build, and checking git status.
-   *
-   */
-  async handleAnalyzeDeployment(input: {
-    testCommand?: string;
-    buildCommand?: string;
-  }): Promise<CallToolResult> {
-    try {
-      const result = await analyzeDeploymentTool.handler(
-        input,
-        this.devopsEngineer
-      );
-
-      if (!result.success) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `❌ Deployment analysis failed: ${result.error}`,
-            },
-          ],
-        };
-      }
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: result.summary || 'Deployment analysis completed',
-          },
-        ],
-      };
-    } catch (error) {
-      logError(error, {
-        component: 'ToolHandlers',
-        method: 'handleAnalyzeDeployment',
-        operation: 'analyzing deployment readiness',
-      });
-
-      const handled = handleError(error, {
-        component: 'ToolHandlers',
-        method: 'handleAnalyzeDeployment',
-      });
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `❌ Failed to analyze deployment: ${handled.message}`,
-          },
-        ],
-      };
+    const cleaned = normalized.replace(/[_\s]+/g, '-');
+    const direct = new Set(['idle', 'code-written', 'test-complete', 'commit-ready', 'committed']);
+    if (direct.has(cleaned)) {
+      return cleaned;
     }
-  }
 
-  /**
-   * Handle devops-setup-ci tool
-   *
-   * Complete CI/CD setup that generates config, writes to file, and records to Knowledge Graph.
-   */
-  async handleSetupCI(input: {
-    platform: 'github-actions' | 'gitlab-ci';
-    testCommand: string;
-    buildCommand: string;
-  }): Promise<CallToolResult> {
-    try {
-      const result = await setupCITool.handler(
-        input,
-        this.devopsEngineer
-      );
+    const aliases: Record<string, string> = {
+      planning: 'idle',
+      analysis: 'idle',
+      start: 'idle',
+      'code-analysis': 'code-written',
+      implementation: 'code-written',
+      coding: 'code-written',
+      code: 'code-written',
+      'test-analysis': 'test-complete',
+      testing: 'test-complete',
+      tests: 'test-complete',
+      test: 'test-complete',
+      'tests-complete': 'test-complete',
+      'ready-to-commit': 'commit-ready',
+      commit: 'commit-ready',
+      'pre-commit': 'commit-ready',
+      done: 'committed',
+      merged: 'committed',
+      shipped: 'committed',
+      released: 'committed',
+    };
 
-      if (!result.success) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `❌ CI setup failed: ${result.error}`,
-            },
-          ],
-        };
-      }
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `${result.message}
-
-${result.nextSteps}
-
-──────────────────────────────────────
-Configuration Details:
-──────────────────────────────────────
-
-Config File: ${result.details?.configFile || result.configFileName}
-Test Command: ${result.details?.testCommand || input.testCommand}
-Build Command: ${result.details?.buildCommand || input.buildCommand}
-`,
-          },
-        ],
-      };
-    } catch (error) {
-      logError(error, {
-        component: 'ToolHandlers',
-        method: 'handleSetupCI',
-        operation: 'setting up CI/CD',
-        data: { platform: input.platform },
-      });
-
-      const handled = handleError(error, {
-        component: 'ToolHandlers',
-        method: 'handleSetupCI',
-      });
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `❌ Failed to setup CI: ${handled.message}`,
-          },
-        ],
-      };
-    }
-  }
-
-  /**
-   * Handle workflow-create tool
-   *
-   * Creates automated workflows using Google Opal or n8n.
-   * Automatically selects the best platform based on description.
-   *
-   * @param input - Workflow creation arguments
-   * @returns Tool execution result
-   */
-  async handleCreateWorkflow(input: {
-    description: string;
-    platform?: 'opal' | 'n8n' | 'auto';
-    priority?: 'speed' | 'production';
-  }): Promise<CallToolResult> {
-    try {
-      const result = await createWorkflowTool.handler(
-        input,
-        this.workflowOrchestrator
-      );
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify(result, null, 2),
-          },
-        ],
-      };
-    } catch (error) {
-      logError(error, {
-        component: 'ToolHandlers',
-        method: 'handleCreateWorkflow',
-        operation: 'creating workflow',
-        data: { description: input.description, platform: input.platform },
-      });
-
-      const handled = handleError(error, {
-        component: 'ToolHandlers',
-        method: 'handleCreateWorkflow',
-      });
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `❌ Failed to create workflow: ${handled.message}`,
-          },
-        ],
-      };
-    }
-  }
-
-  /**
-   * Handle workflow-list tool
-   *
-   * Lists all workflows from Google Opal and n8n platforms.
-   *
-   * @param input - Workflow list arguments
-   * @returns Tool execution result
-   */
-  async handleListWorkflows(input: {
-    platform?: 'opal' | 'n8n' | 'all';
-  }): Promise<CallToolResult> {
-    try {
-      const result = await listWorkflowsTool.handler(
-        input,
-        this.workflowOrchestrator
-      );
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify(result, null, 2),
-          },
-        ],
-      };
-    } catch (error) {
-      logError(error, {
-        component: 'ToolHandlers',
-        method: 'handleListWorkflows',
-        operation: 'listing workflows',
-        data: { platform: input.platform },
-      });
-
-      const handled = handleError(error, {
-        component: 'ToolHandlers',
-        method: 'handleListWorkflows',
-      });
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `❌ Failed to list workflows: ${handled.message}`,
-          },
-        ],
-      };
-    }
+    return aliases[cleaned] || null;
   }
 }

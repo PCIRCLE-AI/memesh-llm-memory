@@ -1,7 +1,7 @@
 /**
  * KnowledgeGraph - Internal storage and query engine
  *
- * Similar to VectorStore in RAGAgent - provides low-level storage operations
+ * Provides low-level storage operations for the knowledge graph
  */
 
 import { Entity, Relation, SearchOptions } from './types';

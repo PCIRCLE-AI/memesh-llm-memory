@@ -1,4 +1,6 @@
 import { ValidationError } from '../errors/index.js';
+import { pathToFileURL } from 'url';
+import { resolveUserPath } from '../utils/paths.js';
 
 /**
  * Reload reason types
@@ -77,10 +79,11 @@ export class ClaudeMdReloader {
    * Generate MCP resource update request for CLAUDE.md
    */
   generateReloadRequest(): ResourceUpdateRequest {
+    const claudeMdPath = resolveUserPath('~/.claude/CLAUDE.md');
     return {
       method: 'resources/updated',
       params: {
-        uri: 'file://~/.claude/CLAUDE.md',
+        uri: pathToFileURL(claudeMdPath).toString(),
       },
     };
   }

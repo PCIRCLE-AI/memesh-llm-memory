@@ -16,6 +16,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { ClaudeCodeBuddyMCPServer } from '../../src/mcp/server.js';
+import { AgentRegistry } from '../../src/core/AgentRegistry.js';
 
 describe('Smart-Planning System - Complete E2E', () => {
   let server: ClaudeCodeBuddyMCPServer;
@@ -93,16 +94,11 @@ describe('Smart-Planning System - Complete E2E', () => {
   });
 
   /**
-   * Test 2: Agent Assignment Validation
+   * Test 2: Capability Assignment Validation
    *
-   * Verifies that appropriate agents are assigned based on task characteristics:
-   * - Security tasks → security-auditor or backend-developer
-   * - Code review → code-reviewer
-   * - Testing → test-automator
-   * - API → api-designer or backend-developer
-   * - Frontend → frontend-developer or ui-designer
+   * Verifies that appropriate capabilities are surfaced based on task characteristics.
    */
-  it('should assign appropriate agents based on task types', async () => {
+  it('should assign appropriate capabilities based on task types', async () => {
     // Generate plan for security-focused feature
     const result = await (server as any).toolHandlers.handleGenerateSmartPlan({
       featureDescription: 'Add secure user authentication with role-based access control',
@@ -120,43 +116,39 @@ describe('Smart-Planning System - Complete E2E', () => {
     expect(planText).toContain('Implementation Plan');
     expect(planText).toContain('## Tasks');
 
-    // Verify agent assignment section exists (when agents are assigned)
-    // Note: Not all tasks may have agents assigned, so check for at least one
-    expect(planText).toMatch(/- \*\*Suggested Agent\*\*:/);
+    // Verify capability assignment section exists (when capabilities are assigned)
+    // Note: Not all tasks may have capabilities assigned, so check for at least one
+    expect(planText).toMatch(/- \*\*Suggested Capability\*\*:/);
 
-    // Count agent assignments (should have at least one)
-    const agentMatches = planText.match(/\*\*Suggested Agent\*\*: ([\w-]+)/g);
-    expect(agentMatches).toBeDefined();
-    expect(agentMatches!.length).toBeGreaterThan(0);
+    // Count capability assignments (should have at least one)
+    const capabilityMatches = planText.match(/\*\*Suggested Capability\*\*: ([^\n]+)/g);
+    expect(capabilityMatches).toBeDefined();
+    expect(capabilityMatches!.length).toBeGreaterThan(0);
 
-    // Extract agent names
-    const assignedAgents = agentMatches!.map(match => {
-      const agentMatch = match.match(/\*\*Suggested Agent\*\*: ([\w-]+)/);
-      return agentMatch ? agentMatch[1] : null;
-    }).filter(Boolean);
-
-    // Verify valid agent names assigned
-    const validAgentNames = [
-      'security-auditor',
-      'backend-developer',
-      'code-reviewer',
-      'test-automator',
-      'api-designer',
-      'frontend-developer',
-      'ui-designer',
-      'database-optimizer',
-    ];
-
-    assignedAgents.forEach(agent => {
-      expect(validAgentNames).toContain(agent);
+    // Extract capability names
+    const assignedCapabilities = capabilityMatches!.flatMap(match => {
+      const capabilityMatch = match.match(/\*\*Suggested Capability\*\*: ([^\n]+)/);
+      if (!capabilityMatch) return [];
+      return capabilityMatch[1]
+        .split(',')
+        .map(value => value.trim())
+        .filter(Boolean);
     });
 
-    // Verify at least one security-related agent OR backend agent assigned
-    // (Assignment logic may vary based on keyword matching)
-    const hasSecurityAgent = assignedAgents.some(agent =>
-      ['security-auditor', 'backend-developer'].includes(agent!)
+    const registry = new AgentRegistry();
+    const validCapabilities = new Set(
+      registry.getAllAgents().flatMap(agent => agent.capabilities || [])
     );
-    expect(hasSecurityAgent || assignedAgents.length > 0).toBe(true);
+
+    assignedCapabilities.forEach(capability => {
+      expect(validCapabilities.has(capability)).toBe(true);
+    });
+
+    // Verify at least one security-related capability OR at least one assigned capability
+    const hasSecurityCapability = assignedCapabilities.some(capability =>
+      ['security-audit', 'vulnerability-assessment', 'compliance'].includes(capability)
+    );
+    expect(hasSecurityCapability || assignedCapabilities.length > 0).toBe(true);
   });
 
   /**

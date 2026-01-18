@@ -3,8 +3,9 @@
  *
  * Provides a centralized registry for all available agents in the system with
  * dynamic agent discovery, categorization, classification filtering, and metadata
- * management. Supports 22 agents across development, analysis, operations, and
- * creative domains with real implementations, enhanced prompts, and optional features.
+ * management. Supports a curated set of agents across development, analysis,
+ * operations, and creative domains with real implementations, enhanced prompts,
+ * and optional features.
  *
  * Features:
  * - Automatic agent registration on instantiation
@@ -17,7 +18,7 @@
  * Agent Categories:
  * - **development**: Frontend, backend, testing, code review, refactoring
  * - **analysis**: Architecture, research, data analysis
- * - **operations**: DevOps, security auditing, infrastructure
+ * - **operations**: Security auditing, infrastructure guidance
  * - **management**: Project management, product management
  * - **creative**: UI/UX design, marketing strategy
  * - **engineering**: ML engineering, data engineering
@@ -87,14 +88,6 @@ import { ValidationError } from '../errors/index.js';
  *   capabilities: ['code-review', 'security', 'best-practices']
  * };
  *
- * // Optional agent with external dependencies
- * const ragAgent: AgentMetadata = {
- *   name: 'rag-agent',
- *   description: 'Knowledge retrieval, vector search',
- *   category: 'analysis',
- *   classification: AgentClassification.OPTIONAL_FEATURE,
- *   requiredDependencies: ['chromadb', 'openai']
- * };
  * ```
  */
 export interface AgentMetadata {
@@ -131,13 +124,8 @@ export interface AgentMetadata {
  * Agent Registry Class
  *
  * Centralized registry managing all available agents in the system.
- * Automatically registers 22 agents on instantiation with support for
+ * Automatically registers available agents on instantiation with support for
  * dynamic discovery, filtering by category/classification, and metadata queries.
- *
- * Agent Distribution:
- * - 6 real implementation agents (with actual MCP tool integration)
- * - 15 enhanced prompt agents (specialized prompts without tools)
- * - 1 optional feature agent (requires external dependencies)
  *
  * @example
  * ```typescript
@@ -248,7 +236,7 @@ export class AgentRegistry {
    * Available Categories:
    * - **development**: Frontend, backend, testing, code review, debugging, refactoring
    * - **analysis**: Architecture analysis, research, data analysis
-   * - **operations**: DevOps, security auditing, infrastructure management
+   * - **operations**: Security auditing, infrastructure guidance
    * - **management**: Project management, product management
    * - **creative**: UI/UX design, marketing strategy
    * - **engineering**: ML engineering, data engineering
@@ -404,8 +392,8 @@ export class AgentRegistry {
    * Get agents by classification type
    *
    * Returns all agents with OPTIONAL_FEATURE classification.
-   * These agents require external dependencies (like chromadb, openai) and
-   * may not be available unless dependencies are installed.
+   * These agents require external dependencies and may not be available
+   * unless dependencies are installed.
    *
    * @returns Array of agents with OPTIONAL_FEATURE classification
    *
@@ -423,7 +411,7 @@ export class AgentRegistry {
    * });
    *
    * // Simulate dependency check
-   * const availableDeps = ['chromadb', 'openai']; // Mock installed dependencies
+   * const availableDeps = ['playwright']; // Mock installed dependencies
    * const availableOptionalAgents = optionalAgents.filter(agent =>
    *   agent.requiredDependencies?.every(dep => availableDeps.includes(dep))
    * );
@@ -445,7 +433,7 @@ export class AgentRegistry {
    */
   private registerAllAgents(): void {
     const allAgents: AgentMetadata[] = [
-      // Real Implementation Agents (5)
+      // Real Implementation Agents
       {
         name: 'development-butler',
         description: 'Event-driven workflow automation, code maintenance, testing, dependency management, git workflow, build automation, development monitoring',
@@ -475,13 +463,6 @@ export class AgentRegistry {
         classification: AgentClassification.REAL_IMPLEMENTATION,
         mcpTools: ['playwright', 'filesystem', 'bash', 'memory'],
         capabilities: ['e2e-testing', 'auto-healing', 'testing', 'code-generation', 'debugging'],
-      },
-      {
-        name: 'devops-engineer',
-        description: 'DevOps, CI/CD, infrastructure automation, deployment expert',
-        category: 'operations',
-        classification: AgentClassification.REAL_IMPLEMENTATION,
-        mcpTools: ['bash', 'filesystem'],
       },
       {
         name: 'project-manager',
@@ -675,40 +656,6 @@ export class AgentRegistry {
         capabilities: ['general'],
       },
 
-      // Optional Feature Agents (1)
-      {
-        name: 'rag-agent',
-        description: 'Knowledge retrieval, vector search, embedding-based context search',
-        category: 'analysis',
-        classification: AgentClassification.OPTIONAL_FEATURE,
-        requiredDependencies: ['chromadb', 'openai'],
-      },
-
-      // Workflow Automation Agents (3)
-      {
-        name: 'workflow-orchestrator',
-        description: 'Intelligent Workflow platform selector (Opal vs n8n), workflow automation orchestration',
-        category: 'automation',
-        classification: AgentClassification.REAL_IMPLEMENTATION,
-        mcpTools: [],
-        capabilities: ['workflow-automation', 'intelligent-platform-selection', 'opal', 'n8n'],
-      },
-      {
-        name: 'opal-automation',
-        description: 'Google Opal browser automation, natural language workflow creation, AI-powered prototypes',
-        category: 'automation',
-        classification: AgentClassification.REAL_IMPLEMENTATION,
-        mcpTools: ['playwright', 'memory'],
-        capabilities: ['workflow-automation', 'browser-automation', 'opal-workflows', 'natural-language-ui'],
-      },
-      {
-        name: 'n8n-workflow',
-        description: 'n8n workflow API integration, production workflow management, multi-system integration',
-        category: 'automation',
-        classification: AgentClassification.REAL_IMPLEMENTATION,
-        mcpTools: ['bash', 'memory'],
-        capabilities: ['workflow-automation', 'n8n-integration', 'api-integration'],
-      },
     ];
 
     // Register all agents

@@ -50,56 +50,6 @@ buddy do optimize this database query
 
 ---
 
-### `buddy stats [period]`
-
-View performance dashboard showing token usage, cost savings, and routing decisions.
-
-**What it does:**
-- Shows token usage metrics
-- Displays cost savings from Ollama routing
-- Breaks down model routing decisions (Ollama vs Claude)
-- Shows task completion stats
-
-**Parameters:**
-- `period` (optional): Time period for stats
-  - `day` - Today's stats
-  - `week` - Last 7 days
-  - `month` - Last 30 days
-  - `all` - All time (default)
-
-**Examples:**
-```bash
-buddy stats          # All time stats
-buddy stats day      # Today only
-buddy stats week     # Last 7 days
-buddy stats month    # Last 30 days
-```
-
-**Aliases:**
-- `buddy dashboard`
-- `buddy metrics`
-- `buddy performance`
-
-**Output Example:**
-```
-📊 Claude Code Buddy Performance Dashboard (all)
-
-Token Usage:
-- Tokens Used: 125,000
-- Tokens Saved: 450,000 (via Ollama routing)
-- Cost Savings: $9.00
-
-Routing Decisions:
-- Ollama: 45 tasks (78%)
-- Claude: 12 tasks (22%)
-
-Performance:
-- Tasks Completed: 57
-- Average Complexity: 5.2
-```
-
----
-
 ### `buddy remember <query> [limit]`
 
 Recall project memory - past decisions, architecture choices, bug fixes, and patterns.
@@ -148,17 +98,15 @@ Get help for all buddy commands or a specific command.
 
 **Parameters:**
 - `command` (optional): Specific command to get help for
-  - `do` - Help for buddy_do
-  - `stats` - Help for buddy_stats
-  - `remember` - Help for buddy_remember
+  - `do` - Help for buddy do
+  - `remember` - Help for buddy remember
   - (Leave empty for all commands)
 
 **Examples:**
 ```bash
 buddy help          # Show all commands
-buddy help do       # Help for buddy_do
-buddy help stats    # Help for buddy_stats
-buddy help remember # Help for buddy_remember
+buddy help do       # Help for buddy do
+buddy help remember # Help for buddy remember
 ```
 
 ---
@@ -167,7 +115,7 @@ buddy help remember # Help for buddy_remember
 
 Direct MCP tool access (for advanced users or MCP integrations).
 
-### `buddy_do`
+### `buddy-do`
 
 MCP tool version of `buddy do` command.
 
@@ -187,27 +135,7 @@ MCP tool version of `buddy do` command.
 
 ---
 
-### `buddy_stats`
-
-MCP tool version of `buddy stats` command.
-
-**Input Schema:**
-```json
-{
-  "period": "enum (optional) - day | week | month | all (default: all)"
-}
-```
-
-**Example:**
-```json
-{
-  "period": "week"
-}
-```
-
----
-
-### `buddy_remember`
+### `buddy-remember`
 
 MCP tool version of `buddy remember` command.
 
@@ -229,7 +157,7 @@ MCP tool version of `buddy remember` command.
 
 ---
 
-### `buddy_help`
+### `buddy-help`
 
 MCP tool version of `buddy help` command.
 
@@ -244,6 +172,65 @@ MCP tool version of `buddy help` command.
 ```json
 {
   "command": "do"
+}
+```
+
+---
+
+### `get-session-health`
+
+Check session health including token usage and quality metrics.
+
+**Input Schema:**
+```json
+{}
+```
+
+---
+
+### `get-workflow-guidance`
+
+Get intelligent workflow recommendations based on current development context.
+
+**Input Schema:**
+```json
+{
+  "phase": "enum (required) - idle | code-written | test-complete | commit-ready | committed",
+  "filesChanged": "array (optional) - list of changed files",
+  "testsPassing": "boolean (optional) - whether tests are passing"
+}
+```
+
+---
+
+### `generate-smart-plan`
+
+Generate an implementation plan with TDD-friendly steps and clear task breakdown.
+
+**Input Schema:**
+```json
+{
+  "featureDescription": "string (required) - Feature to plan",
+  "requirements": "array (optional) - Specific requirements",
+  "constraints": "object (optional) - Project constraints"
+}
+```
+
+---
+
+### `hook-tool-use`
+
+Internal hook event ingestion for workflow automation and memory tracking.
+
+**Input Schema:**
+```json
+{
+  "toolName": "string (required) - Tool executed by Claude Code",
+  "arguments": "object (optional) - Tool arguments payload",
+  "success": "boolean (required) - Whether execution succeeded",
+  "duration": "number (optional) - Duration in milliseconds",
+  "tokensUsed": "number (optional) - Tokens used by tool call",
+  "output": "string (optional) - Tool output"
 }
 ```
 
@@ -264,13 +251,6 @@ All buddy commands support multiple aliases for convenience:
 - `buddy retrieve <query>`
 - `buddy search <query>`
 - `buddy find <query>`
-
-### `buddy stats` Aliases
-- `buddy dashboard [period]`
-- `buddy metrics [period]`
-- `buddy performance [period]`
-
----
 
 ## Usage Examples
 
@@ -294,13 +274,6 @@ buddy do add input validation
 buddy do update API documentation
 ```
 
-**4. Check performance:**
-```bash
-buddy stats week
-```
-
----
-
 ### Memory-Driven Development
 
 **Store important decisions:**
@@ -316,19 +289,6 @@ buddy remember database migration approach
 buddy remember error handling patterns
 buddy remember API versioning strategy
 ```
-
----
-
-### Cost-Conscious Development
-
-**Use stats to track costs:**
-```bash
-buddy stats day    # Daily token usage
-buddy stats week   # Weekly breakdown
-buddy stats month  # Monthly totals
-```
-
-**The system automatically routes simple tasks to Ollama (free) and complex tasks to Claude (paid), optimizing your costs.**
 
 ---
 
@@ -352,15 +312,7 @@ buddy remember what we're working on
 buddy remember authentication approach
 ```
 
-### 3. Monitor Your Usage
-```bash
-# Check stats regularly
-buddy stats week
-
-# Adjust complexity thresholds if needed
-```
-
-### 4. Use Aliases for Speed
+### 3. Use Aliases for Speed
 ```bash
 # Short aliases for common operations
 buddy recall auth    # instead of buddy remember auth
@@ -402,7 +354,7 @@ If tools fail to execute:
    ```
 
 2. **Verify Environment:**
-   - Node.js 18+ installed
+  - Node.js 20+ installed
    - Claude Code configured
    - MCP server running
 

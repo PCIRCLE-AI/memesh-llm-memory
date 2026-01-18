@@ -158,7 +158,7 @@ describe('KnowledgeAgent', () => {
 
   describe('Error Handling', () => {
     test('should throw error if not initialized', async () => {
-      const uninitializedAgent = new KnowledgeAgent();
+      const uninitializedAgent = new KnowledgeAgent(':memory:');
 
       await expect(uninitializedAgent.createEntities([])).rejects.toThrow('not initialized');
     });

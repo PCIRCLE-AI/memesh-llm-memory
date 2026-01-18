@@ -20,7 +20,7 @@ describe('errorHandler', () => {
     it('should return git repository suggestion for git errors', () => {
       const error = new Error('fatal: not a git repository');
       const suggestion = getRecoverySuggestion(error);
-      expect(suggestion).toContain('git-setup');
+      expect(suggestion).toContain('git init');
     });
 
     it('should return suggestion for nothing to commit', () => {
@@ -32,7 +32,7 @@ describe('errorHandler', () => {
     it('should return suggestion for invalid reference', () => {
       const error = new Error('invalid reference: HEAD~100');
       const suggestion = getRecoverySuggestion(error);
-      expect(suggestion).toContain('git-list-versions');
+      expect(suggestion).toContain('git log');
     });
 
     it('should return suggestion for permission denied', () => {
@@ -103,7 +103,7 @@ describe('errorHandler', () => {
 
     it('should handle string errors', () => {
       const suggestion = getRecoverySuggestion('not a git repository');
-      expect(suggestion).toContain('git-setup');
+      expect(suggestion).toContain('git init');
     });
   });
 
@@ -119,7 +119,7 @@ describe('errorHandler', () => {
       const error = new Error('not a git repository');
       const formatted = formatErrorWithSuggestion(error, 'list versions');
       expect(formatted).toContain('Failed to list versions');
-      expect(formatted).toContain('git-setup');
+      expect(formatted).toContain('git init');
     });
 
     it('should not include suggestion for unknown errors', () => {

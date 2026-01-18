@@ -79,6 +79,7 @@ describe('ProjectAutoTracker', () => {
         const description = 'Added user authentication';
 
         await tracker.recordCodeChange(files, description);
+        await tracker.flushPendingCodeChanges('test');
 
         expect(mockMCP.memory.createEntities).toHaveBeenCalledWith({
           entities: [{
@@ -96,6 +97,7 @@ describe('ProjectAutoTracker', () => {
 
       it('should include timestamp in code change record', async () => {
         await tracker.recordCodeChange(['test.ts'], 'Test change');
+        await tracker.flushPendingCodeChanges('test');
 
         const call = (mockMCP.memory.createEntities as any).mock.calls[0][0];
         expect(call.entities[0].name).toMatch(/\d{4}-\d{2}-\d{2}/); // ISO date format
@@ -103,6 +105,7 @@ describe('ProjectAutoTracker', () => {
 
       it('should handle empty file list gracefully', async () => {
         await tracker.recordCodeChange([], 'No files changed');
+        await tracker.flushPendingCodeChanges('test');
 
         expect(mockMCP.memory.createEntities).toHaveBeenCalledWith({
           entities: [{
@@ -114,6 +117,23 @@ describe('ProjectAutoTracker', () => {
             ]),
           }],
         });
+      });
+
+      it('should aggregate multiple code changes into a single entry', async () => {
+        await tracker.recordCodeChange(['src/a.ts'], 'Added A');
+        await tracker.recordCodeChange(['src/b.ts'], 'Added B');
+        await tracker.flushPendingCodeChanges('test');
+
+        expect(mockMCP.memory.createEntities).toHaveBeenCalledTimes(1);
+        const call = (mockMCP.memory.createEntities as any).mock.calls[0][0];
+        const observations = call.entities[0].observations;
+        expect(observations).toEqual(
+          expect.arrayContaining([
+            expect.stringContaining('Files modified: 2'),
+            expect.stringContaining('src/a.ts'),
+            expect.stringContaining('src/b.ts'),
+          ])
+        );
       });
     });
 
@@ -175,6 +195,44 @@ describe('ProjectAutoTracker', () => {
         expect(mockMCP.memory.createEntities).toHaveBeenCalled();
       });
     });
+
+    describe('Workflow Checkpoints', () => {
+      it('should record workflow checkpoint with details', async () => {
+        await tracker.recordWorkflowCheckpoint('code-written', ['Files changed: 2']);
+
+        expect(mockMCP.memory.createEntities).toHaveBeenCalledWith({
+          entities: [{
+            name: expect.stringContaining('Workflow Checkpoint'),
+            entityType: 'workflow_checkpoint',
+            observations: expect.arrayContaining([
+              'Checkpoint: code-written',
+              'Files changed: 2',
+            ]),
+          }],
+        });
+      });
+    });
+
+    describe('Commits', () => {
+      it('should record commit with message and command', async () => {
+        await tracker.recordCommit({
+          message: 'feat: add memory hooks',
+          command: 'git commit -m "feat: add memory hooks"',
+          output: '1 file changed, 10 insertions(+)',
+        });
+
+        expect(mockMCP.memory.createEntities).toHaveBeenCalledWith({
+          entities: [{
+            name: expect.stringContaining('Commit'),
+            entityType: 'commit',
+            observations: expect.arrayContaining([
+              expect.stringContaining('Message: feat: add memory hooks'),
+              expect.stringContaining('Command: git commit -m'),
+            ]),
+          }],
+        });
+      });
+    });
   });
 
   describe('Integration with HookIntegration', () => {
@@ -182,6 +240,7 @@ describe('ProjectAutoTracker', () => {
       const hook = tracker.createFileChangeHook();
 
       await hook(['src/api/user.ts', 'src/models/User.ts'], 'Added authentication');
+      await tracker.flushPendingCodeChanges('test');
 
       expect(mockMCP.memory.createEntities).toHaveBeenCalledWith(
         expect.objectContaining({

@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import type { Router } from '../../orchestrator/router.js';
 import type { ResponseFormatter } from '../../ui/ResponseFormatter.js';
-import { getStatsService } from '../../core/StatsService.js';
 import { type MicroDollars } from '../../utils/money.js';
 import { logger } from '../../utils/logger.js';
 
@@ -18,8 +17,6 @@ export type ValidatedBuddyDoInput = z.infer<typeof BuddyDoInputSchema>;
  * - Ollama (simple tasks, fast & free)
  * - Claude (complex tasks, high quality)
  *
- * All task executions are tracked in StatsService for buddy_stats.
- *
  * Examples:
  *   task: "setup authentication"
  *   task: "refactor user service"
@@ -32,7 +29,6 @@ export async function executeBuddyDo(
 ): Promise<{ content: Array<{ type: 'text'; text: string }> }> {
   const startTime = Date.now();
   const taskId = `buddy-do-${startTime}`;
-  const statsService = getStatsService();
 
   try {
     // Route task through smart routing system
@@ -77,30 +73,6 @@ export async function executeBuddyDo(
                         modelUsed === 'hybrid' ? 0.000005 : 0;
     const costMicro = Math.round(totalTokens * costPerToken * 1_000_000) as MicroDollars;
 
-    // Record the task
-    statsService.recordTask({
-      timestamp: new Date(),
-      agentType: selectedAgent,
-      taskDescription: input.task.substring(0, 200), // Truncate for storage
-      complexity,
-      durationMs,
-      tokensUsed: totalTokens,
-      tokensSaved,
-      costMicro,
-      success: true,
-      modelUsed,
-    });
-
-    // Record the routing decision
-    statsService.recordRoutingDecision({
-      timestamp: new Date(),
-      taskId,
-      selectedModel: modelUsed,
-      reason: `Complexity ${complexity}/10 -> ${modelUsed}`,
-      complexity,
-      estimatedTokens: totalTokens,
-    });
-
     logger.debug('buddy_do task completed', {
       taskId,
       agent: selectedAgent,
@@ -109,12 +81,26 @@ export async function executeBuddyDo(
       durationMs,
     });
 
+    const capabilityFocus = result.analysis.requiredCapabilities.length > 0
+      ? result.analysis.requiredCapabilities
+      : ['general'];
+
     const formattedResponse = formatter.format({
       agentType: 'buddy-do',
       taskDescription: input.task,
       status: 'success',
+      enhancedPrompt: result.routing.enhancedPrompt,
       results: {
-        ...result,
+        routing: {
+          approved: result.approved,
+          message: result.approved
+            ? `Task routed for capabilities: ${capabilityFocus.join(', ')}`
+            : result.message,
+          capabilityFocus,
+          complexity: result.analysis.complexity,
+          estimatedTokens: result.analysis.estimatedTokens,
+          estimatedCost: result.routing.estimatedCost,
+        },
         stats: {
           durationMs,
           modelUsed,
@@ -136,20 +122,6 @@ export async function executeBuddyDo(
   } catch (error) {
     const errorObj = error instanceof Error ? error : new Error(String(error));
     const durationMs = Date.now() - startTime;
-
-    // Record failed task
-    statsService.recordTask({
-      timestamp: new Date(),
-      agentType: 'buddy-do',
-      taskDescription: input.task.substring(0, 200),
-      complexity: 5, // Default
-      durationMs,
-      tokensUsed: 0,
-      tokensSaved: 0,
-      costMicro: 0 as MicroDollars,
-      success: false,
-      modelUsed: 'claude', // Assume Claude was attempted
-    });
 
     logger.error('buddy_do task failed', { taskId, error: errorObj.message });
 

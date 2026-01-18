@@ -25,8 +25,11 @@ export class TelemetryStore {
   private isInitialized: boolean = false;
 
   constructor(options: TelemetryStoreOptions = {}) {
-    this.storagePath = options.storagePath ||
-      path.join(os.homedir(), '.claude-code-buddy', 'telemetry');
+    const isTestEnv = process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST);
+    const defaultPath = isTestEnv
+      ? path.join(os.tmpdir(), 'claude-code-buddy', 'telemetry')
+      : path.join(os.homedir(), '.claude-code-buddy', 'telemetry');
+    this.storagePath = options.storagePath || defaultPath;
   }
 
   async initialize(): Promise<void> {

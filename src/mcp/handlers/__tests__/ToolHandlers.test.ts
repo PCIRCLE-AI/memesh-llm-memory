@@ -22,9 +22,11 @@ import type { SkillManager } from '../../../skills/index.js';
 import type { UninstallManager } from '../../../management/index.js';
 import type { DevelopmentButler } from '../../../agents/DevelopmentButler.js';
 import type { CheckpointDetector } from '../../../core/CheckpointDetector.js';
+import type { HookIntegration } from '../../../core/HookIntegration.js';
 import type { PlanningEngine } from '../../../planning/PlanningEngine.js';
 import type { ProjectMemoryManager } from '../../../memory/ProjectMemoryManager.js';
 import type { HumanInLoopUI } from '../../HumanInLoopUI.js';
+import type { KnowledgeGraph } from '../../../knowledge-graph/index.js';
 
 describe('ToolHandlers', () => {
   // Mock dependencies
@@ -38,8 +40,10 @@ describe('ToolHandlers', () => {
   let mockUninstallManager: UninstallManager;
   let mockDevelopmentButler: DevelopmentButler;
   let mockCheckpointDetector: CheckpointDetector;
+  let mockHookIntegration: HookIntegration;
   let mockPlanningEngine: PlanningEngine;
   let mockProjectMemoryManager: ProjectMemoryManager;
+  let mockKnowledgeGraph: KnowledgeGraph;
   let mockUI: HumanInLoopUI;
   let toolHandlers: ToolHandlers;
 
@@ -50,15 +54,10 @@ describe('ToolHandlers', () => {
     } as unknown as Router;
 
     mockAgentRegistry = {
-      getAllAgents: vi.fn().mockReturnValue([
-        { name: 'frontend-developer', category: 'code', description: 'Frontend development' },
-        { name: 'backend-developer', category: 'code', description: 'Backend development' },
-        { name: 'test-automator', category: 'testing', description: 'Test automation' },
-      ]),
-      getAgentsByCategory: vi.fn().mockReturnValue([
-        { name: 'frontend-developer', category: 'code' },
-      ]),
-      getAgent: vi.fn().mockReturnValue({ name: 'frontend-developer', category: 'code' }),
+      getAgent: vi.fn().mockReturnValue({
+        name: 'backend-developer',
+        capabilities: ['backend', 'api', 'server'],
+      }),
     } as unknown as AgentRegistry;
 
     mockFeedbackCollector = {} as FeedbackCollector;
@@ -112,6 +111,9 @@ describe('ToolHandlers', () => {
     } as unknown as DevelopmentButler;
 
     mockCheckpointDetector = {} as CheckpointDetector;
+    mockHookIntegration = {
+      processToolUse: vi.fn().mockResolvedValue(undefined),
+    } as unknown as HookIntegration;
 
     mockPlanningEngine = {
       generatePlan: vi.fn().mockResolvedValue({
@@ -140,6 +142,13 @@ describe('ToolHandlers', () => {
     } as unknown as PlanningEngine;
 
     mockProjectMemoryManager = {} as ProjectMemoryManager;
+    mockKnowledgeGraph = {
+      createEntity: vi.fn(),
+      addObservation: vi.fn(),
+      createRelation: vi.fn(),
+      query: vi.fn(),
+      listEntities: vi.fn(),
+    } as unknown as KnowledgeGraph;
 
     mockUI = {
       formatConfirmationRequest: vi.fn().mockReturnValue('Formatted confirmation'),
@@ -157,48 +166,12 @@ describe('ToolHandlers', () => {
       mockUninstallManager,
       mockDevelopmentButler,
       mockCheckpointDetector,
+      mockHookIntegration,
       mockPlanningEngine,
       mockProjectMemoryManager,
+      mockKnowledgeGraph,
       mockUI
     );
-  });
-
-  describe('handleListAgents', () => {
-    it('should list all agents grouped by category', async () => {
-      const result = await toolHandlers.handleListAgents();
-
-      expect(result.content).toHaveLength(1);
-      expect(result.content[0].text).toContain('Available Agents');
-      expect(result.content[0].text).toContain('Total');
-      expect(result.content[0].text).toContain('frontend-developer');
-      expect(result.content[0].text).toContain('backend-developer');
-      expect(result.content[0].text).toContain('test-automator');
-    });
-
-    it('should group agents by category', async () => {
-      const result = await toolHandlers.handleListAgents();
-
-      expect(result.content[0].text).toContain('💻'); // code emoji
-      expect(result.content[0].text).toContain('🧪'); // testing emoji
-    });
-
-    it('should handle empty agent list', async () => {
-      vi.mocked(mockAgentRegistry.getAllAgents).mockReturnValue([]);
-
-      const result = await toolHandlers.handleListAgents();
-
-      expect(result.content[0].text).toContain('Total**: 0');
-    });
-
-    it('should handle errors gracefully', async () => {
-      vi.mocked(mockAgentRegistry.getAllAgents).mockImplementation(() => {
-        throw new Error('Registry error');
-      });
-
-      const result = await toolHandlers.handleListAgents();
-
-      expect(result.content[0].text).toContain('❌ List agents failed');
-    });
   });
 
   describe('handleListSkills', () => {
@@ -239,9 +212,9 @@ describe('ToolHandlers', () => {
       const result = await toolHandlers.handleUninstall({});
 
       expect(mockUninstallManager.uninstall).toHaveBeenCalledWith({
-        keepData: undefined,
-        keepConfig: undefined,
-        dryRun: undefined,
+        keepData: false,
+        keepConfig: false,
+        dryRun: false,
       });
       expect(result.content[0].text).toBe('Uninstall report');
     });
@@ -280,9 +253,9 @@ describe('ToolHandlers', () => {
       });
 
       expect(mockDevelopmentButler.processCheckpoint).toHaveBeenCalledWith(
-        'implementation',
+        'code-written',
         expect.objectContaining({
-          phase: 'implementation',
+          phase: 'code-written',
           filesChanged: ['src/index.ts'],
           testsPassing: true,
         })
@@ -349,6 +322,27 @@ describe('ToolHandlers', () => {
     });
   });
 
+  describe('handleHookToolUse', () => {
+    it('should forward hook tool use to HookIntegration', async () => {
+      const result = await toolHandlers.handleHookToolUse({
+        toolName: 'Write',
+        arguments: { file_path: 'src/index.ts' },
+        success: true,
+        tokensUsed: 120,
+      });
+
+      expect(mockHookIntegration.processToolUse).toHaveBeenCalledWith({
+        toolName: 'Write',
+        arguments: { file_path: 'src/index.ts' },
+        success: true,
+        duration: undefined,
+        tokensUsed: 120,
+        output: undefined,
+      });
+      expect(result.content[0].text).toContain('success');
+    });
+  });
+
   describe('handleGenerateSmartPlan', () => {
     it('should generate and format a plan', async () => {
       const result = await toolHandlers.handleGenerateSmartPlan({
@@ -406,8 +400,9 @@ describe('ToolHandlers', () => {
 
   describe('Edge Cases', () => {
     it('should handle null inputs gracefully', async () => {
-      const result = await toolHandlers.handleListAgents();
+      const result = await toolHandlers.handleGetWorkflowGuidance(null);
       expect(result.content).toHaveLength(1);
+      expect(result.content[0].text).toContain('Input validation failed');
     });
 
     it('should handle empty object inputs', async () => {

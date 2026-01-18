@@ -89,7 +89,7 @@ Claude：[關於索引和查詢結構的泛化建議]
 你：「優化這個資料庫查詢」
 
 CCB 分析：資料庫優化任務
-CCB 路由到：db-optimizer agent 類型
+CCB 路由到：資料庫優化能力
 CCB 用以下內容增強提示：資料庫最佳實踐、索引策略、性能分析技術
 
 Claude：[針對你的資料庫設定的具體優化建議，包含實際查詢範例
@@ -113,7 +113,7 @@ CCB 在背景自動增強你的請求，不需要特別的指令：
      ↓
 CCB 自動執行：
   • 偵測任務類型 → 程式碼審查
-  • 路由到 → code-reviewer agent
+  • 路由到 → 程式碼審查能力
   • 增強提示詞 → 安全檢查清單、最佳實踐
      ↓
 Claude 回應專業的安全審查結果
@@ -129,75 +129,11 @@ Claude 回應專業的安全審查結果
 |------|------|------|
 | `buddy-do` | 智能路由執行任務 | `buddy-do "建立使用者認證系統"` |
 | `buddy-remember` | 搜尋專案記憶 | `buddy-remember "為什麼選擇 PostgreSQL"` |
-| `buddy-stats` | 查看效能儀表板 | `buddy-stats week` |
 | `buddy-help` | 取得指令說明 | `buddy-help remember` |
 
-### 💾 記憶指令（儲存與召回知識）
+### 💾 專案記憶
 
-**儲存決策和模式：**
-
-```
-create-entities [{
-  name: "認證決策 2024年1月",
-  entityType: "decision",
-  observations: [
-    "選擇 JWT 而非 sessions，因為需要無狀態 API",
-    "使用 RS256 簽署 token",
-    "Refresh token 存放在 httpOnly cookies"
-  ]
-}]
-```
-
-**召回記憶：**
-
-```
-recall-memory "認證相關決策"
-buddy-remember "我們討論過的 API 設計模式"
-```
-
-**新增到現有知識：**
-
-```
-add-observations [{
-  entityName: "認證決策 2024年1月",
-  contents: ["新增速率限制：每用戶每分鐘 100 次請求"]
-}]
-```
-
-### 📚 RAG 功能（搜尋你的知識庫）
-
-如果你在安裝時啟用了 RAG：
-
-**步驟 1：放入檔案進行索引**（每 5 秒自動索引）：
-
-```bash
-~/Documents/claude-code-buddy-knowledge/
-  ├── architecture.md      # 你的系統設計文件
-  ├── api-spec.json        # API 規格說明
-  ├── meeting-notes.txt    # 團隊決策記錄
-  └── onboarding.pdf       # 支援 .md, .txt, .json, .pdf, .docx
-```
-
-**步驟 2：自然地提問：**
-
-```
-你：「這個專案的認證機制是怎麼運作的？」
-CCB：[搜尋你的索引檔案，回傳相關內容]
-
-你：「我們對資料庫 schema 做了什麼決定？」
-CCB：[找到你的 architecture.md，顯示相關章節]
-```
-
-### 🔧 Git 指令（不需要 Git 知識）
-
-| 指令 | 功能 | 範例 |
-|------|------|------|
-| `git-save-work` | 暫存全部 + 提交 | `git-save-work "新增登入功能"` |
-| `git-list-versions` | 顯示最近的提交 | `git-list-versions` |
-| `git-go-back` | 切換到之前的版本 | `git-go-back 3` |
-| `git-status` | 目前狀態（友善顯示） | `git-status` |
-| `git-show-changes` | 顯示變更內容 | `git-show-changes` |
-| `git-create-backup` | 建立本地備份 | `git-create-backup` |
+專案記憶會自動記錄。使用 `buddy-remember` 召回關鍵決策與近期進度。
 
 ### 📋 快速參考卡
 
@@ -206,31 +142,19 @@ CCB：[找到你的 architecture.md，顯示相關章節]
 │  CCB 快速參考                                                │
 ├─────────────────────────────────────────────────────────────┤
 │  🔄 自動模式（正常對話即可）                                   │
-│     • 「審查這段程式碼」→ 路由到 code-reviewer                 │
-│     • 「幫我除錯這個錯誤」→ 路由到 debugger                    │
-│     • 「設計一個元件」→ 路由到 frontend-specialist             │
+│     • 「審查這段程式碼」→ 路由到程式碼審查能力                 │
+│     • 「幫我除錯這個錯誤」→ 路由到除錯能力                     │
+│     • 「設計一個元件」→ 路由到介面設計能力                     │
 ├─────────────────────────────────────────────────────────────┤
 │  🎮 BUDDY 指令                                               │
 │     buddy-do "任務"         智能路由執行                      │
 │     buddy-remember "查詢"   搜尋專案記憶                      │
-│     buddy-stats [期間]      查看效能儀表板                    │
 │     buddy-help [指令]       取得說明                          │
 ├─────────────────────────────────────────────────────────────┤
-│  💾 記憶指令                                                 │
-│     create-entities         儲存決策/模式                    │
-│     recall-memory           召回過去的工作                   │
-│     add-observations        更新現有知識                     │
-│     create-relations        連結相關實體                     │
-├─────────────────────────────────────────────────────────────┤
-│  📚 RAG（如果已啟用）                                         │
-│     檔案放入: ~/Documents/claude-code-buddy-knowledge/        │
-│     然後直接問: 「這個專案的 X 是怎麼運作的？」                 │
-├─────────────────────────────────────────────────────────────┤
-│  🔧 GIT（新手友善）                                          │
-│     git-save-work "訊息"    提交所有變更                     │
-│     git-list-versions       顯示歷史記錄                     │
-│     git-go-back N           回到版本 N                       │
-│     git-status              目前狀態                         │
+│  🧭 工作流程                                                  │
+│     get-session-health     檢查上下文健康度                   │
+│     get-workflow-guidance  取得下一步建議                     │
+│     generate-smart-plan    產生實作計畫                       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -240,106 +164,19 @@ CCB：[找到你的 architecture.md，顯示相關章節]
 
 ### ✨ 自動專業知識路由
 
-**36 個專業 Agents** 根據任務類型自動選擇：
+CCB 會依照能力訊號自動路由至內部專家。你只要描述需求即可。
 
-**類型：** 9 個真實實作 + 26 個增強提示 + 1 個可選功能（RAG）
+**涵蓋能力範圍：**
+- 程式碼審查、安全稽核與最佳實踐
+- 除錯與根因分析
+- 重構與技術債處理
+- API 設計、後端架構、資料庫優化
+- 測試策略與測試產生
+- 效能分析與最佳化
+- UI/UX 設計與技術文件
+- 研究、產品與規劃支援
 
-**你不需要選擇 agent - CCB 會自動為你的任務選擇正確的 agent。**
-
-<details>
-<summary><b>📋 查看全部 36 個 Agents</b></summary>
-
-#### 🔧 真實實作 Agents（9 個）
-
-這些 agents 具有實際程式碼實作並整合 MCP 工具：
-
-- **development-butler** - 事件驅動工作流程自動化、程式碼維護、測試、依賴管理、git 工作流程、建置自動化
-- **test-writer** - 測試自動化專家、TDD 專家、覆蓋率分析
-- **e2e-healing-agent** - 端到端測試自動化並具自我修復能力、Playwright 驅動的瀏覽器測試、自動失敗分析和程式碼修復
-- **devops-engineer** - DevOps、CI/CD、基礎設施自動化、部署專家
-- **project-manager** - 專案規劃、任務管理、里程碑追蹤、團隊協調
-- **data-engineer** - 資料管道開發、ETL 流程、資料品質管理
-- **workflow-orchestrator** - 智能工作流程平台選擇器（Opal vs n8n）、工作流程自動化編排
-- **opal-automation** - Google Opal 瀏覽器自動化、自然語言工作流程創建、AI 驅動的原型
-- **n8n-workflow** - n8n 工作流程 API 整合、生產工作流程管理、多系統整合
-
-#### 💬 增強提示 Agents（26 個）
-
-這些 agents 使用專業提示，無需 MCP 工具整合：
-
-**開發類（13 個 agents）**
-
-- **frontend-developer** - 前端開發專家、React/Vue/Angular 專家
-- **backend-developer** - 後端開發專家、API 和伺服器端專家
-- **frontend-specialist** - 前端架構、性能優化、現代框架專家
-- **backend-specialist** - 後端架構、可擴展性、微服務專家
-- **database-administrator** - 資料庫專家、schema 設計、查詢優化專家
-- **db-optimizer** - 資料庫優化、查詢調校、索引設計專家
-- **performance-engineer** - 性能優化專家、瓶頸分析、快取專家
-- **performance-profiler** - 性能分析、瓶頸識別、優化分析
-- **code-reviewer** - 專業程式碼審查、安全分析、最佳實踐驗證
-- **debugger** - 進階除錯、根本原因分析、系統化問題解決
-- **refactorer** - 程式碼重構、技術債務削減、程式碼品質改進
-- **api-designer** - API 設計、REST/GraphQL 架構、API 文檔專家
-- **test-automator** - 測試自動化專家、自動化測試專家
-
-**分析與研究（4 個 agents）**
-
-- **architecture-agent** - 系統架構專家、設計模式、可擴展性分析
-- **research-agent** - 技術研究、可行性分析、技術評估
-- **data-analyst** - 資料分析、統計建模、商業智能專家
-- **knowledge-agent** - 知識管理、資訊檢索、文檔組織
-
-**營運與安全（1 個 agent）**
-
-- **security-auditor** - 安全審計、漏洞評估、合規專家
-
-**管理（1 個 agent）**
-
-- **product-manager** - 產品策略、用戶研究、功能優先順序專家
-
-**創意（2 個 agents）**
-
-- **ui-designer** - UI/UX 設計、用戶體驗、介面設計專家
-- **technical-writer** - 技術文檔、API 文檔、用戶指南專家
-
-**商業（1 個 agent）**
-
-- **marketing-strategist** - 行銷策略、品牌定位、增長駭客專家
-
-**工程（1 個 agent）**
-
-- **ml-engineer** - 機器學習工程、模型訓練、ML 管道專家
-
-**工具類（3 個 agents）**
-
-- **migration-assistant** - 遷移規劃、版本升級、傳統系統現代化
-- **api-integrator** - API 整合、第三方服務、SDK 實作專家
-- **general-agent** - 通用型 agent，用於雜項任務和備援情境
-
-#### 🎯 可選功能 Agents（1 個）
-
-需要外部依賴（ChromaDB + OpenAI）：
-
-- **rag-agent** - 知識檢索、向量搜尋、基於嵌入的上下文搜尋
-
-</details>
-
-### 💾 三種記憶類型
-
-**RAG（檢索增強生成）與 Drop Inbox**
-
-```
-你：「顯示這個專案中的身份驗證如何運作」
-CCB：[搜尋你的程式碼庫，找到實際的身份驗證檔案，展示模式]
-```
-
-**Drop Inbox 魔法：**
-
-- 將檔案放入 `~/Documents/claude-code-buddy-knowledge/`
-- CCB 每 5 秒自動索引
-- 支援：.md、.txt、.json、.pdf、.docx
-- 不需要命令 - 只要放入即可！
+### 💾 記憶系統
 
 **知識圖譜**
 
@@ -374,45 +211,11 @@ CCB 分析任務複雜度並路由到最佳的 Claude 模型，節省約 40% 的
 
 ```bash
 # 自然語言命令，就是這麼簡單
-buddy do setup authentication
-buddy do optimize this database query
-buddy stats week
-buddy remember how we implemented login
-buddy help
+buddy-do "setup authentication"
+buddy-do "optimize this database query"
+buddy-remember "how we implemented login"
+buddy-help
 ```
-
-**別名也可以用：** `help-with`、`execute`、`recall`、`dashboard` - 選擇你覺得自然的。
-
-### 💾 初學者友善的 Git 助手
-
-**不需要 Git 命令。** 只要用自然語言告訴 CCB 你想要什麼：
-
-```bash
-# 儲存你的工作
-git-save-work "added login feature"
-
-# 查看你的版本
-git-list-versions
-
-# 回到先前的版本
-git-go-back 3
-
-# 顯示變更內容
-git-show-changes
-```
-
-**8 個說人話的 Git 工具：**
-
-- `git-save-work` - 用友善的提交訊息儲存
-- `git-list-versions` - 列出最近的版本
-- `git-status` - 以可讀格式顯示目前狀態
-- `git-show-changes` - 查看變更內容
-- `git-go-back` - 時光倒流到先前版本
-- `git-create-backup` - 創建本地備份
-- `git-setup` - 為新專案設定 Git
-- `git-help` - 顯示可用命令
-
-**適合：** 覺得 Git 令人畏懼的初學者，或任何想要簡單版本控制的人。
 
 ### 🔄 智能工作流程引導
 
@@ -424,25 +227,23 @@ git-show-changes
 審查完成 → CCB：「審查完成！提交並推送？」
 ```
 
-**4 個工作流程工具：**
+**工作流程工具：**
 
 - `get-workflow-guidance` - 獲得下一步建議
 - `get-session-health` - 檢查 session 健康狀態
-- `reload-context` - 需要時重載 CLAUDE.md
-- `record-token-usage` - 追蹤 token 消耗
 
 **優勢：** 永不疑惑「我接下來該做什麼？」- CCB 引導你完成整個開發流程。
 
 ### 📋 智能實作規劃
 
-**將複雜功能分解為小型任務。** CCB 生成 TDD 結構化計畫，具備 agent 感知的任務分解。
+**將複雜功能分解為小型任務。** CCB 生成 TDD 結構化計畫，具備能力感知的任務分解。
 
 ```
 你：「規劃使用者身份驗證的實作」
 CCB：[生成逐步計畫，包含：
   - 測試優先方法
   - 2-5 分鐘的任務
-  - 每個任務的正確 agent
+  - 每個任務的正確能力
   - 明確的成功標準]
 ```
 
@@ -456,7 +257,7 @@ CCB：[生成逐步計畫，包含：
 
 ### 前置需求
 
-- Node.js 18+ ([下載](https://nodejs.org/))
+- Node.js 20+ ([下載](https://nodejs.org/))
 - Claude Code 已安裝 ([在這裡取得](https://claude.com/claude-code))
 
 ### 安裝
@@ -470,31 +271,24 @@ cd claude-code-buddy
 ./scripts/install.sh
 ```
 
-安裝程式會引導你完成 **11 個互動式步驟**：
+安裝程式會引導你完成 **9 個互動式步驟**：
 
-**核心設定（步驟 1-8）**：
+**核心設定（步驟 1-7）**：
 
-- ✓ 檢查前置需求（Node.js 18+、npm、git）
+- ✓ 檢查前置需求（Node.js 20+、npm；git 可選）
 - ✓ 安裝相依性
 - ✓ 建構專案
 - ✓ 檢查系統資源
 - ✓ 設定環境
-- ✓ **選用 RAG 設定**：選擇 HuggingFace（免費）或 OpenAI（付費）以增強知識檢索
 - ✓ 設定 Claude Code MCP 整合
 - ✓ 測試安裝
 
-**互動式展示（步驟 9-10）**：
+**互動式展示（步驟 8-9）**：
 
-- 📚 **步驟 9：基本使用展示** - 了解 CCB 的智能路由、範例提示、記憶類型和成本節省
-- 📁 **步驟 10：RAG 功能展示**（如果啟用）- 探索 Drop Inbox 的魔力與範例文件
+- 📚 **步驟 8：基本使用展示** - 了解 CCB 的智能路由、範例提示與記憶功能
+- ✅ **步驟 9：MCP 驗證** - 確認 MCP 伺服器可連線
 
 **核心功能不需要 API 金鑰** - 使用你現有的 Claude Code 訂閱。
-
-**選用 RAG 功能**：
-
-- **免費選項**：HuggingFace 嵌入（無需 API 金鑰成本）
-- **付費選項**：OpenAI 嵌入（自備 API 金鑰）
-- **Drop Inbox**：每 5 秒自動索引 `~/Documents/claude-code-buddy-knowledge/` 目錄中的檔案
 
 ### 開始使用
 
@@ -507,7 +301,7 @@ cd claude-code-buddy
 「優化這個資料庫查詢」
 ```
 
-CCB 會自動將任務路由到正確的 agent，並用相關上下文增強提示。
+CCB 會自動將任務路由到正確的能力，並用相關上下文增強提示。
 
 ---
 
@@ -518,7 +312,7 @@ CCB 會自動將任務路由到正確的 agent，並用相關上下文增強提�
     ↓
 CCB 分析任務
     ↓
-路由到最佳 agent 類型（例如 code-reviewer、debugger）
+路由到最佳能力類型（例如程式碼審查、除錯）
     ↓
 用專業上下文增強提示
     ↓
@@ -529,8 +323,8 @@ Claude Code 用你的訂閱執行
 
 **幕後：**
 
-- **36 個 agent 總數**：9 個真實實作（測試撰寫器、DevOps 工程師、工作流程編排器等）+ 26 個增強提示 + 1 個可選功能（RAG）
-- **智能路由**分析任務複雜度並自動選擇最佳 agent 和 Claude 模型
+- **內部專家體系**：以能力訊號驅動路由與提示增強
+- **智能路由**分析任務複雜度並自動選擇最佳 Claude 模型
 - **演化系統**從你的選擇中學習並持續改進建議
 
 **技術深入探討：** 參見 [ARCHITECTURE.md](docs/ARCHITECTURE.md)
@@ -543,10 +337,10 @@ Claude Code 用你的訂閱執行
 
 - **使 Claude Code 具備專案意識**針對你的特定專案
 - **減少重複提示**透過智能任務路由
-- **在不同 session 之間記憶**使用持久記憶系統（RAG + 知識圖譜 + 專案上下文）
+- **在不同 session 之間記憶**使用持久記憶系統（知識圖譜 + 專案上下文）
 - **提供專業知識**無需你撰寫專家級提示
 - **節省 token 成本**透過路由到最佳 Claude 模型（Haiku/Sonnet/Opus）
-- **從你的選擇中學習**當你覆蓋 agent 建議時
+- **從你的選擇中學習**當你覆蓋建議時
 - **引導你的工作流程**透過智能下一步建議
 - **協調複雜工作流程**跨越多個步驟
 - **跨平台支援**無縫支援 Windows、macOS 和 Linux
@@ -571,7 +365,7 @@ Claude Code 用你的訂閱執行
 
 ```
 「審查這個 PR 是否有安全漏洞和程式碼品質問題」
-→ 路由到 code-reviewer
+→ 路由到程式碼審查能力
 → 獲得安全檢查清單 + 品質標準
 → 返回詳細審查，包含具體建議
 ```
@@ -580,7 +374,7 @@ Claude Code 用你的訂閱執行
 
 ```
 「這個函式在 undefined 時崩潰，幫助除錯」
-→ 路由到 debugger
+→ 路由到除錯能力
 → 獲得系統化除錯方法
 → 逐步進行根本原因分析
 ```
@@ -589,7 +383,7 @@ Claude Code 用你的訂閱執行
 
 ```
 「設計一個具有深色模式的響應式儀表板」
-→ 路由到 frontend-specialist
+→ 路由到介面設計能力
 → 獲得 UI/UX 模式 + 無障礙性指南
 → 返回完整設計，包含響應式斷點
 ```
@@ -598,7 +392,7 @@ Claude Code 用你的訂閱執行
 
 ```
 「這個 Prisma 查詢需要 2 秒，優化它」
-→ 路由到 db-optimizer
+→ 路由到資料庫優化能力
 → 獲得查詢優化模式 + 索引策略
 → 返回優化的查詢，包含性能基準測試
 ```
@@ -607,11 +401,9 @@ Claude Code 用你的訂閱執行
 
 ## 進階功能
 
-- **自訂技能** - 用 TypeScript 撰寫你自己的 agent 行為
+- **自訂技能** - 用 TypeScript 撰寫你自己的路由行為
 - **多步驟規劃** - 將複雜任務分解為可執行的計劃
 - **工作流程協調** - 自動檢查點檢測和下一步建議
-- **Git 整合** - 初學者友善的 Git 命令（`save-work`、`list-versions`、`go-back-to`）
-- **N8n & Opal 整合** - 工作流程自動化（N8n REST API + Opal 瀏覽器自動化與自然語言）
 - **儀表板** - 即時指標、session 健康監控、性能追蹤
 
 **探索：** 參見 [docs/](docs/) 了解每個功能的詳細指南。
@@ -669,15 +461,15 @@ npm run dashboard
 答：Claude Code 對所有任務一視同仁。CCB 增加了任務特定的專業知識、記憶和學習。
 
 **問：我的程式碼是私有的嗎？**
-答：是的。所有內容都透過你的 Claude Code 訂閱在本地執行。可選的 RAG 功能提供兩種嵌入選項：本地 Ollama（無需 API 金鑰，完全私密）或 OpenAI API（自備金鑰）。
+答：是的。所有內容都透過你的 Claude Code 訂閱在本地執行，不需要外部 AI 服務。
 
 **問：如果我不喜歡怎麼辦？**
 答：從你的 MCP 設定中移除它。沒有鎖定，沒有供應商依賴。
 
 **問：這要多少錢？**
-答：CCB 是免費且開源的（AGPL-3.0）。與你現有的 Claude Code 訂閱一起使用。可選的 RAG 功能是免費的 - 使用本地 Ollama 嵌入（無需 API 金鑰）或自備 OpenAI API 金鑰。
+答：CCB 是免費且開源的（AGPL-3.0）。與你現有的 Claude Code 訂閱一起使用。
 
-**問：我可以自訂 agent 嗎？**
+**問：我可以自訂路由行為嗎？**
 答：當然！提示範本在 `src/core/PromptEnhancer.ts`。演化設定在 `src/evolution/AgentEvolutionConfig.ts`。
 
 ---
@@ -694,7 +486,6 @@ npm run dashboard
 
 - 使用 [Model Context Protocol (MCP)](https://github.com/anthropics/mcp) 建構
 - 與 [Claude Code](https://claude.com/claude-code) 配合使用
-- 可選的 [OpenAI Embeddings](https://openai.com) 用於 RAG 功能
 - 受 Claude Code 社群啟發
 - 感謝所有貢獻者和早期測試者
 

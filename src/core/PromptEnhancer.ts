@@ -18,13 +18,13 @@
  * - **Cost Optimization**: Complexity-based model selection (Haiku/Sonnet/Opus)
  * - **Specialized Expertise**: Agent-specific personas and tool definitions
  *
- * Agent Types Supported (33 total):
+ * Agent Types Supported:
  * - **Development**: code-reviewer, test-writer, debugger, refactorer, api-designer
  * - **Frontend/Backend**: frontend-specialist, backend-specialist, frontend-developer, backend-developer
- * - **Infrastructure**: devops-engineer, database-administrator, performance-engineer
+ * - **Infrastructure**: database-administrator, performance-engineer
  * - **Security**: security-auditor
  * - **Data**: data-analyst, data-engineer, ml-engineer, db-optimizer
- * - **Research**: research-agent, rag-agent, knowledge-agent
+ * - **Research**: research-agent, knowledge-agent
  * - **Management**: project-manager, product-manager, marketing-strategist
  * - **Documentation**: technical-writer, ui-designer
  * - **Automation**: development-butler, test-automator, performance-profiler

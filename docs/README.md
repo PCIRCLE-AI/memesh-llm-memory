@@ -18,9 +18,9 @@ System architecture and design patterns documentation.
 
 ### 🤖 Core Features
 
-Advanced multi-agent systems and self-learning capabilities.
+Advanced capability routing and self-learning systems.
 
-- **[Self-Evolving Agent](./EVOLUTION.md)** - Self-learning and behavior optimization system
+- **[Self-Evolving System](./EVOLUTION.md)** - Self-learning and behavior optimization system
 - **[Terminal UI Dashboard](./UI_TERMINAL_DASHBOARD.md)** - Real-time monitoring and progress tracking
 
 ### 🔌 [API Reference](./api/)
@@ -37,7 +37,6 @@ Step-by-step guides for common tasks and best practices.
 - **[Setup Guide](./guides/SETUP.md)** - Installation and configuration
 - **[Testing Guide](./guides/TESTING.md)** - Testing strategies and best practices
 - **[E2E Testing Best Practices](./guides/E2E_TESTING_BEST_PRACTICES.md)** - End-to-end testing guide
-- **[RAG Deployment](./guides/RAG_DEPLOYMENT.md)** - RAG agent deployment guide
 - **[Claude Code Enhancement Guide](./guides/CLAUDE_CODE_ENHANCEMENT_GUIDE.md)** - Enhancing Claude Code with claude-code-buddy
 
 ### 📝 [Examples](./examples/)
@@ -57,14 +56,13 @@ Example configurations and quick references.
 **Developer**:
 1. [Setup Guide](./guides/SETUP.md)
 2. [System Overview](./architecture/OVERVIEW.md)
-3. [Self-Evolving Agent](./EVOLUTION.md)
+3. [Self-Evolving System](./EVOLUTION.md)
 4. [API Reference](./api/API_REFERENCE.md)
 5. [Testing Guide](./guides/TESTING.md)
 
-**DevOps Engineer**:
-1. [RAG Deployment](./guides/RAG_DEPLOYMENT.md)
-2. [MCP Integration](./architecture/mcp-orchestrator-integration.md)
-3. [Enterprise Examples](./examples/enterprise/)
+**Operations**:
+1. [MCP Integration](./architecture/mcp-orchestrator-integration.md)
+2. [Enterprise Examples](./examples/enterprise/)
 
 ### By Task
 

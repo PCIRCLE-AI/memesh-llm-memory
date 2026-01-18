@@ -56,14 +56,12 @@ describe('MCPToolInterface', () => {
       });
     });
 
-    it('should throw error for tool invocation (v2.1.0 limitation)', async () => {
-      // v2.1.0 limitation: MCP tool invocation not yet implemented
-      // Agents work via prompt enhancement instead of direct tool calls
+    it('should throw error when external tool invocation is not configured', async () => {
       await expect(
         toolInterface.invokeTool('filesystem', 'read', {
           path: '/test/file.txt',
         })
-      ).rejects.toThrow('MCP tool invocation not yet implemented (v2.1.0 limitation)');
+      ).rejects.toThrow('External MCP tool invocation is not configured');
     });
 
     it('should throw error when invoking unregistered tool', async () => {

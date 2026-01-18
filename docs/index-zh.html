@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Claude Code Buddy - 你的友善 AI 編程助手</title>
-    <meta name="description" content="免費開源的 Plugin，為 Claude Code 提供智能路由、記憶管理和 36 個專業 Agents。你的友善 Vibe Coding 夥伴。">
+    <meta name="description" content="免費開源的 Plugin，為 Claude Code 提供智能路由、記憶管理與工作流程引導。你的友善 Vibe Coding 夥伴。">
 
     <!-- Open Graph -->
     <meta property="og:title" content="Claude Code Buddy - 你的友善 AI 編程助手">
-    <meta property="og:description" content="智能任務路由、記憶管理和 36 個專業 Agents 為 Claude Code 賦能">
+    <meta property="og:description" content="智能任務路由、記憶管理與工作流程引導，為 Claude Code 賦能">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://ccb.pcircle.ai">
 
@@ -298,7 +298,7 @@
                 </h1>
 
                 <p class="text-xl md:text-2xl text-gray-700 mb-12 max-w-3xl mx-auto leading-relaxed">
-                    為 Claude Code 增強<strong>智能任務路由</strong>、<strong>持久記憶</strong>和 <strong>36 個專業 Agents</strong>。
+                    為 Claude Code 增強<strong>智能任務路由</strong>、<strong>持久記憶</strong>和 <strong>工作流程引導</strong>。
                     將你的 AI 助手轉變為<strong>專案感知的團隊成員</strong>，永不遺忘。
                 </p>
 
@@ -345,9 +345,9 @@
                     <div class="text-gray-500 text-sm mt-2">透過智能模型選擇</div>
                 </div>
                 <div class="glass-card rounded-2xl p-8 text-center">
-                    <div class="text-5xl font-bold text-orange-600 mb-2">36</div>
-                    <div class="text-gray-700 font-semibold">專業 Agents</div>
-                    <div class="text-gray-500 text-sm mt-2">適用於各種開發任務</div>
+                    <div class="text-5xl font-bold text-orange-600 mb-2">7</div>
+                    <div class="text-gray-700 font-semibold">核心工具</div>
+                    <div class="text-gray-500 text-sm mt-2">路由、記憶、規劃與引導</div>
                 </div>
                 <div class="glass-card rounded-2xl p-8 text-center">
                     <div class="text-5xl font-bold text-green-600 mb-2">100%</div>
@@ -363,7 +363,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
                 <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Claude Code 使用者面臨的問題</h2>
-                <p class="text-xl text-gray-600">CCB 透過智能記憶和專業 Agents 解決常見挫折</p>
+                <p class="text-xl text-gray-600">CCB 透過智能記憶和能力路由解決常見挫折</p>
             </div>
 
             <div class="space-y-8">
@@ -415,11 +415,11 @@
                             <div class="flex-1">
                                 <h4 class="text-xl font-bold text-gray-900 mb-3">解決方案：智能任務路由</h4>
                                 <p class="text-gray-700 mb-4 leading-relaxed">
-                                    36 個專業 Agents 為不同任務提供專家級回應。code-reviewer 專注安全、debugger 進行系統性分析、ui-designer 確保無障礙性。
+                                    依能力路由提供專家級回應。程式碼審查專注安全，除錯提供系統性分析，UI/UX 設計強調可用性與一致性。
                                 </p>
                                 <div class="warm-gradient-blue rounded-xl p-5">
                                     <p class="text-gray-700 text-sm">
-                                        <strong>實際範例：</strong>「審查此程式碼」→ 自動路由到 code-reviewer agent → 獲得安全檢查清單 + OWASP 最佳實踐 + 具體建議
+                                        <strong>實際範例：</strong>「審查此程式碼」→ 自動路由到 code review 能力 → 獲得安全檢查清單 + OWASP 最佳實踐 + 具體建議
                                     </p>
                                 </div>
                             </div>
@@ -457,7 +457,7 @@
                     </div>
                 </div>
 
-                <!-- Problem 4: Repetitive Context → RAG + Drop Inbox -->
+                <!-- Problem 4: Repetitive Context → Project Memory -->
                 <div class="glass-card rounded-2xl p-8">
                     <div class="flex items-start mb-4">
                         <div class="icon-red mr-6"><i data-lucide="x-circle" class="icon-xl text-white"></i></div>
@@ -473,13 +473,13 @@
                         <div class="flex items-start">
                             <div class="icon-blue mr-6"><i data-lucide="library" class="icon-xl text-white"></i></div>
                             <div class="flex-1">
-                                <h4 class="text-xl font-bold text-gray-900 mb-3">解決方案：RAG + Drop Inbox</h4>
+                                <h4 class="text-xl font-bold text-gray-900 mb-3">解決方案：專案記憶與自動整理</h4>
                                 <p class="text-gray-700 mb-4 leading-relaxed">
-                                    將文件拖放到 ~/Documents/claude-code-buddy-knowledge/ → 每 5 秒自動索引 → 不需重複說明。
+                                    透過 hooks 在關鍵階段自動整理專案記憶，保留決策與上下文，不需重複說明。
                                 </p>
                                 <div class="warm-gradient-blue rounded-xl p-5">
                                     <p class="text-gray-700 text-sm">
-                                        <strong>實際運作：</strong>FileWatcher 監控文件夾 → 新增 .md/.txt/.json/.pdf/.docx → 自動建立索引 → buddy remember 可搜尋內容
+                                        <strong>實際運作：</strong>HookIntegration 捕捉進度 → Project Memory 生成 → buddy remember 查詢相關記憶
                                     </p>
                                 </div>
                             </div>
@@ -563,34 +563,34 @@
             </div>
 
             <div class="grid md:grid-cols-2 gap-8">
-                <!-- Feature 1: 36 Specialized Agents -->
+                <!-- Feature 1: Capability Routing -->
                 <div class="glass-card rounded-2xl p-8">
                     <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center mb-6">
                         <i data-lucide="users" class="icon-xl text-white"></i>
                     </div>
-                    <h3 class="text-2xl font-bold text-gray-900 mb-4">36 個專業 Agents</h3>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">能力導向路由</h3>
                     <p class="text-gray-700 mb-6 leading-relaxed">
-                        根據任務類型自動路由到專業 Agents。每個 Agent 都針對特定開發場景進行訓練。
+                        根據任務類型自動選擇最適合的能力，聚焦安全、品質與可用性。
                     </p>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="bg-white bg-opacity-60 rounded-lg p-4">
-                            <div class="font-semibold text-gray-900 mb-1">code-reviewer</div>
+                            <div class="font-semibold text-gray-900 mb-1">code review</div>
                             <div class="text-sm text-gray-600">安全性、品質</div>
                         </div>
                         <div class="bg-white bg-opacity-60 rounded-lg p-4">
-                            <div class="font-semibold text-gray-900 mb-1">debugger</div>
+                            <div class="font-semibold text-gray-900 mb-1">debugging</div>
                             <div class="text-sm text-gray-600">系統性除錯</div>
                         </div>
                         <div class="bg-white bg-opacity-60 rounded-lg p-4">
-                            <div class="font-semibold text-gray-900 mb-1">ui-designer</div>
+                            <div class="font-semibold text-gray-900 mb-1">ui/ux</div>
                             <div class="text-sm text-gray-600">UI/UX 設計</div>
                         </div>
                         <div class="bg-white bg-opacity-60 rounded-lg p-4">
-                            <div class="font-semibold text-gray-900 mb-1">architect</div>
+                            <div class="font-semibold text-gray-900 mb-1">architecture</div>
                             <div class="text-sm text-gray-600">系統設計</div>
                         </div>
                     </div>
-                    <div class="text-center mt-4 text-gray-500 italic">...還有 32 個專業 Agents</div>
+                    <div class="text-center mt-4 text-gray-500 italic">涵蓋前後端、測試與效能等能力</div>
                 </div>
 
                 <!-- Feature 2: Knowledge Graph Memory -->
@@ -618,47 +618,40 @@
                     </div>
                 </div>
 
-                <!-- Feature 3: Git Tools for Beginners -->
+                <!-- Feature 3: Workflow Guidance -->
                 <div class="glass-card rounded-2xl p-8">
                     <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center mb-6">
-                        <i data-lucide="git-branch" class="icon-xl text-white"></i>
+                        <i data-lucide="compass" class="icon-xl text-white"></i>
                     </div>
-                    <h3 class="text-2xl font-bold text-gray-900 mb-4">新手友善的 Git</h3>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">工作流程引導</h3>
                     <p class="text-gray-700 mb-4 leading-relaxed">
-                        8 個使用簡單語言的 Git 工具。無需複雜的 Git 命令。
+                        在 code-written/test-complete 等階段提供下一步建議，降低卡關。
                     </p>
                     <div class="bg-white bg-opacity-60 rounded-lg p-4">
-                        <pre class="text-sm"><code><span class="comment"># 儲存你的工作</span>
-git-save-work <span class="string">"新增登入功能"</span>
+                        <pre class="text-sm"><code><span class="comment"># 取得下一步建議</span>
+get-workflow-guidance <span class="string">{"phase":"code-written"}</span>
 
-<span class="comment"># 查看版本</span>
-git-list-versions
-
-<span class="comment"># 回到版本 3</span>
-git-go-back 3</code></pre>
+<span class="comment"># 檢查會話健康度</span>
+get-session-health</code></pre>
                     </div>
                 </div>
 
-                <!-- Feature 4: RAG Codebase Search -->
-                <div class="glass-card rounded-2xl p-8 border-2 border-orange-200">
-                    <span class="badge badge-orange mb-3">選配增強功能</span>
-                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center mb-6">
-                        <i data-lucide="search" class="icon-xl text-white"></i>
+                <!-- Feature 4: Project Memory -->
+                <div class="glass-card rounded-2xl p-8 border-2 border-blue-200">
+                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center mb-6">
+                        <i data-lucide="brain" class="icon-xl text-white"></i>
                     </div>
-                    <h3 class="text-2xl font-bold text-gray-900 mb-4">RAG - 程式碼庫搜尋</h3>
-                    <div class="flex items-baseline mb-4">
-                        <span class="text-3xl font-bold text-gray-900">免費</span>
-                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">專案記憶與檢索</h3>
                     <p class="text-gray-700 mb-4 leading-relaxed">
-                        語義化搜尋你的程式碼庫，找到實際實作範例。
+                        自動累積決策與脈絡，使用 buddy remember 快速回憶。
                     </p>
-                    <div class="warm-gradient-orange rounded-xl p-5">
+                    <div class="warm-gradient-blue rounded-xl p-5">
                         <p class="text-gray-700 text-sm mb-2">
-                            <strong>兩種嵌入選項：</strong>本地 Ollama 或 OpenAI API
+                            <strong>自動整理：</strong>在重要階段與提交後同步專案記憶
                         </p>
                         <p class="text-gray-600 text-sm">
-                            • <strong>本地 Ollama：</strong>無需 API 金鑰（nomic-embed-text, mxbai-embed-large）<br>
-                            • <strong>OpenAI API：</strong>自備 OpenAI API 金鑰（更高品質、雲端運算）
+                            • 結構化記憶，不需重複說明<br>
+                            • 可直接查詢過往決策與實作
                         </p>
                     </div>
                 </div>
@@ -678,11 +671,11 @@ git-go-back 3</code></pre>
                         <h3 class="text-xl font-bold text-gray-900 mb-3">核心功能無需 API Key</h3>
                         <p class="text-gray-700 mb-4 leading-relaxed">
                             Claude Code Buddy 使用你現有的 <strong>Claude Code 訂閱</strong>。
-                            所有 36 個 Agents、知識圖譜記憶和任務路由功能開箱即用。
+                            任務路由、專案記憶與工作流程引導功能開箱即用。
                         </p>
                         <div class="warm-gradient-blue rounded-lg p-4">
                             <p class="text-gray-700 text-sm">
-                                <strong>選配增強功能：</strong>RAG（檢索增強生成）功能提供兩種嵌入選項：本地 Ollama（無需 API 金鑰）或 OpenAI API（自備金鑰）。
+                                <strong>補充：</strong>記憶系統會在關鍵階段自動整理上下文，協助保持專案一致性。
                             </p>
                         </div>
                     </div>
@@ -710,10 +703,10 @@ git-go-back 3</code></pre>
                         </div>
                         <div class="flex-1">
                             <h3 class="text-2xl font-bold text-gray-900 mb-4">前置需求</h3>
-                            <p class="text-gray-700 mb-4">Node.js 18+ 和 Claude Code 已安裝</p>
+                            <p class="text-gray-700 mb-4">Node.js 20+ 和 Claude Code 已安裝</p>
                             <div class="glass-card rounded-xl p-5">
                                 <pre><code><span class="comment"># 檢查 Node.js 版本</span>
-node --version  <span class="comment"># 應為 v18 或更高</span></code></pre>
+node --version  <span class="comment"># 應為 v20 或更高</span></code></pre>
                             </div>
                         </div>
                     </div>
@@ -790,11 +783,11 @@ node --version  <span class="comment"># 應為 v18 或更高</span></code></pre>
                     </div>
                     <h3 class="text-2xl font-bold text-gray-900 mb-4">自動模式</h3>
                     <p class="text-gray-700 mb-4 leading-relaxed">
-                        CCB 在背景自動工作。像平常一樣使用 Claude Code，CCB 會根據你的任務自動路由到專業 Agents。
+                        CCB 在背景自動工作。像平常一樣使用 Claude Code，CCB 會根據你的任務自動路由到合適的能力。
                     </p>
                     <div class="warm-gradient-blue rounded-xl p-5">
                         <p class="text-gray-700 text-sm">
-                            <strong>範例：</strong>當你請 Claude「審查這段程式碼」，CCB 自動路由到 code-reviewer agent 提供安全分析。
+                            <strong>範例：</strong>當你請 Claude「審查這段程式碼」，CCB 自動路由到 code review 能力提供安全分析。
                         </p>
                     </div>
                 </div>
@@ -806,7 +799,7 @@ node --version  <span class="comment"># 應為 v18 或更高</span></code></pre>
                     </div>
                     <h3 class="text-2xl font-bold text-gray-900 mb-4">明確指令模式</h3>
                     <p class="text-gray-700 mb-4 leading-relaxed">
-                        使用 <code class="inline-code">buddy</code> 指令直接與 CCB 互動，獲取記憶管理、統計數據等功能。
+                        使用 <code class="inline-code">buddy</code> 指令直接與 CCB 互動，獲取記憶管理、工作流程引導等功能。
                     </p>
                     <div class="warm-gradient-orange rounded-xl p-5">
                         <p class="text-gray-700 text-sm">
@@ -826,15 +819,11 @@ node --version  <span class="comment"># 應為 v18 或更高</span></code></pre>
                     <div class="space-y-3">
                         <div class="bg-white bg-opacity-60 rounded-lg p-3">
                             <code class="text-blue-700 font-semibold text-sm">buddy do [任務]</code>
-                            <p class="text-gray-600 text-xs mt-1">智能執行任務並路由到合適的 agent</p>
+                            <p class="text-gray-600 text-xs mt-1">智能執行任務並路由到合適的能力</p>
                         </div>
                         <div class="bg-white bg-opacity-60 rounded-lg p-3">
                             <code class="text-blue-700 font-semibold text-sm">buddy remember [問題]</code>
                             <p class="text-gray-600 text-xs mt-1">從專案記憶中召回相關資訊</p>
-                        </div>
-                        <div class="bg-white bg-opacity-60 rounded-lg p-3">
-                            <code class="text-blue-700 font-semibold text-sm">buddy stats</code>
-                            <p class="text-gray-600 text-xs mt-1">查看 token 使用量和成本節省統計</p>
                         </div>
                         <div class="bg-white bg-opacity-60 rounded-lg p-3">
                             <code class="text-blue-700 font-semibold text-sm">buddy help</code>
@@ -846,50 +835,37 @@ node --version  <span class="comment"># 應為 v18 或更高</span></code></pre>
                 <!-- Memory Commands -->
                 <div class="glass-card rounded-2xl p-6">
                     <h4 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                        <i data-lucide="brain" class="icon-md text-purple-600 mr-2"></i> 記憶指令
+                        <i data-lucide="brain" class="icon-md text-purple-600 mr-2"></i> 記憶工具
                     </h4>
                     <div class="space-y-3">
                         <div class="bg-white bg-opacity-60 rounded-lg p-3">
-                            <code class="text-blue-700 font-semibold text-sm">create-entities</code>
-                            <p class="text-gray-600 text-xs mt-1">儲存決策、解決方案到知識圖譜</p>
+                            <code class="text-blue-700 font-semibold text-sm">buddy-remember</code>
+                            <p class="text-gray-600 text-xs mt-1">回憶專案決策與過往脈絡</p>
                         </div>
                         <div class="bg-white bg-opacity-60 rounded-lg p-3">
-                            <code class="text-blue-700 font-semibold text-sm">recall-memory</code>
-                            <p class="text-gray-600 text-xs mt-1">從知識圖譜檢索過去的記憶</p>
-                        </div>
-                        <div class="bg-white bg-opacity-60 rounded-lg p-3">
-                            <code class="text-blue-700 font-semibold text-sm">add-observations</code>
-                            <p class="text-gray-600 text-xs mt-1">為現有實體新增觀察記錄</p>
-                        </div>
-                        <div class="bg-white bg-opacity-60 rounded-lg p-3">
-                            <code class="text-blue-700 font-semibold text-sm">create-relations</code>
-                            <p class="text-gray-600 text-xs mt-1">建立實體之間的關聯</p>
+                            <code class="text-blue-700 font-semibold text-sm">buddy-help</code>
+                            <p class="text-gray-600 text-xs mt-1">查看工具與使用方式</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- RAG & Git -->
+                <!-- Workflow & Planning -->
                 <div class="glass-card rounded-2xl p-6">
                     <h4 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                        <i data-lucide="folder-search" class="icon-md text-green-600 mr-2"></i> RAG 和 Git
+                        <i data-lucide="compass" class="icon-md text-green-600 mr-2"></i> 流程與規劃
                     </h4>
                     <div class="space-y-3">
                         <div class="bg-white bg-opacity-60 rounded-lg p-3">
-                            <p class="text-gray-700 text-sm font-semibold">RAG 文件收件匣</p>
-                            <p class="text-gray-600 text-xs mt-1">將檔案拖放到 <code class="text-xs">~/Documents/claude-code-buddy-knowledge/</code></p>
-                            <p class="text-gray-500 text-xs">每 5 秒自動索引</p>
+                            <code class="text-blue-700 font-semibold text-sm">get-workflow-guidance</code>
+                            <p class="text-gray-600 text-xs mt-1">依階段提供下一步建議</p>
                         </div>
                         <div class="bg-white bg-opacity-60 rounded-lg p-3">
-                            <code class="text-blue-700 font-semibold text-sm">git-save-work "訊息"</code>
-                            <p class="text-gray-600 text-xs mt-1">儲存你的工作（友善的 commit）</p>
+                            <code class="text-blue-700 font-semibold text-sm">get-session-health</code>
+                            <p class="text-gray-600 text-xs mt-1">檢查會話健康度與提醒</p>
                         </div>
                         <div class="bg-white bg-opacity-60 rounded-lg p-3">
-                            <code class="text-blue-700 font-semibold text-sm">git-list-versions</code>
-                            <p class="text-gray-600 text-xs mt-1">列出所有版本（友善的 log）</p>
-                        </div>
-                        <div class="bg-white bg-opacity-60 rounded-lg p-3">
-                            <code class="text-blue-700 font-semibold text-sm">git-go-back [版本號]</code>
-                            <p class="text-gray-600 text-xs mt-1">回到指定版本</p>
+                            <code class="text-blue-700 font-semibold text-sm">generate-smart-plan</code>
+                            <p class="text-gray-600 text-xs mt-1">產生可執行的實作計畫</p>
                         </div>
                     </div>
                 </div>
@@ -913,24 +889,24 @@ node --version  <span class="comment"># 應為 v18 或更高</span></code></pre>
                         <h5 class="font-bold text-gray-900 mb-3 text-green-600">記憶操作</h5>
                         <ul class="text-sm space-y-2">
                             <li><code class="quick-ref-code">buddy remember 架構</code></li>
-                            <li><code class="quick-ref-code">recall-memory 決策</code></li>
-                            <li><code class="quick-ref-code">create-entities</code></li>
+                            <li><code class="quick-ref-code">buddy remember 決策</code></li>
+                            <li><code class="quick-ref-code">buddy help</code></li>
                         </ul>
                     </div>
                     <div>
-                        <h5 class="font-bold text-gray-900 mb-3 text-orange-600">RAG 搜尋</h5>
+                        <h5 class="font-bold text-gray-900 mb-3 text-orange-600">流程建議</h5>
                         <ul class="text-sm space-y-2 text-gray-700">
-                            <li>拖放 .md/.txt/.pdf</li>
-                            <li>自動索引（5秒）</li>
-                            <li><code class="quick-ref-code">buddy remember 文件名</code></li>
+                            <li><code class="quick-ref-code">get-workflow-guidance</code></li>
+                            <li><code class="quick-ref-code">get-session-health</code></li>
+                            <li>依階段提供建議</li>
                         </ul>
                     </div>
                     <div>
-                        <h5 class="font-bold text-gray-900 mb-3 text-purple-600">版本控制</h5>
+                        <h5 class="font-bold text-gray-900 mb-3 text-purple-600">規劃</h5>
                         <ul class="text-sm space-y-2">
-                            <li><code class="quick-ref-code">git-save-work</code></li>
-                            <li><code class="quick-ref-code">git-list-versions</code></li>
-                            <li><code class="quick-ref-code">git-go-back 3</code></li>
+                            <li><code class="quick-ref-code">generate-smart-plan</code></li>
+                            <li><code class="quick-ref-code">buddy do 拆解需求</code></li>
+                            <li>2-5 分鐘任務</li>
                         </ul>
                     </div>
                 </div>

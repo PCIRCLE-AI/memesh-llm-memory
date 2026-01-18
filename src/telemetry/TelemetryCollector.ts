@@ -4,9 +4,18 @@
 import { TelemetryStore } from './TelemetryStore.js';
 import { sanitizeEvent } from './sanitization.js';
 import type { TelemetryEvent } from './types.js';
+import { createRequire } from 'module';
 
-// Import version from package.json
-import packageJson from '../../package.json';
+const require = createRequire(import.meta.url);
+
+function resolveSdkVersion(): string {
+  try {
+    const pkg = require('../../package.json') as { version?: string };
+    return pkg.version || 'unknown';
+  } catch {
+    return process.env.npm_package_version || 'unknown';
+  }
+}
 
 export class TelemetryCollector {
   private store: TelemetryStore;
@@ -33,7 +42,7 @@ export class TelemetryCollector {
       ...(sanitized as Partial<TelemetryEvent>),
       anonymous_id: config.anonymous_id,
       timestamp: new Date().toISOString(),
-      sdk_version: packageJson.version,
+      sdk_version: resolveSdkVersion(),
       node_version: process.version,
       os_platform: process.platform
     } as TelemetryEvent;

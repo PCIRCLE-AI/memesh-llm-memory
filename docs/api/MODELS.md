@@ -86,78 +86,6 @@ const category = await orchestrator.route({
 
 ---
 
-## OpenAI Models (Auxiliary)
-
-### Whisper (Speech-to-Text)
-
-**Cost**: $0.006 / minute
-
-**Usage Example**:
-```typescript
-const transcription = await voiceAgent.transcribe({
-  audioPath: "/path/to/audio.mp3",
-  language: "zh"
-});
-
-// Cost: 5 minutes of audio = $0.03
-```
-
----
-
-### TTS (Text-to-Speech)
-
-**Models**:
-- `tts-1`: Standard quality (recommended)
-- `tts-1-hd`: High quality
-
-**Cost**: $0.015 / 1K characters
-
-**Voice Options**:
-- `alloy`: Neutral, clear (recommended)
-- `echo`: Male, warm
-- `fable`: British accent
-- `onyx`: Deep male voice
-- `nova`: Female, friendly
-- `shimmer`: Female, soft
-
-**Usage Example**:
-```typescript
-const audio = await voiceAgent.synthesize({
-  text: "Hello, welcome to Claude Code Buddy!",
-  voice: "alloy",
-  quality: "standard"
-});
-
-// Cost: 50 characters = $0.00075
-```
-
----
-
-### Embeddings (Vectorization)
-
-**Model Options**:
-- `text-embedding-3-small`: 512 dimensions (recommended)
-- `text-embedding-3-large`: 1536 dimensions
-
-**Cost**:
-- Small: $0.02 / 1M tokens
-- Large: $0.13 / 1M tokens
-
-**Usage Example**:
-```typescript
-await ragAgent.indexDocuments({
-  documents: [
-    "Document content 1...",
-    "Document content 2..."
-  ],
-  model: "text-embedding-3-small"
-});
-
-// Cost: 1000 documents (~500K tokens) = $0.01
-```
-
----
-
 ## Automatic Model Selection Logic
 
 The Orchestrator automatically selects models based on tasks:
@@ -194,25 +122,14 @@ function selectModel(task: string): ModelConfig {
 ### 1. Use Caching
 
 ```typescript
-// Don't recompute identical queries
+// Avoid recomputing identical tasks
 @cache()
-async function getEmbedding(text: string) {
-  return await openai.embeddings.create({ input: text });
+async function routeTask(task: string) {
+  return await orchestrator.route({ task, complexity: "simple" });
 }
 ```
 
-### 2. Batch Processing
-
-```typescript
-// Process multiple documents at once
-await ragAgent.indexDocuments(documents); // ✅ Good
-// vs
-for (const doc of documents) {
-  await ragAgent.indexDocument(doc); // ❌ Expensive
-}
-```
-
-### 3. Choose the Right Model
+### 2. Choose the Right Model
 
 ```typescript
 // Use Haiku for simple tasks
@@ -232,10 +149,8 @@ await orchestrator.route({ task: "Classification", complexity: "complex" }); // 
 | Service | Usage | Cost |
 |---------|-------|------|
 | Claude Sonnet | 500K tokens/day | $15-20 |
-| Whisper | 100 minutes/month | $0.60 |
-| TTS | 50K characters/month | $0.75 |
-| Embeddings | 1M tokens/month | $0.02 |
-| **Total** | | **~$20-25/month** |
+| Claude Haiku | 200K tokens/day | $2-3 |
+| **Total** | | **~$17-23/month** |
 
 **Moderate Usage** (Budget $50-100/month):
 
@@ -243,10 +158,8 @@ await orchestrator.route({ task: "Classification", complexity: "complex" }); // 
 |---------|-------|------|
 | Claude Sonnet | 1M tokens/day | $30-40 |
 | Claude Opus | 100K tokens/month | $5-10 |
-| Whisper | 300 minutes/month | $1.80 |
-| TTS | 100K characters/month | $1.50 |
-| Embeddings | 5M tokens/month | $0.10 |
-| **Total** | | **~$40-55/month** |
+| Claude Haiku | 400K tokens/day | $4-6 |
+| **Total** | | **~$39-56/month** |
 
 ---
 

@@ -8,12 +8,6 @@ describe('BuddyCommands', () => {
     expect(result.args).toBe('setup authentication');
   });
 
-  it('should parse "buddy stats" command', () => {
-    const result = BuddyCommands.parse('buddy stats');
-    expect(result.command).toBe('stats');
-    expect(result.args).toBe('');
-  });
-
   it('should parse "buddy remember" command', () => {
     const result = BuddyCommands.parse('buddy remember api design decisions');
     expect(result.command).toBe('remember');

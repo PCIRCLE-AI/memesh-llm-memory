@@ -7,17 +7,11 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { TestWriterAgent } from '../../src/agents/TestWriterAgent.js';
-import { DevOpsEngineerAgent } from '../../src/agents/DevOpsEngineerAgent.js';
 import { KnowledgeAgent } from '../../src/agents/knowledge/index.js';
-import { RAGAgent } from '../../src/agents/rag/index.js';
 import { MCPToolInterface } from '../../src/core/MCPToolInterface.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -122,99 +116,6 @@ export function safeDivide(a: number, b: number): number | null {
     });
   });
 
-  describe('DevOpsEngineerAgent Workflow', () => {
-    it('should complete full deployment readiness check', async () => {
-      // 1. Create a temporary git repo
-      const repoPath = path.join(TEST_WORKSPACE, 'test-repo');
-      await fs.mkdir(repoPath, { recursive: true });
-
-      // Initialize git repo
-      await execAsync('git init', { cwd: repoPath });
-      await execAsync('git config user.email "test@example.com"', { cwd: repoPath });
-      await execAsync('git config user.name "Test User"', { cwd: repoPath });
-
-      // Create a simple package.json for npm test
-      const packageJson = {
-        name: 'test-repo',
-        version: '1.0.0',
-        scripts: {
-          test: 'echo "Tests passed"',
-          build: 'echo "Build completed"',
-        },
-      };
-      await fs.writeFile(
-        path.join(repoPath, 'package.json'),
-        JSON.stringify(packageJson, null, 2)
-      );
-
-      // Commit the file (so git status is clean)
-      await execAsync('git add .', { cwd: repoPath });
-      await execAsync('git commit -m "Initial commit"', { cwd: repoPath });
-
-      // 2. Run DevOpsEngineerAgent
-      const agent = new DevOpsEngineerAgent(mcp);
-      const result = await agent.analyzeDeploymentReadiness({
-        testCommand: 'npm test',
-        buildCommand: 'npm run build',
-      });
-
-      // 3. Verify it runs real tests
-      expect(result).toBeDefined();
-      expect(result.readyToDeploy).toBeDefined();
-      expect(result.testsPass).toBeDefined();
-      expect(result.buildSuccessful).toBeDefined();
-
-      // 4. Verify it checks real git status
-      expect(result.noUncommittedChanges).toBeDefined();
-
-      // 5. Verify accurate deployment readiness
-      // With clean git and passing tests/build, should be ready
-      if (result.testsPass && result.buildSuccessful && result.noUncommittedChanges) {
-        expect(result.readyToDeploy).toBe(true);
-      }
-    });
-
-    it.skip('should detect uncommitted changes', async () => {
-      // SKIPPED: This test requires DevOpsEngineerAgent to support custom working directories
-      // Current implementation runs git commands in process.cwd(), not in the test repo
-      // TODO: Enhance DevOpsEngineerAgent.analyzeDeploymentReadiness() to accept workingDir option
-      // Create another test repo with uncommitted changes
-      const repoPath = path.join(TEST_WORKSPACE, 'test-repo-dirty');
-      await fs.mkdir(repoPath, { recursive: true });
-
-      await execAsync('git init', { cwd: repoPath });
-      await execAsync('git config user.email "test@example.com"', { cwd: repoPath });
-      await execAsync('git config user.name "Test User"', { cwd: repoPath });
-
-      // Create a file but don't commit it
-      const packageJson = {
-        name: 'test-repo-dirty',
-        version: '1.0.0',
-        scripts: {
-          test: 'echo "Tests passed"',
-          build: 'echo "Build completed"',
-        },
-      };
-      await fs.writeFile(
-        path.join(repoPath, 'package.json'),
-        JSON.stringify(packageJson, null, 2)
-      );
-
-      // Don't commit - leave working directory dirty
-
-      const agent = new DevOpsEngineerAgent(mcp);
-      const result = await agent.analyzeDeploymentReadiness({
-        testCommand: 'npm test',
-        buildCommand: 'npm run build',
-      });
-
-      // Should detect uncommitted changes
-      expect(result.noUncommittedChanges).toBe(false);
-      expect(result.readyToDeploy).toBe(false);
-      expect(result.blockers).toContain('Uncommitted changes');
-    });
-  });
-
   describe('KnowledgeAgent Workflow', () => {
     let agent: KnowledgeAgent;
 
@@ -316,129 +217,13 @@ export function safeDivide(a: number, b: number): number | null {
     });
   });
 
-  describe('RAGAgent Workflow', () => {
-    it('should complete document indexing and retrieval workflow', async () => {
-      // Note: This test requires a valid OpenAI API key in environment
-      // Skip if not available
-      if (!process.env.OPENAI_API_KEY) {
-        console.warn('Skipping RAG workflow test - OPENAI_API_KEY not set');
-        return;
-      }
-
-      // 1. Initialize RAGAgent
-      const agent = new RAGAgent();
-      await agent.initialize();
-      await agent.enableRAG({
-        provider: 'openai',
-        apiKey: process.env.OPENAI_API_KEY,
-      });
-
-      // 2. Add documents to index
-      await agent.indexDocuments([
-        {
-          content: 'Claude Code Buddy is a multi-agent system built with Claude Code.',
-          metadata: { source: 'readme.md', section: 'overview' },
-        },
-        {
-          content: 'The KnowledgeAgent manages a knowledge graph for tracking project knowledge.',
-          metadata: { source: 'architecture.md', section: 'agents' },
-        },
-        {
-          content: 'The RAGAgent provides semantic search over project documentation.',
-          metadata: { source: 'architecture.md', section: 'agents' },
-        },
-      ]);
-
-      // 3. Search for relevant documents
-      const results = await agent.search('knowledge graph', {
-        topK: 2,
-        threshold: 0.5,
-      });
-
-      // 4. Verify search results
-      expect(results).toBeDefined();
-      expect(results.length).toBeGreaterThan(0);
-      expect(results[0].content).toContain('KnowledgeAgent');
-
-      // 5. Test with different query
-      const results2 = await agent.search('semantic search');
-      expect(results2).toBeDefined();
-      expect(results2.length).toBeGreaterThan(0);
-      expect(results2[0].content).toContain('RAGAgent');
-    });
-
-    it('should handle document updates and re-indexing', async () => {
-      if (!process.env.OPENAI_API_KEY) {
-        console.warn('Skipping RAG update test - OPENAI_API_KEY not set');
-        return;
-      }
-
-      const agent = new RAGAgent();
-      await agent.initialize();
-      await agent.enableRAG({
-        provider: 'openai',
-        apiKey: process.env.OPENAI_API_KEY,
-      });
-
-      // Add initial document
-      await agent.indexDocuments([
-        {
-          content: 'Version 1.0 documentation',
-          metadata: { source: 'docs.md', version: 'v1' },
-        },
-      ]);
-
-      // Search should find v1
-      const results1 = await agent.search('version 1.0');
-      expect(results1.length).toBeGreaterThan(0);
-
-      // Update document (add new version)
-      await agent.indexDocuments([
-        {
-          content: 'Version 2.0 documentation with new features',
-          metadata: { source: 'docs.md', version: 'v2' },
-        },
-      ]);
-
-      // Search should find both versions
-      const results2 = await agent.search('version');
-      expect(results2.length).toBeGreaterThanOrEqual(2);
-
-      // Search for specific version should work
-      const results3 = await agent.search('version 2.0');
-      expect(results3[0].content).toContain('Version 2.0');
-    });
-  });
-
   describe('Multi-Agent Collaboration Workflow', () => {
     it('should complete a complex workflow with multiple agents', async () => {
       // Scenario: Developer asks for help implementing a new feature
-      // 1. RAG finds relevant documentation
-      // 2. Knowledge graph tracks the decision
-      // 3. TestWriter generates tests
-      // 4. DevOps validates deployment readiness
+      // 1. Knowledge graph tracks the decision
+      // 2. TestWriter generates tests
 
-      // 1. RAG: Find relevant docs
-      if (process.env.OPENAI_API_KEY) {
-        const ragAgent = new RAGAgent();
-        await ragAgent.initialize();
-        await ragAgent.enableRAG({
-          provider: 'openai',
-          apiKey: process.env.OPENAI_API_KEY,
-        });
-
-        await ragAgent.indexDocuments([
-          {
-            content: 'Authentication should use JWT tokens with refresh mechanism',
-            metadata: { source: 'security-guidelines.md' },
-          },
-        ]);
-
-        const authDocs = await ragAgent.search('authentication');
-        expect(authDocs.length).toBeGreaterThan(0);
-      }
-
-      // 2. Knowledge: Track decision (using in-memory database)
+      // 1. Knowledge: Track decision (using in-memory database)
       const knowledgeAgent = new KnowledgeAgent(':memory:');
       await knowledgeAgent.initialize();
 
@@ -454,7 +239,7 @@ export function safeDivide(a: number, b: number): number | null {
         },
       ]);
 
-      // 3. TestWriter: Generate tests for auth module
+      // 2. TestWriter: Generate tests for auth module
       const testWriterAgent = new TestWriterAgent(mcp);
       const authCode = `
 export function validateToken(token: string): boolean {
@@ -466,12 +251,6 @@ export function validateToken(token: string): boolean {
 
       const testCode = await testWriterAgent.generateTests('auth.ts', authCode);
       expect(testCode).toContain('validateToken');
-
-      // 4. DevOps: Validate readiness (simplified check)
-      const devopsAgent = new DevOpsEngineerAgent(mcp);
-      // In real scenario, would check actual tests and git status
-      // Here we verify the agent can be invoked
-      expect(devopsAgent).toBeDefined();
 
       // Verify knowledge was tracked
       const decision = await knowledgeAgent.openNodes(['Decision: Implement JWT Auth']);

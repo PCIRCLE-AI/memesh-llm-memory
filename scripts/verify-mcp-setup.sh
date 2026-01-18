@@ -67,11 +67,6 @@ if [ -f ".env" ]; then
         WARNINGS=$((WARNINGS + 1))
     fi
 
-    if grep -q "OPENAI_API_KEY" .env; then
-        echo -e "   ${GREEN}✓${NC} OPENAI_API_KEY configured (optional)"
-    else
-        echo -e "   ${YELLOW}⚠${NC}  OPENAI_API_KEY not found (RAG agent disabled)"
-    fi
 else
     echo -e "   ${YELLOW}⚠${NC}  .env file not found (copy from .env.example)"
     WARNINGS=$((WARNINGS + 1))

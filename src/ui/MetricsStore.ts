@@ -1,7 +1,10 @@
 // src/ui/MetricsStore.ts
 import { promises as fs } from 'fs';
+import path from 'path';
 import { randomBytes } from 'crypto';
 import type { SessionMetrics, AttributionMessage } from './types.js';
+import { resolveUserPath } from '../utils/paths.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Stores and manages productivity metrics
@@ -11,18 +14,9 @@ export class MetricsStore {
   private currentSession: SessionMetrics;
 
   constructor(storePath: string = '~/.claude-code-buddy/metrics.json') {
-    // Expand home directory
-    this.storePath = storePath.replace(/^~/, process.env.HOME || process.env.USERPROFILE || '');
-
-    this.currentSession = {
-      sessionId: this.generateSessionId(),
-      startedAt: new Date(),
-      tasksCompleted: 0,
-      tasksFailed: 0,
-      totalTimeSaved: 0,
-      totalTokensUsed: 0,
-      agentUsageBreakdown: {},
-    };
+    // Expand home directory and normalize to an absolute path
+    this.storePath = resolveUserPath(storePath);
+    this.currentSession = this.createNewSession();
   }
 
   /**
@@ -56,6 +50,7 @@ export class MetricsStore {
    */
   public async persist(): Promise<void> {
     const data = JSON.stringify(this.currentSession, null, 2);
+    await fs.mkdir(path.dirname(this.storePath), { recursive: true });
     await fs.writeFile(this.storePath, data, 'utf-8');
   }
 
@@ -79,7 +74,11 @@ export class MetricsStore {
         (error as { code?: string }).code === 'ENOENT';
 
       if (!isFileNotFound) {
-        throw error;
+        logger.warn('MetricsStore: failed to load existing metrics, resetting session', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        this.currentSession = this.createNewSession();
+        return;
       }
       // File doesn't exist yet, use current session
     }
@@ -156,5 +155,17 @@ export class MetricsStore {
    */
   private generateSessionId(): string {
     return `session-${randomBytes(8).toString('hex')}`;
+  }
+
+  private createNewSession(): SessionMetrics {
+    return {
+      sessionId: this.generateSessionId(),
+      startedAt: new Date(),
+      tasksCompleted: 0,
+      tasksFailed: 0,
+      totalTimeSaved: 0,
+      totalTokensUsed: 0,
+      agentUsageBreakdown: {},
+    };
   }
 }

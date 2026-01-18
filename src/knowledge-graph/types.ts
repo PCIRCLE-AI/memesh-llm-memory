@@ -30,7 +30,9 @@ export type EntityType =
   | 'code_change'       // Code change events
   | 'test_result'       // Test execution results
   | 'session_snapshot'  // Session state snapshots
-  | 'project_snapshot'; // Project state snapshots
+  | 'project_snapshot'  // Project state snapshots
+  | 'workflow_checkpoint' // Workflow phase completion checkpoints
+  | 'commit';           // Git commit events
 
 export interface Relation {
   id?: number;

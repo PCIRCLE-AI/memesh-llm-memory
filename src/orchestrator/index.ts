@@ -36,6 +36,7 @@ import { ResourceMonitor } from '../core/ResourceMonitor.js';
 import { ExecutionConfig, Progress, BackgroundTask } from '../core/types.js';
 import { ValidationError } from '../errors/index.js';
 import { logger } from '../utils/logger.js';
+import { formatMoney } from '../utils/money.js';
 
 export class Orchestrator {
   private router: Router;
@@ -107,16 +108,19 @@ export class Orchestrator {
 
       logger.info(`\n🎯 Executing task: ${task.id}`);
       logger.info(`📊 Complexity: ${analysis.complexity}`);
-      logger.info(`🤖 Agent: ${routing.selectedAgent}`);
-      logger.info(`💰 Estimated cost: $${routing.estimatedCost.toFixed(6)}\n`);
+      const capabilitySummary = analysis.requiredCapabilities.length > 0
+        ? analysis.requiredCapabilities.join(', ')
+        : 'general';
+      logger.info(`🧭 Capabilities: ${capabilitySummary}`);
+      logger.info(`💰 Estimated cost: ${formatMoney(routing.estimatedCost)}\n`);
 
       // 記錄路由決策到知識圖譜
       await this.knowledge.recordDecision({
         name: `Task ${task.id} Routing Decision`,
         reason: routing.reasoning,
-        alternatives: analysis.requiredAgents.filter(a => a !== routing.selectedAgent),
-        tradeoffs: [`Estimated cost: $${routing.estimatedCost.toFixed(6)}`, `Complexity: ${analysis.complexity}`],
-        outcome: `Selected ${routing.selectedAgent}`,
+        alternatives: analysis.requiredCapabilities,
+        tradeoffs: [`Estimated cost: ${formatMoney(routing.estimatedCost)}`, `Complexity: ${analysis.complexity}`],
+        outcome: `Selected capabilities: ${capabilitySummary}`,
         tags: ['routing', 'orchestrator', task.id]
       });
 
@@ -136,15 +140,15 @@ export class Orchestrator {
       const executionTimeMs = Date.now() - startTime;
 
       logger.info(`✅ Task completed in ${executionTimeMs}ms`);
-      logger.info(`💰 Actual cost: $${actualCost.toFixed(6)}\n`);
+      logger.info(`💰 Actual cost: ${formatMoney(actualCost)}\n`);
 
       // 記錄成功執行的特徵到知識圖譜
       await this.knowledge.recordFeature({
         name: `Task ${task.id} Execution`,
         description: task.description.substring(0, 100),
-        implementation: `Agent: ${routing.selectedAgent}, Model: ${modelToUse}, Tokens: ${response.usage.input_tokens + response.usage.output_tokens}`,
+        implementation: `Capabilities: ${capabilitySummary}, Model: ${modelToUse}, Tokens: ${response.usage.input_tokens + response.usage.output_tokens}`,
         challenges: actualCost > routing.estimatedCost ? ['Cost exceeded estimate'] : undefined,
-        tags: ['task-execution', routing.selectedAgent, task.id]
+        tags: ['task-execution', task.id]
       });
 
       return {
@@ -565,7 +569,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     logger.info(`   Description: ${task.description}`);
     logger.info(`   Complexity: ${analysis.complexity}`);
     logger.info(`   Agent: ${routing.selectedAgent}`);
-    logger.info(`   Estimated cost: $${routing.estimatedCost.toFixed(6)}`);
+    logger.info(`   Estimated cost: ${formatMoney(routing.estimatedCost)}`);
     logger.info(`   Reasoning: ${analysis.reasoning}`);
   }
 

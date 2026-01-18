@@ -186,6 +186,19 @@ export class DevelopmentButler {
       }
     );
 
+    this.checkpointDetector.registerCheckpoint(
+      'committed',
+      async () => {
+        await this.commitCompleted();
+        return { success: true };
+      },
+      {
+        description: 'Triggered when commit completes',
+        category: 'version-control',
+        priority: 'medium',
+      }
+    );
+
     this.initialized = true;
   }
 
@@ -194,6 +207,13 @@ export class DevelopmentButler {
    */
   isInitialized(): boolean {
     return this.initialized;
+  }
+
+  /**
+   * Access the MCP tool interface
+   */
+  getToolInterface(): MCPToolInterface {
+    return this.toolInterface;
   }
 
   /**
@@ -351,8 +371,8 @@ export class DevelopmentButler {
     const suggestedActions: string[] = [];
 
     if (production) {
-      suggestedAgents.push('devops-engineer');
-      suggestedActions.push('Prepare deployment');
+      suggestedAgents.push('security-auditor');
+      suggestedActions.push('Prepare deployment checklist');
     }
 
     return {

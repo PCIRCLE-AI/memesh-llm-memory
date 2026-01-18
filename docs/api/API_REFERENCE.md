@@ -8,9 +8,9 @@
 
 ## Overview
 
-Claude Code Buddy is a **Claude-only** AI agent system built on the Model Context Protocol (MCP). The system provides intelligent agent routing, prompt enhancement, and evolution-based learning without multi-provider complexity.
+Claude Code Buddy is a **Claude-only** capability-routing system built on the Model Context Protocol (MCP). The system provides intelligent task routing, prompt enhancement, and evolution-based learning without multi-provider complexity.
 
-**Architecture**: Claude Sonnet 4.5 → MCP Server → Agent Router → Domain Experts
+**Architecture**: Claude Sonnet 4.5 → MCP Server → Capability Router → Prompt Enhancer
 
 ---
 
@@ -25,15 +25,15 @@ For detailed API documentation, refer to the actual implementation:
    - Handles MCP protocol communication
    - Exposes tools to Claude Code CLI
 
-2. **Agent Registry** - 13 registered domain expert agents
+2. **Capability Registry** - Capability definitions for routing
    - File: [src/core/AgentRegistry.ts](../../src/core/AgentRegistry.ts)
-   - Manages agent definitions and capabilities
-   - Provides agent lookup and routing
+   - Manages capability definitions and metadata
+   - Provides capability lookup for routing
 
 3. **Router System** - Intelligent task routing
    - File: [src/orchestrator/router.ts](../../src/orchestrator/router.ts)
-   - Routes tasks to appropriate agents
-   - Orchestrates multi-agent workflows
+   - Routes tasks to appropriate capabilities
+   - Orchestrates multi-step workflows
 
 4. **Prompt Enhancement** - Domain-expert prompt optimization
    - File: [src/orchestrator/PromptEnhancer.ts](../../src/orchestrator/PromptEnhancer.ts)
@@ -42,67 +42,23 @@ For detailed API documentation, refer to the actual implementation:
 
 5. **Evolution System** - Continuous improvement
    - Directory: [src/evolution/](../../src/evolution/)
-   - Tracks agent performance
+   - Tracks capability performance
    - Learns from outcomes
    - Optimizes routing decisions
 
----
+## Tools
 
-## MCP Tools
+Claude Code Buddy exposes 7 MCP tools:
 
-Claude Code Buddy exposes the following tools via MCP:
-
-### `analyze-task`
-Analyzes a task and routes it to the appropriate domain expert agent.
-
-**Parameters:**
-- `task` (string): Description of the task to analyze
-- `context` (optional object): Additional context for the task
-
-**Returns:**
-- `agent` (string): Recommended agent ID
-- `reasoning` (string): Why this agent was selected
-- `enhancedPrompt` (string): Domain-optimized prompt
-- `confidence` (number): Confidence score (0-1)
-
-### `enhance-prompt`
-Enhances a prompt with domain expertise.
-
-**Parameters:**
-- `prompt` (string): Original prompt to enhance
-- `agentId` (optional string): Specific agent to use
-
-**Returns:**
-- `enhancedPrompt` (string): Optimized prompt
-- `improvements` (array): List of enhancements applied
-
-### `list-agents`
-Lists all available domain expert agents.
-
-**Returns:**
-- `agents` (array): List of agent definitions with capabilities
-
----
-
-## Agent Types
-
-Claude Code Buddy includes 13 domain expert agents:
-
-| Agent ID | Domain | Specialty |
-|----------|--------|-----------|
-| `architect-reviewer` | Architecture | System design, scalability, patterns |
-| `code-reviewer` | Code Quality | Best practices, security, performance |
-| `ui-designer` | Frontend | UI/UX, accessibility, responsive design |
-| `test-automator` | Testing | Test strategies, coverage, automation |
-| `debugger` | Debugging | Root cause analysis, systematic debugging |
-| `performance-engineer` | Performance | Optimization, profiling, bottlenecks |
-| `data-scientist` | Data | Analysis, ML, statistics |
-| `devops-specialist` | DevOps | CI/CD, infrastructure, deployment |
-| `technical-writer` | Documentation | Clear, comprehensive documentation |
-| `research-analyst` | Research | Investigation, fact-finding |
-| `risk-manager` | Security | Vulnerability assessment, compliance |
-| `backend-developer` | Backend | APIs, databases, business logic |
-| `frontend-developer` | Frontend | UI implementation, state management |
+| Tool | Category | Purpose |
+|------|----------|---------|
+| `buddy-do` | Routing | Route tasks to the right capability |
+| `buddy-help` | Help | Command reference and examples |
+| `buddy-remember` | Memory | Recall project memory |
+| `get-session-health` | Health | Session health snapshot |
+| `get-workflow-guidance` | Workflow | Next-step recommendations |
+| `generate-smart-plan` | Planning | Implementation planning |
+| `hook-tool-use` | Internal | Claude Code tool-use hooks (auto-ingested) |
 
 ---
 
@@ -136,12 +92,12 @@ MCP_SERVER_VERSION=2.1.0
 ### Example 1: Code Review
 
 ```typescript
-// Claude Code automatically routes code review requests to code-reviewer agent
+// Claude Code automatically routes code review requests to the code review capability
 const result = await claudeCode.chat("Review this authentication function for security issues");
 
 // Behind the scenes:
 // 1. Task analyzed → code review needed
-// 2. Routed to code-reviewer agent
+// 2. Routed to code review capability
 // 3. Prompt enhanced with security checklist
 // 4. Claude generates comprehensive review
 // 5. Result stored in evolution system
@@ -150,28 +106,28 @@ const result = await claudeCode.chat("Review this authentication function for se
 ### Example 2: Architecture Design
 
 ```typescript
-// Architecture questions routed to architect-reviewer
+// Architecture questions routed to architecture capability
 const result = await claudeCode.chat("Design a scalable API for handling 10M requests/day");
 
 // Routing:
 // 1. Task → architecture design
-// 2. Agent → architect-reviewer
+// 2. Capability → architecture
 // 3. Enhanced with: scalability patterns, trade-offs, best practices
 // 4. Result includes: architecture diagram, component breakdown, scaling strategy
 ```
 
-### Example 3: Multi-Agent Workflow
+### Example 3: Multi-Step Workflow
 
 ```typescript
-// Complex tasks may involve multiple agents sequentially
+// Complex tasks may involve multiple capabilities sequentially
 const result = await claudeCode.chat("Build a new user authentication feature");
 
 // Workflow:
-// 1. architect-reviewer → Design authentication architecture
-// 2. backend-developer → Implement API endpoints
-// 3. frontend-developer → Build login UI
-// 4. test-automator → Create test strategy
-// 5. code-reviewer → Final security review
+// 1. architecture → Design authentication architecture
+// 2. backend → Implement API endpoints
+// 3. frontend → Build login UI
+// 4. testing → Create test strategy
+// 5. code review → Final security review
 ```
 
 ---
@@ -183,17 +139,17 @@ All MCP tools return structured error responses:
 ```typescript
 interface ErrorResponse {
   error: string;          // Error message
-  code: string;           // Error code (e.g., 'AGENT_NOT_FOUND')
+  code: string;           // Error code (e.g., 'TOOL_NOT_FOUND')
   details?: object;       // Additional error details
 }
 ```
 
 Common error codes:
-- `AGENT_NOT_FOUND` - Requested agent doesn't exist
-- `INVALID_TASK` - Task description is invalid or empty
-- `ROUTING_FAILED` - Unable to determine appropriate agent
-- `API_ERROR` - Claude API returned an error
-- `EVOLUTION_ERROR` - Error storing/retrieving learning data
+- `TOOL_NOT_FOUND` - Requested tool doesn't exist
+- `VALIDATION_FAILED` - Input validation failed
+- `OPERATION_FAILED` - Operation failed during execution
+- `API_REQUEST_FAILED` - Claude API returned an error
+- `RESOURCE_NOT_FOUND` - Requested resource doesn't exist
 
 ---
 
@@ -224,20 +180,20 @@ npm run mcp
 npx @modelcontextprotocol/inspector node dist/mcp/server.js
 ```
 
-### Adding New Agents
+### Adding New Capabilities (Internal)
 
-1. Define agent in `src/core/AgentRegistry.ts`
-2. Create agent implementation in `src/agents/[agent-name]/`
-3. Register agent with capabilities and routing rules
-4. Add tests in `tests/unit/agents/`
+1. Define capability metadata in `src/core/AgentRegistry.ts`
+2. Add implementation or prompt template under `src/agents/` (internal)
+3. Register routing rules for the new capability
+4. Add tests under `tests/unit/`
 
 ### Evolution System
 
 The evolution system automatically:
-- Tracks which agents are used for which tasks
+- Tracks which capabilities are used for which tasks
 - Stores task outcomes (success/failure)
 - Learns routing patterns over time
-- Optimizes future agent selection
+- Optimizes future capability selection
 
 Data stored in SQLite database at `data/evolution/claude-code-buddy.db`.
 
@@ -278,8 +234,8 @@ Claude Code Buddy has simplified to a **Claude-only** architecture. The followin
 ## Version History
 
 - **v2.1.0** (2025-12-31): Removed multi-provider support, simplified to Claude-only
-- **v2.0.0** (2025-12-30): MCP Server Pattern with 13 domain expert agents
-- **v1.0.0** (2025-12-01): Initial release with basic agent routing
+- **v2.0.0** (2025-12-30): MCP Server pattern with capability routing
+- **v1.0.0** (2025-12-01): Initial release with basic routing
 
 ---
 

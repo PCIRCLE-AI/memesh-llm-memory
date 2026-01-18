@@ -25,7 +25,7 @@ describe('TaskAnalyzer', () => {
     const analysis = await analyzer.analyze(task);
 
     expect(analysis.complexity).toBe('simple');
-    expect(analysis.requiredAgents).toContain('general-agent');
+    expect(analysis.requiredCapabilities).toContain('general');
   });
 
   it('should classify complex tasks correctly', async () => {
@@ -38,7 +38,7 @@ describe('TaskAnalyzer', () => {
 
     expect(analysis.complexity).toBe('complex');
     // Improved capability detection detects 'architecture-agent' from 'architecture' keyword
-    expect(analysis.requiredAgents).toContain('architecture-agent');
+    expect(analysis.requiredCapabilities).toContain('architecture');
   });
 
   it('should classify medium tasks correctly', async () => {
@@ -50,7 +50,7 @@ describe('TaskAnalyzer', () => {
     const analysis = await analyzer.analyze(task);
 
     expect(analysis.complexity).toBe('medium');
-    expect(analysis.requiredAgents).toContain('general-agent');
+    expect(analysis.requiredCapabilities).toContain('general');
   });
 
   it('should estimate tokens correctly', async () => {
@@ -126,7 +126,7 @@ describe('AgentRouter', () => {
     const routing = await router.route(analysis);
 
     // In test environment with limited memory, may fallback to general-agent
-    expect(['general-agent', 'architecture-agent']).toContain(routing.selectedAgent);
+    expect(['code-reviewer', 'general-agent']).toContain(routing.selectedAgent);
     expect(routing.enhancedPrompt).toBeDefined();
   });
 

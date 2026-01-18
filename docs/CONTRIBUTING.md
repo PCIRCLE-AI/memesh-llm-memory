@@ -51,7 +51,7 @@ Project maintainers will remove, edit, or reject comments, commits, code, issues
 
 Before contributing, ensure you have:
 
-- **Node.js** 18+ installed ([download](https://nodejs.org/))
+- **Node.js** 20+ installed ([download](https://nodejs.org/))
 - **npm** 9+ installed (comes with Node.js)
 - **Git** installed and configured
 - **Claude Code** installed (for testing MCP integration)
@@ -66,7 +66,7 @@ Before contributing, ensure you have:
 - Bug fixes
 
 **Areas needing help**:
-- Additional agent implementations
+- Additional capability implementations
 - Evolution system improvements
 - Performance optimizations
 - Documentation updates
@@ -127,9 +127,6 @@ LOG_LEVEL=debug
 DATA_DIR=./data-dev
 BACKUP_DIR=./backups-dev
 
-# Optional: RAG development
-# OPENAI_API_KEY=sk-...
-# RAG_PROVIDER=ollama  # Use local Ollama for development
 ```
 
 ### 6. Start Development

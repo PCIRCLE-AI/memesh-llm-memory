@@ -13,21 +13,16 @@ cd claude-code-buddy
 ./scripts/install.sh
 ```
 
-The installer will guide you through **11 interactive steps**:
+The installer will guide you through core setup and a basic usage demo:
 
-**Core Setup (Steps 1-8)**:
-- ✓ Check prerequisites (Node.js 18+, npm, git)
+- ✓ Check prerequisites (Node.js 20+, npm, git)
 - ✓ Install dependencies
 - ✓ Build the project
 - ✓ Check system resources
 - ✓ Configure environment
-- ✓ **Optional RAG Setup**: Choose HuggingFace (FREE) or OpenAI (paid)
 - ✓ Configure Claude Code MCP integration
 - ✓ Test installation
-
-**Interactive Demos (Steps 9-10)**:
-- 📚 **Step 9**: Basic Usage Demo
-- 📁 **Step 10**: RAG Feature Demo (if enabled)
+- 📚 Basic usage demo
 
 **No API keys needed for core features** - uses your Claude Code subscription.
 
@@ -77,53 +72,27 @@ Edit `~/.claude/mcp_settings.json` and add the claude-code-buddy MCP server:
 
 **Important**: Replace `/path/to/claude-code-buddy` with the actual project path.
 
-### Step 4: (Optional) Configure RAG Agent
-
-If you want to use the RAG agent, configure the OpenAI API key for embeddings:
-
-```bash
-# Copy environment template
-cp .env.example .env
-
-# Edit .env, only fill in RAG-related configuration
-nano .env
-```
-
-Add to `.env`:
-
-```bash
-# OpenAI API (for RAG embeddings only)
-OPENAI_API_KEY=sk-your-key-here
-OPENAI_EMBEDDING_MODEL=text-embedding-3-small
-
-# Vector DB path (optional)
-VECTRA_INDEX_PATH=~/.claude-code-buddy/vectra
-```
-
-**If not using RAG agent**, you can skip this step and don't even need a .env file.
-
-### Step 5: Restart Claude Code
+### Step 4: Restart Claude Code
 
 Restart Claude Code, and the MCP server will start automatically.
 
-### Step 6: Verify Installation
+### Step 5: Verify Installation
 
 Test in Claude Code:
 
 ```
-Please use claude-code-buddy' code-reviewer to review this code...
+Please use claude-code-buddy to review this code...
 ```
 
 ---
 
 ## Verification Checklist (V2.0)
 
-- [ ] Node.js >= 18 installed
+- [ ] Node.js >= 20 installed
 - [ ] Project dependencies installed (`npm install`)
 - [ ] TypeScript compiled (`npm run build`)
 - [ ] MCP server configured in `~/.claude/mcp_settings.json`
 - [ ] Claude Code restarted
-- [ ] (Optional) RAG Agent OpenAI API key configured
 
 ## Common Issues (V2.0)
 
@@ -142,14 +111,6 @@ Please use claude-code-buddy' code-reviewer to review this code...
 2. Check MCP server status
 3. Try running in Claude Code: `/mcp list`
 
-### Q: RAG Agent embedding fails
-
-**Solutions**:
-1. Confirm `OPENAI_API_KEY` is configured in `.env`
-2. Check if API key is valid
-3. Confirm OpenAI API quota is not exhausted
-4. Check `VECTRA_INDEX_PATH` directory permissions
-
 ### Q: Out of memory
 
 **Solutions**:
@@ -159,7 +120,7 @@ Please use claude-code-buddy' code-reviewer to review this code...
 ## System Requirements
 
 ### Minimum Requirements
-- **Node.js**: >= 18.0.0
+- **Node.js**: >= 20.0.0
 - **Claude Code**: Installed
 - **RAM**: 2 GB (V2.0 MCP server is lightweight)
 - **Storage**: 5 GB available space
@@ -168,13 +129,12 @@ Please use claude-code-buddy' code-reviewer to review this code...
 - **Node.js**: >= 20.0.0
 - **Claude Code**: Latest version
 - **RAM**: 4+ GB
-- **Storage**: 20+ GB SSD (if using RAG agent)
+- **Storage**: 20+ GB SSD
 - **Network**: Stable connection (Claude Code → Claude API)
 
 ## Next Steps
 
 After configuration, see:
-- [RAG Deployment Guide](./RAG_DEPLOYMENT.md) - RAG Agent detailed deployment
-- [Usage Guide](./USAGE.md) - How to use various agents
+- [Usage Guide](./USAGE.md) - How to use core capabilities
 - [Architecture Documentation](../../ARCHITECTURE.md) - System architecture
 - [Evolution System](../EVOLUTION.md) - Self-learning mechanism

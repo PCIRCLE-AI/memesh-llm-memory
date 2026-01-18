@@ -36,6 +36,8 @@
  */
 
 import winston from 'winston';
+import { existsSync, mkdirSync } from 'fs';
+import path from 'path';
 
 /**
  * Log severity levels
@@ -70,13 +72,38 @@ const fileFormat = winston.format.combine(
   winston.format.json()
 );
 
+function buildFileTransports(): winston.transport[] {
+  const logDir = path.join(process.cwd(), 'logs');
+
+  try {
+    if (!existsSync(logDir)) {
+      mkdirSync(logDir, { recursive: true });
+    }
+  } catch (error) {
+    // Fall back to console-only logging if filesystem is not writable.
+    console.warn('Logger: failed to create logs directory, using console-only logging');
+    return [];
+  }
+
+  return [
+    new winston.transports.File({
+      filename: path.join(logDir, 'error.log'),
+      level: LogLevel.ERROR,
+      format: fileFormat,
+    }),
+    new winston.transports.File({
+      filename: path.join(logDir, 'combined.log'),
+      format: fileFormat,
+    }),
+  ];
+}
+
 /**
  * Winston logger instance
  *
  * Configured with multiple transports:
  * - Console: Colorized output with timestamps
- * - Error file: JSON format, ERROR level only
- * - Combined file: JSON format, all levels
+ * - File: JSON format for error and combined logs (if available)
  *
  * Default log level: INFO (configurable via LOG_LEVEL env var)
  *
@@ -104,17 +131,7 @@ export const logger = winston.createLogger({
     new winston.transports.Console({
       format: consoleFormat,
     }),
-    // File transport for errors
-    new winston.transports.File({
-      filename: 'logs/error.log',
-      level: LogLevel.ERROR,
-      format: fileFormat,
-    }),
-    // File transport for all logs
-    new winston.transports.File({
-      filename: 'logs/combined.log',
-      format: fileFormat,
-    }),
+    ...buildFileTransports(),
   ],
 });
 

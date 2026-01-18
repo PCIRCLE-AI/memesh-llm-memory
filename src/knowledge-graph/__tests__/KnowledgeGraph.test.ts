@@ -86,4 +86,21 @@ describe('KnowledgeGraph', () => {
       expect(result).toBe(false);
     });
   });
+
+  describe('searchEntities', () => {
+    it('should return observations and tags without duplication', () => {
+      kg.createEntity({
+        name: 'EntityWithTags',
+        entityType: 'test_type',
+        observations: ['alpha', 'beta|||gamma'],
+        tags: ['tag-one', 'tag-two'],
+      });
+
+      const results = kg.searchEntities({ namePattern: 'EntityWithTags' });
+
+      expect(results).toHaveLength(1);
+      expect(results[0].observations).toEqual(['alpha', 'beta|||gamma']);
+      expect(results[0].tags).toEqual(['tag-one', 'tag-two']);
+    });
+  });
 });

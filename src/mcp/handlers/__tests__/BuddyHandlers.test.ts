@@ -4,7 +4,6 @@
  * Comprehensive tests for Buddy Command handlers.
  * Tests cover:
  * - Natural language task execution (buddy-do)
- * - Performance stats (buddy-stats)
  * - Memory recall (buddy-remember)
  * - Help system (buddy-help)
  * - Input validation
@@ -167,50 +166,6 @@ describe('BuddyHandlers', () => {
     });
   });
 
-  describe('handleBuddyStats', () => {
-    it('should get stats with default period', async () => {
-      const result = await buddyHandlers.handleBuddyStats({});
-
-      expect(result.content).toHaveLength(1);
-      expect(result.content[0].type).toBe('text');
-    });
-
-    it('should accept period parameter', async () => {
-      const result = await buddyHandlers.handleBuddyStats({
-        period: 'week',
-      });
-
-      expect(result.content).toHaveLength(1);
-    });
-
-    it('should accept all valid periods', async () => {
-      const validPeriods = ['day', 'week', 'month'];
-
-      for (const period of validPeriods) {
-        const result = await buddyHandlers.handleBuddyStats({ period });
-        expect(result.content).toHaveLength(1);
-      }
-    });
-
-    it('should validate invalid period', async () => {
-      const result = await buddyHandlers.handleBuddyStats({
-        period: 'invalid',
-      });
-      expect(result.isError).toBe(true);
-      expect(result.content[0].type).toBe('text');
-      expect(result.content[0].text).toContain('ValidationError');
-    });
-
-    it('should validate period is a string', async () => {
-      const result = await buddyHandlers.handleBuddyStats({
-        period: 123,
-      });
-      expect(result.isError).toBe(true);
-      expect(result.content[0].type).toBe('text');
-      expect(result.content[0].text).toContain('ValidationError');
-    });
-  });
-
   describe('handleBuddyRemember', () => {
     it('should search memories with query', async () => {
       const result = await buddyHandlers.handleBuddyRemember({
@@ -317,7 +272,7 @@ describe('BuddyHandlers', () => {
     });
 
     it('should accept all buddy commands', async () => {
-      const validCommands = ['buddy-do', 'buddy-stats', 'buddy-remember', 'buddy-help'];
+      const validCommands = ['buddy-do', 'buddy-remember', 'buddy-help'];
 
       for (const command of validCommands) {
         const result = await buddyHandlers.handleBuddyHelp({ command });
@@ -422,9 +377,6 @@ describe('BuddyHandlers', () => {
       await buddyHandlers.handleBuddyDo({
         task: 'Task 1',
       });
-
-      // Check stats
-      await buddyHandlers.handleBuddyStats({});
 
       // Search memory
       await buddyHandlers.handleBuddyRemember({

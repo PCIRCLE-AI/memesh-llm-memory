@@ -11,6 +11,8 @@ import { safeJsonParse } from '../../utils/json.js';
 import type { Entity, Relation, SearchOptions } from './KnowledgeGraph.js';
 import type { SQLParams } from '../../evolution/storage/types.js';
 import { logger } from '../../utils/logger.js';
+import path from 'path';
+import { getHomeDir } from '../../utils/paths.js';
 
 export interface KnowledgeGraphOptions {
   /**
@@ -57,7 +59,7 @@ export class KnowledgeGraphSQLite {
 
   constructor(options: KnowledgeGraphOptions = {}) {
     this.options = {
-      dbPath: options.dbPath || `${process.env.HOME}/.claude/knowledge-graph.db`,
+      dbPath: options.dbPath || path.join(getHomeDir(), '.claude', 'knowledge-graph.db'),
       verbose: options.verbose || false,
     };
 

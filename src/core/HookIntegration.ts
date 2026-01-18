@@ -9,7 +9,7 @@
  * - **Automatic Checkpoint Detection**: Detects checkpoints from tool execution patterns
  * - **Write/Edit Tool Monitoring**: Triggers 'code-written' checkpoint for file changes
  * - **Test Execution Detection**: Triggers 'test-complete' checkpoint for test commands
- * - **Git Integration**: Triggers 'commit-ready' checkpoint for git add commands
+ * - **Git Integration**: Triggers 'commit-ready' for git add and 'committed' for git commit
  * - **Project Memory Recording**: Optionally records events to ProjectAutoTracker
  * - **Token Usage Tracking**: Monitors and records token consumption
  *
@@ -17,6 +17,7 @@
  * - **code-written**: Write/Edit tool → file modified/created
  * - **test-complete**: Bash tool → npm test/vitest/jest/mocha
  * - **commit-ready**: Bash tool → git add command
+ * - **committed**: Bash tool → git commit command
  *
  * @example
  * ```typescript
@@ -28,7 +29,8 @@
  * const butler = new DevelopmentButler(detector, mcpTools);
  * const hooks = new HookIntegration(detector, butler);
  *
- * // Optional: Enable project memory recording
+ * // Optional: Enable project memory recording immediately
+ * // (otherwise auto-initialized on first hook when memory support is available)
  * hooks.initializeProjectMemory(mcpTools);
  *
  * // Register callback for checkpoint triggers
@@ -172,7 +174,7 @@ interface BashToolArgs {
  * ```
  */
 interface Checkpoint {
-  /** Checkpoint name (e.g., 'code-written', 'test-complete', 'commit-ready') */
+  /** Checkpoint name (e.g., 'code-written', 'test-complete', 'commit-ready', 'committed') */
   name: string;
 
   /** Checkpoint-specific context data */
@@ -221,6 +223,7 @@ export interface CheckpointContext {
  * - **Write/Edit tools** → 'code-written' checkpoint
  * - **Bash test commands** → 'test-complete' checkpoint
  * - **git add commands** → 'commit-ready' checkpoint
+ * - **git commit commands** → 'committed' checkpoint
  *
  * @example
  * ```typescript
@@ -228,7 +231,8 @@ export interface CheckpointContext {
  * const butler = new DevelopmentButler(detector, mcpTools);
  * const hooks = new HookIntegration(detector, butler);
  *
- * // Enable project memory (optional)
+ * // Enable project memory immediately (optional)
+ * // Auto-initialization also happens on first hook when memory is available
  * hooks.initializeProjectMemory(mcpTools);
  *
  * // Register callback for all checkpoint triggers
@@ -249,6 +253,7 @@ export class HookIntegration {
   private butler: DevelopmentButler;
   private triggerCallbacks: Array<(context: CheckpointContext) => void> = [];
   private projectMemory?: ProjectAutoTracker;
+  private lastCheckpoint?: string;
 
   /**
    * Create a new HookIntegration
@@ -282,6 +287,9 @@ export class HookIntegration {
    * When enabled, checkpoints trigger automatic memory recording for code changes,
    * test results, and token usage. Call this after construction to enable.
    *
+   * This is optional because processToolUse() will auto-initialize when memory
+   * support is available.
+   *
    * Recorded Events:
    * - **code-written**: File changes recorded with change type (new-file/modification)
    * - **test-complete**: Test results recorded (total, passed, failed)
@@ -307,6 +315,10 @@ export class HookIntegration {
    * ```
    */
   initializeProjectMemory(mcp: MCPToolInterface): void {
+    if (this.projectMemory) {
+      return;
+    }
+
     this.projectMemory = new ProjectAutoTracker(mcp);
   }
 
@@ -322,6 +334,7 @@ export class HookIntegration {
    * - **Edit tool** → 'code-written' checkpoint (modification)
    * - **Bash tool with test command** → 'test-complete' checkpoint
    * - **Bash tool with git add** → 'commit-ready' checkpoint
+   * - **Bash tool with git commit** → 'committed' checkpoint
    *
    * Test Commands Detected:
    * - npm test / npm run test
@@ -404,9 +417,20 @@ export class HookIntegration {
       };
     }
 
-    // Detect test-complete checkpoint (Bash running tests)
+    // Detect Bash-driven checkpoints
     if (toolName === 'Bash') {
       const bashArgs = args as BashToolArgs;
+
+      if (this.isGitCommitCommand(bashArgs.command)) {
+        return {
+          name: 'committed',
+          data: {
+            command: bashArgs.command,
+            message: this.extractGitCommitMessage(bashArgs.command),
+          },
+        };
+      }
+
       if (this.isTestCommand(bashArgs.command)) {
         const testResults = this.parseTestOutput(toolData.output || '');
         return {
@@ -414,11 +438,7 @@ export class HookIntegration {
           data: testResults,
         };
       }
-    }
 
-    // Detect commit-ready checkpoint (git add)
-    if (toolName === 'Bash') {
-      const bashArgs = args as BashToolArgs;
       if (this.isGitAddCommand(bashArgs.command)) {
         return {
           name: 'commit-ready',
@@ -489,6 +509,8 @@ export class HookIntegration {
    * ```
    */
   async processToolUse(toolData: ToolUseData): Promise<void> {
+    this.ensureProjectMemoryInitialized();
+
     const checkpoint = await this.detectCheckpointFromToolUse(toolData);
 
     if (checkpoint) {
@@ -509,6 +531,7 @@ export class HookIntegration {
       // Record to project memory if initialized
       if (this.projectMemory) {
         await this.recordToProjectMemory(checkpoint, toolData);
+        await this.recordCheckpointProgress(checkpoint, toolData);
       }
     }
 
@@ -589,6 +612,112 @@ export class HookIntegration {
         failures: [],
       });
     }
+  }
+
+  /**
+   * Record phase completion and commit events to project memory
+   */
+  private async recordCheckpointProgress(
+    checkpoint: Checkpoint,
+    toolData: ToolUseData
+  ): Promise<void> {
+    if (!this.projectMemory) {
+      return;
+    }
+
+    const trackedPhases = new Set(['code-written', 'test-complete', 'commit-ready', 'committed']);
+    if (!trackedPhases.has(checkpoint.name)) {
+      return;
+    }
+
+    if (checkpoint.name !== 'code-written' && checkpoint.name !== 'committed') {
+      await this.projectMemory.flushPendingCodeChanges(checkpoint.name);
+    }
+
+    if (checkpoint.name === 'committed') {
+      const commitData = checkpoint.data as {
+        command?: string;
+        message?: string | null;
+      };
+      await this.projectMemory.recordCommit({
+        command: commitData.command,
+        message: commitData.message ?? undefined,
+        output: toolData.output,
+      });
+    }
+
+    if (checkpoint.name === this.lastCheckpoint) {
+      return;
+    }
+
+    const details = this.buildCheckpointDetails(checkpoint, toolData);
+    await this.projectMemory.recordWorkflowCheckpoint(checkpoint.name, details);
+    this.lastCheckpoint = checkpoint.name;
+  }
+
+  /**
+   * Build human-friendly checkpoint details for memory recording
+   */
+  private buildCheckpointDetails(
+    checkpoint: Checkpoint,
+    toolData: ToolUseData
+  ): string[] {
+    const details: string[] = [`Trigger: ${toolData.toolName}`];
+
+    if (checkpoint.name === 'code-written') {
+      const files = (checkpoint.data.files as string[] | undefined) || [];
+      details.push(`Files changed: ${files.length}`);
+    }
+
+    if (checkpoint.name === 'test-complete') {
+      const { total, passed, failed } = checkpoint.data as {
+        total: number;
+        passed: number;
+        failed: number;
+      };
+      if (total > 0) {
+        details.push(`Tests: ${passed}/${total} passed`);
+      }
+      if (failed > 0) {
+        details.push(`Failed: ${failed}`);
+      }
+    }
+
+    if (checkpoint.name === 'commit-ready') {
+      const command = (checkpoint.data as { command?: string }).command;
+      if (command) {
+        details.push(`Command: ${command}`);
+      }
+    }
+
+    if (checkpoint.name === 'committed') {
+      const message = (checkpoint.data as { message?: string | null }).message;
+      if (message) {
+        details.push(`Message: ${message}`);
+      }
+    }
+
+    if (toolData.duration) {
+      details.push(`Duration: ${toolData.duration}ms`);
+    }
+
+    return details;
+  }
+
+  /**
+   * Auto-initialize project memory when hooks are first used
+   */
+  private ensureProjectMemoryInitialized(): void {
+    if (this.projectMemory) {
+      return;
+    }
+
+    const mcp = this.butler.getToolInterface();
+    if (!mcp.supportsMemory()) {
+      return;
+    }
+
+    this.initializeProjectMemory(mcp);
   }
 
   /**
@@ -729,6 +858,63 @@ export class HookIntegration {
    */
   private isGitAddCommand(command: string): boolean {
     return command.trim().startsWith('git add');
+  }
+
+  /**
+   * Check if command is git commit
+   *
+   * Determines if a bash command is a git commit command.
+   * Used to detect committed checkpoint from Bash tool execution.
+   *
+   * @param command - Bash command to check
+   * @returns True if command is git commit
+   */
+  private isGitCommitCommand(command: string): boolean {
+    return this.findGitCommitSegment(command) !== null;
+  }
+
+  /**
+   * Extract commit message from a git commit command
+   *
+   * Supports repeated -m flags and returns a combined message.
+   * Returns null if no -m flag is present.
+   *
+   * @param command - Git commit command
+   * @returns Commit message string or null
+   */
+  private extractGitCommitMessage(command: string): string | null {
+    const segment = this.findGitCommitSegment(command);
+    const source = segment ?? command;
+    const messages: string[] = [];
+    const regex = /-m\s+(?:"([^"]*)"|'([^']*)'|([^\s]+))/g;
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(source)) !== null) {
+      const message = match[1] ?? match[2] ?? match[3];
+      if (message) {
+        messages.push(message);
+      }
+    }
+
+    return messages.length > 0 ? messages.join('\n') : null;
+  }
+
+  /**
+   * Locate the git commit segment within a composite shell command
+   */
+  private findGitCommitSegment(command: string): string | null {
+    const segments = command
+      .split(/&&|;/)
+      .map(segment => segment.trim())
+      .filter(Boolean);
+
+    for (const segment of segments) {
+      if (/^git\s+commit(\s|$)/.test(segment)) {
+        return segment;
+      }
+    }
+
+    return null;
   }
 
   /**

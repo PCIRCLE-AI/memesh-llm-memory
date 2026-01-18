@@ -53,7 +53,9 @@
  * ```
  */
 
-import { NotFoundError, OperationError } from '../errors/index.js';
+import { spawn } from 'child_process';
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { NotFoundError, OperationError, ValidationError } from '../errors/index.js';
 
 /**
  * Tool metadata structure
@@ -91,6 +93,53 @@ export interface ToolDependencyCheck {
   missing: string[];
 }
 
+export interface ToolDispatcher {
+  routeToolCall(params: { name: string; arguments: Record<string, unknown> }): Promise<CallToolResult>;
+}
+
+export interface CommandResult {
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+}
+
+export interface CommandPolicyDecision {
+  allowed: boolean;
+  requiresConfirmation: boolean;
+  reason?: string;
+}
+
+export interface CommandPolicy {
+  evaluate(command: string): CommandPolicyDecision;
+}
+
+export interface CommandRunner {
+  run(command: string, timeoutMs?: number): Promise<CommandResult>;
+}
+
+export interface MemoryEntityInput {
+  name: string;
+  entityType: string;
+  observations: string[];
+  metadata?: Record<string, unknown>;
+}
+
+export interface CreateEntitiesInput {
+  entities: MemoryEntityInput[];
+}
+
+export interface MemoryProvider {
+  createEntities(input: CreateEntitiesInput): Promise<void>;
+  searchNodes(query: string): Promise<unknown[]>;
+}
+
+export interface MCPToolInterfaceOptions {
+  toolDispatcher?: ToolDispatcher;
+  commandPolicy?: CommandPolicy;
+  commandRunner?: CommandRunner;
+  memoryProvider?: MemoryProvider;
+}
+
 /**
  * MCP Tool Interface Class
  *
@@ -99,6 +148,36 @@ export interface ToolDependencyCheck {
  */
 export class MCPToolInterface {
   private tools: Map<string, ToolMetadata> = new Map();
+  private toolDispatcher?: ToolDispatcher;
+  private commandPolicy: CommandPolicy;
+  private commandRunner: CommandRunner;
+  private memoryProvider?: MemoryProvider;
+
+  constructor(options: MCPToolInterfaceOptions = {}) {
+    this.toolDispatcher = options.toolDispatcher;
+    this.commandPolicy = options.commandPolicy || createDefaultCommandPolicy();
+    this.commandRunner = options.commandRunner || createDefaultCommandRunner();
+    this.memoryProvider = options.memoryProvider;
+  }
+
+  attachToolDispatcher(dispatcher: ToolDispatcher): void {
+    this.toolDispatcher = dispatcher;
+  }
+
+  attachMemoryProvider(provider: MemoryProvider): void {
+    this.memoryProvider = provider;
+  }
+
+  /**
+   * Check if memory operations are available
+   */
+  supportsMemory(): boolean {
+    return Boolean(this.memoryProvider) || this.isToolRegistered('memory');
+  }
+
+  setCommandPolicy(policy: CommandPolicy): void {
+    this.commandPolicy = policy;
+  }
 
   /**
    * Filesystem helper methods
@@ -223,8 +302,16 @@ export class MCPToolInterface {
      * });
      * ```
      */
-    createEntities: async (opts: Record<string, unknown>): Promise<void> => {
-      await this.invokeTool('memory', 'createEntities', opts);
+    createEntities: async (opts: CreateEntitiesInput): Promise<void> => {
+      if (this.memoryProvider) {
+        await this.memoryProvider.createEntities(opts);
+        return;
+      }
+      await this.invokeTool(
+        'memory',
+        'createEntities',
+        opts as unknown as Record<string, unknown>
+      );
     },
 
     /**
@@ -253,6 +340,9 @@ export class MCPToolInterface {
      * ```
      */
     searchNodes: async (query: string): Promise<unknown[]> => {
+      if (this.memoryProvider) {
+        return await this.memoryProvider.searchNodes(query);
+      }
       const result = await this.invokeTool('memory', 'searchNodes', { query });
       if (result.success && result.data && Array.isArray(result.data)) {
         return result.data;
@@ -349,56 +439,58 @@ export class MCPToolInterface {
 
   /**
    * Bash command execution helper
-   * Provides convenient access to bash/shell command execution
-   *
-   * NOTE: In test mode (v2.1.0), this simulates command execution
-   * Actual MCP tool invocation will be implemented in v3.0
+   * Provides vetted access to shell command execution.
    */
-  public bash = async (opts: { command: string; timeout?: number }): Promise<{
-    exitCode: number;
-    stdout: string;
-    stderr: string;
-  }> => {
-    // Test mode: Simulate command execution based on command content
-    const { command } = opts;
+  public bash = async (opts: {
+    command: string;
+    timeout?: number;
+    confirmed?: boolean;
+    confirmationReason?: string;
+  }): Promise<CommandResult> => {
+    const { command, timeout, confirmed } = opts;
 
-    // Simulate failing commands
-    if (command.includes('test-nonexistent') ||
-        command.includes('build-invalid') ||
-        command.includes('this-is-not-a-valid-command') ||
-        command.includes('exit 1')) {
-      return {
-        exitCode: 1,
-        stdout: '',
-        stderr: `Command failed: ${command}`
-      };
+    if (!command || !command.trim()) {
+      throw new ValidationError('Command is required', {
+        component: 'MCPToolInterface',
+        method: 'bash',
+        providedValue: command,
+      });
     }
 
-    // Simulate empty test/build commands
-    if (command === '') {
-      return {
-        exitCode: 1,
-        stdout: '',
-        stderr: 'No command provided'
-      };
+    let decision: CommandPolicyDecision;
+    try {
+      decision = this.commandPolicy.evaluate(command);
+    } catch (error) {
+      throw new OperationError(
+        `Command policy evaluation failed: ${error instanceof Error ? error.message : String(error)}`,
+        { command }
+      );
     }
 
-    // Simulate git status --porcelain
-    if (command.includes('git status --porcelain')) {
-      // Return empty stdout (no uncommitted changes) for clean repo
-      return {
-        exitCode: 0,
-        stdout: '',
-        stderr: ''
-      };
+    if (!decision.allowed) {
+      throw new OperationError(
+        decision.reason ? `Command blocked: ${decision.reason}` : 'Command blocked by policy',
+        { command }
+      );
     }
 
-    // Simulate successful commands (default)
-    return {
-      exitCode: 0,
-      stdout: 'Command executed successfully',
-      stderr: ''
-    };
+    if (decision.requiresConfirmation && !confirmed) {
+      throw new OperationError(
+        'Command requires confirmation. Re-run with confirmed: true.',
+        { command }
+      );
+    }
+
+    const result = await this.commandRunner.run(command, timeout);
+
+    if (result.exitCode !== 0) {
+      throw new OperationError(
+        `Command failed with exit code ${result.exitCode}`,
+        { command, stdout: result.stdout, stderr: result.stderr }
+      );
+    }
+
+    return result;
   };
 
   /**
@@ -473,32 +565,44 @@ export class MCPToolInterface {
       );
     }
 
-    // KNOWN LIMITATION: MCP tool invocation not yet implemented in v2.1.0
-    // This is a documented limitation of the current MCP Server Pattern
-    //
-    // TODO for v3.0: Implement actual MCP client connection
-    // - Connect to MCP server via stdio/HTTP
-    // - Call tool with proper request/response protocol
-    // - Handle errors and timeouts
-    //
-    // Current workaround: Agents using MCPToolInterface should handle this error
-    // and use alternative methods (direct API calls, fallback mechanisms)
     throw new OperationError(
-      `MCP tool invocation not yet implemented (v2.1.0 limitation).\n` +
-      `Tool: ${toolName}, Method: ${method}\n\n` +
-      `This is a known limitation of the current MCP Server Pattern.\n` +
-      `In v2.1.0, agents work via prompt enhancement instead of direct tool calls.\n\n` +
-      `For implementation guidance, see:\n` +
-      `- https://github.com/modelcontextprotocol/specification\n` +
-      `- docs/architecture/MCP_TOOL_INVOCATION.md`,
+      'External MCP tool invocation is not configured. Attach a ToolDispatcher for in-process tools.',
       {
         toolName,
         method,
         params,
-        version: 'v2.1.0',
-        limitation: 'MCP_TOOL_INVOCATION_NOT_IMPLEMENTED'
       }
     );
+  }
+
+  /**
+   * Invoke a CCB tool directly via in-process dispatcher
+   *
+   * @param toolName - MCP tool name (e.g., "buddy-do", "get-session-health")
+   * @param args - Tool arguments
+   * @returns ToolInvocationResult with MCP CallToolResult payload
+   */
+  async invokeToolByName(
+    toolName: string,
+    args: Record<string, unknown>
+  ): Promise<ToolInvocationResult> {
+    if (!this.toolDispatcher) {
+      throw new OperationError('Tool dispatcher is not attached', {
+        toolName,
+        args,
+      });
+    }
+
+    const result = await this.toolDispatcher.routeToolCall({
+      name: toolName,
+      arguments: args,
+    });
+
+    return {
+      success: !result.isError,
+      data: result,
+      error: result.isError ? 'Tool execution failed' : undefined,
+    };
   }
 
   /**
@@ -531,4 +635,183 @@ export class MCPToolInterface {
   getToolMetadata(toolName: string): ToolMetadata | undefined {
     return this.tools.get(toolName);
   }
+}
+
+const DEFAULT_GIT_SUBCOMMANDS = new Set([
+  'add',
+  'commit',
+  'status',
+  'log',
+  'diff',
+  'rev-parse',
+  'stash',
+  'checkout',
+  'init',
+  'config',
+  'push',
+]);
+
+const DEFAULT_CONFIRM_GIT_SUBCOMMANDS = new Set([
+  'add',
+  'commit',
+  'stash',
+  'checkout',
+  'push',
+  'init',
+  'config',
+]);
+
+function createDefaultCommandPolicy(): CommandPolicy {
+  return {
+    evaluate: (command: string): CommandPolicyDecision => {
+      const tokens = parseCommandLine(command);
+      if (tokens.length === 0) {
+        return { allowed: false, requiresConfirmation: false, reason: 'Empty command' };
+      }
+
+      const [binary, ...args] = tokens;
+      if (binary !== 'git') {
+        return {
+          allowed: false,
+          requiresConfirmation: false,
+          reason: 'Only git commands are allowed by default',
+        };
+      }
+
+      const subcommand = extractGitSubcommand(args);
+      if (!subcommand) {
+        return { allowed: false, requiresConfirmation: false, reason: 'Missing git subcommand' };
+      }
+
+      if (!DEFAULT_GIT_SUBCOMMANDS.has(subcommand)) {
+        return {
+          allowed: false,
+          requiresConfirmation: false,
+          reason: `Git subcommand not allowed: ${subcommand}`,
+        };
+      }
+
+      return {
+        allowed: true,
+        requiresConfirmation: DEFAULT_CONFIRM_GIT_SUBCOMMANDS.has(subcommand),
+      };
+    },
+  };
+}
+
+function createDefaultCommandRunner(): CommandRunner {
+  return {
+    run: async (command: string, timeoutMs?: number): Promise<CommandResult> => {
+      const tokens = parseCommandLine(command);
+      if (tokens.length === 0) {
+        return { exitCode: 1, stdout: '', stderr: 'No command provided' };
+      }
+
+      const [binary, ...args] = tokens;
+      const child = spawn(binary, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+
+      let stdout = '';
+      let stderr = '';
+      let settled = false;
+
+      return await new Promise<CommandResult>((resolve) => {
+        const finish = (exitCode: number, extraStderr?: string) => {
+          if (settled) return;
+          settled = true;
+          if (timeoutId) clearTimeout(timeoutId);
+          if (extraStderr) {
+            stderr += stderr ? `\n${extraStderr}` : extraStderr;
+          }
+          resolve({ exitCode, stdout, stderr });
+        };
+
+        const timeoutId = timeoutMs && timeoutMs > 0 ? setTimeout(() => {
+          child.kill('SIGTERM');
+          finish(124, 'Command timed out');
+        }, timeoutMs) : undefined;
+
+        child.stdout.on('data', (chunk: Buffer) => {
+          stdout += chunk.toString();
+        });
+
+        child.stderr.on('data', (chunk: Buffer) => {
+          stderr += chunk.toString();
+        });
+
+        child.on('error', (error) => {
+          finish(1, error.message);
+        });
+
+        child.on('close', (code) => {
+          finish(code ?? 1);
+        });
+      });
+    },
+  };
+}
+
+function extractGitSubcommand(args: string[]): string | null {
+  for (const arg of args) {
+    if (arg.startsWith('-')) {
+      continue;
+    }
+    return arg;
+  }
+  return null;
+}
+
+function parseCommandLine(command: string): string[] {
+  const tokens: string[] = [];
+  let current = '';
+  let quote: '"' | '\'' | null = null;
+  let escape = false;
+
+  for (let i = 0; i < command.length; i += 1) {
+    const char = command[i];
+
+    if (escape) {
+      current += char;
+      escape = false;
+      continue;
+    }
+
+    if (char === '\\\\' && quote !== '\'') {
+      escape = true;
+      continue;
+    }
+
+    if ((char === '\"' || char === '\'') && !quote) {
+      quote = char;
+      continue;
+    }
+
+    if (quote && char === quote) {
+      quote = null;
+      continue;
+    }
+
+    if (!quote && /\\s/.test(char)) {
+      if (current) {
+        tokens.push(current);
+        current = '';
+      }
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (escape) {
+    current += '\\\\';
+  }
+
+  if (quote) {
+    throw new Error('Unterminated quote in command');
+  }
+
+  if (current) {
+    tokens.push(current);
+  }
+
+  return tokens;
 }

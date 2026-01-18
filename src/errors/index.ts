@@ -113,7 +113,7 @@ export class ValidationError extends BaseError {
  * (not initialized, already running, etc.)
  *
  * @example
- * throw new StateError('RAG Agent not initialized', {
+ * throw new StateError('Memory system not initialized', {
  *   operation: 'search',
  *   requiredState: 'initialized',
  *   currentState: 'not_initialized'
@@ -192,9 +192,9 @@ export class OperationError extends BaseError {
  * Use when external service calls fail
  *
  * @example
- * throw new ExternalServiceError('n8n API request failed', {
- *   service: 'n8n',
- *   endpoint: '/workflows',
+ * throw new ExternalServiceError('External API request failed', {
+ *   service: 'third-party-service',
+ *   endpoint: '/endpoint',
  *   statusCode: 500,
  *   response: errorResponse
  * });

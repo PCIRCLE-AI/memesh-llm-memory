@@ -13,6 +13,7 @@ import { LearningManager } from '../evolution/LearningManager.js';
 import { AdaptationEngine, AdaptedExecution } from '../evolution/AdaptationEngine.js';
 import { getAllAgentConfigs, toAdaptationConfig } from '../evolution/AgentEvolutionConfig.js';
 import { logger } from '../utils/logger.js';
+import { formatMoney, type MicroDollars } from '../utils/money.js';
 
 export class Router {
   private analyzer: TaskAnalyzer;
@@ -116,7 +117,7 @@ export class Router {
 
     const message = approved
       ? `✅ Task routed to ${routing.selectedAgent}`
-      : `❌ Task blocked: Estimated cost $${routing.estimatedCost} exceeds budget`;
+      : `❌ Task blocked: Estimated cost ${formatMoney(routing.estimatedCost)} exceeds budget`;
 
     return {
       analysis,
@@ -136,7 +137,7 @@ export class Router {
       routing: RoutingDecision;
       approved: boolean;
     }>;
-    totalCost: number;
+    totalCost: MicroDollars;
     approved: boolean;
   }> {
     const analyses = await this.analyzer.analyzeBatch(tasks);
@@ -170,7 +171,7 @@ export class Router {
     modelName: string,
     inputTokens: number,
     outputTokens: number
-  ): number {
+  ): MicroDollars {
     return this.costTracker.recordCost(taskId, modelName, inputTokens, outputTokens);
   }
 

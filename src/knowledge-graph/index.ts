@@ -14,6 +14,7 @@ import type { Entity, Relation, SearchQuery, RelationTrace, EntityType, Relation
 import type { SQLParams } from '../evolution/storage/types.js';
 import { logger } from '../utils/logger.js';
 import { QueryCache } from '../db/QueryCache.js';
+import { safeJsonParse } from '../utils/json.js';
 
 export class KnowledgeGraph {
   private db: Database.Database;
@@ -316,11 +317,9 @@ export class KnowledgeGraph {
     // Cache miss - execute query
     let sql = `
       SELECT e.*,
-        GROUP_CONCAT(o.content, '|||') as observations,
-        GROUP_CONCAT(t.tag, ',') as tags
+        (SELECT json_group_array(content) FROM observations o WHERE o.entity_id = e.id) as observations_json,
+        (SELECT json_group_array(tag) FROM tags t WHERE t.entity_id = e.id) as tags_json
       FROM entities e
-      LEFT JOIN observations o ON e.id = o.entity_id
-      LEFT JOIN tags t ON e.id = t.entity_id
       WHERE 1=1
     `;
 
@@ -341,7 +340,7 @@ export class KnowledgeGraph {
       params.push(`%${this.escapeLikePattern(query.namePattern)}%`);
     }
 
-    sql += ' GROUP BY e.id ORDER BY e.created_at DESC';
+    sql += ' ORDER BY e.created_at DESC';
 
     if (query.limit) {
       sql += ' LIMIT ?';
@@ -363,31 +362,24 @@ export class KnowledgeGraph {
         id: number;
         name: string;
         type: string;
-        observations: string | null;
-        tags: string | null;
+        observations_json: string | null;
+        tags_json: string | null;
         metadata: string | null;
         created_at: string;
       };
 
-      // Optimized: Avoid intermediate arrays from split().filter()
-      let tags: string[] = [];
-      if (r.tags) {
-        const tagParts = r.tags.split(',');
-        const filteredTags: string[] = [];
-        for (let j = 0; j < tagParts.length; j++) {
-          const tag = tagParts[j];
-          if (tag) filteredTags.push(tag);
-        }
-        tags = filteredTags;
-      }
+      const observations = safeJsonParse<string[]>(r.observations_json, [])
+        .filter(value => value);
+      const tags = safeJsonParse<string[]>(r.tags_json, [])
+        .filter(value => value);
 
       entities[i] = {
         id: r.id,
         name: r.name,
         entityType: r.type as EntityType,
-        observations: r.observations ? r.observations.split('|||') : [],
+        observations,
         tags,
-        metadata: r.metadata ? JSON.parse(r.metadata) : {},
+        metadata: r.metadata ? safeJsonParse<Record<string, unknown>>(r.metadata, {}) : {},
         createdAt: new Date(r.created_at)
       };
     }

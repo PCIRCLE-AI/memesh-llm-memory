@@ -129,6 +129,10 @@ export class ResourceMonitor {
    */
   getCurrentResources(): SystemResources {
     const cpus = os.cpus();
+    const fallbackCores = typeof os.availableParallelism === 'function'
+      ? os.availableParallelism()
+      : 1;
+    const cores = Math.max(cpus.length, fallbackCores, 1);
     const totalMem = os.totalmem() / (1024 * 1024); // Convert to MB
     const freeMem = os.freemem() / (1024 * 1024); // Convert to MB
     const usedMem = totalMem - freeMem;
@@ -136,12 +140,12 @@ export class ResourceMonitor {
     // Calculate CPU usage (simplified - in production use better method)
     // This is a simplified calculation based on load average
     const loadAvg = os.loadavg()[0]; // 1 minute load average
-    const cpuUsage = Math.min(100, (loadAvg / cpus.length) * 100);
+    const cpuUsage = Math.min(100, (loadAvg / cores) * 100);
 
     return {
       cpu: {
         usage: cpuUsage,
-        cores: cpus.length,
+        cores,
       },
       memory: {
         total: totalMem,

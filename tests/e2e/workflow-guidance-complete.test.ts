@@ -11,7 +11,9 @@
  */
 
 import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from 'vitest';
+import { pathToFileURL } from 'url';
 import { ClaudeCodeBuddyMCPServer } from '../../src/mcp/server.js';
+import { resolveUserPath } from '../../src/utils/paths.js';
 
 describe('Workflow Guidance System - Complete E2E', () => {
   let server: ClaudeCodeBuddyMCPServer;
@@ -175,7 +177,8 @@ describe('Workflow Guidance System - Complete E2E', () => {
     // Verify resourceUpdate has correct structure (actual method name from implementation)
     expect(reloadResult.resourceUpdate.method).toBe('resources/updated');
     expect(reloadResult.resourceUpdate.params).toBeDefined();
-    expect(reloadResult.resourceUpdate.params.uri).toBe('file://~/.claude/CLAUDE.md');
+    const expectedUri = pathToFileURL(resolveUserPath('~/.claude/CLAUDE.md')).toString();
+    expect(reloadResult.resourceUpdate.params.uri).toBe(expectedUri);
   });
 
   /**

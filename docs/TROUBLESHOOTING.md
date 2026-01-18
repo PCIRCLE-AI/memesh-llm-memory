@@ -10,7 +10,7 @@ This guide helps you diagnose and resolve common issues with Claude Code Buddy.
 ## Table of Contents
 
 1. [General Issues](#general-issues)
-2. [Agent-Specific Issues](#agent-specific-issues)
+2. [Capability-Specific Issues](#capability-specific-issues)
 3. [MCP Server Issues](#mcp-server-issues)
 4. [Performance Issues](#performance-issues)
 5. [Integration Issues](#integration-issues)
@@ -55,7 +55,7 @@ cat ~/.claude/logs/claude-code-buddy.log
 
 5. **Verify Node.js version**:
 ```bash
-node --version  # Should be >= 18.0.0
+node --version  # Should be >= 20.0.0
 ```
 
 ---
@@ -129,7 +129,7 @@ npm install
 
 ---
 
-## Agent-Specific Issues
+## Capability-Specific Issues
 
 ### TestWriterAgent Issues
 
@@ -174,7 +174,7 @@ export function add(a: number, b: number): number {
   return a + b;
 }
 
-// Then use test-writer agent
+// Then use testing capability
 ```
 
 ---
@@ -210,164 +210,6 @@ src/my utils/validation.ts
 
 # ✅ Good: Kebab-case or camelCase
 src/my-utils/validation.ts
-```
-
----
-
-### DevOpsEngineerAgent Issues
-
-#### Issue 1: CI Setup Fails
-
-**Symptoms**:
-- DevOps agent runs but no CI config created
-- Permission denied errors
-- CI config file already exists
-
-**Solutions**:
-
-1. **Check write permissions**:
-```bash
-# For GitHub Actions
-ls -la .github/workflows/
-mkdir -p .github/workflows
-
-# For GitLab CI
-touch .gitlab-ci.yml  # Test write permission
-```
-
-2. **Verify existing CI config**:
-```bash
-# GitHub Actions
-ls .github/workflows/
-
-# GitLab CI
-ls .gitlab-ci.yml
-
-# If exists, remove or rename
-mv .github/workflows/ci.yml .github/workflows/ci.yml.backup
-```
-
-3. **Check bash MCP tools available**:
-```typescript
-// In Claude Code
-"List available MCP tools"
-// Check for: bash, execute_command
-```
-
----
-
-#### Issue 2: Deployment Analysis Incorrect
-
-**Symptoms**:
-- Deployment analysis shows wrong status
-- Tests passing but analysis says failing
-- Build successful but analysis says failed
-
-**Solutions**:
-
-**NOTE**: Current version uses mocked checks. Real integration planned for future release.
-
-1. **Manual verification**:
-```bash
-# Verify tests actually pass
-npm test
-
-# Verify build succeeds
-npm run build
-
-# Check git status
-git status
-```
-
-2. **Check for test framework issues**:
-```bash
-# Ensure test command works
-npm test -- --run
-
-# Check exit code
-echo $?  # Should be 0 for success
-```
-
----
-
-### RAGAgent Issues
-
-#### Issue 1: RAG Agent Not Available
-
-**Symptoms**:
-- RAG agent not listed in available agents
-- Error: "RAG features require OpenAI API key"
-
-**Solutions**:
-
-1. **Set OpenAI API key**:
-```bash
-# Option 1: Environment variable
-export OPENAI_API_KEY="sk-..."
-
-# Option 2: .env file
-echo "OPENAI_API_KEY=sk-..." >> .env
-
-# Option 3: Claude Code config
-# Edit ~/.claude.json:
-{
-  "mcpServers": {
-    "claude-code-buddy": {
-      "env": {
-        "OPENAI_API_KEY": "sk-..."
-      }
-    }
-  }
-}
-```
-
-2. **Verify API key is valid**:
-```bash
-curl https://api.openai.com/v1/models \
-  -H "Authorization: Bearer $OPENAI_API_KEY"
-```
-
-3. **Check RAG agent is optional**:
-```bash
-# RAG is optional feature - system works without it
-# Other agents remain available
-```
-
----
-
-#### Issue 2: Slow Indexing or Search
-
-**Symptoms**:
-- Document indexing takes too long
-- Search queries time out
-- High memory usage
-
-**Solutions**:
-
-1. **Reduce document size**:
-```typescript
-// Split large documents into chunks
-const chunks = splitIntoChunks(largeDocument, 1000); // 1000 chars per chunk
-for (const chunk of chunks) {
-  await ragAgent.indexDocument({ content: chunk, metadata: {...} });
-}
-```
-
-2. **Use batch indexing**:
-```typescript
-// Index multiple documents in batch
-await Promise.all(
-  documents.map(doc => ragAgent.indexDocument(doc))
-);
-```
-
-3. **Adjust search parameters**:
-```typescript
-// Reduce topK for faster search
-const results = await ragAgent.search(query, {
-  topK: 3,  // Instead of default 5
-  threshold: 0.8  // Higher threshold = fewer results
-});
 ```
 
 ---
@@ -495,7 +337,7 @@ node dist/mcp/server.js 2>&1 | tee error.log
 
 **Symptoms**:
 - Agents take too long to respond
-- UI freezes during agent operations
+- UI freezes during capability operations
 - Timeout errors
 
 **Solutions**:
@@ -512,19 +354,19 @@ vm_stat
 df -h
 ```
 
-2. **Reduce concurrent agent operations**:
+2. **Reduce concurrent capability operations**:
 ```typescript
-// ❌ Bad: Too many parallel agents
+// ❌ Bad: Too many parallel tasks
 Promise.all([
-  agent1.execute(),
-  agent2.execute(),
-  agent3.execute(),
-  agent4.execute()
+  task1.run(),
+  task2.run(),
+  task3.run(),
+  task4.run()
 ]);
 
 // ✅ Good: Sequential execution
-await agent1.execute();
-await agent2.execute();
+await task1.run();
+await task2.run();
 ```
 
 3. **Clear evolution database**:
@@ -564,23 +406,14 @@ ps aux | grep "claude-code-buddy"
 top -l 1 | grep PhysMem
 ```
 
-2. **Reduce vector database size**:
-```bash
-# For RAG Agent
-ls -lh ~/.claude/rag-vectors/
-
-# Clear old vectors
-rm -rf ~/.claude/rag-vectors/old-*
-```
-
-3. **Limit concurrent operations**:
+2. **Limit concurrent operations**:
 ```typescript
-// Use queue for agent operations
+// Use queue for capability operations
 const queue = new PQueue({ concurrency: 2 });
-await queue.add(() => agent.execute());
+await queue.add(() => task.run());
 ```
 
-4. **Restart MCP server periodically**:
+3. **Restart MCP server periodically**:
 ```bash
 # If running for extended periods
 # Close and reopen Claude Code
@@ -632,7 +465,7 @@ npx vitest run
 ### Issue: CI Pipeline Fails After Setup
 
 **Symptoms**:
-- DevOpsEngineerAgent setup succeeds
+- Setup succeeds
 - CI pipeline fails on first run
 - Build or test errors in CI
 
@@ -644,13 +477,13 @@ npx vitest run
 - name: Setup Node.js
   uses: actions/setup-node@v3
   with:
-    node-version: '18'  # Must match local version
+    node-version: '20'  # Must match local version
 ```
 
 2. **Check for environment-specific issues**:
 ```bash
 # Test build in clean environment
-docker run -v $(pwd):/app node:18 bash -c "cd /app && npm ci && npm test && npm run build"
+docker run -v $(pwd):/app node:20 bash -c "cd /app && npm ci && npm test && npm run build"
 ```
 
 3. **Review CI logs**:
@@ -790,8 +623,8 @@ git log --oneline -5
 
 ### "API key not found"
 
-**Cause**: OpenAI API key not set (RAG features)  
-**Solution**: Set `OPENAI_API_KEY` environment variable
+**Cause**: Anthropic API key not set in standalone mode  
+**Solution**: Set `ANTHROPIC_API_KEY` or enable `MCP_SERVER_MODE=true`
 
 ### "MCP server not responding"
 
@@ -802,13 +635,13 @@ git log --oneline -5
 
 ## FAQ
 
-**Q: Do I need an OpenAI API key?**  
-A: Only if you want to use RAG features. All other agents work without it.
+**Q: Do I need an API key?**  
+A: Only for standalone orchestrator usage. MCP Server Mode uses Claude Code's access.
 
 **Q: How do I update Claude Code Buddy?**  
 A: `git pull origin main && npm install && npm run build`
 
-**Q: Can I customize agent behavior?**  
+**Q: Can I customize capability behavior?**  
 A: Yes, see [Configuration section](./USER_GUIDE.md#configuration) in User Guide.
 
 **Q: Why are some tests skipped?**  

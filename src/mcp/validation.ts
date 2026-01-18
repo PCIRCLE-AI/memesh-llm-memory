@@ -139,6 +139,8 @@ export const UninstallInputSchema = z.object({
  */
 export const WorkflowGuidanceInputSchema = z.object({
   phase: z.string().min(1, 'Phase cannot be empty'),
+  filesChanged: z.array(z.string().min(1)).optional(),
+  testsPassing: z.boolean().optional(),
 });
 
 /**
@@ -147,6 +149,18 @@ export const WorkflowGuidanceInputSchema = z.object({
 export const RecordTokenUsageInputSchema = z.object({
   inputTokens: z.number().int().nonnegative('Input tokens must be non-negative'),
   outputTokens: z.number().int().nonnegative('Output tokens must be non-negative'),
+});
+
+/**
+ * Hook tool use input schema for hook-tool-use
+ */
+export const HookToolUseInputSchema = z.object({
+  toolName: z.string().min(1, 'Tool name cannot be empty'),
+  arguments: z.unknown().optional(),
+  success: z.boolean(),
+  duration: z.number().int().nonnegative('Duration must be non-negative').optional(),
+  tokensUsed: z.number().int().nonnegative('Tokens used must be non-negative').optional(),
+  output: z.string().optional(),
 });
 
 /**
@@ -162,47 +176,51 @@ export const GenerateSmartPlanInputSchema = z.object({
 });
 
 /**
- * Git save work input schema for git-save-work
- */
-export const GitSaveWorkInputSchema = z.object({
-  description: z.string().min(1, 'Description cannot be empty'),
-  autoBackup: z.boolean().optional().default(true),
-});
-
-/**
- * Git list versions input schema for git-list-versions
- */
-export const GitListVersionsInputSchema = z.object({
-  limit: z.number().int().positive('Limit must be positive').max(100, 'Limit too large (max 100)').optional().default(10),
-});
-
-/**
- * Git show changes input schema for git-show-changes
- */
-export const GitShowChangesInputSchema = z.object({
-  compareWith: z.string().optional(),
-});
-
-/**
- * Git go back input schema for git-go-back
- */
-export const GitGoBackInputSchema = z.object({
-  identifier: z.string().min(1, 'Identifier cannot be empty'),
-});
-
-/**
- * Git setup input schema for git-setup
- */
-export const GitSetupInputSchema = z.object({
-  existingGit: z.boolean().optional(),
-});
-
-/**
  * Recall memory input schema for recall-memory
  */
 export const RecallMemoryInputSchema = z.object({
   limit: z.number().int().positive('Limit must be positive').max(100, 'Limit too large (max 100)').optional().default(10),
   query: z.string().max(1000, 'Query too long (max 1000 characters)').optional(),
+});
+
+/**
+ * Create entities input schema for knowledge graph
+ */
+export const CreateEntitiesInputSchema = z.object({
+  entities: z.array(
+    z.object({
+      name: z.string().min(1, 'Entity name cannot be empty'),
+      entityType: z.string().min(1, 'Entity type cannot be empty'),
+      observations: z.array(z.string().min(1, 'Observation cannot be empty')),
+      metadata: z.record(z.unknown()).optional(),
+    })
+  ).min(1, 'At least one entity is required'),
+});
+
+/**
+ * Add observations input schema for knowledge graph
+ */
+export const AddObservationsInputSchema = z.object({
+  observations: z.array(
+    z.object({
+      entityName: z.string().min(1, 'Entity name cannot be empty'),
+      contents: z.array(z.string().min(1, 'Observation cannot be empty')).min(1, 'At least one observation is required'),
+    })
+  ).min(1, 'At least one observation entry is required'),
+});
+
+/**
+ * Create relations input schema for knowledge graph
+ */
+export const CreateRelationsInputSchema = z.object({
+  relations: z.array(
+    z.object({
+      from: z.string().min(1, 'Relation "from" cannot be empty'),
+      to: z.string().min(1, 'Relation "to" cannot be empty'),
+      relationType: z.string().min(1, 'Relation type cannot be empty'),
+      metadata: z.record(z.unknown()).optional(),
+    })
+  ).min(1, 'At least one relation is required'),
 });
 
 /**
@@ -215,13 +233,12 @@ export type ValidatedListSkillsInput = z.infer<typeof ListSkillsInputSchema>;
 export type ValidatedUninstallInput = z.infer<typeof UninstallInputSchema>;
 export type ValidatedWorkflowGuidanceInput = z.infer<typeof WorkflowGuidanceInputSchema>;
 export type ValidatedRecordTokenUsageInput = z.infer<typeof RecordTokenUsageInputSchema>;
+export type ValidatedHookToolUseInput = z.infer<typeof HookToolUseInputSchema>;
 export type ValidatedGenerateSmartPlanInput = z.infer<typeof GenerateSmartPlanInputSchema>;
-export type ValidatedGitSaveWorkInput = z.infer<typeof GitSaveWorkInputSchema>;
-export type ValidatedGitListVersionsInput = z.infer<typeof GitListVersionsInputSchema>;
-export type ValidatedGitShowChangesInput = z.infer<typeof GitShowChangesInputSchema>;
-export type ValidatedGitGoBackInput = z.infer<typeof GitGoBackInputSchema>;
-export type ValidatedGitSetupInput = z.infer<typeof GitSetupInputSchema>;
 export type ValidatedRecallMemoryInput = z.infer<typeof RecallMemoryInputSchema>;
+export type ValidatedCreateEntitiesInput = z.infer<typeof CreateEntitiesInputSchema>;
+export type ValidatedAddObservationsInput = z.infer<typeof AddObservationsInputSchema>;
+export type ValidatedCreateRelationsInput = z.infer<typeof CreateRelationsInputSchema>;
 
 /**
  * Validation error formatter

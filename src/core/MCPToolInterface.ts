@@ -54,6 +54,7 @@
  */
 
 import { spawn } from 'child_process';
+import path from 'path';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { NotFoundError, OperationError, ValidationError } from '../errors/index.js';
 
@@ -637,28 +638,47 @@ export class MCPToolInterface {
   }
 }
 
-const DEFAULT_GIT_SUBCOMMANDS = new Set([
-  'add',
-  'commit',
-  'status',
-  'log',
-  'diff',
-  'rev-parse',
-  'stash',
-  'checkout',
-  'init',
-  'config',
-  'push',
+const DEFAULT_ALLOWED_BINARIES = new Set([
+  'rg',
+  'ls',
+  'pwd',
+  'cat',
+  'stat',
+  'head',
+  'tail',
+  'node',
+  'npm',
+  'pnpm',
+  'yarn',
+  'bun',
+  'python',
+  'python3',
+  'pip',
+  'pip3',
+  'pytest',
+  'vitest',
+  'jest',
+  'mocha',
+  'tsc',
+  'eslint',
+  'prettier',
+  'go',
+  'cargo',
+  'make',
 ]);
 
-const DEFAULT_CONFIRM_GIT_SUBCOMMANDS = new Set([
-  'add',
-  'commit',
-  'stash',
-  'checkout',
-  'push',
-  'init',
-  'config',
+const DEFAULT_CONFIRM_BINARIES = new Set([
+  'npm',
+  'pnpm',
+  'yarn',
+  'bun',
+  'python',
+  'python3',
+  'pip',
+  'pip3',
+  'go',
+  'cargo',
+  'make',
 ]);
 
 function createDefaultCommandPolicy(): CommandPolicy {
@@ -669,31 +689,20 @@ function createDefaultCommandPolicy(): CommandPolicy {
         return { allowed: false, requiresConfirmation: false, reason: 'Empty command' };
       }
 
-      const [binary, ...args] = tokens;
-      if (binary !== 'git') {
+      const [binary] = tokens;
+      const normalizedBinary = path.basename(binary);
+
+      if (!DEFAULT_ALLOWED_BINARIES.has(normalizedBinary)) {
         return {
           allowed: false,
           requiresConfirmation: false,
-          reason: 'Only git commands are allowed by default',
-        };
-      }
-
-      const subcommand = extractGitSubcommand(args);
-      if (!subcommand) {
-        return { allowed: false, requiresConfirmation: false, reason: 'Missing git subcommand' };
-      }
-
-      if (!DEFAULT_GIT_SUBCOMMANDS.has(subcommand)) {
-        return {
-          allowed: false,
-          requiresConfirmation: false,
-          reason: `Git subcommand not allowed: ${subcommand}`,
+          reason: `Command not allowed by default: ${normalizedBinary}`,
         };
       }
 
       return {
         allowed: true,
-        requiresConfirmation: DEFAULT_CONFIRM_GIT_SUBCOMMANDS.has(subcommand),
+        requiresConfirmation: DEFAULT_CONFIRM_BINARIES.has(normalizedBinary),
       };
     },
   };
@@ -748,16 +757,6 @@ function createDefaultCommandRunner(): CommandRunner {
       });
     },
   };
-}
-
-function extractGitSubcommand(args: string[]): string | null {
-  for (const arg of args) {
-    if (arg.startsWith('-')) {
-      continue;
-    }
-    return arg;
-  }
-  return null;
 }
 
 function parseCommandLine(command: string): string[] {

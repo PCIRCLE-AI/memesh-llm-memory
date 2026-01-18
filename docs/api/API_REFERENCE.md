@@ -8,9 +8,9 @@
 
 ## Overview
 
-Claude Code Buddy is a **Claude-only** capability-routing system built on the Model Context Protocol (MCP). The system provides intelligent task routing, prompt enhancement, and evolution-based learning without multi-provider complexity.
+Claude Code Buddy is a capability-routing system built on the Model Context Protocol (MCP). The system provides intelligent task routing, prompt enhancement, and evolution-based learning with a minimal dependency surface.
 
-**Architecture**: Claude Sonnet 4.5 → MCP Server → Capability Router → Prompt Enhancer
+**Architecture**: Claude Code → MCP Server → Capability Router → Prompt Enhancer
 
 ---
 
@@ -148,7 +148,7 @@ Common error codes:
 - `TOOL_NOT_FOUND` - Requested tool doesn't exist
 - `VALIDATION_FAILED` - Input validation failed
 - `OPERATION_FAILED` - Operation failed during execution
-- `API_REQUEST_FAILED` - Claude API returned an error
+- `API_REQUEST_FAILED` - Upstream API returned an error
 - `RESOURCE_NOT_FOUND` - Requested resource doesn't exist
 
 ---
@@ -164,7 +164,7 @@ Common error codes:
 **Resource Usage:**
 - Memory: ~50-100MB (base system)
 - Storage: ~1-10MB (evolution data)
-- Network: Claude API calls only (no multi-provider overhead)
+- Network: No direct API calls in MCP server mode
 
 ---
 
@@ -201,22 +201,13 @@ Data stored in SQLite database at `data/evolution/claude-code-buddy.db`.
 
 ## Migration Notes
 
-### Removed Features (v2.1.0)
+### Simplified Routing (v2.1.0)
 
-Claude Code Buddy has simplified to a **Claude-only** architecture. The following multi-provider features have been removed:
+Claude Code Buddy streamlined routing to focus on capability-first prompt enhancement and reduced integration complexity.
 
-- ❌ Ollama integration
-- ❌ Multi-provider routing
-- ❌ Cost estimation/optimization
-- ❌ Provider failover logic
-- ❌ Quota management
-
-**Rationale**: Claude Sonnet 4.5 provides excellent quality for all task types. Multi-provider complexity added minimal value while significantly increasing maintenance burden.
-
-**Migration Path**: No action needed. The system now has:
-- ✅ Simpler architecture
-- ✅ Faster response times (no provider selection overhead)
-- ✅ Fewer dependencies
+**Migration Path**: No action needed. The system now emphasizes:
+- ✅ Capability-focused routing
+- ✅ Lower operational overhead
 - ✅ More predictable behavior
 - ✅ Easier debugging
 
@@ -233,7 +224,7 @@ Claude Code Buddy has simplified to a **Claude-only** architecture. The followin
 
 ## Version History
 
-- **v2.1.0** (2025-12-31): Removed multi-provider support, simplified to Claude-only
+- **v2.1.0** (2025-12-31): Simplified routing and capability-first prompt enhancement
 - **v2.0.0** (2025-12-30): MCP Server pattern with capability routing
 - **v1.0.0** (2025-12-01): Initial release with basic routing
 

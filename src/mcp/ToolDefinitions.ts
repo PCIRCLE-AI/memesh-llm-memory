@@ -59,7 +59,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
 
   const buddyDoTool: MCPToolDefinition = {
     name: 'buddy-do',
-    description: '🤖 CCB: Execute a task with smart routing. Analyzes complexity and routes to Ollama (fast & free) or Claude (high quality).',
+    description: '🤖 CCB: Execute a task with smart routing. Analyzes complexity and applies capability-focused prompt enhancement.',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -151,7 +151,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
 
   const generateSmartPlanTool: MCPToolDefinition = {
     name: 'generate-smart-plan',
-    description: '📋 Claude Code Buddy: Generate intelligent implementation plan with agent-aware task breakdown and TDD structure. Creates bite-sized tasks (2-5 min each) with learning-enhanced recommendations.',
+    description: '📋 Claude Code Buddy: Generate an implementation plan with capability-aware task breakdown and TDD structure. Creates bite-sized tasks (2-5 min each) with learning-enhanced recommendations.',
     inputSchema: {
       type: 'object' as const,
       properties: {

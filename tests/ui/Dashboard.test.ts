@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Dashboard } from '../../src/ui/Dashboard.js';
-import { ResourceMonitor } from '../../src/core/ResourceMonitor.js';
+import { TestResourceMonitor } from '../helpers/TestResourceMonitor.js';
 import type { UIConfig } from '../../src/ui/types.js';
 
 describe('Dashboard', () => {
   let dashboard: Dashboard;
-  let resourceMonitor: ResourceMonitor;
+  let resourceMonitor: TestResourceMonitor;
 
   beforeEach(() => {
-    resourceMonitor = new ResourceMonitor();
+    resourceMonitor = new TestResourceMonitor();
     dashboard = new Dashboard(resourceMonitor);
   });
 

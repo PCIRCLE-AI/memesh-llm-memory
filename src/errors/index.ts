@@ -157,9 +157,9 @@ export class NotFoundError extends BaseError {
  * Use when configuration is missing or invalid
  *
  * @example
- * throw new ConfigurationError('OpenAI API key is required', {
- *   configKey: 'OPENAI_API_KEY',
- *   envVar: 'OPENAI_API_KEY'
+ * throw new ConfigurationError('API key is required', {
+ *   configKey: 'ANTHROPIC_API_KEY',
+ *   envVar: 'ANTHROPIC_API_KEY'
  * });
  */
 export class ConfigurationError extends BaseError {
@@ -174,9 +174,9 @@ export class ConfigurationError extends BaseError {
  * Use when an operation fails during execution
  *
  * @example
- * throw new OperationError('Embedding creation failed', {
- *   operation: 'createEmbedding',
- *   inputLength: 1000,
+ * throw new OperationError('Memory update failed', {
+ *   operation: 'createEntities',
+ *   inputCount: 3,
  *   cause: originalError
  * });
  */

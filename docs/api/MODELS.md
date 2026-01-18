@@ -1,4 +1,8 @@
-# 🤖 Model Selection Guide
+# 🤖 Model Recommendation Guide
+
+CCB provides **model recommendations** inside enhanced prompts. In MCP server mode,
+Claude Code performs the actual model execution, while CCB focuses on capability
+routing, prompt enrichment, and cost estimation.
 
 ## Claude Model Series (Primary)
 
@@ -17,17 +21,15 @@
 
 **Typical Use Cases**:
 ```typescript
-// Code generation
-const result = await orchestrator.route({
-  task: "Write a TypeScript function to calculate Fibonacci sequence",
-  complexity: "medium" // Automatically selects Sonnet
+import { Router } from '../../src/orchestrator/router.js';
+
+const router = new Router();
+const result = await router.routeTask({
+  id: 'task-1',
+  description: 'Write a TypeScript function to calculate Fibonacci sequence'
 });
 
-// General Q&A
-const answer = await orchestrator.route({
-  task: "Explain what closures are",
-  complexity: "simple" // May use Haiku
-});
+console.log(result.routing.enhancedPrompt?.suggestedModel);
 ```
 
 ---
@@ -47,17 +49,15 @@ const answer = await orchestrator.route({
 
 **Typical Use Cases**:
 ```typescript
-// System architecture design
-const architecture = await orchestrator.route({
-  task: "Design a highly available microservices architecture",
-  complexity: "complex" // Automatically selects Opus
+import { Router } from '../../src/orchestrator/router.js';
+
+const router = new Router();
+const result = await router.routeTask({
+  id: 'task-2',
+  description: 'Design a highly available microservices architecture'
 });
 
-// Creative writing
-const story = await orchestrator.route({
-  task: "Write a science fiction short story",
-  complexity: "complex"
-});
+console.log(result.routing.enhancedPrompt?.suggestedModel);
 ```
 
 ---
@@ -77,102 +77,44 @@ const story = await orchestrator.route({
 
 **Typical Use Cases**:
 ```typescript
-// Simple classification
-const category = await orchestrator.route({
-  task: "Is this text positive or negative: 'This product is great!'",
-  complexity: "simple" // Automatically selects Haiku
+import { Router } from '../../src/orchestrator/router.js';
+
+const router = new Router();
+const result = await router.routeTask({
+  id: 'task-3',
+  description: "Classify sentiment: 'This product is great!'"
 });
+
+console.log(result.routing.enhancedPrompt?.suggestedModel);
 ```
 
 ---
 
-## Automatic Model Selection Logic
+## Recommendation Logic
 
-The Orchestrator automatically selects models based on tasks:
+CCB recommends models based on task complexity and capability focus:
 
 ```typescript
-function selectModel(task: string): ModelConfig {
-  const complexity = analyzeComplexity(task);
+import { Router } from '../../src/orchestrator/router.js';
 
-  if (complexity === 'simple') {
-    return {
-      model: 'claude-haiku-4',
-      reasoning: 'Simple task, using Haiku to save costs'
-    };
-  }
+const router = new Router();
+const result = await router.routeTask({
+  id: 'task-4',
+  description: 'Investigate memory regression in the telemetry pipeline'
+});
 
-  if (complexity === 'medium') {
-    return {
-      model: 'claude-sonnet-4-5',
-      reasoning: 'Medium task, using Sonnet to balance performance and cost'
-    };
-  }
-
-  return {
-    model: 'claude-opus-4-5',
-    reasoning: 'Complex task, using Opus to ensure quality'
-  };
-}
+const suggestedModel = result.routing.enhancedPrompt?.suggestedModel;
+console.log(`Suggested model: ${suggestedModel ?? 'default'}`);
 ```
-
 ---
 
-## Cost Optimization Recommendations
+## Cost Awareness
 
-### 1. Use Caching
-
-```typescript
-// Avoid recomputing identical tasks
-@cache()
-async function routeTask(task: string) {
-  return await orchestrator.route({ task, complexity: "simple" });
-}
-```
-
-### 2. Choose the Right Model
+CCB tracks estimated costs for budgeting and reporting:
 
 ```typescript
-// Use Haiku for simple tasks
-await orchestrator.route({ task: "Classification", complexity: "simple" }); // $0.001
-
-// vs using Opus
-await orchestrator.route({ task: "Classification", complexity: "complex" }); // $0.015
-// Save 15x the cost!
+const report = router.getCostTracker().generateReport();
+console.log(report);
 ```
 
----
-
-## Monthly Cost Estimates
-
-**Conservative Usage** (Budget $30-50/month):
-
-| Service | Usage | Cost |
-|---------|-------|------|
-| Claude Sonnet | 500K tokens/day | $15-20 |
-| Claude Haiku | 200K tokens/day | $2-3 |
-| **Total** | | **~$17-23/month** |
-
-**Moderate Usage** (Budget $50-100/month):
-
-| Service | Usage | Cost |
-|---------|-------|------|
-| Claude Sonnet | 1M tokens/day | $30-40 |
-| Claude Opus | 100K tokens/month | $5-10 |
-| Claude Haiku | 400K tokens/day | $4-6 |
-| **Total** | | **~$39-56/month** |
-
----
-
-## Monitoring and Alerts
-
-Claude Code Buddy automatically tracks costs:
-
-```typescript
-// Check current costs
-const report = costTracker.getReport();
-console.log(`Used this month: $${report.monthlyTotal}`);
-console.log(`Remaining budget: $${report.remaining}`);
-
-// Automatic warning when exceeding 80%
-// Switches to cheaper models when exceeding 100%
-```
+Set `MONTHLY_BUDGET_USD` and `COST_ALERT_THRESHOLD` in `.env` to tune alerts.

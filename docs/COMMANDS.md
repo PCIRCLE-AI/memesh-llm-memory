@@ -21,7 +21,7 @@ Execute any development task with smart routing.
 
 **What it does:**
 - Analyzes task complexity
-- Routes to Ollama (fast & free) or Claude (high quality)
+- Applies capability-focused prompt enhancement
 - Returns execution result with routing info
 
 **Parameters:**
@@ -43,10 +43,9 @@ buddy do optimize this database query
 - `buddy task`
 
 **Routing Logic:**
-- Simple tasks (complexity ≤ 5) → Ollama qwen2.5-coder:14b
-- Ultra-fast (complexity ≤ 2) → Ollama llama3.2:1b
-- Mixed (complexity 6-8) → Ollama draft + Claude review
-- Complex/Creative (complexity ≥ 9) → Claude Sonnet 4.5
+- CCB evaluates task complexity and capability keywords
+- Specialized prompt context is added for the detected capability focus
+- Estimated cost and complexity are included for transparency
 
 ---
 

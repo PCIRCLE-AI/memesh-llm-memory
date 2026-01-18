@@ -54,10 +54,8 @@ import { expandHome, getHomeDir, resolveUserPath } from '../utils/paths.js';
  *   throw new Error(`Missing required config: ${missing.join(', ')}`);
  * }
  *
- * // Use OpenAI API key if available
- * if (SimpleConfig.OPENAI_API_KEY) {
- *   // Initialize optional external integrations
- * }
+ * // Optional external integrations can be gated by environment flags
+ * // if (process.env.FEATURE_FLAG === 'true') { ... }
  * ```
  */
 export class SimpleConfig {

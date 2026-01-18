@@ -214,43 +214,34 @@ src/my-utils/validation.ts
 
 ---
 
-### DevelopmentButlerAgent Issues
+### Workflow Guidance Issues
 
-#### Issue 1: Butler Not Triggering
+#### Issue 1: Guidance Not Triggering
 
 **Symptoms**:
 - No automatic recommendations
 - Checkpoints not detected
-- Butler seems inactive
+- Workflow guidance seems inactive
 
 **Solutions**:
 
-1. **Verify Development Butler is enabled**:
+1. **Verify workflow tools are available**:
 ```bash
 # Check MCP tools
-# Look for: get-workflow-guidance, detect-checkpoint
+# Look for: get-workflow-guidance, hook-tool-use
 ```
 
-2. **Manually trigger checkpoint detection**:
+2. **Manually request guidance**:
 ```typescript
 // In Claude Code
-"Detect current workflow checkpoint"
-"What does the development butler recommend?"
+"What should I do next in this implementation?"
+"Get workflow guidance for the current phase."
 ```
 
-3. **Check git status**:
+3. **Verify hooks integration**:
 ```bash
-# Butler depends on git status
-git status
-
-# Ensure you're in a git repository
-git rev-parse --is-inside-work-tree
-```
-
-4. **Verify hooks integration**:
-```bash
-# Check if hooks are installed
-ls -la .git/hooks/
+# Check logs for hook events
+tail -50 ~/.claude/logs/claude-code-buddy.log
 ```
 
 ---
@@ -597,9 +588,6 @@ npm test
 ls -lh ~/.claude/evolution.db
 ls -lh ~/.claude/knowledge-graph/
 
-# Git status
-git status
-git log --oneline -5
 ```
 
 ---

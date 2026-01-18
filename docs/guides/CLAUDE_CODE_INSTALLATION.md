@@ -54,7 +54,7 @@ After installation, customize **anything** by talking to Claude Code:
 | Modify capabilities | "Make code review focus on security" |
 | Create capabilities | "Create a capability for API documentation" |
 | Add skills | "Add a skill for database migrations" |
-| Change config | "Use Claude Opus for complex tasks" |
+| Change config | "Set confirmations to risk-based" |
 | View docs | "Show me the capability architecture" |
 
 **No manual file editing required - Claude Code does everything!**

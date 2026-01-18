@@ -525,11 +525,11 @@
               </div>
               <div>
                 <h3 class="text-2xl font-bold text-gray-900 mb-2">
-                  Problem: Expensive Token Costs
+                  Problem: One-Size-Fits-All Responses
                 </h3>
                 <p class="text-gray-600">
-                  All tasks use <strong>expensive models</strong> even for
-                  simple work, wasting tokens and budget on routine operations.
+                  Every request gets the same generic response shape, even when
+                  the work needs a specific checklist, workflow, or guardrails.
                 </p>
               </div>
             </div>
@@ -538,17 +538,15 @@
                 <div
                   class="w-12 h-12 icon-green rounded-xl flex items-center justify-center mr-4 flex-shrink-0"
                 >
-                  <i data-lucide="coins" class="icon-xl text-green-600"></i>
+                  <i data-lucide="route" class="icon-xl text-green-600"></i>
                 </div>
                 <div>
                   <h4 class="text-xl font-bold text-green-600 mb-2">
-                    Solution: Smart Model Selection
+                    Solution: Capability Routing
                   </h4>
                   <p class="text-gray-700">
-                    Routes tasks by complexity: <strong>Haiku</strong> (simple,
-                    cheap) → <strong>Sonnet</strong> (balanced) →
-                    <strong>Opus</strong> (complex, quality). Saves ~40% token
-                    costs.
+                    Routes tasks by intent (review, debugging, design, planning)
+                    and injects the right structure, checklists, and constraints.
                   </p>
                 </div>
               </div>
@@ -813,41 +811,41 @@ generate-smart-plan <span class="string">{"featureDescription":"Add login flow"}
             </div>
           </div>
 
-          <!-- Smart Model Selection -->
+          <!-- Capability Routing -->
           <div class="glass-card rounded-2xl p-8 md:col-span-2">
             <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
               <span
                 class="w-12 h-12 icon-orange rounded-lg flex items-center justify-center mr-3"
-                ><i data-lucide="coins" class="icon-xl"></i
+                ><i data-lucide="route" class="icon-xl"></i
               ></span>
-              Smart Model Selection
+              Capability Routing
             </h3>
             <p class="text-gray-600 mb-5">
-              Saves ~40% token costs by routing tasks to the right Claude model
+              Focused prompts based on task type and project context
             </p>
             <div class="grid md:grid-cols-2 gap-4">
               <div class="flex items-start">
                 <span class="text-green-500 mr-3 text-xl">✓</span>
                 <span class="text-gray-700"
-                  >Claude Haiku for simple tasks (cheap & fast)</span
+                  >Code review checklists and security focus</span
                 >
               </div>
               <div class="flex items-start">
                 <span class="text-green-500 mr-3 text-xl">✓</span>
                 <span class="text-gray-700"
-                  >Claude Sonnet for balanced tasks (standard)</span
+                  >Debugging workflows with root-cause steps</span
                 >
               </div>
               <div class="flex items-start">
                 <span class="text-green-500 mr-3 text-xl">✓</span>
                 <span class="text-gray-700"
-                  >Claude Opus for complex tasks (quality)</span
+                  >Planning and refactor structure with tradeoffs</span
                 >
               </div>
               <div class="flex items-start">
                 <span class="text-green-500 mr-3 text-xl">✓</span>
                 <span class="text-gray-700"
-                  >Automatic complexity analysis & cost estimation</span
+                  >UI/UX guidance with usability heuristics</span
                 >
               </div>
             </div>

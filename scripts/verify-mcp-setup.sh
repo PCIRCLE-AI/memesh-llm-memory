@@ -22,10 +22,10 @@ WARNINGS=0
 echo "1️⃣  Checking Node.js version..."
 NODE_VERSION=$(node -v | cut -d'v' -f2)
 MAJOR_VERSION=$(echo $NODE_VERSION | cut -d'.' -f1)
-if [ "$MAJOR_VERSION" -ge 18 ]; then
-    echo -e "   ${GREEN}✓${NC} Node.js $NODE_VERSION (>= 18.0.0)"
+if [ "$MAJOR_VERSION" -ge 20 ]; then
+    echo -e "   ${GREEN}✓${NC} Node.js $NODE_VERSION (>= 20.0.0)"
 else
-    echo -e "   ${RED}✗${NC} Node.js $NODE_VERSION (requires >= 18.0.0)"
+    echo -e "   ${RED}✗${NC} Node.js $NODE_VERSION (requires >= 20.0.0)"
     ERRORS=$((ERRORS + 1))
 fi
 echo ""
@@ -55,27 +55,49 @@ echo "4️⃣  Checking environment variables..."
 if [ -f ".env" ]; then
     echo -e "   ${GREEN}✓${NC} .env file exists"
 
-    if grep -q "ANTHROPIC_API_KEY" .env; then
+    if grep -q "MCP_SERVER_MODE=false" .env; then
         if grep -q "ANTHROPIC_API_KEY=sk-" .env; then
             echo -e "   ${GREEN}✓${NC} ANTHROPIC_API_KEY configured"
         else
-            echo -e "   ${YELLOW}⚠${NC}  ANTHROPIC_API_KEY exists but may not be set"
+            echo -e "   ${YELLOW}⚠${NC}  ANTHROPIC_API_KEY not configured (required for standalone mode)"
             WARNINGS=$((WARNINGS + 1))
         fi
     else
-        echo -e "   ${YELLOW}⚠${NC}  ANTHROPIC_API_KEY not found (orchestrator won't work)"
-        WARNINGS=$((WARNINGS + 1))
+        echo -e "   ${GREEN}✓${NC} MCP Server mode enabled (API key optional)"
     fi
 
 else
-    echo -e "   ${YELLOW}⚠${NC}  .env file not found (copy from .env.example)"
+    echo -e "   ${YELLOW}⚠${NC}  .env file not found (optional in MCP Server mode)"
     WARNINGS=$((WARNINGS + 1))
 fi
 echo ""
 
-# Check 5: Test MCP server module loads
-echo "5️⃣  Testing MCP server module..."
-if node -e "require('./dist/mcp/server.js')" 2>/dev/null; then
+# Check 5: Claude Code MCP config
+echo "5️⃣  Checking Claude Code MCP config..."
+CONFIG_PATH=""
+for CANDIDATE in "$HOME/.claude.json" "$HOME/.config/claude/claude_desktop_config.json" "$HOME/.claude/mcp_settings.json"; do
+    if [ -f "$CANDIDATE" ]; then
+        CONFIG_PATH="$CANDIDATE"
+        break
+    fi
+done
+
+if [ -z "$CONFIG_PATH" ]; then
+    echo -e "   ${YELLOW}⚠${NC}  MCP config file not found"
+    WARNINGS=$((WARNINGS + 1))
+else
+    if node -e "const fs=require('fs'); const config=JSON.parse(fs.readFileSync(process.argv[2], 'utf8')); if (config?.mcpServers?.['claude-code-buddy']) process.exit(0); process.exit(1);" "$CONFIG_PATH" 2>/dev/null; then
+        echo -e "   ${GREEN}✓${NC} claude-code-buddy registered in $CONFIG_PATH"
+    else
+        echo -e "   ${YELLOW}⚠${NC}  claude-code-buddy not found in $CONFIG_PATH"
+        WARNINGS=$((WARNINGS + 1))
+    fi
+fi
+echo ""
+
+# Check 6: Test MCP server module loads
+echo "6️⃣  Testing MCP server module..."
+if node --input-type=module -e "import('./dist/mcp/server.js')" 2>/dev/null; then
     echo -e "   ${GREEN}✓${NC} MCP server module loads successfully"
 else
     echo -e "   ${YELLOW}⚠${NC}  MCP server module check skipped (requires stdio)"
@@ -83,13 +105,13 @@ else
 fi
 echo ""
 
-# Check 6: Agent registry loads
-echo "6️⃣  Checking agent registry..."
-AGENT_COUNT=$(grep -c "name:" src/core/AgentRegistry.ts 2>/dev/null || echo "0")
-if [ "$AGENT_COUNT" -gt 0 ]; then
-    echo -e "   ${GREEN}✓${NC} $AGENT_COUNT agents registered"
+# Check 7: MCP tool definitions
+echo "7️⃣  Checking MCP tool definitions..."
+TOOL_COUNT=$(grep -c "name: '" src/mcp/ToolDefinitions.ts 2>/dev/null || echo "0")
+if [ "$TOOL_COUNT" -gt 0 ]; then
+    echo -e "   ${GREEN}✓${NC} $TOOL_COUNT tools defined"
 else
-    echo -e "   ${YELLOW}⚠${NC}  Could not verify agent count"
+    echo -e "   ${YELLOW}⚠${NC}  Could not verify tool definitions"
     WARNINGS=$((WARNINGS + 1))
 fi
 echo ""

@@ -35,17 +35,11 @@ CCB remembers your architecture decisions, coding patterns, and past solutions. 
 
 Your request gets analyzed and routed to the right "expert mode" - code review tasks get code review expertise, debugging gets systematic debugging methodology, frontend gets UI/UX best practices.
 
-### 3. 💰 **Smart Model Selection**
+### 3. 🎯 **Capability Guidance**
 
-Routes tasks to the right Claude model based on complexity:
+CCB tailors prompts to the task type and your project context, so reviews, debugging, and design work all get the right structure and guardrails.
 
-- **Haiku** (simple tasks) - Fast & cheap
-- **Sonnet** (medium tasks) - Balanced performance
-- **Opus** (complex tasks) - Maximum capability
-
-Saves ~40% on token costs by using smaller models for simpler tasks.
-
-**Result:** Expert responses without expert prompts. Context that persists. Cost-effective intelligence that never forgets.
+**Result:** Expert responses without expert prompts. Context that persists. Guidance that stays focused and actionable.
 
 ### What does "evolves with your project" actually mean?
 
@@ -197,17 +191,13 @@ CCB remembers:
 - What you've already built
 ```
 
-### 💰 Smart Model Selection & Cost Savings
+### 🎯 Capability Guidance & Prompt Focus
 
-CCB analyzes task complexity and routes to the optimal Claude model, saving ~40% on token costs:
+CCB analyzes task complexity and routes to the right internal capability, shaping prompts for reviews, debugging, planning, or UI/UX work.
 
-- **Haiku** (simple/cheap) - Quick tasks like code formatting, simple bug fixes
-- **Sonnet** (balanced) - Standard development work, code reviews
-- **Opus** (complex/quality) - Architecture design, complex debugging
+**How it works**: TaskAnalyzer examines your request → Estimates complexity (1-10) → Routes to the best capability profile → You get focused guidance without over-tuning prompts.
 
-**How it works**: TaskAnalyzer examines your request → Estimates complexity (1-10) → Routes to the most cost-effective Claude model → You get quality results without overpaying for simple tasks.
-
-**Real example**: "Fix this typo" uses Haiku (fast & cheap), "Design authentication system" uses Opus (maximum capability), "Review this PR" uses Sonnet (balanced).
+**Real example**: "Fix this typo" gets a fast, minimal path, while "Design authentication system" gets a structured architecture workflow and risk checklist.
 
 ### 🤝 User-Friendly Commands
 
@@ -339,7 +329,7 @@ System learns from your choices (when you override recommendations)
 - **Reduces repetitive prompting** through intelligent task routing
 - **Remembers between sessions** with persistent memory systems (Knowledge Graph + Project Context)
 - **Provides specialized expertise** without you writing expert prompts
-- **Saves token costs** by routing to optimal Claude models (Haiku/Sonnet/Opus)
+- **Keeps responses focused** by routing to the right capability for each task
 - **Learns from your choices** when you override recommendations
 - **Guides your workflow** with intelligent next-step recommendations
 - **Coordinates complex workflows** across multiple steps

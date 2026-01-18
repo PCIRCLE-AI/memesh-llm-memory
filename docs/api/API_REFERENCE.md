@@ -81,7 +81,7 @@ MCP_SERVER_VERSION=2.1.0
 
 ### Configuration Files
 
-- **Claude Code Config**: `~/.config/claude/claude_desktop_config.json`
+- **Claude Code Config**: `~/.claude.json`
   - Registers Claude Code Buddy MCP server
   - Configures MCP connection settings
 

@@ -118,7 +118,6 @@ export class ToolRouter {
     const args = params.arguments;
 
     // Route to appropriate handler based on tool name
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return await this.dispatch(toolName, args as any);
   }
 
@@ -139,7 +138,6 @@ export class ToolRouter {
    *
    * @private
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async dispatch(toolName: string, args: any): Promise<CallToolResult> {
     // Buddy Commands
     if (toolName === 'buddy-do') {

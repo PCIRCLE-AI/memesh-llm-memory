@@ -333,10 +333,10 @@ node dist/mcp/server.js 2>&1 | tee error.log
 
 ## Performance Issues
 
-### Issue: Slow Agent Response Times
+### Issue: Slow Response Times
 
 **Symptoms**:
-- Agents take too long to respond
+- Capability routing or responses take too long
 - UI freezes during capability operations
 - Timeout errors
 
@@ -508,7 +508,7 @@ docker run -v $(pwd):/app node:20 bash -c "cd /app && npm ci && npm test && npm 
 ### Check Documentation
 
 1. **User Guide**: [USER_GUIDE.md](./USER_GUIDE.md)
-2. **Agent Reference**: [AGENT_REFERENCE.md](./AGENT_REFERENCE.md)
+2. **Command Reference**: [COMMANDS.md](./COMMANDS.md)
 3. **Architecture**: [docs/architecture/OVERVIEW.md](./architecture/OVERVIEW.md)
 
 ### Search Existing Issues
@@ -534,7 +534,7 @@ docker run -v $(pwd):/app node:20 bash -c "cd /app && npm ci && npm test && npm 
 ## Bug Report
 
 **Version**: 2.2.0
-**Node.js**: 18.x.x
+**Node.js**: 20.x.x
 **OS**: macOS 14.x / Windows 11 / Ubuntu 22.04
 
 **Describe the bug**

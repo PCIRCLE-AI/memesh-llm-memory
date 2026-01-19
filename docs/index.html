@@ -89,6 +89,15 @@
         background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%);
       }
 
+      .warm-gradient .text-gray-600,
+      .warm-gradient .text-gray-700,
+      .warm-gradient-blue .text-gray-600,
+      .warm-gradient-blue .text-gray-700,
+      .warm-gradient-orange .text-gray-600,
+      .warm-gradient-orange .text-gray-700 {
+        color: #111827;
+      }
+
       /* Soft Shadows */
       .soft-shadow {
         box-shadow: 0 4px 20px rgba(31, 38, 135, 0.1);
@@ -959,6 +968,11 @@ cd claude-code-buddy
           <p class="text-gray-700 text-lg mb-2">
             <strong>No API keys needed in MCP server mode</strong> - CCB uses
             your existing Claude Code subscription.
+          </p>
+          <p class="text-gray-700 text-sm">
+            Note: If running the standalone orchestrator, set
+            <code>MCP_SERVER_MODE=false</code> and <code>ANTHROPIC_API_KEY</code>
+            in <code>.env</code>.
           </p>
         </div>
       </div>

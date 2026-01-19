@@ -11,6 +11,8 @@
  * - DATABASE_PATH: SQLite database path (default: ~/.claude-code-buddy/database.db)
  * - NODE_ENV: Environment (development/production/test)
  * - LOG_LEVEL: Log level (debug/info/warn/error, default: info)
+ * - BEGINNER_MODE: Enable beginner-friendly guidance (default: true)
+ * - EVIDENCE_MODE: Require evidence-based output (default: true)
  */
 
 import { logger } from '../utils/logger.js';
@@ -102,6 +104,30 @@ export class SimpleConfig {
     const raw = process.env.DATABASE_PATH
       || path.join(getHomeDir(), '.claude-code-buddy', 'database.db');
     return expandHome(raw);
+  }
+
+  /**
+   * Beginner-friendly guidance mode
+   *
+   * Enables plain-language summaries and step-by-step guidance in prompts.
+   *
+   * **Environment Variable**: `BEGINNER_MODE`
+   * **Default**: `true`
+   */
+  static get BEGINNER_MODE(): boolean {
+    return this.parseBoolean(process.env.BEGINNER_MODE, true);
+  }
+
+  /**
+   * Evidence-first output guard
+   *
+   * Instructs agents to cite file paths/commands and label assumptions.
+   *
+   * **Environment Variable**: `EVIDENCE_MODE`
+   * **Default**: `true`
+   */
+  static get EVIDENCE_MODE(): boolean {
+    return this.parseBoolean(process.env.EVIDENCE_MODE, true);
   }
 
   /**
@@ -300,10 +326,28 @@ export class SimpleConfig {
       DATABASE_PATH: this.DATABASE_PATH,
       NODE_ENV: this.NODE_ENV,
       LOG_LEVEL: this.LOG_LEVEL,
+      BEGINNER_MODE: this.BEGINNER_MODE,
+      EVIDENCE_MODE: this.EVIDENCE_MODE,
       isDevelopment: this.isDevelopment,
       isProduction: this.isProduction,
       isTest: this.isTest,
     };
+  }
+
+  private static parseBoolean(value: string | undefined, defaultValue: boolean): boolean {
+    if (value === undefined) {
+      return defaultValue;
+    }
+
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'y', 'on'].includes(normalized)) {
+      return true;
+    }
+    if (['false', '0', 'no', 'n', 'off'].includes(normalized)) {
+      return false;
+    }
+
+    return defaultValue;
   }
 }
 

@@ -79,6 +79,7 @@
  */
 
 import { AgentType, Task, EnhancedPrompt } from '../orchestrator/types.js';
+import { SimpleConfig } from '../config/simple-config.js';
 import {
   AGENT_PERSONAS,
   AGENT_TOOLS,
@@ -220,21 +221,22 @@ export class PromptEnhancer {
    */
   enhance(agentType: AgentType, task: Task, complexity: 'simple' | 'medium' | 'complex' = 'medium'): EnhancedPrompt {
     const systemPrompt = this.buildSystemPrompt(agentType);
-    const userPrompt = this.buildUserPrompt(task, agentType);
+    const guardrails = this.buildGuardrails(agentType);
+    const userPrompt = this.buildUserPrompt(task, agentType, guardrails);
     const suggestedModel = this.suggestModel(agentType, complexity);
-
-    return {
-      systemPrompt,
-      userPrompt,
-      suggestedModel,
-      metadata: {
-        agentType,
-        taskId: task.id,
-        complexity,
-        timestamp: Date.now(),
-        tools: AGENT_TOOLS[agentType],
-      },
+    const metadata: Record<string, unknown> = {
+      agentType,
+      taskId: task.id,
+      complexity,
+      timestamp: Date.now(),
+      tools: AGENT_TOOLS[agentType],
     };
+
+    if (guardrails) {
+      metadata.guardrails = guardrails;
+    }
+
+    return { systemPrompt, userPrompt, suggestedModel, metadata };
   }
 
   /**
@@ -366,7 +368,11 @@ export class PromptEnhancer {
    * // }"
    * ```
    */
-  private buildUserPrompt(task: Task, agentType: AgentType): string {
+  private buildUserPrompt(
+    task: Task,
+    agentType: AgentType,
+    guardrails?: string | null
+  ): string {
     let userPrompt = task.description;
 
     // Add agent-specific instructions
@@ -380,7 +386,73 @@ export class PromptEnhancer {
       userPrompt += `\n\nAdditional Context:\n${JSON.stringify(task.metadata, null, 2)}`;
     }
 
+    if (guardrails) {
+      userPrompt += `\n\n${guardrails}`;
+    }
+
     return userPrompt;
+  }
+
+  private buildGuardrails(agentType: AgentType): string | null {
+    const sections: string[] = [];
+
+    if (SimpleConfig.EVIDENCE_MODE) {
+      const evidenceLines = [
+        'Do not invent files, APIs, errors, or test results.',
+        'Cite file paths/symbols or command output for each claim.',
+        'If evidence is missing, label it as "Assumption" and request the missing input.',
+        'Separate facts vs assumptions and list risks explicitly.',
+      ];
+
+      const agentSpecific = this.getEvidenceGuardrails(agentType);
+      if (agentSpecific.length > 0) {
+        evidenceLines.push(...agentSpecific);
+      }
+
+      sections.push(`Evidence & Risk Guard:\n${evidenceLines.map((line) => `- ${line}`).join('\n')}`);
+    }
+
+    if (SimpleConfig.BEGINNER_MODE) {
+      const beginnerLines = [
+        'Provide a 1-2 sentence plain-language summary.',
+        'Give exactly one "Next Step" and explain why it matters.',
+        'If a command is needed, include the safest command and expected output.',
+      ];
+
+      sections.push(`Beginner-Friendly Output:\n${beginnerLines.map((line) => `- ${line}`).join('\n')}`);
+    }
+
+    return sections.length > 0 ? sections.join('\n\n') : null;
+  }
+
+  private getEvidenceGuardrails(agentType: AgentType): string[] {
+    switch (agentType) {
+      case 'code-reviewer':
+        return [
+          'Group findings by severity (Blocker/High/Medium/Low).',
+          'Include at least one concrete code reference per finding.',
+          'List tests to run and highlight missing coverage.',
+        ];
+      case 'debugger':
+        return [
+          'Provide reproduction steps or request them if missing.',
+          'Explain root cause with evidence, then propose minimal fix.',
+          'Include verification steps to prevent regressions.',
+        ];
+      case 'test-writer':
+      case 'test-automator':
+        return [
+          'State which tests were run; if none, say "Not run".',
+          'Provide the exact test command and summarize results.',
+        ];
+      case 'e2e-healing-agent':
+        return [
+          'Cite screenshots/logs/traces when describing failures.',
+          'State healing status and verification steps explicitly.',
+        ];
+      default:
+        return [];
+    }
   }
 
   /**

@@ -20,7 +20,7 @@
             </div>
 
             <h1 class="text-4xl font-bold text-gray-900 mb-4">隱私權政策</h1>
-            <p class="text-gray-600 mb-8">最後更新：2026 年 1 月 3 日</p>
+            <p class="text-gray-600 mb-8">最後更新：2026 年 1 月 19 日</p>
 
             <div class="prose prose-lg max-w-none">
                 <section class="mb-8">
@@ -36,9 +36,13 @@
                         <strong>僅本機儲存：</strong> 所有 CCB 資料都儲存在您的電腦本機：
                     </p>
                     <ul class="list-disc list-inside text-gray-700 leading-relaxed space-y-2 mb-4">
-                        <li><code class="bg-gray-100 px-2 py-1 rounded text-sm">data/knowledge-graph.db</code> - 您的專案知識和記憶</li>
-                        <li><code class="bg-gray-100 px-2 py-1 rounded text-sm">logs/</code> - 除錯和效能日誌</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded text-sm">~/.claude-code-buddy/database.db</code> - 核心狀態、知識圖譜與演化資料</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded text-sm">~/.claude-code-buddy/telemetry/telemetry.db</code> - 本機遙測資料（需使用者同意）</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded text-sm">logs/</code> - 除錯和效能日誌（若啟用）</li>
                     </ul>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        在開發模式下，專案資料可能會建立於儲存庫目錄下（例如 <code class="bg-gray-100 px-2 py-1 rounded text-sm">data/</code>）。
+                    </p>
                     <p class="text-gray-700 leading-relaxed mb-4">
                         <strong>您擁有您的資料：</strong> CCB 從不將您的程式碼、專案資料或知識圖譜傳送到外部伺服器。一切都保留在您的電腦上。
                     </p>
@@ -60,7 +64,7 @@
                 <section class="mb-8">
                     <h2 class="text-2xl font-semibold text-gray-900 mb-4">您的控制權</h2>
                     <ul class="list-disc list-inside text-gray-700 leading-relaxed space-y-2">
-                        <li>隨時刪除 <code class="bg-gray-100 px-2 py-1 rounded text-sm">data/</code> 目錄即可移除 CCB 資料</li>
+                        <li>隨時刪除 <code class="bg-gray-100 px-2 py-1 rounded text-sm">~/.claude-code-buddy/</code> 或 <code class="bg-gray-100 px-2 py-1 rounded text-sm">data/</code> 目錄即可移除 CCB 資料</li>
                         <li>所有資料處理都在您的電腦本機進行</li>
                         <li>開源程式碼代表完全透明 - <a href="https://github.com/PCIRCLE-AI/claude-code-buddy" target="_blank" class="text-blue-600 hover:underline">查看原始碼</a></li>
                     </ul>

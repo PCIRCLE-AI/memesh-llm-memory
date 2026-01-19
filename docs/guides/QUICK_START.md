@@ -18,51 +18,37 @@ Before you begin, ensure you have:
 
 ### Step 1: Clone and Setup (5 minutes)
 
-Clone the repository and run the automated setup script:
+Clone the repository and run the interactive installer:
 
 ```bash
 # Clone repository
-git clone https://github.com/kevintseng/claude-code-buddy.git
+git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
 cd claude-code-buddy
 
-# Run automated setup
-./scripts/setup.sh
+# Run interactive installer
+./scripts/install.sh
 ```
 
-**The setup script will:**
+**The installer will:**
 - ✅ Check Node.js version (20+ required)
 - ✅ Install npm dependencies
-- ✅ Create `.env` file from template
-- ✅ Run tests to verify installation
 - ✅ Build the project
-- ✅ (Optional) Configure MCP server integration
+- ✅ Create `.env` file from template
+- ✅ Configure MCP server integration
+- ✅ Run validation tests
 
-**Expected output:**
-```
-🚀 Claude Code Buddy - Automated Setup
-==================================
-
-✅ Node.js version: v20.x.x
-✅ npm is installed
-📦 Installing dependencies...
-✅ Dependencies installed
-📝 Creating .env file...
-✅ .env created from template
-ℹ️  MCP Server mode enabled - Claude Code will manage API access
-🧪 Running tests...
-✅ All tests passed
-🔨 Building project...
-✅ Build complete
-✅ Setup complete!
-```
+**Expected output:** Step-by-step confirmation for each phase (prerequisites, install, build, env, MCP config, tests).
 
 ---
 
 ### Step 2: Configure Environment (2 minutes)
 
-The `.env` file is automatically created with sensible defaults. Review and customize if needed:
+Create a `.env` file from the template (or use the setup script to do this automatically), then review and customize if needed:
 
 ```bash
+# Create from template (if missing)
+cp .env.example .env
+
 # View current configuration
 cat .env
 ```
@@ -229,9 +215,9 @@ Ask for next-step suggestions based on your current phase:
 Now that you're up and running, explore more:
 
 - **📚 Capability Reference:** Learn about available capabilities - [USER_GUIDE.md](../USER_GUIDE.md)
-- **🏗️ Architecture:** Understand the system design - [ARCHITECTURE.md](../ARCHITECTURE.md)
+- **📚 Docs Index:** Documentation map - [README.md](../README.md)
 - **🧪 Testing Guide:** Write tests and validate core features - [TESTING.md](TESTING.md)
-- **🔧 MCP Integration:** Advanced configuration - [MCP_INTEGRATION.md](../MCP_INTEGRATION.md)
+- **🔧 MCP Integration:** Advanced configuration - [SETUP.md](./SETUP.md)
 
 ---
 
@@ -290,7 +276,7 @@ Now that you're up and running, explore more:
 1. **Check Node.js version:**
    ```bash
    node -v
-   # Should be v18.0.0 or higher
+  # Should be v20.0.0 or higher
    ```
 
 2. **Clean install:**
@@ -381,15 +367,15 @@ If you're still stuck after trying the troubleshooting steps:
 
 1. **📚 Check Documentation:**
    - [README.md](../../README.md) - Full project overview
-   - [ARCHITECTURE.md](../ARCHITECTURE.md) - System design
-   - [MCP_INTEGRATION.md](../MCP_INTEGRATION.md) - Integration details
+   - [README.md](../README.md) - Documentation map
+   - [SETUP.md](./SETUP.md) - Installation and MCP configuration
 
 2. **🐛 Report Issues:**
-   - [GitHub Issues](https://github.com/kevintseng/claude-code-buddy/issues)
+   - [GitHub Issues](https://github.com/PCIRCLE-AI/claude-code-buddy/issues)
    - Include: OS, Node.js version, error messages, steps to reproduce
 
 3. **💬 Discussions:**
-   - [GitHub Discussions](https://github.com/kevintseng/claude-code-buddy/discussions)
+   - [GitHub Discussions](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
    - Ask questions, share tips, request features
 
 4. **📝 Logs:**

@@ -192,7 +192,7 @@ export const CreateEntitiesInputSchema = z.object({
       name: z.string().min(1, 'Entity name cannot be empty'),
       entityType: z.string().min(1, 'Entity type cannot be empty'),
       observations: z.array(z.string().min(1, 'Observation cannot be empty')),
-      metadata: z.record(z.unknown()).optional(),
+      metadata: z.record(z.string(), z.unknown()).optional(),
     })
   ).min(1, 'At least one entity is required'),
 });
@@ -218,7 +218,7 @@ export const CreateRelationsInputSchema = z.object({
       from: z.string().min(1, 'Relation "from" cannot be empty'),
       to: z.string().min(1, 'Relation "to" cannot be empty'),
       relationType: z.string().min(1, 'Relation type cannot be empty'),
-      metadata: z.record(z.unknown()).optional(),
+      metadata: z.record(z.string(), z.unknown()).optional(),
     })
   ).min(1, 'At least one relation is required'),
 });
@@ -246,7 +246,7 @@ export type ValidatedCreateRelationsInput = z.infer<typeof CreateRelationsInputS
  * Converts Zod validation errors to user-friendly messages
  */
 export function formatValidationError(error: z.ZodError): string {
-  const messages = error.errors.map(err => {
+  const messages = error.issues.map((err) => {
     const path = err.path.join('.');
     return `${path}: ${err.message}`;
   });

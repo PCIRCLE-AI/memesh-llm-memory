@@ -1,7 +1,7 @@
 # Claude Code Buddy (CCB) v2.2 User Guide
 
 **Version**: 2.2.0
-**Last Updated**: 2025-12-31
+**Last Updated**: 2026-01-20
 
 ---
 
@@ -29,41 +29,57 @@
 
 ### Installation
 
-**Option 1: Quick Install via Claude Code**
-```
-"Install claude-code-buddy MCP from https://github.com/PCIRCLE-AI/claude-code-buddy"
+**Option 1: Interactive Installer (Recommended)**
+```bash
+# Clone repository
+git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
+cd claude-code-buddy
+
+# Run the interactive installer
+./scripts/install.sh
 ```
 
-Claude Code will handle everything automatically:
-- Clone repository
+The installer will:
+- Check prerequisites (Node.js 20+, npm)
 - Install dependencies
-- Configure MCP server
-- Setup optional features
-- Verify installation
+- Build the project
+- Create `.env` from `.env.example`
+- Configure Claude Code MCP integration
+- Run validation tests
 
 **Option 2: Manual Installation**
 ```bash
 # Clone repository
-git clone https://github.com/PCIRCLE-AI/claude-code-buddy
+git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
 cd claude-code-buddy
 
 # Install dependencies
 npm install
 
+# Create env file (optional, uses defaults)
+cp .env.example .env
+
 # Build the project
 npm run build
+```
 
-# Configure MCP server (edit Claude Code config)
-# Add to ~/.claude.json:
+**Configure MCP server** (edit `~/.claude.json`):
+```json
 {
   "mcpServers": {
     "claude-code-buddy": {
+      "type": "stdio",
       "command": "node",
-      "args": ["/path/to/claude-code-buddy/dist/mcp/server.js"]
+      "args": ["/path/to/claude-code-buddy/dist/mcp/server.js"],
+      "env": {
+        "NODE_ENV": "production"
+      }
     }
   }
 }
 ```
+
+**API keys**: Not required in MCP server mode (`MCP_SERVER_MODE=true`). If running standalone orchestrator, set `MCP_SERVER_MODE=false` and `ANTHROPIC_API_KEY` in `.env`.
 
 ### Quick Start
 
@@ -541,6 +557,10 @@ RESTful API with stateless JWT authentication. Password hashing using bcrypt. To
 ```bash
 # For custom evolution database location
 EVOLUTION_DB_PATH=/path/to/evolution.db
+
+# Guidance modes
+BEGINNER_MODE=true
+EVIDENCE_MODE=true
 ```
 
 ### MCP Server Configuration

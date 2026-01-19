@@ -1,0 +1,25 @@
+{
+  "name": "pcircle-ai",
+  "owner": {
+    "name": "pcircle.ai"
+  },
+  "metadata": {
+    "description": "PCIRCLE AI Claude Code plugins marketplace",
+    "version": "2.2.0"
+  },
+  "plugins": [
+    {
+      "name": "claude-code-buddy",
+      "description": "Your friendly AI companion for Claude Code - smart routing, prompt enhancement, and project memory",
+      "version": "2.2.0",
+      "author": {
+        "name": "PCIRCLE AI"
+      },
+      "source": {
+        "source": "github",
+        "repo": "PCIRCLE-AI/claude-code-buddy"
+      },
+      "tags": ["mcp", "productivity", "memory", "routing"]
+    }
+  ]
+}

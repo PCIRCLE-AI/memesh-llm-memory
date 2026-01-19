@@ -68,7 +68,7 @@ describe('AgentSDKAdapter', () => {
         expect.objectContaining({
           thinking: {
             type: 'enabled',
-            budget_tokens: 10000,
+            budget_tokens: 1024,
           },
         })
       );

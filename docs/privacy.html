@@ -20,7 +20,7 @@
             </div>
 
             <h1 class="text-4xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
-            <p class="text-gray-600 mb-8">Last updated: January 3, 2026</p>
+            <p class="text-gray-600 mb-8">Last updated: January 19, 2026</p>
 
             <div class="prose prose-lg max-w-none">
                 <section class="mb-8">
@@ -36,9 +36,13 @@
                         <strong>Local Storage Only:</strong> All CCB data is stored locally on your machine in:
                     </p>
                     <ul class="list-disc list-inside text-gray-700 leading-relaxed space-y-2 mb-4">
-                        <li><code class="bg-gray-100 px-2 py-1 rounded text-sm">data/knowledge-graph.db</code> - Your project knowledge and memory</li>
-                        <li><code class="bg-gray-100 px-2 py-1 rounded text-sm">logs/</code> - Debug and performance logs</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded text-sm">~/.claude-code-buddy/database.db</code> - Core state, knowledge graph, and evolution data</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded text-sm">~/.claude-code-buddy/telemetry/telemetry.db</code> - Local telemetry (opt-in)</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded text-sm">logs/</code> - Debug and performance logs (if enabled)</li>
                     </ul>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        In development mode, project-local data may be created under the repository directory (e.g., <code class="bg-gray-100 px-2 py-1 rounded text-sm">data/</code>).
+                    </p>
                     <p class="text-gray-700 leading-relaxed mb-4">
                         <strong>You own your data:</strong> CCB never sends your code, project data, or knowledge graph to external servers. Everything stays on your computer.
                     </p>

@@ -1,6 +1,6 @@
 {
   "name": "claude-code-buddy",
-  "version": "2.0.0",
+  "version": "2.2.0",
   "description": "Your friendly AI companion for Claude Code - smart routing, prompt enhancement, and project memory",
   "main": "dist/index.js",
   "type": "module",
@@ -8,8 +8,10 @@
     "claude-code-buddy": "dist/mcp/server.js"
   },
   "files": [
-    ".claude-plugin/",
+    "dist/",
+    "plugin.json",
     "README.md",
+    "README.zh-TW.md",
     "LICENSE"
   ],
   "scripts": {
@@ -62,14 +64,14 @@
     "@types/multer": "^2.0.0",
     "asciichart": "^1.5.25",
     "axios": "^1.13.2",
-    "better-sqlite3": "^12.5.0",
+    "better-sqlite3": "^12.6.2",
     "boxen": "^8.0.1",
     "chalk": "^5.6.2",
-    "cli-spinners": "^3.3.0",
+    "cli-spinners": "^3.4.0",
     "cli-table3": "^0.6.5",
     "commander": "^14.0.2",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
+    "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "form-data": "^4.0.5",
     "fs-extra": "^11.3.3",
@@ -81,10 +83,9 @@
     "multer": "^2.0.2",
     "ora": "^9.0.0",
     "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7",
     "uuid": "^13.0.0",
     "winston": "^3.19.0",
-    "zod": "^3.24.1"
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@types/asciichart": "^1.5.8",
@@ -93,19 +94,22 @@
     "@types/express": "^5.0.6",
     "@types/glob": "^8.1.0",
     "@types/minimatch": "^5.1.2",
-    "@types/node": "^22.10.2",
-    "@types/react": "^19.2.7",
+    "@types/node": "^25.0.9",
+    "@types/react": "^19.2.8",
     "@types/uuid": "^10.0.0",
     "@types/winston": "^2.4.4",
-    "@typescript-eslint/eslint-plugin": "^8.18.2",
-    "@typescript-eslint/parser": "^8.18.2",
-    "@vitest/coverage-v8": "^4.0.16",
-    "eslint": "^9.17.0",
-    "prettier": "^3.4.2",
+    "@typescript-eslint/eslint-plugin": "^8.53.0",
+    "@typescript-eslint/parser": "^8.53.0",
+    "@vitest/coverage-v8": "^4.0.17",
+    "eslint": "^9.39.2",
+    "prettier": "^3.8.0",
     "tsx": "^4.19.2",
-    "typedoc": "^0.26.11",
-    "typescript": "^5.6.3",
-    "vitest": "^4.0.16"
+    "typedoc": "^0.28.16",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.17"
+  },
+  "overrides": {
+    "hono": "4.11.4"
   },
   "engines": {
     "node": ">=20.0.0",

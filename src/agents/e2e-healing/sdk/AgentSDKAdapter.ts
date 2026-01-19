@@ -34,6 +34,7 @@ export class AgentSDKAdapter {
   async analyzeFailure(
     input: AnalyzeFailureInput
   ): Promise<AnalyzeFailureResult> {
+    const extendedThinkingBudgetTokens = 1024;
     const response = await this.client.messages.create({
       model: 'claude-sonnet-4-5-20250929',
       max_tokens: 4000,
@@ -42,7 +43,8 @@ export class AgentSDKAdapter {
         ? {
             thinking: {
               type: 'enabled',
-              budget_tokens: 10000,
+              // SDK requires >= 1024 and counts against max_tokens.
+              budget_tokens: extendedThinkingBudgetTokens,
             },
           }
         : {}),

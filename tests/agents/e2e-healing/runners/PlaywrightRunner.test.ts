@@ -23,7 +23,8 @@ describe('PlaywrightRunner', () => {
 
       expect(result.status).toBe('success');
       expect(mockExec).toHaveBeenCalledWith(
-        expect.stringContaining('npx playwright test')
+        'npx',
+        expect.arrayContaining(['playwright', 'test', 'tests/Button.test.tsx', '--reporter=json'])
       );
     });
 

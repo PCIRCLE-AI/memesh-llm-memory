@@ -278,7 +278,15 @@ cd claude-code-buddy
 - 📚 **步驟 8：基本使用展示** - 了解 CCB 的智能路由、範例提示與記憶功能
 - ✅ **步驟 9：MCP 驗證** - 確認 MCP 伺服器可連線
 
-**核心功能不需要 API 金鑰** - 使用你現有的 Claude Code 訂閱。
+**在 MCP 伺服器模式下不需要 API 金鑰** - 使用你現有的 Claude Code 訂閱。
+
+**可選設定**（只有在需要調整預設值時才需要）：
+```bash
+cp .env.example .env
+# 若要以獨立 orchestrator 模式執行：
+# MCP_SERVER_MODE=false
+# ANTHROPIC_API_KEY=your_key_here
+```
 
 ### 開始使用
 
@@ -317,9 +325,9 @@ Claude Code 用你的訂閱執行
 - **智能路由**分析任務複雜度並選擇最佳能力配置
 - **演化系統**從你的選擇中學習並持續改進建議
 
-**技術深入探討：** 參見 [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+**技術深入探討：** 參見 [docs/README.md](docs/README.md)
 
-**API 文檔：** 參見 [API Documentation](docs/api/) - 使用 `npm run docs` 生成
+**API 文檔：** 參見 [docs/api/API_REFERENCE.md](docs/api/API_REFERENCE.md)
 
 ---
 
@@ -342,7 +350,7 @@ Claude Code 用你的訂閱執行
 - **不是學習的替代品** - 你應該了解你在建構什麼
 - **增強 Claude Code，不是取代它** - 與你現有的設定一起運作
 - **需要設定** - 2 分鐘安裝，不是一鍵完成（還沒有）
-- **早期階段（v2.0）** - 預期會有粗糙的地方，但正在積極改進
+- **早期階段（v2.2）** - 預期會有粗糙的地方，但正在積極改進
 - **受 Claude 能力限制** - 無法讓 Claude 做不可能的事
 
 **理念：** 我們對什麼有效、什麼無效保持誠實。如果某些東西對你不起作用，請告訴我們 - 這個回饋會讓所有人都受益。
@@ -431,7 +439,7 @@ npm run dashboard
 
 **完整文檔：**
 
-- 📐 [系統架構](docs/ARCHITECTURE.md) - 高階架構總覽、設計原則、技術堆疊
+- 📚 [文件索引](docs/README.md) - 文件總覽與導航
 - 🔧 [組件指南](docs/COMPONENT_GUIDE.md) - 詳細組件參考與 API 文檔
 - 🔄 [數據流程](docs/DATA_FLOW.md) - 請求生命週期、事務模式、錯誤傳播
 - 🚀 [部署指南](docs/DEPLOYMENT.md) - 安裝、配置、監控、故障排除

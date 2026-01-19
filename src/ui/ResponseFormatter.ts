@@ -156,9 +156,19 @@ export class ResponseFormatter {
     sections.push(chalk.gray('System:'));
     sections.push(chalk.white(this.truncateText(prompt.systemPrompt, this.MAX_PROMPT_LENGTH)));
 
+    const guardrails = this.extractGuardrails(prompt.metadata);
+    const userPrompt = guardrails
+      ? this.stripGuardrails(prompt.userPrompt, guardrails)
+      : prompt.userPrompt;
+
     // User Prompt
     sections.push(chalk.gray('User:'));
-    sections.push(chalk.white(this.truncateText(prompt.userPrompt, this.MAX_PROMPT_LENGTH)));
+    sections.push(chalk.white(this.truncateText(userPrompt, this.MAX_PROMPT_LENGTH)));
+
+    if (guardrails) {
+      sections.push(chalk.bold.yellow('Guardrails:'));
+      sections.push(chalk.white(guardrails));
+    }
 
     // Suggested Model
     if (prompt.suggestedModel) {
@@ -166,6 +176,24 @@ export class ResponseFormatter {
     }
 
     return sections.join('\n');
+  }
+
+  private extractGuardrails(metadata?: EnhancedPrompt['metadata']): string | null {
+    if (!metadata || typeof metadata !== 'object') {
+      return null;
+    }
+
+    const record = metadata as Record<string, unknown>;
+    return typeof record.guardrails === 'string' ? record.guardrails : null;
+  }
+
+  private stripGuardrails(userPrompt: string, guardrails: string): string {
+    const index = userPrompt.lastIndexOf(guardrails);
+    if (index === -1) {
+      return userPrompt;
+    }
+
+    return userPrompt.slice(0, index).trimEnd();
   }
 
   /**

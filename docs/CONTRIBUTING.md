@@ -118,15 +118,26 @@ npm run test:e2e:safe
 
 ### 5. Configure Development Environment
 
-**Create `.env.development`**:
+**Create `.env` from the template**:
+
+```bash
+cp .env.example .env
+```
+
+**Recommended development settings**:
 
 ```bash
 # Development configuration
 NODE_ENV=development
 LOG_LEVEL=debug
-DATA_DIR=./data-dev
-BACKUP_DIR=./backups-dev
+MCP_SERVER_MODE=true
 
+# Optional (standalone orchestrator testing)
+# MCP_SERVER_MODE=false
+# ANTHROPIC_API_KEY=your_key_here
+
+# Optional database override
+# DATABASE_PATH=./data/dev.db
 ```
 
 ### 6. Start Development
@@ -514,10 +525,10 @@ import { describe, it, expect } from 'vitest';
 import { Orchestrator } from '../../src/orchestrator/index.js';
 
 describe('API Backward Compatibility', () => {
-  it('should maintain v2.0 Orchestrator.executeTask API', async () => {
+  it('should maintain v2.2 Orchestrator.executeTask API', async () => {
     const orchestrator = new Orchestrator();
 
-    // v2.0 API signature
+    // v2.2 API signature
     const result = await orchestrator.executeTask({
       id: 'task-1',
       description: 'Test task',
@@ -765,7 +776,7 @@ git push origin feature/my-awesome-feature
 <!-- What actually happens -->
 
 ## Environment
-- CCB Version: 2.0.0
+- CCB Version: 2.2.0
 - Node.js Version: 20.0.0
 - OS: macOS 13.0
 - Claude Code Version: 1.5.0
@@ -806,7 +817,7 @@ git push origin feature/my-awesome-feature
 
 ### Adding a New Agent
 
-**See**: [Extension Points in ARCHITECTURE.md](./ARCHITECTURE.md#extension-points)
+**See**: [Documentation Index](./README.md)
 
 **Steps**:
 1. Register in `AgentRegistry`
@@ -853,7 +864,7 @@ describe('MLEngineerAgent', () => {
 
 ### Adding a New Adaptation Type
 
-**See**: [Extension Points in ARCHITECTURE.md](./ARCHITECTURE.md#extension-points)
+**See**: [Documentation Index](./README.md)
 
 **Example**: Context window optimization
 
@@ -909,6 +920,6 @@ By contributing, you agree that your contributions will be licensed under the AG
 
 ---
 
-**Version**: 2.0.0
-**Last Updated**: 2026-01-01
+**Version**: 2.2.0
+**Last Updated**: 2026-01-20
 **Maintainer**: Claude Code Buddy Team

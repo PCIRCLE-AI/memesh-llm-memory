@@ -1,6 +1,6 @@
 # Claude Code Buddy Quick Start Card
 
-**30-second setup guide for Claude Code Buddy v2.1.0**
+**30-second setup guide for Claude Code Buddy v2.2.0**
 
 ---
 
@@ -26,7 +26,7 @@ The installer guides you through core setup and a quick usage demo:
 - ✓ Installation testing
 - 📚 Basic usage demo (smart routing, prompts, memory)
 
-**No API keys needed** - uses your Claude Code subscription for MCP usage.
+**No API keys needed in MCP server mode** - uses your Claude Code subscription for MCP usage.
 
 ---
 
@@ -70,8 +70,12 @@ npm run dashboard
 ## Environment Variables
 
 ```env
-# .env file
-ANTHROPIC_API_KEY=sk-ant-xxx  # Required for orchestrator
+# .env file (copy from .env.example)
+MCP_SERVER_MODE=true
+
+# Optional: only needed for standalone orchestrator usage
+# MCP_SERVER_MODE=false
+# ANTHROPIC_API_KEY=sk-ant-xxx
 ```
 
 ---
@@ -79,22 +83,23 @@ ANTHROPIC_API_KEY=sk-ant-xxx  # Required for orchestrator
 ## Troubleshooting
 
 **Problem**: Server not starting
-**Fix**: Check path in config.json is absolute, run `npm run build`
+**Fix**: Check the path in `~/.claude.json` is absolute, run `npm run build`
 
 **Problem**: Tools not appearing
 **Fix**: Restart Claude Code, check logs at `~/.claude/logs/`
 
 **Problem**: API errors
-**Fix**: Verify `.env` has valid API keys
+**Fix**: If running standalone (`MCP_SERVER_MODE=false`), verify `.env` has a valid `ANTHROPIC_API_KEY`
 
 ---
 
 ## Documentation
 
-- **Full Guide**: [docs/MCP_INTEGRATION.md](./MCP_INTEGRATION.md)
+- **Setup Guide**: [docs/guides/SETUP.md](./guides/SETUP.md)
 - **User Manual**: [docs/USER_GUIDE.md](./USER_GUIDE.md)
-- **Architecture**: [ARCHITECTURE.md](../ARCHITECTURE.md)
+- **Commands**: [docs/COMMANDS.md](./COMMANDS.md)
+- **Troubleshooting**: [docs/TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
 
 ---
 
-**Version**: 2.1.0 | **License**: MIT | **Node**: >= 20.0.0
+**Version**: 2.2.0 | **License**: AGPL-3.0 | **Node**: >= 20.0.0

@@ -1,6 +1,6 @@
 # Claude Code Buddy Examples
 
-**Version**: 2.0.0
+**Version**: 2.2.0
 
 ## Example 1: Code Review
 

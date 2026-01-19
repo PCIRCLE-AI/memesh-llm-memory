@@ -2,7 +2,7 @@
  * Unit tests for BackgroundExecutor
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { BackgroundExecutor } from './BackgroundExecutor.js';
 import { ResourceMonitor } from './ResourceMonitor.js';
 import { ExecutionConfig } from './types.js';
@@ -12,6 +12,19 @@ describe('BackgroundExecutor', () => {
   let monitor: ResourceMonitor;
 
   beforeEach(() => {
+    vi.spyOn(ResourceMonitor.prototype, 'getCurrentResources').mockImplementation(function () {
+      return {
+        cpu: { usage: 10, cores: 8 },
+        memory: {
+          total: 16384,
+          used: 2048,
+          available: 14336,
+          usagePercent: 12.5,
+        },
+        activeBackgroundAgents: this.getActiveBackgroundCount(),
+      };
+    });
+
     // Use realistic thresholds for test environment
     // Note: Production deployments use ResourceMonitor defaults (8GB)
     // Test environments need higher limits due to OS + IDE + browser overhead
@@ -20,6 +33,10 @@ describe('BackgroundExecutor', () => {
       maxMemory: 16384, // 16GB - realistic test/development machine limit
     });
     executor = new BackgroundExecutor(monitor);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   const createTestConfig = (priority: 'high' | 'medium' | 'low' = 'medium'): ExecutionConfig => ({

@@ -124,7 +124,7 @@ if [ $ERRORS -eq 0 ] && [ $WARNINGS -eq 0 ]; then
     echo ""
     echo "Next steps:"
     echo "1. Add Claude Code Buddy to ~/.claude.json"
-    echo "   See: docs/MCP_INTEGRATION.md"
+    echo "   See: docs/guides/SETUP.md"
     echo "2. Restart Claude Code"
     echo "3. Verify tools appear in Claude Code"
     exit 0
@@ -132,7 +132,7 @@ elif [ $ERRORS -eq 0 ]; then
     echo -e "${YELLOW}⚠ Setup complete with $WARNINGS warning(s)${NC}"
     echo ""
     echo "You can proceed, but some features may not work."
-    echo "See: docs/MCP_INTEGRATION.md for details"
+    echo "See: docs/guides/SETUP.md for details"
     exit 0
 else
     echo -e "${RED}✗ Setup incomplete: $ERRORS error(s), $WARNINGS warning(s)${NC}"

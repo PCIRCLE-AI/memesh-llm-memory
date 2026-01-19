@@ -1,10 +1,7 @@
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { spawn } from 'child_process';
 import { TestResult } from '../types.js';
 
-const execAsync = promisify(exec);
-
-type ExecFunction = (command: string) => Promise<{
+type ExecFunction = (command: string, args: string[]) => Promise<{
   exitCode: number;
   stdout: string;
   stderr: string;
@@ -30,8 +27,9 @@ export class PlaywrightRunner {
 
   async executeTest(testFile: string): Promise<TestResult> {
     try {
-      const command = `npx playwright test ${testFile} --reporter=json`;
-      const result = await this.execFunction(command);
+      const command = 'npx';
+      const args = ['playwright', 'test', testFile, '--reporter=json'];
+      const result = await this.execFunction(command, args);
 
       if (result.exitCode === 0) {
         return {
@@ -67,24 +65,41 @@ export class PlaywrightRunner {
       .map((line) => line.trim());
   }
 
-  private async defaultExec(command: string): Promise<{
+  private async defaultExec(command: string, args: string[]): Promise<{
     exitCode: number;
     stdout: string;
     stderr: string;
   }> {
-    try {
-      const { stdout, stderr } = await execAsync(command);
-      return {
-        exitCode: 0,
-        stdout,
-        stderr,
+    return await new Promise((resolve) => {
+      const proc = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+      let stdout = '';
+      let stderr = '';
+      let settled = false;
+
+      const finish = (exitCode: number, extraStderr?: string) => {
+        if (settled) return;
+        settled = true;
+        if (extraStderr) {
+          stderr += stderr ? `\n${extraStderr}` : extraStderr;
+        }
+        resolve({ exitCode, stdout, stderr });
       };
-    } catch (err: any) {
-      return {
-        exitCode: err.code || 1,
-        stdout: err.stdout || '',
-        stderr: err.stderr || err.message,
-      };
-    }
+
+      proc.stdout.on('data', (data: Buffer) => {
+        stdout += data.toString();
+      });
+
+      proc.stderr.on('data', (data: Buffer) => {
+        stderr += data.toString();
+      });
+
+      proc.on('error', (error) => {
+        finish(1, error.message);
+      });
+
+      proc.on('close', (code) => {
+        finish(code ?? 1);
+      });
+    });
   }
 }

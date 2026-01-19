@@ -111,7 +111,7 @@ class ClaudeCodeBuddyMCPServer {
     this.server = new Server(
       {
         name: 'claude-code-buddy',
-        version: '2.0.0',
+        version: '2.2.0',
       },
       {
         capabilities: {

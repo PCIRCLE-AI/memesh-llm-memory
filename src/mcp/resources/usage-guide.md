@@ -1,6 +1,6 @@
 # Claude Code Buddy Complete Usage Guide
 
-**Version**: 2.0.0
+**Version**: 2.2.0
 **Last Updated**: 2025-12-29
 
 ## 📖 Overview

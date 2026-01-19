@@ -32,6 +32,7 @@ import { PlanningEngine } from '../../planning/PlanningEngine.js';
 import { ProjectMemoryManager } from '../../memory/ProjectMemoryManager.js';
 import { KnowledgeGraph } from '../../knowledge-graph/index.js';
 import { HumanInLoopUI } from '../HumanInLoopUI.js';
+import { SimpleConfig } from '../../config/simple-config.js';
 import { recallMemoryTool } from '../tools/recall-memory.js';
 import { createEntitiesTool } from '../tools/create-entities.js';
 import { addObservationsTool } from '../tools/add-observations.js';
@@ -658,6 +659,15 @@ export class ToolHandlers {
         }
 
         planText += `\n---\n\n`;
+      }
+
+      if (SimpleConfig.EVIDENCE_MODE || SimpleConfig.BEGINNER_MODE) {
+        planText += `## Quality Gates (Best Practices)\n\n`;
+        planText += `- **Code Review**: Group findings by severity and cite file paths/symbols for each issue.\n`;
+        planText += `- **Issue Fixes**: Provide reproduction steps, root cause evidence, minimal fix, and verification steps.\n`;
+        planText += `- **E2E Tests**: Run targeted tests and attach logs/screenshots; if not run, state "Not run".\n`;
+        planText += `- **Evidence Guard**: Separate facts vs assumptions and request missing inputs explicitly.\n`;
+        planText += `- **Release Hygiene**: Run lint/typecheck, update docs if APIs change, and note tests executed.\n\n`;
       }
 
       return {

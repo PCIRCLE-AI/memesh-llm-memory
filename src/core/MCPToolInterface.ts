@@ -247,7 +247,7 @@ export class MCPToolInterface {
    * // Store project milestone
    * await mcpTools.memory.createEntities({
    *   entities: [{
-   *     name: 'API Integration v2.0',
+   *     name: 'API Integration v2.2',
    *     entityType: 'milestone',
    *     observations: [
    *       'Completed RESTful API endpoints',
@@ -668,6 +668,7 @@ const DEFAULT_ALLOWED_BINARIES = new Set([
 ]);
 
 const DEFAULT_CONFIRM_BINARIES = new Set([
+  'node',
   'npm',
   'pnpm',
   'yarn',

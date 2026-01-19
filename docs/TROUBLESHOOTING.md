@@ -1,7 +1,7 @@
 # Troubleshooting Guide
 
 **Version**: 2.2.0
-**Last Updated**: 2025-12-31
+**Last Updated**: 2026-01-20
 
 This guide helps you diagnose and resolve common issues with Claude Code Buddy.
 
@@ -83,7 +83,7 @@ npm run build
 
 3. **Check Node.js/npm versions**:
 ```bash
-node --version  # >= 18.0.0
+node --version  # >= 20.0.0
 npm --version   # >= 9.0.0
 ```
 
@@ -612,7 +612,7 @@ ls -lh ~/.claude/knowledge-graph/
 ### "API key not found"
 
 **Cause**: Anthropic API key not set in standalone mode  
-**Solution**: Set `ANTHROPIC_API_KEY` or enable `MCP_SERVER_MODE=true`
+**Solution**: Set `ANTHROPIC_API_KEY` in `.env`, or enable `MCP_SERVER_MODE=true`
 
 ### "MCP server not responding"
 

@@ -1,7 +1,7 @@
 # Claude Code Buddy MCP Server - API Reference
 
-**Version**: 2.1.0
-**Last Updated**: 2025-12-31
+**Version**: 2.2.0
+**Last Updated**: 2026-01-20
 **Author**: Claude Code Buddy Team
 
 ---
@@ -67,16 +67,39 @@ Claude Code Buddy exposes 7 MCP tools:
 ### Environment Variables
 
 ```bash
-# Claude API Configuration
-ANTHROPIC_API_KEY=your_api_key_here
+# MCP server mode (default true)
+MCP_SERVER_MODE=true
 
-# Evolution System (optional)
-ENABLE_LEARNING=true
-STORAGE_PATH=./data/evolution
+# Claude API key (only required if MCP_SERVER_MODE=false)
+# ANTHROPIC_API_KEY=your_api_key_here
 
-# MCP Server (optional)
-MCP_SERVER_NAME=claude-code-buddy
-MCP_SERVER_VERSION=2.1.0
+# Model configuration
+CLAUDE_MODEL=claude-sonnet-4-5-20250929
+CLAUDE_OPUS_MODEL=claude-opus-4-5-20251101
+
+# Quota and cost controls
+CLAUDE_DAILY_LIMIT=150
+CLAUDE_MONTHLY_LIMIT=4500
+MONTHLY_BUDGET_USD=50
+COST_ALERT_THRESHOLD=0.8
+
+# Logging and metrics
+LOG_LEVEL=info
+ENABLE_METRICS=true
+METRICS_PORT=9090
+
+# Guidance modes
+BEGINNER_MODE=true
+EVIDENCE_MODE=true
+
+# Server and orchestrator
+NODE_ENV=production
+PORT=3000
+ORCHESTRATOR_MODE=local
+ORCHESTRATOR_MAX_MEMORY_MB=6144
+
+# Local database (optional override)
+# DATABASE_PATH=~/.claude-code-buddy/database.db
 ```
 
 ### Configuration Files
@@ -195,13 +218,13 @@ The evolution system automatically:
 - Learns routing patterns over time
 - Optimizes future capability selection
 
-Data stored in SQLite database at `data/evolution/claude-code-buddy.db`.
+Data stored locally in SQLite (default: `~/.claude-code-buddy/database.db`, override with `DATABASE_PATH`).
 
 ---
 
 ## Migration Notes
 
-### Simplified Routing (v2.1.0)
+### Simplified Routing (v2.0.0)
 
 Claude Code Buddy streamlined routing to focus on capability-first prompt enhancement and reduced integration complexity.
 
@@ -216,16 +239,16 @@ Claude Code Buddy streamlined routing to focus on capability-first prompt enhanc
 ## Further Documentation
 
 - **User Guide**: [../USER_GUIDE.md](../USER_GUIDE.md) - End-user documentation
-- **Architecture**: [../architecture/OVERVIEW.md](../architecture/OVERVIEW.md) - System design
-- **Evolution System**: [../architecture/EVOLUTION.md](../architecture/EVOLUTION.md) - Learning mechanism
-- **Contributing**: [../../CONTRIBUTING.md](../../CONTRIBUTING.md) - Development guidelines
+- **Commands**: [../COMMANDS.md](../COMMANDS.md) - Tool reference
+- **Troubleshooting**: [../TROUBLESHOOTING.md](../TROUBLESHOOTING.md) - Common fixes
+- **Docs Index**: [../README.md](../README.md) - Documentation map
 
 ---
 
 ## Version History
 
-- **v2.1.0** (2025-12-31): Simplified routing and capability-first prompt enhancement
-- **v2.0.0** (2025-12-30): MCP Server pattern with capability routing
+- **v2.2.0** (2026-01-20): Evidence guardrails, beginner mode, and quality gates
+- **v2.0.0** (2026-01-19): MCP Server pattern with capability routing
 - **v1.0.0** (2025-12-01): Initial release with basic routing
 
 ---

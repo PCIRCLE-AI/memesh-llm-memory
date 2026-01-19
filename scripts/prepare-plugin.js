@@ -66,11 +66,15 @@ try {
 
 // Step 4: Copy plugin.json to plugin directory
 console.log('\n4️⃣ Copying plugin.json to plugin directory...');
-const sourcePluginJson = join(projectRoot, '.claude-plugin', 'plugin.json');
+const pluginJsonCandidates = [
+  join(projectRoot, 'plugin.json'),
+  join(projectRoot, '.claude-plugin', 'plugin.json'),
+];
+const sourcePluginJson = pluginJsonCandidates.find((candidate) => existsSync(candidate));
 const targetPluginJson = join(pluginDir, 'plugin.json');
 
-if (!existsSync(sourcePluginJson)) {
-  console.error('   ❌ Error: .claude-plugin/plugin.json not found. Please create it first.');
+if (!sourcePluginJson) {
+  console.error('   ❌ Error: plugin.json not found. Please create it at project root.');
   process.exit(1);
 }
 

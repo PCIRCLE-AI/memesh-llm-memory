@@ -147,7 +147,7 @@ Examples:
    */
   private static getGeneralHelp(): string {
     return `
-Claude Code Buddy (CCB) v2.0 - Your friendly AI companion
+Claude Code Buddy (CCB) v2.2 - Your friendly AI companion
 
 Commands:
   buddy do <task>        Execute tasks with smart routing

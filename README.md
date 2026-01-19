@@ -280,7 +280,18 @@ The installer guides you through **9 interactive steps**:
 - 📚 **Step 8: Basic Usage Demo** - Learn about CCB's smart routing, example prompts, and memory features
 - ✅ **Step 9: MCP Verification** - Confirm the MCP server is reachable
 
-**No API keys needed for core features** - uses your existing Claude Code subscription.
+**No API keys needed in MCP server mode** - uses your existing Claude Code subscription.
+
+**Optional configuration** (only if you want to change defaults):
+```bash
+cp .env.example .env
+# For standalone orchestrator usage:
+# MCP_SERVER_MODE=false
+# ANTHROPIC_API_KEY=your_key_here
+# Optional guidance modes:
+# BEGINNER_MODE=true
+# EVIDENCE_MODE=true
+```
 
 ### Start Using It
 
@@ -319,7 +330,7 @@ System learns from your choices (when you override recommendations)
 - **Smart routing** analyzes task complexity and automatically selects the right Claude model
 - **Evolution system** learns from your choices and continuously improves recommendations
 
-**Technical deep dive:** See [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+**Technical deep dive:** See [docs/README.md](docs/README.md)
 
 ---
 
@@ -332,6 +343,7 @@ System learns from your choices (when you override recommendations)
 - **Keeps responses focused** by routing to the right capability for each task
 - **Learns from your choices** when you override recommendations
 - **Guides your workflow** with intelligent next-step recommendations
+- **Reduces hallucinations** with evidence-first prompting and explicit assumptions
 - **Coordinates complex workflows** across multiple steps
 - **Cross-platform support** works seamlessly on Windows, macOS, and Linux
 - **Production-ready** with comprehensive testing, security hardening, and resource protection
@@ -342,7 +354,7 @@ System learns from your choices (when you override recommendations)
 - **Not a replacement for learning** - You should understand what you're building
 - **Enhances Claude Code, doesn't replace it** - Works alongside your existing setup
 - **Requires setup** - 2-minute install, not one-click (yet)
-- **Early stage (v2.0)** - Expect rough edges, but actively improving
+- **Early stage (v2.2)** - Expect rough edges, but actively improving
 - **Limited by Claude's capabilities** - Can't make Claude do impossible things
 
 **Philosophy:** We're honest about what works and what doesn't. If something doesn't work for you, let us know - that feedback makes it better for everyone.
@@ -429,7 +441,7 @@ npm run dashboard
 
 **Contributing:** We welcome contributions! See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
 
-**Project Structure:** See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for a deep dive.
+**Project Structure:** See [docs/README.md](docs/README.md) for a documentation map.
 
 ---
 

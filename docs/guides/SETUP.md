@@ -1,4 +1,4 @@
-# 🚀 Claude Code Buddy Setup Guide (V2.0 MCP Server Pattern)
+# 🚀 Claude Code Buddy Setup Guide (v2.2 MCP Server Pattern)
 
 ## Quick Installation (Recommended)
 
@@ -24,7 +24,7 @@ The installer will guide you through core setup and a basic usage demo:
 - ✓ Test installation
 - 📚 Basic usage demo
 
-**No API keys needed for core features** - uses your Claude Code subscription.
+**No API keys needed in MCP server mode** - uses your Claude Code subscription.
 
 **After installation**: Restart Claude Code and start using CCB!
 
@@ -38,20 +38,29 @@ If you prefer manual control over the installation process, follow these steps:
 
 ```bash
 # Clone repository
-git clone <your-repo-url> claude-code-buddy
+git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
 cd claude-code-buddy
 
 # Install Node.js dependencies
 npm install
 ```
 
-### Step 2: Compile TypeScript
+### Step 2: Configure Environment
+
+```bash
+# Create .env from template (optional, uses defaults)
+cp .env.example .env
+```
+
+**API keys**: Not required in MCP server mode (`MCP_SERVER_MODE=true`). If running standalone orchestrator, set `MCP_SERVER_MODE=false` and `ANTHROPIC_API_KEY` in `.env`.
+
+### Step 3: Compile TypeScript
 
 ```bash
 npm run build
 ```
 
-### Step 3: Configure Claude Code MCP Server
+### Step 4: Configure Claude Code MCP Server
 
 Edit `~/.claude.json` and add the claude-code-buddy MCP server:
 
@@ -72,11 +81,11 @@ Edit `~/.claude.json` and add the claude-code-buddy MCP server:
 
 **Important**: Replace `/path/to/claude-code-buddy` with the actual project path.
 
-### Step 4: Restart Claude Code
+### Step 5: Restart Claude Code
 
 Restart Claude Code, and the MCP server will start automatically.
 
-### Step 5: Verify Installation
+### Step 6: Verify Installation
 
 Test in Claude Code:
 
@@ -135,6 +144,6 @@ Please use claude-code-buddy to review this code...
 ## Next Steps
 
 After configuration, see:
-- [Usage Guide](./USAGE.md) - How to use core capabilities
-- [Architecture Documentation](../../ARCHITECTURE.md) - System architecture
-- [Evolution System](../EVOLUTION.md) - Self-learning mechanism
+- [User Guide](../USER_GUIDE.md) - How to use core capabilities
+- [Commands Reference](../COMMANDS.md) - Buddy commands + MCP tools
+- [Troubleshooting](../TROUBLESHOOTING.md) - Common fixes

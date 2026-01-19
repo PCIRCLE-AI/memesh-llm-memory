@@ -1,4 +1,5 @@
 import { MCPToolInterface } from '../core/MCPToolInterface.js';
+import path from 'path';
 import { TestOrchestrator } from './e2e-healing/orchestrator/TestOrchestrator.js';
 import { PlaywrightRunner } from './e2e-healing/runners/PlaywrightRunner.js';
 import { FailureAnalyzer } from './e2e-healing/analyzers/FailureAnalyzer.js';
@@ -10,6 +11,7 @@ import { RollbackManager } from './e2e-healing/safety/RollbackManager.js';
 import { GraduatedAutonomyPolicy } from './e2e-healing/policy/GraduatedAutonomyPolicy.js';
 import { E2EHealingConfig } from './e2e-healing/types.js';
 import { DEFAULT_CONFIG } from './e2e-healing/config.js';
+import { hashStackTrace } from '../telemetry/sanitization.js';
 
 /**
  * Safety constants for E2E healing
@@ -108,14 +110,33 @@ export class E2EHealingAgent {
       throw new Error('Invalid test path: must be a non-empty string');
     }
 
+    const normalizedTestPath = testPath.trim();
+
+    if (normalizedTestPath.length === 0) {
+      throw new Error('Invalid test path: must be a non-empty string');
+    }
+
+    if (path.isAbsolute(normalizedTestPath)) {
+      throw new Error('Invalid test path: absolute paths are not allowed');
+    }
+
     // Check for path traversal attempts
-    if (testPath.includes('..') || testPath.includes('\0')) {
+    if (normalizedTestPath.includes('..') || normalizedTestPath.includes('\0')) {
       throw new Error('Invalid test path: path traversal not allowed');
     }
 
     // Ensure path looks like a test file
-    if (!testPath.match(/\.(test|spec)\.(ts|tsx|js|jsx)$/)) {
+    if (!normalizedTestPath.match(/\.(test|spec)\.(ts|tsx|js|jsx)$/)) {
       throw new Error('Invalid test path: must be a test file (.test.ts, .spec.ts, etc.)');
+    }
+
+    if (normalizedTestPath.startsWith('-')) {
+      throw new Error('Invalid test path: cannot start with "-"');
+    }
+
+    const safePathPattern = /^[a-zA-Z0-9_.\\/\\-]+$/;
+    if (!safePathPattern.test(normalizedTestPath)) {
+      throw new Error('Invalid test path: contains unsupported characters');
     }
 
     try {
@@ -126,7 +147,7 @@ export class E2EHealingAgent {
             name: `E2E Test Run ${new Date().toISOString()}`,
             entityType: 'e2e_test_run',
             observations: [
-              `Test path: ${testPath}`,
+              `Test path: ${normalizedTestPath}`,
               `Auto-apply: ${autoApply}`,
               `Environment: ${environment}`,
               `Started at: ${new Date().toISOString()}`,
@@ -136,7 +157,7 @@ export class E2EHealingAgent {
       });
 
       // Use orchestrator's healE2ETest method
-      const result = await this.orchestrator.healE2ETest(testPath, {
+      const result = await this.orchestrator.healE2ETest(normalizedTestPath, {
         maxAttempts: this.config.maxAttempts,
         maxFilesModified: this.config.maxAttempts,
         maxLinesChanged: MAX_LINES_CHANGED_PER_FIX,
@@ -154,7 +175,7 @@ export class E2EHealingAgent {
         healingAttempts: result.attempts,
         healingSuccesses: result.status === 'healed' ? 1 : 0,
         message: this.formatOrchestratorResult(result),
-        failedTests: result.status !== 'healed' ? [testPath] : undefined,
+        failedTests: result.status !== 'healed' ? [normalizedTestPath] : undefined,
       };
 
       // Record result to Knowledge Graph
@@ -164,7 +185,7 @@ export class E2EHealingAgent {
             name: `E2E Test Result ${new Date().toISOString()}`,
             entityType: 'e2e_test_result',
             observations: [
-              `Test path: ${testPath}`,
+              `Test path: ${normalizedTestPath}`,
               `Status: ${result.status}`,
               `Attempts: ${result.attempts}`,
               `Completed at: ${new Date().toISOString()}`,
@@ -181,13 +202,13 @@ export class E2EHealingAgent {
 
       // Record error to Knowledge Graph with stack trace for debugging
       const observations = [
-        `Test path: ${testPath}`,
+        `Test path: ${normalizedTestPath}`,
         `Error: ${errorMessage}`,
         `Failed at: ${new Date().toISOString()}`,
       ];
 
       if (stackTrace) {
-        observations.push(`Stack trace: ${stackTrace}`);
+        observations.push(`Stack trace hash: ${hashStackTrace(stackTrace)}`);
       }
 
       await this.mcp.memory.createEntities({

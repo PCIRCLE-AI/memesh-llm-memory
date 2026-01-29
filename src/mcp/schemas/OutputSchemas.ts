@@ -5,6 +5,22 @@
  *
  * These schemas define the structure of responses from each tool,
  * enabling runtime validation and type safety.
+ *
+ * @example
+ * ```typescript
+ * import { OutputSchemas, BuddyDoOutput } from './schemas/OutputSchemas.js';
+ *
+ * // Use schema for validation
+ * const schema = OutputSchemas.buddyDo;
+ *
+ * // Use inferred type
+ * const response: BuddyDoOutput = {
+ *   routing: {
+ *     approved: true,
+ *     message: 'Task approved for execution',
+ *   },
+ * };
+ * ```
  */
 
 export const OutputSchemas = {
@@ -223,4 +239,99 @@ export const OutputSchemas = {
     },
     required: ['success', 'message'],
   },
+};
+
+/**
+ * TypeScript type inference helpers
+ *
+ * These types are inferred from the JSON schemas above,
+ * providing type safety for tool responses.
+ */
+
+export type BuddyDoOutput = {
+  routing: {
+    approved: boolean;
+    message: string;
+    capabilityFocus?: string[];
+    complexity?: 'simple' | 'medium' | 'complex';
+    estimatedTokens?: number;
+    estimatedCost?: number;
+  };
+  enhancedPrompt?: {
+    systemPrompt?: string;
+    userPrompt?: string;
+    suggestedModel?: string;
+  };
+  stats?: {
+    durationMs?: number;
+    estimatedTokens?: number;
+  };
+};
+
+export type BuddyRememberOutput = {
+  query: string;
+  count: number;
+  memories?: Array<{
+    id?: string;
+    content?: string;
+    type?: string;
+    timestamp?: string;
+    relevance?: number;
+  }>;
+  suggestions?: string[];
+};
+
+export type BuddyHelpOutput = {
+  commands: Array<{
+    name: string;
+    description: string;
+    usage?: string;
+    examples?: string[];
+  }>;
+};
+
+export type SessionHealthOutput = {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  tokenUsagePercentage: number;
+  timestamp: string;
+  warnings?: string[];
+  recommendations?: string[];
+};
+
+export type WorkflowGuidanceOutput = {
+  currentPhase: string;
+  recommendations: Array<{
+    action: string;
+    priority: 'low' | 'medium' | 'high' | 'critical';
+    confidence?: number;
+    suggestedAgent?: string;
+    reasoning?: string;
+  }>;
+  nextSteps?: string[];
+};
+
+export type SmartPlanOutput = {
+  planId: string;
+  featureDescription: string;
+  tasks: Array<{
+    id: string;
+    title: string;
+    description: string;
+    estimatedDuration?: string;
+    requiredCapabilities?: string[];
+    dependencies?: string[];
+    testCriteria?: string[];
+  }>;
+  totalEstimatedDuration?: string;
+  risks?: string[];
+};
+
+export type HookToolUseOutput = {
+  success: boolean;
+  message: string;
+  recorded?: {
+    toolName?: string;
+    timestamp?: string;
+    success?: boolean;
+  };
 };

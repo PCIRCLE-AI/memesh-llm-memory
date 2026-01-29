@@ -408,6 +408,46 @@ Claude Code 用你的訂閱執行
 
 ---
 
+## 技術規格
+
+### Claude 4.5 模型支援
+
+CCB 完整支援最新的 Claude 4.5 模型家族：
+
+- **Claude Haiku 4.5** (claude-haiku-4-5-20251015) - 簡單任務的快速回應
+  - 價格：$1.00 input / $5.00 output per MTok
+  - 使用場景：快速查詢、簡單重構、程式碼格式化
+
+- **Claude Sonnet 4.5** (claude-sonnet-4-5-20250929) - 日常開發的平衡效能
+  - 使用場景：程式碼生成、測試、中等複雜度任務
+
+- **Claude Opus 4.5** (claude-opus-4-5-20251101) - 複雜挑戰的深度推理
+  - 使用場景：架構設計、複雜除錯、創意問題解決
+
+**智慧模型選擇：** CCB 根據任務複雜度自動選擇適當的模型，兼顧品質與成本效益。
+
+### MCP 規範符合性
+
+✅ **完全符合 MCP Specification 2025-11-25**
+
+所有 MCP 工具都包含：
+- **工具註解**：`readOnlyHint`、`destructiveHint`、`idempotentHint`、`openWorldHint`
+- **輸出 Schema**：具類型安全的結構化 JSON schemas
+- **執行時驗證**：自動驗證工具輸入與輸出
+
+**7 個 MCP 工具可用：**
+1. `buddy-do` - 具備能力路由的智慧任務執行
+2. `buddy-remember` - 專案記憶回溯
+3. `buddy-help` - 命令文件
+4. `get-session-health` - Session 監控與診斷
+5. `get-workflow-guidance` - 智慧工作流程建議
+6. `generate-smart-plan` - 實作計劃生成
+7. `hook-tool-use` - 工具使用事件追蹤
+
+完整工具規格請參見 [src/mcp/ToolDefinitions.ts](src/mcp/ToolDefinitions.ts)。
+
+---
+
 ## 社群與支援
 
 - **文件**：[docs/](docs/) 資料夾 + 這個 README

@@ -46,10 +46,12 @@ export const CLAUDE_MODELS = {
 
   /** Claude 3 Haiku (legacy) */
   HAIKU: 'claude-3-haiku-20240307',
-  /** Claude 3.5 Haiku - Fast responses for simple tasks */
+  /** Claude 3.5 Haiku (legacy) - Fast responses for simple tasks */
   HAIKU_3_5: 'claude-3-5-haiku-20241022',
-  /** Claude Haiku 4 - Latest fast model */
+  /** Claude Haiku 4 (legacy) */
   HAIKU_4: 'claude-haiku-4-20250514',
+  /** Claude Haiku 4.5 - Latest fast model for simple tasks */
+  HAIKU_4_5: 'claude-haiku-4-5-20251015',
 } as const;
 
 
@@ -98,6 +100,10 @@ export const MODEL_COSTS = {
     input: 0.80,  // Claude Haiku 4 pricing
     output: 4.0,
   },
+  [CLAUDE_MODELS.HAIKU_4_5]: {
+    input: 1.00,  // Claude Haiku 4.5 pricing
+    output: 5.00,
+  },
 } as const;
 
 /**
@@ -106,13 +112,13 @@ export const MODEL_COSTS = {
 export function selectClaudeModel(complexity: 'simple' | 'medium' | 'complex'): string {
   switch (complexity) {
     case 'simple':
-      return CLAUDE_MODELS.HAIKU;
+      return CLAUDE_MODELS.HAIKU_4_5;
     case 'medium':
-      return CLAUDE_MODELS.SONNET;
+      return CLAUDE_MODELS.SONNET_4_5;
     case 'complex':
-      return CLAUDE_MODELS.OPUS;
+      return CLAUDE_MODELS.OPUS_4_5;
     default:
-      return CLAUDE_MODELS.SONNET;
+      return CLAUDE_MODELS.SONNET_4_5;
   }
 }
 

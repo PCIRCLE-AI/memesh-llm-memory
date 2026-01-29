@@ -809,7 +809,7 @@ export const AGENT_TOOLS: Record<AgentType, string[]> = {
  * - **complex**: Advanced tasks needing highest quality reasoning (use Opus)
  */
 export interface ModelSuggestion {
-  /** Model ID for simple/quick tasks (e.g., 'claude-3-5-haiku-20241022') */
+  /** Model ID for simple/quick tasks (e.g., 'claude-haiku-4-5-20251015') */
   simple: string;
 
   /** Model ID for standard/medium complexity tasks (e.g., 'claude-sonnet-4-5-20250929') */
@@ -821,12 +821,12 @@ export interface ModelSuggestion {
 
 export const MODEL_SUGGESTIONS: Record<AgentType, ModelSuggestion> = {
   'code-reviewer': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-opus-4-5-20251101',
   },
   'test-writer': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
@@ -841,7 +841,7 @@ export const MODEL_SUGGESTIONS: Record<AgentType, ModelSuggestion> = {
     complex: 'claude-opus-4-5-20251101',
   },
   'api-designer': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
@@ -856,72 +856,72 @@ export const MODEL_SUGGESTIONS: Record<AgentType, ModelSuggestion> = {
     complex: 'claude-opus-4-5-20251101',
   },
   'data-analyst': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
   'knowledge-agent': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
   'db-optimizer': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
   'frontend-specialist': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
   'backend-specialist': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
   'development-butler': {
-    simple: 'claude-3-5-haiku-20241022',
-    medium: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
+    medium: 'claude-haiku-4-5-20251015',
     complex: 'claude-sonnet-4-5-20250929',
   },
   'performance-profiler': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
   'security-auditor': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-opus-4-5-20251101',
   },
   'technical-writer': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
   'ui-designer': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
   'migration-assistant': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
   'api-integrator': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
   'general-agent': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
   'project-manager': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
@@ -931,7 +931,7 @@ export const MODEL_SUGGESTIONS: Record<AgentType, ModelSuggestion> = {
     complex: 'claude-opus-4-5-20251101',
   },
   'data-engineer': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-opus-4-5-20251101',
   },
@@ -941,37 +941,37 @@ export const MODEL_SUGGESTIONS: Record<AgentType, ModelSuggestion> = {
     complex: 'claude-opus-4-5-20251101',
   },
   'marketing-strategist': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-opus-4-5-20251101',
   },
   'test-automator': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
   'e2e-healing-agent': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-opus-4-5-20251101',
   },
   'frontend-developer': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
   'backend-developer': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
   'database-administrator': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-sonnet-4-5-20250929',
   },
   'performance-engineer': {
-    simple: 'claude-3-5-haiku-20241022',
+    simple: 'claude-haiku-4-5-20251015',
     medium: 'claude-sonnet-4-5-20250929',
     complex: 'claude-opus-4-5-20251101',
   },

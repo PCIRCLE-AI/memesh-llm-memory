@@ -276,19 +276,12 @@ export class SkillManager {
       : skillName;
 
     // Only allow alphanumeric, hyphens, and underscores
-    // Reject path traversal attempts (.., /, \, null bytes)
+    // The regex already prevents path traversal (.., /, \) since those chars are not in [a-zA-Z0-9_-]
     const validPattern = /^[a-zA-Z0-9_-]+$/;
 
     if (!validPattern.test(nameWithoutPrefix)) {
       throw new Error(
         `Invalid skill name "${skillName}". Only alphanumeric characters, hyphens, and underscores are allowed.`
-      );
-    }
-
-    // Additional check for path traversal patterns
-    if (nameWithoutPrefix.includes('..') || nameWithoutPrefix.includes('/') || nameWithoutPrefix.includes('\\')) {
-      throw new Error(
-        `Invalid skill name "${skillName}". Path traversal attempts are not allowed.`
       );
     }
 

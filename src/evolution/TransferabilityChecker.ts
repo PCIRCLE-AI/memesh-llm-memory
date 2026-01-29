@@ -38,24 +38,18 @@ export class TransferabilityChecker {
     let totalScore = 0;
 
     // Agent type similarity (40%)
-    if (context1.agent_type && context2.agent_type) {
-      if (context1.agent_type === context2.agent_type) {
-        totalScore += this.WEIGHTS.agent_type;
-      }
+    if (context1.agent_type && context2.agent_type && context1.agent_type === context2.agent_type) {
+      totalScore += this.WEIGHTS.agent_type;
     }
 
     // Task type similarity (30%)
-    if (context1.task_type && context2.task_type) {
-      if (context1.task_type === context2.task_type) {
-        totalScore += this.WEIGHTS.task_type;
-      }
+    if (context1.task_type && context2.task_type && context1.task_type === context2.task_type) {
+      totalScore += this.WEIGHTS.task_type;
     }
 
     // Complexity similarity (20%)
-    if (context1.complexity && context2.complexity) {
-      if (context1.complexity === context2.complexity) {
-        totalScore += this.WEIGHTS.complexity;
-      }
+    if (context1.complexity && context2.complexity && context1.complexity === context2.complexity) {
+      totalScore += this.WEIGHTS.complexity;
     }
 
     // Config keys similarity (10%) - using Jaccard similarity
@@ -146,6 +140,7 @@ export class TransferabilityChecker {
   ): string[] {
     const reasoning: string[] = [];
 
+    // Similarity assessment using if/else chain (clearer than nested ternaries)
     if (similarity >= 0.8) {
       reasoning.push('High context similarity - pattern likely applicable');
     } else if (similarity >= 0.5) {
@@ -156,25 +151,28 @@ export class TransferabilityChecker {
       reasoning.push('Very low context similarity - contexts incompatible');
     }
 
-    // Add specific context comparison details
-    if (pattern.context.agent_type === targetContext.agent_type) {
-      reasoning.push('Same agent type');
-    } else {
-      reasoning.push(`Different agent types: ${pattern.context.agent_type} → ${targetContext.agent_type}`);
-    }
-
-    if (pattern.context.task_type === targetContext.task_type) {
-      reasoning.push('Same task type');
-    } else {
-      reasoning.push(`Different task types: ${pattern.context.task_type} → ${targetContext.task_type}`);
-    }
-
-    if (pattern.context.complexity === targetContext.complexity) {
-      reasoning.push('Same complexity level');
-    } else {
-      reasoning.push(`Different complexity: ${pattern.context.complexity} → ${targetContext.complexity}`);
-    }
+    // Add context comparison details using helper
+    const { context: sourceCtx } = pattern;
+    this.addContextComparison(reasoning, 'agent type', sourceCtx.agent_type, targetContext.agent_type);
+    this.addContextComparison(reasoning, 'task type', sourceCtx.task_type, targetContext.task_type);
+    this.addContextComparison(reasoning, 'complexity', sourceCtx.complexity, targetContext.complexity);
 
     return reasoning;
+  }
+
+  /**
+   * Add context comparison detail to reasoning array
+   */
+  private addContextComparison(
+    reasoning: string[],
+    label: string,
+    sourceValue: string | undefined,
+    targetValue: string | undefined
+  ): void {
+    if (sourceValue === targetValue) {
+      reasoning.push(`Same ${label}`);
+    } else {
+      reasoning.push(`Different ${label}: ${sourceValue} → ${targetValue}`);
+    }
   }
 }

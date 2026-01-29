@@ -79,7 +79,7 @@ const SENSITIVE_PATTERNS = [
   // File Paths (expanded)
   /\/Users\/[^\/]+\//,            // macOS user paths
   /\/home\/[^\/]+\//,             // Linux user paths
-  /C:\\Users\\[^\\]+\\/,          // Windows user paths
+  /[A-Z]:\\Users\\[^\\]+\\/,      // ✅ FIX HIGH-4: Windows user paths (all drives A-Z)
   /\/private\/[^\/]+\//,          // macOS private paths
 
   // PII Patterns

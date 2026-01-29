@@ -77,6 +77,12 @@ export class RateLimiter {
   private lastRefill: number;
   private refillTimer?: NodeJS.Timeout;
 
+  /**
+   * ✅ FIX CRITICAL-2: Race condition protection
+   * Prevents concurrent consume() calls from racing on refill + token check
+   */
+  private consuming: boolean = false;
+
   constructor(options: RateLimiterOptions = {}) {
     // Option 1: Use requestsPerMinute for simple config
     if (options.requestsPerMinute !== undefined) {
@@ -154,28 +160,60 @@ export class RateLimiter {
   /**
    * Attempt to consume tokens for a request
    *
+   * ✅ FIX CRITICAL-2: Added race condition protection
+   * ✅ FIX MEDIUM-2: Improved with spin-lock for true atomicity
+   * Ensures refill + token check + consume is atomic operation
+   *
    * @param tokens Number of tokens to consume (default: 1)
    * @returns true if request is allowed, false if rate limited
    */
   consume(tokens: number = 1): boolean {
-    // Refill before checking
-    this.refill();
+    // ✅ FIX MEDIUM-2: Spin-lock implementation for atomic check-and-set
+    // Wait for lock to be available (max 10 attempts = ~1ms worst case)
+    let attempts = 0;
+    const MAX_SPIN_ATTEMPTS = 10;
 
-    if (this.tokens >= tokens) {
-      this.tokens -= tokens;
-      logger.debug('RateLimiter: Request allowed', {
-        tokensConsumed: tokens,
-        tokensRemaining: this.tokens,
-      });
-      return true;
+    while (this.consuming && attempts < MAX_SPIN_ATTEMPTS) {
+      attempts++;
+      // Busy wait - synchronous, no async overhead
+      // In practice, this loop rarely executes (most calls don't collide)
     }
 
-    logger.warn('RateLimiter: Request blocked (rate limit exceeded)', {
-      tokensRequested: tokens,
-      tokensAvailable: this.tokens,
-      maxTokens: this.maxTokens,
-    });
-    return false;
+    // If still locked after max attempts, reject request (rate limit)
+    if (this.consuming) {
+      logger.warn('RateLimiter: Request rejected (lock contention)', {
+        attempts,
+        maxAttempts: MAX_SPIN_ATTEMPTS,
+      });
+      return false;
+    }
+
+    // Acquire lock immediately (now atomic with check)
+    this.consuming = true;
+
+    try {
+      // Refill before checking (atomic with lock protection)
+      this.refill();
+
+      if (this.tokens >= tokens) {
+        this.tokens -= tokens;
+        logger.debug('RateLimiter: Request allowed', {
+          tokensConsumed: tokens,
+          tokensRemaining: this.tokens,
+        });
+        return true;
+      }
+
+      logger.warn('RateLimiter: Request blocked (rate limit exceeded)', {
+        tokensRequested: tokens,
+        tokensAvailable: this.tokens,
+        maxTokens: this.maxTokens,
+      });
+      return false;
+    } finally {
+      // ✅ FIX CRITICAL-2 & MEDIUM-2: Always reset lock
+      this.consuming = false;
+    }
   }
 
   /**

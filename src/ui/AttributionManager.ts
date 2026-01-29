@@ -128,11 +128,11 @@ ${sanitizedStack}
    * Store attribution in memory
    */
   private storeAttribution(attribution: AttributionMessage): void {
-    this.attributions.unshift(attribution); // Add to beginning
+    this.attributions.unshift(attribution);
 
-    // Limit stored attributions
+    // Maintain maximum size by removing excess from end
     if (this.attributions.length > this.maxStoredAttributions) {
-      this.attributions = this.attributions.slice(0, this.maxStoredAttributions);
+      this.attributions.length = this.maxStoredAttributions;
     }
   }
 

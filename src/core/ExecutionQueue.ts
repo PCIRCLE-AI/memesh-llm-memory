@@ -259,11 +259,7 @@ export class ExecutionQueue {
    * ```
    */
   size(): number {
-    let total = 0;
-    for (const queue of this.queues.values()) {
-      total += queue.length;
-    }
-    return total;
+    return Array.from(this.queues.values()).reduce((total, queue) => total + queue.length, 0);
   }
 
   /**

@@ -31,6 +31,7 @@
 
 import { BackgroundTask } from './types.js';
 import { logger } from '../utils/logger.js';
+import { looksLikeSensitive, hashValue } from '../telemetry/sanitization.js';
 
 /**
  * ResultHandler Class
@@ -186,10 +187,48 @@ export class ResultHandler {
     try {
       callback();
     } catch (callbackError) {
+      // ✅ FIX LOW-1: Sanitize error messages before logging to prevent sensitive data exposure
+      const sanitizedError = this.sanitizeCallbackError(callbackError);
+
       logger.error(
         `BackgroundExecutor: Error in ${callbackName} callback for task ${taskId}:`,
-        callbackError
+        sanitizedError
       );
     }
+  }
+
+  /**
+   * ✅ FIX LOW-1: Sanitize callback errors before logging
+   * User callbacks may log task results containing sensitive data.
+   * This method sanitizes error messages to prevent data exposure.
+   *
+   * @param error - Error from user callback
+   * @returns Sanitized error safe for logging
+   * @private
+   */
+  private sanitizeCallbackError(error: unknown): unknown {
+    if (error instanceof Error) {
+      // Sanitize error message
+      const message = error.message || '';
+      const sanitized = message
+        .split('\n')
+        .map(line => (looksLikeSensitive(line) ? `[REDACTED:${hashValue(line)}]` : line))
+        .join('\n');
+
+      // Return sanitized error with original stack (stack doesn't contain user data)
+      return {
+        name: error.name,
+        message: sanitized,
+        stack: error.stack,
+      };
+    }
+
+    // For non-Error objects, sanitize string representation
+    const errorStr = String(error);
+    if (looksLikeSensitive(errorStr)) {
+      return `[REDACTED:${hashValue(errorStr)}]`;
+    }
+
+    return error;
   }
 }

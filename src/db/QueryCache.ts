@@ -119,6 +119,10 @@ export class QueryCache<K, V> {
   // Cleanup interval
   private cleanupInterval?: NodeJS.Timeout;
 
+  // ✅ FIX P1-16: Track consecutive cleanup errors for escalation
+  private cleanupErrorCount: number = 0;
+  private readonly MAX_CONSECUTIVE_CLEANUP_ERRORS = 5;
+
   constructor(options: CacheOptions = {}) {
     this.maxSize = options.maxSize || 1000;
     this.defaultTTL = options.defaultTTL || 5 * 60 * 1000; // 5 minutes
@@ -126,9 +130,43 @@ export class QueryCache<K, V> {
 
     this.cache = new Map();
 
+    // ✅ FIX BUG-4: Wrap cleanup in try-catch to prevent interval breakage
+    // ✅ FIX P1-16: Track consecutive errors and escalate on persistent failures
     // Schedule periodic cleanup (every minute)
     this.cleanupInterval = setInterval(() => {
-      this.cleanup();
+      try {
+        this.cleanup();
+        // Reset error count on successful cleanup
+        this.cleanupErrorCount = 0;
+      } catch (error) {
+        this.cleanupErrorCount++;
+
+        logger.error('[QueryCache] Cleanup error:', {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          consecutiveErrors: this.cleanupErrorCount,
+        });
+
+        // ✅ FIX P1-16: Escalate after consecutive failures
+        if (this.cleanupErrorCount >= this.MAX_CONSECUTIVE_CLEANUP_ERRORS) {
+          logger.error(
+            `[QueryCache] Cleanup failed ${this.cleanupErrorCount} times consecutively - destroying cache`,
+            {
+              maxErrors: this.MAX_CONSECUTIVE_CLEANUP_ERRORS,
+              cacheSize: this.cache.size,
+            }
+          );
+
+          // Clear the interval to prevent further cleanup attempts
+          if (this.cleanupInterval) {
+            clearInterval(this.cleanupInterval);
+            this.cleanupInterval = undefined;
+          }
+
+          // Destroy the cache to prevent further issues
+          this.destroy();
+        }
+      }
     }, 60 * 1000);
 
     if (this.debug) {
@@ -301,21 +339,9 @@ export class QueryCache<K, V> {
     const totalAccesses = this.hits + this.misses;
     const hitRate = totalAccesses > 0 ? (this.hits / totalAccesses) * 100 : 0;
 
-    let memoryUsage = 0;
-    let oldestEntry: number | null = null;
-    let newestEntry: number | null = null;
-
-    for (const entry of this.cache.values()) {
-      memoryUsage += entry.size;
-
-      if (oldestEntry === null || entry.lastAccessed < oldestEntry) {
-        oldestEntry = entry.lastAccessed;
-      }
-
-      if (newestEntry === null || entry.lastAccessed > newestEntry) {
-        newestEntry = entry.lastAccessed;
-      }
-    }
+    const entries = Array.from(this.cache.values());
+    const memoryUsage = entries.reduce((sum, entry) => sum + entry.size, 0);
+    const accessTimes = entries.map(entry => entry.lastAccessed);
 
     return {
       hits: this.hits,
@@ -324,8 +350,8 @@ export class QueryCache<K, V> {
       size: this.cache.size,
       maxSize: this.maxSize,
       memoryUsage,
-      oldestEntry,
-      newestEntry,
+      oldestEntry: accessTimes.length > 0 ? Math.min(...accessTimes) : null,
+      newestEntry: accessTimes.length > 0 ? Math.max(...accessTimes) : null,
     };
   }
 
@@ -379,6 +405,16 @@ export class QueryCache<K, V> {
     if (this.debug) {
       logger.debug('[QueryCache] Destroyed');
     }
+  }
+
+  /**
+   * Dispose cache and cleanup resources
+   *
+   * ✅ FIX BUG-4: Alias for destroy() to match ResourceMonitor interface
+   * Call when cache is no longer needed to prevent memory leaks.
+   */
+  dispose(): void {
+    this.destroy();
   }
 
   /**

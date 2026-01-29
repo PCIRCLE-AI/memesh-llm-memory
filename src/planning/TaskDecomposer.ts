@@ -66,56 +66,36 @@ export class TaskDecomposer {
   }
 
   /**
+   * Component detection rules mapping keywords to component types
+   */
+  private static readonly COMPONENT_RULES: Array<{
+    type: ComponentType;
+    description: string;
+    keywords: string[];
+  }> = [
+    { type: 'database-schema', description: 'Database schema and migrations', keywords: ['database', 'schema', 'model'] },
+    { type: 'api-endpoint', description: 'Backend API endpoint', keywords: ['api', 'endpoint', 'backend'] },
+    { type: 'frontend-component', description: 'Frontend UI component', keywords: ['ui', 'frontend', 'component', 'dashboard'] },
+    { type: 'authentication', description: 'Authentication system', keywords: ['auth', 'login', 'jwt', 'registration', 'password'] },
+  ];
+
+  /**
    * Identify high-level components from feature description
    */
   private identifyComponents(featureDescription: string): Component[] {
-    const components: Component[] = [];
     const desc = featureDescription.toLowerCase();
 
-    // Database schema
-    if (desc.includes('database') || desc.includes('schema') || desc.includes('model')) {
-      components.push({
-        type: 'database-schema',
-        description: 'Database schema and migrations'
-      });
-    }
-
-    // API endpoint
-    if (desc.includes('api') || desc.includes('endpoint') || desc.includes('backend')) {
-      components.push({
-        type: 'api-endpoint',
-        description: 'Backend API endpoint'
-      });
-    }
-
-    // Frontend component
-    if (desc.includes('ui') || desc.includes('frontend') || desc.includes('component') || desc.includes('dashboard')) {
-      components.push({
-        type: 'frontend-component',
-        description: 'Frontend UI component'
-      });
-    }
-
-    // Authentication
-    if (desc.includes('auth') || desc.includes('login') || desc.includes('jwt') || desc.includes('registration') || desc.includes('password')) {
-      components.push({
-        type: 'authentication',
-        description: 'Authentication system'
-      });
-    }
+    // Match components based on keyword rules
+    const components: Component[] = TaskDecomposer.COMPONENT_RULES
+      .filter(rule => rule.keywords.some(keyword => desc.includes(keyword)))
+      .map(rule => ({ type: rule.type, description: rule.description }));
 
     // Always include testing
-    components.push({
-      type: 'testing',
-      description: 'Integration and E2E tests'
-    });
+    components.push({ type: 'testing', description: 'Integration and E2E tests' });
 
     // If only testing, add implementation first
-    if (components.length === 1 && components[0].type === 'testing') {
-      components.unshift({
-        type: 'implementation',
-        description: 'Core implementation'
-      });
+    if (components.length === 1) {
+      components.unshift({ type: 'implementation', description: 'Core implementation' });
     }
 
     return components;
@@ -291,33 +271,31 @@ export class TaskDecomposer {
    * Link dependencies between tasks
    */
   private linkDependencies(tasks: DecomposedTask[]): void {
-    // Find schema tasks
-    const schemaTasks = tasks.filter(t => t.description.toLowerCase().includes('schema'));
+    // Helper to find tasks by phase or description keyword
+    const findByPhase = (phase: string): DecomposedTask[] => tasks.filter(t => t.phase === phase);
+    const findByKeyword = (keyword: string): DecomposedTask[] =>
+      tasks.filter(t => t.description.toLowerCase().includes(keyword));
+    const getIds = (taskList: DecomposedTask[]): string[] => taskList.map(t => t.id);
+
+    // Schema tasks
+    const schemaTaskIds = getIds(findByKeyword('schema'));
 
     // API endpoint tasks depend on schema tasks
-    const apiEndpointTasks = tasks.filter(t =>
-      t.description.toLowerCase().includes('endpoint') ||
-      t.description.toLowerCase().includes('api')
-    );
-
+    const apiEndpointTasks = [...findByKeyword('endpoint'), ...findByKeyword('api')];
     for (const apiTask of apiEndpointTasks) {
-      apiTask.dependencies.push(...schemaTasks.map(t => t.id));
+      apiTask.dependencies.push(...schemaTaskIds);
     }
 
     // Testing tasks depend on ALL implementation tasks
-    const testingTasks = tasks.filter(t => t.phase === 'testing');
-    const implementationTasks = tasks.filter(t => t.phase !== 'testing');
-
-    for (const testTask of testingTasks) {
-      testTask.dependencies = implementationTasks.map(t => t.id);
+    const implementationTaskIds = getIds(tasks.filter(t => t.phase !== 'testing'));
+    for (const testTask of findByPhase('testing')) {
+      testTask.dependencies = implementationTaskIds;
     }
 
     // Frontend tasks depend on ALL backend tasks
-    const frontendTasks = tasks.filter(t => t.phase === 'frontend');
-    const backendTasks = tasks.filter(t => t.phase === 'backend');
-
-    for (const frontendTask of frontendTasks) {
-      frontendTask.dependencies.push(...backendTasks.map(t => t.id));
+    const backendTaskIds = getIds(findByPhase('backend'));
+    for (const frontendTask of findByPhase('frontend')) {
+      frontendTask.dependencies.push(...backendTaskIds);
     }
   }
 

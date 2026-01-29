@@ -50,6 +50,9 @@ export class GlobalResourcePool {
   private activeE2E: Map<string, ResourceSlot> = new Map();
   private activeBuilds: Map<string, ResourceSlot> = new Map();
 
+  // ✅ FIX HIGH-3: Mutex for E2E slot acquisition to prevent race conditions
+  private e2eMutex: Promise<void> = Promise.resolve();
+
   // 等待佇列
   private e2eWaitQueue: Array<{
     orchestratorId: string;
@@ -109,38 +112,49 @@ export class GlobalResourcePool {
   /**
    * 請求 E2E 測試槽位
    *
+   * ✅ FIX HIGH-3: Proper mutex implementation to prevent race conditions
+   *
    * 如果當前已有其他 E2E 測試運行，會等待直到：
    * - 其他測試完成並釋放槽位
    * - 或超時
    */
   async acquireE2ESlot(orchestratorId: string): Promise<void> {
-    // 檢查是否已經持有槽位
-    if (this.activeE2E.has(orchestratorId)) {
-      logger.warn(`Orchestrator ${orchestratorId} already holds E2E slot`);
-      return;
-    }
+    // ✅ FIX HIGH-3: Acquire mutex lock before any checks
+    const release = await this.acquireMutex();
 
-    // 檢查是否有可用槽位
-    if (this.activeE2E.size < this.config.maxConcurrentE2E) {
-      // 直接獲取槽位
-      this.activeE2E.set(orchestratorId, {
-        type: 'e2e',
-        orchestratorId,
-        acquiredAt: new Date(),
-        pid: process.pid,
-      });
+    try {
+      // 檢查是否已經持有槽位
+      if (this.activeE2E.has(orchestratorId)) {
+        logger.warn(`Orchestrator ${orchestratorId} already holds E2E slot`);
+        return;
+      }
 
+      // Atomic check-and-set within mutex
+      if (this.activeE2E.size < this.config.maxConcurrentE2E) {
+        // 獲取槽位 (now truly atomic)
+        this.activeE2E.set(orchestratorId, {
+          type: 'e2e',
+          orchestratorId,
+          acquiredAt: new Date(),
+          pid: process.pid,
+        });
+
+        logger.info(
+          `[ResourcePool] E2E slot acquired by ${orchestratorId} (${this.activeE2E.size}/${this.config.maxConcurrentE2E})`
+        );
+        return;
+      }
+
+      // 槽位已滿，加入等待佇列
       logger.info(
-        `[ResourcePool] E2E slot acquired by ${orchestratorId} (${this.activeE2E.size}/${this.config.maxConcurrentE2E})`
+        `[ResourcePool] E2E slot full, ${orchestratorId} waiting... (queue: ${this.e2eWaitQueue.length})`
       );
-      return;
+    } finally {
+      // Release mutex before waiting in queue
+      release();
     }
 
-    // 槽位已滿，加入等待佇列
-    logger.info(
-      `[ResourcePool] E2E slot full, ${orchestratorId} waiting... (queue: ${this.e2eWaitQueue.length})`
-    );
-
+    // Wait in queue (outside mutex to allow other operations)
     return new Promise((resolve, reject) => {
       const queuedAt = new Date();
       const timeoutId = setTimeout(() => {
@@ -172,6 +186,30 @@ export class GlobalResourcePool {
         queuedAt,
       });
     });
+  }
+
+  /**
+   * ✅ FIX HIGH-3: Promise-based mutex implementation
+   *
+   * Returns a release function that must be called to release the lock.
+   * Uses promise chaining to create a queue of lock acquirers.
+   */
+  private async acquireMutex(): Promise<() => void> {
+    let release: (() => void) | undefined;
+
+    // Create a new promise that will be resolved when this lock is released
+    const newMutex = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    // Wait for previous lock to be released
+    const previousMutex = this.e2eMutex;
+    this.e2eMutex = previousMutex.then(() => newMutex);
+
+    await previousMutex;
+
+    // Return release function
+    return release!;
   }
 
   /**

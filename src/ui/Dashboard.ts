@@ -229,16 +229,23 @@ export class Dashboard {
   }
 
   /**
+   * Generate unique ID with given prefix
+   */
+  private generateId(prefix: string): string {
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  }
+
+  /**
    * Generate unique session ID
    */
   private generateSessionId(): string {
-    return `session-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    return this.generateId('session');
   }
 
   /**
    * Generate unique attribution ID
    */
   private generateAttributionId(): string {
-    return `attr-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    return this.generateId('attr');
   }
 }

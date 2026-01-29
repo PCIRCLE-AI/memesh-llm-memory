@@ -5,6 +5,66 @@ import { ValidationError } from '../../../errors/index.js';
 import type { Span, SpanQuery, SpanRow, SQLParams, SQLParam } from '../types';
 
 /**
+ * ✅ FIX CRITICAL-1: SQL injection protection constants
+ * Moved to module level for type safety and reusability
+ */
+const ALLOWED_SORT_COLUMNS = [
+  'start_time',
+  'duration_ms',
+  'status_code',
+  'name',
+  'kind',
+  'end_time',
+  'span_id',
+  'trace_id',
+  'task_id',
+  'execution_id',
+] as const;
+
+const ALLOWED_SORT_ORDERS = ['ASC', 'DESC'] as const;
+
+type AllowedSortColumn = (typeof ALLOWED_SORT_COLUMNS)[number];
+type AllowedSortOrder = (typeof ALLOWED_SORT_ORDERS)[number];
+
+/**
+ * ✅ FIX CRITICAL-1: Type-safe SQL sort parameter validation
+ * Returns validated column name or throws ValidationError
+ */
+function validateSortColumn(column: string): AllowedSortColumn {
+  if (!ALLOWED_SORT_COLUMNS.includes(column as AllowedSortColumn)) {
+    throw new ValidationError(
+      `Invalid sort column: ${column}. Allowed: ${ALLOWED_SORT_COLUMNS.join(', ')}`,
+      {
+        component: 'SpanRepository',
+        method: 'validateSortColumn',
+        providedValue: column,
+        allowedValues: ALLOWED_SORT_COLUMNS as unknown as string[],
+        constraint: 'sort_by must be one of allowed columns',
+      }
+    );
+  }
+  return column as AllowedSortColumn;
+}
+
+/**
+ * ✅ FIX CRITICAL-1: Type-safe SQL sort order validation
+ * Returns validated sort order or throws ValidationError
+ */
+function validateSortOrder(order: string): AllowedSortOrder {
+  const upperOrder = order.toUpperCase();
+  if (!ALLOWED_SORT_ORDERS.includes(upperOrder as AllowedSortOrder)) {
+    throw new ValidationError(`Invalid sort order: ${order}. Allowed: ASC, DESC`, {
+      component: 'SpanRepository',
+      method: 'validateSortOrder',
+      providedValue: order,
+      allowedValues: ALLOWED_SORT_ORDERS as unknown as string[],
+      constraint: 'sort_order must be ASC or DESC',
+    });
+  }
+  return upperOrder as AllowedSortOrder;
+}
+
+/**
  * Span Repository
  *
  * Handles span CRUD operations and queries.
@@ -55,9 +115,30 @@ export class SpanRepository {
   /**
    * Record multiple spans in a single transaction
    *
+   * ✅ FIX MEDIUM-4: Added batch size limit to prevent DoS
+   * Maximum batch size is 1000 spans to prevent memory exhaustion
+   * and transaction timeouts.
+   *
    * @param spans - Array of spans to record
+   * @throws ValidationError if batch size exceeds maximum
    */
   async recordSpanBatch(spans: Span[]): Promise<void> {
+    // ✅ FIX MEDIUM-4: Validate batch size to prevent DoS
+    const MAX_BATCH_SIZE = 1000;
+
+    if (spans.length > MAX_BATCH_SIZE) {
+      throw new ValidationError(
+        `Batch size ${spans.length} exceeds maximum ${MAX_BATCH_SIZE}. ` +
+        `Please split into smaller batches.`,
+        {
+          component: 'SpanRepository',
+          method: 'recordSpanBatch',
+          providedSize: spans.length,
+          maxSize: MAX_BATCH_SIZE,
+        }
+      );
+    }
+
     const insertMany = this.db.transaction((spans: Span[]) => {
       for (const span of spans) {
         this.recordSpan(span);
@@ -125,44 +206,16 @@ export class SpanRepository {
       params.push(query.end_time_lte);
     }
 
-    // Sorting - SQL injection protection
-    const ALLOWED_SORT_COLUMNS = [
-      'start_time', 'duration_ms', 'status_code', 'name', 'kind',
-      'end_time', 'span_id', 'trace_id', 'task_id', 'execution_id'
-    ];
-    const ALLOWED_SORT_ORDERS = ['ASC', 'DESC'];
-
+    // ✅ FIX CRITICAL-1: SQL injection protection with type-safe validation
+    // Use validated values explicitly to prevent any injection risk
     if (query.sort_by) {
-      if (!ALLOWED_SORT_COLUMNS.includes(query.sort_by)) {
-        throw new ValidationError(
-          `Invalid sort column: ${query.sort_by}. Allowed: ${ALLOWED_SORT_COLUMNS.join(', ')}`,
-          {
-            component: 'SpanRepository',
-            method: 'querySpans',
-            providedValue: query.sort_by,
-            allowedValues: ALLOWED_SORT_COLUMNS,
-            constraint: 'sort_by must be one of allowed columns',
-          }
-        );
-      }
-      sql += ` ORDER BY ${query.sort_by}`;
+      const validatedColumn = validateSortColumn(query.sort_by);
+      const validatedOrder = query.sort_order
+        ? validateSortOrder(query.sort_order)
+        : 'ASC';
 
-      if (query.sort_order) {
-        const upperOrder = query.sort_order.toUpperCase();
-        if (!ALLOWED_SORT_ORDERS.includes(upperOrder)) {
-          throw new ValidationError(
-            `Invalid sort order: ${query.sort_order}. Allowed: ASC, DESC`,
-            {
-              component: 'SpanRepository',
-              method: 'querySpans',
-              providedValue: query.sort_order,
-              allowedValues: ALLOWED_SORT_ORDERS,
-              constraint: 'sort_order must be ASC or DESC',
-            }
-          );
-        }
-        sql += ` ${upperOrder}`;
-      }
+      // Use validated values (already verified against whitelist)
+      sql += ` ORDER BY ${validatedColumn} ${validatedOrder}`;
     } else {
       sql += ' ORDER BY start_time DESC';
     }

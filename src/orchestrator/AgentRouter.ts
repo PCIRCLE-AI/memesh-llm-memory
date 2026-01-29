@@ -407,9 +407,21 @@ export class AgentRouter {
 
   /**
    * 批次路由多個任務
+   *
+   * ✅ FIX MAJOR-2: Limit concurrency to prevent resource exhaustion
    */
   async routeBatch(analyses: TaskAnalysis[]): Promise<RoutingDecision[]> {
-    return Promise.all(analyses.map(analysis => this.route(analysis)));
+    const CONCURRENCY_LIMIT = 10; // Maximum 10 concurrent routing decisions
+    const results: RoutingDecision[] = [];
+
+    // Process in batches of CONCURRENCY_LIMIT
+    for (let i = 0; i < analyses.length; i += CONCURRENCY_LIMIT) {
+      const batch = analyses.slice(i, i + CONCURRENCY_LIMIT);
+      const batchResults = await Promise.all(batch.map(analysis => this.route(analysis)));
+      results.push(...batchResults);
+    }
+
+    return results;
   }
 
   /**

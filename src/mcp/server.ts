@@ -30,6 +30,7 @@ import { setupResourceHandlers } from './handlers/index.js';
 import { SessionBootstrapper } from './SessionBootstrapper.js';
 import { logger } from '../utils/logger.js';
 import { logError } from '../utils/errorHandler.js';
+import { generateRequestId } from '../utils/requestId.js'; // ✅ FIX HIGH-10: Request ID generation
 
 /**
  * Claude Code Buddy MCP Server
@@ -160,8 +161,30 @@ class ClaudeCodeBuddyMCPServer {
 
     // Execute tool (route task to agent)
     this.server.setRequestHandler(CallToolRequestSchema, async request => {
-      const result = await this.toolRouter.routeToolCall(request.params);
-      return await this.sessionBootstrapper.maybePrepend(result);
+      // ✅ FIX HIGH-10: Generate request ID for tracing
+      const requestId = generateRequestId();
+
+      logger.debug('[MCP] Incoming tool call request', {
+        requestId,
+        toolName: (request.params as any)?.name,
+        component: 'ClaudeCodeBuddyMCPServer',
+      });
+
+      try {
+        const result = await this.toolRouter.routeToolCall(request.params, undefined, requestId);
+        return await this.sessionBootstrapper.maybePrepend(result);
+      } catch (error) {
+        // ✅ FIX HIGH-10: Include request ID in error logs
+        logError(error, {
+          component: 'ClaudeCodeBuddyMCPServer',
+          method: 'CallToolRequestHandler',
+          requestId,
+          data: {
+            toolName: (request.params as any)?.name,
+          },
+        });
+        throw error;
+      }
     });
   }
 
@@ -218,6 +241,9 @@ class ClaudeCodeBuddyMCPServer {
 
   /**
    * Gracefully shutdown server resources
+   *
+   * ✅ FIX HIGH-7: Proper resource cleanup to prevent data corruption
+   * Closes all resources in correct order: databases first, then network, then internal state
    */
   private async shutdown(reason: string): Promise<void> {
     if (this.isShuttingDown) return;
@@ -225,7 +251,55 @@ class ClaudeCodeBuddyMCPServer {
 
     logger.warn(`Shutting down MCP server (${reason})...`);
 
+    // ✅ FIX HIGH-7: Close resources in proper order
+    // 1. Close databases first (most critical for data integrity)
     try {
+      logger.info('Closing knowledge graph database...');
+      if (this.components.knowledgeGraph) {
+        await this.components.knowledgeGraph.close();
+      }
+    } catch (error) {
+      logError(error, {
+        component: 'ClaudeCodeBuddyMCPServer',
+        method: 'shutdown',
+        operation: 'closing knowledge graph',
+      });
+      logger.error('Failed to close knowledge graph cleanly:', error);
+    }
+
+    // 2. Close evolution monitor (includes database cleanup)
+    try {
+      logger.info('Closing evolution monitor...');
+      if (this.components.evolutionMonitor) {
+        await this.components.evolutionMonitor.close();
+      }
+    } catch (error) {
+      logError(error, {
+        component: 'ClaudeCodeBuddyMCPServer',
+        method: 'shutdown',
+        operation: 'closing evolution monitor',
+      });
+      logger.error('Failed to close evolution monitor cleanly:', error);
+    }
+
+    // 3. Stop rate limiter (cleanup intervals)
+    try {
+      logger.info('Stopping rate limiter...');
+      if (this.components.rateLimiter) {
+        this.components.rateLimiter.stop();
+      }
+    } catch (error) {
+      logError(error, {
+        component: 'ClaudeCodeBuddyMCPServer',
+        method: 'shutdown',
+        operation: 'stopping rate limiter',
+      });
+      logger.error('Failed to stop rate limiter cleanly:', error);
+    }
+
+    // 4. Finally, close MCP transport
+    try {
+      logger.info('Closing MCP server transport...');
       await this.server.close();
     } catch (error) {
       logError(error, {
@@ -235,6 +309,8 @@ class ClaudeCodeBuddyMCPServer {
       });
       logger.error('Failed to close MCP server cleanly:', error);
     }
+
+    logger.info('Shutdown complete');
   }
 }
 

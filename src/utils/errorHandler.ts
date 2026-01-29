@@ -53,6 +53,8 @@ export interface ErrorContext {
   method: string;
   /** Operation being performed */
   operation?: string;
+  /** ✅ FIX HIGH-10: Request ID for distributed tracing */
+  requestId?: string;
   /** Additional context data */
   data?: Record<string, unknown>;
 }
@@ -72,7 +74,32 @@ export interface HandledError {
 }
 
 /**
+ * ✅ FIX MEDIUM-2: Safely stringify data with size limit
+ *
+ * Prevents memory exhaustion and log overflow from large objects.
+ *
+ * @param data - Data to stringify
+ * @param maxLength - Maximum length of stringified output (default: 2000)
+ * @returns Safely stringified data with truncation if needed
+ *
+ * @private
+ */
+function safeStringifyWithLimit(data: unknown, maxLength: number = 2000): string {
+  try {
+    const str = JSON.stringify(data);
+    if (str.length > maxLength) {
+      return str.substring(0, maxLength) + `... (truncated, ${str.length} total chars)`;
+    }
+    return str;
+  } catch (error) {
+    return `[Stringify failed: ${error instanceof Error ? error.message : String(error)}]`;
+  }
+}
+
+/**
  * Log error with full stack trace and structured context
+ *
+ * ✅ FIX MEDIUM-2: Now uses safe stringify with size limits
  *
  * @param error - Error to log
  * @param context - Contextual information
@@ -84,11 +111,12 @@ export function logError(error: unknown, context: ErrorContext): void {
     message: errorObj.message,
     stack: sanitizeSensitiveData(errorObj.stack || ''),
     errorType: errorObj.constructor.name,
+    requestId: context.requestId, // ✅ FIX HIGH-10: Include request ID in logs
     context: {
       component: context.component,
       method: context.method,
       operation: context.operation,
-      data: context.data ? sanitizeSensitiveData(JSON.stringify(context.data)) : undefined,
+      data: context.data ? sanitizeSensitiveData(safeStringifyWithLimit(context.data)) : undefined,
     },
   });
 }

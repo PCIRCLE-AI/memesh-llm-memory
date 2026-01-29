@@ -80,6 +80,23 @@ import { AttributionManager } from '../ui/AttributionManager.js';
 import { ValidationError, NotFoundError, StateError } from '../errors/index.js';
 
 /**
+ * Timeout Error - Task exceeded maximum duration
+ *
+ * Thrown when a task execution exceeds the configured maxDuration limit.
+ * This error is always treated as a task failure, not a cancellation.
+ *
+ * Exported for external catch blocks to handle timeout-specific logic.
+ */
+export class TimeoutError extends Error {
+  constructor(duration: number) {
+    super(
+      `Task timed out after ${duration}ms. Consider breaking down the task into smaller operations or increasing maxDuration in config.resourceLimits.`
+    );
+    this.name = 'TimeoutError';
+  }
+}
+
+/**
  * Expected structure for task data
  *
  * Flexible task data structure supporting multiple execution patterns:
@@ -209,11 +226,21 @@ export class BackgroundExecutor {
   private activeWorkers: Map<string, WorkerHandle>;
   private resourceMonitor: ResourceMonitor;
   private tasks: Map<string, BackgroundTask>;
-  private processingQueue: boolean = false;
+  // ✅ FIX MAJOR-3: Removed processingQueue promise - use simple boolean lock instead
+  private processingLock: boolean = false;
+  private cleanupTimers: Map<string, NodeJS.Timeout> = new Map();
+  private cleanupScheduled: Set<string> = new Set();
+  private cleanupCancelCounts: Map<string, number> = new Map();
+  private activeTimeouts: Set<NodeJS.Timeout> = new Set();
   private eventBus?: UIEventBus;
   private attributionManager?: AttributionManager;
   private resultHandler: ResultHandler;
   private executionMonitor: ExecutionMonitor;
+
+  // Security: Resource exhaustion protection
+  private readonly MAX_TASK_HISTORY = 1000;
+  private readonly FORCE_CLEANUP_AGE = 3600000; // 1 hour in milliseconds
+  private readonly MAX_CLEANUP_CANCELS = 10;
 
   /**
    * Create a new BackgroundExecutor
@@ -314,6 +341,38 @@ export class BackgroundExecutor {
    * ```
    */
   async executeTask(task: unknown, config: ExecutionConfig): Promise<string> {
+    // ✅ FIX CRITICAL-3: Comprehensive maxDuration validation to prevent DoS and integer overflow
+    if (config.resourceLimits?.maxDuration !== undefined) {
+      const duration = config.resourceLimits.maxDuration;
+      const MAX_ALLOWED_DURATION = 3600000; // 1 hour
+
+      // Validate it's a safe integer (prevents Number.MAX_SAFE_INTEGER attacks)
+      if (!Number.isSafeInteger(duration)) {
+        throw new ValidationError('maxDuration must be a safe integer', {
+          provided: duration,
+          isSafeInteger: Number.isSafeInteger(duration),
+          maxSafeInteger: Number.MAX_SAFE_INTEGER,
+        });
+      }
+
+      // Validate range
+      if (duration < 0) {
+        throw new ValidationError('maxDuration cannot be negative', {
+          provided: duration,
+        });
+      }
+
+      if (duration > MAX_ALLOWED_DURATION) {
+        throw new ValidationError(
+          `maxDuration cannot exceed ${MAX_ALLOWED_DURATION}ms (1 hour)`,
+          {
+            provided: duration,
+            max: MAX_ALLOWED_DURATION,
+          }
+        );
+      }
+    }
+
     // Check if resources are available (but only fail if it's a hard limit)
     const resourceCheck = this.resourceMonitor.canRunBackgroundTask(config);
 
@@ -369,13 +428,21 @@ export class BackgroundExecutor {
 
   /**
    * Process the task queue
+   *
+   * ✅ FIX MAJOR-3: Simplified to fire-and-forget task dispatch to prevent promise stacking
+   *
+   * Boolean lock implementation prevents concurrent queue processing.
+   * Tasks are dispatched without awaiting, allowing immediate queue processing
+   * of multiple tasks up to resource limits. Each task's .finally() block
+   * triggers another processQueue() call after completion.
    */
-  private async processQueue(): Promise<void> {
-    if (this.processingQueue) {
+  private processQueue(): void {
+    // Prevent concurrent processing (atomic check-and-set)
+    if (this.processingLock) {
       return;
     }
 
-    this.processingQueue = true;
+    this.processingLock = true;
 
     try {
       while (!this.scheduler.isEmpty()) {
@@ -386,11 +453,18 @@ export class BackgroundExecutor {
           break;
         }
 
-        // Start execution
-        await this.startTaskExecution(backgroundTask);
+        // ✅ FIX MAJOR-3: Fire-and-forget to prevent promise stacking
+        // startTaskExecution() handles its own cleanup via .finally()
+        // Each task independently calls processQueue() when done
+        this.startTaskExecution(backgroundTask).catch((error) => {
+          logger.error(
+            `[BackgroundExecutor] Task ${backgroundTask.taskId} execution error:`,
+            this.sanitizeErrorForLog(error)
+          );
+        });
       }
     } finally {
-      this.processingQueue = false;
+      this.processingLock = false;
     }
   }
 
@@ -428,7 +502,44 @@ export class BackgroundExecutor {
     };
 
     // Execute task
-    const promise = this.executeTaskInternal(task, config, updateProgress, () => cancelled);
+    let executePromise: Promise<unknown> = this.executeTaskInternal(
+      task,
+      config,
+      updateProgress,
+      () => cancelled
+    );
+
+    // Add timeout if maxDuration specified
+    let timeoutId: NodeJS.Timeout | undefined;
+    let timeoutFired = false;
+
+    try {
+      if (config.resourceLimits?.maxDuration) {
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            timeoutFired = true;
+            // Set cancelled flag so cooperative tasks can stop early
+            cancel();
+            // Reject with timeout error (always treated as failure, not cancellation)
+            reject(new TimeoutError(config.resourceLimits!.maxDuration!));
+          }, config.resourceLimits.maxDuration);
+
+          // Security: Track timeout for cleanup on shutdown
+          this.activeTimeouts.add(timeoutId);
+        });
+
+        // Race task execution against timeout
+        executePromise = Promise.race([executePromise, timeoutPromise]);
+      }
+    } catch (error) {
+      // Security: Ensure timeout is cleared if setup fails
+      if (timeoutId) {
+        this.clearTaskTimeout(timeoutId);
+      }
+      throw error;
+    }
+
+    const promise = executePromise;
 
     // Store worker handle
     this.activeWorkers.set(taskId, {
@@ -440,6 +551,10 @@ export class BackgroundExecutor {
     // Handle completion/failure
     promise
       .then(result => {
+        // Security: Only clear if timeout hasn't already fired
+        if (timeoutId && !timeoutFired) {
+          this.clearTaskTimeout(timeoutId);
+        }
         if (cancelled) {
           this.handleTaskCancelled(taskId);
         } else {
@@ -447,7 +562,14 @@ export class BackgroundExecutor {
         }
       })
       .catch(error => {
-        if (cancelled) {
+        // Security: Only clear if timeout hasn't already fired
+        if (timeoutId && !timeoutFired) {
+          this.clearTaskTimeout(timeoutId);
+        }
+        // TimeoutError is always treated as failure, not cancellation
+        if (error instanceof TimeoutError) {
+          this.handleTaskFailed(taskId, error);
+        } else if (cancelled) {
           this.handleTaskCancelled(taskId);
         } else {
           this.handleTaskFailed(taskId, error);
@@ -505,6 +627,7 @@ export class BackgroundExecutor {
    * Handle task completion
    *
    * Delegates to ResultHandler for consistent result processing.
+   * Schedules automatic cleanup after 60 seconds.
    */
   private handleTaskCompleted(taskId: string, result: unknown): void {
     const task = this.tasks.get(taskId);
@@ -514,12 +637,16 @@ export class BackgroundExecutor {
 
     this.resultHandler.handleCompleted(task, result);
     this.tasks.set(taskId, task);
+
+    // Schedule cleanup after 60 seconds
+    this.scheduleTaskCleanup(taskId);
   }
 
   /**
    * Handle task failure
    *
    * Delegates to ResultHandler for consistent error handling.
+   * Schedules automatic cleanup after 60 seconds.
    */
   private handleTaskFailed(taskId: string, error: Error): void {
     const task = this.tasks.get(taskId);
@@ -529,12 +656,16 @@ export class BackgroundExecutor {
 
     this.resultHandler.handleFailed(task, error);
     this.tasks.set(taskId, task);
+
+    // Schedule cleanup after 60 seconds
+    this.scheduleTaskCleanup(taskId);
   }
 
   /**
    * Handle task cancellation
    *
    * Delegates to ResultHandler for consistent cancellation handling.
+   * Schedules automatic cleanup after 60 seconds.
    */
   private handleTaskCancelled(taskId: string): void {
     const task = this.tasks.get(taskId);
@@ -544,6 +675,162 @@ export class BackgroundExecutor {
 
     this.resultHandler.handleCancelled(task);
     this.tasks.set(taskId, task);
+
+    // Schedule cleanup after 60 seconds
+    this.scheduleTaskCleanup(taskId);
+  }
+
+  /**
+   * Schedule automatic task cleanup
+   *
+   * BUG-2 Fix: Schedule cleanup timer to remove completed/failed/cancelled tasks
+   * after 60 seconds to prevent memory leaks. Only one cleanup timer per task.
+   * Cleanup can be cancelled by calling getTask() which indicates user is accessing it.
+   *
+   * Security Fix: Enforces maximum task history and forced cleanup to prevent
+   * resource exhaustion attacks via cleanup cancellation manipulation.
+   */
+  private scheduleTaskCleanup(taskId: string): void {
+    const task = this.tasks.get(taskId);
+    if (!task) {
+      return;
+    }
+
+    // Security: Force cleanup after absolute time limit regardless of access
+    if (task.endTime && Date.now() - task.endTime.getTime() > this.FORCE_CLEANUP_AGE) {
+      logger.warn(`[BackgroundExecutor] Force cleaning up task ${taskId} - exceeded max age`);
+      this.tasks.delete(taskId);
+      this.cleanupTimers.delete(taskId);
+      this.cleanupScheduled.delete(taskId);
+      this.cleanupCancelCounts.delete(taskId);
+      return;
+    }
+
+    // Security: Enforce maximum task history to prevent memory exhaustion
+    if (this.tasks.size > this.MAX_TASK_HISTORY) {
+      this.forceCleanupOldestTasks(100);
+    }
+
+    // Prevent duplicate timers for the same task
+    if (this.cleanupScheduled.has(taskId)) {
+      return;
+    }
+
+    this.cleanupScheduled.add(taskId);
+
+    const timerId = setTimeout(() => {
+      // BUG-2 Fix: Use setImmediate to defer actual deletion to next event loop tick
+      // This gives getTask() a chance to cancel cleanup even if called at the exact cleanup time
+      setImmediate(() => {
+        // Double-check task wasn't accessed (cleanup might have been cancelled)
+        if (this.cleanupScheduled.has(taskId)) {
+          this.tasks.delete(taskId);
+          this.cleanupTimers.delete(taskId);
+          this.cleanupScheduled.delete(taskId);
+          this.cleanupCancelCounts.delete(taskId);
+        }
+      });
+    }, 60000); // 60 seconds
+
+    this.cleanupTimers.set(taskId, timerId);
+  }
+
+  /**
+   * Cancel scheduled cleanup for a task
+   *
+   * BUG-2 Fix: When user accesses a task via getTask(), cancel its cleanup timer
+   * to prevent the task from being deleted while user is working with it.
+   *
+   * Security Fix: Tracks cleanup cancellations and forces cleanup after excessive
+   * cancellations to prevent resource exhaustion attacks.
+   */
+  private cancelTaskCleanup(taskId: string): void {
+    // Security: Track cleanup cancellations to detect abuse
+    const cancelCount = this.cleanupCancelCounts.get(taskId) || 0;
+
+    if (cancelCount >= this.MAX_CLEANUP_CANCELS) {
+      logger.warn(
+        `[BackgroundExecutor] Task ${taskId} cleanup cancelled ${cancelCount} times - forcing cleanup`
+      );
+      this.tasks.delete(taskId);
+      this.cleanupTimers.delete(taskId);
+      this.cleanupScheduled.delete(taskId);
+      this.cleanupCancelCounts.delete(taskId);
+      return;
+    }
+
+    const timerId = this.cleanupTimers.get(taskId);
+    if (timerId) {
+      clearTimeout(timerId);
+      this.cleanupTimers.delete(taskId);
+      this.cleanupScheduled.delete(taskId);
+      this.cleanupCancelCounts.set(taskId, cancelCount + 1);
+      logger.debug(`BackgroundExecutor: Cancelled cleanup for task ${taskId} (count: ${cancelCount + 1})`);
+    }
+  }
+
+  /**
+   * Clear a task timeout and remove from tracking
+   *
+   * Security Fix: Ensures timeout is properly cleared and removed from activeTimeouts set
+   * to prevent timer leaks on shutdown.
+   */
+  private clearTaskTimeout(timeoutId: NodeJS.Timeout): void {
+    clearTimeout(timeoutId);
+    this.activeTimeouts.delete(timeoutId);
+  }
+
+  /**
+   * Force cleanup of oldest tasks
+   *
+   * Security Fix: Removes oldest completed/failed tasks when total task count exceeds limit.
+   * Prevents memory exhaustion attacks via excessive task retention.
+   *
+   * @param count - Number of oldest tasks to remove
+   */
+  private forceCleanupOldestTasks(count: number): void {
+    const completedTasks = Array.from(this.tasks.entries())
+      .filter(([_, task]) => ['completed', 'failed', 'cancelled'].includes(task.status))
+      .sort((a, b) => {
+        const aTime = a[1].endTime?.getTime() || 0;
+        const bTime = b[1].endTime?.getTime() || 0;
+        return aTime - bTime; // Oldest first
+      })
+      .slice(0, count);
+
+    for (const [taskId, _] of completedTasks) {
+      this.tasks.delete(taskId);
+      const timerId = this.cleanupTimers.get(taskId);
+      if (timerId) {
+        clearTimeout(timerId);
+        this.cleanupTimers.delete(taskId);
+      }
+      this.cleanupScheduled.delete(taskId);
+      this.cleanupCancelCounts.delete(taskId);
+    }
+
+    if (completedTasks.length > 0) {
+      logger.warn(
+        `[BackgroundExecutor] Force cleaned ${completedTasks.length} oldest tasks (history limit: ${this.MAX_TASK_HISTORY})`
+      );
+    }
+  }
+
+  /**
+   * Sanitize error for logging
+   *
+   * Security Fix: Removes control characters and truncates long messages to prevent
+   * log injection attacks and log file bloat.
+   *
+   * @param error - Error to sanitize
+   * @returns Sanitized error message
+   */
+  private sanitizeErrorForLog(error: unknown): string {
+    const message = error instanceof Error ? error.message : String(error);
+    return message
+      .replace(/[\x00-\x1F\x7F-\x9F]/g, '') // Remove control characters
+      .replace(/password[=:]\s*\S+/gi, 'password=***') // Redact passwords
+      .substring(0, 1000); // Truncate to 1000 chars
   }
 
   /**
@@ -665,6 +952,10 @@ export class BackgroundExecutor {
    * ```
    */
   async cancelTask(taskId: string): Promise<void> {
+    // BUG-2 Fix: Cancel cleanup timer when user accesses task
+    // This prevents task from being deleted while user is trying to cancel it
+    this.cancelTaskCleanup(taskId);
+
     // Check if task is in queue
     if (this.scheduler.removeTask(taskId)) {
       const task = this.tasks.get(taskId);
@@ -752,7 +1043,15 @@ export class BackgroundExecutor {
    * ```
    */
   getTask(taskId: string): BackgroundTask | undefined {
-    return this.tasks.get(taskId);
+    const task = this.tasks.get(taskId);
+
+    // BUG-2 Fix: Cancel cleanup timer when user accesses task
+    // This prevents task from being deleted while user is working with it
+    if (task) {
+      this.cancelTaskCleanup(taskId);
+    }
+
+    return task;
   }
 
   /**
@@ -879,14 +1178,15 @@ export class BackgroundExecutor {
     cancelled: number;
     queueStats: ReturnType<TaskScheduler['getStats']>;
   } {
-    return {
-      queued: this.getTasksByStatus('queued').length,
-      running: this.getTasksByStatus('running').length,
-      completed: this.getTasksByStatus('completed').length,
-      failed: this.getTasksByStatus('failed').length,
-      cancelled: this.getTasksByStatus('cancelled').length,
-      queueStats: this.scheduler.getStats(),
-    };
+    const counts = { queued: 0, running: 0, completed: 0, failed: 0, cancelled: 0 };
+
+    for (const task of this.tasks.values()) {
+      if (task.status in counts) {
+        counts[task.status as keyof typeof counts]++;
+      }
+    }
+
+    return { ...counts, queueStats: this.scheduler.getStats() };
   }
 
   /**

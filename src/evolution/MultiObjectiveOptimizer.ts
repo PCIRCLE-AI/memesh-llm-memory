@@ -97,16 +97,10 @@ export class MultiObjectiveOptimizer {
       }
 
       if (!isDominated) {
-        // Remove any Pareto members dominated by this candidate
-        const newParetoFront = paretoFront.filter(
-          (member) => !this.dominates(candidate, member)
-        );
-
-        // Add this candidate
-        newParetoFront.push(candidate);
-
+        // Remove any Pareto members dominated by this candidate, then add candidate
+        const filtered = paretoFront.filter(member => !this.dominates(candidate, member));
         paretoFront.length = 0;
-        paretoFront.push(...newParetoFront);
+        paretoFront.push(...filtered, candidate);
       }
     }
 

@@ -1,25 +1,36 @@
 /**
  * Service Locator
  *
- * Central registry for dependency injection.
- * Reduces constructor parameter coupling.
+ * ⚠️ **DEPRECATED**: This is an anti-pattern and should not be used in new code.
  *
- * Usage:
+ * **Why ServiceLocator is an anti-pattern:**
+ * - Hidden dependencies: Classes don't declare their dependencies explicitly
+ * - Hard to test: Dependencies are not visible in constructor
+ * - Runtime errors: Missing dependencies only discovered at runtime
+ * - Tight coupling: Global state makes refactoring difficult
+ * - No type safety: Generic T casting bypasses TypeScript safety
+ *
+ * **✅ Use Dependency Injection instead:**
  * ```typescript
- * // Registration (in initialization code)
- * ServiceLocator.register('database', db);
- * ServiceLocator.register('logger', logger);
+ * // ❌ DON'T: ServiceLocator (hidden dependency)
+ * class UserService {
+ *   private db = ServiceLocator.get<Database>('database');
+ * }
  *
- * // Retrieval (in classes)
- * const db = ServiceLocator.get<Database>('database');
- * const logger = ServiceLocator.get<Logger>('logger');
+ * // ✅ DO: Constructor Injection (explicit dependency)
+ * class UserService {
+ *   constructor(private db: Database) {}
+ * }
  * ```
  *
- * Benefits:
- * - Reduces constructor parameter count
- * - Centralizes dependency management
- * - Easier testing (swap services in tests)
- * - Loose coupling between components
+ * **Migration Guide:**
+ * 1. Add dependencies as constructor parameters
+ * 2. Update ServerInitializer to pass dependencies
+ * 3. Remove ServiceLocator.get() calls
+ * 4. Benefit: Better testability, type safety, and maintainability
+ *
+ * @deprecated Use constructor-based dependency injection instead
+ * @see ServerInitializer for proper dependency injection examples
  */
 export class ServiceLocator {
   private static services = new Map<string, any>();
@@ -27,8 +38,11 @@ export class ServiceLocator {
   /**
    * Register a service instance
    *
+   * ⚠️ **DEPRECATED**: Use constructor injection instead
+   *
    * @param key - Unique identifier for the service
    * @param service - Service instance to register
+   * @deprecated Use constructor-based dependency injection
    *
    * @example
    * ```typescript
@@ -46,9 +60,12 @@ export class ServiceLocator {
   /**
    * Retrieve a registered service
    *
+   * ⚠️ **DEPRECATED**: Use constructor injection instead
+   *
    * @param key - Service identifier
    * @returns The registered service instance
    * @throws Error if service not found
+   * @deprecated Use constructor-based dependency injection
    *
    * @example
    * ```typescript

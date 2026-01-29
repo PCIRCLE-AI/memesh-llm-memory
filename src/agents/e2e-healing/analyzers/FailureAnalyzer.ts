@@ -48,13 +48,18 @@ export class FailureAnalyzer {
     };
   }
 
+  /**
+   * Calculate confidence based on analysis quality
+   * Simple heuristic: longer analysis = higher confidence
+   */
   private calculateConfidence(rootCause: string): number {
-    // Simple heuristic: longer analysis = higher confidence
-    // Real implementation would use more sophisticated metrics
-    const length = rootCause.length;
-    if (length > 500) return 0.9;
-    if (length > 200) return 0.7;
-    if (length > 100) return 0.5;
-    return 0.3;
+    const thresholds = [
+      { minLength: 500, confidence: 0.9 },
+      { minLength: 200, confidence: 0.7 },
+      { minLength: 100, confidence: 0.5 },
+    ];
+
+    const match = thresholds.find(t => rootCause.length > t.minLength);
+    return match?.confidence ?? 0.3;
   }
 }

@@ -10,6 +10,8 @@ import type { AdaptationEngine } from './AdaptationEngine.js';
 import type { EvolutionStats } from './types.js';
 import { getAllAgentConfigs } from './AgentEvolutionConfig.js';
 import * as asciichart from 'asciichart';
+import { ValidationError } from '../errors/index.js'; // ✅ FIX MAJOR-4
+import { logger } from '../utils/logger.js'; // ✅ FIX MAJOR-4
 
 export interface DashboardSummary {
   totalAgents: number;
@@ -244,20 +246,61 @@ export class EvolutionMonitor {
   // =====================
 
   /**
+   * ✅ FIX MAJOR-4: Prevent unbounded time series data growth
+   *
+   * Limits:
+   * - Max 100 different metrics can be tracked
+   * - Max 10,000 data points per metric
+   * - Automatically trims oldest data when limits exceeded
+   */
+  private readonly MAX_METRIC_POINTS = 10000; // per metric
+  private readonly MAX_METRICS = 100; // total metrics
+
+  /**
    * Track a system-wide metric over time
+   *
+   * ✅ FIX MAJOR-4: Now with size limits to prevent memory leaks
    */
   trackSystemMetric(metricName: string, value: number, metadata?: Record<string, unknown>): void {
     const timestamp = Date.now();
+
+    // ✅ FIX MAJOR-4: Validate total metrics limit
+    if (!this.metricsHistory.has(metricName) && this.metricsHistory.size >= this.MAX_METRICS) {
+      throw new ValidationError(
+        `Too many metrics tracked (max ${this.MAX_METRICS}). Cannot add new metric: ${metricName}`,
+        {
+          component: 'EvolutionMonitor',
+          method: 'trackSystemMetric',
+          currentCount: this.metricsHistory.size,
+          maxMetrics: this.MAX_METRICS,
+          attemptedMetric: metricName,
+        }
+      );
+    }
 
     if (!this.metricsHistory.has(metricName)) {
       this.metricsHistory.set(metricName, []);
     }
 
-    this.metricsHistory.get(metricName)!.push({
+    const history = this.metricsHistory.get(metricName)!;
+    history.push({
       value,
       timestamp,
       metadata,
     });
+
+    // ✅ FIX MAJOR-4: Trim to max size (keep most recent data)
+    if (history.length > this.MAX_METRIC_POINTS) {
+      // Remove oldest 10% to avoid frequent trimming
+      const trimCount = Math.floor(this.MAX_METRIC_POINTS * 0.1);
+      history.splice(0, trimCount);
+
+      logger.debug('[EvolutionMonitor] Trimmed old metric data', {
+        metricName,
+        removedPoints: trimCount,
+        remainingPoints: history.length,
+      });
+    }
   }
 
   /**
@@ -380,7 +423,15 @@ export class EvolutionMonitor {
   // =====================
 
   /**
+   * ✅ FIX MAJOR-5: Chart dimension limits to prevent DoS
+   */
+  private readonly MAX_CHART_HEIGHT = 50;
+  private readonly MAX_CHART_WIDTH = 200;
+
+  /**
    * Render ASCII chart for a single metric
+   *
+   * ✅ FIX MAJOR-5: Now with dimension validation
    */
   renderChart(
     metricName: string,
@@ -405,10 +456,32 @@ export class EvolutionMonitor {
     // Extract values for chart
     const values = dataPoints.map(p => p.value);
 
-    // Configure chart
+    // ✅ FIX MAJOR-5: Validate and limit chart dimensions to prevent DoS
+    const height = Math.min(options?.height || 10, this.MAX_CHART_HEIGHT);
+    const width = options?.width
+      ? Math.min(options.width, this.MAX_CHART_WIDTH)
+      : undefined;
+
+    if (options?.height && options.height > this.MAX_CHART_HEIGHT) {
+      logger.warn('[EvolutionMonitor] Chart height limited', {
+        requested: options.height,
+        limited: height,
+        maxHeight: this.MAX_CHART_HEIGHT,
+      });
+    }
+
+    if (options?.width && options.width > this.MAX_CHART_WIDTH) {
+      logger.warn('[EvolutionMonitor] Chart width limited', {
+        requested: options.width,
+        limited: width,
+        maxWidth: this.MAX_CHART_WIDTH,
+      });
+    }
+
+    // Configure chart with validated dimensions
     const config = {
-      height: options?.height || 10,
-      width: options?.width,
+      height,
+      width,
     };
 
     // Render chart
@@ -428,6 +501,8 @@ export class EvolutionMonitor {
 
   /**
    * Render multiple metrics on one chart
+   *
+   * ✅ FIX MAJOR-5: Now with dimension validation
    */
   renderMultiChart(
     metricNames: string[],
@@ -459,10 +534,16 @@ export class EvolutionMonitor {
       return `No data available for metrics: ${metricNames.join(', ')}`;
     }
 
+    // ✅ FIX MAJOR-5: Validate and limit chart dimensions
+    const height = Math.min(options?.height || 10, this.MAX_CHART_HEIGHT);
+    const width = options?.width
+      ? Math.min(options.width, this.MAX_CHART_WIDTH)
+      : undefined;
+
     // Configure chart (colors are ANSI color codes from asciichart)
     const config = {
-      height: options?.height || 10,
-      width: options?.width,
+      height,
+      width,
       colors: [
         asciichart.blue,
         asciichart.green,
@@ -496,7 +577,14 @@ export class EvolutionMonitor {
   // =====================
 
   /**
+   * ✅ FIX MAJOR-3: Max export size to prevent DoS
+   */
+  private readonly MAX_EXPORT_SIZE = 1000000; // 1MB limit
+
+  /**
    * Export dashboard data as JSON
+   *
+   * ✅ FIX MAJOR-3: Now with size validation to prevent excessive memory usage
    */
   exportAsJSON(): string {
     const exportData: DashboardExport = {
@@ -506,11 +594,29 @@ export class EvolutionMonitor {
       learningProgress: this.getLearningProgress(),
     };
 
-    return JSON.stringify(exportData, null, 2);
+    const jsonString = JSON.stringify(exportData, null, 2);
+
+    // ✅ FIX MAJOR-3: Validate export size to prevent DoS
+    if (jsonString.length > this.MAX_EXPORT_SIZE) {
+      throw new ValidationError(
+        `Export size exceeds limit (${jsonString.length} bytes > ${this.MAX_EXPORT_SIZE} bytes)`,
+        {
+          component: 'EvolutionMonitor',
+          method: 'exportAsJSON',
+          exportSize: jsonString.length,
+          maxSize: this.MAX_EXPORT_SIZE,
+          hint: 'Consider using getTimeSeriesMetrics with maxDataPoints option to reduce export size',
+        }
+      );
+    }
+
+    return jsonString;
   }
 
   /**
    * Export dashboard data as CSV
+   *
+   * ✅ FIX MAJOR-3: Now with size validation
    */
   exportAsCSV(): string {
     const lines: string[] = [];
@@ -553,11 +659,28 @@ export class EvolutionMonitor {
       lines.push('');
     }
 
-    return lines.join('\n');
+    const csvString = lines.join('\n');
+
+    // ✅ FIX MAJOR-3: Validate export size
+    if (csvString.length > this.MAX_EXPORT_SIZE) {
+      throw new ValidationError(
+        `CSV export size exceeds limit (${csvString.length} bytes > ${this.MAX_EXPORT_SIZE} bytes)`,
+        {
+          component: 'EvolutionMonitor',
+          method: 'exportAsCSV',
+          exportSize: csvString.length,
+          maxSize: this.MAX_EXPORT_SIZE,
+        }
+      );
+    }
+
+    return csvString;
   }
 
   /**
    * Export dashboard data as Markdown
+   *
+   * ✅ FIX MAJOR-3: Now with size validation
    */
   exportAsMarkdown(): string {
     const lines: string[] = [];
@@ -651,7 +774,22 @@ export class EvolutionMonitor {
       });
     }
 
-    return lines.join('\n');
+    const markdownString = lines.join('\n');
+
+    // ✅ FIX MAJOR-3: Validate export size
+    if (markdownString.length > this.MAX_EXPORT_SIZE) {
+      throw new ValidationError(
+        `Markdown export size exceeds limit (${markdownString.length} bytes > ${this.MAX_EXPORT_SIZE} bytes)`,
+        {
+          component: 'EvolutionMonitor',
+          method: 'exportAsMarkdown',
+          exportSize: markdownString.length,
+          maxSize: this.MAX_EXPORT_SIZE,
+        }
+      );
+    }
+
+    return markdownString;
   }
 
   // =====================
@@ -724,6 +862,43 @@ export class EvolutionMonitor {
       this.eventListeners.set(event, []);
     }
     this.eventListeners.get(event)!.push(callback);
+  }
+
+  /**
+   * ✅ FIX MEDIUM-1: Remove specific event listener
+   *
+   * Prevents memory leaks by allowing cleanup of individual listeners
+   * in long-running processes.
+   *
+   * @param event - Event name
+   * @param callback - Callback to remove
+   */
+  off(event: string, callback: (data: unknown) => void): void {
+    const listeners = this.eventListeners.get(event);
+    if (!listeners) return;
+
+    const index = listeners.indexOf(callback);
+    if (index !== -1) {
+      listeners.splice(index, 1);
+    }
+
+    // Clean up empty arrays to prevent memory waste
+    if (listeners.length === 0) {
+      this.eventListeners.delete(event);
+    }
+  }
+
+  /**
+   * ✅ FIX MEDIUM-1: Remove all listeners for an event
+   *
+   * @param event - Event name to clear (if not provided, clears all events)
+   */
+  removeAllListeners(event?: string): void {
+    if (event) {
+      this.eventListeners.delete(event);
+    } else {
+      this.eventListeners.clear();
+    }
   }
 
   /**

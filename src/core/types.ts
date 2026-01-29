@@ -180,6 +180,9 @@ export interface ExecutionConfig {
  * - Medium priority for balanced execution
  * - Conservative resource limits (70% CPU, 2GB memory, 10 min timeout)
  *
+ * Security Note: maxDuration has an absolute maximum of 1 hour to prevent
+ * timeout bypass attacks via integer overflow.
+ *
  * @example
  * ```typescript
  * import { DEFAULT_EXECUTION_CONFIG } from './types.js';
@@ -204,10 +207,21 @@ export const DEFAULT_EXECUTION_CONFIG: ExecutionConfig = {
   priority: 'medium',
   resourceLimits: {
     maxCPU: 70,
-    maxMemory: 2048, // 2GB
-    maxDuration: 600, // 10 minutes
+    maxMemory: 2048, // 2GB in megabytes
+    /**
+     * Maximum task execution duration in milliseconds (10 minutes)
+     * @type {number} 600000 milliseconds = 600 seconds = 10 minutes
+     */
+    maxDuration: 600000,
   },
 };
+
+/**
+ * Maximum allowed maxDuration value (1 hour)
+ *
+ * Security: Prevents integer overflow attacks and ensures tasks eventually timeout
+ */
+export const MAX_ALLOWED_DURATION = 3600000; // 1 hour in milliseconds
 
 /**
  * Task progress information

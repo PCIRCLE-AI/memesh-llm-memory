@@ -153,12 +153,40 @@ export class MCPToolInterface {
   private commandPolicy: CommandPolicy;
   private commandRunner: CommandRunner;
   private memoryProvider?: MemoryProvider;
+  // ✅ FIX HIGH-1: Track active child processes for cleanup on shutdown
+  private activeProcesses: Set<import('child_process').ChildProcess> = new Set();
 
   constructor(options: MCPToolInterfaceOptions = {}) {
     this.toolDispatcher = options.toolDispatcher;
     this.commandPolicy = options.commandPolicy || createDefaultCommandPolicy();
-    this.commandRunner = options.commandRunner || createDefaultCommandRunner();
+    this.commandRunner = options.commandRunner || createDefaultCommandRunner(this.activeProcesses);
     this.memoryProvider = options.memoryProvider;
+  }
+
+  /**
+   * Cleanup all active child processes
+   *
+   * ✅ FIX HIGH-1: Kill all spawned processes on shutdown
+   * Sends SIGTERM then SIGKILL to ensure processes don't become zombies
+   */
+  dispose(): void {
+    for (const child of this.activeProcesses) {
+      try {
+        // Try graceful shutdown first
+        child.kill('SIGTERM');
+        // Force kill after 1 second if still running
+        setTimeout(() => {
+          try {
+            child.kill('SIGKILL');
+          } catch {
+            // Process already exited
+          }
+        }, 1000);
+      } catch {
+        // Process already exited
+      }
+    }
+    this.activeProcesses.clear();
   }
 
   attachToolDispatcher(dispatcher: ToolDispatcher): void {
@@ -709,7 +737,9 @@ function createDefaultCommandPolicy(): CommandPolicy {
   };
 }
 
-function createDefaultCommandRunner(): CommandRunner {
+function createDefaultCommandRunner(
+  activeProcesses?: Set<import('child_process').ChildProcess>
+): CommandRunner {
   return {
     run: async (command: string, timeoutMs?: number): Promise<CommandResult> => {
       const tokens = parseCommandLine(command);
@@ -720,11 +750,31 @@ function createDefaultCommandRunner(): CommandRunner {
       const [binary, ...args] = tokens;
       const child = spawn(binary, args, { stdio: ['ignore', 'pipe', 'pipe'] });
 
+      // ✅ FIX HIGH-1: Track spawned process for cleanup
+      if (activeProcesses) {
+        activeProcesses.add(child);
+      }
+
       let stdout = '';
       let stderr = '';
       let settled = false;
+      let killTimeoutId: NodeJS.Timeout | undefined;
 
       return await new Promise<CommandResult>((resolve) => {
+        const cleanup = () => {
+          // ✅ FIX HIGH-1: Remove from active processes and clear listeners
+          if (activeProcesses) {
+            activeProcesses.delete(child);
+          }
+          if (killTimeoutId) {
+            clearTimeout(killTimeoutId);
+            killTimeoutId = undefined;
+          }
+          child.stdout.removeAllListeners();
+          child.stderr.removeAllListeners();
+          child.removeAllListeners();
+        };
+
         const finish = (exitCode: number, extraStderr?: string) => {
           if (settled) return;
           settled = true;
@@ -732,11 +782,29 @@ function createDefaultCommandRunner(): CommandRunner {
           if (extraStderr) {
             stderr += stderr ? `\n${extraStderr}` : extraStderr;
           }
+          cleanup();
           resolve({ exitCode, stdout, stderr });
         };
 
         const timeoutId = timeoutMs && timeoutMs > 0 ? setTimeout(() => {
-          child.kill('SIGTERM');
+          // ✅ FIX HIGH-1: SIGKILL fallback after SIGTERM
+          try {
+            child.kill('SIGTERM');
+          } catch {
+            // Process already exited
+            finish(124, 'Command timed out');
+            return;
+          }
+
+          // If process doesn't exit within 2s, force kill
+          killTimeoutId = setTimeout(() => {
+            try {
+              child.kill('SIGKILL');
+            } catch {
+              // Process already exited
+            }
+          }, 2000);
+
           finish(124, 'Command timed out');
         }, timeoutMs) : undefined;
 

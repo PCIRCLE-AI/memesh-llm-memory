@@ -23,6 +23,7 @@ import {
   AttributionMessage,
   MetricsSnapshot,
 } from './types.js';
+import { logger } from '../utils/logger.js';
 
 type EventHandler<T = unknown> = (data: T) => void;
 type UnsubscribeFunction = () => void;
@@ -37,13 +38,16 @@ export class UIEventBus {
   private emitter: EventEmitter;
 
   /**
-   * Track wrapped handlers to prevent memory leaks
-   * Maps original handler to wrapped handler for proper cleanup
+   * ✅ FIX HIGH-11: Track wrapped handlers for proper cleanup
+   * Maps original handler to array of wrapped handlers (one per subscription)
+   *
+   * Why array? If the same handler is subscribed multiple times, each subscription
+   * should be independent and removable separately.
    *
    * Note: Using WeakMap with 'any' to handle generic type variance
    * Type safety is ensured through method signatures
    */
-  private handlerMap: WeakMap<EventHandler<any>, EventHandler<any>> = new WeakMap();
+  private handlerMap: WeakMap<EventHandler<any>, Array<EventHandler<any>>> = new WeakMap();
 
   private constructor() {
     this.emitter = new EventEmitter();
@@ -81,33 +85,64 @@ export class UIEventBus {
   /**
    * Subscribe to a generic event
    * Returns unsubscribe function
+   *
+   * ✅ FIX HIGH-11: Each subscription gets its own wrapped handler
+   * Previously, reusing wrapped handlers caused memory leaks when the same
+   * handler was subscribed multiple times. Now each subscription is independent.
    */
   on<T = unknown>(eventType: UIEventTypeValue, handler: EventHandler<T>): UnsubscribeFunction {
-    // Check if this handler is already wrapped
-    let wrappedHandler = this.handlerMap.get(handler) as EventHandler<T> | undefined;
+    // ✅ FIX HIGH-11: Create a NEW wrapped handler for each subscription
+    // This prevents memory leaks from reusing wrapped handlers
+    const wrappedHandler = this.wrapHandlerWithErrorBoundary(handler, eventType);
 
-    // If not wrapped yet, create and store the wrapped version
-    if (!wrappedHandler) {
-      wrappedHandler = this.wrapHandlerWithErrorBoundary(handler, eventType);
-      this.handlerMap.set(handler, wrappedHandler);
-    }
+    // Store the wrapped handler in the array for this original handler
+    const wrappedHandlers = this.handlerMap.get(handler) || [];
+    wrappedHandlers.push(wrappedHandler);
+    this.handlerMap.set(handler, wrappedHandlers);
 
     this.emitter.on(eventType, wrappedHandler);
 
-    // Return unsubscribe function that properly cleans up
+    // Return unsubscribe function that properly cleans up THIS specific subscription
     return () => {
-      this.emitter.off(eventType, wrappedHandler as EventHandler<T>);
+      this.emitter.off(eventType, wrappedHandler);
+
+      // Remove from handlerMap array
+      const handlers = this.handlerMap.get(handler);
+      if (handlers) {
+        const index = handlers.indexOf(wrappedHandler);
+        if (index > -1) {
+          handlers.splice(index, 1);
+        }
+        // Clean up empty array
+        if (handlers.length === 0) {
+          this.handlerMap.delete(handler);
+        }
+      }
     };
   }
 
   /**
    * Remove a specific listener
    * Uses the original handler reference to find and remove the wrapped handler
+   *
+   * ✅ FIX HIGH-11: Removes only the first wrapped handler
+   * If the same handler was subscribed multiple times, this removes one subscription.
+   * Use the returned unsubscribe function for more precise control.
    */
   off<T = unknown>(eventType: UIEventTypeValue, handler: EventHandler<T>): void {
-    const wrappedHandler = this.handlerMap.get(handler) as EventHandler<T> | undefined;
-    if (wrappedHandler) {
+    const wrappedHandlers = this.handlerMap.get(handler);
+    if (wrappedHandlers && wrappedHandlers.length > 0) {
+      // Remove the first wrapped handler
+      const wrappedHandler = wrappedHandlers[0];
       this.emitter.off(eventType, wrappedHandler);
+
+      // Remove from array
+      wrappedHandlers.shift();
+
+      // Clean up empty array
+      if (wrappedHandlers.length === 0) {
+        this.handlerMap.delete(handler);
+      }
     }
   }
 
@@ -241,19 +276,13 @@ export class UIEventBus {
    * Returns a map of event types to listener counts
    */
   getAllListenerCounts(): Record<string, number> {
-    const counts: Record<string, number> = {};
-
-    // Get all event types
-    const eventTypes = Object.values(UIEventType);
-
-    for (const eventType of eventTypes) {
+    return Object.values(UIEventType).reduce((counts, eventType) => {
       const count = this.emitter.listenerCount(eventType);
       if (count > 0) {
         counts[eventType] = count;
       }
-    }
-
-    return counts;
+      return counts;
+    }, {} as Record<string, number>);
   }
 
   /**
@@ -279,6 +308,11 @@ export class UIEventBus {
   /**
    * Wrap handler with error boundary
    * If handler throws, emit error event and continue processing other handlers
+   *
+   * FIXED P1-14: Now catches unhandled Promise rejections
+   * - Detects if handler returns Promise
+   * - Attaches .catch() to handle async rejections
+   * - Prevents silent failures in async event handlers
    */
   private wrapHandlerWithErrorBoundary<T>(
     handler: EventHandler<T>,
@@ -286,8 +320,50 @@ export class UIEventBus {
   ): EventHandler<T> {
     return (data: T) => {
       try {
-        handler(data);
+        const result = handler(data);
+
+        // FIXED P1-14: Handle async handlers that return Promise
+        // Security Fix: Proper Promise type guard and return promise with .catch()
+        if (
+          result != null &&
+          typeof (result as any).then === 'function' &&
+          typeof (result as any).catch === 'function'
+        ) {
+          // Attach error handler and return the promise
+          const promiseWithCatch = (result as Promise<unknown>).catch((error: unknown) => {
+            // Log original error details for debugging
+            logger.error('[UIEventBus] Async handler error:', {
+              eventType,
+              error: error instanceof Error ? error.stack || error.message : String(error),
+              handlerType: 'async',
+            });
+
+            // Only emit error event if we're not already handling an error event
+            if (eventType !== UIEventType.ERROR) {
+              const errorEvent: ErrorEvent = {
+                agentId: 'ui-event-bus',
+                agentType: 'event-handler-async',
+                taskDescription: `Handling ${eventType} event (async handler) [eventType: ${eventType}]`,
+                error: error instanceof Error ? error : new Error(String(error)),
+                timestamp: new Date(),
+              };
+
+              // Emit error immediately (emit is non-blocking)
+              try {
+                this.emit(UIEventType.ERROR, errorEvent);
+              } catch (emitError) {
+                // Last resort: log to console if error event emission fails
+                console.error('UIEventBus: Failed to emit error event for async handler:', emitError);
+                console.error('Original async handler error:', error);
+              }
+            }
+          });
+
+          // Return the promise with error handler attached
+          return promiseWithCatch as any;
+        }
       } catch (error) {
+        // Handle synchronous errors
         // Only emit error event if we're not already handling an error event
         // This prevents infinite loops
         if (eventType !== UIEventType.ERROR) {

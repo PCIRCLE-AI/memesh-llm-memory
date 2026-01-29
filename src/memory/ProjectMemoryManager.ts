@@ -69,12 +69,16 @@ export class ProjectMemoryManager {
       results.push(...entities);
     }
 
-    // Sort by creation date (newest first) and limit results
+    // ✅ FIX LOW-1: Sort by creation date (newest first) with explicit null handling
     const sorted = results
       .sort((a, b) => {
-        const dateA = a.createdAt?.getTime() || 0;
-        const dateB = b.createdAt?.getTime() || 0;
-        return dateB - dateA;
+        // Entities without timestamps go to the end
+        if (!a.createdAt && !b.createdAt) return 0;
+        if (!a.createdAt) return 1;   // a goes after b
+        if (!b.createdAt) return -1;  // b goes after a
+
+        // Both have timestamps - sort newest first
+        return b.createdAt.getTime() - a.createdAt.getTime();
       })
       .slice(0, limit);
 

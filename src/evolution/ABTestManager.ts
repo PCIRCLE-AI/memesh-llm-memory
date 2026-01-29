@@ -211,19 +211,17 @@ export class ABTestManager {
     variantName: string,
     metrics: Record<string, number>
   ): void {
-    let experimentMetrics = this.metrics.get(experimentId);
-    if (!experimentMetrics) {
-      experimentMetrics = new Map();
-      this.metrics.set(experimentId, experimentMetrics);
+    // Get or create experiment metrics map
+    if (!this.metrics.has(experimentId)) {
+      this.metrics.set(experimentId, new Map());
     }
+    const experimentMetrics = this.metrics.get(experimentId)!;
 
-    let variantMetrics = experimentMetrics.get(variantName);
-    if (!variantMetrics) {
-      variantMetrics = [];
-      experimentMetrics.set(variantName, variantMetrics);
+    // Get or create variant metrics array
+    if (!experimentMetrics.has(variantName)) {
+      experimentMetrics.set(variantName, []);
     }
-
-    variantMetrics.push(metrics);
+    experimentMetrics.get(variantName)!.push(metrics);
   }
 
   /**

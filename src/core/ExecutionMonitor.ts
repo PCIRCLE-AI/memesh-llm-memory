@@ -403,15 +403,15 @@ export class ExecutionMonitor {
    * ```
    */
   getStats(): ExecutionStats {
-    const tasks = Array.from(this.tasks.values());
+    const stats: ExecutionStats = { queued: 0, running: 0, completed: 0, failed: 0, cancelled: 0 };
 
-    return {
-      queued: tasks.filter(t => t.status === 'queued').length,
-      running: tasks.filter(t => t.status === 'running').length,
-      completed: tasks.filter(t => t.status === 'completed').length,
-      failed: tasks.filter(t => t.status === 'failed').length,
-      cancelled: tasks.filter(t => t.status === 'cancelled').length,
-    };
+    for (const task of this.tasks.values()) {
+      if (task.status in stats) {
+        stats[task.status as keyof ExecutionStats]++;
+      }
+    }
+
+    return stats;
   }
 
   /**

@@ -107,7 +107,7 @@
     "vitest": "^4.0.17"
   },
   "overrides": {
-    "hono": "4.11.4"
+    "hono": "4.11.7"
   },
   "engines": {
     "node": ">=20.0.0",

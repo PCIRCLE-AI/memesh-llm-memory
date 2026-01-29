@@ -99,6 +99,10 @@ describe('ConnectionPool - BUG-1: Race Condition Tests', () => {
     // Create waiting request
     const waitingPromise = pool.acquire();
 
+    // ✅ FIX: Wait for acquire() to actually enter waiting state
+    // Use setImmediate to ensure acquire() Promise initialization completes
+    await new Promise(resolve => setImmediate(resolve));
+
     // Concurrent release (one should go to waiting, duplicates should be ignored)
     await Promise.all([
       Promise.resolve(pool.release(connections[0])),

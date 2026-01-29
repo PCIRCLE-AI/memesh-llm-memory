@@ -37,6 +37,8 @@ import { ExecutionConfig, Progress, BackgroundTask } from '../core/types.js';
 import { ValidationError } from '../errors/index.js';
 import { logger } from '../utils/logger.js';
 import { formatMoney } from '../utils/money.js';
+// ✅ SECURITY FIX (HIGH-3): Import path validation to prevent path traversal
+import { validateDatabasePath } from '../utils/pathValidation.js';
 
 export class Orchestrator {
   private router: Router;
@@ -56,14 +58,35 @@ export class Orchestrator {
     this.orchestratorId = `orch-${randomBytes(4).toString('hex')}`;
     // 獲取全局資源池
     this.resourcePool = GlobalResourcePool.getInstance();
-    // 初始化 Knowledge Graph
-    const dbPath = options?.knowledgeDbPath || join(process.cwd(), 'data', 'knowledge-graph.db');
+    // ✅ SECURITY FIX (HIGH-3): Validate database path to prevent path traversal attacks
+    const rawDbPath = options?.knowledgeDbPath || join(process.cwd(), 'data', 'knowledge-graph.db');
+    const dbPath = validateDatabasePath(rawDbPath);
     this.knowledge = new KnowledgeAgent(dbPath);
     // 初始化 Background Execution 相關組件
     this.resourceMonitor = new ResourceMonitor();
     this.backgroundExecutor = new BackgroundExecutor(this.resourceMonitor);
 
     logger.info(`[Orchestrator] Initialized with ID: ${this.orchestratorId}`);
+  }
+
+  /**
+   * Initialize async components (KnowledgeAgent)
+   *
+   * IMPORTANT: Must be called after constructor and before executing any tasks.
+   * This is separate from constructor because KnowledgeAgent requires async
+   * initialization (database setup, schema migration).
+   *
+   * @throws Error if KnowledgeAgent initialization fails
+   *
+   * @example
+   * ```typescript
+   * const orchestrator = new Orchestrator();
+   * await orchestrator.initialize();  // Required!
+   * await orchestrator.executeTasksInParallel(tasks, 3);
+   * ```
+   */
+  async initialize(): Promise<void> {
+    await this.knowledge.initialize();
   }
 
   /**

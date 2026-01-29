@@ -24,8 +24,10 @@ import { cpus } from 'os';
 describe('P1-11: Backpressure in Parallel Execution', () => {
   let orchestrator: Orchestrator;
 
-  beforeEach(() => {
-    orchestrator = new Orchestrator();
+  beforeEach(async () => {
+    // Use in-memory database for tests to avoid schema migration issues
+    orchestrator = new Orchestrator({ knowledgeDbPath: ':memory:' });
+    await orchestrator.initialize();
   });
 
   afterEach(() => {

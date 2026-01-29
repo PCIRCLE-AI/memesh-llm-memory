@@ -242,7 +242,7 @@ describe('Evolution System Regression Tests', () => {
       };
 
       // Should throw validation error due to empty taskType
-      await expect(router.routeTask(task)).rejects.toThrow('taskType must be a non-empty string');
+      await expect(router.routeTask(task)).rejects.toThrow('Task description must be a non-empty string');
     });
 
     it('should handle missing priority gracefully', async () => {

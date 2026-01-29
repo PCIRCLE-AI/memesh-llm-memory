@@ -7,7 +7,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Orchestrator } from '../../src/orchestrator/index.js';
 import { Task } from '../../src/orchestrator/types.js';
-import * as os from 'os';
+import type * as os from 'os';
+
+// Mock os module at module level (required for ESM)
+vi.mock('os', async (importOriginal) => {
+  const actual = await importOriginal<typeof os>();
+  return {
+    ...actual,
+    cpus: vi.fn(),
+  };
+});
+
+// Import the mocked os after vi.mock
+import { cpus } from 'os';
 
 describe('P1-11: Backpressure in Parallel Execution', () => {
   let orchestrator: Orchestrator;
@@ -25,7 +37,7 @@ describe('P1-11: Backpressure in Parallel Execution', () => {
     it('should apply backpressure when CPU usage is high', async () => {
       // Mock high CPU usage
       let callCount = 0;
-      vi.spyOn(os, 'cpus').mockReturnValue(
+      vi.mocked(cpus).mockReturnValue(
         Array(8).fill({
           model: 'Mock CPU',
           speed: 3000,
@@ -61,7 +73,7 @@ describe('P1-11: Backpressure in Parallel Execution', () => {
 
     it('should apply emergency brake on critical resource exhaustion', async () => {
       // Mock critical CPU usage
-      vi.spyOn(os, 'cpus').mockReturnValue(
+      vi.mocked(cpus).mockReturnValue(
         Array(8).fill({
           model: 'Mock CPU',
           speed: 3000,
@@ -88,7 +100,7 @@ describe('P1-11: Backpressure in Parallel Execution', () => {
 
     it('should proceed normally when resources are healthy', async () => {
       // Mock healthy resource usage
-      vi.spyOn(os, 'cpus').mockReturnValue(
+      vi.mocked(cpus).mockReturnValue(
         Array(8).fill({
           model: 'Mock CPU',
           speed: 3000,
@@ -171,7 +183,7 @@ describe('P1-11: Backpressure in Parallel Execution', () => {
   describe('Backpressure Thresholds', () => {
     it('should apply backpressure at 80% CPU threshold', async () => {
       // Mock CPU at exactly 80% (borderline high)
-      vi.spyOn(os, 'cpus').mockReturnValue(
+      vi.mocked(cpus).mockReturnValue(
         Array(8).fill({
           model: 'Mock CPU',
           speed: 3000,
@@ -198,7 +210,7 @@ describe('P1-11: Backpressure in Parallel Execution', () => {
 
     it('should apply emergency brake at 90% CPU threshold', async () => {
       // Mock CPU at 90% (critical)
-      vi.spyOn(os, 'cpus').mockReturnValue(
+      vi.mocked(cpus).mockReturnValue(
         Array(8).fill({
           model: 'Mock CPU',
           speed: 3000,

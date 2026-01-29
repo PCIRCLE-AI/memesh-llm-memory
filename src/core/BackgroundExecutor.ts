@@ -226,8 +226,8 @@ export class BackgroundExecutor {
   private activeWorkers: Map<string, WorkerHandle>;
   private resourceMonitor: ResourceMonitor;
   private tasks: Map<string, BackgroundTask>;
-  // ✅ FIX MAJOR-3: Removed processingQueue promise - use simple boolean lock instead
-  private processingLock: boolean = false;
+  // ✅ FIX P1-9: Promise-based mutex for processQueue atomicity
+  private processingLock: Promise<void> | null = null;
   private cleanupTimers: Map<string, NodeJS.Timeout> = new Map();
   private cleanupScheduled: Set<string> = new Set();
   private cleanupCancelCounts: Map<string, number> = new Map();

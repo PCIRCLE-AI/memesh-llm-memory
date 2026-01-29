@@ -37,7 +37,8 @@ describe('ProjectMemoryCleanup', () => {
 
     const deleted = await cleanup.cleanupOldMemories();
 
-    expect(deleted).toBe(1);
+    expect(deleted.deleted).toBe(1);
+    expect(deleted.failed).toBe(0);
     expect(mockKG.deleteEntity).toHaveBeenCalledWith('CodeChange-old');
   });
 
@@ -55,7 +56,8 @@ describe('ProjectMemoryCleanup', () => {
 
     const deleted = await cleanup.cleanupOldMemories();
 
-    expect(deleted).toBe(0);
+    expect(deleted.deleted).toBe(0);
+    expect(deleted.failed).toBe(0);
     expect(mockKG.deleteEntity).not.toHaveBeenCalled();
   });
 
@@ -71,7 +73,8 @@ describe('ProjectMemoryCleanup', () => {
     const deleted = await cleanup.cleanupOldMemories();
 
     // Should not delete if no valid timestamp found
-    expect(deleted).toBe(0);
+    expect(deleted.deleted).toBe(0);
+    expect(deleted.failed).toBe(0);
     expect(mockKG.deleteEntity).not.toHaveBeenCalled();
   });
 
@@ -117,7 +120,8 @@ describe('ProjectMemoryCleanup', () => {
 
     const deleted = await cleanup.cleanupOldMemories();
 
-    expect(deleted).toBe(3);
+    expect(deleted.deleted).toBe(3);
+    expect(deleted.failed).toBe(0);
     expect(mockKG.searchEntities).toHaveBeenCalledTimes(3);
     expect(mockKG.deleteEntity).toHaveBeenCalledTimes(3);
   });
@@ -153,7 +157,8 @@ describe('ProjectMemoryCleanup', () => {
     const deleted = await cleanup.cleanupOldMemories();
 
     // Should only delete old entity
-    expect(deleted).toBe(1);
+    expect(deleted.deleted).toBe(1);
+    expect(deleted.failed).toBe(0);
     expect(mockKG.deleteEntity).toHaveBeenCalledWith('Entity-old');
     expect(mockKG.deleteEntity).not.toHaveBeenCalledWith('Entity-recent');
   });

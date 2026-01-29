@@ -45,9 +45,9 @@ describe('ConnectionPool - BUG-5: Health Check Tests', () => {
 
     let healthCheckCount = 0;
     const originalHealthCheck = privatePool.performHealthCheck.bind(pool);
-    privatePool.performHealthCheck = () => {
+    privatePool.performHealthCheck = async () => {
       healthCheckCount++;
-      originalHealthCheck();
+      await originalHealthCheck();
     };
 
     // Call startHealthCheck multiple times (simulating potential bug)
@@ -72,7 +72,7 @@ describe('ConnectionPool - BUG-5: Health Check Tests', () => {
     const privatePool = pool as any;
     let checkCount = 0;
 
-    privatePool.performHealthCheck = () => {
+    privatePool.performHealthCheck = async () => {
       checkCount++;
       throw new Error('Health check error');
     };
@@ -92,7 +92,7 @@ describe('ConnectionPool - BUG-5: Health Check Tests', () => {
     vi.useFakeTimers();
 
     const privatePool = pool as any;
-    privatePool.performHealthCheck = () => {
+    privatePool.performHealthCheck = async () => {
       throw new Error('Health check fails');
     };
 
@@ -118,7 +118,7 @@ describe('ConnectionPool - BUG-5: Health Check Tests', () => {
     const privatePool = pool as any;
     let checkCount = 0;
 
-    privatePool.performHealthCheck = () => {
+    privatePool.performHealthCheck = async () => {
       checkCount++;
     };
 
@@ -147,7 +147,7 @@ describe('ConnectionPool - BUG-5: Health Check Tests', () => {
     const privatePool = pool as any;
     let checkCount = 0;
 
-    privatePool.performHealthCheck = () => {
+    privatePool.performHealthCheck = async () => {
       checkCount++;
     };
 

@@ -537,7 +537,8 @@ export class ConnectionPool {
       new Promise<never>((_, reject) =>
         setTimeout(
           () => {
-            // Note: Don't increment timeoutErrors here - _acquireInternal already does it
+            // Track timeout error at outer level (Promise.race ensures this runs first)
+            this.stats.timeoutErrors++;
             reject(new Error(`Connection acquisition timeout after ${this.options.connectionTimeout}ms`));
           },
           this.options.connectionTimeout
@@ -583,7 +584,7 @@ export class ConnectionPool {
           this.waiting.splice(index, 1);
         }
 
-        this.stats.timeoutErrors++;
+        // Note: timeoutErrors is tracked at outer Promise.race level in acquire()
         reject(new Error(`Connection acquisition timeout after ${this.options.connectionTimeout}ms`));
       }, this.options.connectionTimeout);
 

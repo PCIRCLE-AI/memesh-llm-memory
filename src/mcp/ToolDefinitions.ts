@@ -5,6 +5,8 @@
  * Separated from server.ts for better maintainability.
  */
 
+import { OutputSchemas } from './schemas/OutputSchemas.js';
+
 
 /**
  * Common input schemas used across multiple tools
@@ -77,6 +79,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
       },
       required: ['task'],
     },
+    outputSchema: OutputSchemas.buddyDo,
     annotations: {
       readOnlyHint: false,      // May generate modification suggestions
       destructiveHint: false,   // Does not directly execute destructive operations
@@ -104,6 +107,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
       },
       required: ['query'],
     },
+    outputSchema: OutputSchemas.buddyRemember,
     annotations: {
       readOnlyHint: true,       // Pure read operation
       destructiveHint: false,
@@ -124,6 +128,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
         },
       },
     },
+    outputSchema: OutputSchemas.buddyHelp,
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
@@ -159,6 +164,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
       },
       required: ['phase'],
     },
+    outputSchema: OutputSchemas.workflowGuidance,
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
@@ -174,6 +180,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
       type: 'object' as const,
       properties: {},
     },
+    outputSchema: OutputSchemas.sessionHealth,
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
@@ -216,6 +223,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
       },
       required: ['featureDescription'],
     },
+    outputSchema: OutputSchemas.smartPlan,
     annotations: {
       readOnlyHint: true,       // Only generates plan, doesn't execute
       destructiveHint: false,
@@ -261,6 +269,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
       },
       required: ['toolName', 'success'],
     },
+    outputSchema: OutputSchemas.hookToolUse,
     annotations: {
       readOnlyHint: false,      // Records data
       destructiveHint: false,

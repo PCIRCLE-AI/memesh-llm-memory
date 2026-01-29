@@ -66,7 +66,7 @@ export class KnowledgeGraphStore {
       const db = this.db!;
       // ✅ FIX HIGH-2: Use IMMEDIATE mode to acquire write lock at transaction start
       // Prevents "database is locked" errors under concurrent writes
-      const transaction = db.transaction(() => {
+      db.transaction(() => {
         try {
           // Insert entity
           const insertEntity = db.prepare(`
@@ -99,7 +99,6 @@ export class KnowledgeGraphStore {
         }
       }).immediate();
 
-      transaction();
       logger.debug('Entity created', { entityName: entity.name });
     } catch (error) {
       logError(error, {
@@ -165,7 +164,7 @@ export class KnowledgeGraphStore {
     try {
       const db = this.db!;
       // ✅ FIX HIGH-2: Use IMMEDIATE mode to acquire write lock at transaction start
-      const transaction = db.transaction(() => {
+      db.transaction(() => {
         try {
           // Update entity metadata
           db.prepare(`
@@ -198,7 +197,6 @@ export class KnowledgeGraphStore {
         }
       }).immediate();
 
-      transaction();
       logger.debug('Entity updated', { entityName: entity.name });
     } catch (error) {
       logError(error, {

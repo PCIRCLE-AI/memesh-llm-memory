@@ -459,7 +459,7 @@ export class ConnectionPool {
    * @returns ConnectionMetadata with valid connection, or undefined if none available
    * @private
    */
-  private getValidConnection(): ConnectionMetadata | undefined {
+  private async getValidConnection(): Promise<ConnectionMetadata | undefined> {
     while (this.available.length > 0) {
       const metadata = this.available.shift()!;
 
@@ -556,7 +556,7 @@ export class ConnectionPool {
     }
 
     // Check for available valid connection
-    const metadata = this.getValidConnection();
+    const metadata = await this.getValidConnection();
     if (metadata) {
       metadata.lastAcquired = Date.now();
       metadata.usageCount++;

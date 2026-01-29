@@ -51,21 +51,61 @@ export const env = envSchema.parse(process.env);
 
 /**
  * Conditional validation: ANTHROPIC_API_KEY required when NOT in MCP server mode
+ * ✅ SECURITY FIX (CRITICAL-1): Added API key format validation
  */
-if (!env.MCP_SERVER_MODE && !env.ANTHROPIC_API_KEY) {
-  throw new ConfigurationError(
-    'ANTHROPIC_API_KEY is required when not running in MCP server mode.\n' +
-    'Either set ANTHROPIC_API_KEY in your .env file, or set MCP_SERVER_MODE=true\n' +
-    'Get your API key at: https://console.anthropic.com/settings/keys',
-    {
-      component: 'config',
-      method: 'initialization',
-      missingKey: 'ANTHROPIC_API_KEY',
-      mcpServerMode: env.MCP_SERVER_MODE,
-      solution: 'Set ANTHROPIC_API_KEY in .env file or enable MCP_SERVER_MODE',
-      documentationUrl: 'https://console.anthropic.com/settings/keys',
-    }
-  );
+if (!env.MCP_SERVER_MODE) {
+  // Check if API key exists
+  if (!env.ANTHROPIC_API_KEY) {
+    throw new ConfigurationError(
+      'ANTHROPIC_API_KEY is required when not running in MCP server mode.\n' +
+      'Either set ANTHROPIC_API_KEY in your .env file, or set MCP_SERVER_MODE=true\n' +
+      'Get your API key at: https://console.anthropic.com/settings/keys',
+      {
+        component: 'config',
+        method: 'initialization',
+        missingKey: 'ANTHROPIC_API_KEY',
+        mcpServerMode: env.MCP_SERVER_MODE,
+        solution: 'Set ANTHROPIC_API_KEY in .env file or enable MCP_SERVER_MODE',
+        documentationUrl: 'https://console.anthropic.com/settings/keys',
+      }
+    );
+  }
+
+  // ✅ SECURITY: Validate API key format (prevents runtime failures from malformed keys)
+  if (!env.ANTHROPIC_API_KEY.startsWith('sk-ant-')) {
+    throw new ConfigurationError(
+      'ANTHROPIC_API_KEY has invalid format.\n' +
+      'Expected format: sk-ant-...\n' +
+      'Get your API key at: https://console.anthropic.com/settings/keys',
+      {
+        component: 'config',
+        method: 'initialization',
+        invalidKey: 'ANTHROPIC_API_KEY',
+        expectedPrefix: 'sk-ant-',
+        actualPrefix: env.ANTHROPIC_API_KEY.substring(0, 7),
+        solution: 'Check your .env file for copy-paste errors',
+        documentationUrl: 'https://console.anthropic.com/settings/keys',
+      }
+    );
+  }
+
+  // ✅ SECURITY: Validate minimum length (typical Anthropic keys are 100+ chars)
+  if (env.ANTHROPIC_API_KEY.length < 50) {
+    throw new ConfigurationError(
+      'ANTHROPIC_API_KEY appears truncated or invalid (too short).\n' +
+      `Current length: ${env.ANTHROPIC_API_KEY.length} characters (minimum: 50)\n` +
+      'Please check your .env file for copy-paste errors',
+      {
+        component: 'config',
+        method: 'initialization',
+        invalidKey: 'ANTHROPIC_API_KEY',
+        actualLength: env.ANTHROPIC_API_KEY.length,
+        minimumLength: 50,
+        solution: 'Copy the complete API key from Anthropic console',
+        documentationUrl: 'https://console.anthropic.com/settings/keys',
+      }
+    );
+  }
 }
 
 /**

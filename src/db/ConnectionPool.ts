@@ -532,19 +532,36 @@ export class ConnectionPool {
    */
   async acquire(): Promise<Database.Database> {
     // ✅ FIX MEDIUM-3: Wrap entire acquisition in timeout to prevent hangs
-    return Promise.race([
-      this._acquireInternal(),
-      new Promise<never>((_, reject) =>
-        setTimeout(
-          () => {
-            // Track timeout error at outer level (Promise.race ensures this runs first)
-            this.stats.timeoutErrors++;
-            reject(new Error(`Connection acquisition timeout after ${this.options.connectionTimeout}ms`));
-          },
-          this.options.connectionTimeout
-        )
-      ),
-    ]);
+    let outerTimeoutId: NodeJS.Timeout | null = null;
+
+    try {
+      const result = await Promise.race([
+        this._acquireInternal(),
+        new Promise<never>((_, reject) => {
+          outerTimeoutId = setTimeout(
+            () => {
+              // Track timeout error at outer level (Promise.race ensures this runs first)
+              this.stats.timeoutErrors++;
+              reject(new Error(`Connection acquisition timeout after ${this.options.connectionTimeout}ms`));
+            },
+            this.options.connectionTimeout
+          );
+        }),
+      ]);
+
+      // Success - cancel outer timeout to prevent timer leak
+      if (outerTimeoutId) {
+        clearTimeout(outerTimeoutId);
+      }
+
+      return result;
+    } catch (error) {
+      // Error (including timeout) - cancel outer timeout if still pending
+      if (outerTimeoutId) {
+        clearTimeout(outerTimeoutId);
+      }
+      throw error;
+    }
   }
 
   /**

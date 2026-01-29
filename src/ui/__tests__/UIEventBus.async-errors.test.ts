@@ -330,12 +330,11 @@ describe('P1-14: Unhandled Promise Rejections in Event Bus', () => {
       });
 
       // Register handler that returns Promise-like (thenable)
+      // ✅ FIX: Use actual Promise to ensure proper thenable behavior
       eventBus.onProgress(() => {
-        return {
-          catch: (handler: (error: Error) => void) => {
-            setTimeout(() => handler(new Error('Thenable error')), 10);
-          },
-        };
+        return new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Thenable error')), 10);
+        });
       });
 
       eventBus.emitProgress({

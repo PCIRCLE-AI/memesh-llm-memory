@@ -36,6 +36,8 @@ import { PatternRepository } from './repositories/PatternRepository';
 import { AdaptationRepository } from './repositories/AdaptationRepository';
 import { RewardRepository } from './repositories/RewardRepository';
 import { StatsRepository } from './repositories/StatsRepository';
+// ✅ SECURITY FIX (HIGH-3): Import path validation to prevent path traversal
+import { validateDatabasePath } from '../../utils/pathValidation.js';
 import type { EvolutionStore } from './EvolutionStore';
 import type {
   Task,
@@ -105,8 +107,12 @@ export class SQLiteStore implements EvolutionStore {
    * Note: Call initialize() after construction to create tables and run migrations.
    */
   constructor(options: SQLiteStoreOptions = {}) {
+    // ✅ SECURITY FIX (HIGH-3): Validate database path to prevent path traversal attacks
+    const rawDbPath = options.dbPath || ':memory:';
+    const validatedDbPath = validateDatabasePath(rawDbPath, 'data/evolution');
+
     this.options = {
-      dbPath: options.dbPath || ':memory:',
+      dbPath: validatedDbPath,
       verbose: options.verbose || false,
       enableWAL: options.enableWAL !== false,
     };
@@ -491,18 +497,26 @@ export class SQLiteStore implements EvolutionStore {
   // Link Management
   // ========================================================================
 
+  /**
+   * ✅ SECURITY FIX (HIGH-1): Use JSON functions for exact matching
+   * Replaces LIKE pattern matching to prevent SQL injection edge cases
+   * and avoid double-escaping risks
+   */
   async queryLinkedSpans(spanId: string): Promise<Span[]> {
     // Find all spans that link to this span
-    // Escape special characters to prevent LIKE injection
-    const escapedSpanId = this.escapeLikePattern(spanId);
-
+    // Use json_extract for exact match instead of LIKE patterns
     const stmt = this.db.prepare(`
-      SELECT * FROM spans WHERE links IS NOT NULL AND links LIKE ? ESCAPE '\\'
+      SELECT * FROM spans
+      WHERE links IS NOT NULL
+        AND json_valid(links)
+        AND EXISTS (
+          SELECT 1 FROM json_each(links)
+          WHERE json_extract(value, '$.span_id') = ?
+        )
     `);
 
-    // Build LIKE pattern without string interpolation (anti-pattern)
-    const pattern = '%"span_id":"' + escapedSpanId + '"%';
-    const rows = stmt.all(pattern) as SpanRow[];
+    // ✅ Pure parameterization - no string concatenation
+    const rows = stmt.all(spanId) as SpanRow[];
 
     // Optimized: Pre-allocate array with known length
     const spans: Span[] = new Array(rows.length);

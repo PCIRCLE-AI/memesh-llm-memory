@@ -5,6 +5,52 @@ All notable changes to Claude Code Buddy will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2026-01-30
+
+### Security
+
+#### HIGH Priority Fixes
+
+- **SQL Injection Prevention (PatternRepository)**
+  - Added whitelist validation for ORDER BY clauses in pattern queries
+  - Prevents SQL injection via `sort_by` and `sort_order` parameters
+  - Location: `src/evolution/storage/repositories/PatternRepository.ts:122-138`
+
+- **Event Loop Blocking Fix (ConnectionPool)**
+  - Replaced synchronous busy-wait with async retry mechanism
+  - Uses `setTimeout` for non-blocking delays during connection retries
+  - Prevents event loop blocking during database connection failures
+  - Location: `src/db/ConnectionPool.ts:129-169, 807-835`
+
+- **Race Condition in E2E Slot Acquisition (GlobalResourcePool)**
+  - Implemented proper promise-based mutex using chaining
+  - Prevents TOCTOU race conditions when multiple agents acquire E2E slots
+  - Atomic check-and-set operations now properly synchronized
+  - Location: `src/orchestrator/GlobalResourcePool.ts:54, 197-213`
+
+### Fixed
+
+#### MAJOR Priority Fixes
+
+- **Resource Exhaustion Prevention**
+  - Implemented batch processing with `CONCURRENCY_LIMIT = 10` in:
+    - `TaskAnalyzer.analyzeBatch()` - prevents memory/CPU exhaustion on large task batches
+    - `AgentRouter.routeBatch()` - limits concurrent routing decisions
+  - Location: `src/orchestrator/TaskAnalyzer.ts:333-345`, `src/orchestrator/AgentRouter.ts:413-425`
+
+- **Error Handling Verification (UninstallManager)**
+  - Verified all catch blocks properly handle errors
+  - Error logging to report or intentional fallback behavior confirmed
+
+### Technical Improvements
+
+- Promise-based mutex implementation without external dependencies
+- Async retry with exponential backoff for database connections
+- Concurrency control via batching pattern
+- SQL injection prevention via whitelisting approach
+
+**Total Changes**: 40 files modified, +2213 insertions, -413 deletions
+
 ## [2.2.0] - 2026-01-20
 
 ### Fixed

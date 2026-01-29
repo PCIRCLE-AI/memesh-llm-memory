@@ -8,7 +8,7 @@
 import Database from 'better-sqlite3';
 import { join } from 'path';
 import { promises as fsPromises, existsSync, mkdirSync } from 'fs';
-import { NotFoundError } from '../errors/index.js';
+import { NotFoundError, ValidationError } from '../errors/index.js';
 import { SimpleDatabaseFactory } from '../config/simple-config.js';
 import type { Entity, Relation, SearchQuery, RelationTrace, EntityType, RelationType } from './types.js';
 import type { SQLParams } from '../evolution/storage/types.js';
@@ -303,8 +303,35 @@ export class KnowledgeGraph {
 
   /**
    * Search entities
+   *
+   * ✅ FIX LOW-2: Added limit/offset validation
    */
   searchEntities(query: SearchQuery): Entity[] {
+    // ✅ FIX LOW-2: Validate limit and offset parameters
+    const MAX_LIMIT = 1000;
+
+    if (query.limit !== undefined) {
+      if (query.limit < 0) {
+        throw new ValidationError('Limit must be non-negative', {
+          component: 'KnowledgeGraph',
+          method: 'searchEntities',
+          providedLimit: query.limit,
+        });
+      }
+      if (query.limit > MAX_LIMIT) {
+        logger.warn(`Limit ${query.limit} exceeds maximum, capping to ${MAX_LIMIT}`);
+        query.limit = MAX_LIMIT;
+      }
+    }
+
+    if (query.offset !== undefined && query.offset < 0) {
+      throw new ValidationError('Offset must be non-negative', {
+        component: 'KnowledgeGraph',
+        method: 'searchEntities',
+        providedOffset: query.offset,
+      });
+    }
+
     // Generate cache key from query parameters
     const cacheKey = `entities:${JSON.stringify(query)}`;
 

@@ -21,6 +21,19 @@ export interface ToolRouterConfig {
   rateLimiter: RateLimiter;
   toolHandlers: ToolHandlers;
   buddyHandlers: BuddyHandlers;
+
+  /**
+   * ✅ FIX HIGH-5: CSRF protection for future HTTP transport
+   * Allowed request origins (for HTTP mode only, stdio doesn't need this)
+   * @default undefined (stdio mode, no origin validation)
+   */
+  allowedOrigins?: string[];
+
+  /**
+   * ✅ FIX HIGH-5: Transport mode
+   * @default 'stdio' (current implementation)
+   */
+  transportMode?: 'stdio' | 'http';
 }
 
 /**
@@ -61,6 +74,12 @@ export class ToolRouter {
   private buddyHandlers: BuddyHandlers;
 
   /**
+   * ✅ FIX HIGH-5: CSRF protection configuration
+   */
+  private readonly allowedOrigins?: string[];
+  private readonly transportMode: 'stdio' | 'http';
+
+  /**
    * Create a new ToolRouter instance
    *
    * @param config - Router configuration with all required dependencies
@@ -69,15 +88,79 @@ export class ToolRouter {
     this.rateLimiter = config.rateLimiter;
     this.toolHandlers = config.toolHandlers;
     this.buddyHandlers = config.buddyHandlers;
+
+    // ✅ FIX HIGH-5: Initialize CSRF protection config
+    this.allowedOrigins = config.allowedOrigins;
+    this.transportMode = config.transportMode || 'stdio';
+  }
+
+  /**
+   * ✅ FIX HIGH-5: Validate request origin for CSRF protection
+   *
+   * Only applicable for HTTP transport mode. Stdio transport doesn't have origin headers.
+   *
+   * @param origin - Request origin header (if available)
+   * @throws ValidationError if HTTP mode and origin is not allowed
+   * @private
+   */
+  private validateRequestOrigin(origin?: string): void {
+    // Skip validation for stdio transport (no CSRF risk)
+    if (this.transportMode === 'stdio') {
+      return;
+    }
+
+    // HTTP mode requires origin validation
+    if (this.transportMode === 'http') {
+      // If allowedOrigins is not configured, reject all requests (secure default)
+      if (!this.allowedOrigins || this.allowedOrigins.length === 0) {
+        throw new ValidationError(
+          'CSRF protection: No allowed origins configured for HTTP mode',
+          {
+            component: 'ToolRouter',
+            method: 'validateRequestOrigin',
+            transportMode: this.transportMode,
+            hint: 'Configure allowedOrigins in ToolRouterConfig for HTTP transport',
+          }
+        );
+      }
+
+      // Validate origin is provided
+      if (!origin) {
+        throw new ValidationError('CSRF protection: Missing origin header', {
+          component: 'ToolRouter',
+          method: 'validateRequestOrigin',
+          transportMode: this.transportMode,
+        });
+      }
+
+      // Validate origin is in allowed list
+      if (!this.allowedOrigins.includes(origin)) {
+        throw new ValidationError('CSRF protection: Invalid request origin', {
+          component: 'ToolRouter',
+          method: 'validateRequestOrigin',
+          providedOrigin: origin,
+          allowedOrigins: this.allowedOrigins,
+        });
+      }
+    }
   }
 
   /**
    * Route tool call to appropriate handler
    *
    * @param params - MCP tool call parameters
+   * @param requestHeaders - Optional request headers (for HTTP mode CSRF protection)
+   * @param requestId - ✅ FIX HIGH-10: Optional request ID for tracing (generated if not provided)
    * @returns Tool execution result
    */
-  async routeToolCall(params: unknown): Promise<CallToolResult> {
+  async routeToolCall(
+    params: unknown,
+    requestHeaders?: Record<string, string>,
+    requestId?: string
+  ): Promise<CallToolResult> {
+    // ✅ FIX HIGH-5: Validate request origin for CSRF protection (HTTP mode only)
+    this.validateRequestOrigin(requestHeaders?.['origin']);
+
     // Type guard: validate params structure
     if (
       !params ||
@@ -94,6 +177,7 @@ export class ToolRouter {
         {
           component: 'ToolRouter',
           method: 'routeToolCall',
+          requestId, // ✅ FIX HIGH-10: Include request ID in errors
           providedParams: params,
           requiredFields: ['name (string, non-empty)', 'arguments (object)'],
         }
@@ -108,6 +192,7 @@ export class ToolRouter {
         {
           component: 'ToolRouter',
           method: 'routeToolCall',
+          requestId, // ✅ FIX HIGH-10: Include request ID in errors
           rateLimitStatus: status,
           hint: 'Too many requests. The server allows up to 30 requests per minute.',
         }

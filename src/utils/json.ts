@@ -118,9 +118,13 @@ export function safeJsonParse<T>(jsonString: string | null, fallback: T): T {
   try {
     return JSON.parse(jsonString) as T;
   } catch (error) {
+    // ✅ FIX LOW-3: Only truncate if input is long, include length for debugging
     logger.warn('JSON parse error:', {
       error: error instanceof Error ? error.message : String(error),
-      input: jsonString.substring(0, 100), // Log first 100 chars for debugging
+      input: jsonString.length > 100
+        ? jsonString.substring(0, 100) + '... (truncated)'
+        : jsonString,
+      inputLength: jsonString.length,
     });
     return fallback;
   }

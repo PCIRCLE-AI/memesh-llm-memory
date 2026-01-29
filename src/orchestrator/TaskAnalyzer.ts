@@ -11,6 +11,7 @@
 import { Task, TaskAnalysis, TaskComplexity, ExecutionMode, TaskCapability } from './types.js';
 import { MODEL_COSTS, CLAUDE_MODELS } from '../config/models.js';
 import { type MicroDollars, calculateTokenCost, addCosts } from '../utils/money.js';
+import { ValidationError } from '../errors/index.js'; // ✅ FIX HIGH-6: Import ValidationError
 
 /**
  * Complexity detection configuration
@@ -106,8 +107,32 @@ export class TaskAnalyzer {
 
   /**
    * 判斷任務複雜度
+   *
+   * ✅ FIX HIGH-6: Added input validation to prevent DoS attacks
    */
   private determineComplexity(task: Task): TaskComplexity {
+    // ✅ FIX HIGH-6: Validate description length to prevent DoS
+    const MAX_DESCRIPTION_LENGTH = 10000; // 10KB max
+    if (!task.description || typeof task.description !== 'string') {
+      throw new ValidationError('Task description must be a non-empty string', {
+        component: 'TaskAnalyzer',
+        method: 'determineComplexity',
+        providedType: typeof task.description,
+      });
+    }
+
+    if (task.description.length > MAX_DESCRIPTION_LENGTH) {
+      throw new ValidationError(
+        `Task description too long (max ${MAX_DESCRIPTION_LENGTH} characters)`,
+        {
+          component: 'TaskAnalyzer',
+          method: 'determineComplexity',
+          providedLength: task.description.length,
+          maxLength: MAX_DESCRIPTION_LENGTH,
+        }
+      );
+    }
+
     const description = task.description.toLowerCase();
     const wordCount = task.description.split(/\s+/).length;
 
@@ -302,9 +327,21 @@ export class TaskAnalyzer {
 
   /**
    * 批次分析多個任務
+   *
+   * ✅ FIX MAJOR-2: Limit concurrency to prevent resource exhaustion
    */
   async analyzeBatch(tasks: Task[]): Promise<TaskAnalysis[]> {
-    return Promise.all(tasks.map(task => this.analyze(task)));
+    const CONCURRENCY_LIMIT = 10; // Maximum 10 concurrent analyses
+    const results: TaskAnalysis[] = [];
+
+    // Process in batches of CONCURRENCY_LIMIT
+    for (let i = 0; i < tasks.length; i += CONCURRENCY_LIMIT) {
+      const batch = tasks.slice(i, i + CONCURRENCY_LIMIT);
+      const batchResults = await Promise.all(batch.map(task => this.analyze(task)));
+      results.push(...batchResults);
+    }
+
+    return results;
   }
 
   /**

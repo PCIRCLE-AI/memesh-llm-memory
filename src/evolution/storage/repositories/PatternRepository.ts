@@ -119,11 +119,21 @@ export class PatternRepository {
       params.push(query.observed_before.toISOString());
     }
 
-    // Sorting
+    // ✅ FIX HIGH-1: Type-safe sorting to prevent SQL injection
     if (query.sort_by) {
+      const ALLOWED_SORT_FIELDS = ['confidence', 'occurrences', 'first_observed', 'last_observed', 'id'];
+      if (!ALLOWED_SORT_FIELDS.includes(query.sort_by)) {
+        throw new Error(`Invalid sort field: ${query.sort_by}. Allowed: ${ALLOWED_SORT_FIELDS.join(', ')}`);
+      }
       sql += ` ORDER BY ${query.sort_by}`;
+
       if (query.sort_order) {
-        sql += ` ${query.sort_order.toUpperCase()}`;
+        const ALLOWED_SORT_ORDER = ['ASC', 'DESC'];
+        const normalizedOrder = query.sort_order.toUpperCase();
+        if (!ALLOWED_SORT_ORDER.includes(normalizedOrder)) {
+          throw new Error(`Invalid sort order: ${query.sort_order}. Allowed: ASC, DESC`);
+        }
+        sql += ` ${normalizedOrder}`;
       }
     }
 

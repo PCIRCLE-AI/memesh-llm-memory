@@ -39,6 +39,14 @@ export interface RetryOptions {
    * Operation name for logging
    */
   operationName?: string;
+
+  /**
+   * ✅ FIX HIGH-9: Timeout for individual operation attempts (milliseconds)
+   * If an operation takes longer than this, it will be aborted and retried
+   * Default: 30000 (30 seconds)
+   * Set to 0 to disable timeout
+   */
+  timeout?: number;
 }
 
 export interface RetryResult<T> {
@@ -103,12 +111,36 @@ function isRetryableError(
       'ENETUNREACH',
       'EAI_AGAIN',
     ];
+
+    // ✅ FIX BUG-8: Check both error.code property and error.message
+    // Security: Validate error.code is a real Node.js error, not fake
+    const errorObj = error as any;
+    if (typeof errorObj.code === 'string' && networkErrorCodes.includes(errorObj.code)) {
+      // Additional validation: check if error looks like a real Node.js error
+      // Real Node.js errors have syscall or errno properties
+      if (errorObj.syscall || errorObj.errno !== undefined) {
+        return true;
+      }
+      // Log suspicious error codes without syscall/errno
+      logger.warn('[Retry] Suspicious error code without syscall/errno', {
+        code: errorObj.code,
+        hasMessage: !!errorObj.message,
+        errorType: typeof error,
+      });
+    }
+
+    // Also check message for backwards compatibility
     if (networkErrorCodes.some(code => error.message.includes(code))) {
       return true;
     }
 
     // Fetch API network errors
     if (error.name === 'FetchError' || error.name === 'NetworkError') {
+      return true;
+    }
+
+    // ✅ FIX HIGH-9: Timeout errors are retryable (transient failures)
+    if (error.message && error.message.includes('timed out after')) {
       return true;
     }
   }
@@ -165,6 +197,56 @@ function calculateDelay(
  */
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * ✅ FIX HIGH-9: Wrap operation with timeout protection
+ *
+ * Ensures that operations don't hang indefinitely. If an operation takes
+ * longer than the specified timeout, it will be aborted and an error thrown.
+ *
+ * @param operation - Async function to execute with timeout
+ * @param timeoutMs - Timeout in milliseconds (0 = no timeout)
+ * @param operationName - Operation name for error messages
+ * @returns Result from operation
+ * @throws Error if operation times out
+ *
+ * @private
+ * @internal
+ */
+async function withTimeout<T>(
+  operation: () => Promise<T>,
+  timeoutMs: number,
+  operationName: string
+): Promise<T> {
+  // No timeout protection if timeout is 0 or negative
+  if (timeoutMs <= 0) {
+    return operation();
+  }
+
+  // Create AbortController for cancellation
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  try {
+    // Race between operation and timeout
+    const result = await Promise.race([
+      operation(),
+      new Promise<never>((_, reject) => {
+        controller.signal.addEventListener('abort', () => {
+          reject(new Error(`${operationName} timed out after ${timeoutMs}ms`));
+        });
+      }),
+    ]);
+
+    clearTimeout(timeoutId);
+    return result;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
 }
 
 /**
@@ -241,6 +323,7 @@ export async function retryWithBackoff<T>(
     retryableStatusCodes = DEFAULT_RETRYABLE_STATUS_CODES,
     isRetryable: customIsRetryable,
     operationName = 'API operation',
+    timeout = 30000, // ✅ FIX HIGH-9: Default 30s timeout
   } = options;
 
   let lastError: Error | unknown;
@@ -250,7 +333,8 @@ export async function retryWithBackoff<T>(
     try {
       logger.debug(`[Retry] Attempt ${attempt + 1}/${maxRetries + 1} for ${operationName}`);
 
-      const result = await operation();
+      // ✅ FIX HIGH-9: Wrap operation with timeout protection
+      const result = await withTimeout(operation, timeout, operationName);
 
       if (attempt > 0) {
         logger.info(`[Retry] ✅ ${operationName} succeeded on attempt ${attempt + 1} after ${totalDelay}ms delay`, {
@@ -271,6 +355,7 @@ export async function retryWithBackoff<T>(
         logger.warn(`[Retry] ❌ ${operationName} failed with non-retryable error`, {
           operation: operationName,
           error: getErrorMessage(error),
+          stack: error instanceof Error ? error.stack : undefined,
           attempt: attempt + 1,
         });
         throw error;
@@ -283,6 +368,7 @@ export async function retryWithBackoff<T>(
           attempts: maxRetries + 1,
           totalDelay,
           error: getErrorMessage(error),
+          stack: error instanceof Error ? error.stack : undefined,
         });
         throw lastError;
       }
@@ -297,6 +383,7 @@ export async function retryWithBackoff<T>(
         delay,
         totalDelay,
         error: getErrorMessage(error),
+        stack: error instanceof Error ? error.stack : undefined,
       });
 
       await sleep(delay);
@@ -310,6 +397,10 @@ export async function retryWithBackoff<T>(
 /**
  * Retry with detailed result (doesn't throw on failure)
  *
+ * ✅ FIX BUG-8: Accurately tracks attempt count across retries
+ * Implements own retry logic to properly count attempts instead of
+ * delegating to retryWithBackoff which doesn't return attempt count.
+ *
  * @example
  * ```typescript
  * const result = await retryWithBackoffDetailed(
@@ -319,6 +410,7 @@ export async function retryWithBackoff<T>(
  *
  * if (result.success) {
  *   console.log('Generated audio:', result.result);
+ *   console.log('Took', result.attempts, 'attempts');
  * } else {
  *   console.error('Failed after', result.attempts, 'attempts');
  * }
@@ -328,27 +420,108 @@ export async function retryWithBackoffDetailed<T>(
   operation: () => Promise<T>,
   options: RetryOptions = {}
 ): Promise<RetryResult<T>> {
-  const startTime = Date.now();
-  let attempts = 0;
+  const {
+    maxRetries = 3,
+    baseDelay = 1000,
+    enableJitter = true,
+    retryableStatusCodes = DEFAULT_RETRYABLE_STATUS_CODES,
+    isRetryable: customIsRetryable,
+    operationName = 'API operation',
+    timeout = 30000, // ✅ FIX HIGH-9: Default 30s timeout
+  } = options;
 
-  try {
-    const result = await retryWithBackoff(operation, options);
-    attempts = 1; // If successful on first try
+  let lastError: Error | unknown;
+  let totalDelay = 0;
 
-    return {
-      success: true,
-      result,
-      attempts,
-      totalDelay: Date.now() - startTime,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error : new Error(String(error)),
-      attempts: (options.maxRetries ?? 3) + 1,
-      totalDelay: Date.now() - startTime,
-    };
+  // ✅ FIX BUG-8: Track actual attempts correctly
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      logger.debug(`[Retry] Attempt ${attempt + 1}/${maxRetries + 1} for ${operationName}`);
+
+      // ✅ FIX HIGH-9: Wrap operation with timeout protection
+      const result = await withTimeout(operation, timeout, operationName);
+
+      if (attempt > 0) {
+        logger.info(`[Retry] ✅ ${operationName} succeeded on attempt ${attempt + 1} after ${totalDelay}ms delay`, {
+          operation: operationName,
+          attempts: attempt + 1,
+          totalDelay,
+        });
+      }
+
+      // ✅ FIX BUG-8: Return actual attempt count (1-based)
+      return {
+        success: true,
+        result,
+        attempts: attempt + 1,
+        totalDelay,
+      };
+    } catch (error) {
+      lastError = error;
+
+      // Check if error is retryable
+      const shouldRetry = isRetryableError(error, retryableStatusCodes, customIsRetryable);
+
+      if (!shouldRetry) {
+        logger.warn(`[Retry] ❌ ${operationName} failed with non-retryable error`, {
+          operation: operationName,
+          error: getErrorMessage(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          attempt: attempt + 1,
+        });
+
+        // ✅ FIX BUG-8: Return actual attempt count on non-retryable error
+        return {
+          success: false,
+          error: error instanceof Error ? error : new Error(String(error)),
+          attempts: attempt + 1,
+          totalDelay,
+        };
+      }
+
+      // Don't retry if we've exhausted all attempts
+      if (attempt >= maxRetries) {
+        logger.error(`[Retry] ❌ ${operationName} failed after ${maxRetries + 1} attempts`, {
+          operation: operationName,
+          attempts: maxRetries + 1,
+          totalDelay,
+          error: getErrorMessage(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+
+        // ✅ FIX BUG-8: Return actual attempt count on exhausted retries
+        return {
+          success: false,
+          error: lastError instanceof Error ? lastError : new Error(String(lastError)),
+          attempts: maxRetries + 1,
+          totalDelay,
+        };
+      }
+
+      // Calculate delay with exponential backoff and jitter
+      const delay = calculateDelay(attempt, baseDelay, enableJitter);
+      totalDelay += delay;
+
+      logger.warn(`[Retry] ⚠️  ${operationName} failed (attempt ${attempt + 1}), retrying in ${delay}ms`, {
+        operation: operationName,
+        attempt: attempt + 1,
+        delay,
+        totalDelay,
+        error: getErrorMessage(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
+      await sleep(delay);
+    }
   }
+
+  // Should never reach here, but TypeScript needs it
+  return {
+    success: false,
+    error: lastError instanceof Error ? lastError : new Error(String(lastError)),
+    attempts: maxRetries + 1,
+    totalDelay,
+  };
 }
 
 /**

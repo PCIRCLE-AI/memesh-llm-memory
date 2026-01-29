@@ -439,8 +439,18 @@ export class Orchestrator {
         return result;
       };
 
-      const taskId = await this.backgroundExecutor.executeTask(wrappedTask, config);
-      return { taskId };
+      // ✅ FIX MEDIUM-2: Catch and log BackgroundExecutor errors
+      try {
+        const taskId = await this.backgroundExecutor.executeTask(wrappedTask, config);
+        return { taskId };
+      } catch (error) {
+        logger.error('[Orchestrator] Failed to submit background task:', {
+          taskId: task.id,
+          taskDescription: task.description,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        throw error; // Re-throw after logging
+      }
     } else if (config.mode === 'foreground') {
       // Foreground execution (existing behavior)
       const result = await this.executeTask(task);
@@ -455,11 +465,23 @@ export class Orchestrator {
           ...config,
           mode: 'background',
         };
-        const taskId = await this.backgroundExecutor.executeTask(
-          async (context: unknown) => this.executeTask(task),
-          backgroundConfig
-        );
-        return { taskId };
+
+        // ✅ FIX MEDIUM-2: Catch and log BackgroundExecutor errors
+        try {
+          const taskId = await this.backgroundExecutor.executeTask(
+            async (context: unknown) => this.executeTask(task),
+            backgroundConfig
+          );
+          return { taskId };
+        } catch (error) {
+          logger.error('[Orchestrator] Failed to submit complex task to background:', {
+            taskId: task.id,
+            taskDescription: task.description,
+            complexity: analysis.complexity,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          throw error; // Re-throw after logging
+        }
       } else {
         const result = await this.executeTask(task);
         return { result };
@@ -525,9 +547,46 @@ export class Orchestrator {
 
   /**
    * 關閉 Orchestrator（清理資源）
+   *
+   * ✅ FIX MAJOR-1: Comprehensive resource cleanup
+   * Prevents resource leaks by cleaning up all components:
+   * - BackgroundExecutor: Cancels running tasks
+   * - ResourceMonitor: Disposes intervals
+   * - GlobalResourcePool: Releases E2E slot
+   * - KnowledgeAgent: Closes database connection
    */
   close(): void {
-    this.knowledge.close();
+    // 1. Cancel all running background tasks
+    const runningTasks = this.backgroundExecutor.getTasksByStatus('running');
+    for (const task of runningTasks) {
+      this.backgroundExecutor.cancelTask(task.taskId).catch(error => {
+        // Log but don't throw - we want to continue cleanup
+        logger.warn(`Failed to cancel task ${task.taskId} during shutdown:`, error);
+      });
+    }
+
+    // 2. Dispose ResourceMonitor (clears all intervals)
+    try {
+      this.resourceMonitor.dispose();
+    } catch (error) {
+      logger.warn('Failed to dispose ResourceMonitor:', error);
+    }
+
+    // 3. Release E2E slot in GlobalResourcePool
+    try {
+      this.resourcePool.releaseE2ESlot(this.orchestratorId);
+    } catch (error) {
+      logger.warn(`Failed to release E2E slot for ${this.orchestratorId}:`, error);
+    }
+
+    // 4. Close KnowledgeAgent database connection
+    try {
+      this.knowledge.close();
+    } catch (error) {
+      logger.warn('Failed to close KnowledgeAgent:', error);
+    }
+
+    logger.info(`Orchestrator ${this.orchestratorId} shutdown complete`);
   }
 }
 

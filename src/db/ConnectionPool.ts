@@ -229,6 +229,10 @@ export class ConnectionPool {
   private healthCheckTimer: NodeJS.Timeout | null = null;
   private isShuttingDown = false;
 
+  // ✅ FIX P1-16: Track consecutive health check errors for escalation
+  private healthCheckErrorCount: number = 0;
+  private readonly MAX_CONSECUTIVE_HEALTH_CHECK_ERRORS = 5;
+
   /**
    * Create a new connection pool
    *
@@ -325,6 +329,9 @@ export class ConnectionPool {
    * Internal method to create and configure SQLite connections.
    * Applies optimizations similar to SimpleDatabaseFactory.
    *
+   * ✅ FIX HIGH-2: Removed retry logic to prevent event loop blocking
+   * Retries are now handled by async callers (acquire, healthCheck, restorePoolSize)
+   *
    * @returns Configured Database instance
    * @throws Error if connection creation fails
    *
@@ -336,21 +343,94 @@ export class ConnectionPool {
     });
 
     // Set busy timeout (5 seconds)
-    db.pragma('busy_timeout = 5000');
-
-    // Enable WAL mode for better concurrency (except in-memory)
-    if (this.dbPath !== ':memory:') {
-      db.pragma('journal_mode = WAL');
-      // Increase cache size for better query performance (10MB)
-      db.pragma('cache_size = -10000');
-      // Enable memory-mapped I/O (128MB)
-      db.pragma('mmap_size = 134217728');
+    try {
+      db.pragma('busy_timeout = 5000');
+    } catch (error) {
+      logger.warn('[ConnectionPool] Could not set busy_timeout pragma:', error);
     }
 
-    // Enable foreign key constraints
+    // ✅ FIX LOW-3: Graceful degradation when pragmas fail
+    // Enable WAL mode for better concurrency (except in-memory)
+    if (this.dbPath !== ':memory:') {
+      try {
+        const journalMode = db.pragma('journal_mode = WAL', { simple: true }) as string;
+        if (journalMode.toLowerCase() !== 'wal') {
+          logger.warn('[ConnectionPool] Failed to enable WAL mode, using: ' + journalMode);
+        }
+      } catch (error) {
+        logger.warn('[ConnectionPool] Could not set journal_mode to WAL:', error);
+      }
+
+      // Increase cache size for better query performance (10MB)
+      try {
+        db.pragma('cache_size = -10000');
+      } catch (error) {
+        logger.debug('[ConnectionPool] Could not set cache_size:', error);
+      }
+
+      // Enable memory-mapped I/O (128MB)
+      try {
+        db.pragma('mmap_size = 134217728');
+      } catch (error) {
+        logger.debug('[ConnectionPool] Could not set mmap_size:', error);
+      }
+    }
+
+    // Enable foreign key constraints (critical - throw if this fails)
     db.pragma('foreign_keys = ON');
 
     return db;
+  }
+
+  /**
+   * Create connection with retry logic (async)
+   *
+   * ✅ FIX HIGH-2: Async retry logic with proper delays (no event loop blocking)
+   *
+   * @param context - Context string for logging
+   * @returns Configured Database instance
+   * @throws Error if connection creation fails after all retries
+   *
+   * @private
+   */
+  private async createConnectionWithRetry(context: string): Promise<Database.Database> {
+    const MAX_RETRIES = 3;
+    const RETRY_DELAYS = [100, 300, 1000]; // Exponential backoff in ms
+
+    let lastError: Error | undefined;
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        return this.createConnection();
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+
+        // Check if error is retryable (SQLITE_BUSY or database locked)
+        const isRetryable =
+          lastError.message.includes('SQLITE_BUSY') ||
+          lastError.message.includes('database is locked') ||
+          lastError.message.includes('SQLITE_LOCKED');
+
+        if (!isRetryable || attempt === MAX_RETRIES - 1) {
+          // Not retryable or last attempt - throw error
+          throw lastError;
+        }
+
+        // Wait before retry (async, no event loop blocking!)
+        const delay = RETRY_DELAYS[attempt];
+        logger.warn(`[ConnectionPool] ${context}: Connection creation failed, retrying...`, {
+          attempt: attempt + 1,
+          maxRetries: MAX_RETRIES,
+          delay,
+          error: lastError.message,
+        });
+
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+
+    // Should never reach here, but TypeScript needs it
+    throw lastError || new Error('Connection creation failed');
   }
 
   /**
@@ -400,7 +480,8 @@ export class ConnectionPool {
 
       // Create replacement connection
       try {
-        const newDb = this.createConnection();
+        // ✅ FIX HIGH-2: Use async retry to avoid blocking event loop
+        const newDb = await this.createConnectionWithRetry('acquire fallback');
         const newMetadata: ConnectionMetadata = {
           db: newDb,
           lastAcquired: 0,
@@ -450,6 +531,26 @@ export class ConnectionPool {
    * ```
    */
   async acquire(): Promise<Database.Database> {
+    // ✅ FIX MEDIUM-3: Wrap entire acquisition in timeout to prevent hangs
+    return Promise.race([
+      this._acquireInternal(),
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => {
+            // Note: Don't increment timeoutErrors here - _acquireInternal already does it
+            reject(new Error(`Connection acquisition timeout after ${this.options.connectionTimeout}ms`));
+          },
+          this.options.connectionTimeout
+        )
+      ),
+    ]);
+  }
+
+  /**
+   * ✅ FIX MEDIUM-3: Internal acquisition logic (extracted for timeout wrapping)
+   * @private
+   */
+  private async _acquireInternal(): Promise<Database.Database> {
     if (this.isShuttingDown) {
       throw new Error('Pool is shutting down');
     }
@@ -599,8 +700,53 @@ export class ConnectionPool {
    * @private
    */
   private startHealthCheck(): void {
+    // ✅ FIX BUG-5: Clear existing timer before creating new one to prevent duplicates
+    if (this.healthCheckTimer) {
+      clearInterval(this.healthCheckTimer);
+    }
+
+    // ✅ FIX BUG-5: Wrap performHealthCheck in try-catch to prevent timer breakage
+    // ✅ FIX P1-16: Track consecutive errors and escalate on persistent failures
+    // ✅ FIX HIGH-2: Handle async performHealthCheck
     this.healthCheckTimer = setInterval(() => {
-      this.performHealthCheck();
+      this.performHealthCheck()
+        .then(() => {
+          // Reset error count on successful health check
+          this.healthCheckErrorCount = 0;
+        })
+        .catch((error) => {
+          this.healthCheckErrorCount++;
+
+          logger.error('[ConnectionPool] Health check error:', {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            consecutiveErrors: this.healthCheckErrorCount,
+          });
+
+          // ✅ FIX P1-16: Escalate after consecutive failures
+          if (this.healthCheckErrorCount >= this.MAX_CONSECUTIVE_HEALTH_CHECK_ERRORS) {
+            logger.error(
+              `[ConnectionPool] Health check failed ${this.healthCheckErrorCount} times consecutively - shutting down pool`,
+              {
+                dbPath: this.dbPath,
+                maxErrors: this.MAX_CONSECUTIVE_HEALTH_CHECK_ERRORS,
+              }
+            );
+
+            // Clear the timer to prevent further checks
+            if (this.healthCheckTimer) {
+              clearInterval(this.healthCheckTimer);
+              this.healthCheckTimer = null;
+            }
+
+            // Initiate graceful shutdown
+            this.shutdown().catch((shutdownError) => {
+              logger.error('[ConnectionPool] Shutdown after health check failures failed:', {
+                error: shutdownError instanceof Error ? shutdownError.message : String(shutdownError),
+              });
+            });
+          }
+        });
     }, this.options.healthCheckInterval);
   }
 
@@ -610,9 +756,17 @@ export class ConnectionPool {
    * Scans for idle connections that have exceeded idleTimeout and recycles them.
    * Recycling involves closing the stale connection and creating a fresh one.
    *
+   * ✅ FIX MEDIUM-1: Skip health check if pool is shutting down
+   * ✅ FIX HIGH-2: Made async to use non-blocking retry logic
+   *
    * @private
    */
-  private performHealthCheck(): void {
+  private async performHealthCheck(): Promise<void> {
+    // ✅ FIX MEDIUM-1: Don't perform health checks during shutdown
+    if (this.isShuttingDown) {
+      return;
+    }
+
     const now = Date.now();
     let recycledCount = 0;
 
@@ -634,12 +788,24 @@ export class ConnectionPool {
         try {
           metadata.db.close();
         } catch (error) {
+          // ✅ FIX MEDIUM-1: Implement proper error recovery for zombie connections
           logger.error('Error closing stale connection:', error);
+
+          // Force cleanup: remove zombie connection from pool to prevent accumulation
+          const poolIndex = this.pool.indexOf(metadata);
+          if (poolIndex !== -1) {
+            this.pool.splice(poolIndex, 1);
+            logger.warn('[ConnectionPool] Removed zombie connection from pool', {
+              poolSize: this.pool.length,
+              targetSize: this.options.maxConnections,
+            });
+          }
         }
 
         // Create new connection
         try {
-          const newDb = this.createConnection();
+          // ✅ FIX HIGH-2: Use async retry to avoid blocking event loop
+          const newDb = await this.createConnectionWithRetry('health check');
           const newMetadata: ConnectionMetadata = {
             db: newDb,
             lastAcquired: 0,
@@ -666,6 +832,70 @@ export class ConnectionPool {
 
     if (recycledCount > 0) {
       logger.info(`Recycled ${recycledCount} idle connections`);
+    }
+
+    // ✅ FIX MAJOR-7: Restore pool to target size after degradation
+    await this.restorePoolSize();
+  }
+
+  /**
+   * ✅ FIX MAJOR-7: Restore degraded pool to maxConnections target
+   * ✅ FIX HIGH-2: Made async to use non-blocking retry logic
+   *
+   * When connection recycling fails, the pool can degrade (shrink from 5 → 4 → 3 → 1).
+   * This method detects degradation and attempts to restore the pool to its configured size.
+   *
+   * Called from performHealthCheck() to ensure pool maintains target size over time.
+   */
+  private async restorePoolSize(): Promise<void> {
+    const currentSize = this.pool.length;
+    const targetSize = this.options.maxConnections;
+    const deficit = targetSize - currentSize;
+
+    if (deficit > 0) {
+      logger.warn('[ConnectionPool] Pool degraded - attempting restoration', {
+        currentSize,
+        targetSize,
+        deficit,
+      });
+
+      let restored = 0;
+      for (let i = 0; i < deficit; i++) {
+        try {
+          // ✅ FIX HIGH-2: Use async retry to avoid blocking event loop
+          const newDb = await this.createConnectionWithRetry('pool restoration');
+          const metadata: ConnectionMetadata = {
+            db: newDb,
+            lastAcquired: 0,
+            lastReleased: Date.now(),
+            usageCount: 0,
+          };
+
+          this.pool.push(metadata);
+          this.available.push(metadata);
+          restored++;
+        } catch (error) {
+          logger.error('[ConnectionPool] Failed to restore pool connection:', error);
+
+          // If we can't create ANY connections, pool is critically degraded
+          if (this.pool.length === 0) {
+            throw new Error(
+              'Connection pool completely degraded - no connections available. ' +
+              'Database may be locked or inaccessible.'
+            );
+          }
+
+          // Stop trying after first failure to avoid excessive error logging
+          break;
+        }
+      }
+
+      if (restored > 0) {
+        logger.info('[ConnectionPool] Restored pool connections', {
+          restored,
+          newSize: this.pool.length,
+        });
+      }
     }
   }
 

@@ -64,6 +64,8 @@ export class KnowledgeGraphStore {
 
     try {
       const db = this.db!;
+      // ✅ FIX HIGH-2: Use IMMEDIATE mode to acquire write lock at transaction start
+      // Prevents "database is locked" errors under concurrent writes
       const transaction = db.transaction(() => {
         try {
           // Insert entity
@@ -95,7 +97,7 @@ export class KnowledgeGraphStore {
           // Transaction will rollback automatically
           throw error;
         }
-      });
+      }).immediate();
 
       transaction();
       logger.debug('Entity created', { entityName: entity.name });
@@ -162,6 +164,7 @@ export class KnowledgeGraphStore {
 
     try {
       const db = this.db!;
+      // ✅ FIX HIGH-2: Use IMMEDIATE mode to acquire write lock at transaction start
       const transaction = db.transaction(() => {
         try {
           // Update entity metadata
@@ -193,7 +196,7 @@ export class KnowledgeGraphStore {
           // Transaction will rollback automatically
           throw error;
         }
-      });
+      }).immediate();
 
       transaction();
       logger.debug('Entity updated', { entityName: entity.name });
@@ -229,7 +232,27 @@ export class KnowledgeGraphStore {
   }
 
   /**
+   * ✅ FIX MAJOR-1: Sanitize search query to prevent LIKE wildcard issues
+   */
+  private sanitizeSearchQuery(query: string): string {
+    // Escape LIKE special characters (% and _)
+    // Remove potentially problematic characters
+    return query
+      .replace(/%/g, '\\%')  // Escape % wildcard
+      .replace(/_/g, '\\_')  // Escape _ wildcard
+      .replace(/\[/g, '')    // Remove [
+      .replace(/\]/g, '')    // Remove ]
+      .replace(/</g, '')     // Remove <
+      .replace(/>/g, '')     // Remove >
+      .replace(/{/g, '')     // Remove {
+      .replace(/}/g, '')     // Remove }
+      .trim();               // Remove leading/trailing whitespace
+  }
+
+  /**
    * Search entities by query (full-text search on observations)
+   *
+   * ✅ FIX MAJOR-1: Now with input sanitization
    */
   async searchEntities(query: string, options: {
     entityType?: string;
@@ -243,18 +266,21 @@ export class KnowledgeGraphStore {
       const limit = options.limit || 100;
       const offset = options.offset || 0;
 
-      // Build query
+      // ✅ FIX MAJOR-1: Sanitize user input
+      const sanitizedQuery = this.sanitizeSearchQuery(query);
+
+      // Build query (use ESCAPE clause for escaped wildcards)
       let sql = `
         SELECT DISTINCT e.name, e.entity_type
         FROM entities e
         LEFT JOIN observations o ON e.name = o.entity_name
         WHERE (
-          e.name LIKE ? OR
-          o.content LIKE ?
+          e.name LIKE ? ESCAPE '\\' OR
+          o.content LIKE ? ESCAPE '\\'
         )
       `;
 
-      const params: any[] = [`%${query}%`, `%${query}%`];
+      const params: any[] = [`%${sanitizedQuery}%`, `%${sanitizedQuery}%`];
 
       if (options.entityType) {
         sql += ` AND e.entity_type = ?`;

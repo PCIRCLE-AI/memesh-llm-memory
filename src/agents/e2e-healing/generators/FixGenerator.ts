@@ -88,20 +88,15 @@ export class FixGenerator {
    */
   private determineTargetFile(input: GenerateFixInput): string {
     const rootCauseLower = input.rootCause.toLowerCase();
-
-    // Check if root cause indicates a style issue
-    const isStyleIssue =
-      rootCauseLower.includes('css') ||
-      rootCauseLower.includes('style') ||
-      rootCauseLower.includes('class');
+    const styleKeywords = ['css', 'style', 'class'];
+    const isStyleIssue = styleKeywords.some(keyword => rootCauseLower.includes(keyword));
 
     // If root cause mentions CSS/styles AND we have a style file, target it
     if (input.styleFile && isStyleIssue) {
       return input.styleFile;
     }
 
-    // Default to component file
-    // If component file not specified, derive from test file
-    return input.componentFile || input.testFile.replace('.test.', '.');
+    // Default to component file (derive from test file if not specified)
+    return input.componentFile ?? input.testFile.replace('.test.', '.');
   }
 }

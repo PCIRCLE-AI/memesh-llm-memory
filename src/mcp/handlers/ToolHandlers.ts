@@ -16,8 +16,9 @@
 
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { ValidationError } from '../../errors/index.js';
+import { ValidationError, OperationError } from '../../errors/index.js';
 import { Router } from '../../orchestrator/router.js';
+import { RateLimiter } from '../../utils/RateLimiter.js';
 import { AgentRegistry } from '../../core/AgentRegistry.js';
 import { FeedbackCollector } from '../../evolution/FeedbackCollector.js';
 import { PerformanceTracker } from '../../evolution/PerformanceTracker.js';
@@ -83,6 +84,12 @@ import {
  */
 export class ToolHandlers {
   /**
+   * ✅ FIX MAJOR-2: Rate limiter for memory operations (10 req/min)
+   * Prevents DoS through excessive database writes
+   */
+  private memoryRateLimiter: RateLimiter;
+
+  /**
    * Create a new ToolHandlers instance
    *
    * @param router - Main task routing engine
@@ -117,7 +124,10 @@ export class ToolHandlers {
     private projectMemoryManager: ProjectMemoryManager,
     private knowledgeGraph: KnowledgeGraph,
     private ui: HumanInLoopUI
-  ) {}
+  ) {
+    // ✅ FIX MAJOR-2: Initialize rate limiter for memory operations
+    this.memoryRateLimiter = new RateLimiter({ requestsPerMinute: 10 });
+  }
 
   /**
    * Handle buddy_skills tool - List all skills
@@ -706,6 +716,18 @@ export class ToolHandlers {
    * Handle recall-memory tool
    */
   async handleRecallMemory(args: unknown): Promise<CallToolResult> {
+    // ✅ FIX MAJOR-2: Check rate limit before memory operation
+    if (!this.memoryRateLimiter.consume()) {
+      throw new OperationError(
+        'Memory operation rate limit exceeded. Please try again later.',
+        {
+          component: 'ToolHandlers',
+          method: 'handleRecallMemory',
+          rateLimitStatus: this.memoryRateLimiter.getStatus(),
+        }
+      );
+    }
+
     try {
       let validatedInput: ValidatedRecallMemoryInput;
       try {
@@ -807,6 +829,18 @@ export class ToolHandlers {
    * Creates new entities in the Knowledge Graph for manual knowledge recording.
    */
   async handleCreateEntities(args: unknown): Promise<CallToolResult> {
+    // ✅ FIX MAJOR-2: Check rate limit before memory operation
+    if (!this.memoryRateLimiter.consume()) {
+      throw new OperationError(
+        'Memory operation rate limit exceeded. Please try again later.',
+        {
+          component: 'ToolHandlers',
+          method: 'handleCreateEntities',
+          rateLimitStatus: this.memoryRateLimiter.getStatus(),
+        }
+      );
+    }
+
     try {
       let validatedInput: ValidatedCreateEntitiesInput;
       try {
@@ -897,6 +931,18 @@ export class ToolHandlers {
    * Adds new observations to existing entities in the Knowledge Graph.
    */
   async handleAddObservations(args: unknown): Promise<CallToolResult> {
+    // ✅ FIX MAJOR-2: Check rate limit before memory operation
+    if (!this.memoryRateLimiter.consume()) {
+      throw new OperationError(
+        'Memory operation rate limit exceeded. Please try again later.',
+        {
+          component: 'ToolHandlers',
+          method: 'handleAddObservations',
+          rateLimitStatus: this.memoryRateLimiter.getStatus(),
+        }
+      );
+    }
+
     try {
       let validatedInput: ValidatedAddObservationsInput;
       try {
@@ -1001,6 +1047,18 @@ export class ToolHandlers {
    *
    */
   async handleCreateRelations(args: unknown): Promise<CallToolResult> {
+    // ✅ FIX MAJOR-2: Check rate limit before memory operation
+    if (!this.memoryRateLimiter.consume()) {
+      throw new OperationError(
+        'Memory operation rate limit exceeded. Please try again later.',
+        {
+          component: 'ToolHandlers',
+          method: 'handleCreateRelations',
+          rateLimitStatus: this.memoryRateLimiter.getStatus(),
+        }
+      );
+    }
+
     try {
       let validatedInput: ValidatedCreateRelationsInput;
       try {

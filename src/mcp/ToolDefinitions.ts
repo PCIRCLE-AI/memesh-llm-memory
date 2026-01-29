@@ -40,12 +40,19 @@ export const CommonSchemas = {
 };
 
 /**
- * MCP Tool Definition structure
+ * MCP Tool Definition structure (updated for MCP Specification 2025-11-25)
  */
 export interface MCPToolDefinition {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
+  outputSchema?: Record<string, unknown>;
+  annotations?: {
+    readOnlyHint?: boolean;
+    destructiveHint?: boolean;
+    idempotentHint?: boolean;
+    openWorldHint?: boolean;
+  };
 }
 
 /**
@@ -70,6 +77,12 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
       },
       required: ['task'],
     },
+    annotations: {
+      readOnlyHint: false,      // May generate modification suggestions
+      destructiveHint: false,   // Does not directly execute destructive operations
+      idempotentHint: false,    // Results may vary based on context
+      openWorldHint: true,      // Can handle open-ended tasks
+    },
   };
 
   const buddyRememberTool: MCPToolDefinition = {
@@ -91,6 +104,12 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
       },
       required: ['query'],
     },
+    annotations: {
+      readOnlyHint: true,       // Pure read operation
+      destructiveHint: false,
+      idempotentHint: true,     // Same query returns same results
+      openWorldHint: false,     // Limited to project memory scope
+    },
   };
 
   const buddyHelpTool: MCPToolDefinition = {
@@ -104,6 +123,12 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
           description: 'Specific command to get help for (optional, e.g., "do", "remember")',
         },
       },
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
     },
   };
 
@@ -134,6 +159,12 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
       },
       required: ['phase'],
     },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,    // Results depend on current state
+      openWorldHint: false,
+    },
   };
 
   const getSessionHealthTool: MCPToolDefinition = {
@@ -142,6 +173,12 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
     inputSchema: {
       type: 'object' as const,
       properties: {},
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,    // Results change over time
+      openWorldHint: false,
     },
   };
 
@@ -178,6 +215,12 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
         },
       },
       required: ['featureDescription'],
+    },
+    annotations: {
+      readOnlyHint: true,       // Only generates plan, doesn't execute
+      destructiveHint: false,
+      idempotentHint: false,    // Plans may vary based on context
+      openWorldHint: true,      // Can handle various feature requirements
     },
   };
 
@@ -217,6 +260,12 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
         },
       },
       required: ['toolName', 'success'],
+    },
+    annotations: {
+      readOnlyHint: false,      // Records data
+      destructiveHint: false,
+      idempotentHint: true,     // Repeated calls have no additional side effects
+      openWorldHint: false,
     },
   };
 

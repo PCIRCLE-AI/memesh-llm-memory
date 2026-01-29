@@ -219,7 +219,7 @@ describe('Evolution System E2E Integration', () => {
       };
 
       // Should throw validation error due to empty taskType
-      await expect(router.routeTask(invalidTask)).rejects.toThrow('taskType must be a non-empty string');
+      await expect(router.routeTask(invalidTask)).rejects.toThrow('Task description must be a non-empty string');
     });
   });
 

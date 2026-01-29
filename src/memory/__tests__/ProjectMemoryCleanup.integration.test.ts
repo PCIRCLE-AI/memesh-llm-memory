@@ -68,7 +68,8 @@ describe('ProjectMemoryCleanup Integration', () => {
     const deleted = await cleanup.cleanupOldMemories();
 
     // Should delete only old entity
-    expect(deleted).toBe(1);
+    expect(deleted.deleted).toBe(1);
+    expect(deleted.failed).toBe(0);
 
     // Verify only recent entity remains
     const afterCleanup = kg.searchEntities({ entityType: 'code_change' });
@@ -103,7 +104,8 @@ describe('ProjectMemoryCleanup Integration', () => {
     const deleted = await cleanup.cleanupOldMemories();
 
     // Should delete all 3 old entities
-    expect(deleted).toBe(3);
+    expect(deleted.deleted).toBe(3);
+    expect(deleted.failed).toBe(0);
 
     // Verify all are gone
     const stats = kg.getStats();
@@ -122,7 +124,8 @@ describe('ProjectMemoryCleanup Integration', () => {
     const deleted = await cleanup.cleanupOldMemories();
 
     // Should not delete entity without timestamp
-    expect(deleted).toBe(0);
+    expect(deleted.deleted).toBe(0);
+    expect(deleted.failed).toBe(0);
 
     const entities = kg.searchEntities({ entityType: 'code_change' });
     expect(entities).toHaveLength(1);

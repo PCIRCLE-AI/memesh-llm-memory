@@ -5,6 +5,60 @@ All notable changes to Claude Code Buddy will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-01-30
+
+### Added
+
+- **Claude 4.5 Model Support**
+  - Added support for Claude Haiku 4.5 (claude-haiku-4-5-20251015)
+  - Updated model pricing: $1.00 input / $5.00 output per MTok
+  - Updated all 27 agent types to use Haiku 4.5 for simple tasks
+  - Location: `src/config/models.ts`, `src/prompts/templates/PromptTemplates.ts`
+
+- **MCP Tool Annotations (MCP Specification 2025-11-25)**
+  - Added comprehensive annotations to all 7 MCP tools:
+    - `readOnlyHint`: Indicates if tool only reads data
+    - `destructiveHint`: Indicates if tool performs destructive operations
+    - `idempotentHint`: Indicates if repeated calls have same effect
+    - `openWorldHint`: Indicates if tool can handle open-ended tasks
+  - Location: `src/mcp/ToolDefinitions.ts`
+
+- **Output Schemas for Structured Responses**
+  - Created comprehensive JSON schemas for all 7 MCP tools
+  - Enables runtime validation and type safety for tool responses
+  - New file: `src/mcp/schemas/OutputSchemas.ts`
+  - Schemas include: buddyDo, buddyRemember, buddyHelp, sessionHealth, workflowGuidance, smartPlan, hookToolUse
+  - Location: `src/mcp/schemas/OutputSchemas.ts`, `src/mcp/ToolDefinitions.ts`
+
+### Changed
+
+- **Model Selection Strategy**
+  - Default simple complexity model: Haiku 3.5 → Haiku 4.5
+  - Default medium complexity model: Sonnet 3 → Sonnet 4.5
+  - Default complex complexity model: Opus 3 → Opus 4.5
+  - Location: `src/config/models.ts:selectClaudeModel()`
+
+### Fixed
+
+- **Dependency Management**
+  - Removed deprecated @types/glob and @types/minimatch packages
+  - Both glob and minimatch now use built-in type definitions
+  - Resolved TypeScript compilation warnings
+
+- **TypeScript Compilation Errors**
+  - Fixed KnowledgeGraphStore transaction().immediate() usage (2 locations)
+  - Fixed ConnectionPool missing async declaration for getValidConnection()
+  - All TypeScript compilation errors resolved
+  - Location: `src/agents/knowledge/storage/KnowledgeGraphStore.ts`, `src/db/ConnectionPool.ts`
+
+### Compliance
+
+- ✅ Full compliance with MCP Specification 2025-11-25
+- ✅ All tools include required annotations and output schemas
+- ✅ Type safety for all structured responses
+
+---
+
 ## [2.2.1] - 2026-01-30
 
 ### Security

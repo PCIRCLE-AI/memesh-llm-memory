@@ -412,6 +412,46 @@ System learns from your choices (when you override recommendations)
 
 ---
 
+## Technical Specifications
+
+### Claude 4.5 Model Support
+
+CCB fully supports the latest Claude 4.5 model family:
+
+- **Claude Haiku 4.5** (claude-haiku-4-5-20251015) - Fast responses for simple tasks
+  - Pricing: $1.00 input / $5.00 output per MTok
+  - Use case: Quick queries, simple refactors, code formatting
+
+- **Claude Sonnet 4.5** (claude-sonnet-4-5-20250929) - Balanced performance for daily development
+  - Use case: Code generation, testing, moderate complexity tasks
+
+- **Claude Opus 4.5** (claude-opus-4-5-20251101) - Deep reasoning for complex challenges
+  - Use case: Architecture design, complex debugging, creative problem-solving
+
+**Smart Model Selection:** CCB automatically selects the appropriate model based on task complexity, optimizing for both quality and cost.
+
+### MCP Specification Compliance
+
+✅ **Full compliance with MCP Specification 2025-11-25**
+
+All MCP tools include:
+- **Tool Annotations**: `readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`
+- **Output Schemas**: Structured JSON schemas for type-safe responses
+- **Runtime Validation**: Automatic validation of tool inputs and outputs
+
+**7 MCP Tools Available:**
+1. `buddy-do` - Smart task execution with capability routing
+2. `buddy-remember` - Project memory recall
+3. `buddy-help` - Command documentation
+4. `get-session-health` - Session monitoring and diagnostics
+5. `get-workflow-guidance` - Intelligent workflow recommendations
+6. `generate-smart-plan` - Implementation plan generation
+7. `hook-tool-use` - Tool usage event tracking
+
+See [src/mcp/ToolDefinitions.ts](src/mcp/ToolDefinitions.ts) for complete tool specifications.
+
+---
+
 ## Community & Support
 
 - **Documentation**: [docs/](docs/) folder + this README

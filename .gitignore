@@ -279,3 +279,11 @@ logs/*.log
 data/*.db
 data/*.db-shm
 data/*.db-wal
+
+# Design assets (local use only)
+assets/
+*.html
+!docs/**/*.html
+
+# Browser automation artifacts
+.playwright-mcp/

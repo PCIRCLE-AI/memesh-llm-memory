@@ -54,6 +54,8 @@ import { CheckpointDetector } from './CheckpointDetector.js';
 import { DevelopmentButler } from '../agents/DevelopmentButler.js';
 import { ProjectAutoTracker } from '../memory/ProjectAutoTracker.js';
 import type { MCPToolInterface } from './MCPToolInterface.js';
+import { logger } from '../utils/logger.js';
+import { TestOutputParser, type FailedTest, type TestResults } from './TestOutputParser.js';
 
 /**
  * Tool use data from Claude Code hooks
@@ -254,6 +256,7 @@ export class HookIntegration {
   private triggerCallbacks: Array<(context: CheckpointContext) => void> = [];
   private projectMemory?: ProjectAutoTracker;
   private lastCheckpoint?: string;
+  private testParser: TestOutputParser;
 
   /**
    * Create a new HookIntegration
@@ -278,6 +281,7 @@ export class HookIntegration {
   ) {
     this.detector = checkpointDetector;
     this.butler = developmentButler;
+    this.testParser = new TestOutputParser();
   }
 
   /**
@@ -391,6 +395,11 @@ export class HookIntegration {
 
     const { toolName, arguments: args } = toolData;
 
+    // Validate args is an object before accessing properties
+    if (!args || typeof args !== 'object') {
+      return null;
+    }
+
     // Detect code-written checkpoint (Write tool)
     if (toolName === 'Write') {
       const fileArgs = args as FileToolArgs;
@@ -432,7 +441,7 @@ export class HookIntegration {
       }
 
       if (this.isTestCommand(bashArgs.command)) {
-        const testResults = this.parseTestOutput(toolData.output || '');
+        const testResults = this.testParser.parse(toolData.output || '');
         return {
           name: 'test-complete',
           data: testResults,
@@ -598,21 +607,48 @@ export class HookIntegration {
 
     // Record test results
     if (checkpoint.name === 'test-complete') {
+      // Validate test results data structure
+      if (!this.isValidTestResults(checkpoint.data)) {
+        logger.warn('Invalid test results data structure, skipping memory record', {
+          checkpoint: checkpoint.name,
+          data: checkpoint.data,
+        });
+        return;
+      }
+
       const testResultHook = this.projectMemory.createTestResultHook();
-      const { total, passed, failed } = checkpoint.data as {
-        total: number;
-        passed: number;
-        failed: number;
-      };
+
+      // Extract test results with detailed failure information
+      const testResults = checkpoint.data;
+      const { total, passed, failed, failedTests } = testResults;
+
+      // Convert FailedTest[] to string[] format expected by ProjectAutoTracker
+      const failures = failedTests.map(test => {
+        const parts: string[] = [];
+
+        // Format: "[file]: TestName - Error" or "TestName - Error" or "TestName"
+        if (test.file) {
+          parts.push(`${test.file}:`);
+        }
+        parts.push(test.name);
+        if (test.error) {
+          parts.push(`- ${test.error}`);
+        }
+
+        return parts.join(' ');
+      });
+
       await testResultHook({
         total,
         passed,
         failed,
-        // TODO: Extract from test output - See issue #3
-        failures: [],
+        failures,
       });
     }
   }
+
+  /** Checkpoint phases that trigger memory recording */
+  private static readonly TRACKED_PHASES = new Set(['code-written', 'test-complete', 'commit-ready', 'committed']);
 
   /**
    * Record phase completion and commit events to project memory
@@ -621,31 +657,26 @@ export class HookIntegration {
     checkpoint: Checkpoint,
     toolData: ToolUseData
   ): Promise<void> {
-    if (!this.projectMemory) {
+    if (!this.projectMemory || !HookIntegration.TRACKED_PHASES.has(checkpoint.name)) {
       return;
     }
 
-    const trackedPhases = new Set(['code-written', 'test-complete', 'commit-ready', 'committed']);
-    if (!trackedPhases.has(checkpoint.name)) {
-      return;
-    }
-
+    // Flush pending changes for intermediate checkpoints
     if (checkpoint.name !== 'code-written' && checkpoint.name !== 'committed') {
       await this.projectMemory.flushPendingCodeChanges(checkpoint.name);
     }
 
+    // Record commit metadata
     if (checkpoint.name === 'committed') {
-      const commitData = checkpoint.data as {
-        command?: string;
-        message?: string | null;
-      };
+      const { command, message } = checkpoint.data as { command?: string; message?: string | null };
       await this.projectMemory.recordCommit({
-        command: commitData.command,
-        message: commitData.message ?? undefined,
+        command,
+        message: message ?? undefined,
         output: toolData.output,
       });
     }
 
+    // Avoid duplicate checkpoint records
     if (checkpoint.name === this.lastCheckpoint) {
       return;
     }
@@ -663,37 +694,29 @@ export class HookIntegration {
     toolData: ToolUseData
   ): string[] {
     const details: string[] = [`Trigger: ${toolData.toolName}`];
+    const data = checkpoint.data;
 
-    if (checkpoint.name === 'code-written') {
-      const files = (checkpoint.data.files as string[] | undefined) || [];
-      details.push(`Files changed: ${files.length}`);
-    }
-
-    if (checkpoint.name === 'test-complete') {
-      const { total, passed, failed } = checkpoint.data as {
-        total: number;
-        passed: number;
-        failed: number;
-      };
-      if (total > 0) {
-        details.push(`Tests: ${passed}/${total} passed`);
+    switch (checkpoint.name) {
+      case 'code-written': {
+        const files = (data.files as string[] | undefined) ?? [];
+        details.push(`Files changed: ${files.length}`);
+        break;
       }
-      if (failed > 0) {
-        details.push(`Failed: ${failed}`);
+      case 'test-complete': {
+        const { total, passed, failed } = data as { total: number; passed: number; failed: number };
+        if (total > 0) details.push(`Tests: ${passed}/${total} passed`);
+        if (failed > 0) details.push(`Failed: ${failed}`);
+        break;
       }
-    }
-
-    if (checkpoint.name === 'commit-ready') {
-      const command = (checkpoint.data as { command?: string }).command;
-      if (command) {
-        details.push(`Command: ${command}`);
+      case 'commit-ready': {
+        const command = data.command as string | undefined;
+        if (command) details.push(`Command: ${command}`);
+        break;
       }
-    }
-
-    if (checkpoint.name === 'committed') {
-      const message = (checkpoint.data as { message?: string | null }).message;
-      if (message) {
-        details.push(`Message: ${message}`);
+      case 'committed': {
+        const message = data.message as string | null | undefined;
+        if (message) details.push(`Message: ${message}`);
+        break;
       }
     }
 
@@ -771,90 +794,37 @@ export class HookIntegration {
     this.triggerCallbacks.push(callback);
   }
 
+  /** Patterns for detecting test files */
+  private static readonly TEST_FILE_PATTERNS = ['.test.', '.spec.', '/tests/'];
+
+  /** Patterns for detecting test commands */
+  private static readonly TEST_COMMAND_PATTERNS = ['npm test', 'npm run test', 'vitest', 'jest', 'mocha'];
+
   /**
    * Check if file path is a test file
    *
-   * Determines if a file path represents a test file based on common naming patterns.
-   * Used to set the hasTests flag in code-written checkpoint data.
-   *
-   * Detection Patterns:
-   * - `.test.` in filename (e.g., api.test.ts)
-   * - `.spec.` in filename (e.g., api.spec.ts)
-   * - `/tests/` in path (e.g., src/tests/api.ts)
-   *
    * @param filePath - File path to check
    * @returns True if file appears to be a test file
-   *
-   * @example
-   * ```typescript
-   * isTestFile('src/api/users.ts')           // false
-   * isTestFile('src/api/users.test.ts')      // true
-   * isTestFile('src/api/users.spec.ts')      // true
-   * isTestFile('src/tests/integration.ts')   // true
-   * isTestFile('src/__tests__/api.ts')       // false (not detected by current pattern)
-   * ```
    */
   private isTestFile(filePath: string): boolean {
-    return (
-      filePath.includes('.test.') ||
-      filePath.includes('.spec.') ||
-      filePath.includes('/tests/')
-    );
+    return HookIntegration.TEST_FILE_PATTERNS.some(p => filePath.includes(p));
   }
 
   /**
    * Check if command is a test command
    *
-   * Determines if a bash command is running tests based on common test runner patterns.
-   * Used to detect test-complete checkpoint from Bash tool execution.
-   *
-   * Detected Test Runners:
-   * - npm test / npm run test
-   * - vitest
-   * - jest
-   * - mocha
-   *
    * @param command - Bash command to check
    * @returns True if command appears to be running tests
-   *
-   * @example
-   * ```typescript
-   * isTestCommand('npm test')                 // true
-   * isTestCommand('npm run test:unit')        // true
-   * isTestCommand('vitest run')               // true
-   * isTestCommand('jest --coverage')          // true
-   * isTestCommand('mocha tests/')             // true
-   * isTestCommand('npm run build')            // false
-   * isTestCommand('git status')               // false
-   * ```
    */
   private isTestCommand(command: string): boolean {
-    return (
-      command.includes('npm test') ||
-      command.includes('npm run test') ||
-      command.includes('vitest') ||
-      command.includes('jest') ||
-      command.includes('mocha')
-    );
+    return HookIntegration.TEST_COMMAND_PATTERNS.some(p => command.includes(p));
   }
 
   /**
    * Check if command is git add
    *
-   * Determines if a bash command is a git add command (staging files for commit).
-   * Used to detect commit-ready checkpoint from Bash tool execution.
-   *
    * @param command - Bash command to check
    * @returns True if command is git add
-   *
-   * @example
-   * ```typescript
-   * isGitAddCommand('git add .')              // true
-   * isGitAddCommand('git add src/api.ts')     // true
-   * isGitAddCommand('  git add file.ts  ')    // true (handles whitespace)
-   * isGitAddCommand('git commit -m "..."')    // false
-   * isGitAddCommand('git status')             // false
-   * ```
    */
   private isGitAddCommand(command: string): boolean {
     return command.trim().startsWith('git add');
@@ -918,48 +888,29 @@ export class HookIntegration {
   }
 
   /**
-   * Parse test output to extract results
+   * Type guard to validate TestResults structure
    *
-   * Parses test runner output to extract test counts (total, passed, failed).
-   * Uses regex patterns to match common test runner output formats.
-   * Returns zero counts if patterns not found.
-   *
-   * Supported Output Formats:
-   * - "34 tests passed, 2 failed" (vitest, jest)
-   * - "34 passed, 2 failed" (generic)
-   * - "Tests: 34 passed, 2 failed" (various runners)
-   *
-   * @param output - Test command stdout/stderr output
-   * @returns Test results with total, passed, and failed counts
-   *
-   * @example
-   * ```typescript
-   * parseTestOutput('34 tests passed, 2 failed')
-   * // Returns: { total: 36, passed: 34, failed: 2 }
-   *
-   * parseTestOutput('Tests: 50 passed, 0 failed')
-   * // Returns: { total: 50, passed: 50, failed: 0 }
-   *
-   * parseTestOutput('All tests passed!')
-   * // Returns: { total: 0, passed: 0, failed: 0 } (no numeric patterns found)
-   *
-   * parseTestOutput('100 passed')
-   * // Returns: { total: 100, passed: 100, failed: 0 }
-   * ```
+   * @param data - Unknown data to validate
+   * @returns true if data matches TestResults interface
    */
-  private parseTestOutput(output: string): {
-    total: number;
-    passed: number;
-    failed: number;
-  } {
-    // Simple parser - look for patterns like "34 tests passed, 2 failed"
-    const passedMatch = output.match(/(\d+)\s+(?:tests?\s+)?passed/i);
-    const failedMatch = output.match(/(\d+)\s+(?:tests?\s+)?failed/i);
+  private isValidTestResults(data: unknown): data is TestResults {
+    if (!data || typeof data !== 'object') {
+      return false;
+    }
 
-    const passed = passedMatch ? parseInt(passedMatch[1], 10) : 0;
-    const failed = failedMatch ? parseInt(failedMatch[1], 10) : 0;
-    const total = passed + failed;
+    const obj = data as Record<string, unknown>;
 
-    return { total, passed, failed };
+    return (
+      typeof obj.total === 'number' &&
+      typeof obj.passed === 'number' &&
+      typeof obj.failed === 'number' &&
+      Array.isArray(obj.failedTests) &&
+      obj.failedTests.every(
+        (test: unknown) =>
+          test &&
+          typeof test === 'object' &&
+          typeof (test as Record<string, unknown>).name === 'string'
+      )
+    );
   }
 }

@@ -103,20 +103,12 @@ describe('ProjectAutoTracker', () => {
         expect(call.entities[0].name).toMatch(/\d{4}-\d{2}-\d{2}/); // ISO date format
       });
 
-      it('should handle empty file list gracefully', async () => {
+      it('should skip memory creation when file list is empty', async () => {
+        // Empty file lists are skipped (deduplication cannot work without files)
         await tracker.recordCodeChange([], 'No files changed');
         await tracker.flushPendingCodeChanges('test');
 
-        expect(mockMCP.memory.createEntities).toHaveBeenCalledWith({
-          entities: [{
-            name: expect.any(String),
-            entityType: 'code_change',
-            observations: expect.arrayContaining([
-              'Files modified: 0',
-              expect.stringContaining('No files changed'),
-            ]),
-          }],
-        });
+        expect(mockMCP.memory.createEntities).not.toHaveBeenCalled();
       });
 
       it('should aggregate multiple code changes into a single entry', async () => {

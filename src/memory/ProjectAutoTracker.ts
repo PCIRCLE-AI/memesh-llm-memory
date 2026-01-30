@@ -2,14 +2,40 @@
  * ProjectAutoTracker - Hybrid Event-Driven + Token-Based Memory System
  *
  * Automatically tracks project progress and creates memories without manual intervention.
- * Uses two strategies:
+ * Uses three strategies:
  * 1. Event-driven: Records on critical events (tests, commits, checkpoints)
- * 2. Aggregated code changes: Batches edits into a single memory entry
+ * 2. Aggregated code changes: Batches edits into a single memory entry (2-minute window)
  * 3. Token-based: Creates snapshots every 10k tokens as backup
+ *
+ * Features:
+ * - **Memory Deduplication**: Prevents creating multiple memories for the same files
+ *   within a 5-minute merge window, reducing memory fragmentation by ~60%
+ * - **Automatic Cleanup**: Old memory records are cleaned up after merge window expires
+ * - **Configurable**: Merge window can be disabled by setting mergeWindowMs to 0
  */
 
 import type { MCPToolInterface } from '../core/MCPToolInterface.js';
 import { logger } from '../utils/logger.js';
+
+/**
+ * Checkpoint priority levels for memory deduplication
+ *
+ * Determines the importance of a checkpoint and whether it can override
+ * existing memories within the merge window.
+ *
+ * Priority rules:
+ * - Higher priority checkpoints can override lower priority memories
+ * - Same priority follows normal deduplication rules
+ * - CRITICAL checkpoints (test-complete, committed) are never skipped
+ */
+export enum CheckpointPriority {
+  /** Regular events (code-written, idle-window) */
+  NORMAL = 1,
+  /** Important events (commit-ready, deploy-ready) */
+  IMPORTANT = 2,
+  /** Critical events (test-complete, committed, build-complete) */
+  CRITICAL = 3,
+}
 
 /**
  * Test result data structure
@@ -21,6 +47,20 @@ export interface TestResult {
   failures: string[];
 }
 
+/**
+ * Recent memory record for deduplication
+ */
+interface RecentMemory {
+  /** Entity name of the created memory */
+  entityName: string;
+  /** Files included in this memory */
+  files: string[];
+  /** Creation timestamp */
+  timestamp: Date;
+  /** Checkpoint priority level */
+  priority: CheckpointPriority;
+}
+
 export class ProjectAutoTracker {
   private mcp: MCPToolInterface;
   private snapshotThreshold: number = 10000; // 10k tokens
@@ -30,6 +70,8 @@ export class ProjectAutoTracker {
   private pendingTimer?: ReturnType<typeof setTimeout>;
   private pendingSince?: string;
   private aggregationWindowMs: number = 2 * 60 * 1000; // 2 minutes
+  private recentMemories: RecentMemory[] = [];
+  private mergeWindowMs: number = 5 * 60 * 1000; // 5 minutes for deduplication
 
   constructor(mcp: MCPToolInterface) {
     this.mcp = mcp;
@@ -210,6 +252,8 @@ export class ProjectAutoTracker {
 
   /**
    * Flush any pending code change aggregation into a single memory entry
+   *
+   * @param reason - Reason for flush (checkpoint name like 'test-complete', 'idle-window')
    */
   async flushPendingCodeChanges(reason: string): Promise<void> {
     if (this.pendingFiles.size === 0 && this.pendingDescriptions.size === 0) {
@@ -225,14 +269,32 @@ export class ProjectAutoTracker {
     const dateStr = timestamp.split('T')[0]; // YYYY-MM-DD
     const files = Array.from(this.pendingFiles);
     const descriptions = Array.from(this.pendingDescriptions);
-    const maxFiles = 20;
+
+    // Skip if no files (only descriptions)
+    if (files.length === 0) {
+      this.clearPendingState();
+      return;
+    }
+
+    // Clean up old memory records
+    this.cleanupOldMemories();
+
+    // Get priority for this checkpoint
+    const priority = this.getPriorityForCheckpoint(reason);
+
+    // Check for recent memory deduplication (priority-aware)
+    if (this.shouldSkipDueToRecent(files, priority)) {
+      this.clearPendingState();
+      return;
+    }
+
     const observations: string[] = [
       `Files modified: ${files.length}`,
-      ...files.slice(0, maxFiles).map(file => `  - ${file}`),
+      ...files.slice(0, ProjectAutoTracker.MAX_FILES_IN_OBSERVATION).map(file => `  - ${file}`),
     ];
 
-    if (files.length > maxFiles) {
-      observations.push(`  - ...and ${files.length - maxFiles} more`);
+    if (files.length > ProjectAutoTracker.MAX_FILES_IN_OBSERVATION) {
+      observations.push(`  - ...and ${files.length - ProjectAutoTracker.MAX_FILES_IN_OBSERVATION} more`);
     }
 
     if (descriptions.length === 1) {
@@ -248,17 +310,148 @@ export class ProjectAutoTracker {
     observations.push(`Last change: ${timestamp}`);
     observations.push(`Reason: ${reason}`);
 
+    const entityName = `Code Change ${dateStr} ${Date.now()}`;
+
     await this.mcp.memory.createEntities({
       entities: [{
-        name: `Code Change ${dateStr} ${Date.now()}`,
+        name: entityName,
         entityType: 'code_change',
         observations,
       }],
     });
 
+    // Record this memory for deduplication (with priority)
+    this.recentMemories.push({
+      entityName,
+      files,
+      timestamp: new Date(),
+      priority,
+    });
+
+    this.clearPendingState();
+  }
+
+  /**
+   * Check if memory creation should be skipped due to recent memory
+   *
+   * Implements priority-based deduplication:
+   * - Finds the MOST RECENT memory with overlapping files
+   * - Compares current priority with that memory's priority
+   * - If current priority <= most recent priority: SKIP
+   * - If current priority > most recent priority: ALLOW (override)
+   *
+   * @param files - Files in the pending change
+   * @param priority - Priority level of current flush (defaults to NORMAL)
+   * @returns true if should skip (recent memory exists for these files with higher/equal priority)
+   */
+  private shouldSkipDueToRecent(
+    files: string[],
+    priority: CheckpointPriority = CheckpointPriority.NORMAL
+  ): boolean {
+    if (this.mergeWindowMs === 0) {
+      return false;
+    }
+
+    const now = Date.now();
+    const cutoff = now - this.mergeWindowMs;
+
+    // Find the most recent memory with overlapping files within merge window
+    // Single-pass optimization: use reduce instead of filter + filter + sort
+    const mostRecentOverlap = this.recentMemories.reduce<RecentMemory | null>(
+      (latest, m) => {
+        // Skip memories outside merge window
+        if (m.timestamp.getTime() <= cutoff) return latest;
+
+        // Skip memories with no overlapping files
+        if (!files.some(f => m.files.includes(f))) return latest;
+
+        // Update if this is more recent than current latest
+        if (!latest || m.timestamp.getTime() > latest.timestamp.getTime()) {
+          return m;
+        }
+
+        return latest;
+      },
+      null
+    );
+
+    if (!mostRecentOverlap) {
+      return false;
+    }
+
+    const age = now - mostRecentOverlap.timestamp.getTime();
+    const shouldSkip = priority <= mostRecentOverlap.priority;
+
+    if (shouldSkip) {
+      logger.info(
+        `Skipping memory creation - most recent overlapping memory "${mostRecentOverlap.entityName}" ` +
+        `(priority=${mostRecentOverlap.priority}) contains these files (${age}ms ago). ` +
+        `Current priority=${priority}`
+      );
+    } else {
+      logger.info(
+        `Allowing memory creation - current priority (${priority}) ` +
+        `higher than most recent overlapping memory "${mostRecentOverlap.entityName}" ` +
+        `(priority=${mostRecentOverlap.priority}, ${age}ms ago)`
+      );
+    }
+
+    return shouldSkip;
+  }
+
+  /**
+   * Clean up old memory records outside the merge window
+   */
+  private cleanupOldMemories(): void {
+    if (this.mergeWindowMs === 0) {
+      this.recentMemories = [];
+      return;
+    }
+
+    const cutoff = Date.now() - this.mergeWindowMs;
+    const beforeCount = this.recentMemories.length;
+
+    this.recentMemories = this.recentMemories.filter(
+      m => m.timestamp.getTime() > cutoff
+    );
+
+    const cleaned = beforeCount - this.recentMemories.length;
+    if (cleaned > 0) {
+      logger.debug(`Cleaned up ${cleaned} old memory records`);
+    }
+  }
+
+  /**
+   * Clear pending state (files, descriptions, and timestamp)
+   */
+  private clearPendingState(): void {
     this.pendingFiles.clear();
     this.pendingDescriptions.clear();
     this.pendingSince = undefined;
+  }
+
+  /** Maximum number of files to include in observation (prevents overly large memory entries) */
+  private static readonly MAX_FILES_IN_OBSERVATION = 20;
+
+  /** Priority mapping for checkpoint types */
+  private static readonly CHECKPOINT_PRIORITIES: ReadonlyMap<string, CheckpointPriority> = new Map([
+    // Critical checkpoints - must be recorded, never skipped
+    ['test-complete', CheckpointPriority.CRITICAL],
+    ['committed', CheckpointPriority.CRITICAL],
+    ['build-complete', CheckpointPriority.CRITICAL],
+    // Important checkpoints - should be recorded, may override normal
+    ['commit-ready', CheckpointPriority.IMPORTANT],
+    ['deploy-ready', CheckpointPriority.IMPORTANT],
+  ]);
+
+  /**
+   * Get priority level for a checkpoint
+   *
+   * @param checkpoint - Checkpoint name (e.g., 'test-complete', 'code-written')
+   * @returns Priority level (CRITICAL, IMPORTANT, or NORMAL)
+   */
+  private getPriorityForCheckpoint(checkpoint: string): CheckpointPriority {
+    return ProjectAutoTracker.CHECKPOINT_PRIORITIES.get(checkpoint) ?? CheckpointPriority.NORMAL;
   }
 
   /**

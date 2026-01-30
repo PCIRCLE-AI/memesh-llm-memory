@@ -107,7 +107,7 @@ export const MODEL_COSTS = {
 } as const;
 
 /**
- * 根據任務複雜度選擇模型
+ * Select model based on task complexity
  */
 export function selectClaudeModel(complexity: 'simple' | 'medium' | 'complex'): string {
   switch (complexity) {

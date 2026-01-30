@@ -28,21 +28,21 @@ export class AgentRouter {
   }
 
   /**
-   * 路由任務到最佳 Agent
+   * Route task to optimal Agent
    */
   async route(analysis: TaskAnalysis): Promise<RoutingDecision> {
     const systemResources = await this.getSystemResources();
 
-    // 檢查記憶體是否足夠
+    // Check if memory is sufficient
     if (!this.hasEnoughMemory(systemResources, analysis)) {
       return this.createFallbackDecision(analysis, 'Insufficient memory');
     }
 
-    // 根據任務能力需求選擇專業 Agent
+    // Select specialized Agent based on task capability requirements
     const selectedAgent = this.selectAgent(analysis);
     const fallbackAgent = this.getFallbackAgent(selectedAgent);
 
-    // 建立 Task 物件用於 Prompt Enhancement
+    // Create Task object for Prompt Enhancement
     const task: Task = {
       id: analysis.taskId,
       description: `Task requiring ${analysis.requiredCapabilities.join(', ')} capabilities`,
@@ -55,7 +55,7 @@ export class AgentRouter {
       },
     };
 
-    // 使用 PromptEnhancer 生成 enhanced prompt
+    // Use PromptEnhancer to generate enhanced prompt
     const enhancedPrompt = this.promptEnhancer.enhance(
       selectedAgent,
       task,
@@ -77,7 +77,7 @@ export class AgentRouter {
   }
 
   /**
-   * 獲取系統資源狀態
+   * Get system resource status
    */
   async getSystemResources(): Promise<SystemResources> {
     const totalMemory = os.totalmem();
@@ -93,7 +93,7 @@ export class AgentRouter {
   }
 
   /**
-   * 檢查記憶體是否足夠
+   * Check if memory is sufficient
    *
    * Note: On macOS, os.freemem() returns very low values because macOS
    * aggressively caches files. The "free" memory is misleading - macOS
@@ -126,7 +126,7 @@ export class AgentRouter {
   }
 
   /**
-   * 估算任務所需記憶體 (MB)
+   * Estimate required memory for task (MB)
    *
    * MCP Server Pattern: We only do prompt enhancement and routing,
    * not running local models. Memory requirements are minimal.
@@ -143,13 +143,13 @@ export class AgentRouter {
   }
 
   /**
-   * 選擇最佳 Agent（基於能力需求）
+   * Select optimal Agent (based on capability requirements)
    */
   private selectAgent(analysis: TaskAnalysis): AgentType {
-    // 根據 requiredCapabilities 包含的能力選擇對應的專業 Agent
+    // Select specialized Agent based on requiredCapabilities
     const requiredCapabilities = analysis.requiredCapabilities;
 
-    // 能力到 Agent 的映射
+    // Capability to Agent mapping
     const capabilityToAgent: Record<string, AgentType> = {
       'code-review': 'code-reviewer',
       'code-generation': 'general-agent',
@@ -164,7 +164,7 @@ export class AgentRouter {
       'documentation': 'technical-writer',
     };
 
-    // 嘗試從 requiredCapabilities 映射到 AgentType
+    // Try to map from requiredCapabilities to AgentType
     for (const required of requiredCapabilities) {
       const mappedAgent = capabilityToAgent[required];
       if (mappedAgent) {
@@ -172,12 +172,12 @@ export class AgentRouter {
       }
     }
 
-    // 如果無法映射，fallback 到 general-agent
+    // If mapping fails, fallback to general-agent
     return 'general-agent';
   }
 
   /**
-   * 獲取 Agent 對應的能力清單
+   * Get capability list for Agent
    */
   private getCapabilitiesForAgent(agent: AgentType): TaskCapability[] {
     const agentCapabilities: Record<AgentType, TaskCapability[]> = {
@@ -218,12 +218,12 @@ export class AgentRouter {
   }
 
   /**
-   * 獲取備用 Agent
+   * Get fallback Agent
    */
   private getFallbackAgent(primaryAgent: AgentType): AgentType | undefined {
-    // 定義 Agent 的降級策略
+    // Define Agent degradation strategy
     const fallbackMap: Record<AgentType, AgentType | undefined> = {
-      // 開發類 Agent fallback
+      // Development Agent fallbacks
       'code-reviewer': 'general-agent',
       'test-writer': 'general-agent',
       'test-automator': 'test-writer',
@@ -232,12 +232,12 @@ export class AgentRouter {
       'refactorer': 'general-agent',
       'api-designer': 'general-agent',
 
-      // 分析類 Agent fallback
+      // Analysis Agent fallbacks
       'research-agent': 'general-agent',
       'architecture-agent': 'general-agent',
       'data-analyst': 'general-agent',
 
-      // 知識類 Agent fallback
+      // Knowledge Agent fallbacks
       'knowledge-agent': 'research-agent',
 
       'db-optimizer': 'general-agent',
@@ -260,7 +260,7 @@ export class AgentRouter {
       'ml-engineer': 'data-analyst',
       'marketing-strategist': 'general-agent',
 
-      // general-agent 沒有 fallback
+      // general-agent has no fallback
       'general-agent': undefined,
     };
 
@@ -268,7 +268,7 @@ export class AgentRouter {
   }
 
   /**
-   * 生成路由推理說明
+   * Generate routing reasoning explanation
    */
   private generateRoutingReasoning(
     analysis: TaskAnalysis,
@@ -282,7 +282,7 @@ export class AgentRouter {
     reasons.push(`Memory usage: ${resources.memoryUsagePercent}%`);
     reasons.push(`Estimated cost: $${toDollars(analysis.estimatedCost).toFixed(6)}`);
 
-    // Agent 專業說明
+    // Agent specialization descriptions
     const agentDescriptions: Record<AgentType, string> = {
       'code-reviewer': 'Specialized in code quality analysis and security review',
       'test-writer': 'Expert in test automation and TDD',
@@ -325,16 +325,16 @@ export class AgentRouter {
   }
 
   /**
-   * 創建降級決策 (當資源不足時)
+   * Create fallback decision (when resources are insufficient)
    */
   private createFallbackDecision(
     analysis: TaskAnalysis,
     reason: string
   ): RoutingDecision {
-    // 降級到通用 Agent
+    // Downgrade to general Agent
     const fallbackAgent: AgentType = 'general-agent';
 
-    // 建立簡化的 Task 物件
+    // Create simplified Task object
     const task: Task = {
       id: analysis.taskId,
       description: `Fallback task due to: ${reason}`,
@@ -345,7 +345,7 @@ export class AgentRouter {
       },
     };
 
-    // 使用 PromptEnhancer 生成 enhanced prompt（使用 simple complexity）
+    // Use PromptEnhancer to generate enhanced prompt (using simple complexity)
     const enhancedPrompt = this.promptEnhancer.enhance(
       fallbackAgent,
       task,
@@ -356,7 +356,7 @@ export class AgentRouter {
       taskId: analysis.taskId,
       selectedAgent: fallbackAgent,
       enhancedPrompt,
-      // general-agent 降低成本估算 (80% discount)
+      // general-agent reduced cost estimate (80% discount)
       estimatedCost: Math.round(analysis.estimatedCost * 0.2) as import('../utils/money.js').MicroDollars,
       reasoning: `Fallback to ${fallbackAgent} due to: ${reason}`,
     };
@@ -369,7 +369,7 @@ export class AgentRouter {
   private readonly CPU_CACHE_TTL = 1000; // 1 second TTL
 
   /**
-   * 獲取 CPU 使用率
+   * Get CPU usage
    *
    * Uses Node.js built-in 'os' module to calculate actual CPU usage.
    * Results are cached for 1 second to avoid performance overhead.
@@ -406,7 +406,7 @@ export class AgentRouter {
   }
 
   /**
-   * 批次路由多個任務
+   * Route multiple tasks in batch
    *
    * ✅ FIX MAJOR-2: Limit concurrency to prevent resource exhaustion
    */
@@ -425,10 +425,10 @@ export class AgentRouter {
   }
 
   /**
-   * 檢查是否應該使用平行執行
+   * Check if parallel execution should be used
    */
   async shouldUseParallel(decisions: RoutingDecision[]): Promise<boolean> {
-    // 如果所有任務都是簡單任務（general-agent），可以平行執行
+    // If all tasks are simple (general-agent), can execute in parallel
     const allSimple = decisions.every(
       decision => decision.selectedAgent === 'general-agent'
     );
@@ -437,16 +437,16 @@ export class AgentRouter {
       return true;
     }
 
-    // 如果總成本不高，且系統資源充足，可以平行執行
+    // If total cost is low and system resources are sufficient, can execute in parallel
     const totalCost = decisions.reduce(
       (sum, d) => (sum + d.estimatedCost) as MicroDollars,
       0 as MicroDollars
     );
     const systemResources = await this.getSystemResources();
 
-    // 檢查記憶體和成本
+    // Check memory and cost
     const hasEnoughMemory = systemResources.memoryUsagePercent < 80;
-    const costReasonable = toDollars(totalCost) < 0.1; // 總成本低於 $0.1
+    const costReasonable = toDollars(totalCost) < 0.1; // Total cost below $0.1
 
     return hasEnoughMemory && costReasonable;
   }

@@ -1,14 +1,14 @@
 /**
- * GlobalResourcePool - 全局資源池
+ * GlobalResourcePool - Global Resource Pool
  *
- * 跨 Orchestrator 實例的資源協調
- * 防止多個 orchestrator 同時消耗過多資源
+ * Resource coordination across Orchestrator instances
+ * Prevents multiple orchestrators from consuming excessive resources simultaneously
  *
- * 核心原則：
- * - Singleton pattern（全局唯一實例）
- * - E2E 測試互斥（同時只能有 1 個）
- * - 資源槽位管理（基於系統資源動態調整）
- * - 自動清理死鎖
+ * Core principles:
+ * - Singleton pattern (globally unique instance)
+ * - E2E test mutual exclusion (only 1 at a time)
+ * - Resource slot management (dynamically adjusted based on system resources)
+ * - Automatic deadlock cleanup
  */
 
 import { SystemResourceManager, SystemResourcesConfig } from '../utils/SystemResources.js';
@@ -27,17 +27,17 @@ export interface ResourceSlot {
 }
 
 export interface GlobalResourcePoolConfig extends SystemResourcesConfig {
-  // E2E 測試配置
-  maxConcurrentE2E?: number;        // 最大並發 E2E 數量（預設 1）
-  e2eWaitTimeout?: number;          // E2E 等待超時（ms，預設 5 分鐘）
+  // E2E test configuration
+  maxConcurrentE2E?: number;        // Maximum concurrent E2E count (default: 1)
+  e2eWaitTimeout?: number;          // E2E wait timeout (ms, default: 5 minutes)
 
-  // 建置任務配置
-  maxConcurrentBuilds?: number;     // 最大並發 build 數量（預設 2）
-  buildWaitTimeout?: number;        // Build 等待超時（ms，預設 10 分鐘）
+  // Build task configuration
+  maxConcurrentBuilds?: number;     // Maximum concurrent build count (default: 2)
+  buildWaitTimeout?: number;        // Build wait timeout (ms, default: 10 minutes)
 
-  // 死鎖檢測
-  staleCheckInterval?: number;      // 死鎖檢測間隔（ms，預設 60 秒）
-  staleLockThreshold?: number;      // 死鎖判定時間（ms，預設 30 分鐘）
+  // Deadlock detection
+  staleCheckInterval?: number;      // Deadlock check interval (ms, default: 60 seconds)
+  staleLockThreshold?: number;      // Deadlock threshold time (ms, default: 30 minutes)
 }
 
 export class GlobalResourcePool {
@@ -46,14 +46,14 @@ export class GlobalResourcePool {
   private resourceManager: SystemResourceManager;
   private config: Required<GlobalResourcePoolConfig>;
 
-  // 資源槽位
+  // Resource slots
   private activeE2E: Map<string, ResourceSlot> = new Map();
   private activeBuilds: Map<string, ResourceSlot> = new Map();
 
   // ✅ FIX HIGH-3: Mutex for E2E slot acquisition to prevent race conditions
   private e2eMutex: Promise<void> = Promise.resolve();
 
-  // 等待佇列
+  // Wait queue
   private e2eWaitQueue: Array<{
     orchestratorId: string;
     resolve: () => void;
@@ -61,7 +61,7 @@ export class GlobalResourcePool {
     queuedAt: Date;
   }> = [];
 
-  // 死鎖檢測定時器
+  // Deadlock detection timer
   private staleCheckTimer: NodeJS.Timeout | null = null;
 
   private constructor(config: GlobalResourcePoolConfig = {}) {
@@ -85,12 +85,12 @@ export class GlobalResourcePool {
 
     this.resourceManager = new SystemResourceManager(this.config);
 
-    // 啟動死鎖檢測
+    // Start deadlock detection
     this.startStaleCheckTimer();
   }
 
   /**
-   * 獲取全局唯一實例
+   * Get global singleton instance
    */
   static getInstance(config?: GlobalResourcePoolConfig): GlobalResourcePool {
     if (!GlobalResourcePool.instance) {
@@ -100,7 +100,7 @@ export class GlobalResourcePool {
   }
 
   /**
-   * 重置實例（僅用於測試）
+   * Reset instance (for testing only)
    */
   static resetInstance(): void {
     if (GlobalResourcePool.instance) {
@@ -110,20 +110,20 @@ export class GlobalResourcePool {
   }
 
   /**
-   * 請求 E2E 測試槽位
+   * Request E2E test slot
    *
    * ✅ FIX HIGH-3: Proper mutex implementation to prevent race conditions
    *
-   * 如果當前已有其他 E2E 測試運行，會等待直到：
-   * - 其他測試完成並釋放槽位
-   * - 或超時
+   * If other E2E tests are currently running, will wait until:
+   * - Other tests complete and release slots
+   * - Or timeout
    */
   async acquireE2ESlot(orchestratorId: string): Promise<void> {
     // ✅ FIX HIGH-3: Acquire mutex lock before any checks
     const release = await this.acquireMutex();
 
     try {
-      // 檢查是否已經持有槽位
+      // Check if already holding slot
       if (this.activeE2E.has(orchestratorId)) {
         logger.warn(`Orchestrator ${orchestratorId} already holds E2E slot`);
         return;
@@ -131,7 +131,7 @@ export class GlobalResourcePool {
 
       // Atomic check-and-set within mutex
       if (this.activeE2E.size < this.config.maxConcurrentE2E) {
-        // 獲取槽位 (now truly atomic)
+        // Acquire slot (now truly atomic)
         this.activeE2E.set(orchestratorId, {
           type: 'e2e',
           orchestratorId,
@@ -145,7 +145,7 @@ export class GlobalResourcePool {
         return;
       }
 
-      // 槽位已滿，加入等待佇列
+      // Slots full, join wait queue
       logger.info(
         `[ResourcePool] E2E slot full, ${orchestratorId} waiting... (queue: ${this.e2eWaitQueue.length})`
       );
@@ -158,7 +158,7 @@ export class GlobalResourcePool {
     return new Promise((resolve, reject) => {
       const queuedAt = new Date();
       const timeoutId = setTimeout(() => {
-        // 超時，從佇列移除並拒絕
+        // Timeout, remove from queue and reject
         const index = this.e2eWaitQueue.findIndex(
           item => item.orchestratorId === orchestratorId
         );
@@ -213,7 +213,7 @@ export class GlobalResourcePool {
   }
 
   /**
-   * 釋放 E2E 測試槽位
+   * Release E2E test slot
    */
   releaseE2ESlot(orchestratorId: string): void {
     if (!this.activeE2E.has(orchestratorId)) {
@@ -226,12 +226,12 @@ export class GlobalResourcePool {
       `[ResourcePool] E2E slot released by ${orchestratorId} (${this.activeE2E.size}/${this.config.maxConcurrentE2E})`
     );
 
-    // 檢查等待佇列
+    // Check wait queue
     this.processE2EWaitQueue();
   }
 
   /**
-   * 處理 E2E 等待佇列
+   * Process E2E wait queue
    */
   private processE2EWaitQueue(): void {
     while (
@@ -241,7 +241,7 @@ export class GlobalResourcePool {
       const next = this.e2eWaitQueue.shift();
       if (!next) break;
 
-      // 分配槽位
+      // Allocate slot
       this.activeE2E.set(next.orchestratorId, {
         type: 'e2e',
         orchestratorId: next.orchestratorId,
@@ -253,20 +253,20 @@ export class GlobalResourcePool {
         `[ResourcePool] E2E slot assigned to ${next.orchestratorId} from queue (waited ${Date.now() - next.queuedAt.getTime()}ms)`
       );
 
-      // 通知等待者
+      // Notify waiter
       next.resolve();
     }
   }
 
   /**
-   * 檢查系統資源是否允許運行 E2E 測試
+   * Check if system resources allow E2E test execution
    */
   async canRunE2E(count: number = 1): Promise<{
     canRun: boolean;
     reason?: string;
     recommendation?: string;
   }> {
-    // 檢查槽位
+    // Check slots
     const availableSlots = this.config.maxConcurrentE2E - this.activeE2E.size;
     if (count > availableSlots) {
       return {
@@ -276,12 +276,12 @@ export class GlobalResourcePool {
       };
     }
 
-    // 檢查系統資源
+    // Check system resources
     return this.resourceManager.canRunE2E(count);
   }
 
   /**
-   * 獲取當前狀態
+   * Get current status
    */
   getStatus(): {
     e2e: {
@@ -313,7 +313,7 @@ export class GlobalResourcePool {
   }
 
   /**
-   * 生成狀態報告
+   * Generate status report
    */
   async generateReport(): Promise<string> {
     const status = this.getStatus();
@@ -342,12 +342,12 @@ export class GlobalResourcePool {
   }
 
   /**
-   * 死鎖檢測
+   * Deadlock detection
    */
-  private async checkStaleLocksと(): Promise<void> {
+  private async checkStaleLocks(): Promise<void> {
     const now = Date.now();
 
-    // 檢查 E2E 槽位
+    // Check E2E slots
     for (const [orchestratorId, slot] of this.activeE2E.entries()) {
       const age = now - slot.acquiredAt.getTime();
 
@@ -356,12 +356,12 @@ export class GlobalResourcePool {
           `[ResourcePool] Stale E2E slot detected: ${orchestratorId} (${Math.floor(age / 1000)}s old)`
         );
 
-        // 檢查 PID 是否還存活
+        // Check if PID is still alive
         try {
-          process.kill(slot.pid, 0);  // Signal 0 只檢查，不發送信號
+          process.kill(slot.pid, 0);  // Signal 0 only checks, does not send signal
           logger.warn(`  PID ${slot.pid} still alive, keeping lock`);
         } catch (error) {
-          // PID 已死，清理槽位
+          // PID is dead, clean up slot
           logger.warn(`  PID ${slot.pid} dead, releasing stale lock`);
           this.activeE2E.delete(orchestratorId);
           this.processE2EWaitQueue();
@@ -371,18 +371,18 @@ export class GlobalResourcePool {
   }
 
   /**
-   * 啟動死鎖檢測定時器
+   * Start deadlock detection timer
    */
   private startStaleCheckTimer(): void {
     this.staleCheckTimer = setInterval(() => {
-      this.checkStaleLocksと().catch(error => {
+      this.checkStaleLocks().catch(error => {
         logger.error('[ResourcePool] Stale check error:', error);
       });
     }, this.config.staleCheckInterval);
   }
 
   /**
-   * 清理資源
+   * Clean up resources
    */
   cleanup(): void {
     if (this.staleCheckTimer) {
@@ -390,7 +390,7 @@ export class GlobalResourcePool {
       this.staleCheckTimer = null;
     }
 
-    // 拒絕所有等待中的請求
+    // Reject all pending requests
     for (const waiting of this.e2eWaitQueue) {
       waiting.reject(new Error('GlobalResourcePool is shutting down'));
     }
@@ -401,7 +401,7 @@ export class GlobalResourcePool {
   }
 }
 
-// 導出便利函數
+// Export convenience functions
 export async function acquireE2ESlot(orchestratorId: string): Promise<void> {
   const pool = GlobalResourcePool.getInstance();
   return pool.acquireE2ESlot(orchestratorId);

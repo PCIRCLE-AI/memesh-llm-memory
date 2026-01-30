@@ -1,16 +1,16 @@
 /**
- * Agent Orchestrator - 主要入口點
+ * Agent Orchestrator - Main Entry Point
  *
- * 智能 AI Agent 編排系統
+ * Intelligent AI Agent Orchestration System
  *
- * 核心功能：
- * - 任務複雜度分析 (TaskAnalyzer)
- * - 智能 Agent 路由 (AgentRouter)
- * - 成本追蹤與預算管理 (CostTracker)
- * - 記憶體感知調度
- * - 平行/循序執行決策
+ * Core Features:
+ * - Task complexity analysis (TaskAnalyzer)
+ * - Intelligent Agent routing (AgentRouter)
+ * - Cost tracking and budget management (CostTracker)
+ * - Memory-aware scheduling
+ * - Parallel/sequential execution decisions
  *
- * 使用範例：
+ * Usage Example:
  * ```typescript
  * import { Orchestrator } from './orchestrator/index.js';
  *
@@ -54,15 +54,15 @@ export class Orchestrator {
     this.anthropic = new Anthropic({
       apiKey: appConfig.claude.apiKey,
     });
-    // 生成唯一 ID
+    // Generate unique ID
     this.orchestratorId = `orch-${randomBytes(4).toString('hex')}`;
-    // 獲取全局資源池
+    // Get global resource pool
     this.resourcePool = GlobalResourcePool.getInstance();
     // ✅ SECURITY FIX (HIGH-3): Validate database path to prevent path traversal attacks
     const rawDbPath = options?.knowledgeDbPath || join(process.cwd(), 'data', 'knowledge-graph.db');
     const dbPath = validateDatabasePath(rawDbPath);
     this.knowledge = new KnowledgeAgent(dbPath);
-    // 初始化 Background Execution 相關組件
+    // Initialize Background Execution related components
     this.resourceMonitor = new ResourceMonitor();
     this.backgroundExecutor = new BackgroundExecutor(this.resourceMonitor);
 
@@ -90,7 +90,7 @@ export class Orchestrator {
   }
 
   /**
-   * 執行單一任務
+   * Execute single task
    */
   async executeTask(task: Task): Promise<{
     task: Task;
@@ -103,7 +103,7 @@ export class Orchestrator {
     const startTime = Date.now();
 
     try {
-      // 步驟 0: 查詢知識圖譜，尋找相似任務的經驗
+      // Step 0: Query knowledge graph for similar task experiences
       const similarTasks = await this.knowledge.findSimilar(task.description, 'feature');
       if (similarTasks.length > 0) {
         logger.info(`💡 Found ${similarTasks.length} similar past experiences`);
@@ -112,7 +112,7 @@ export class Orchestrator {
         });
       }
 
-      // 步驟 1: 路由任務
+      // Step 1: Route task
       const { analysis, routing, approved, message } = await this.router.routeTask(task);
 
       if (!approved) {
@@ -137,7 +137,7 @@ export class Orchestrator {
       logger.info(`🧭 Capabilities: ${capabilitySummary}`);
       logger.info(`💰 Estimated cost: ${formatMoney(routing.estimatedCost)}\n`);
 
-      // 記錄路由決策到知識圖譜
+      // Record routing decision to knowledge graph
       await this.knowledge.recordDecision({
         name: `Task ${task.id} Routing Decision`,
         reason: routing.reasoning,
@@ -147,12 +147,12 @@ export class Orchestrator {
         tags: ['routing', 'orchestrator', task.id]
       });
 
-      // 步驟 2: 執行任務
-      // 使用 enhancedPrompt 中建議的模型，如果沒有則使用 fallback
+      // Step 2: Execute task
+      // Use model suggested in enhancedPrompt, use fallback if none
       const modelToUse = routing.enhancedPrompt.suggestedModel || 'claude-sonnet-4-5-20250929';
       const response = await this.callClaude(modelToUse, task.description);
 
-      // 步驟 3: 記錄成本
+      // Step 3: Record cost
       const actualCost = this.router.recordTaskCost(
         task.id,
         modelToUse,
@@ -165,7 +165,7 @@ export class Orchestrator {
       logger.info(`✅ Task completed in ${executionTimeMs}ms`);
       logger.info(`💰 Actual cost: ${formatMoney(actualCost)}\n`);
 
-      // 記錄成功執行的特徵到知識圖譜
+      // Record successful execution features to knowledge graph
       await this.knowledge.recordFeature({
         name: `Task ${task.id} Execution`,
         description: task.description.substring(0, 100),
@@ -185,7 +185,7 @@ export class Orchestrator {
     } catch (error) {
       const executionTimeMs = Date.now() - startTime;
 
-      // 記錄錯誤到知識圖譜
+      // Record error to knowledge graph
       await this.knowledge.recordBugFix({
         name: `Task ${task.id} Error`,
         rootCause: error instanceof Error ? error.message : String(error),
@@ -200,11 +200,11 @@ export class Orchestrator {
   }
 
   /**
-   * 批次執行多個任務
+   * Execute multiple tasks in batch
    *
-   * 新增資源管理：
-   * - 動態調整並行度（基於系統資源）
-   * - E2E 測試強制序列化
+   * Added resource management:
+   * - Dynamically adjust concurrency (based on system resources)
+   * - E2E tests force serialization
    * - 使用 GlobalResourcePool 協調
    */
   async executeBatch(
@@ -212,7 +212,7 @@ export class Orchestrator {
     mode: 'sequential' | 'parallel' = 'sequential',
     options?: {
       maxConcurrent?: number;  // 最大並行數（會根據系統資源調整）
-      forceSequential?: boolean;  // 強制序列化（用於 E2E 測試）
+      forceSequential?: boolean;  // Force serialization (for E2E tests)
     }
   ): Promise<{
     results: Awaited<ReturnType<Orchestrator['executeTask']>>[];
@@ -221,19 +221,19 @@ export class Orchestrator {
   }> {
     const startTime = Date.now();
 
-    // 檢查是否有 E2E 測試
+    // Check if there are E2E tests
     const hasE2E = tasks.some(task =>
       task.description?.toLowerCase().includes('e2e') ||
       task.description?.toLowerCase().includes('end-to-end')
     );
 
-    // E2E 測試必須序列化
+    // E2E tests must be serialized
     if (hasE2E) {
       logger.info('⚠️  Detected E2E tests - forcing sequential execution');
       mode = 'sequential';
     }
 
-    // 強制序列化選項
+    // Force serialization option
     if (options?.forceSequential) {
       mode = 'sequential';
     }
@@ -243,11 +243,11 @@ export class Orchestrator {
     let results: Awaited<ReturnType<Orchestrator['executeTask']>>[];
 
     if (mode === 'parallel') {
-      // 並行模式：使用資源感知的並行執行
-      const maxConcurrent = options?.maxConcurrent ?? 2;  // 預設最多 2 個並行
+      // Parallel mode: use resource-aware parallel execution
+      const maxConcurrent = options?.maxConcurrent ?? 2;  // Default max 2 concurrent
       results = await this.executeTasksInParallel(tasks, maxConcurrent);
     } else {
-      // 序列模式
+      // Sequential mode
       results = [];
       for (const task of tasks) {
         const result = await this.executeTask(task);
@@ -271,7 +271,7 @@ export class Orchestrator {
   }
 
   /**
-   * 呼叫 Claude API
+   * Call Claude API
    */
   private async callClaude(
     model: string,
@@ -292,14 +292,14 @@ export class Orchestrator {
   }
 
   /**
-   * 獲取成本報告
+   * Get cost report
    */
   getCostReport(): string {
     return this.router.getCostReport();
   }
 
   /**
-   * 獲取系統狀態
+   * Get system status
    */
   async getSystemStatus(): Promise<{
     resources: Awaited<ReturnType<Router['getSystemStatus']>>['resources'];
@@ -310,14 +310,14 @@ export class Orchestrator {
   }
 
   /**
-   * 導出成本數據
+   * Export cost data
    */
   exportCostData(): string {
     return this.router.getCostTracker().exportData();
   }
 
   /**
-   * 僅分析任務 (不執行)
+   * Only analyze task (do not execute)
    */
   async analyzeTask(task: Task): Promise<{
     analysis: TaskAnalysis;
@@ -328,10 +328,10 @@ export class Orchestrator {
   }
 
   /**
-   * 資源感知的並行執行
+   * Resource-aware parallel execution
    *
-   * 使用 Promise pool 限制並行度
-   * 根據系統資源動態調整
+   * Use Promise pool to limit concurrency
+   * Dynamically adjust based on system resources
    */
   private async executeTasksInParallel(
     tasks: Task[],
@@ -359,63 +359,63 @@ export class Orchestrator {
       }
     }
 
-    // 等待所有剩餘任務完成
+    // Wait for all remaining tasks to complete
     await Promise.all(executing);
 
     return results;
   }
 
   /**
-   * 獲取資源池狀態
+   * Get resource pool status
    */
   async getResourcePoolStatus(): Promise<ReturnType<GlobalResourcePool['getStatus']>> {
     return this.resourcePool.getStatus();
   }
 
   /**
-   * 生成資源池報告
+   * Generate resource pool report
    */
   async getResourcePoolReport(): Promise<string> {
     return this.resourcePool.generateReport();
   }
 
   /**
-   * 獲取 Orchestrator ID
+   * Get Orchestrator ID
    */
   getOrchestratorId(): string {
     return this.orchestratorId;
   }
 
   /**
-   * 獲取 Router 實例 (進階用法)
+   * Get Router instance (advanced usage)
    */
   getRouter(): Router {
     return this.router;
   }
 
   /**
-   * 獲取 Knowledge Agent 實例
+   * Get Knowledge Agent instance
    */
   getKnowledgeAgent(): KnowledgeAgent {
     return this.knowledge;
   }
 
   /**
-   * 查詢知識圖譜中的決策記錄
+   * Query decision records in knowledge graph
    */
   async getDecisionHistory(): Promise<Awaited<ReturnType<KnowledgeAgent['getDecisions']>>> {
     return this.knowledge.getDecisions();
   }
 
   /**
-   * 查詢知識圖譜中的教訓記錄
+   * Query lesson records in knowledge graph
    */
   async getLessonsLearned(): Promise<Awaited<ReturnType<KnowledgeAgent['getLessonsLearned']>>> {
     return this.knowledge.getLessonsLearned();
   }
 
   /**
-   * 手動記錄最佳實踐到知識圖譜
+   * Manually record best practices to knowledge graph
    */
   async recordBestPractice(practice: {
     name: string;
@@ -428,7 +428,7 @@ export class Orchestrator {
   }
 
   /**
-   * 獲取知識圖譜統計資訊
+   * Get knowledge graph statistics
    */
   async getKnowledgeStats(): Promise<Awaited<ReturnType<KnowledgeAgent['getStats']>>> {
     return this.knowledge.getStats();
@@ -569,7 +569,7 @@ export class Orchestrator {
   }
 
   /**
-   * 關閉 Orchestrator（清理資源）
+   * Close Orchestrator (cleanup resources)
    *
    * ✅ FIX MAJOR-1: Comprehensive resource cleanup
    * Prevents resource leaks by cleaning up all components:
@@ -613,18 +613,18 @@ export class Orchestrator {
   }
 }
 
-// 導出所有必要的類型和類別
+// Export all necessary types and classes
 export * from './types.js';
 export { TaskAnalyzer } from './TaskAnalyzer.js';
 export { AgentRouter } from './AgentRouter.js';
 export { CostTracker } from './CostTracker.js';
 export { Router } from './router.js';
 
-// CLI 模式 (當直接執行此文件時)
+// CLI mode (when executing this file directly)
 if (import.meta.url === `file://${process.argv[1]}`) {
   const orchestrator = new Orchestrator();
 
-  // 示範任務
+  // Demo tasks
   const demoTasks: Task[] = [
     {
       id: 'task-1',
@@ -644,7 +644,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   logger.info('🎯 Agent Orchestrator Demo\n');
 
-  // 分析所有任務
+  // Analyze all tasks
   for (const task of demoTasks) {
     const { analysis, routing } = await orchestrator.analyzeTask(task);
     logger.info(`\n📋 Task: ${task.id}`);
@@ -655,7 +655,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     logger.info(`   Reasoning: ${analysis.reasoning}`);
   }
 
-  // 顯示系統狀態
+  // Show system status
   logger.info('\n' + '═'.repeat(60));
   const status = await orchestrator.getSystemStatus();
   logger.info('\n💻 System Resources:');

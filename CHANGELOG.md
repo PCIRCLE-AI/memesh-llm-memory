@@ -5,6 +5,85 @@ All notable changes to Claude Code Buddy will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2026-01-30
+
+### Security
+
+- **CRITICAL-0: Repository Privacy Protection**
+  - **Trigger**: Preventive security measure to protect business plans and internal documentation
+  - **Background**: During security review, identified risk of accidentally committing sensitive strategic documents to public repository
+  - **Impact**: Prevents accidental exposure of business plans, development roadmaps, marketing strategies, and internal knowledge bases
+  - **Implementation**:
+    - Added 60+ comprehensive .gitignore rules for sensitive documents
+    - Covers both English and Chinese file naming conventions (商業計劃, 開發計畫, etc.)
+    - Protects Obsidian vaults, knowledge bases, and internal documentation
+    - Includes specific patterns for files previously found in git history (ROADMAP, STRATEGY, IMPLEMENTATION)
+  - **Verification**: All patterns tested with `git check-ignore` to ensure no false positives on legitimate documentation
+  - **Location**: `.gitignore` lines 100-248
+
+- **CRITICAL-1: API Key Format Validation**
+  - Added comprehensive validation for `ANTHROPIC_API_KEY` to prevent runtime failures
+  - Validates key format (must start with `sk-ant-`), minimum length (≥ 50 characters)
+  - Provides clear error messages for invalid or truncated API keys
+  - Location: `src/config/index.ts`
+
+- **CRITICAL-2: Input Validation DoS Prevention**
+  - Added comprehensive `maxDuration` validation to prevent denial-of-service attacks
+  - Blocks malicious values: NaN (immediate timeout), Infinity (resource leak), negative zero, integer overflow
+  - Validates type, finiteness, safe integer range, and positive values
+  - Location: `src/core/BackgroundExecutor.ts:346-395`
+
+- **HIGH-1: SQL Injection Edge Case Prevention**
+  - Replaced LIKE pattern matching with `json_extract()` for exact matching
+  - Eliminates SQL injection risks and double-escaping vulnerabilities in `queryLinkedSpans()`
+  - Uses pure parameterization instead of string concatenation
+  - Location: `src/evolution/storage/SQLiteStore.ts:494-518`
+
+- **HIGH-2: Logging Sanitization Enhancement**
+  - Enhanced error log sanitization using 50+ sensitive pattern detection
+  - Redacts API keys (sk-, ghp_, AKIA, AIza, etc.), JWT tokens, database connection strings, file paths, PII
+  - Reuses existing `telemetry/sanitization.ts` infrastructure
+  - Location: `src/core/BackgroundExecutor.ts:66-82, 857-903`
+
+- **HIGH-3: Path Traversal Prevention**
+  - Created `validateDatabasePath()` utility to prevent arbitrary file access
+  - Normalizes paths, resolves symlinks, ensures paths stay within allowed directories
+  - Validates `.db` file extension to prevent accessing arbitrary files
+  - Locations: `src/utils/pathValidation.ts` (new), `src/orchestrator/index.ts`, `src/evolution/storage/SQLiteStore.ts`
+
+- **Dependency Update: Hono Security Fixes**
+  - Updated Hono from 4.11.4 to 4.11.7
+  - Fixed 4 moderate vulnerabilities: XSS through ErrorBoundary, arbitrary key read, cache bypass, IPv4 validation bypass
+  - Location: `package.json`
+
+### Fixed
+
+- **Test Stability (29 tests fixed)**
+  - Fixed timer leak in `ConnectionPool.acquire()` (3 tests)
+  - Fixed race condition test timing with `setImmediate` (1 test)
+  - Redesigned BackgroundExecutor concurrency tests using First Principles analysis (3 tests)
+  - Fixed ProjectMemoryCleanup return type mismatch (7 tests)
+  - Fixed async mock in ConnectionPool health check (3 tests)
+  - Fixed ESM module-level mocking in backpressure tests (9 tests)
+  - Fixed UIEventBus thenable implementation (1 test)
+  - Updated evolution validation error messages (2 tests)
+
+### Security Audit
+
+```bash
+npm audit
+# Result: 0 vulnerabilities found ✅
+```
+
+### Test Results
+
+```
+Test Files: 1 failed | 125 passed (126 total)
+Tests:      9 failed | 1226 passed (1235 total)
+```
+
+**Note**: 9 failed tests require API credentials (environment dependency, not code issues)
+
 ## [2.3.0] - 2026-01-30
 
 ### Added

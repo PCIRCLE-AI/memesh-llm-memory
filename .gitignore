@@ -113,8 +113,62 @@ docs/architecture/**
 docs/diagrams/**
 docs/internal/**
 docs/design/**
+docs/marketing/**
+docs/implementation/**
+docs/roadmap/**
+docs/strategy/**
+docs/business/**
+docs/commercial/**
+docs/confidential/**
+docs/private/**
+
+# Business Plans & Development Plans - 商業計劃及開發計畫
+# Rationale: These documents often contain sensitive strategic information
+# that should not be publicly visible in repository history.
+# Trigger: Preventive security measure (2026-01-30)
+# Note: Patterns are specific to avoid blocking legitimate development docs
+
+# Chinese patterns (specific to avoid false positives)
+*商業計劃*.md
+*商業計畫*.md
+*商業策略*.md
+*開發計劃*.md
+*開發計畫*.md
+*開發路線*.md
+*產品路線圖*.md
+
+# English patterns (consolidated for brevity)
+*business*plan*.md
+*development*plan*.md
+*roadmap*.md
+*strategy*.md
+
+# Directories
+商業計劃/
+商業計畫/
+開發計劃/
+開發計畫/
+business-plan/
+development-plan/
+roadmap/
+strategy/
+
+# Obsidian & Knowledge Base - DO NOT PUSH
+.obsidian/
+obsidian/
+vault/
+knowledge-base/
+知識庫/
+筆記/
 
 # Development artifacts - DO NOT PUSH
+# Pattern Style Guide:
+# *.suffix.md      - Matches files ending with .suffix.md
+# *-suffix.md      - Matches files with -suffix before .md
+# *PATTERN*.md     - Matches files containing PATTERN (case variations)
+# EXACT_NAME.md    - Matches exact filename only
+
+# Common development artifacts
 *.plan.md
 *.planning.md
 *.ideas.md
@@ -124,6 +178,13 @@ docs/design/**
 *.draft.md
 *.scratch.md
 *.personal.md
+*.confidential.md
+*.private.md
+*.internal.md
+*.roadmap.md
+*.strategy.md
+
+# Hyphenated variants
 *-planning.md
 *-ideas.md
 *-notes.md
@@ -132,11 +193,25 @@ docs/design/**
 *-audit.md
 *-debug.md
 *-progress.md
+*-roadmap.md
+*-strategy.md
+*-business.md
+*-commercial.md
+*-confidential.md
+*-private.md
+*-internal.md
+
+# Implementation, migration, and refactoring docs (consolidated)
 *IMPLEMENTATION*.md
-*_IMPLEMENTATION*.md
-IMPLEMENTATION_*.md
 *MIGRATION*.md
+*ROADMAP*.md
+*STRATEGY*.md
 REFACTORING_ANALYSIS.md
+
+# Specific known sensitive files
+EVOLUTION_IMPROVEMENT*.md
+MASTER_ROADMAP*.md
+MESSAGING_STRATEGY*.md
 
 # Test reports and analysis
 test-reports/
@@ -168,6 +243,18 @@ scratch/
 brainstorming/
 ideas/
 wip/
+private/
+confidential/
+internal/
+商業/
+開發/
+計畫/
+筆記/
+會議/
+internal-docs/
+private-docs/
+business-docs/
+planning-docs/
 
 # Experimental code (cleaned up - do not recreate)
 experiments/

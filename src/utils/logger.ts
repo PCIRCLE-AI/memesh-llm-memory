@@ -124,15 +124,36 @@ function buildFileTransports(): winston.transport[] {
  * });
  * ```
  */
+/**
+ * Build logger transports based on MCP server mode
+ *
+ * In MCP server mode, disable console logging to prevent stdout pollution
+ * that interferes with JSON-RPC stdio communication.
+ */
+function buildTransports(): winston.transport[] {
+  const transports: winston.transport[] = [];
+
+  // Only enable console transport when NOT in MCP server mode
+  // MCP servers use stdio for JSON-RPC, so console output breaks communication
+  const isMCPServerMode = process.env.MCP_SERVER_MODE === 'true';
+
+  if (!isMCPServerMode) {
+    transports.push(
+      new winston.transports.Console({
+        format: consoleFormat,
+      })
+    );
+  }
+
+  // Always include file transports for debugging
+  transports.push(...buildFileTransports());
+
+  return transports;
+}
+
 export const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || LogLevel.INFO,
-  transports: [
-    // Console transport (pretty format)
-    new winston.transports.Console({
-      format: consoleFormat,
-    }),
-    ...buildFileTransports(),
-  ],
+  transports: buildTransports(),
 });
 
 /**

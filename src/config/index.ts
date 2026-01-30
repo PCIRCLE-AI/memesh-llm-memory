@@ -1,13 +1,13 @@
 /**
  * 配置管理
+ *
+ * Note: dotenv removed to prevent stdout pollution in MCP stdio mode.
+ * MCP servers receive configuration through environment variables set by the host,
+ * not through .env files. This prevents JSON-RPC communication interference.
  */
 
-import { config } from 'dotenv';
 import { z } from 'zod';
 import { ConfigurationError } from '../errors/index.js';
-
-// 載入環境變數（覆蓋現有的環境變數）
-config({ override: true });
 
 /**
  * 環境變數 Schema 驗證

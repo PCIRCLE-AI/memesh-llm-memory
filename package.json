@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "claude-code-buddy": "dist/mcp/server.js"
+    "claude-code-buddy": "dist/mcp/server-bootstrap.js"
   },
   "files": [
     "dist/",
@@ -33,7 +33,7 @@
     "dashboard": "tsx src/dashboard/server.ts",
     "demo:architecture": "tsx src/agents/architecture/demo.ts",
     "demo:dashboard": "tsx examples/dashboard-demo.ts",
-    "mcp": "node dist/mcp/server.js",
+    "mcp": "node dist/mcp/server-bootstrap.js",
     "docs": "typedoc",
     "docs:watch": "typedoc --watch",
     "verify:mcp": "./scripts/verify-mcp-stdio.sh",

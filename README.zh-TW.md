@@ -249,7 +249,9 @@ CCB：[生成逐步計畫，包含：
 
 #### Cursor 用戶
 
-[![安裝到 Cursor](https://img.shields.io/badge/安裝到-Cursor-blue?style=for-the-badge&logo=cursor)](cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==)
+<a href="cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==">
+  <img src="https://cursor.com/deeplink/mcp-install-dark.png" alt="安裝到 Cursor" />
+</a>
 
 **點擊上方按鈕或在瀏覽器貼上此連結：**
 ```

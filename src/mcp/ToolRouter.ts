@@ -256,6 +256,16 @@ export class ToolRouter {
       return await this.toolHandlers.handleHookToolUse(args);
     }
 
+    // Learning tools
+    if (toolName === 'buddy-record-mistake') {
+      return await this.toolHandlers.handleBuddyRecordMistake(args);
+    }
+
+    // Knowledge Graph tools
+    if (toolName === 'create-entities') {
+      return await this.toolHandlers.handleCreateEntities(args);
+    }
+
     throw new NotFoundError(
       `Unknown tool: ${toolName}`,
       'tool',

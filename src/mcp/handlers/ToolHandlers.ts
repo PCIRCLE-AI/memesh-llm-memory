@@ -38,6 +38,7 @@ import { recallMemoryTool } from '../tools/recall-memory.js';
 import { createEntitiesTool } from '../tools/create-entities.js';
 import { addObservationsTool } from '../tools/add-observations.js';
 import { createRelationsTool } from '../tools/create-relations.js';
+import { handleBuddyRecordMistake, type BuddyRecordMistakeInput } from './BuddyRecordMistake.js';
 import type { AgentType } from '../../orchestrator/types.js';
 import { handleError, logError } from '../../utils/errorHandler.js';
 import {
@@ -923,6 +924,39 @@ export class ToolHandlers {
         ],
       };
     }
+  }
+
+  /**
+   * Handle buddy-record-mistake tool
+   *
+   * Records AI mistakes for learning and prevention.
+   * This enables the "learn from feedback" feature.
+   */
+  async handleBuddyRecordMistake(args: unknown): Promise<CallToolResult> {
+    // Validate input
+    if (!args || typeof args !== 'object') {
+      throw new ValidationError('Invalid input: expected object', {
+        component: 'ToolHandlers',
+        method: 'handleBuddyRecordMistake',
+        providedArgs: args,
+      });
+    }
+
+    const input = args as BuddyRecordMistakeInput;
+
+    // Validate required fields
+    const requiredFields = ['action', 'errorType', 'userCorrection', 'correctMethod', 'impact', 'preventionMethod'];
+    for (const field of requiredFields) {
+      if (!(field in input) || !input[field as keyof BuddyRecordMistakeInput]) {
+        throw new ValidationError(`Missing required field: ${field}`, {
+          component: 'ToolHandlers',
+          method: 'handleBuddyRecordMistake',
+          missingField: field,
+        });
+      }
+    }
+
+    return handleBuddyRecordMistake(input, this.feedbackCollector);
   }
 
   /**

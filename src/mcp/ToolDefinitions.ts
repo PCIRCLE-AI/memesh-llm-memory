@@ -233,6 +233,70 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
   };
 
   // ========================================
+  // Learning Tools (Feedback & Improvement)
+  // ========================================
+
+  const buddyRecordMistakeTool: MCPToolDefinition = {
+    name: 'buddy-record-mistake',
+    description: '📝 CCB: Record an AI mistake for learning and prevention. Enables "learn from feedback" feature.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        action: {
+          type: 'string',
+          description: 'What action the AI took (the mistake)',
+        },
+        errorType: {
+          type: 'string',
+          description: 'Error classification',
+          enum: [
+            'procedure-violation',
+            'workflow-skip',
+            'assumption-error',
+            'validation-skip',
+            'responsibility-lack',
+            'firefighting',
+            'dependency-miss',
+            'integration-error',
+            'deployment-error',
+          ],
+        },
+        userCorrection: {
+          type: 'string',
+          description: 'User\'s correction/feedback',
+        },
+        correctMethod: {
+          type: 'string',
+          description: 'What should have been done instead',
+        },
+        impact: {
+          type: 'string',
+          description: 'Impact of the mistake',
+        },
+        preventionMethod: {
+          type: 'string',
+          description: 'How to prevent this in the future',
+        },
+        relatedRule: {
+          type: 'string',
+          description: 'Related rule/guideline (optional)',
+        },
+        context: {
+          type: 'object',
+          description: 'Additional context (optional)',
+        },
+      },
+      required: ['action', 'errorType', 'userCorrection', 'correctMethod', 'impact', 'preventionMethod'],
+    },
+    annotations: {
+      readOnlyHint: false,      // Records data
+      destructiveHint: false,   // Non-destructive
+      idempotentHint: true,     // Same mistake recorded multiple times is OK
+      openWorldHint: false,     // Structured input required
+    },
+  };
+
+  // ========================================
   // Hook Integration Tools (Internal)
   // ========================================
 
@@ -279,6 +343,54 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
   };
 
   // ========================================
+  // Knowledge Graph Tools
+  // ========================================
+
+  const createEntitiesTool: MCPToolDefinition = {
+    name: 'create-entities',
+    description: '✨ CCB: Create new entities in the Knowledge Graph. Record decisions, features, bug fixes, code changes, and other knowledge for future recall.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        entities: {
+          type: 'array',
+          description: 'Array of entities to create',
+          items: {
+            type: 'object',
+            properties: {
+              name: {
+                type: 'string',
+                description: 'Entity name (unique identifier)',
+              },
+              entityType: {
+                type: 'string',
+                description: 'Entity type (e.g., "decision", "feature", "bug_fix", "lesson_learned")',
+              },
+              observations: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Array of observations (facts, notes, details)',
+              },
+              metadata: {
+                type: 'object',
+                description: 'Optional metadata',
+              },
+            },
+            required: ['name', 'entityType', 'observations'],
+          },
+        },
+      },
+      required: ['entities'],
+    },
+    annotations: {
+      readOnlyHint: false,      // Creates data
+      destructiveHint: false,   // Non-destructive
+      idempotentHint: false,    // Creates new entities each time
+      openWorldHint: false,     // Structured input required
+    },
+  };
+
+  // ========================================
   // Return all tools in priority order
   // ========================================
 
@@ -290,6 +402,14 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
     getSessionHealthTool,
     getWorkflowGuidanceTool,
     generateSmartPlanTool,
+
+    // Learning Tools
+    buddyRecordMistakeTool,
+
+    // Knowledge Graph Tools
+    createEntitiesTool,
+
+    // Hook Integration
     hookToolUseTool,
   ];
 }

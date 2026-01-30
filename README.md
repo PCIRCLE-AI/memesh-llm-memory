@@ -275,11 +275,11 @@ npm audit
 
 #### For Cursor Users
 
-[![Install to Cursor](https://img.shields.io/badge/Install%20to-Cursor-blue?style=for-the-badge&logo=cursor)](cursor://anysphere.cursor-deeplink/mcp/install?name=claude-code-buddy&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNsYXVkZS1jb2RlLWJ1ZGR5Il19)
+[![Install to Cursor](https://img.shields.io/badge/Install%20to-Cursor-blue?style=for-the-badge&logo=cursor)](cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==)
 
 **Click the button above or paste this link in your browser:**
 ```
-cursor://anysphere.cursor-deeplink/mcp/install?name=claude-code-buddy&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNsYXVkZS1jb2RlLWJ1ZGR5Il19
+cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==
 ```
 
 #### For VS Code / Claude Code Users
@@ -288,9 +288,9 @@ cursor://anysphere.cursor-deeplink/mcp/install?name=claude-code-buddy&config=eyJ
 ```json
 {
   "mcpServers": {
-    "claude-code-buddy": {
+    "@pcircle/claude-code-buddy-mcp": {
       "command": "npx",
-      "args": ["-y", "claude-code-buddy"]
+      "args": ["-y", "@pcircle/claude-code-buddy-mcp"]
     }
   }
 }

@@ -8,11 +8,11 @@ Claude Code Buddy (CCB) can be installed to Cursor and VS Code in just one click
 
 Click the button below to install CCB to Cursor:
 
-[![Install to Cursor](https://img.shields.io/badge/Install%20to-Cursor-blue?style=for-the-badge&logo=cursor)](cursor://anysphere.cursor-deeplink/mcp/install?name=claude-code-buddy&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNsYXVkZS1jb2RlLWJ1ZGR5Il19)
+[![Install to Cursor](https://img.shields.io/badge/Install%20to-Cursor-blue?style=for-the-badge&logo=cursor)](cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==)
 
 **Or paste this link in your browser:**
 ```
-cursor://anysphere.cursor-deeplink/mcp/install?name=claude-code-buddy&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNsYXVkZS1jb2RlLWJ1ZGR5Il19
+cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==
 ```
 
 ---
@@ -26,9 +26,9 @@ cursor://anysphere.cursor-deeplink/mcp/install?name=claude-code-buddy&config=eyJ
 ```json
 {
   "mcpServers": {
-    "claude-code-buddy": {
+    "@pcircle/claude-code-buddy-mcp": {
       "command": "npx",
-      "args": ["-y", "claude-code-buddy"]
+      "args": ["-y", "@pcircle/claude-code-buddy-mcp"]
     }
   }
 }
@@ -46,7 +46,7 @@ Run the interactive installer (includes automatic MCP configuration):
 
 ```bash
 git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
-cd claude-code-buddy
+cd @pcircle/claude-code-buddy-mcp
 ./scripts/install.sh
 ```
 
@@ -90,16 +90,16 @@ For contributors or users who want to run from source:
 ```bash
 # Clone and install
 git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
-cd claude-code-buddy
+cd @pcircle/claude-code-buddy-mcp
 npm install
 npm run build
 
 # Configure MCP to use local installation
 {
   "mcpServers": {
-    "claude-code-buddy": {
+    "@pcircle/claude-code-buddy-mcp": {
       "command": "node",
-      "args": ["/path/to/claude-code-buddy/dist/mcp/server.js"]
+      "args": ["/path/to/@pcircle/claude-code-buddy-mcp/dist/mcp/server.js"]
     }
   }
 }
@@ -112,9 +112,9 @@ You can customize the MCP server configuration:
 ```json
 {
   "mcpServers": {
-    "claude-code-buddy": {
+    "@pcircle/claude-code-buddy-mcp": {
       "command": "npx",
-      "args": ["-y", "claude-code-buddy"],
+      "args": ["-y", "@pcircle/claude-code-buddy-mcp"],
       "env": {
         "CCB_LOG_LEVEL": "debug",
         "CCB_KNOWLEDGE_DB_PATH": "/custom/path/knowledge.db"
@@ -138,7 +138,7 @@ After installation, verify CCB is working:
 ### In Cursor
 1. Open a project
 2. Open the MCP panel (View → MCP Servers)
-3. Look for "claude-code-buddy" in the server list
+3. Look for "@pcircle/claude-code-buddy-mcp" in the server list
 4. Status should show "Connected ✓"
 
 ### In Claude Code
@@ -206,12 +206,12 @@ After installation:
 ### For npx users (default):
 CCB automatically uses the latest version. To verify:
 ```bash
-npx claude-code-buddy --version
+npx @pcircle/claude-code-buddy-mcp --version
 ```
 
 ### For local installation users:
 ```bash
-cd /path/to/claude-code-buddy
+cd /path/to/@pcircle/claude-code-buddy-mcp
 git pull origin main
 npm install
 npm run build

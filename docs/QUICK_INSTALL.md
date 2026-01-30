@@ -8,7 +8,9 @@ Claude Code Buddy (CCB) can be installed to Cursor and VS Code in just one click
 
 Click the button below to install CCB to Cursor:
 
-[![Install to Cursor](https://img.shields.io/badge/Install%20to-Cursor-blue?style=for-the-badge&logo=cursor)](cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==)
+<a href="cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==">
+  <img src="https://cursor.com/deeplink/mcp-install-dark.png" alt="Add to Cursor" />
+</a>
 
 **Or paste this link in your browser:**
 ```

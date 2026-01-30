@@ -261,7 +261,7 @@ CCB: [Generates step-by-step plan with:
 - ✅ **Race Condition Protection**: Systematic concurrency testing and prevention
 - ✅ **Graceful Error Handling**: Detailed error messages with recovery suggestions
 
-**Latest Security Audit (v2.3.4):**
+**Latest Security Audit (v2.3.5):**
 ```bash
 npm audit
 # Result: 0 vulnerabilities found ✅
@@ -275,7 +275,9 @@ npm audit
 
 #### For Cursor Users
 
-[![Install to Cursor](https://img.shields.io/badge/Install%20to-Cursor-blue?style=for-the-badge&logo=cursor)](cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==)
+<a href="cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==">
+  <img src="https://cursor.com/deeplink/mcp-install-dark.png" alt="Add to Cursor" />
+</a>
 
 **Click the button above or paste this link in your browser:**
 ```

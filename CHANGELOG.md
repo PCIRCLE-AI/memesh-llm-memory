@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-01-30
+
+### Fixed
+- **Installation Script Bug**: Fixed critical bug where install script created wrong config file
+  - Script was looking for `~/.claude.json` but Claude Code CLI uses `~/.claude/config.json`
+  - This caused installation to fail silently - CCB was never registered with Claude Code
+  - Changed default config path to `~/.claude/config.json`
+  - Added proper fallback chain for different Claude environments
+  - Location: `scripts/install-helpers.js`
+
+## [2.4.0] - 2026-01-30
+
 ### Added
 - **Enhanced Test Parsing**: `test-complete` checkpoint now includes detailed failure information
   - Extract failed test names for Vitest, Jest, and Mocha

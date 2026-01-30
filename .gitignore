@@ -269,6 +269,7 @@ tests/scripts/**
 test-*.ts
 test-*.js
 test-*.sh
+!scripts/test-installation.sh
 debug-*.ts
 debug-*.js
 temp-*.ts

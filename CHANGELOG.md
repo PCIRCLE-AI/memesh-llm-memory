@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.2] - 2026-01-30
+
+### Fixed
+- **Installation Script Fallback Logic**: Removed incorrect fallback chain
+  - Always use `~/.claude/config.json` as single source of truth
+  - Previously would fallback to other files when config didn't exist
+  - Could create configs in wrong locations
+  - Now creates `~/.claude/config.json` if it doesn't exist
+
 ## [2.4.1] - 2026-01-30
 
 ### Fixed

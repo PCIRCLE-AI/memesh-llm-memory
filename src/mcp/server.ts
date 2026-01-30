@@ -207,16 +207,7 @@ class ClaudeCodeBuddyMCPServer {
   async start(): Promise<void> {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-
-    // Server ready
-    logger.info('Claude Code Buddy MCP Server started');
-    const agents = this.components.agentRegistry.getAllAgents();
-    const capabilityCount = new Set(
-      agents.flatMap(agent => agent.capabilities || [])
-    ).size;
-    logger.info(`Capabilities loaded: ${capabilityCount}`);
-
-    logger.info('Waiting for requests...');
+    // No logging - keep stdio completely clean for MCP JSON-RPC communication
   }
 
   /**
@@ -317,30 +308,24 @@ class ClaudeCodeBuddyMCPServer {
 /**
  * Main entry point for the MCP server
  *
- * @throws Error if server initialization or startup fails
+ * Follows official MCP SDK pattern:
+ * - server.connect() keeps process alive by listening to stdin
+ * - Use console.error() for logging (stderr is safe for stdio transport)
+ * - No need for infinite promise
  */
 async function main() {
-  try {
-    const mcpServer = new ClaudeCodeBuddyMCPServer();
-    await mcpServer.start();
-
-    // Keep process alive - stdio transport will exit when stdin closes
-    // This prevents the process from exiting immediately after start()
-    await new Promise(() => {}); // Infinite promise - waits until killed
-  } catch (error) {
-    logError(error, {
-      component: 'ClaudeCodeBuddyMCPServer',
-      method: 'main',
-      operation: 'starting MCP server',
-    });
-    logger.error('Failed to start MCP server:', error);
-    process.exit(1);
-  }
+  const mcpServer = new ClaudeCodeBuddyMCPServer();
+  await mcpServer.start();
+  // server.connect() keeps the process alive - no need for infinite promise
 }
 
 // Start server if run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
+  main().catch((error) => {
+    // Use console.error for stdio safety (writes to stderr, not stdout)
+    console.error('Fatal error in main():', error);
+    process.exit(1);
+  });
 }
 
 export { ClaudeCodeBuddyMCPServer };

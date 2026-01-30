@@ -4,9 +4,10 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
-const DEFAULT_CONFIG_PATH = path.join(os.homedir(), '.claude.json');
+const DEFAULT_CONFIG_PATH = path.join(os.homedir(), '.claude', 'config.json');
 const FALLBACK_CONFIG_PATHS = [
   DEFAULT_CONFIG_PATH,
+  path.join(os.homedir(), '.claude.json'),
   path.join(os.homedir(), '.config', 'claude', 'claude_desktop_config.json'),
   path.join(os.homedir(), '.claude', 'mcp_settings.json'),
 ];

@@ -249,11 +249,11 @@ CCB：[生成逐步計畫，包含：
 
 #### Cursor 用戶
 
-[![安裝到 Cursor](https://img.shields.io/badge/安裝到-Cursor-blue?style=for-the-badge&logo=cursor)](cursor://anysphere.cursor-deeplink/mcp/install?name=claude-code-buddy&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNsYXVkZS1jb2RlLWJ1ZGR5Il19)
+[![安裝到 Cursor](https://img.shields.io/badge/安裝到-Cursor-blue?style=for-the-badge&logo=cursor)](cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==)
 
 **點擊上方按鈕或在瀏覽器貼上此連結：**
 ```
-cursor://anysphere.cursor-deeplink/mcp/install?name=claude-code-buddy&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNsYXVkZS1jb2RlLWJ1ZGR5Il19
+cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==
 ```
 
 #### VS Code / Claude Code 用戶
@@ -262,9 +262,9 @@ cursor://anysphere.cursor-deeplink/mcp/install?name=claude-code-buddy&config=eyJ
 ```json
 {
   "mcpServers": {
-    "claude-code-buddy": {
+    "@pcircle/claude-code-buddy-mcp": {
       "command": "npx",
-      "args": ["-y", "claude-code-buddy"]
+      "args": ["-y", "@pcircle/claude-code-buddy-mcp"]
     }
   }
 }

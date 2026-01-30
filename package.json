@@ -1,5 +1,5 @@
 {
-  "name": "claude-code-buddy",
+  "name": "@pcircle/claude-code-buddy-mcp",
   "version": "2.3.1",
   "description": "Your friendly AI companion for Claude Code - smart routing, prompt enhancement, and project memory",
   "main": "dist/index.js",

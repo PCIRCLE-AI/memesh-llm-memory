@@ -421,7 +421,7 @@
             </div>
             <pre><code><span class="comment"># Clone the repository</span>
 <span class="keyword">git</span> clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
-<span class="keyword">cd</span> claude-code-buddy
+<span class="keyword">cd</span> @pcircle/claude-code-buddy-mcp
 
 <span class="comment"># Run the interactive installer</span>
 ./scripts/install.sh</code></pre>
@@ -893,7 +893,7 @@ generate-smart-plan <span class="string">{"featureDescription":"Add login flow"}
                 For Cursor Users
               </h4>
               <a
-                href="cursor://anysphere.cursor-deeplink/mcp/install?name=claude-code-buddy&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNsYXVkZS1jb2RlLWJ1ZGR5Il19"
+                href="cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ=="
                 class="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl text-center mb-3"
               >
                 Install to Cursor
@@ -911,9 +911,9 @@ generate-smart-plan <span class="string">{"featureDescription":"Add login flow"}
               <div class="bg-gray-900 rounded-lg p-4 text-sm mb-3">
                 <pre class="text-gray-300 overflow-x-auto text-xs"><code>{
   "mcpServers": {
-    "claude-code-buddy": {
+    "@pcircle/claude-code-buddy-mcp": {
       "command": "npx",
-      "args": ["-y", "claude-code-buddy"]
+      "args": ["-y", "@pcircle/claude-code-buddy-mcp"]
     }
   }
 }</code></pre>
@@ -984,7 +984,7 @@ node --version  <span class="comment"># Should be v20 or higher</span></code></p
                 <div class="glass-card rounded-lg p-5">
                   <pre><code><span class="comment"># Clone the repository</span>
 git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
-cd claude-code-buddy
+cd @pcircle/claude-code-buddy-mcp
 
 <span class="comment"># Run interactive installer</span>
 ./scripts/install.sh</code></pre>

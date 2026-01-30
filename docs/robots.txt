@@ -1,0 +1,31 @@
+# robots.txt for Claude Code Buddy
+# https://ccb.pcircle.ai
+
+User-agent: *
+Allow: /
+
+# AI Crawlers - Allow all for better discoverability
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Perplexity-Bot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+# Sitemap location
+Sitemap: https://ccb.pcircle.ai/sitemap.xml
+
+# LLMs.txt location (AI-first standard)
+# See: https://llmstxt.org/
+Allow: /llms.txt

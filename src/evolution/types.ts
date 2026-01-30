@@ -837,3 +837,114 @@ export interface GlobalModel {
    */
   createdAt: Date;
 }
+
+/**
+ * AI Error Classification
+ *
+ * Categories of errors that the main AI (not sub-agents) can make.
+ * Used to track and learn from mistakes to prevent recurrence.
+ */
+export enum AIErrorType {
+  /** Violated established workflow or procedure */
+  PROCEDURE_VIOLATION = 'procedure-violation',
+
+  /** Skipped required workflow step */
+  WORKFLOW_SKIP = 'workflow-skip',
+
+  /** Made assumption without verification */
+  ASSUMPTION_ERROR = 'assumption-error',
+
+  /** Skipped validation/checking step */
+  VALIDATION_SKIP = 'validation-skip',
+
+  /** Lacked responsibility/ownership */
+  RESPONSIBILITY_LACK = 'responsibility-lack',
+
+  /** Reactive firefighting instead of proactive prevention */
+  FIREFIGHTING = 'firefighting',
+
+  /** Missing or incorrect dependency */
+  DEPENDENCY_MISS = 'dependency-miss',
+
+  /** Integration or coordination failure */
+  INTEGRATION_ERROR = 'integration-error',
+
+  /** Deployment or release error */
+  DEPLOYMENT_ERROR = 'deployment-error',
+}
+
+/**
+ * AI Mistake Record
+ *
+ * Records a specific mistake made by the main AI, including:
+ * - What action was taken
+ * - Why it was wrong
+ * - What the correct approach should have been
+ * - Impact and prevention method
+ */
+export interface AIMistake {
+  /** Unique mistake ID */
+  id: string;
+
+  /** Timestamp when mistake occurred */
+  timestamp: Date;
+
+  /** What action was taken (the mistake) */
+  action: string;
+
+  /** Error classification */
+  errorType: AIErrorType;
+
+  /** User's correction/feedback */
+  userCorrection: string;
+
+  /** What should have been done instead */
+  correctMethod: string;
+
+  /** Impact of the mistake */
+  impact: string;
+
+  /** How to prevent this in the future */
+  preventionMethod: string;
+
+  /** Related rule/guideline (if any) */
+  relatedRule?: string;
+
+  /** Context/details */
+  context?: Record<string, unknown>;
+}
+
+/**
+ * AI Behavior Pattern
+ *
+ * Identifies recurring patterns in AI behavior (good or bad).
+ * Used by evolution system to recognize and prevent anti-patterns.
+ */
+export interface AIBehaviorPattern {
+  /** Pattern ID */
+  id: string;
+
+  /** Pattern description */
+  description: string;
+
+  /** Pattern type */
+  type: 'positive' | 'negative';
+
+  /** Associated error type (for negative patterns) */
+  errorType?: AIErrorType;
+
+  /** Number of occurrences */
+  occurrences: number;
+
+  /** When this pattern tends to occur */
+  triggerContext: string;
+
+  /** Prevention or reinforcement strategy */
+  strategy: string;
+
+  /** Confidence level (0-1) */
+  confidence: number;
+
+  /** Last seen timestamp */
+  lastSeen: Date;
+}

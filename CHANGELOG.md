@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.2] - 2026-01-31
+
+### Fixed
+
+- **CRITICAL**: Tools defined but not routed - buddy-record-mistake and create-entities were non-functional
+  - Added routing for `buddy-record-mistake` in ToolRouter.ts
+  - Added routing for `create-entities` in ToolRouter.ts
+  - Added `create-entities` to ToolDefinitions.ts (was missing)
+  - Added `handleBuddyRecordMistake` method to ToolHandlers class
+  - Root cause: Tools were defined but dispatch logic was never implemented
+  - This is another example of releasing untested code
+
+### Lessons Learned
+
+- v2.5.0: Database path wrong, memory completely broken
+- v2.5.1: Fixed database, but tools still not routed
+- v2.5.2: Fixed tool routing
+- Pattern: Declaring work "done" without end-to-end verification
+
 ## [2.5.1] - 2026-01-31
 
 ### Fixed

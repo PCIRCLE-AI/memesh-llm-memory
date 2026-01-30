@@ -66,6 +66,27 @@ export {
 } from './AdaptationEngine.js';
 export { EvolutionBootstrap } from './EvolutionBootstrap.js';
 
+// NEW: Mistake Detection & Learning (Main AI Evolution)
+export {
+  FeedbackCollector,
+  type FeedbackCollectorConfig,
+  type RoutingApprovalInput,
+  type TaskCompletionInput,
+} from './FeedbackCollector.js';
+export {
+  LocalMistakeDetector,
+  type CorrectionDetection,
+  type Message,
+} from './LocalMistakeDetector.js';
+export {
+  CloudEvolutionClient,
+  createCloudClient,
+  type CloudEvolutionConfig,
+  type AdvancedMistakeDetection,
+  type PatternRecognitionResult,
+  type PreventionSuggestion,
+} from './CloudEvolutionClient.js';
+
 // Types
 export type {
   PerformanceMetrics,
@@ -73,6 +94,15 @@ export type {
   AgentFeedback,
   AdaptationConfig,
   EvolutionStats,
+} from './types.js';
+
+// NEW: Main AI Mistake Types
+export {
+  AIErrorType,
+} from './types.js';
+export type {
+  AIMistake,
+  AIBehaviorPattern,
 } from './types.js';
 
 // Phase 3: Cross-Agent Knowledge Transfer

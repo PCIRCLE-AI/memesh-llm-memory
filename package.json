@@ -1,6 +1,6 @@
 {
   "name": "@pcircle/claude-code-buddy-mcp",
-  "version": "2.3.10",
+  "version": "2.3.11",
   "description": "Your friendly AI companion for Claude Code - smart routing, prompt enhancement, and project memory",
   "main": "dist/index.js",
   "type": "module",

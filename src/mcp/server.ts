@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * Claude Code Buddy MCP Server
  *

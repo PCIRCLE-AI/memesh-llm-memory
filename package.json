@@ -35,7 +35,9 @@
     "demo:dashboard": "tsx examples/dashboard-demo.ts",
     "mcp": "node dist/mcp/server.js",
     "docs": "typedoc",
-    "docs:watch": "typedoc --watch"
+    "docs:watch": "typedoc --watch",
+    "verify:mcp": "./scripts/verify-mcp-stdio.sh",
+    "prepublishOnly": "npm run build && npm run verify:mcp"
   },
   "keywords": [
     "claude",

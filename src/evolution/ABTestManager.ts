@@ -182,8 +182,8 @@ export class ABTestManager {
    * @returns Variant index
    */
   private hashToVariant(key: string, trafficSplit: number[]): number {
-    // Use MD5 hash to get deterministic assignment
-    const hash = crypto.createHash('md5').update(key).digest('hex');
+    // Use SHA-256 hash to get deterministic assignment
+    const hash = crypto.createHash('sha256').update(key).digest('hex');
     const hashInt = parseInt(hash.substring(0, 8), 16);
     const normalizedHash = (hashInt % 100000) / 100000; // 0 to 1
 

@@ -1,0 +1,273 @@
+# Claude Code Buddy - AI Assistant Context
+
+> Free & Open Source Plugin that adds intelligence, memory, and task routing to Claude Code
+> Transform Claude Code into a project-aware AI teammate with persistent memory
+
+## Project Overview
+
+Claude Code Buddy (CCB) is an MCP (Model Context Protocol) server that extends Claude Code with:
+- **Project Memory**: Knowledge graph remembering architecture decisions and coding patterns
+- **Smart Task Routing**: Automatic routing to specialized capabilities (code review, debugging, frontend, backend)
+- **Workflow Guidance**: Phase-aware recommendations and smart planning
+- **Session Health Monitoring**: Token tracking and intelligent context management
+
+**License**: AGPL-3.0
+**Language**: TypeScript
+**Platform**: Node.js 20+
+**Latest Version**: 2.5.0 (2026-01-30)
+
+## Quick Start
+
+### Installation (NPM)
+```bash
+npx -y @pcircle/claude-code-buddy-mcp
+```
+
+### Installation (Git Clone)
+```bash
+git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
+cd claude-code-buddy
+./scripts/install.sh
+```
+
+### Configuration (Claude Code CLI)
+Add to `~/.claude/config.json`:
+```json
+{
+  "mcpServers": {
+    "claude-code-buddy": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@pcircle/claude-code-buddy-mcp"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}
+```
+
+## Core Features
+
+### 1. Project Memory System
+- **Knowledge Graph**: SQLite-based persistent memory
+- **Auto-Tracking**: Hook-based automatic updates
+- **Memory Recall**: `buddy-remember "query"` command
+- **Deduplication**: Smart duplicate detection
+- **Cross-Session**: Memory persists across sessions
+
+### 2. Capability Routing
+Automatic routing to specialized capabilities:
+- `code-review`: Security, quality, anti-patterns
+- `debugging`: Systematic debugging methodology
+- `frontend-design`: UI/UX, accessibility, responsive design
+- `backend-systems`: API design, database optimization
+- `test-automation`: Test strategy and implementation
+- `architecture-review`: System design validation
+
+### 3. Process Management (v2.5.0)
+New CLI tools for managing MCP server processes:
+- `npm run processes:list` - List all CCB MCP processes
+- `npm run processes:kill` - Terminate all processes
+- `npm run processes:orphaned` - Find orphaned processes
+- `npm run processes:config` - Check configuration
+
+### 4. Smart Planning
+- Generate implementation plans: `generate-smart-plan`
+- Break down features into small tasks
+- TDD-friendly task ordering
+- Dependency analysis
+
+### 5. Session Health Monitoring
+- Token usage tracking (200K limit awareness)
+- Automatic context reload at 90% capacity
+- Success rate analytics
+- Intelligent next-step recommendations
+
+## Available Commands
+
+### Buddy Commands (Direct Invocation)
+- `buddy-do "task description"` - Execute task with smart routing
+- `buddy-remember "query"` - Search project memory
+- `buddy-help` - Show available commands
+- `create-entities` - Add entities to knowledge graph
+- `create-relations` - Add relations to knowledge graph
+- `add-observations` - Add observations to memory
+- `health-check` - Check system health
+
+### Workflow Commands
+- `get-workflow-guidance` - Get phase-aware recommendations
+- `generate-smart-plan` - Generate implementation plan
+- `get-session-health` - Check session token usage
+
+## Technical Architecture
+
+### Technology Stack
+- **Language**: TypeScript
+- **Runtime**: Node.js 20+
+- **Database**: better-sqlite3
+- **Protocol**: Model Context Protocol (MCP)
+- **Testing**: Vitest
+- **License**: AGPL-3.0
+
+### Directory Structure
+```
+src/
+├── mcp/              # MCP server implementation
+├── agents/           # Specialized capability agents
+├── orchestrator/     # Task routing and orchestration
+├── memory/           # Project memory management
+├── evolution/        # Learning and adaptation
+├── core/             # Core functionality
+└── utils/            # Utilities
+```
+
+### Key Files
+- `src/mcp/server.ts` - Main MCP server
+- `src/orchestrator/index.ts` - Task orchestrator
+- `src/agents/knowledge/KnowledgeGraph.ts` - Knowledge graph
+- `src/memory/ProjectAutoTracker.ts` - Auto-tracking
+- `scripts/manage-mcp-processes.sh` - Process management CLI
+
+## API Reference
+
+### MCP Tools
+
+#### buddy-remember
+Search project memory with semantic queries.
+```typescript
+{
+  "query": string,        // Search query
+  "limit"?: number       // Max results (default: 5)
+}
+```
+
+#### buddy-do
+Execute task with automatic capability routing.
+```typescript
+{
+  "taskDescription": string,  // Task to execute
+  "context"?: object         // Additional context
+}
+```
+
+#### create-entities
+Add entities to knowledge graph.
+```typescript
+{
+  "entities": [
+    {
+      "name": string,        // Entity name
+      "entityType": string,  // Type (concept, decision, pattern, etc.)
+      "observations": [string]  // Associated observations
+    }
+  ]
+}
+```
+
+#### create-relations
+Add relations between entities.
+```typescript
+{
+  "relations": [
+    {
+      "from": string,        // Source entity
+      "to": string,          // Target entity
+      "relationType": string  // Relation type
+    }
+  ]
+}
+```
+
+## Development
+
+### Build from Source
+```bash
+npm install
+npm run build
+npm run test
+```
+
+### Run Tests
+```bash
+npm run test              # Unit tests
+npm run test:coverage     # With coverage
+npm run test:e2e:safe     # E2E tests (resource-safe)
+```
+
+### Verify Installation
+```bash
+npm run verify:mcp        # Test MCP server stdio mode
+npm run test:install      # Full installation test suite
+```
+
+## Troubleshooting
+
+### Multiple Processes Running
+```bash
+npm run processes:list     # List all processes
+npm run processes:orphaned # Find orphaned processes
+npm run processes:kill     # Kill all CCB processes
+```
+
+### MCP Server Not Connecting
+1. Check configuration: `npm run processes:config`
+2. Verify stdio mode: `npm run verify:mcp`
+3. Check logs in `~/.claude-code-buddy/logs/`
+4. Ensure no orphaned processes: `npm run processes:orphaned`
+
+### Installation Issues
+See comprehensive guide: `docs/PRE_RELEASE_CHECKLIST.md`
+Process management guide: `docs/MCP_PROCESS_MANAGEMENT.md`
+
+## Resources
+
+- **GitHub**: https://github.com/PCIRCLE-AI/claude-code-buddy
+- **NPM**: https://www.npmjs.com/package/@pcircle/claude-code-buddy-mcp
+- **Documentation**: https://github.com/PCIRCLE-AI/claude-code-buddy#readme
+- **Website**: https://ccb.pcircle.ai
+- **Issues**: https://github.com/PCIRCLE-AI/claude-code-buddy/issues
+- **Discussions**: https://github.com/PCIRCLE-AI/claude-code-buddy/discussions
+
+## Recent Updates (v2.5.0)
+
+### New in v2.5.0 (2026-01-30)
+- ✨ Process management CLI tools
+- ✨ Pre-release comprehensive checklist
+- ✨ MCP process management documentation
+- 🌍 All code comments converted to English (i18n)
+- 📝 README updated with process management section
+
+### Previous Versions
+- v2.4.2: Fixed config path fallback logic
+- v2.4.1: Corrected Claude Code CLI config path
+- v2.4.0: Enhanced test parsing and memory deduplication
+- v2.3.x: Core memory and routing features
+
+## Contributing
+
+Contributions welcome! See `docs/CONTRIBUTING.md` for guidelines.
+
+### Development Guidelines
+- Follow TypeScript strict mode
+- Add tests for new features
+- Update documentation
+- Run pre-commit checks: `npm run lint && npm run typecheck`
+- Use conventional commits
+
+## License
+
+AGPL-3.0 - See LICENSE file for details.
+
+## Contact
+
+- **Organization**: PCIRCLE AI
+- **Website**: https://pcircle.ai
+- **GitHub Org**: https://github.com/PCIRCLE-AI
+- **Email**: Support via GitHub Issues
+
+---
+
+**Note for AI Agents**: This file provides comprehensive context about Claude Code Buddy.
+Use this information to understand the project structure, features, and usage patterns.
+For code-level details, refer to the source files in the GitHub repository.

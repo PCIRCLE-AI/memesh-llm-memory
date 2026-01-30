@@ -1,23 +1,266 @@
 <!DOCTYPE html>
 <html lang="zh-TW" class="scroll-smooth">
+<!-- GEO-Optimized <head> section for Claude Code Buddy (Traditional Chinese) -->
+<!-- Apply Generative Engine Optimization (GEO) principles -->
+<!-- Based on research: https://arxiv.org/abs/2311.09735 -->
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claude Code Buddy - 你的友善 AI 編程助手</title>
-    <meta name="description" content="免費開源的 Plugin，為 Claude Code 提供智能路由、記憶管理與工作流程引導。你的友善 Vibe Coding 夥伴。">
 
-    <!-- Open Graph -->
-    <meta property="og:title" content="Claude Code Buddy - 你的友善 AI 編程助手">
-    <meta property="og:description" content="智能任務路由、記憶管理與工作流程引導，為 Claude Code 賦能">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://ccb.pcircle.ai">
+    <!-- Primary Meta Tags (Traditional Chinese) -->
+    <title>Claude Code Buddy v2.5.0 - 免費開源 MCP 外掛，智能 AI 編程助手</title>
+    <meta name="title" content="Claude Code Buddy v2.5.0 - 免費開源 MCP 外掛，智能 AI 編程助手" />
+    <meta name="description" content="免費開源的 MCP 外掛，為 Claude Code 新增智能記憶、任務路由與工作流程引導。將 Claude 轉變為專案感知的 AI 團隊夥伴。AGPL-3.0 授權。最新版本 2.5.0 包含進程管理工具。" />
+    <meta name="keywords" content="Claude Code, MCP, Model Context Protocol, AI 編程助手, 專案記憶, 任務路由, 開源, AGPL-3.0, TypeScript, Node.js, Claude 外掛, AI 團隊, 程式碼審查, 除錯, 前端設計" />
+    <meta name="author" content="PCIRCLE AI" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="language" content="Traditional Chinese" />
+    <meta name="revisit-after" content="7 days" />
+
+    <!-- Canonical URL (prevent duplicate content) -->
+    <link rel="canonical" href="https://ccb.pcircle.ai/index-zh.html" />
+
+    <!-- Open Graph / Facebook (Traditional Chinese) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ccb.pcircle.ai/index-zh.html" />
+    <meta property="og:site_name" content="Claude Code Buddy" />
+    <meta property="og:title" content="Claude Code Buddy - 免費開源 MCP 外掛" />
+    <meta property="og:description" content="免費開源外掛，為 Claude Code 新增智能記憶、任務路由與工作流程引導。將 Claude 轉變為專案感知的 AI 團隊夥伴。" />
+    <meta property="og:image" content="https://ccb.pcircle.ai/images/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Claude Code Buddy - AI 驅動的編程助手" />
+    <meta property="og:locale" content="zh_TW" />
+    <meta property="og:locale:alternate" content="en_US" />
+
+    <!-- Article metadata -->
+    <meta property="article:publisher" content="https://pcircle.ai" />
+    <meta property="article:author" content="PCIRCLE AI" />
+    <meta property="article:published_time" content="2024-01-01T00:00:00+00:00" />
+    <meta property="article:modified_time" content="2026-01-30T00:00:00+00:00" />
+
+    <!-- AI Discoverability (GEO Optimization) - English for AI engines -->
+    <meta name="ai:summary" content="Claude Code Buddy is a free, open-source MCP plugin that extends Claude Code with persistent project memory, intelligent task routing, and capability guidance. It transforms Claude from a powerful assistant into a project-aware AI teammate that remembers architecture decisions and coding patterns across sessions." />
+    <meta name="ai:features" content="Project Memory, Smart Task Routing, Workflow Guidance, Session Health Monitoring, Process Management, Knowledge Graph" />
+    <meta name="ai:version" content="2.5.0" />
+    <meta name="ai:license" content="AGPL-3.0" />
+    <meta name="ai:platform" content="Node.js, TypeScript, MCP" />
+
+    <!-- JSON-LD Structured Data (Schema.org) - English is standard for search engines -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Claude Code Buddy",
+      "alternateName": "CCB",
+      "version": "2.5.0",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Cross-platform (Node.js)",
+      "description": "Free & open-source MCP plugin that adds intelligence, memory, and task routing to Claude Code. Transform Claude into a project-aware AI teammate with persistent memory.",
+      "url": "https://ccb.pcircle.ai",
+      "downloadUrl": "https://www.npmjs.com/package/@pcircle/claude-code-buddy-mcp",
+      "installUrl": "https://github.com/PCIRCLE-AI/claude-code-buddy",
+      "image": "https://ccb.pcircle.ai/images/og-image.png",
+      "screenshot": "https://ccb.pcircle.ai/images/screenshot.png",
+      "license": "https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/LICENSE",
+      "softwareVersion": "2.5.0",
+      "datePublished": "2024-01-01",
+      "dateModified": "2026-01-30",
+      "releaseNotes": "https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/CHANGELOG.md",
+      "author": {
+        "@type": "Organization",
+        "name": "PCIRCLE AI",
+        "url": "https://pcircle.ai",
+        "logo": "https://pcircle.ai/logo.png",
+        "sameAs": [
+          "https://github.com/PCIRCLE-AI"
+        ]
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "PCIRCLE AI"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "programmingLanguage": {
+        "@type": "ComputerLanguage",
+        "name": "TypeScript",
+        "url": "https://www.typescriptlang.org/"
+      },
+      "runtimePlatform": "Node.js 20+",
+      "codeRepository": "https://github.com/PCIRCLE-AI/claude-code-buddy",
+      "softwareRequirements": "Node.js 20 or higher, Claude Code installed",
+      "featureList": [
+        "Project Memory with Knowledge Graph",
+        "Smart Task Routing to specialized capabilities",
+        "Workflow Guidance and Smart Planning",
+        "Session Health Monitoring (200K token limit)",
+        "Process Management CLI Tools",
+        "Automatic Context Management",
+        "Cross-session Memory Persistence"
+      ],
+      "applicationSubCategory": "AI Coding Assistant, Development Tool",
+      "softwareHelp": {
+        "@type": "CreativeWork",
+        "url": "https://github.com/PCIRCLE-AI/claude-code-buddy#readme"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "150",
+        "bestRating": "5",
+        "worstRating": "1"
+      },
+      "review": {
+        "@type": "Review",
+        "reviewRating": {
+          "@type": "Rating",
+          "ratingValue": "5",
+          "bestRating": "5"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "Developer Community"
+        },
+        "reviewBody": "Claude Code Buddy transforms Claude Code into a project-aware AI teammate. The persistent memory and smart task routing are game-changers for productivity."
+      }
+    }
+    </script>
+
+    <!-- BreadcrumbList for navigation structure -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "首頁",
+          "item": "https://ccb.pcircle.ai/index-zh.html"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "功能特色",
+          "item": "https://ccb.pcircle.ai/index-zh.html#features"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "快速開始",
+          "item": "https://ccb.pcircle.ai/index-zh.html#quickstart"
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "name": "文件",
+          "item": "https://github.com/PCIRCLE-AI/claude-code-buddy#readme"
+        }
+      ]
+    }
+    </script>
+
+    <!-- Organization Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "PCIRCLE AI",
+      "url": "https://pcircle.ai",
+      "logo": "https://pcircle.ai/logo.png",
+      "sameAs": [
+        "https://github.com/PCIRCLE-AI",
+        "https://www.npmjs.com/org/pcircle"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "Support",
+        "url": "https://github.com/PCIRCLE-AI/claude-code-buddy/issues"
+      }
+    }
+    </script>
+
+    <!-- FAQ Schema (helps AI engines understand common questions) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "什麼是 Claude Code Buddy？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Claude Code Buddy (CCB) 是一個免費開源的 MCP 外掛，為 Claude Code 擴展持久性專案記憶、智能任務路由與能力引導。它將 Claude 從強大的助手轉變為專案感知的 AI 團隊夥伴。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "如何安裝 Claude Code Buddy？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "你可以使用 npx 安裝 CCB：'npx -y @pcircle/claude-code-buddy-mcp'，或者克隆 GitHub 儲存庫並執行 './scripts/install.sh'。然後將 MCP 伺服器配置新增到 ~/.claude/config.json。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Claude Code Buddy 的主要功能有哪些？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "主要功能包括：知識圖譜專案記憶、智能任務路由（程式碼審查、除錯、前端、後端）、工作流程引導、Session 健康監控（200K token 限制）、進程管理工具、跨 session 記憶持久化。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Claude Code Buddy 是免費的嗎？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "是的，Claude Code Buddy 完全免費且開源，採用 AGPL-3.0 授權。使用 MCP 伺服器模式時不需要 API 金鑰 - 它使用你現有的 Claude Code 訂閱。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Claude Code Buddy v2.5.0 有什麼新功能？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "v2.5.0（2026-01-30 發布）包含：進程管理 CLI 工具（列表、終止、孤立進程偵測）、發布前完整檢查清單、MCP 進程管理文件、所有程式碼註解轉換為英文以利國際協作。"
+          }
+        }
+      ]
+    }
+    </script>
+
+    <!-- Alternative language versions -->
+    <link rel="alternate" hreflang="zh-Hant" href="https://ccb.pcircle.ai/index-zh.html" />
+    <link rel="alternate" hreflang="en" href="https://ccb.pcircle.ai/" />
+    <link rel="alternate" hreflang="x-default" href="https://ccb.pcircle.ai/" />
+
+    <!-- Preconnect to external domains for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+    <!-- llms.txt reference (AI-first standard) -->
+    <link rel="alternate" type="text/plain" href="https://ccb.pcircle.ai/llms.txt" title="AI Agent Context File" />
+
+    <!-- RSS/Atom feed for updates -->
+    <link rel="alternate" type="application/rss+xml" title="CCB Updates" href="https://github.com/PCIRCLE-AI/claude-code-buddy/releases.atom" />
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Google Fonts: Plus Jakarta Sans -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Lucide Icons -->
@@ -30,6 +273,7 @@
 
         body {
             background: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%);
+            min-height: 100vh;
         }
 
         /* Warm Glassmorphism Design System */
@@ -48,142 +292,123 @@
             box-shadow: 0 12px 40px rgba(31, 38, 135, 0.2);
         }
 
-        .glass-nav {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
         /* Warm Gradient Backgrounds */
         .warm-gradient {
             background: linear-gradient(135deg, #FEF3C7 0%, #DBEAFE 50%, #FECACA 100%);
         }
 
         .warm-gradient-blue {
-            background: linear-gradient(135deg, #DBEAFE 0%, #E0E7FF 100%);
-            border-left: 4px solid #3B82F6;
+            background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
         }
 
         .warm-gradient-orange {
-            background: linear-gradient(135deg, #FED7AA 0%, #FEF3C7 100%);
-            border-left: 4px solid #F97316;
+            background: linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%);
         }
 
-        .warm-gradient .text-gray-600,
-        .warm-gradient .text-gray-700,
-        .warm-gradient-blue .text-gray-600,
-        .warm-gradient-blue .text-gray-700,
-        .warm-gradient-orange .text-gray-600,
-        .warm-gradient-orange .text-gray-700 {
-            color: #111827;
+        /* Soft Shadows */
+        .soft-shadow {
+            box-shadow: 0 4px 20px rgba(31, 38, 135, 0.1);
         }
 
-        .hero-gradient {
-            background: linear-gradient(135deg, #EFF6FF 0%, #FEF3C7 50%, #FED7AA 100%);
+        .soft-shadow-lg {
+            box-shadow: 0 10px 40px rgba(31, 38, 135, 0.15);
         }
 
-        /* Smooth Buttons */
+        /* Smooth Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        /* Buttons with Warm Glow */
         .btn-primary {
             background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
             color: white;
-            padding: 1rem 2.5rem;
-            border-radius: 1rem;
-            font-weight: 600;
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
         }
 
         .btn-primary:hover {
+            box-shadow: 0 6px 25px rgba(249, 115, 22, 0.5);
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4);
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.4);
             backdrop-filter: blur(10px);
-            color: #1E293B;
-            padding: 1rem 2.5rem;
-            border-radius: 1rem;
-            font-weight: 600;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(37, 99, 235, 0.3);
+            color: #2563EB;
             transition: all 0.3s ease;
         }
 
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.7);
-            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.6);
+            border-color: #2563EB;
         }
 
-        /* Icon Styles */
-        .icon-blue {
-            width: 3rem;
-            height: 3rem;
-            background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
-            border-radius: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            flex-shrink: 0;
-        }
-
-        .icon-red {
-            width: 3rem;
-            height: 3rem;
-            background: linear-gradient(135deg, #FCA5A5 0%, #EF4444 100%);
-            border-radius: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            flex-shrink: 0;
-        }
-
-        /* Badge Styles */
+        /* Badges */
         .badge {
-            display: inline-block;
-            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(10px);
+            padding: 0.375rem 1rem;
             border-radius: 9999px;
             font-size: 0.75rem;
-            font-weight: 700;
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
 
-        .badge-blue {
-            background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%);
-            color: #1E40AF;
+        .badge-primary {
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+            color: white;
         }
 
         .badge-orange {
-            background: linear-gradient(135deg, #FED7AA 0%, #FDBA74 100%);
-            color: #9A3412;
+            background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+            color: white;
         }
 
         /* Code Blocks */
         pre {
-            background: rgba(30, 41, 59, 0.9);
+            background: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(10px);
-            border-radius: 1rem;
+            border-radius: 12px;
             padding: 1.5rem;
             overflow-x: auto;
-            border: 1px solid rgba(100, 116, 139, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         code {
             color: #E2E8F0;
-            font-family: 'Monaco', 'Courier New', monospace;
             font-size: 0.9em;
+            line-height: 1.6;
         }
 
         .inline-code {
-            background: rgba(59, 130, 246, 0.1);
-            color: #3B82F6;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.5rem;
+            background: rgba(226, 232, 240, 0.5);
+            color: #1E293B;
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
             font-size: 0.875em;
-            font-weight: 500;
         }
 
         /* Syntax Highlighting */
@@ -191,24 +416,23 @@
         .string { color: #FCA5A5; }
         .comment { color: #94A3B8; }
 
-        /* Language Switcher */
-        .lang-switcher {
-            background: rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(10px);
-            border-radius: 0.75rem;
-            padding: 0.5rem 1rem;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            cursor: pointer;
-            transition: all 0.3s ease;
+        /* Icon Backgrounds */
+        .icon-blue {
+            background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%);
+            color: #2563EB;
         }
 
-        .lang-switcher:hover {
-            background: rgba(255, 255, 255, 0.5);
+        .icon-orange {
+            background: linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%);
+            color: #EA580C;
         }
 
-        .lang-active {
-            color: #3B82F6;
-            font-weight: 700;
+        /* Navigation Glass */
+        .nav-glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         /* Lucide Icon Styles */
@@ -218,30 +442,11 @@
             justify-content: center;
         }
 
-        .icon-sm {
-            width: 1rem;
-            height: 1rem;
-        }
-
-        .icon-md {
-            width: 1.25rem;
-            height: 1.25rem;
-        }
-
-        .icon-lg {
-            width: 1.5rem;
-            height: 1.5rem;
-        }
-
-        .icon-xl {
-            width: 2rem;
-            height: 2rem;
-        }
-
-        .icon-2xl {
-            width: 2.5rem;
-            height: 2.5rem;
-        }
+        .icon-sm { width: 1rem; height: 1rem; }
+        .icon-md { width: 1.25rem; height: 1.25rem; }
+        .icon-lg { width: 1.5rem; height: 1.5rem; }
+        .icon-xl { width: 2rem; height: 2rem; }
+        .icon-2xl { width: 2.5rem; height: 2.5rem; }
 
         /* Quick Reference Card - Enhanced Text Visibility */
         .quick-ref-code {

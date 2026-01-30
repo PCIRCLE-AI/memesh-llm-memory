@@ -14,9 +14,8 @@
  * - Responses formatted via ResponseFormatter for Terminal output
  */
 
-// Load environment variables from .env file
-import dotenv from 'dotenv';
-dotenv.config();
+// Note: dotenv removed to prevent stdout pollution in MCP stdio mode
+// MCP servers should receive configuration through MCP protocol, not .env files
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';

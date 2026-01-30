@@ -271,12 +271,43 @@ npm audit
 
 ## Quick Start (2 Minutes)
 
+### 🚀 One-Click Installation
+
+#### For Cursor Users
+
+[![Install to Cursor](https://img.shields.io/badge/Install%20to-Cursor-blue?style=for-the-badge&logo=cursor)](cursor://anysphere.cursor-deeplink/mcp/install?name=claude-code-buddy&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNsYXVkZS1jb2RlLWJ1ZGR5Il19)
+
+**Click the button above or paste this link in your browser:**
+```
+cursor://anysphere.cursor-deeplink/mcp/install?name=claude-code-buddy&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNsYXVkZS1jb2RlLWJ1ZGR5Il19
+```
+
+#### For VS Code / Claude Code Users
+
+**Quick MCP Configuration** (add to `~/.claude/mcp_settings.json`):
+```json
+{
+  "mcpServers": {
+    "claude-code-buddy": {
+      "command": "npx",
+      "args": ["-y", "claude-code-buddy"]
+    }
+  }
+}
+```
+
+Then restart Claude Code and start using CCB!
+
+**📖 Detailed installation guide**: See [QUICK_INSTALL.md](docs/QUICK_INSTALL.md)
+
+---
+
 ### Prerequisites
 
 - Node.js 20+ ([download](https://nodejs.org/))
-- Claude Code installed ([get it here](https://claude.com/claude-code))
+- Claude Code installed ([get it here](https://claude.com/claude-code)) or Cursor IDE
 
-### Installation
+### Manual Installation (Alternative)
 
 ```bash
 # 1. Clone the repository

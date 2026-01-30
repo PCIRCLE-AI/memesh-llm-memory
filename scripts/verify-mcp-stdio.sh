@@ -49,7 +49,7 @@ echo ""
 # Check 2: No dotenv in source
 echo "🔍 Source Code Checks"
 test_check "No dotenv imports" "! grep -r \"from 'dotenv'\" src/ --include='*.ts'"
-test_check "No console.log in source" "! grep -r \"console\\.log\" src/ --include='*.ts' | grep -v '//' | grep -v '\\*'"
+test_check "No console.log in source" "! grep -r \"console\\.log\" src/ --include='*.ts' --exclude='*.test.ts' | grep -v '//' | grep -v '\\*'"
 echo ""
 
 # Check 3: Stdio pollution test

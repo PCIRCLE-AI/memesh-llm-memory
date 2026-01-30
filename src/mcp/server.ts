@@ -323,6 +323,10 @@ async function main() {
   try {
     const mcpServer = new ClaudeCodeBuddyMCPServer();
     await mcpServer.start();
+
+    // Keep process alive - stdio transport will exit when stdin closes
+    // This prevents the process from exiting immediately after start()
+    await new Promise(() => {}); // Infinite promise - waits until killed
   } catch (error) {
     logError(error, {
       component: 'ClaudeCodeBuddyMCPServer',

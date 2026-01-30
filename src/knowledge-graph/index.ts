@@ -8,6 +8,7 @@
 import Database from 'better-sqlite3';
 import { join } from 'path';
 import { promises as fsPromises, existsSync, mkdirSync } from 'fs';
+import { homedir } from 'os';
 import { NotFoundError, ValidationError } from '../errors/index.js';
 import { SimpleDatabaseFactory } from '../config/simple-config.js';
 import type { Entity, Relation, SearchQuery, RelationTrace, EntityType, RelationType } from './types.js';
@@ -52,11 +53,12 @@ export class KnowledgeGraph {
    * ```
    */
   static async create(dbPath?: string): Promise<KnowledgeGraph> {
-    // Default to data/knowledge-graph.db
-    const resolvedPath = dbPath || join(process.cwd(), 'data', 'knowledge-graph.db');
+    // ✅ FIX: Default to ~/.claude-code-buddy/knowledge-graph.db (not ./data/)
+    const defaultPath = join(homedir(), '.claude-code-buddy', 'knowledge-graph.db');
+    const resolvedPath = dbPath || defaultPath;
 
-    // Ensure data directory exists (async)
-    const dataDir = join(process.cwd(), 'data');
+    // Ensure .claude-code-buddy directory exists (async)
+    const dataDir = join(homedir(), '.claude-code-buddy');
     try {
       await fsPromises.access(dataDir);
     } catch {
@@ -88,10 +90,12 @@ export class KnowledgeGraph {
    * @returns KnowledgeGraph instance
    */
   static createSync(dbPath?: string): KnowledgeGraph {
-    const resolvedPath = dbPath || join(process.cwd(), 'data', 'knowledge-graph.db');
+    // ✅ FIX: Default to ~/.claude-code-buddy/knowledge-graph.db (not ./data/)
+    const defaultPath = join(homedir(), '.claude-code-buddy', 'knowledge-graph.db');
+    const resolvedPath = dbPath || defaultPath;
 
-    // Ensure data directory exists (sync)
-    const dataDir = join(process.cwd(), 'data');
+    // Ensure .claude-code-buddy directory exists (sync)
+    const dataDir = join(homedir(), '.claude-code-buddy');
     if (!existsSync(dataDir)) {
       mkdirSync(dataDir, { recursive: true });
     }

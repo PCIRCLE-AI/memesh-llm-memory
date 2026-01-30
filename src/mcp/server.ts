@@ -305,27 +305,8 @@ class ClaudeCodeBuddyMCPServer {
   }
 }
 
-/**
- * Main entry point for the MCP server
- *
- * Follows official MCP SDK pattern:
- * - server.connect() keeps process alive by listening to stdin
- * - Use console.error() for logging (stderr is safe for stdio transport)
- * - No need for infinite promise
- */
-async function main() {
-  const mcpServer = new ClaudeCodeBuddyMCPServer();
-  await mcpServer.start();
-  // server.connect() keeps the process alive - no need for infinite promise
-}
-
-// Start server if run directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch((error) => {
-    // Use console.error for stdio safety (writes to stderr, not stdout)
-    console.error('Fatal error in main():', error);
-    process.exit(1);
-  });
-}
-
+// Export server class for bootstrap loader
 export { ClaudeCodeBuddyMCPServer };
+
+// NOTE: Do not run server directly from this file.
+// Use server-bootstrap.ts instead, which sets MCP_SERVER_MODE before imports.

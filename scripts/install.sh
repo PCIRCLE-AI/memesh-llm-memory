@@ -132,7 +132,7 @@ fi
 # Step 6: Configure MCP
 print_step "Step 6/9: Configuring MCP integration..."
 
-CCB_PATH="$(pwd)/dist/mcp/server.js"
+CCB_PATH="$(pwd)/dist/mcp/server-bootstrap.js"
 
 # Add CCB to MCP config using Node.js helper
 if node scripts/install-helpers.js add-to-mcp "$CCB_PATH"; then
@@ -265,11 +265,11 @@ print_step "Step 9/9: Verifying MCP server..."
 
 # Try to start MCP server (timeout after 3 seconds)
 if command -v timeout &> /dev/null; then
-    timeout 3 node dist/mcp/server.js &> /dev/null \
+    timeout 3 node dist/mcp/server-bootstrap.js &> /dev/null \
         && print_success "MCP server starts successfully" \
         || print_success "MCP server configured (will start when Claude Code connects)"
 else
-    node dist/mcp/server.js &> /dev/null &
+    node dist/mcp/server-bootstrap.js &> /dev/null &
     MCP_PID=$!
     sleep 3
     if kill -0 $MCP_PID 2>/dev/null; then

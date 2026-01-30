@@ -101,7 +101,7 @@ npm run build
   "mcpServers": {
     "@pcircle/claude-code-buddy-mcp": {
       "command": "node",
-      "args": ["/path/to/@pcircle/claude-code-buddy-mcp/dist/mcp/server.js"]
+      "args": ["/path/to/@pcircle/claude-code-buddy-mcp/dist/mcp/server-bootstrap.js"]
     }
   }
 }

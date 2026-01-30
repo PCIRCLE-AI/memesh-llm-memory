@@ -70,7 +70,7 @@ npm run build
     "claude-code-buddy": {
       "type": "stdio",
       "command": "node",
-      "args": ["/path/to/claude-code-buddy/dist/mcp/server.js"],
+      "args": ["/path/to/claude-code-buddy/dist/mcp/server-bootstrap.js"],
       "env": {
         "NODE_ENV": "production"
       }
@@ -571,7 +571,7 @@ EVIDENCE_MODE=true
   "mcpServers": {
     "claude-code-buddy": {
       "command": "node",
-      "args": ["/path/to/claude-code-buddy/dist/mcp/server.js"]
+      "args": ["/path/to/claude-code-buddy/dist/mcp/server-bootstrap.js"]
     }
   }
 }

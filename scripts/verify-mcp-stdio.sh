@@ -61,7 +61,7 @@ TEMP_OUTPUT=$(mktemp)
 # Run server for 1 second and capture output
 echo "Starting MCP server in stdio mode (1 second test)..."
 (
-    MCP_SERVER_MODE=true node dist/mcp/server.js &
+    node dist/mcp/server-bootstrap.js &
     SERVER_PID=$!
     sleep 1
     kill $SERVER_PID 2>/dev/null || true
@@ -90,7 +90,7 @@ echo "📡 JSON-RPC Communication Test"
 INIT_REQUEST='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}'
 
 JSONRPC_OUTPUT=$(mktemp)
-echo "$INIT_REQUEST" | MCP_SERVER_MODE=true node dist/mcp/server.js > "$JSONRPC_OUTPUT" 2>&1 &
+echo "$INIT_REQUEST" | node dist/mcp/server-bootstrap.js > "$JSONRPC_OUTPUT" 2>&1 &
 SERVER_PID=$!
 sleep 2
 kill $SERVER_PID 2>/dev/null || true

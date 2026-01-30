@@ -245,12 +245,43 @@ CCB：[生成逐步計畫，包含：
 
 ## 快速開始（2 分鐘）
 
+### 🚀 一鍵安裝
+
+#### Cursor 用戶
+
+[![安裝到 Cursor](https://img.shields.io/badge/安裝到-Cursor-blue?style=for-the-badge&logo=cursor)](cursor://anysphere.cursor-deeplink/mcp/install?name=claude-code-buddy&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNsYXVkZS1jb2RlLWJ1ZGR5Il19)
+
+**點擊上方按鈕或在瀏覽器貼上此連結：**
+```
+cursor://anysphere.cursor-deeplink/mcp/install?name=claude-code-buddy&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNsYXVkZS1jb2RlLWJ1ZGR5Il19
+```
+
+#### VS Code / Claude Code 用戶
+
+**快速 MCP 配置**（加入到 `~/.claude/mcp_settings.json`）：
+```json
+{
+  "mcpServers": {
+    "claude-code-buddy": {
+      "command": "npx",
+      "args": ["-y", "claude-code-buddy"]
+    }
+  }
+}
+```
+
+然後重啟 Claude Code 即可開始使用 CCB！
+
+**📖 詳細安裝指南**：參見 [QUICK_INSTALL.md](docs/QUICK_INSTALL.md)
+
+---
+
 ### 前置需求
 
 - Node.js 20+ ([下載](https://nodejs.org/))
-- Claude Code 已安裝 ([在這裡取得](https://claude.com/claude-code))
+- Claude Code 已安裝 ([在這裡取得](https://claude.com/claude-code)) 或 Cursor IDE
 
-### 安裝
+### 手動安裝（替代方案）
 
 ```bash
 # 1. 複製儲存庫

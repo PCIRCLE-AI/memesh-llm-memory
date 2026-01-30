@@ -875,6 +875,72 @@ generate-smart-plan <span class="string">{"featureDescription":"Add login flow"}
           </p>
         </div>
 
+        <!-- One-Click Installation -->
+        <div class="glass-card rounded-2xl p-8 mb-12">
+          <div class="text-center mb-8">
+            <h3 class="text-3xl font-bold text-gray-900 mb-4">
+              🚀 One-Click Installation
+            </h3>
+            <p class="text-gray-600">
+              Install CCB to your IDE in seconds
+            </p>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-6 mb-6">
+            <!-- Cursor Installation -->
+            <div class="bg-white rounded-xl p-6 border-2 border-blue-200 hover:border-blue-400 transition-all">
+              <h4 class="text-xl font-bold text-gray-900 mb-3">
+                For Cursor Users
+              </h4>
+              <a
+                href="cursor://anysphere.cursor-deeplink/mcp/install?name=claude-code-buddy&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNsYXVkZS1jb2RlLWJ1ZGR5Il19"
+                class="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl text-center mb-3"
+              >
+                Install to Cursor
+              </a>
+              <p class="text-gray-600 text-sm">
+                Click above or paste in browser
+              </p>
+            </div>
+
+            <!-- VS Code / Claude Code Installation -->
+            <div class="bg-white rounded-xl p-6 border-2 border-purple-200 hover:border-purple-400 transition-all">
+              <h4 class="text-xl font-bold text-gray-900 mb-3">
+                For VS Code / Claude Code
+              </h4>
+              <div class="bg-gray-900 rounded-lg p-4 text-sm mb-3">
+                <pre class="text-gray-300 overflow-x-auto text-xs"><code>{
+  "mcpServers": {
+    "claude-code-buddy": {
+      "command": "npx",
+      "args": ["-y", "claude-code-buddy"]
+    }
+  }
+}</code></pre>
+              </div>
+              <p class="text-gray-600 text-sm">
+                Add to <code class="bg-gray-100 px-2 py-1 rounded text-xs">~/.claude/mcp_settings.json</code>
+              </p>
+            </div>
+          </div>
+
+          <div class="text-center">
+            <a
+              href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/QUICK_INSTALL.md"
+              target="_blank"
+              class="text-blue-600 hover:text-blue-700 font-medium"
+            >
+              📖 Detailed Installation Guide →
+            </a>
+          </div>
+        </div>
+
+        <div class="text-center mb-8">
+          <p class="text-gray-600">
+            Or use the manual installation below
+          </p>
+        </div>
+
         <div class="space-y-6">
           <!-- Step 1 -->
           <div class="glass-card rounded-2xl p-8">

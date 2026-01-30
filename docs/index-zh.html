@@ -702,6 +702,54 @@ get-session-health</code></pre>
                 <p class="text-xl text-gray-600">只需 <strong>2 分鐘</strong>即可開始使用</p>
             </div>
 
+            <!-- One-Click Installation -->
+            <div class="glass-card rounded-2xl p-8 mb-12">
+                <h3 class="text-2xl font-bold text-gray-900 mb-6">🚀 一鍵安裝</h3>
+
+                <div class="grid md:grid-cols-2 gap-6 mb-6">
+                    <!-- Cursor Installation -->
+                    <div class="bg-white rounded-xl p-6 shadow-lg">
+                        <h4 class="text-xl font-bold text-gray-900 mb-4">Cursor 用戶</h4>
+                        <p class="text-gray-600 mb-4">點擊下方按鈕即可自動安裝到 Cursor：</p>
+                        <a href="cursor://anysphere.cursor-deeplink/mcp/install?name=claude-code-buddy&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNsYXVkZS1jb2RlLWJ1ZGR5Il19"
+                           class="inline-block px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-700 text-white font-semibold rounded-xl hover:shadow-xl transition-all duration-200">
+                            安裝到 Cursor
+                        </a>
+                        <p class="text-sm text-gray-500 mt-4">或在瀏覽器中貼上此連結：</p>
+                        <code class="text-xs bg-gray-100 px-2 py-1 rounded break-all">cursor://anysphere.cursor-deeplink/mcp/install?name=claude-code-buddy&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNsYXVkZS1jb2RlLWJ1ZGR5Il19</code>
+                    </div>
+
+                    <!-- VS Code Installation -->
+                    <div class="bg-white rounded-xl p-6 shadow-lg">
+                        <h4 class="text-xl font-bold text-gray-900 mb-4">VS Code / Claude Code 用戶</h4>
+                        <p class="text-gray-600 mb-4">將以下配置添加到您的 MCP 設定檔：</p>
+                        <div class="glass-card rounded-xl p-4 mb-4">
+                            <pre><code>{
+  "mcpServers": {
+    "claude-code-buddy": {
+      "command": "npx",
+      "args": ["-y", "claude-code-buddy"]
+    }
+  }
+}</code></pre>
+                        </div>
+                        <p class="text-sm text-gray-600">
+                            <strong>配置檔位置：</strong><br>
+                            • macOS/Linux: <code class="text-xs bg-gray-100 px-1">~/.claude/mcp_settings.json</code><br>
+                            • Windows: <code class="text-xs bg-gray-100 px-1">%APPDATA%\Claude\mcp_settings.json</code>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <p class="text-gray-700">
+                        📖 <strong>詳細安裝說明：</strong> 請參閱
+                        <a href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/QUICK_INSTALL.md"
+                           class="text-blue-600 hover:underline font-semibold">快速安裝指南</a>
+                    </p>
+                </div>
+            </div>
+
             <div class="space-y-6">
                 <!-- Step 1 -->
                 <div class="glass-card rounded-2xl p-8">

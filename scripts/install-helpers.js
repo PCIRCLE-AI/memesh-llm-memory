@@ -22,12 +22,8 @@ function resolveConfigPath(preferredPath) {
     return envPath;
   }
 
-  for (const candidate of FALLBACK_CONFIG_PATHS) {
-    if (fs.existsSync(candidate)) {
-      return candidate;
-    }
-  }
-
+  // Always use DEFAULT_CONFIG_PATH (~/.claude/config.json) for Claude Code CLI
+  // Don't fallback to other files like ~/.claude.json (which is the main CLI config, not MCP config)
   return DEFAULT_CONFIG_PATH;
 }
 

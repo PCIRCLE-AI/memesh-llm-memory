@@ -1,14 +1,14 @@
 /**
- * CostTracker - 成本追蹤與預算管理
+ * CostTracker - Cost Tracking and Budget Management
  *
- * 功能：
- * - 追蹤每個任務的成本
- * - 計算累積成本
- * - 預算警報
- * - 成本報告生成
- * - SQLite 持久化（數據不再在重啟時丟失！）
+ * Features:
+ * - Track cost of each task
+ * - Calculate cumulative cost
+ * - Budget alerts
+ * - Cost report generation
+ * - SQLite persistence (data no longer lost on restart!)
  *
- * 使用整數運算 (micro-dollars) 避免浮點精度錯誤
+ * Use integer arithmetic (micro-dollars) to avoid floating-point precision errors
  */
 
 import { CostRecord, CostStats } from './types.js';
@@ -92,7 +92,7 @@ export class CostTracker {
   }
 
   /**
-   * 記錄任務成本
+   * Record task cost
    *
    * @returns Cost in micro-dollars (μUSD)
    */
@@ -127,14 +127,14 @@ export class CostTracker {
       }
     }
 
-    // 檢查是否超過預算警告閾值
+    // Check if budget warning threshold exceeded
     this.checkBudgetAlert();
 
     return cost;
   }
 
   /**
-   * 計算特定模型的成本 (使用整數運算)
+   * Calculate cost for specific model (using integer arithmetic)
    *
    * @returns Cost in micro-dollars (μUSD) - integer for precision
    */
@@ -170,13 +170,13 @@ export class CostTracker {
   }
 
   /**
-   * 獲取成本統計 (使用整數運算)
+   * Get cost statistics (using integer arithmetic)
    */
   getStats(): CostStats {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // 篩選本月成本
+    // Filter this month costs
     const monthlyCosts = this.costs.filter(
       record => record.timestamp >= monthStart
     );
@@ -192,7 +192,7 @@ export class CostTracker {
       ? Math.round(totalCost / taskCount) as MicroDollars
       : 0 as MicroDollars;
 
-    // 按模型統計成本 (integer arithmetic)
+    // Count costs by model (integer arithmetic)
     const costByModel = monthlyCosts.reduce((acc, record) => {
       const currentCost = (acc[record.modelName] || 0) as number;
       acc[record.modelName] = (currentCost + record.cost) as MicroDollars;
@@ -212,7 +212,7 @@ export class CostTracker {
   }
 
   /**
-   * 檢查預算警告
+   * Check budget warning
    */
   private checkBudgetAlert(): void {
     const stats = this.getStats();
@@ -232,7 +232,7 @@ export class CostTracker {
   }
 
   /**
-   * 獲取特定時間範圍的成本
+   * Get costs for specific time range
    *
    * @returns Cost in micro-dollars (μUSD)
    */
@@ -248,7 +248,7 @@ export class CostTracker {
   }
 
   /**
-   * 獲取特定任務的成本
+   * Get cost for specific task
    *
    * @returns Cost in micro-dollars (μUSD)
    */
@@ -261,7 +261,7 @@ export class CostTracker {
   }
 
   /**
-   * 生成成本報告
+   * Generate cost report
    */
   generateReport(): string {
     const stats = this.getStats();
@@ -298,7 +298,7 @@ export class CostTracker {
   }
 
   /**
-   * 清除歷史記錄 (保留最近 N 筆)
+   * Clear history (keep recent N records)
    */
   clearOldRecords(keepRecent: number = 1000): void {
     if (this.costs.length > keepRecent) {
@@ -308,7 +308,7 @@ export class CostTracker {
   }
 
   /**
-   * 導出成本數據 (JSON)
+   * Export cost data (JSON)
    */
   exportData(): string {
     return JSON.stringify(
@@ -323,7 +323,7 @@ export class CostTracker {
   }
 
   /**
-   * 檢查是否在預算內
+   * Check if within budget
    *
    * @param estimatedCost - Estimated cost in micro-dollars (μUSD)
    */
@@ -335,7 +335,7 @@ export class CostTracker {
   }
 
   /**
-   * 獲取建議 (基於當前預算使用情況)
+   * Get recommendations (based on current budget usage)
    */
   getRecommendation(): string {
     const stats = this.getStats();

@@ -39,7 +39,12 @@
     "docs:watch": "typedoc --watch",
     "verify:mcp": "./scripts/verify-mcp-stdio.sh",
     "test:install": "./scripts/test-installation.sh",
-    "prepublishOnly": "npm run test:install"
+    "prepublishOnly": "npm run test:install",
+    "processes:list": "./scripts/manage-mcp-processes.sh list",
+    "processes:kill": "./scripts/manage-mcp-processes.sh kill",
+    "processes:restart": "./scripts/manage-mcp-processes.sh restart",
+    "processes:orphaned": "./scripts/manage-mcp-processes.sh orphaned",
+    "processes:config": "./scripts/manage-mcp-processes.sh config"
   },
   "keywords": [
     "claude",

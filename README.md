@@ -302,6 +302,31 @@ Then restart Claude Code and start using CCB!
 
 **📖 Detailed installation guide**: See [QUICK_INSTALL.md](docs/QUICK_INSTALL.md)
 
+### 🔧 Process Management (Optional)
+
+CCB MCP server runs as a background process for each Claude Code CLI session. Normally, this is transparent and requires no action. However, you may want to manage processes when:
+
+- Upgrading to a new version
+- Debugging connection issues
+- Cleaning up orphaned processes
+
+**Quick Commands:**
+```bash
+# List all CCB MCP processes
+npm run processes:list
+
+# Check for orphaned processes
+npm run processes:orphaned
+
+# Clean up all CCB MCP processes
+npm run processes:kill
+
+# Check MCP configuration
+npm run processes:config
+```
+
+**📖 Detailed process management guide**: See [MCP_PROCESS_MANAGEMENT.md](docs/MCP_PROCESS_MANAGEMENT.md)
+
 ---
 
 ### Prerequisites

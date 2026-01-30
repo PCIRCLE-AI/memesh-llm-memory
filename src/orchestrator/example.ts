@@ -1,7 +1,7 @@
 /**
- * Agent Orchestrator 使用範例
+ * Agent Orchestrator Usage Examples
  *
- * 展示如何使用 Orchestrator 進行任務分析和成本管理
+ * Demonstrates how to use Orchestrator for task analysis and cost management
  */
 
 import { Orchestrator, Task } from './index.js';
@@ -19,7 +19,7 @@ async function main() {
 
   const orchestrator = new Orchestrator();
 
-  // ==================== 範例 1: 簡單任務分析 ====================
+  // ==================== Example 1: Simple Task Analysis ====================
   logger.info('📋 Example 1: Simple Task Analysis\n');
 
   const simpleTask: Task = {
@@ -36,7 +36,7 @@ async function main() {
   logger.info(`Reasoning: ${simpleAnalysis.analysis.reasoning}`);
   logger.info('\n' + '─'.repeat(60) + '\n');
 
-  // ==================== 範例 2: 複雜任務分析 ====================
+  // ==================== Example 2: Complex Task Analysis ====================
   logger.info('📋 Example 2: Complex Task Analysis\n');
 
   const complexTask: Task = {
@@ -56,7 +56,7 @@ async function main() {
   logger.info(`Reasoning: ${complexAnalysis.analysis.reasoning}`);
   logger.info('\n' + '─'.repeat(60) + '\n');
 
-  // ==================== 範例 3: 中等任務分析 ====================
+  // ==================== Example 3: Medium Task Analysis ====================
   logger.info('📋 Example 3: Medium Task Analysis\n');
 
   const mediumTask: Task = {
@@ -73,7 +73,7 @@ async function main() {
   logger.info(`Reasoning: ${mediumAnalysis.analysis.reasoning}`);
   logger.info('\n' + '─'.repeat(60) + '\n');
 
-  // ==================== 範例 4: 批次任務分析 ====================
+  // ==================== Example 4: Batch Task Analysis ====================
   logger.info('📋 Example 4: Batch Task Analysis\n');
 
   const batchTasks: Task[] = [
@@ -104,7 +104,7 @@ async function main() {
   logger.info(`Total Estimated Cost: $${toDollars(totalEstimatedCost as import('../utils/money.js').MicroDollars).toFixed(MICRO_COST_DECIMALS)}`);
   logger.info('\n' + '─'.repeat(60) + '\n');
 
-  // ==================== 範例 5: 系統狀態檢查 ====================
+  // ==================== Example 5: System Status Check ====================
   logger.info('📋 Example 5: System Status Check\n');
 
   const status = await orchestrator.getSystemStatus();
@@ -125,12 +125,12 @@ async function main() {
 
   logger.info('\n' + '═'.repeat(60) + '\n');
 
-  // ==================== 範例 6: 成本追蹤 ====================
+  // ==================== Example 6: Cost Tracking ====================
   logger.info('📋 Example 6: Cost Tracking Simulation\n');
 
   const costTracker = router.getCostTracker();
 
-  // 模擬幾次任務執行
+  // Simulate a few task executions
   logger.info('Simulating task executions...\n');
 
   costTracker.recordCost('sim-1', 'claude-haiku-4-20250514', 1000, 2000);
@@ -146,7 +146,7 @@ async function main() {
 
   logger.info('\n' + '═'.repeat(60) + '\n');
 
-  // ==================== 範例 7: 預算檢查 ====================
+  // ==================== Example 7: Budget Check ====================
   logger.info('📋 Example 7: Budget Check\n');
 
   const testCosts = [
@@ -167,5 +167,5 @@ async function main() {
   logger.info('✨ Examples completed!\n');
 }
 
-// 執行範例
+// Execute examples
 main().catch((error) => logger.error('Example failed:', error));

@@ -1,5 +1,5 @@
 /**
- * 配置管理
+ * Configuration Management
  *
  * Note: dotenv removed to prevent stdout pollution in MCP stdio mode.
  * MCP servers receive configuration through environment variables set by the host,
@@ -10,7 +10,7 @@ import { z } from 'zod';
 import { ConfigurationError } from '../errors/index.js';
 
 /**
- * 環境變數 Schema 驗證
+ * Environment Variable Schema Validation
  */
 const envSchema = z.object({
   // MCP Server Mode (default: true - designed for Claude Code MCP integration)
@@ -45,7 +45,7 @@ const envSchema = z.object({
 });
 
 /**
- * 解析並驗證環境變數
+ * Parse and Validate Environment Variables
  */
 export const env = envSchema.parse(process.env);
 
@@ -109,7 +109,7 @@ if (!env.MCP_SERVER_MODE) {
 }
 
 /**
- * 應用配置
+ * Application Configuration
  */
 export const appConfig = {
   // Claude (primary provider)

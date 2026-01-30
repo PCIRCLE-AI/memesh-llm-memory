@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Process Management Tools**: CLI commands to manage CCB MCP server processes
+  - `npm run processes:list` - List all CCB MCP server processes with detailed status
+  - `npm run processes:kill` - Terminate all CCB MCP server processes
+  - `npm run processes:orphaned` - Find orphaned processes (parent no longer exists)
+  - `npm run processes:config` - Check CCB MCP configuration
+  - Location: `scripts/manage-mcp-processes.sh`
+
+- **Pre-Release Checklist**: Comprehensive checklist for release validation
+  - Functional testing checklist for all core features
+  - Installation testing (fresh install, upgrade, missing config scenarios)
+  - Process management testing
+  - Build and package verification
+  - Documentation completeness check
+  - Security audit checklist
+  - Location: `docs/PRE_RELEASE_CHECKLIST.md`
+
+- **MCP Process Management Guide**: Complete guide for managing MCP server processes
+  - Explains normal vs abnormal process patterns
+  - Orphaned process detection and cleanup
+  - Best practices for version upgrades
+  - Troubleshooting common issues
+  - Location: `docs/MCP_PROCESS_MANAGEMENT.md`
+
+### Improved
+- **Code Documentation**: All source code comments converted from Chinese to English
+  - Improved international collaboration and open-source contribution readiness
+  - Consistent professional documentation across the codebase
+  - Affected files: All TypeScript files in `src/config/`, `src/utils/`, `src/orchestrator/`
+
+- **README**: Added process management section with quick reference commands
+
 ## [2.4.2] - 2026-01-30
 
 ### Fixed

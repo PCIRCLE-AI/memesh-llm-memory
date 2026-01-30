@@ -1,11 +1,11 @@
 /**
- * TaskAnalyzer - 智能任務分析器
+ * TaskAnalyzer - Intelligent Task Analyzer
  *
- * 功能：
- * - 分析任務複雜度 (simple/medium/complex)
- * - 估算所需資源 (tokens, memory)
- * - 推薦執行模式 (parallel/sequential)
- * - 計算預估成本
+ * Features:
+ * - Analyze task complexity (simple/medium/complex)
+ * - Estimate required resources (tokens, memory)
+ * - Recommend execution mode (parallel/sequential)
+ * - Calculate estimated cost
  */
 
 import { Task, TaskAnalysis, TaskComplexity, ExecutionMode, TaskCapability } from './types.js';
@@ -83,7 +83,7 @@ export class TaskAnalyzer {
   }
 
   /**
-   * 分析任務並返回詳細分析結果
+   * Analyze task and return detailed analysis results
    */
   async analyze(task: Task): Promise<TaskAnalysis> {
     const complexity = this.determineComplexity(task);
@@ -106,7 +106,7 @@ export class TaskAnalyzer {
   }
 
   /**
-   * 判斷任務複雜度
+   * Determine task complexity
    *
    * ✅ FIX HIGH-6: Added input validation to prevent DoS attacks
    */
@@ -180,10 +180,10 @@ export class TaskAnalyzer {
   }
 
   /**
-   * 估算任務所需 tokens
+   * Estimate required tokens for task
    */
   private estimateTokens(task: Task, complexity: TaskComplexity): number {
-    const baseTokens = task.description.length * 0.3; // 粗略估算：1 token ≈ 3.33 chars
+    const baseTokens = task.description.length * 0.3; // Rough estimate: 1 token ≈ 3.33 chars
 
     const complexityMultiplier = {
       simple: 1.5,
@@ -195,14 +195,14 @@ export class TaskAnalyzer {
   }
 
   /**
-   * 檢測任務所需能力（基於任務描述關鍵字分析）
-   * 改進：不再僅基於複雜度，而是分析任務內容來檢測實際需要的能力
+   * Detect required task capabilities (based on task description keyword analysis)
+   * Improvement: No longer based solely on complexity, but analyzes task content to detect actually needed capabilities
    */
   private detectRequiredCapabilities(task: Task, complexity: TaskComplexity): TaskCapability[] {
     const description = task.description.toLowerCase();
     const detectedCapabilities: TaskCapability[] = [];
 
-    // 關鍵字到 Agent 的映射
+    // Keyword to Agent mapping
     const keywordToAgent: Partial<Record<TaskCapability, { keywords: string[] }>> = {
       'code-review': {
         keywords: ['review', 'code review', 'check code', 'audit', 'quality', 'best practices'],
@@ -233,7 +233,7 @@ export class TaskAnalyzer {
       },
     };
 
-    // 檢測任務描述中的關鍵字
+    // Detect keywords in task description
     for (const [capability, config] of Object.entries(keywordToAgent)) {
       if (!config) continue;
       const { keywords } = config;
@@ -242,7 +242,7 @@ export class TaskAnalyzer {
       }
     }
 
-    // 如果沒有檢測到特定能力，根據複雜度返回默認 Agent
+    // If no specific capability detected, return default Agent based on complexity
     if (detectedCapabilities.length === 0) {
       if (complexity === 'complex') {
         return ['architecture', 'general'];
@@ -254,12 +254,12 @@ export class TaskAnalyzer {
   }
 
   /**
-   * 判斷執行模式
+   * Determine execution mode
    */
   private determineExecutionMode(task: Task): ExecutionMode {
     const description = task.description.toLowerCase();
 
-    // 平行處理指標
+    // Parallel processing indicators
     const parallelIndicators = [
       'independent',
       'batch process',
@@ -276,7 +276,7 @@ export class TaskAnalyzer {
   }
 
   /**
-   * 計算預估成本 (使用整數運算)
+   * Calculate estimated cost (using integer arithmetic)
    *
    * @returns Cost in micro-dollars (μUSD) - integer for precision
    */
@@ -297,7 +297,7 @@ export class TaskAnalyzer {
   }
 
   /**
-   * 生成分析推理說明
+   * Generate analysis reasoning explanation
    */
   private generateReasoning(
     task: Task,
@@ -326,7 +326,7 @@ export class TaskAnalyzer {
   }
 
   /**
-   * 批次分析多個任務
+   * Analyze multiple tasks in batch
    *
    * ✅ FIX MAJOR-2: Limit concurrency to prevent resource exhaustion
    */
@@ -345,10 +345,10 @@ export class TaskAnalyzer {
   }
 
   /**
-   * 獲取任務優先順序建議
+   * Get task priority recommendation
    */
   suggestPriority(analysis: TaskAnalysis): number {
-    // 複雜度越高，優先級越高
+    // Higher complexity = higher priority
     const complexityPriority = {
       simple: 1,
       medium: 2,

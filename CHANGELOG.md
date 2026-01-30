@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.1] - 2026-01-31
+
+### Fixed
+
+- **CRITICAL**: Knowledge Graph database initialization failure
+  - Fixed incorrect database path configuration (was using `./data/`, now uses `~/.claude-code-buddy/`)
+  - Fixed ES Module compatibility issue (replaced `require('os')` with `import { homedir } from 'os'`)
+  - Resolved `ReferenceError: require is not defined` error that prevented MCP server startup
+  - This bug affected all users in v2.5.0, causing complete memory functionality failure
+  - Memory tools (buddy-remember, create-entities) now work correctly
+
+### Technical Details
+
+- Root cause: Database path defaulted to project directory instead of user home directory
+- Impact: All CCB memory features were non-functional in v2.5.0
+- Files changed: `src/knowledge-graph/index.ts`
+- Database location: `~/.claude-code-buddy/knowledge-graph.db`
+
+## [2.5.0] - 2026-01-XX
+
 ### Added
 
 - **llms.txt**: Comprehensive AI context file for LLM agents

@@ -22,7 +22,7 @@ describe('Installation Verification', () => {
     });
 
     it('should have MCP server built', () => {
-      expect(fs.existsSync('dist/mcp/server.js')).toBe(true);
+      expect(fs.existsSync('dist/mcp/server-bootstrap.js')).toBe(true);
     });
 
     it('should have main entry point', () => {
@@ -45,7 +45,7 @@ describe('Installation Verification', () => {
   describe('MCP Configuration', () => {
     it('should have valid MCP server export', async () => {
       // Import the MCP server module to verify it exports correctly
-      const serverModule = await import('../dist/mcp/server.js');
+      const serverModule = await import('../dist/mcp/server-bootstrap.js');
       expect(serverModule).toBeDefined();
     });
   });

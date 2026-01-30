@@ -19,7 +19,7 @@
 
 - [ ] **測試本地 build**:
   ```bash
-  MCP_SERVER_MODE=true node dist/mcp/server.js
+  MCP_SERVER_MODE=true node dist/mcp/server-bootstrap.js
   ```
   - 確認：無任何 console 輸出（等待 stdin）
   - 確認：無 dotenv 訊息
@@ -27,7 +27,7 @@
 
 - [ ] **測試 stdio 通訊**:
   ```bash
-  echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}' | MCP_SERVER_MODE=true node dist/mcp/server.js
+  echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}' | MCP_SERVER_MODE=true node dist/mcp/server-bootstrap.js
   ```
   - 確認：只有 JSON-RPC 回應，無其他輸出
 

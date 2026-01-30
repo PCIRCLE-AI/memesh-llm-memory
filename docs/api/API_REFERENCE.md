@@ -200,7 +200,7 @@ Common error codes:
 npm run mcp
 
 # Test with MCP Inspector
-npx @modelcontextprotocol/inspector node dist/mcp/server.js
+npx @modelcontextprotocol/inspector node dist/mcp/server-bootstrap.js
 ```
 
 ### Adding New Capabilities (Internal)

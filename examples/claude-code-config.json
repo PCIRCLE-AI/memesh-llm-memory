@@ -4,7 +4,7 @@
     "claude-code-buddy": {
       "command": "node",
       "args": [
-        "/absolute/path/to/claude-code-buddy/dist/mcp/server.js"
+        "/absolute/path/to/claude-code-buddy/dist/mcp/server-bootstrap.js"
       ],
       "env": {
         "ANTHROPIC_API_KEY": "your_anthropic_api_key_here",

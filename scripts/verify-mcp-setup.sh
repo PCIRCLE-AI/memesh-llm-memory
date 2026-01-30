@@ -42,10 +42,10 @@ echo ""
 
 # Check 3: Build artifacts
 echo "3️⃣  Checking build artifacts..."
-if [ -f "dist/mcp/server.js" ]; then
-    echo -e "   ${GREEN}✓${NC} dist/mcp/server.js exists"
+if [ -f "dist/mcp/server-bootstrap.js" ]; then
+    echo -e "   ${GREEN}✓${NC} dist/mcp/server-bootstrap.js exists"
 else
-    echo -e "   ${RED}✗${NC} dist/mcp/server.js not found (run: npm run build)"
+    echo -e "   ${RED}✗${NC} dist/mcp/server-bootstrap.js not found (run: npm run build)"
     ERRORS=$((ERRORS + 1))
 fi
 echo ""
@@ -97,8 +97,8 @@ echo ""
 
 # Check 6: Test MCP server module loads
 echo "6️⃣  Testing MCP server module..."
-if node --input-type=module -e "import('./dist/mcp/server.js')" 2>/dev/null; then
-    echo -e "   ${GREEN}✓${NC} MCP server module loads successfully"
+if node --input-type=module -e "import('./dist/mcp/server-bootstrap.js')" 2>/dev/null; then
+    echo -e "   ${GREEN}✓${NC} MCP server bootstrap loads successfully"
 else
     echo -e "   ${YELLOW}⚠${NC}  MCP server module check skipped (requires stdio)"
     echo -e "      (This is normal - server needs Claude Code connection)"

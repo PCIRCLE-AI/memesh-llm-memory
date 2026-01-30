@@ -78,7 +78,7 @@ function addToMcpConfig(ccbPath, preferredConfigPath) {
  */
 function verifyInstallation() {
   const requiredFiles = [
-    'dist/mcp/server.js',
+    'dist/mcp/server-bootstrap.js',
     'dist/index.js',
     'package.json',
     '.env'

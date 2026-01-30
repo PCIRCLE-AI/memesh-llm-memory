@@ -95,7 +95,7 @@ notepad %USERPROFILE%\.claude\config.json
   "mcpServers": {
     "claude-code-buddy": {
       "command": "node",
-      "args": ["/absolute/path/to/claude-code-buddy/dist/mcp/server.js"],
+      "args": ["/absolute/path/to/claude-code-buddy/dist/mcp/server-bootstrap.js"],
       "env": {
         "NODE_ENV": "production"
       }
@@ -245,7 +245,7 @@ Now that you're up and running, explore more:
 3. Verify server.js was built:
    ```bash
    # Check dist directory exists
-   ls -la dist/mcp/server.js
+   ls -la dist/mcp/server-bootstrap.js
    # Rebuild if missing
    npm run build
    ```

@@ -500,7 +500,7 @@ describe('MCP Server E2E', () => {
 
     // Call MCP server
     const response = execSync(
-      `echo '${request}' | node dist/mcp/server.js`,
+      `echo '${request}' | node dist/mcp/server-bootstrap.js`,
       { encoding: 'utf-8' }
     );
 

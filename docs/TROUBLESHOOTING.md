@@ -39,7 +39,7 @@ cat ~/.claude.json | grep claude-code-buddy
 ```bash
 cd /path/to/claude-code-buddy
 npm run build
-node dist/mcp/server.js --version
+node dist/mcp/server-bootstrap.js --version
 ```
 
 3. **Check server logs**:
@@ -311,13 +311,13 @@ tail -100 ~/.claude/logs/claude-code-buddy.log
 3. **Restart with verbose logging**:
 ```bash
 # In server.ts, enable debug mode
-DEBUG=* node dist/mcp/server.js
+DEBUG=* node dist/mcp/server-bootstrap.js
 ```
 
 4. **Report crash with stack trace**:
 ```bash
 # Capture full error
-node dist/mcp/server.js 2>&1 | tee error.log
+node dist/mcp/server-bootstrap.js 2>&1 | tee error.log
 ```
 
 ---
@@ -573,7 +573,7 @@ pwd
 # Claude Code Buddy status
 cd /path/to/claude-code-buddy
 npm run build
-ls dist/mcp/server.js
+ls dist/mcp/server-bootstrap.js
 
 # MCP configuration
 cat ~/.claude.json | grep -A 10 claude-code-buddy

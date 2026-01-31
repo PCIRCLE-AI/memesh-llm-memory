@@ -257,6 +257,7 @@ export class HookIntegration {
   private projectMemory?: ProjectAutoTracker;
   private lastCheckpoint?: string;
   private testParser: TestOutputParser;
+  private projectAutoTracker?: ProjectAutoTracker;
 
   /**
    * Create a new HookIntegration
@@ -267,6 +268,7 @@ export class HookIntegration {
    *
    * @param checkpointDetector - Checkpoint detector to trigger checkpoints through
    * @param developmentButler - Development Butler instance for workflow automation
+   * @param projectAutoTracker - Optional ProjectAutoTracker for error recording
    *
    * @example
    * ```typescript
@@ -277,11 +279,13 @@ export class HookIntegration {
    */
   constructor(
     checkpointDetector: CheckpointDetector,
-    developmentButler: DevelopmentButler
+    developmentButler: DevelopmentButler,
+    projectAutoTracker?: ProjectAutoTracker
   ) {
     this.detector = checkpointDetector;
     this.butler = developmentButler;
     this.testParser = new TestOutputParser();
+    this.projectAutoTracker = projectAutoTracker;
   }
 
   /**
@@ -542,6 +546,13 @@ export class HookIntegration {
         await this.recordToProjectMemory(checkpoint, toolData);
         await this.recordCheckpointProgress(checkpoint, toolData);
       }
+    }
+
+    // Auto-detect errors from command output
+    if (toolData.output && this.shouldRecordError(toolData.output)) {
+      const args = toolData.arguments as BashToolArgs;
+      const command = args?.command || 'unknown command';
+      await this.recordErrorFromOutput(toolData.output, command);
     }
 
     // Track tokens if available
@@ -912,5 +923,47 @@ export class HookIntegration {
           typeof (test as Record<string, unknown>).name === 'string'
       )
     );
+  }
+
+  /**
+   * Check if command output contains error indicators
+   */
+  private shouldRecordError(output: string): boolean {
+    const errorPatterns = [
+      /error:/i,
+      /exception:/i,
+      /failed:/i,
+      /\d+ failing/i,  // Test failures
+      /build failed/i,
+    ];
+
+    return errorPatterns.some(pattern => pattern.test(output));
+  }
+
+  /**
+   * Extract and record error information from command output
+   */
+  private async recordErrorFromOutput(output: string, command: string): Promise<void> {
+    // Simple heuristic: extract first line with error
+    const lines = output.split('\n');
+    const errorLine = lines.find(line =>
+      /error:|exception:|failed:/i.test(line)
+    );
+
+    if (!errorLine || !this.projectAutoTracker) {
+      return;
+    }
+
+    // Extract error type and message (simple heuristic)
+    const match = errorLine.match(/(\w+Error|Exception|Failed):\s*(.+)/i);
+    const errorType = match?.[1] || 'Unknown Error';
+    const errorMessage = match?.[2] || errorLine.substring(0, 100);
+
+    await this.projectAutoTracker.recordError({
+      error_type: errorType,
+      error_message: errorMessage,
+      context: `Command: ${command}`,
+      resolution: 'Detected during command execution',
+    });
   }
 }

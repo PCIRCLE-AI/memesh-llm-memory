@@ -12,7 +12,7 @@
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { ValidationError, NotFoundError, OperationError } from '../errors/index.js';
 import { RateLimiter } from '../utils/RateLimiter.js';
-import { ToolHandlers, BuddyHandlers } from './handlers/index.js';
+import { ToolHandlers, BuddyHandlers, A2AToolHandlers } from './handlers/index.js';
 
 /**
  * Tool Router Configuration
@@ -21,6 +21,7 @@ export interface ToolRouterConfig {
   rateLimiter: RateLimiter;
   toolHandlers: ToolHandlers;
   buddyHandlers: BuddyHandlers;
+  a2aHandlers: A2AToolHandlers;
 
   /**
    * ✅ FIX HIGH-5: CSRF protection for future HTTP transport
@@ -72,6 +73,7 @@ export class ToolRouter {
   private rateLimiter: RateLimiter;
   private toolHandlers: ToolHandlers;
   private buddyHandlers: BuddyHandlers;
+  private a2aHandlers: A2AToolHandlers;
 
   /**
    * ✅ FIX HIGH-5: CSRF protection configuration
@@ -88,6 +90,7 @@ export class ToolRouter {
     this.rateLimiter = config.rateLimiter;
     this.toolHandlers = config.toolHandlers;
     this.buddyHandlers = config.buddyHandlers;
+    this.a2aHandlers = config.a2aHandlers;
 
     // ✅ FIX HIGH-5: Initialize CSRF protection config
     this.allowedOrigins = config.allowedOrigins;
@@ -264,6 +267,23 @@ export class ToolRouter {
     // Knowledge Graph tools
     if (toolName === 'create-entities') {
       return await this.toolHandlers.handleCreateEntities(args);
+    }
+
+    // A2A Protocol tools
+    if (toolName === 'a2a-send-task') {
+      return await this.a2aHandlers.handleA2ASendTask(args);
+    }
+
+    if (toolName === 'a2a-get-task') {
+      return await this.a2aHandlers.handleA2AGetTask(args);
+    }
+
+    if (toolName === 'a2a-list-tasks') {
+      return await this.a2aHandlers.handleA2AListTasks(args);
+    }
+
+    if (toolName === 'a2a-list-agents') {
+      return await this.a2aHandlers.handleA2AListAgents(args);
     }
 
     throw new NotFoundError(

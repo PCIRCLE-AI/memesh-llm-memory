@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { Router } from '../../orchestrator/router.js';
 import type { ResponseFormatter } from '../../ui/ResponseFormatter.js';
+import type { ProjectAutoTracker } from '../../memory/ProjectAutoTracker.js';
 import { logger } from '../../utils/logger.js';
 
 export const BuddyDoInputSchema = z.object({
@@ -8,6 +9,32 @@ export const BuddyDoInputSchema = z.object({
 });
 
 export type ValidatedBuddyDoInput = z.infer<typeof BuddyDoInputSchema>;
+
+/**
+ * Extract goal, reason, and expected outcome from task description
+ * Phase 0.6: Enhanced Auto-Memory - task metadata extraction
+ * Uses simple heuristics and patterns
+ */
+function extractTaskMetadata(task: string): {
+  goal: string;
+  reason?: string;
+  expectedOutcome?: string;
+} {
+  // Extract goal: First sentence or "to X" pattern
+  const goalMatch = task.match(/^([^.!?]+)[.!?]/) || task.match(/to ([^,]+)/);
+
+  // Extract reason: "because X", "so that X" patterns
+  const reasonMatch = task.match(/because ([^,\.]+)/) || task.match(/so that ([^,\.]+)/);
+
+  // Extract expected outcome: "should X", "will X" patterns
+  const expectedMatch = task.match(/should ([^,\.]+)/) || task.match(/will ([^,\.]+)/);
+
+  return {
+    goal: goalMatch?.[1]?.trim() || task.substring(0, 100),
+    reason: reasonMatch?.[1]?.trim(),
+    expectedOutcome: expectedMatch?.[1]?.trim(),
+  };
+}
 
 /**
  * buddy_do tool - Execute tasks with smart routing
@@ -23,12 +50,32 @@ export type ValidatedBuddyDoInput = z.infer<typeof BuddyDoInputSchema>;
 export async function executeBuddyDo(
   input: ValidatedBuddyDoInput,
   router: Router,
-  formatter: ResponseFormatter
+  formatter: ResponseFormatter,
+  autoTracker?: ProjectAutoTracker
 ): Promise<{ content: Array<{ type: 'text'; text: string }> }> {
   const startTime = Date.now();
   const taskId = `buddy-do-${startTime}`;
 
   try {
+    // Phase 0.6: Auto-record task start with metadata
+    if (autoTracker) {
+      const taskMeta = extractTaskMetadata(input.task);
+
+      await autoTracker.recordTaskStart({
+        task_description: input.task,
+        goal: taskMeta.goal,
+        reason: taskMeta.reason,
+        expected_outcome: taskMeta.expectedOutcome,
+        priority: 'normal',
+      });
+
+      logger.debug('Task start recorded', {
+        goal: taskMeta.goal,
+        hasReason: !!taskMeta.reason,
+        hasExpectedOutcome: !!taskMeta.expectedOutcome,
+      });
+    }
+
     // Route task through smart routing system
     const result = await router.routeTask({
       id: taskId,

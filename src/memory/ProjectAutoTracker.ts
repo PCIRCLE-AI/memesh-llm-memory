@@ -16,6 +16,7 @@
 
 import type { MCPToolInterface } from '../core/MCPToolInterface.js';
 import { logger } from '../utils/logger.js';
+import { EntityType } from './EntityTypes.js';
 
 /**
  * Checkpoint priority levels for memory deduplication
@@ -132,6 +133,184 @@ export class ProjectAutoTracker {
   }
 
   /**
+   * Record task start with goal, reason, and expected outcome
+   * Phase 0.6: Enhanced Auto-Memory - capture task intentions
+   * @param data - Task metadata including goal, reason, expected outcome
+   */
+  async recordTaskStart(data: {
+    task_description: string;
+    goal: string;
+    reason?: string;
+    expected_outcome?: string;
+    priority?: string;
+  }): Promise<void> {
+    const timestamp = new Date().toISOString();
+    const dateStr = timestamp.split('T')[0]; // YYYY-MM-DD
+
+    const observations: string[] = [
+      `GOAL: ${data.goal}`,
+    ];
+
+    if (data.reason) {
+      observations.push(`REASON: ${data.reason}`);
+    }
+
+    observations.push(`TASK: ${data.task_description}`);
+
+    if (data.expected_outcome) {
+      observations.push(`EXPECTED: ${data.expected_outcome}`);
+    }
+
+    if (data.priority) {
+      observations.push(`PRIORITY: ${data.priority}`);
+    }
+
+    observations.push(`Timestamp: ${timestamp}`);
+
+    await this.mcp.memory.createEntities({
+      entities: [{
+        name: `Task Started: ${data.goal.substring(0, 50)} - ${dateStr}`,
+        entityType: EntityType.TASK_START,
+        observations,
+      }],
+    });
+  }
+
+  /**
+   * Record a decision made during development
+   * Phase 0.6: Enhanced Auto-Memory - capture decision rationale
+   * @param data - Decision metadata including context, options considered, chosen option
+   */
+  async recordDecision(data: {
+    decision_description: string;
+    context: string;
+    options_considered?: string[];
+    chosen_option: string;
+    rationale: string;
+    trade_offs?: string;
+    confidence?: string;
+  }): Promise<void> {
+    const timestamp = new Date().toISOString();
+    const dateStr = timestamp.split('T')[0]; // YYYY-MM-DD
+
+    const observations: string[] = [
+      `DECISION: ${data.decision_description}`,
+      `CONTEXT: ${data.context}`,
+    ];
+
+    if (data.options_considered && data.options_considered.length > 0) {
+      observations.push(`OPTIONS CONSIDERED: ${data.options_considered.join(', ')}`);
+    }
+
+    observations.push(`CHOSEN: ${data.chosen_option}`);
+    observations.push(`RATIONALE: ${data.rationale}`);
+
+    if (data.trade_offs) {
+      observations.push(`TRADE-OFFS: ${data.trade_offs}`);
+    }
+
+    if (data.confidence) {
+      observations.push(`CONFIDENCE: ${data.confidence}`);
+    }
+
+    observations.push(`Timestamp: ${timestamp}`);
+
+    await this.mcp.memory.createEntities({
+      entities: [{
+        name: `Decision: ${data.chosen_option.substring(0, 50)} - ${dateStr}`,
+        entityType: EntityType.DECISION,
+        observations,
+      }],
+    });
+  }
+
+  /**
+   * Record a progress milestone during development
+   * Phase 0.6: Enhanced Auto-Memory - capture significant progress points
+   * @param data - Milestone metadata including description, impact, learnings
+   */
+  async recordProgressMilestone(data: {
+    milestone_description: string;
+    significance: string;
+    impact?: string;
+    learnings?: string;
+    next_steps?: string;
+  }): Promise<void> {
+    const timestamp = new Date().toISOString();
+    const dateStr = timestamp.split('T')[0]; // YYYY-MM-DD
+
+    const observations: string[] = [
+      `MILESTONE: ${data.milestone_description}`,
+      `SIGNIFICANCE: ${data.significance}`,
+    ];
+
+    if (data.impact) {
+      observations.push(`IMPACT: ${data.impact}`);
+    }
+
+    if (data.learnings) {
+      observations.push(`LEARNINGS: ${data.learnings}`);
+    }
+
+    if (data.next_steps) {
+      observations.push(`NEXT STEPS: ${data.next_steps}`);
+    }
+
+    observations.push(`Timestamp: ${timestamp}`);
+
+    await this.mcp.memory.createEntities({
+      entities: [{
+        name: `Milestone: ${data.milestone_description.substring(0, 50)} - ${dateStr}`,
+        entityType: EntityType.PROGRESS_MILESTONE,
+        observations,
+      }],
+    });
+  }
+
+  /**
+   * Record an error resolution during development
+   * Phase 0.6: Enhanced Auto-Memory - capture error patterns and solutions
+   * @param data - Error metadata including type, message, resolution
+   */
+  async recordError(data: {
+    error_type: string;
+    error_message: string;
+    context: string;
+    root_cause?: string;
+    resolution: string;
+    prevention?: string;
+  }): Promise<void> {
+    const timestamp = new Date().toISOString();
+    const dateStr = timestamp.split('T')[0]; // YYYY-MM-DD
+
+    const observations: string[] = [
+      `ERROR TYPE: ${data.error_type}`,
+      `MESSAGE: ${data.error_message}`,
+      `CONTEXT: ${data.context}`,
+    ];
+
+    if (data.root_cause) {
+      observations.push(`ROOT CAUSE: ${data.root_cause}`);
+    }
+
+    observations.push(`RESOLUTION: ${data.resolution}`);
+
+    if (data.prevention) {
+      observations.push(`PREVENTION: ${data.prevention}`);
+    }
+
+    observations.push(`Timestamp: ${timestamp}`);
+
+    await this.mcp.memory.createEntities({
+      entities: [{
+        name: `Error Resolution: ${data.error_type} - ${dateStr}`,
+        entityType: EntityType.ERROR_RESOLUTION,
+        observations,
+      }],
+    });
+  }
+
+  /**
    * Record test execution results to Knowledge Graph
    * @param result - Test execution summary
    */
@@ -158,7 +337,7 @@ export class ProjectAutoTracker {
     await this.mcp.memory.createEntities({
       entities: [{
         name: `Test Result ${status} ${dateStr} ${Date.now()}`,
-        entityType: 'test_result',
+        entityType: EntityType.TEST_RESULT,
         observations,
       }],
     });
@@ -176,7 +355,7 @@ export class ProjectAutoTracker {
     await this.mcp.memory.createEntities({
       entities: [{
         name: `Workflow Checkpoint ${checkpoint} ${dateStr} ${Date.now()}`,
-        entityType: 'workflow_checkpoint',
+        entityType: EntityType.WORKFLOW_CHECKPOINT,
         observations: [
           `Checkpoint: ${checkpoint}`,
           ...details,
@@ -223,7 +402,7 @@ export class ProjectAutoTracker {
     await this.mcp.memory.createEntities({
       entities: [{
         name: `Commit ${dateStr} ${Date.now()}`,
-        entityType: 'commit',
+        entityType: EntityType.COMMIT,
         observations,
       }],
     });
@@ -239,7 +418,7 @@ export class ProjectAutoTracker {
     await this.mcp.memory.createEntities({
       entities: [{
         name: `Project Snapshot ${dateStr} ${Date.now()}`,
-        entityType: 'project_snapshot',
+        entityType: EntityType.PROJECT_SNAPSHOT,
         observations: [
           `Token count: ${this.currentTokenCount}`,
           `Snapshot threshold: ${this.snapshotThreshold}`,
@@ -315,7 +494,7 @@ export class ProjectAutoTracker {
     await this.mcp.memory.createEntities({
       entities: [{
         name: entityName,
-        entityType: 'code_change',
+        entityType: EntityType.CODE_CHANGE,
         observations,
       }],
     });

@@ -7,6 +7,129 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-01-31
+
+### Added - Phase 0.6: Enhanced Auto-Memory System
+
+**Automatic Task Tracking**
+- Task start recording with goal/reason/expected outcome extraction
+- Integrated with `buddy-do` tool for automatic metadata capture
+- Natural language pattern matching for task context extraction
+
+**Decision Tracking**
+- Comprehensive decision recording with context and rationale
+- Captures options considered, chosen option, and trade-offs
+- Confidence level tracking for architectural decisions
+
+**Progress Milestone Tracking**
+- Milestone recording with significance and impact analysis
+- Learning capture from development progress
+- Next steps documentation
+
+**Error Resolution Tracking**
+- Automatic error detection from command output
+- Manual error recording with root cause analysis
+- Prevention strategies documentation
+
+**Infrastructure Improvements**
+- EntityType enum for type-safe entity management
+- Integration with HookIntegration for automatic event capture
+- Enhanced ProjectAutoTracker with 4 new recording methods
+
+**Documentation**
+- Comprehensive auto-memory system guide
+- Updated buddy-do skill documentation
+- Integration testing and validation suite
+- Phase 0.6 validation checklist
+
+**Testing**
+- 15 new tests for Phase 0.6 features
+- Integration tests covering all entity types
+- Entity type validation tests
+- Data completeness verification
+
+### Added
+
+- **A2A (Agent-to-Agent) Protocol - Phase 0.5** 🤝
+  - Multi-agent collaboration framework enabling Claude instances to delegate tasks to each other
+  - **4 new MCP tools** for agent collaboration:
+    - `a2a-send-task` - Send tasks to other A2A agents for execution
+    - `a2a-get-task` - Query task status and details from other agents
+    - `a2a-list-tasks` - List tasks assigned to this agent
+    - `a2a-list-agents` - Discover available agents in the registry
+  - **Agent Registry** (SQLite) - Centralized registry of active agents with heartbeat monitoring
+  - **Task Queue** (SQLite per agent) - Persistent task storage with message history and artifacts
+  - **A2A HTTP Server** (Express) - RESTful API endpoints for A2A protocol operations
+  - **A2A HTTP Client** - Client library for sending requests to other agents
+  - **Task Executor** - Background task processing (Phase 0.5: echo responses; Phase 1: Claude integration)
+  - **Server Lifecycle Management** - Automatic port assignment (3000-3999), graceful shutdown, registry cleanup
+  - Location: `src/a2a/` (types, server, client, storage, executor)
+  - Documentation: `docs/features/a2a-agent-collaboration.md`
+  - Manual testing guide: `docs/testing/phase-0.5-a2a-manual-tests.md`
+
+### Changed
+
+- **MCP Tool Count**: 7 → 11 tools (added 4 A2A tools)
+- **README.md**: Added "Multi-Agent Collaboration" section showcasing A2A Protocol capabilities
+
+### Technical Details
+
+**A2A Protocol Implementation:**
+- 7 new TypeScript modules (types, server, client, storage, executor, handlers)
+- 2 SQLite database schemas (agent registry, task queue)
+- 5 HTTP endpoints (`/a2a/agent-card`, `/a2a/send-message`, `/a2a/tasks/*`)
+- Full MCP tool integration with validation schemas
+- Comprehensive manual testing guide with 5 test scenarios
+
+**Database Locations:**
+- Agent Registry: `~/.claude-code-buddy/a2a-registry.db`
+- Task Queues: `~/.claude-code-buddy/a2a-tasks-{agentId}.db`
+
+**Phase 0.5 Scope:**
+- ✅ Agent discovery and registration
+- ✅ Task delegation and status tracking
+- ✅ Local-only communication (localhost)
+- ✅ Simplified task execution (echo responses)
+- ❌ Not included: Claude API integration (Phase 1), cross-machine networking (Phase 2), authentication (Phase 2)
+
+**Commits:**
+- `fbc0c1b` - feat(a2a): add A2A Protocol type definitions
+- `f154d53` - feat(a2a): implement Task Queue storage with SQLite
+- `8e056bc` - feat(a2a): implement Agent Registry with SQLite
+- `dab5c6b` - feat(a2a): implement A2A HTTP Server with Express
+- `b3f5fab` - feat(a2a): implement A2A HTTP Client
+- `14877dd` - feat(a2a): implement task executor for Phase 0.5
+- `bfd0d41` - feat(a2a): add MCP tools for A2A protocol operations
+- `b304339` - refactor(a2a): improve MCP handler code quality
+- `8b65aa8` - feat(a2a): add server lifecycle management
+- `3836162` - refactor(a2a): improve shutdown robustness with timeout
+- `4249fa9` - docs(a2a): add manual integration test guide for Phase 0.5
+
+**Files Changed:**
+- Added: 28 new files (implementation + tests + docs)
+- Modified: 5 files (MCP integration, tool definitions, router)
+- Total: +3,847 lines of code
+
+**Test Coverage:**
+- 15 new test files covering all A2A components
+- Integration testing via comprehensive manual test guide
+- Database schema validation tests
+- HTTP client/server integration tests
+
+**Known Limitations (Phase 0.5):**
+1. Simplified task execution (echo responses only)
+2. Local-only communication (same machine)
+3. No authentication/authorization
+4. No push notifications (must poll for status)
+5. No task cancellation via MCP tools (endpoint exists)
+6. No task priority enforcement
+
+**Roadmap:**
+- **Phase 1** (Q1 2026): Claude API integration, streaming, real-time notifications
+- **Phase 2** (Q2 2026): Cross-machine networking, authentication, security
+- **Phase 3** (Q3 2026): Workflow orchestration, advanced routing
+- **Phase 4** (Q4 2026): Enterprise features, clustering, high availability
+
 ## [2.5.3] - 2026-01-31
 
 ### Fixed

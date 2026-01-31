@@ -125,7 +125,7 @@ export const OutputSchemas = {
   /**
    * get-session-health output structure
    */
-  sessionHealth: {
+  getSessionHealth: {
     type: 'object' as const,
     properties: {
       status: {
@@ -149,7 +149,7 @@ export const OutputSchemas = {
   /**
    * get-workflow-guidance output structure
    */
-  workflowGuidance: {
+  getWorkflowGuidance: {
     type: 'object' as const,
     properties: {
       currentPhase: { type: 'string' },
@@ -181,7 +181,7 @@ export const OutputSchemas = {
   /**
    * generate-smart-plan output structure
    */
-  smartPlan: {
+  generateSmartPlan: {
     type: 'object' as const,
     properties: {
       planId: { type: 'string' },
@@ -238,6 +238,185 @@ export const OutputSchemas = {
       },
     },
     required: ['success', 'message'],
+  },
+
+  /**
+   * buddy-record-mistake output structure
+   */
+  buddyRecordMistake: {
+    type: 'object' as const,
+    properties: {
+      success: { type: 'boolean' },
+      mistakeId: { type: 'string' },
+      message: { type: 'string' },
+      details: {
+        type: 'object',
+        properties: {
+          action: { type: 'string' },
+          errorType: { type: 'string' },
+          userCorrection: { type: 'string' },
+          correctMethod: { type: 'string' },
+          impact: { type: 'string' },
+          preventionMethod: { type: 'string' },
+          timestamp: { type: 'string' },
+        },
+        required: ['action', 'errorType', 'userCorrection', 'correctMethod', 'impact', 'preventionMethod', 'timestamp'],
+      },
+    },
+    required: ['success', 'message'],
+  },
+
+  /**
+   * create-entities output structure
+   */
+  createEntities: {
+    type: 'object' as const,
+    properties: {
+      created: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Array of successfully created entity names',
+      },
+      count: { type: 'number' },
+      errors: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            error: { type: 'string' },
+          },
+          required: ['name', 'error'],
+        },
+      },
+    },
+    required: ['created', 'count'],
+  },
+
+  /**
+   * a2a-send-task output structure
+   */
+  a2aSendTask: {
+    type: 'object' as const,
+    properties: {
+      success: { type: 'boolean' },
+      targetAgentId: { type: 'string' },
+      task: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          state: {
+            type: 'string',
+            enum: ['SUBMITTED', 'WORKING', 'INPUT_REQUIRED', 'COMPLETED', 'FAILED', 'CANCELED', 'REJECTED'],
+          },
+          name: { type: 'string' },
+          priority: {
+            type: 'string',
+            enum: ['low', 'normal', 'high', 'urgent'],
+          },
+          createdAt: { type: 'string' },
+          updatedAt: { type: 'string' },
+        },
+        required: ['id', 'state', 'createdAt', 'updatedAt'],
+      },
+    },
+    required: ['success', 'targetAgentId', 'task'],
+  },
+
+  /**
+   * a2a-get-task output structure
+   */
+  a2aGetTask: {
+    type: 'object' as const,
+    properties: {
+      task: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          state: {
+            type: 'string',
+            enum: ['SUBMITTED', 'WORKING', 'INPUT_REQUIRED', 'COMPLETED', 'FAILED', 'CANCELED', 'REJECTED'],
+          },
+          name: { type: 'string' },
+          description: { type: 'string' },
+          priority: {
+            type: 'string',
+            enum: ['low', 'normal', 'high', 'urgent'],
+          },
+          createdAt: { type: 'string' },
+          updatedAt: { type: 'string' },
+          sessionId: { type: 'string' },
+          messageCount: { type: 'number' },
+          artifactCount: { type: 'number' },
+        },
+        required: ['id', 'state', 'createdAt', 'updatedAt'],
+      },
+    },
+    required: ['task'],
+  },
+
+  /**
+   * a2a-list-tasks output structure
+   */
+  a2aListTasks: {
+    type: 'object' as const,
+    properties: {
+      tasks: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            state: {
+              type: 'string',
+              enum: ['SUBMITTED', 'WORKING', 'INPUT_REQUIRED', 'COMPLETED', 'FAILED', 'CANCELED', 'REJECTED'],
+            },
+            name: { type: 'string' },
+            priority: {
+              type: 'string',
+              enum: ['low', 'normal', 'high', 'urgent'],
+            },
+            createdAt: { type: 'string' },
+            updatedAt: { type: 'string' },
+            messageCount: { type: 'number' },
+            artifactCount: { type: 'number' },
+          },
+          required: ['id', 'state', 'createdAt', 'updatedAt', 'messageCount', 'artifactCount'],
+        },
+      },
+      count: { type: 'number' },
+    },
+    required: ['tasks', 'count'],
+  },
+
+  /**
+   * a2a-list-agents output structure
+   */
+  a2aListAgents: {
+    type: 'object' as const,
+    properties: {
+      agents: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            agentId: { type: 'string' },
+            baseUrl: { type: 'string' },
+            port: { type: 'number' },
+            status: {
+              type: 'string',
+              enum: ['active', 'inactive', 'stale'],
+            },
+            lastHeartbeat: { type: 'string' },
+            capabilities: { type: 'object' },
+            metadata: { type: 'object' },
+          },
+          required: ['agentId', 'baseUrl', 'port', 'status', 'lastHeartbeat'],
+        },
+      },
+      count: { type: 'number' },
+    },
+    required: ['agents', 'count'],
   },
 };
 
@@ -334,4 +513,83 @@ export type HookToolUseOutput = {
     timestamp?: string;
     success?: boolean;
   };
+};
+
+export type BuddyRecordMistakeOutput = {
+  success: boolean;
+  message: string;
+  mistakeId?: string;
+  details?: {
+    action: string;
+    errorType: string;
+    userCorrection: string;
+    correctMethod: string;
+    impact: string;
+    preventionMethod: string;
+    timestamp: string;
+  };
+};
+
+export type CreateEntitiesOutput = {
+  created: string[];
+  count: number;
+  errors?: Array<{
+    name: string;
+    error: string;
+  }>;
+};
+
+export type A2ASendTaskOutput = {
+  success: boolean;
+  targetAgentId: string;
+  task: {
+    id: string;
+    state: 'SUBMITTED' | 'WORKING' | 'INPUT_REQUIRED' | 'COMPLETED' | 'FAILED' | 'CANCELED' | 'REJECTED';
+    createdAt: string;
+    updatedAt: string;
+    name?: string;
+    priority?: 'low' | 'normal' | 'high' | 'urgent';
+  };
+};
+
+export type A2AGetTaskOutput = {
+  task: {
+    id: string;
+    state: 'SUBMITTED' | 'WORKING' | 'INPUT_REQUIRED' | 'COMPLETED' | 'FAILED' | 'CANCELED' | 'REJECTED';
+    createdAt: string;
+    updatedAt: string;
+    name?: string;
+    description?: string;
+    priority?: 'low' | 'normal' | 'high' | 'urgent';
+    sessionId?: string;
+    messageCount?: number;
+    artifactCount?: number;
+  };
+};
+
+export type A2AListTasksOutput = {
+  tasks: Array<{
+    id: string;
+    state: 'SUBMITTED' | 'WORKING' | 'INPUT_REQUIRED' | 'COMPLETED' | 'FAILED' | 'CANCELED' | 'REJECTED';
+    createdAt: string;
+    updatedAt: string;
+    messageCount: number;
+    artifactCount: number;
+    name?: string;
+    priority?: 'low' | 'normal' | 'high' | 'urgent';
+  }>;
+  count: number;
+};
+
+export type A2AListAgentsOutput = {
+  agents: Array<{
+    agentId: string;
+    baseUrl: string;
+    port: number;
+    status: 'active' | 'inactive' | 'stale';
+    lastHeartbeat: string;
+    capabilities?: Record<string, unknown>;
+    metadata?: Record<string, unknown>;
+  }>;
+  count: number;
 };

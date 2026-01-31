@@ -67,7 +67,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
-    "@modelcontextprotocol/sdk": "^1.25.2",
+    "@modelcontextprotocol/sdk": "^1.25.3",
     "@types/form-data": "^2.2.1",
     "@types/fs-extra": "^11.0.4",
     "@types/multer": "^2.0.0",
@@ -108,6 +108,7 @@
     "@typescript-eslint/eslint-plugin": "^8.53.0",
     "@typescript-eslint/parser": "^8.53.0",
     "@vitest/coverage-v8": "^4.0.17",
+    "ajv": "^8.17.1",
     "eslint": "^9.39.2",
     "prettier": "^3.8.0",
     "tsx": "^4.19.2",

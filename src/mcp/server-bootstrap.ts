@@ -20,6 +20,9 @@
 // ============================================================================
 process.env.MCP_SERVER_MODE = 'true';
 
+// Global reference to A2A server for shutdown
+let a2aServer: any = null;
+
 // ============================================================================
 // 🚨 STEP 2: Use dynamic import (NOT static import!)
 // ============================================================================
@@ -28,9 +31,12 @@ async function bootstrap() {
     // Dynamic import ensures environment variable is set BEFORE module loading
     const { ClaudeCodeBuddyMCPServer } = await import('./server.js');
 
-    // Start server
-    const server = new ClaudeCodeBuddyMCPServer();
-    await server.start();
+    // Start MCP server
+    const mcpServer = new ClaudeCodeBuddyMCPServer();
+    await mcpServer.start();
+
+    // Start A2A server
+    a2aServer = await startA2AServer();
 
     // server.connect() keeps the process alive - no need for infinite promise
   } catch (error) {
@@ -39,6 +45,95 @@ async function bootstrap() {
     process.exit(1);
   }
 }
+
+/**
+ * Start A2A Protocol server for agent-to-agent communication
+ */
+async function startA2AServer(): Promise<any> {
+  try {
+    // Dynamic imports to avoid loading before env var is set
+    const { A2AServer } = await import('../a2a/server/A2AServer.js');
+    const crypto = await import('crypto');
+
+    // Generate agent ID from env or create unique ID
+    const agentId = process.env.A2A_AGENT_ID || `ccb-mcp-${crypto.randomBytes(4).toString('hex')}`;
+
+    // Create agent card
+    const agentCard = {
+      id: agentId,
+      name: 'Claude Code Buddy (MCP)',
+      description: 'AI development assistant via MCP protocol',
+      version: '2.5.3',
+      capabilities: {
+        skills: [
+          {
+            name: 'buddy-do',
+            description: 'Execute tasks with Claude Code Buddy',
+          },
+          {
+            name: 'buddy-remember',
+            description: 'Store and retrieve knowledge',
+          },
+        ],
+        supportedFormats: ['text/plain', 'application/json'],
+        maxMessageSize: 10 * 1024 * 1024, // 10MB
+        streaming: false,
+        pushNotifications: false,
+      },
+      endpoints: {
+        baseUrl: 'http://localhost:3000', // Will be updated with actual port
+      },
+    };
+
+    // Create and start A2A server
+    const server = new A2AServer({
+      agentId,
+      agentCard,
+      portRange: { min: 3000, max: 3999 },
+      heartbeatInterval: 60000, // 1 minute
+    });
+
+    const port = await server.start();
+    console.error(`[A2A] Server started on port ${port} (Agent ID: ${agentId})`);
+
+    return server;
+  } catch (error) {
+    console.error('[A2A] Failed to start A2A server:', error);
+    // Don't fail MCP startup if A2A server fails
+    return null;
+  }
+}
+
+/**
+ * Graceful shutdown handler with timeout protection
+ */
+async function shutdown(signal: string): Promise<void> {
+  console.error(`\n[Shutdown] ${signal} received. Shutting down gracefully...`);
+
+  // Set shutdown timeout to prevent hung processes
+  const shutdownTimeout = setTimeout(() => {
+    console.error('[Shutdown] ⚠️  Timeout reached (5s), forcing exit');
+    process.exit(1);
+  }, 5000);
+
+  try {
+    if (a2aServer) {
+      await a2aServer.stop();
+      console.error('[Shutdown] A2A Server stopped');
+    }
+
+    clearTimeout(shutdownTimeout);
+    process.exit(0);
+  } catch (error) {
+    console.error('[Shutdown] Error during shutdown:', error);
+    clearTimeout(shutdownTimeout);
+    process.exit(1);
+  }
+}
+
+// Setup signal handlers for graceful shutdown (using once to prevent multiple invocations)
+process.once('SIGTERM', () => shutdown('SIGTERM'));
+process.once('SIGINT', () => shutdown('SIGINT'));
 
 // Start bootstrap
 bootstrap();

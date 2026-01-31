@@ -391,6 +391,126 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
   };
 
   // ========================================
+  // A2A Protocol Tools (Agent-to-Agent)
+  // ========================================
+
+  const a2aSendTaskTool: MCPToolDefinition = {
+    name: 'a2a-send-task',
+    description: '🤝 CCB A2A: Send a task to another A2A agent for execution.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        targetAgentId: {
+          type: 'string',
+          description: 'ID of the target agent to send the task to',
+        },
+        taskDescription: {
+          type: 'string',
+          description: 'Description of the task to execute',
+        },
+        priority: {
+          type: 'string',
+          enum: ['low', 'normal', 'high', 'urgent'],
+          description: 'Task priority (optional, default: normal)',
+        },
+        sessionId: {
+          type: 'string',
+          description: 'Session ID for task tracking (optional)',
+        },
+        metadata: {
+          type: 'object',
+          description: 'Additional task metadata (optional)',
+        },
+      },
+      required: ['targetAgentId', 'taskDescription'],
+    },
+    annotations: {
+      readOnlyHint: false,      // Creates tasks
+      destructiveHint: false,   // Non-destructive
+      idempotentHint: false,    // Each call creates new task
+      openWorldHint: true,      // Can handle various task types
+    },
+  };
+
+  const a2aGetTaskTool: MCPToolDefinition = {
+    name: 'a2a-get-task',
+    description: '🔍 CCB A2A: Get task status and details from another A2A agent.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        targetAgentId: {
+          type: 'string',
+          description: 'ID of the agent that owns the task',
+        },
+        taskId: {
+          type: 'string',
+          description: 'ID of the task to retrieve',
+        },
+      },
+      required: ['targetAgentId', 'taskId'],
+    },
+    annotations: {
+      readOnlyHint: true,       // Read-only operation
+      destructiveHint: false,
+      idempotentHint: true,     // Same query returns same result
+      openWorldHint: false,     // Requires specific task ID
+    },
+  };
+
+  const a2aListTasksTool: MCPToolDefinition = {
+    name: 'a2a-list-tasks',
+    description: '📋 CCB A2A: List own tasks (tasks assigned to this agent).',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        state: {
+          type: 'string',
+          enum: ['SUBMITTED', 'WORKING', 'INPUT_REQUIRED', 'COMPLETED', 'FAILED', 'CANCELED', 'REJECTED'],
+          description: 'Filter by task state (optional)',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of tasks to return (1-100, optional)',
+          minimum: 1,
+          maximum: 100,
+        },
+        offset: {
+          type: 'number',
+          description: 'Number of tasks to skip (optional)',
+          minimum: 0,
+        },
+      },
+    },
+    annotations: {
+      readOnlyHint: true,       // Read-only operation
+      destructiveHint: false,
+      idempotentHint: true,     // Same query returns same result
+      openWorldHint: false,     // Limited to own tasks
+    },
+  };
+
+  const a2aListAgentsTool: MCPToolDefinition = {
+    name: 'a2a-list-agents',
+    description: '🤖 CCB A2A: List available A2A agents in the registry.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        status: {
+          type: 'string',
+          enum: ['active', 'inactive', 'all'],
+          description: 'Filter by agent status (optional, default: active)',
+        },
+      },
+    },
+    annotations: {
+      readOnlyHint: true,       // Read-only operation
+      destructiveHint: false,
+      idempotentHint: true,     // Same query returns same result
+      openWorldHint: false,     // Limited to registry
+    },
+  };
+
+  // ========================================
   // Return all tools in priority order
   // ========================================
 
@@ -408,6 +528,12 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
 
     // Knowledge Graph Tools
     createEntitiesTool,
+
+    // A2A Protocol Tools
+    a2aSendTaskTool,
+    a2aGetTaskTool,
+    a2aListTasksTool,
+    a2aListAgentsTool,
 
     // Hook Integration
     hookToolUseTool,

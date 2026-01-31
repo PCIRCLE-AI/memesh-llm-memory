@@ -241,6 +241,60 @@ export type ValidatedAddObservationsInput = z.infer<typeof AddObservationsInputS
 export type ValidatedCreateRelationsInput = z.infer<typeof CreateRelationsInputSchema>;
 
 /**
+ * A2A send task input schema
+ */
+export const A2ASendTaskInputSchema = z.object({
+  targetAgentId: z.string().min(1, 'Target agent ID cannot be empty'),
+  taskDescription: z
+    .string()
+    .min(1, 'Task description cannot be empty')
+    .max(MAX_TASK_DESCRIPTION_LENGTH, `Task description too long (max ${MAX_TASK_DESCRIPTION_LENGTH} characters)`),
+  priority: z.enum(['low', 'normal', 'high', 'urgent']).optional(),
+  sessionId: z.string().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+/**
+ * A2A get task input schema
+ */
+export const A2AGetTaskInputSchema = z.object({
+  targetAgentId: z.string().min(1, 'Target agent ID cannot be empty'),
+  taskId: z.string().min(1, 'Task ID cannot be empty'),
+});
+
+/**
+ * A2A list tasks input schema
+ */
+export const A2AListTasksInputSchema = z.object({
+  state: z.enum([
+    'SUBMITTED',
+    'WORKING',
+    'INPUT_REQUIRED',
+    'COMPLETED',
+    'FAILED',
+    'CANCELED',
+    'REJECTED',
+  ]).optional(),
+  limit: z.number().int().min(1).max(100, 'Limit too large (max 100)').optional(),
+  offset: z.number().int().min(0).optional(),
+});
+
+/**
+ * A2A list agents input schema
+ */
+export const A2AListAgentsInputSchema = z.object({
+  status: z.enum(['active', 'inactive', 'all']).optional(),
+});
+
+/**
+ * Type exports for A2A validated inputs
+ */
+export type ValidatedA2ASendTaskInput = z.infer<typeof A2ASendTaskInputSchema>;
+export type ValidatedA2AGetTaskInput = z.infer<typeof A2AGetTaskInputSchema>;
+export type ValidatedA2AListTasksInput = z.infer<typeof A2AListTasksInputSchema>;
+export type ValidatedA2AListAgentsInput = z.infer<typeof A2AListAgentsInputSchema>;
+
+/**
  * Validation error formatter
  *
  * Converts Zod validation errors to user-friendly messages

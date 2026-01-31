@@ -485,6 +485,70 @@ System learns from your choices (when you override recommendations)
 
 ## Advanced Features
 
+### Multi-Agent Collaboration (A2A Protocol) - NEW
+
+**Enable multiple Claude Code Buddy instances to work together on complex tasks.**
+
+CCB now supports the **A2A (Agent-to-Agent) Protocol**, allowing you to:
+
+- **Delegate tasks** to other Claude instances
+- **Distribute workload** across multiple agents
+- **Specialize agents** for different domains (frontend, backend, testing, etc.)
+- **Track progress** of tasks across agents
+
+**Quick Example:**
+```
+# Terminal 1: Start agent "alice"
+export CCB_AGENT_ID="alice"
+npm start
+
+# Terminal 2: Start agent "bob"
+export CCB_AGENT_ID="bob"
+npm start
+
+# In Claude Desktop (connected to Alice):
+"Use a2a-send-task to send this task to agent 'bob':
+ 'Generate comprehensive test suite for UserService'"
+```
+
+**Phase 0.5 Status**: Foundation complete with local agent discovery and task delegation. Full Claude integration coming in Phase 1.
+
+📖 **[Complete A2A Documentation](docs/features/a2a-agent-collaboration.md)** - Quick start, architecture, workflows, and limitations
+
+**4 A2A MCP Tools:**
+- `a2a-send-task` - Send tasks to other agents
+- `a2a-get-task` - Query task status
+- `a2a-list-tasks` - List own tasks
+- `a2a-list-agents` - Discover available agents
+
+---
+
+### 🧠 Enhanced Auto-Memory System (Phase 0.6)
+
+**Automatic Knowledge Capture**
+- **Task Tracking**: Automatically extracts and records task goals, reasons, and expected outcomes from `buddy-do` calls
+- **Decision Recording**: Captures architectural decisions with full context, options considered, and trade-offs
+- **Progress Milestones**: Records significant progress points with impact analysis and learnings
+- **Error Resolution**: Auto-detects errors from command output and records solutions with root cause analysis
+
+**Entity Types**
+- `task_start`: Task initiation with extracted metadata
+- `decision`: Technical/architectural decisions
+- `progress_milestone`: Significant development milestones
+- `error_resolution`: Error patterns and solutions
+
+**Integration**
+- Seamlessly integrates with `buddy-do` tool
+- Automatic error detection via HookIntegration
+- Type-safe entity management with EntityType enum
+- Query capabilities via `buddy-remember`
+
+See [Auto-Memory System Guide](docs/guides/auto-memory-system.md) for detailed documentation.
+
+---
+
+### Other Advanced Features
+
 - **Custom Skills** - Write your own routing behaviors in TypeScript
 - **Multi-step Planning** - Break down complex tasks into executable plans
 - **Workflow Coordination** - Automatic checkpoint detection and next-step suggestions
@@ -521,7 +585,9 @@ All MCP tools include:
 - **Output Schemas**: Structured JSON schemas for type-safe responses
 - **Runtime Validation**: Automatic validation of tool inputs and outputs
 
-**7 MCP Tools Available:**
+**11 MCP Tools Available:**
+
+**Core Tools:**
 1. `buddy-do` - Smart task execution with capability routing
 2. `buddy-remember` - Project memory recall
 3. `buddy-help` - Command documentation
@@ -529,6 +595,12 @@ All MCP tools include:
 5. `get-workflow-guidance` - Intelligent workflow recommendations
 6. `generate-smart-plan` - Implementation plan generation
 7. `hook-tool-use` - Tool usage event tracking
+
+**A2A Protocol Tools (NEW):**
+8. `a2a-send-task` - Send tasks to other A2A agents
+9. `a2a-get-task` - Get task status from other agents
+10. `a2a-list-tasks` - List own tasks
+11. `a2a-list-agents` - Discover available agents
 
 See [src/mcp/ToolDefinitions.ts](src/mcp/ToolDefinitions.ts) for complete tool specifications.
 

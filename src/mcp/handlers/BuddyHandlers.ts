@@ -25,6 +25,7 @@ import { logError } from '../../utils/errorHandler.js';
 import type { Router } from '../../orchestrator/router.js';
 import type { ResponseFormatter } from '../../ui/ResponseFormatter.js';
 import type { ProjectMemoryManager } from '../../memory/ProjectMemoryManager.js';
+import type { ProjectAutoTracker } from '../../memory/ProjectAutoTracker.js';
 
 // Import buddy command functions and schemas
 import {
@@ -65,6 +66,7 @@ export class BuddyHandlers {
   private router: Router;
   private formatter: ResponseFormatter;
   private projectMemoryManager: ProjectMemoryManager;
+  private autoTracker?: ProjectAutoTracker;
 
   /**
    * Create a new BuddyHandlers instance
@@ -72,15 +74,18 @@ export class BuddyHandlers {
    * @param router - Main task routing engine
    * @param formatter - Response formatting utility
    * @param projectMemoryManager - Project memory management system
+   * @param autoTracker - Optional project auto-tracker for Phase 0.6 enhanced memory
    */
   constructor(
     router: Router,
     formatter: ResponseFormatter,
-    projectMemoryManager: ProjectMemoryManager
+    projectMemoryManager: ProjectMemoryManager,
+    autoTracker?: ProjectAutoTracker
   ) {
     this.router = router;
     this.formatter = formatter;
     this.projectMemoryManager = projectMemoryManager;
+    this.autoTracker = autoTracker;
   }
 
   /**
@@ -161,7 +166,7 @@ export class BuddyHandlers {
     }
 
     try {
-      return await executeBuddyDo(validatedInput, this.router, this.formatter);
+      return await executeBuddyDo(validatedInput, this.router, this.formatter, this.autoTracker);
     } catch (error) {
       logError(error, {
         component: 'BuddyHandlers',

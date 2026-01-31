@@ -27,7 +27,7 @@ import type { EntityType } from '../knowledge-graph/types.js';
 import { ProjectMemoryManager } from '../memory/ProjectMemoryManager.js';
 import { ProjectAutoTracker } from '../memory/ProjectAutoTracker.js';
 import { RateLimiter } from '../utils/RateLimiter.js';
-import { ToolHandlers, BuddyHandlers } from './handlers/index.js';
+import { ToolHandlers, BuddyHandlers, A2AToolHandlers } from './handlers/index.js';
 
 /**
  * Initialized Server Components
@@ -69,6 +69,7 @@ export interface ServerComponents {
   // Handler modules
   toolHandlers: ToolHandlers;
   buddyHandlers: BuddyHandlers;
+  a2aHandlers: A2AToolHandlers;
 }
 
 /**
@@ -181,7 +182,8 @@ export class ServerInitializer {
     // Initialize Hook Integration (bridges Claude Code hooks to checkpoints)
     const hookIntegration = new HookIntegration(
       checkpointDetector,
-      developmentButler
+      developmentButler,
+      projectAutoTracker
     );
 
     // Initialize Rate Limiter (30 requests per minute)
@@ -211,8 +213,12 @@ export class ServerInitializer {
     const buddyHandlers = new BuddyHandlers(
       router,
       formatter,
-      projectMemoryManager
+      projectMemoryManager,
+      projectAutoTracker
     );
+
+    // Initialize A2A handlers
+    const a2aHandlers = new A2AToolHandlers();
 
     // Return all initialized components
     return {
@@ -237,6 +243,7 @@ export class ServerInitializer {
       rateLimiter,
       toolHandlers,
       buddyHandlers,
+      a2aHandlers,
     };
   }
 }

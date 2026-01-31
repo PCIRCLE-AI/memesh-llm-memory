@@ -130,6 +130,7 @@ class ClaudeCodeBuddyMCPServer {
       rateLimiter: this.components.rateLimiter,
       toolHandlers: this.components.toolHandlers,
       buddyHandlers: this.components.buddyHandlers,
+      a2aHandlers: this.components.a2aHandlers,
     });
     this.components.toolInterface.attachToolDispatcher(this.toolRouter);
     this.sessionBootstrapper = new SessionBootstrapper(

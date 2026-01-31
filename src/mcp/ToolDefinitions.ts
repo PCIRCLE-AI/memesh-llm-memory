@@ -50,6 +50,7 @@ export interface MCPToolDefinition {
   inputSchema: Record<string, unknown>;
   outputSchema?: Record<string, unknown>;
   annotations?: {
+    title?: string;              // Human-readable display name
     readOnlyHint?: boolean;
     destructiveHint?: boolean;
     idempotentHint?: boolean;
@@ -81,6 +82,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
     },
     outputSchema: OutputSchemas.buddyDo,
     annotations: {
+      title: 'Smart Task Router',
       readOnlyHint: false,      // May generate modification suggestions
       destructiveHint: false,   // Does not directly execute destructive operations
       idempotentHint: false,    // Results may vary based on context
@@ -109,6 +111,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
     },
     outputSchema: OutputSchemas.buddyRemember,
     annotations: {
+      title: 'Project Memory Recall',
       readOnlyHint: true,       // Pure read operation
       destructiveHint: false,
       idempotentHint: true,     // Same query returns same results
@@ -130,6 +133,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
     },
     outputSchema: OutputSchemas.buddyHelp,
     annotations: {
+      title: 'Help & Documentation',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
@@ -164,8 +168,9 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
       },
       required: ['phase'],
     },
-    outputSchema: OutputSchemas.workflowGuidance,
+    outputSchema: OutputSchemas.getWorkflowGuidance,
     annotations: {
+      title: 'Workflow Recommendations',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: false,    // Results depend on current state
@@ -179,9 +184,11 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
     inputSchema: {
       type: 'object' as const,
       properties: {},
+      additionalProperties: false,  // No parameters accepted
     },
-    outputSchema: OutputSchemas.sessionHealth,
+    outputSchema: OutputSchemas.getSessionHealth,
     annotations: {
+      title: 'Session Health Check',
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: false,    // Results change over time
@@ -223,8 +230,9 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
       },
       required: ['featureDescription'],
     },
-    outputSchema: OutputSchemas.smartPlan,
+    outputSchema: OutputSchemas.generateSmartPlan,
     annotations: {
+      title: 'Smart Plan Generator',
       readOnlyHint: true,       // Only generates plan, doesn't execute
       destructiveHint: false,
       idempotentHint: false,    // Plans may vary based on context
@@ -288,7 +296,9 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
       },
       required: ['action', 'errorType', 'userCorrection', 'correctMethod', 'impact', 'preventionMethod'],
     },
+    outputSchema: OutputSchemas.buddyRecordMistake,
     annotations: {
+      title: 'Mistake Recorder',
       readOnlyHint: false,      // Records data
       destructiveHint: false,   // Non-destructive
       idempotentHint: true,     // Same mistake recorded multiple times is OK
@@ -335,6 +345,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
     },
     outputSchema: OutputSchemas.hookToolUse,
     annotations: {
+      title: 'Hook Event Processor',
       readOnlyHint: false,      // Records data
       destructiveHint: false,
       idempotentHint: true,     // Repeated calls have no additional side effects
@@ -382,7 +393,9 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
       },
       required: ['entities'],
     },
+    outputSchema: OutputSchemas.createEntities,
     annotations: {
+      title: 'Knowledge Graph Creator',
       readOnlyHint: false,      // Creates data
       destructiveHint: false,   // Non-destructive
       idempotentHint: false,    // Creates new entities each time
@@ -424,7 +437,9 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
       },
       required: ['targetAgentId', 'taskDescription'],
     },
+    outputSchema: OutputSchemas.a2aSendTask,
     annotations: {
+      title: 'A2A Task Sender',
       readOnlyHint: false,      // Creates tasks
       destructiveHint: false,   // Non-destructive
       idempotentHint: false,    // Each call creates new task
@@ -449,7 +464,9 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
       },
       required: ['targetAgentId', 'taskId'],
     },
+    outputSchema: OutputSchemas.a2aGetTask,
     annotations: {
+      title: 'A2A Task Retriever',
       readOnlyHint: true,       // Read-only operation
       destructiveHint: false,
       idempotentHint: true,     // Same query returns same result
@@ -481,7 +498,9 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
         },
       },
     },
+    outputSchema: OutputSchemas.a2aListTasks,
     annotations: {
+      title: 'A2A Task Lister',
       readOnlyHint: true,       // Read-only operation
       destructiveHint: false,
       idempotentHint: true,     // Same query returns same result
@@ -502,7 +521,9 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
         },
       },
     },
+    outputSchema: OutputSchemas.a2aListAgents,
     annotations: {
+      title: 'A2A Agent Registry',
       readOnlyHint: true,       // Read-only operation
       destructiveHint: false,
       idempotentHint: true,     // Same query returns same result

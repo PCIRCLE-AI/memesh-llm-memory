@@ -578,12 +578,24 @@ CCB fully supports the latest Claude 4.5 model family:
 
 ### MCP Specification Compliance
 
-✅ **Full compliance with MCP Specification 2025-11-25**
+✅ **Full compliance with MCP Specification 2025-11-25 (Phase 1)**
 
-All MCP tools include:
-- **Tool Annotations**: `readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`
-- **Output Schemas**: Structured JSON schemas for type-safe responses
-- **Runtime Validation**: Automatic validation of tool inputs and outputs
+**Compliance Status:**
+
+| Feature Category | Status | Coverage |
+|-----------------|--------|----------|
+| Tool Annotations (§4.1) | ✅ Complete | 11/11 tools |
+| Output Schemas (§4.2) | ✅ Complete | 11/11 tools |
+| Error Handling | ✅ Complete | All tools |
+| Documentation (§6) | ✅ Complete | Comprehensive |
+
+**What This Means:**
+- All MCP tools include comprehensive annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`)
+- All tools define structured JSON schemas for type-safe, validated responses
+- Consistent error handling with actionable suggestions
+- Runtime validation ensures data integrity
+
+**📖 Complete Compliance Documentation:** [docs/mcp-compliance.md](docs/mcp-compliance.md)
 
 **11 MCP Tools Available:**
 

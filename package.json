@@ -45,8 +45,6 @@
     "processes:restart": "./scripts/manage-mcp-processes.sh restart",
     "processes:orphaned": "./scripts/manage-mcp-processes.sh orphaned",
     "processes:config": "./scripts/manage-mcp-processes.sh config",
-    "migrate:memory": "tsx scripts/migrate-memory-v2.ts",
-    "migrate:memory:dry-run": "tsx scripts/migrate-memory-v2.ts --dry-run",
     "verify:migration": "tsx scripts/verify-migration.ts"
   },
   "keywords": [

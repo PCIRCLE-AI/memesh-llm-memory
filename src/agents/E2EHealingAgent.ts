@@ -1,14 +1,6 @@
 import { MCPToolInterface } from '../core/MCPToolInterface.js';
 import path from 'path';
 import { TestOrchestrator } from './e2e-healing/orchestrator/TestOrchestrator.js';
-import { PlaywrightRunner } from './e2e-healing/runners/PlaywrightRunner.js';
-import { FailureAnalyzer } from './e2e-healing/analyzers/FailureAnalyzer.js';
-import { FixGenerator } from './e2e-healing/generators/FixGenerator.js';
-import { SafetyGate } from './e2e-healing/safety/SafetyGate.js';
-import { CircuitBreaker } from './e2e-healing/safety/CircuitBreaker.js';
-import { ScopeLimiter } from './e2e-healing/safety/ScopeLimiter.js';
-import { RollbackManager } from './e2e-healing/safety/RollbackManager.js';
-import { GraduatedAutonomyPolicy } from './e2e-healing/policy/GraduatedAutonomyPolicy.js';
 import { E2EHealingConfig } from './e2e-healing/types.js';
 import { DEFAULT_CONFIG } from './e2e-healing/config.js';
 import { hashStackTrace } from '../telemetry/sanitization.js';

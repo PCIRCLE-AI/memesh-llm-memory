@@ -77,7 +77,7 @@ buddy-do "explain how CCB works"    # Watch it intelligently respond
 buddy-remember "project decisions"  # Query your project memory
 ```
 
-**🎬 [Full Video Walkthrough Coming Soon]** • **📖 [Read User Guide](docs/USER_GUIDE.md)**
+**📖 [Read User Guide](docs/USER_GUIDE.md)** • **🔧 [API Reference](docs/api/API_REFERENCE.md)**
 
 </div>
 

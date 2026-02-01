@@ -10,7 +10,6 @@ import { AgentRouter } from './AgentRouter.js';
 import { CostTracker } from './CostTracker.js';
 import { PerformanceTracker } from '../evolution/PerformanceTracker.js';
 import { LearningManager } from '../evolution/LearningManager.js';
-import { logger } from '../utils/logger.js';
 import { formatMoney, type MicroDollars } from '../utils/money.js';
 
 export class Router {

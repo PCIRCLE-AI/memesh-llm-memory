@@ -8,7 +8,6 @@
  */
 
 import Database from 'better-sqlite3';
-import { v4 as uuid } from 'uuid';
 import { logger } from '../../../utils/logger.js';
 import { safeJsonParse, safeJsonStringify } from '../../../utils/json.js';
 

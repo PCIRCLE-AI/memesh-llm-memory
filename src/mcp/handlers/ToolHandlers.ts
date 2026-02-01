@@ -35,7 +35,6 @@ import { MistakePatternEngine } from '../../memory/MistakePatternEngine.js';
 import { UserPreferenceEngine } from '../../memory/UserPreferenceEngine.js';
 import { KnowledgeGraph } from '../../knowledge-graph/index.js';
 import { HumanInLoopUI } from '../HumanInLoopUI.js';
-import { SimpleConfig } from '../../config/simple-config.js';
 import { recallMemoryTool } from '../tools/recall-memory.js';
 import { createEntitiesTool } from '../tools/create-entities.js';
 import { addObservationsTool } from '../tools/add-observations.js';

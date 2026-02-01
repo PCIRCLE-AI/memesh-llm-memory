@@ -1,6 +1,6 @@
 // src/ui/MetricsStore.ts
-import { promises as fs } from 'fs';
 import path from 'path';
+import { promises as fs } from 'fs';
 import { randomBytes } from 'crypto';
 import type { SessionMetrics, AttributionMessage } from './types.js';
 import { resolveUserPath } from '../utils/paths.js';

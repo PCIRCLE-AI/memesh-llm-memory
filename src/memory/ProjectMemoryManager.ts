@@ -7,7 +7,6 @@
 
 import type { KnowledgeGraph } from '../knowledge-graph/index.js';
 import type { Entity, EntityType } from '../knowledge-graph/types.js';
-import { logger } from '../utils/logger.js';
 
 /** Memory-related entity types for project tracking */
 export type MemoryEntityType =

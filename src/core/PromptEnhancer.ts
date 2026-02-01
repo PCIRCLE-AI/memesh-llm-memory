@@ -85,7 +85,6 @@ import {
   AGENT_TOOLS,
   AGENT_INSTRUCTIONS,
   MODEL_SUGGESTIONS,
-  type ModelSuggestion,
 } from '../prompts/templates/PromptTemplates.js';
 
 /**

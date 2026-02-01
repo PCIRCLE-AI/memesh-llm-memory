@@ -16,7 +16,7 @@ export const migrations: Migration[] = [
   {
     version: 1,
     name: 'initial_schema',
-    up: (db) => {
+    up: (_db) => {
       // Tables created by SQLiteStore.createTables()
       // This migration is a no-op since tables are already created
     },

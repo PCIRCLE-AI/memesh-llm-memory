@@ -259,7 +259,6 @@ export class DevelopmentButler {
       this.workflowState.phase = 'code-analysis';
       this.workflowState.lastCheckpoint = 'code-written';
 
-      const files = (data.files as string[]) || [];
       const hasTests = data.hasTests as boolean;
       const type = data.type as string;
 
@@ -739,7 +738,7 @@ ${formattedRequest}
    */
   async recordUserResponse(
     requestId: string,
-    response: {
+    _response: {
       accepted: boolean;
       wasOverridden: boolean;
       selectedAction?: string;

@@ -1022,7 +1022,7 @@ export class SQLiteStore implements EvolutionStore {
     }
   }
 
-  async deactivatePattern(patternId: string, reason?: string): Promise<void> {
+  async deactivatePattern(patternId: string, _reason?: string): Promise<void> {
     const stmt = this.db.prepare(`
       UPDATE patterns SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?
     `);
@@ -1251,9 +1251,9 @@ export class SQLiteStore implements EvolutionStore {
   }
 
   async computePeriodStats(
-    periodType: 'hourly' | 'daily' | 'weekly' | 'monthly',
-    periodStart: Date,
-    periodEnd: Date
+    _periodType: 'hourly' | 'daily' | 'weekly' | 'monthly',
+    _periodStart: Date,
+    _periodEnd: Date
   ): Promise<EvolutionStats[]> {
     // This would involve complex aggregation queries
     // Placeholder for now
@@ -1328,7 +1328,7 @@ export class SQLiteStore implements EvolutionStore {
     return performances.sort((a, b) => b.total_uses - a.total_uses);
   }
 
-  async getSkillRecommendations(filters: {
+  async getSkillRecommendations(_filters: {
     taskType: string;
     agentType?: string;
     topN?: number;

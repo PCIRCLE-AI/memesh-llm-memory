@@ -115,7 +115,7 @@ export function withEvolutionTracking<T extends (...args: unknown[]) => Promise<
           event: 'agent_execution',
           agent_type: fn.name || 'unknown',
           success: true,
-          duration_ms: duration,
+          duration_ms: Date.now() - startTime,
           cost: typedResult?.cost,
           // NO: actual data, code, prompts
         });
@@ -246,8 +246,6 @@ export function withEvolutionTrackingForAgent<T extends Record<string, any>>(
   agent: T,
   options: TrackingOptions = {}
 ): T {
-  const tracker = options.tracker || getGlobalTracker();
-
   return new Proxy(agent, {
     get(target, prop, receiver) {
       const original = Reflect.get(target, prop, receiver);

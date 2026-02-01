@@ -628,7 +628,7 @@ export class BackgroundExecutor {
    */
   private async executeTaskInternal(
     task: unknown,
-    config: ExecutionConfig,
+    _config: ExecutionConfig,
     updateProgress: (progress: number, stage?: string) => void,
     isCancelled: () => boolean
   ): Promise<unknown> {

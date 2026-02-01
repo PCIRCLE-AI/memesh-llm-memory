@@ -125,15 +125,15 @@ function buildMistakeContent(input: BuddyRecordMistakeInput): string {
  *
  * @param input - Mistake details
  * @param unifiedStore - Unified memory store instance
- * @param patternEngine - Pattern storage engine (simplified, no extraction)
- * @param preferenceEngine - Preference storage engine (simplified, no extraction)
+ * @param _patternEngine - Pattern storage engine (simplified, no extraction)
+ * @param _preferenceEngine - Preference storage engine (simplified, no extraction)
  * @returns Tool result with recorded mistake details
  */
 export async function handleBuddyRecordMistake(
   input: BuddyRecordMistakeInput,
   unifiedStore: UnifiedMemoryStore,
-  patternEngine: MistakePatternEngine,
-  preferenceEngine: UserPreferenceEngine
+  _patternEngine: MistakePatternEngine,
+  _preferenceEngine: UserPreferenceEngine
 ): Promise<CallToolResult> {
   try {
     // Validate required fields

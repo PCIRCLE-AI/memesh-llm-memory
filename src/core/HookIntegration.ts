@@ -604,7 +604,7 @@ export class HookIntegration {
    */
   private async recordToProjectMemory(
     checkpoint: Checkpoint,
-    toolData: ToolUseData
+    _toolData: ToolUseData
   ): Promise<void> {
     if (!this.projectMemory) return;
 

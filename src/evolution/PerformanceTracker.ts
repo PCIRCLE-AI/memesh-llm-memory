@@ -314,9 +314,9 @@ export class PerformanceTracker {
    * - Minimal performance impact in practice
    * - Easier to reason about and debug
    *
-   * @param agentId - Agent whose heap entry needs updating
+   * @param _agentId - Agent whose heap entry needs updating
    */
-  private updateHeapForAgent(agentId: string): void {
+  private updateHeapForAgent(_agentId: string): void {
     // Rebuild heap to reflect new oldest metrics
     this.rebuildHeap();
   }

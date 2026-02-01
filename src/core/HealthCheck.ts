@@ -222,7 +222,7 @@ export class HealthChecker {
   /**
    * Check memory usage
    */
-  async checkMemory(timeout: number): Promise<ComponentHealth> {
+  async checkMemory(_timeout: number): Promise<ComponentHealth> {
     const startTime = Date.now();
     const name = 'memory';
 

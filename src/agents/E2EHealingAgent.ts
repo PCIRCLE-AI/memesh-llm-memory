@@ -265,32 +265,6 @@ export class E2EHealingAgent {
     return lines.join('\n');
   }
 
-  /**
-   * Format result message for user
-   */
-  private formatResultMessage(result: {
-    testsRun: number;
-    testsPassed: number;
-    testsFailed: number;
-    healingAttempts: number;
-    healingSuccesses: number;
-    failedTests?: string[];
-  }): string {
-    const lines = [
-      `E2E Test Results:`,
-      `  Tests: ${result.testsPassed}/${result.testsRun} passed`,
-      `  Healing: ${result.healingSuccesses}/${result.healingAttempts} successful`,
-    ];
-
-    if (result.testsFailed > 0 && result.failedTests) {
-      lines.push(`  Failed tests:`);
-      result.failedTests.forEach(test => {
-        lines.push(`    - ${test}`);
-      });
-    }
-
-    return lines.join('\n');
-  }
 
   /**
    * Get agent configuration

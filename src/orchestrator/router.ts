@@ -10,8 +10,6 @@ import { AgentRouter } from './AgentRouter.js';
 import { CostTracker } from './CostTracker.js';
 import { PerformanceTracker } from '../evolution/PerformanceTracker.js';
 import { LearningManager } from '../evolution/LearningManager.js';
-import { AdaptationEngine, AdaptedExecution } from '../evolution/AdaptationEngine.js';
-import { getAllAgentConfigs, toAdaptationConfig } from '../evolution/AgentEvolutionConfig.js';
 import { logger } from '../utils/logger.js';
 import { formatMoney, type MicroDollars } from '../utils/money.js';
 
@@ -23,7 +21,6 @@ export class Router {
   // Evolution system
   private performanceTracker: PerformanceTracker;
   private learningManager: LearningManager;
-  private adaptationEngine: AdaptationEngine;
 
   constructor() {
     this.analyzer = new TaskAnalyzer();
@@ -32,43 +29,18 @@ export class Router {
 
     // Initialize evolution system
     this.performanceTracker = new PerformanceTracker();
-    this.learningManager = new LearningManager(this.performanceTracker);
-    this.adaptationEngine = new AdaptationEngine(
-      this.learningManager,
-      this.performanceTracker
-    );
-
-    // Configure evolution for 22 agent types (18 currently available + 4 planned)
-    this.configureAgentEvolution();
+    this.learningManager = new LearningManager();
   }
 
-  /**
-   * Configure evolution for all agents
-   */
-  private configureAgentEvolution(): void {
-    const allConfigs = getAllAgentConfigs();
-
-    for (const [agentId, evolutionConfig] of allConfigs) {
-      if (evolutionConfig.evolutionEnabled) {
-        const adaptationConfig = toAdaptationConfig(evolutionConfig);
-        this.adaptationEngine.configureAgent(agentId, adaptationConfig);
-      }
-    }
-
-    logger.info(
-      `Evolution system initialized for ${allConfigs.size} agents`
-    );
-  }
 
   /**
-   * Complete task routing flow: analysis → routing → cost check → evolution adaptation
+   * Complete task routing flow: analysis → routing → cost check
    */
   async routeTask(task: Task): Promise<{
     analysis: TaskAnalysis;
     routing: RoutingDecision;
     approved: boolean;
     message: string;
-    adaptedExecution?: AdaptedExecution;
   }> {
     const startTime = Date.now();
 
@@ -78,30 +50,12 @@ export class Router {
     // Step 2: Route to Agent
     const routing = await this.router.route(analysis);
 
-    // Step 3: Apply learned adaptation patterns
-    const adaptedExecution = await this.adaptationEngine.adaptExecution(
-      routing.selectedAgent,
-      task.description.substring(0, 50), // First 50 chars as task type
-      {
-        complexity: analysis.complexity,
-        estimatedTokens: analysis.estimatedTokens,
-      }
-    );
-
-    // Log applied patterns
-    if (adaptedExecution.appliedPatterns.length > 0) {
-      logger.info('Applied evolution patterns:', {
-        agentId: routing.selectedAgent,
-        patterns: adaptedExecution.appliedPatterns,
-      });
-    }
-
-    // Step 4: Check budget
+    // Step 3: Check budget
     const approved = this.costTracker.isWithinBudget(routing.estimatedCost);
 
     const duration = Date.now() - startTime;
 
-    // Step 5: Track performance
+    // Step 4: Track performance
     this.performanceTracker.track({
       agentId: routing.selectedAgent,
       taskType: task.description.substring(0, 50),
@@ -111,7 +65,6 @@ export class Router {
       qualityScore: 0.8, // Will be updated after actual execution
       metadata: {
         complexity: analysis.complexity,
-        appliedPatterns: adaptedExecution.appliedPatterns,
       },
     });
 
@@ -124,7 +77,6 @@ export class Router {
       routing,
       approved,
       message,
-      adaptedExecution,
     };
   }
 
@@ -236,10 +188,4 @@ export class Router {
     return this.learningManager;
   }
 
-  /**
-   * Get AdaptationEngine instance (for evolution system)
-   */
-  getAdaptationEngine(): AdaptationEngine {
-    return this.adaptationEngine;
-  }
 }

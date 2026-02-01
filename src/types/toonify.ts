@@ -9,7 +9,7 @@
 export interface LanguageProfile {
   code: string;                    // ISO 639-1 code (e.g., 'en', 'zh', 'ja')
   name: string;                    // English name
-  nativeName: string;              // Native name (e.g., '中文', '日本語')
+  nativeName: string;              // Native name (e.g., 'Chinese', 'Japanese')
   tokenMultiplier: number;         // Token multiplier relative to English (1.0)
   detectionPatterns: RegExp[];     // Patterns for language detection
   confidence: number;              // Confidence in multiplier accuracy (0-1)

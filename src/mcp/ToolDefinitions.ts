@@ -69,7 +69,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
 
   const buddyDoTool: MCPToolDefinition = {
     name: 'buddy-do',
-    description: '🤖 CCB: Execute a task with smart routing. Analyzes complexity and applies capability-focused prompt enhancement.',
+    description: 'Execute development tasks with smart routing and complexity analysis',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -92,7 +92,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
 
   const buddyRememberTool: MCPToolDefinition = {
     name: 'buddy-remember',
-    description: '🧠 CCB: Recall project memory - past decisions, API design, bug fixes, and patterns.',
+    description: 'Search project memory for past decisions, bugs, patterns, and architecture choices',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -147,7 +147,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
 
   const getWorkflowGuidanceTool: MCPToolDefinition = {
     name: 'get-workflow-guidance',
-    description: '🔄 Claude Code Buddy: Get intelligent workflow recommendations based on current development context',
+    description: 'Get next steps and recommendations for current development phase (code-written, test-complete, commit-ready)',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -196,49 +196,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
     },
   };
 
-  // ========================================
-  // Smart Planning Tools (Phase 2)
-  // ========================================
-
-  const generateSmartPlanTool: MCPToolDefinition = {
-    name: 'generate-smart-plan',
-    description: '📋 Claude Code Buddy: Generate an implementation plan with capability-aware task breakdown and TDD structure. Creates bite-sized tasks (2-5 min each) with learning-enhanced recommendations.',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        featureDescription: {
-          type: 'string',
-          description: 'Description of the feature to plan',
-        },
-        requirements: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'List of specific requirements',
-        },
-        constraints: {
-          type: 'object',
-          properties: {
-            projectType: { type: 'string' },
-            techStack: {
-              type: 'array',
-              items: { type: 'string' },
-            },
-            complexity: { type: 'string', enum: ['low', 'medium', 'high'] },
-          },
-          description: 'Project constraints and context',
-        },
-      },
-      required: ['featureDescription'],
-    },
-    outputSchema: OutputSchemas.generateSmartPlan,
-    annotations: {
-      title: 'Smart Plan Generator',
-      readOnlyHint: true,       // Only generates plan, doesn't execute
-      destructiveHint: false,
-      idempotentHint: false,    // Plans may vary based on context
-      openWorldHint: true,      // Can handle various feature requirements
-    },
-  };
+  // generate-smart-plan tool removed - planning delegated to Claude's built-in capabilities
 
   // ========================================
   // Learning Tools (Feedback & Improvement)
@@ -246,7 +204,50 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
 
   const buddyRecordMistakeTool: MCPToolDefinition = {
     name: 'buddy-record-mistake',
-    description: '📝 CCB: Record an AI mistake for learning and prevention. Enables "learn from feedback" feature.',
+    description: `📝 CCB: Record AI mistakes for learning and prevention - enable systematic improvement from user feedback.
+
+**When to Record:**
+• User explicitly corrects behavior or approach
+• Violated a documented procedure or guideline
+• Made incorrect assumptions instead of asking
+• Skipped validation step and caused problems
+• User says "you should have..." or "why didn't you..."
+
+**Mistake Record Structure:**
+• **Action**: What was actually done (specific, concrete)
+• **Error Type**: Category that best fits (see errorType enum)
+• **User Correction**: What the user said was wrong (exact feedback)
+• **Correct Method**: What should have been done instead (actionable, specific)
+• **Impact**: How this affected the user (time wasted, bugs introduced, confusion)
+• **Prevention Method**: Concrete steps to prevent this in future (not vague promises)
+
+**Pattern Recognition:**
+• Identify the underlying pattern of the mistake (not just the specific instance)
+• Categorize the error type accurately (procedure-violation, assumption-error, etc.)
+• Recognize if this mistake has happened before (check patterns)
+• Extract the root cause, not just the symptom
+
+**Error Type Classification:**
+• **procedure-violation**: Skipped a documented workflow step
+• **workflow-skip**: Didn't follow the correct sequence (e.g., tested before implementing)
+• **assumption-error**: Made incorrect assumptions instead of asking
+• **validation-skip**: Didn't verify something that should have been checked
+• **responsibility-lack**: Failed to take ownership or be proactive
+• **firefighting**: Rushed to fix without understanding root cause
+• **dependency-miss**: Missed a dependency or integration point
+• **integration-error**: Failed to integrate components correctly
+• **deployment-error**: Deployment or configuration mistake
+
+**Example:**
+User: "Why did you edit the file without reading it first? Now the indentation is broken!"
+Record:
+  action: "Edited ServerInitializer.ts without reading file first"
+  errorType: "procedure-violation"
+  userCorrection: "Must read file before editing - broke indentation"
+  correctMethod: "Use Read tool first to see exact content and formatting, then Edit"
+  impact: "Broke file indentation, required re-edit, wasted user time"
+  preventionMethod: "ALWAYS invoke Read tool before Edit tool - no exceptions"
+  relatedRule: "READ_BEFORE_EDIT (Anti-Hallucination Protocol)"`,
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -312,7 +313,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
 
   const hookToolUseTool: MCPToolDefinition = {
     name: 'hook-tool-use',
-    description: '🔌 Internal: Ingest Claude Code tool-use hook events for workflow automation and memory tracking.',
+    description: 'Process tool execution events from Claude Code CLI for workflow automation (auto-triggered, do not call manually)',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -359,7 +360,42 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
 
   const createEntitiesTool: MCPToolDefinition = {
     name: 'create-entities',
-    description: '✨ CCB: Create new entities in the Knowledge Graph. Record decisions, features, bug fixes, code changes, and other knowledge for future recall.',
+    description: `✨ CCB: Create entities in Knowledge Graph - record decisions, features, bug fixes, and lessons learned.
+
+**What to Record:**
+• Technical decisions (e.g., "chose JWT over sessions for auth")
+• Architectural patterns (e.g., "use repository pattern for data access")
+• Bug fixes and root causes (e.g., "fixed race condition in login flow")
+• Lessons learned (e.g., "always validate user input before DB queries")
+• Code changes and rationale (e.g., "refactored UserService to improve testability")
+
+**Entity Naming Guidelines:**
+• Use imperative or declarative form (e.g., "Use Redis for session storage")
+• Make names searchable and meaningful (avoid generic names like "Decision 1")
+• Include key context (e.g., "API rate limiting implementation - Express middleware")
+
+**Observation Structure:**
+• Break down into atomic observations (one fact per observation)
+• Include WHY (rationale), WHAT (implementation), and HOW (approach)
+• Add context for future recall (date, related files, dependencies)
+
+**Tag Guidelines (3-7 tags):**
+• Technology: "tech:postgresql", "tech:nodejs", "tech:react"
+• Domain: "domain:authentication", "domain:api", "domain:frontend"
+• Pattern: "pattern:repository", "pattern:singleton", "pattern:observer"
+• Use lowercase, hyphens for multi-word (e.g., "error-handling")
+• CCB automatically adds scope tags (scope:project:xxx)
+
+**Example:**
+name: "JWT authentication implementation for API"
+entityType: "feature"
+observations: [
+  "Implementation: Used jsonwebtoken library with RS256 algorithm",
+  "Rationale: Stateless auth enables horizontal scaling",
+  "Security: Tokens expire after 1 hour, refresh tokens after 7 days",
+  "Files: src/auth/jwt.ts, src/middleware/authenticate.ts"
+]
+tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -381,6 +417,11 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
                 type: 'array',
                 items: { type: 'string' },
                 description: 'Array of observations (facts, notes, details)',
+              },
+              tags: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Optional tags. Scope tags (scope:project:xxx) and tech tags (tech:xxx) will be automatically added.',
               },
               metadata: {
                 type: 'object',
@@ -532,6 +573,143 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
   };
 
   // ========================================
+  // Test Generation Tools
+  // ========================================
+
+  const generateTestsTool: MCPToolDefinition = {
+    name: 'generate-tests',
+    description: 'Automatically generate test cases from specifications or code using AI',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        specification: {
+          type: 'string',
+          description: 'Feature or function specification to generate tests for',
+        },
+        code: {
+          type: 'string',
+          description: 'Source code to generate tests for',
+        },
+      },
+      oneOf: [
+        { required: ['specification'] },
+        { required: ['code'] },
+      ],
+    },
+    outputSchema: OutputSchemas.generateTests,
+    annotations: {
+      title: 'Test Generator',
+      readOnlyHint: true,       // Only generates test code, doesn't modify files
+      destructiveHint: false,
+      idempotentHint: false,    // Results may vary based on AI generation
+      openWorldHint: true,      // Can handle various specifications and code
+    },
+  };
+
+  // ========================================
+  // Secret Management Tools (Phase 0.7.0)
+  // ========================================
+
+  const buddySecretStoreTool: MCPToolDefinition = {
+    name: 'buddy-secret-store',
+    description: '🔐 CCB: Store a secret (API key, token, password) securely with AES-256-GCM encryption. Never transmitted over network.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        name: {
+          type: 'string',
+          description: 'Name/identifier for the secret (e.g., "openai-api-key")',
+        },
+        value: {
+          type: 'string',
+          description: 'The secret value to store',
+        },
+        type: {
+          type: 'string',
+          enum: ['api_key', 'token', 'password', 'other'],
+          description: 'Type of secret for categorization',
+        },
+        description: {
+          type: 'string',
+          description: 'Optional description of what this secret is for',
+        },
+        expiresIn: {
+          type: 'string',
+          description: 'Optional expiry duration (e.g., "30d", "24h", "60m"). Default: 30 days',
+        },
+      },
+      required: ['name', 'value', 'type'],
+    },
+    annotations: {
+      title: 'Secret Storage',
+      readOnlyHint: false,      // Writes data
+      destructiveHint: false,   // Non-destructive
+      idempotentHint: false,    // Creates new entry each time
+      openWorldHint: false,     // Structured input required
+    },
+  };
+
+  const buddySecretGetTool: MCPToolDefinition = {
+    name: 'buddy-secret-get',
+    description: '🔓 CCB: Retrieve a stored secret by name from CCB secure storage.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        name: {
+          type: 'string',
+          description: 'Name of the secret to retrieve',
+        },
+      },
+      required: ['name'],
+    },
+    annotations: {
+      title: 'Secret Retrieval',
+      readOnlyHint: true,       // Read-only operation
+      destructiveHint: false,
+      idempotentHint: true,     // Same query returns same result
+      openWorldHint: false,     // Requires specific name
+    },
+  };
+
+  const buddySecretListTool: MCPToolDefinition = {
+    name: 'buddy-secret-list',
+    description: '📋 CCB: List all secrets stored in CCB (names and metadata only, NOT values).',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {},
+    },
+    annotations: {
+      title: 'Secret List',
+      readOnlyHint: true,       // Read-only operation
+      destructiveHint: false,
+      idempotentHint: true,     // Same query returns same result
+      openWorldHint: false,
+    },
+  };
+
+  const buddySecretDeleteTool: MCPToolDefinition = {
+    name: 'buddy-secret-delete',
+    description: '🗑️ CCB: Delete a stored secret from CCB secure storage.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        name: {
+          type: 'string',
+          description: 'Name of the secret to delete',
+        },
+      },
+      required: ['name'],
+    },
+    annotations: {
+      title: 'Secret Deletion',
+      readOnlyHint: false,      // Modifies data
+      destructiveHint: true,    // Permanently deletes data
+      idempotentHint: true,     // Deleting twice is safe
+      openWorldHint: false,     // Requires specific name
+    },
+  };
+
+  // ========================================
   // Return all tools in priority order
   // ========================================
 
@@ -542,13 +720,18 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
     buddyHelpTool,
     getSessionHealthTool,
     getWorkflowGuidanceTool,
-    generateSmartPlanTool,
 
     // Learning Tools
     buddyRecordMistakeTool,
 
     // Knowledge Graph Tools
     createEntitiesTool,
+
+    // Secret Management Tools (Phase 0.7.0)
+    buddySecretStoreTool,
+    buddySecretGetTool,
+    buddySecretListTool,
+    buddySecretDeleteTool,
 
     // A2A Protocol Tools
     a2aSendTaskTool,
@@ -558,5 +741,8 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
 
     // Hook Integration
     hookToolUseTool,
+
+    // Test Generation Tools
+    generateTestsTool,
   ];
 }

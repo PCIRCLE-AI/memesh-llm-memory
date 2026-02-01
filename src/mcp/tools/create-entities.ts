@@ -3,6 +3,8 @@
  *
  * Creates new entities in the Knowledge Graph.
  * Allows manual recording of decisions, features, bug fixes, and other knowledge.
+ *
+ * Automatically tags entities with scope and tech tags based on project context.
  */
 
 import type { KnowledgeGraph } from '../../knowledge-graph/index.js';
@@ -17,6 +19,8 @@ export interface CreateEntitiesArgs {
     entityType: string;
     /** Array of observations (facts, notes, details) */
     observations: string[];
+    /** Optional tags (scope and tech tags will be automatically added) */
+    tags?: string[];
     /** Optional metadata */
     metadata?: Record<string, unknown>;
   }>;
@@ -51,6 +55,11 @@ export const createEntitiesTool = {
               items: { type: 'string' },
               description: 'Array of observations (facts, notes, details about this entity)',
             },
+            tags: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Optional tags. Scope tags (scope:project:xxx) and tech tags (tech:xxx) will be automatically added based on current project context.',
+            },
             metadata: {
               type: 'object',
               description: 'Optional metadata',
@@ -66,6 +75,8 @@ export const createEntitiesTool = {
   /**
    * Handler for create-entities tool
    *
+   * Automatically adds scope and tech tags to all created entities.
+   *
    * @param args - Tool arguments
    * @param knowledgeGraph - KnowledgeGraph instance
    * @returns Summary of created entities
@@ -79,10 +90,19 @@ export const createEntitiesTool = {
 
     for (const entity of args.entities) {
       try {
+        // Tags are expected to be provided by Claude via MCP tool description guidance
+        // Only add basic scope tag if not present
+        const tags = entity.tags || [];
+        const hasScope = tags.some(tag => tag.startsWith('scope:'));
+        if (!hasScope) {
+          tags.push('scope:project');
+        }
+
         await knowledgeGraph.createEntity({
           name: entity.name,
-          entityType: entity.entityType as EntityType,  // Cast from MCP string input
+          entityType: entity.entityType as EntityType, // Cast from MCP string input
           observations: entity.observations,
+          tags,
           metadata: entity.metadata,
         });
         created.push(entity.name);

@@ -169,16 +169,8 @@ describe('ToolRouter', () => {
     });
   });
 
-  describe('Planning Tools', () => {
-    it('should route generate-smart-plan', async () => {
-      await toolRouter.routeToolCall({
-        name: 'generate-smart-plan',
-        arguments: { featureDescription: 'User auth' },
-      });
-
-      expect(mockToolHandlers.handleGenerateSmartPlan).toHaveBeenCalled();
-    });
-  });
+  // Planning Tools tests removed - generate-smart-plan tool deleted per MCP compliance
+  // Planning delegated to Claude's built-in capabilities
 
   describe('Hook Tools', () => {
     it('should route hook-tool-use', async () => {

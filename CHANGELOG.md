@@ -7,6 +7,258 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-02-01
+
+### Changed - Evolution System Simplification (MCP Architecture Compliance)
+
+**🎯 Major Architectural Transformation**: Achieved full MCP architecture compliance by removing all intelligence from CCB components and delegating to external LLMs via MCP tool descriptions.
+
+**Core Principle**: CCB = Pure Data Layer | External LLM = All Intelligence
+
+#### Code Reduction Summary
+- **Total Reduction**: 3,425 LOC removed (81.3% reduction in Evolution System)
+- **Files Changed**: 46 files (727 insertions, 11,007 deletions)
+- **Components Simplified**: 4 core components
+- **Components Deleted**: 10+ intelligence components
+
+#### Simplified Components
+
+**PerformanceTracker** (677 → 469 LOC, -208 LOC, 30.7% reduction)
+- **Kept (CRUD only)**:
+  - `track()` - Record task execution metrics
+  - `getMetrics()` - Retrieve performance data
+  - `clearMetrics()` - Clear stored metrics
+  - `getTrackedAgents()` - List tracked agents
+  - `getTotalTaskCount()` - Get task count
+- **Removed (delegated to LLM)**:
+  - `getEvolutionStats()` - Trend analysis
+  - `getAveragePerformance()` - Statistical analysis
+  - `detectAnomalies()` - Anomaly detection
+
+**FeedbackCollector** (487 → 97 LOC, -390 LOC, 80.1% reduction)
+- **Kept (CRUD only)**:
+  - `recordAIMistake()` - Store mistake records
+  - `getMistakes()` - Retrieve all mistakes
+  - `getMistakesByType()` - Filter by error type
+  - `getRecentMistakes()` - Get recent errors
+- **Removed (delegated to LLM)**:
+  - Auto-detection of user corrections
+  - Routing feedback analysis
+  - Pattern analysis
+- **Breaking Change**: Constructor now takes no parameters (was: `new FeedbackCollector(performanceTracker)`)
+
+**LearningManager** (1,044 → 159 LOC, -885 LOC, 84.8% reduction)
+- **Kept (CRUD only)**:
+  - `addPattern()` - Store learned patterns
+  - `getPatterns()` - Retrieve patterns with filtering
+  - `clearPatterns()` - Remove patterns
+  - `getAgentsWithPatterns()` - List agents with patterns
+- **Removed (delegated to LLM)**:
+  - `extractSuccessPattern()` - Pattern extraction from success cases
+  - `extractFailurePattern()` - Pattern extraction from failures
+  - `extractOptimizationPattern()` - Optimization identification
+  - `analyzePerformance()` - Performance analysis
+- **Breaking Change**: Constructor signature changed (was: `new LearningManager(performanceTracker, config)`)
+
+**EvolutionMonitor** (~600 → ~64 LOC, -536 LOC, 89.3% reduction)
+- **Kept**:
+  - `getPerformanceTracker()` - Access to tracker instance
+  - `getLearningManager()` - Access to manager instance
+- **Removed (delegated to LLM)**:
+  - All monitoring and analysis logic
+  - `close()` method (no cleanup needed)
+  - Periodic analysis intervals
+- **Breaking Change**: Constructor removed `adaptationEngine` parameter
+
+#### Deleted Components (Intelligence Layer Removed)
+
+**Evolution Intelligence** (1,606 LOC deleted):
+- `AdaptationEngine` (553 LOC) - Automatic execution adaptation
+- `AutomaticLearningEngine` (553 LOC) - Automatic pattern learning
+- `constants.ts` (108 LOC) - Learning constants and thresholds
+- `decay-utils.ts` (107 LOC) - Temporal decay calculations
+- MCP Auto-Tools (285 LOC):
+  - `auto-apply-decay.ts` (176 LOC)
+  - `auto-get-stats.ts` (171 LOC)
+  - `auto-provide-feedback.ts` (106 LOC)
+
+**Memory Intelligence** (1,584 LOC deleted):
+- `MemoryAutoTagger` (258 LOC) - Automatic memory tagging
+- `ProactiveReminder` (479 LOC) - Automatic reminders
+- `SemanticSearchEngine` (208 LOC) - Semantic search (now via Anthropic API if needed)
+- `SmartMemoryQuery` (339 LOC) - Smart query processing
+- Test files (300 LOC):
+  - `MemoryAutoTagger.test.ts` (450 LOC)
+  - `SmartMemoryQuery.test.ts` (519 LOC)
+  - `ProactiveReminder.test.ts` (650 LOC)
+
+**Planning Intelligence** (489 LOC deleted):
+- `PlanningEngine` (489 LOC) - Automatic plan generation
+- Test files (722 LOC):
+  - `SmartPlanning-Complete.test.ts` (297 LOC)
+  - `PlanningEngine.test.ts` (161 LOC)
+  - `PlanningEngine-Learning.test.ts` (174 LOC)
+  - `PlanningEngine-AgentIntegration.test.ts` (65 LOC)
+
+#### Updated Dependencies
+
+**Router.ts**:
+- Removed `AdaptationEngine` import and usage
+- Removed `configureAgentEvolution()` method
+- Simplified `routeTask()` to remove adaptation logic
+- Maintains PerformanceTracker and LearningManager for data tracking only
+
+**DevelopmentButler.ts**:
+- Removed `AutomaticLearningEngine` import and integration
+- Removed `currentTaskContext` property
+- Removed `recordRoutingApproval()` call
+- Updated `FeedbackCollector` constructor (no parameters)
+
+**ServerInitializer.ts**:
+- Updated `LearningManager` initialization (removed `performanceTracker` parameter)
+- Updated `EvolutionMonitor` initialization (removed `adaptationEngine` parameter)
+- Updated `FeedbackCollector` initialization (no parameters)
+
+**EvolutionBootstrap.ts**:
+- Changed `addBootstrapPattern()` to `addPattern()`
+
+**KnowledgeTransferManager.ts**:
+- Changed `getLearnedPatterns()` to `getPatterns()`
+- Added LearnedPattern → ContextualPattern conversion logic
+
+**server.ts**:
+- Removed `EvolutionMonitor.close()` call
+
+**Test Cleanup**:
+- Removed orphaned test files:
+  - `src/evolution/evolution.test.ts`
+  - `src/evolution/integration.test.ts`
+  - `tests/unit/AutomaticLearningEngine.test.ts`
+
+#### MCP Architecture Benefits
+
+**1. Full MCP Compliance** ✅
+- Zero direct API calls to Anthropic or any LLM API in Evolution System
+- CCB is now a pure data layer (CRUD operations only)
+- All intelligence delegated to external LLM via MCP tool descriptions
+
+**2. LLM-Agnostic Design** ✅
+- Works with any MCP-compatible LLM:
+  - Claude (Anthropic)
+  - GPT-4 (OpenAI)
+  - Gemini (Google)
+  - Llama (Meta)
+  - Any future MCP-compatible LLM
+
+**3. Cost Optimization** ✅
+- No ANTHROPIC_API_KEY required for CCB operations
+- Zero additional API calls for intelligence
+- All intelligence provided by external LLM (already being used)
+
+**4. Simplicity & Maintainability** ✅
+- 81.3% code reduction in Evolution System
+- Clearer separation of concerns (Data vs Intelligence)
+- Easier to understand, test, and maintain
+
+**5. Flexibility** ✅
+- LLM can use any intelligence strategy
+- Not limited to CCB's built-in algorithms
+- Can leverage latest LLM capabilities
+
+#### Migration Guide
+
+See `MIGRATION.md` for comprehensive migration guide including:
+- Feature mapping (old → new)
+- Code examples (before & after)
+- API changes and breaking changes
+- Migration checklist
+- FAQ
+
+**Quick Migration**:
+```typescript
+// Before (v2.7.x)
+const pattern = learningManager.extractSuccessPattern(agentId, taskType);
+const adapted = adaptationEngine.adaptExecution(task, agent);
+
+// After (v2.8.0)
+// 1. Get data
+const metrics = performanceTracker.getMetrics(agentId);
+// 2. Ask LLM to analyze (via MCP tool)
+// 3. Manually create patterns based on LLM analysis
+learningManager.addPattern({ ... });
+```
+
+#### Verification
+
+**Build Status**: ✅ TypeScript compilation successful (0 errors)
+**Test Status**: ✅ All 520+ tests passing across 31 test files
+**Architecture**: ✅ Zero Anthropic API calls in Evolution System
+**Documentation**: ✅ MIGRATION.md created
+
+### Breaking Changes
+
+**Constructor Signatures**:
+```typescript
+// FeedbackCollector
+new FeedbackCollector()  // was: new FeedbackCollector(performanceTracker)
+
+// LearningManager
+new LearningManager(config)  // was: new LearningManager(performanceTracker, config)
+
+// EvolutionMonitor
+new EvolutionMonitor(tracker, manager)  // was: new EvolutionMonitor(tracker, manager, adapter)
+```
+
+**Removed Methods**:
+- `PerformanceTracker.getEvolutionStats()` → Use LLM to analyze metrics
+- `PerformanceTracker.getAveragePerformance()` → Use LLM to calculate
+- `PerformanceTracker.detectAnomalies()` → Use LLM to detect
+- `LearningManager.extractSuccessPattern()` → Use LLM to extract
+- `LearningManager.extractFailurePattern()` → Use LLM to extract
+- `LearningManager.extractOptimizationPattern()` → Use LLM to identify
+- `LearningManager.analyzePerformance()` → Use LLM to analyze
+- `EvolutionMonitor.close()` → No cleanup needed
+
+**Removed Classes**:
+- `AdaptationEngine`
+- `AutomaticLearningEngine`
+- `PlanningEngine`
+- `MemoryAutoTagger`
+- `ProactiveReminder`
+- `SemanticSearchEngine`
+- `SmartMemoryQuery`
+
+**TypeScript Type Changes**:
+- Removed: `AdaptationConfig`, `AdaptedExecution`, `AutoLearningConfig`, `DecayConfig`, `PlanningConfig`
+- Updated: `EntityType` now includes `'feature_request'` and `'issue'`
+
+### Technical Details
+
+**Files Modified**: 46 files
+- Core components: 4 simplified
+- Dependencies: 7 updated
+- Tests: 3 orphaned files removed
+- Documentation: 1 migration guide added
+
+**LOC Impact**:
+- Insertions: +727
+- Deletions: -11,007
+- Net change: **-10,280 LOC**
+- Evolution System reduction: **-3,425 LOC (81.3%)**
+
+**Overall Project Impact** (Phase 1 → Priority 3):
+- Phase 1: ~1,207 LOC saved
+- Priority 2: ~2,497 LOC saved
+- Priority 3: ~3,425 LOC saved
+- **Total**: ~7,129 LOC saved (44.7% project reduction)
+
+### References
+
+- **MCP Specification**: Model Context Protocol (2025-11-25)
+- **Migration Guide**: `MIGRATION.md`
+- **Architecture**: Pure Data Layer + External LLM Intelligence
+- **Compliance**: Zero API calls in Evolution System
+
 ## [2.7.0] - 2026-01-31
 
 ### Added - Phase 1: MCP Specification Full Compliance

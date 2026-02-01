@@ -17,7 +17,7 @@ import type { MCPToolInterface } from '../../src/core/MCPToolInterface.js';
 import type { Router } from '../../src/orchestrator/router.js';
 import type { ResponseFormatter } from '../../src/ui/ResponseFormatter.js';
 import type { CheckpointDetector } from '../../src/core/CheckpointDetector.js';
-import type { DevelopmentButler } from '../../src/butler/DevelopmentButler.js';
+import type { DevelopmentButler } from '../../src/agents/DevelopmentButler.js';
 
 describe('Phase 0.6: Enhanced Auto-Memory End-to-End Integration', () => {
   let mockMCP: MCPToolInterface;

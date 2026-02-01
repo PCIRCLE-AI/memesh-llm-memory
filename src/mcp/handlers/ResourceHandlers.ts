@@ -15,6 +15,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { NotFoundError, OperationError } from '../../errors/index.js';
 import { handleError, logError } from '../../utils/errorHandler.js';
+import { ResourceRegistry } from '../resources/ResourceRegistry.js';
+import { AgentStatusHandler } from '../resources/handlers/AgentStatusHandler.js';
+import { TaskLogsHandler } from '../resources/handlers/TaskLogsHandler.js';
 
 /**
  * Setup MCP Resource handlers
@@ -27,9 +30,35 @@ export function setupResourceHandlers(server: Server): void {
   const __dirname = path.dirname(__filename);
   const resourcesDir = path.join(__dirname, '..', 'resources');
 
-  // List available resources
-  server.setRequestHandler(ListResourcesRequestSchema, async () => ({
-    resources: [
+  // Initialize ResourceRegistry for dynamic resources
+  const resourceRegistry = new ResourceRegistry();
+
+  // Create handler instances
+  const agentStatusHandler = new AgentStatusHandler();
+  const taskLogsHandler = new TaskLogsHandler();
+
+  // Register handlers with URI templates
+  resourceRegistry.register('ccb://agent/{agentType}/status', agentStatusHandler.handle.bind(agentStatusHandler));
+  resourceRegistry.register('ccb://task/{taskId}/logs', taskLogsHandler.handle.bind(taskLogsHandler));
+
+  // Register URI templates for resource listing
+  resourceRegistry.registerTemplate({
+    uriTemplate: 'ccb://agent/{agentType}/status',
+    name: 'Agent Status',
+    description: 'Real-time status of a specific agent (code-reviewer, test-writer, etc.)',
+    mimeType: 'application/json',
+  });
+
+  resourceRegistry.registerTemplate({
+    uriTemplate: 'ccb://task/{taskId}/logs',
+    name: 'Task Execution Logs',
+    description: 'Execution logs and output for a specific task',
+    mimeType: 'text/plain',
+  });
+
+  // List available resources (static + dynamic templates)
+  server.setRequestHandler(ListResourcesRequestSchema, async () => {
+    const staticResources = [
       {
         uri: 'claude-code-buddy://usage-guide',
         name: 'Claude Code Buddy Complete Usage Guide',
@@ -54,14 +83,46 @@ export function setupResourceHandlers(server: Server): void {
         mimeType: 'text/markdown',
         description: 'Tips, guidelines, and best practices for effective capability utilization',
       },
-    ],
-  }));
+    ];
 
-  // Read resource content
+    const dynamicTemplates = resourceRegistry.getTemplates();
+
+    return {
+      resources: [...staticResources, ...dynamicTemplates],
+    };
+  });
+
+  // Read resource content (dynamic + static)
   server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     const uri = request.params.uri;
 
-    // Map URIs to file names
+    // Try dynamic resources first
+    try {
+      const dynamicResource = await resourceRegistry.handle(uri);
+      if (dynamicResource) {
+        return {
+          contents: [
+            {
+              ...dynamicResource,
+              type: 'text' as const,
+            },
+          ],
+        };
+      }
+    } catch (error) {
+      // If it's not a dynamic resource, fall through to static resources
+      // Only log if it's an actual error (not just "no matching template")
+      if (error instanceof Error && !error.message.includes('No handler found for URI')) {
+        logError(error, {
+          component: 'ResourceHandlers',
+          method: 'readResource',
+          operation: 'reading dynamic resource',
+          data: { uri },
+        });
+      }
+    }
+
+    // Fall back to static resources
     const resourceFiles: Record<string, string> = {
       'claude-code-buddy://usage-guide': 'usage-guide.md',
       'claude-code-buddy://quick-reference': 'quick-reference.md',

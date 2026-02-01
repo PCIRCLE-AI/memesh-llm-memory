@@ -14,8 +14,8 @@ Claude Code Buddy (CCB) is **fully compliant** with the Model Context Protocol (
 
 | Feature Category | Status | Coverage |
 |-----------------|--------|----------|
-| Tool Annotations (§4.1) | ✅ Complete | 11/11 tools |
-| Output Schemas (§4.2) | ✅ Complete | 11/11 tools |
+| Tool Annotations (§4.1) | ✅ Complete | 14/14 tools |
+| Output Schemas (§4.2) | ✅ Complete | 14/14 tools |
 | Error Handling | ✅ Complete | All tools |
 | Documentation (§6) | ✅ Complete | Comprehensive |
 
@@ -36,7 +36,7 @@ Claude Code Buddy (CCB) is **fully compliant** with the Model Context Protocol (
 
 ### Specification Reference: Section 4.1
 
-All 11 MCP tools include comprehensive annotations per specification requirements.
+All 14 MCP tools include comprehensive annotations per specification requirements.
 
 ### Annotation Coverage
 
@@ -49,29 +49,32 @@ All 11 MCP tools include comprehensive annotations per specification requirement
 | get-workflow-guidance | true | false | false | false |
 | generate-smart-plan | true | false | true | false |
 | hook-tool-use | false | false | true | false |
+| buddy-record-mistake | false | false | true | false |
+| create-entities | false | false | true | false |
 | a2a-send-task | false | false | false | false |
 | a2a-get-task | true | false | true | false |
 | a2a-list-tasks | true | false | true | false |
 | a2a-list-agents | true | false | true | false |
+| generate-tests | false | false | false | false |
 
 ### Annotation Semantics
 
-**readOnlyHint: true** (7/11 tools)
+**readOnlyHint: true** (7/14 tools)
 - Tools that only read state without modifications
 - Safe for speculative execution
 - Examples: `buddy-remember`, `get-session-health`, `a2a-list-agents`
 
-**destructiveHint: false** (11/11 tools)
+**destructiveHint: false** (14/14 tools)
 - No CCB tools perform destructive operations
 - All state changes are additive (memory creation, task delegation)
 - Rollback-safe operations only
 
-**idempotentHint: true** (6/11 tools)
+**idempotentHint: true** (9/14 tools)
 - Tools where repeated calls with same inputs produce same results
 - Safe to retry on failure
 - Examples: `buddy-remember`, `buddy-help`, `generate-smart-plan`
 
-**openWorldHint: true** (2/11 tools)
+**openWorldHint: true** (2/14 tools)
 - Tools that accept open-ended, natural language inputs
 - Handle diverse, unstructured requests
 - Examples: `buddy-do` (can route any task), `buddy-remember` (semantic search)

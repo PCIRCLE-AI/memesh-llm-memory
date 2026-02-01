@@ -295,6 +295,22 @@ export type ValidatedA2AListTasksInput = z.infer<typeof A2AListTasksInputSchema>
 export type ValidatedA2AListAgentsInput = z.infer<typeof A2AListAgentsInputSchema>;
 
 /**
+ * Generate tests input schema for generate-tests tool
+ */
+export const GenerateTestsInputSchema = z.object({
+  specification: z.string().max(10000, 'Specification too long (max 10,000 characters)').optional(),
+  code: z.string().max(50000, 'Code too long (max 50,000 characters)').optional(),
+}).refine(
+  (data) => data.specification !== undefined || data.code !== undefined,
+  { message: 'Either specification or code must be provided' }
+);
+
+/**
+ * Type export for validated generate tests input
+ */
+export type ValidatedGenerateTestsInput = z.infer<typeof GenerateTestsInputSchema>;
+
+/**
  * Validation error formatter
  *
  * Converts Zod validation errors to user-friendly messages

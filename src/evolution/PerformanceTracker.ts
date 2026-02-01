@@ -1,13 +1,24 @@
 /**
- * Performance Tracker - Agent Performance Monitoring
+ * Performance Tracker - Simplified
  *
- * Tracks agent execution metrics to identify improvement opportunities.
- * NOW WITH SQLITE PERSISTENCE - Metrics survive server restarts!
+ * Stores and retrieves agent performance metrics.
+ * Intelligence (trend analysis, anomaly detection, performance comparison) delegated to LLM via MCP tool descriptions.
+ *
+ * Features:
+ * - Store performance metrics with SQLite persistence
+ * - Retrieve metrics with filtering
+ * - Memory limit enforcement (per-agent and global)
+ * - Basic statistics
+ *
+ * Removed (delegated to LLM):
+ * - Evolution trend analysis (historical vs recent comparison)
+ * - Average performance calculation
+ * - Anomaly detection
  */
 
 import { logger } from '../utils/logger.js';
 import { MinHeap } from '../utils/MinHeap.js';
-import type { PerformanceMetrics, EvolutionStats } from './types.js';
+import type { PerformanceMetrics } from './types.js';
 import { v4 as uuidv4 } from 'uuid';
 import { ValidationError } from '../errors/index.js';
 import { PerformanceMetricsRepository } from './storage/repositories/PerformanceMetricsRepository.js';
@@ -290,11 +301,23 @@ export class PerformanceTracker {
    *
    * Called when per-agent limit is enforced (shift() removes oldest)
    *
+   * Time Complexity: O(N log N) via full heap rebuild
+   *
+   * Potential Optimization (tracked in issue #7):
+   * - Track heap indices in a Map<agentId, heapIndex>
+   * - Update to O(log N) by bubbling up/down the affected node
+   * - Trade-off: Added complexity vs negligible real-world impact
+   *   (typical N < 100 agents, rebuild cost ~1-2ms)
+   *
+   * Current approach chosen for:
+   * - Simpler implementation and maintenance
+   * - Minimal performance impact in practice
+   * - Easier to reason about and debug
+   *
    * @param agentId - Agent whose heap entry needs updating
    */
   private updateHeapForAgent(agentId: string): void {
     // Rebuild heap to reflect new oldest metrics
-    // TODO: Optimize by tracking heap indices for O(log N) update - See issue #7
     this.rebuildHeap();
   }
 
@@ -372,245 +395,6 @@ export class PerformanceTracker {
   }
 
   /**
-   * Calculate evolution statistics
-   *
-   * Analyzes agent performance trends by comparing recent vs historical metrics.
-   * Calculates success rate, cost efficiency, and quality score improvements.
-   *
-   * @param agentId - Agent identifier
-   * @param recentWindowMs - Time window in milliseconds for "recent" metrics (default: 7 days)
-   * @returns Evolution statistics with historical vs recent trends
-   * @throws Error if parameters are invalid
-   */
-  getEvolutionStats(agentId: string, recentWindowMs: number = 7 * 24 * 60 * 60 * 1000): EvolutionStats {
-    if (!agentId || typeof agentId !== 'string' || agentId.trim() === '') {
-      throw new ValidationError('agentId must be a non-empty string', {
-        component: 'PerformanceTracker',
-        method: 'getEvolutionStats',
-        providedValue: agentId,
-        constraint: 'non-empty string',
-      });
-    }
-    if (typeof recentWindowMs !== 'number' || recentWindowMs <= 0) {
-      throw new ValidationError('recentWindowMs must be a positive number', {
-        component: 'PerformanceTracker',
-        method: 'getEvolutionStats',
-        providedValue: recentWindowMs,
-        constraint: 'recentWindowMs > 0',
-      });
-    }
-
-    const allMetrics = this.metrics.get(agentId) || [];
-
-    if (allMetrics.length === 0) {
-      return {
-        agentId,
-        totalExecutions: 0,
-        successRateTrend: { historical: 0, recent: 0, improvement: 0 },
-        costEfficiencyTrend: { historical: 0, recent: 0, improvement: 0 },
-        qualityScoreTrend: { historical: 0, recent: 0, improvement: 0 },
-        learnedPatterns: 0,
-        appliedAdaptations: 0,
-        lastLearningDate: new Date(),
-      };
-    }
-
-    const now = Date.now();
-    const recentCutoff = new Date(now - recentWindowMs);
-
-    const recentMetrics = allMetrics.filter(m => m.timestamp >= recentCutoff);
-    const historicalMetrics = allMetrics.filter(m => m.timestamp < recentCutoff);
-
-    // Success rate
-    const historicalSuccess = historicalMetrics.length > 0
-      ? historicalMetrics.filter(m => m.success).length / historicalMetrics.length
-      : 0;
-    const recentSuccess = recentMetrics.length > 0
-      ? recentMetrics.filter(m => m.success).length / recentMetrics.length
-      : 0;
-    const successImprovement = recentSuccess - historicalSuccess;
-
-    // Cost efficiency (quality / cost)
-    const historicalCostEfficiency = historicalMetrics.length > 0
-      ? historicalMetrics.reduce((sum, m) => sum + (m.qualityScore / (m.cost || 0.01)), 0) / historicalMetrics.length
-      : 0;
-    const recentCostEfficiency = recentMetrics.length > 0
-      ? recentMetrics.reduce((sum, m) => sum + (m.qualityScore / (m.cost || 0.01)), 0) / recentMetrics.length
-      : 0;
-    const costEfficiencyImprovement = recentCostEfficiency - historicalCostEfficiency;
-
-    // Quality score
-    const historicalQuality = historicalMetrics.length > 0
-      ? historicalMetrics.reduce((sum, m) => sum + m.qualityScore, 0) / historicalMetrics.length
-      : 0;
-    const recentQuality = recentMetrics.length > 0
-      ? recentMetrics.reduce((sum, m) => sum + m.qualityScore, 0) / recentMetrics.length
-      : 0;
-    const qualityImprovement = recentQuality - historicalQuality;
-
-    return {
-      agentId,
-      totalExecutions: allMetrics.length,
-      successRateTrend: {
-        historical: historicalSuccess,
-        recent: recentSuccess,
-        improvement: successImprovement,
-      },
-      costEfficiencyTrend: {
-        historical: historicalCostEfficiency,
-        recent: recentCostEfficiency,
-        improvement: costEfficiencyImprovement,
-      },
-      qualityScoreTrend: {
-        historical: historicalQuality,
-        recent: recentQuality,
-        improvement: qualityImprovement,
-      },
-      learnedPatterns: 0, // Will be set by LearningManager
-      appliedAdaptations: 0, // Will be set by AdaptationEngine
-      lastLearningDate: allMetrics[allMetrics.length - 1].timestamp,
-    };
-  }
-
-  /**
-   * Get average performance by task type
-   *
-   * @param agentId - Agent identifier
-   * @param taskType - Task type to analyze
-   * @returns Average performance statistics
-   * @throws Error if parameters are invalid
-   */
-  getAveragePerformance(agentId: string, taskType: string): {
-    avgDuration: number;
-    avgCost: number;
-    avgQuality: number;
-    successRate: number;
-    sampleSize: number;
-  } {
-    if (!agentId || typeof agentId !== 'string' || agentId.trim() === '') {
-      throw new ValidationError('agentId must be a non-empty string', {
-        component: 'PerformanceTracker',
-        method: 'compareTaskPerformance',
-        providedValue: agentId,
-        constraint: 'non-empty string',
-      });
-    }
-    if (!taskType || typeof taskType !== 'string' || taskType.trim() === '') {
-      throw new ValidationError('taskType must be a non-empty string', {
-        component: 'PerformanceTracker',
-        method: 'compareTaskPerformance',
-        providedValue: taskType,
-        constraint: 'non-empty string',
-      });
-    }
-
-    const metrics = this.getMetrics(agentId, { taskType });
-
-    if (metrics.length === 0) {
-      return {
-        avgDuration: 0,
-        avgCost: 0,
-        avgQuality: 0,
-        successRate: 0,
-        sampleSize: 0,
-      };
-    }
-
-    const avgDuration = metrics.reduce((sum, m) => sum + m.durationMs, 0) / metrics.length;
-    const avgCost = metrics.reduce((sum, m) => sum + m.cost, 0) / metrics.length;
-    const avgQuality = metrics.reduce((sum, m) => sum + m.qualityScore, 0) / metrics.length;
-    const successRate = metrics.filter(m => m.success).length / metrics.length;
-
-    return {
-      avgDuration,
-      avgCost,
-      avgQuality,
-      successRate,
-      sampleSize: metrics.length,
-    };
-  }
-
-  /**
-   * Identify performance anomalies
-   *
-   * @param agentId - Agent identifier
-   * @param metric - Performance metric to check
-   * @returns Anomaly detection result
-   * @throws Error if parameters are invalid
-   */
-  detectAnomalies(agentId: string, metric: PerformanceMetrics): {
-    isAnomaly: boolean;
-    type?: 'slow' | 'expensive' | 'low-quality' | 'failure';
-    severity: 'low' | 'medium' | 'high';
-    message: string;
-  } {
-    if (!agentId || typeof agentId !== 'string' || agentId.trim() === '') {
-      throw new ValidationError('agentId must be a non-empty string', {
-        component: 'PerformanceTracker',
-        method: 'predictOptimalStrategy',
-        providedValue: agentId,
-        constraint: 'non-empty string',
-      });
-    }
-    if (!metric || typeof metric !== 'object') {
-      throw new ValidationError('metric must be a valid PerformanceMetrics object', {
-        component: 'PerformanceTracker',
-        method: 'predictOptimalStrategy',
-        providedValue: metric,
-        constraint: 'valid PerformanceMetrics object',
-      });
-    }
-
-    const avg = this.getAveragePerformance(agentId, metric.taskType);
-
-    if (avg.sampleSize < 10) {
-      return { isAnomaly: false, severity: 'low', message: 'Insufficient data' };
-    }
-
-    // Check duration
-    if (metric.durationMs > avg.avgDuration * 2) {
-      return {
-        isAnomaly: true,
-        type: 'slow',
-        severity: metric.durationMs > avg.avgDuration * 3 ? 'high' : 'medium',
-        message: `Execution ${metric.durationMs.toFixed(0)}ms vs avg ${avg.avgDuration.toFixed(0)}ms`,
-      };
-    }
-
-    // Check cost
-    if (metric.cost > avg.avgCost * 2) {
-      return {
-        isAnomaly: true,
-        type: 'expensive',
-        severity: metric.cost > avg.avgCost * 3 ? 'high' : 'medium',
-        message: `Cost $${metric.cost.toFixed(4)} vs avg $${avg.avgCost.toFixed(4)}`,
-      };
-    }
-
-    // Check quality
-    if (metric.qualityScore < avg.avgQuality * 0.7) {
-      return {
-        isAnomaly: true,
-        type: 'low-quality',
-        severity: metric.qualityScore < avg.avgQuality * 0.5 ? 'high' : 'medium',
-        message: `Quality ${metric.qualityScore.toFixed(2)} vs avg ${avg.avgQuality.toFixed(2)}`,
-      };
-    }
-
-    // Check failure
-    if (!metric.success && avg.successRate > 0.8) {
-      return {
-        isAnomaly: true,
-        type: 'failure',
-        severity: 'high',
-        message: `Failed execution (${(avg.successRate * 100).toFixed(0)}% success rate)`,
-      };
-    }
-
-    return { isAnomaly: false, severity: 'low', message: 'Normal performance' };
-  }
-
-  /**
    * Clear metrics for an agent
    *
    * @param agentId - Agent identifier
@@ -632,7 +416,8 @@ export class PerformanceTracker {
       this.metrics.delete(agentId);
 
       // Rebuild heap to remove this agent's entry
-      // TODO: Optimize by tracking heap indices for direct removal - See issue #7
+      // Time Complexity: O(N log N)
+      // Optimization tracked in issue #7 - see updateHeapForAgent() for analysis
       this.rebuildHeap();
 
       logger.info('Metrics cleared', {

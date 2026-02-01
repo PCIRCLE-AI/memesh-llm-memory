@@ -69,7 +69,7 @@
     "url": "https://github.com/PCIRCLE-AI/claude-code-buddy/issues"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.71.2",
+    "@anthropic-ai/sdk": "^0.72.1",
     "@modelcontextprotocol/sdk": "^1.25.3",
     "@types/form-data": "^2.2.1",
     "@types/fs-extra": "^11.0.4",

@@ -221,7 +221,7 @@ export class WorkflowEnforcementEngine {
         requiredConditions: [
           {
             description: 'All code review issues should be fixed',
-            check: async (ctx) => {
+            check: async (_ctx) => {
               // This would check if there are unresolved code review issues
               // For now, we assume if review was run and tests pass, issues are fixed
               return true;

@@ -14,7 +14,7 @@ export class ScopeLimiter {
   }
 
   validateRepairScope(
-    testFile: string,
+    _testFile: string,
     proposedFix: CodeChange[]
   ): ValidationResult {
     const violations: string[] = [];

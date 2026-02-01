@@ -80,7 +80,7 @@ export class GraduatedAutonomyPolicy {
     }
   }
 
-  recordRollback(environment: string): void {
+  recordRollback(_environment: string): void {
     this.rollbackCount++;
 
     // Auto-degrade if too many rollbacks

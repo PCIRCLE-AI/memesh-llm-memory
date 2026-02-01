@@ -19,7 +19,7 @@ import { TaskQueue } from '../storage/TaskQueue.js';
 
 export class A2ARoutes {
   constructor(
-    private agentId: string,
+    private _agentId: string,
     private taskQueue: TaskQueue,
     private agentCard: AgentCard
   ) {}
@@ -158,7 +158,7 @@ export class A2ARoutes {
   };
 
   getAgentCard = async (
-    req: Request,
+    _req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> => {

@@ -1,0 +1,59 @@
+name: Question
+description: Ask a question about Claude Code Buddy
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question about CCB? We're happy to help!
+
+        Before asking, please check:
+        - [README.md](https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/README.md)
+        - [QUICK_START.md](https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/QUICK_START.md)
+        - [COMMANDS.md](https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/COMMANDS.md)
+        - [Existing issues](https://github.com/PCIRCLE-AI/claude-code-buddy/issues)
+
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic
+      description: What is your question about?
+      options:
+        - Installation/Setup
+        - MCP Configuration
+        - Tool Usage (buddy-do, buddy-remember, etc.)
+        - A2A Protocol
+        - Memory System
+        - Troubleshooting
+        - Best Practices
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: Ask your question in detail
+      placeholder: |
+        I'm trying to...
+        How do I...?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Any relevant context
+      placeholder: |
+        My setup: ...
+        I've already tried: ...
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant Configuration
+      description: Any relevant configuration (if applicable)
+      render: json

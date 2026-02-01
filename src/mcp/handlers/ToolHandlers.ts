@@ -29,8 +29,10 @@ import { UninstallManager } from '../../management/index.js';
 import { DevelopmentButler } from '../../agents/DevelopmentButler.js';
 import { CheckpointDetector } from '../../core/CheckpointDetector.js';
 import { HookIntegration } from '../../core/HookIntegration.js';
-import { PlanningEngine } from '../../planning/PlanningEngine.js';
 import { ProjectMemoryManager } from '../../memory/ProjectMemoryManager.js';
+import { UnifiedMemoryStore } from '../../memory/UnifiedMemoryStore.js';
+import { MistakePatternEngine } from '../../memory/MistakePatternEngine.js';
+import { UserPreferenceEngine } from '../../memory/UserPreferenceEngine.js';
 import { KnowledgeGraph } from '../../knowledge-graph/index.js';
 import { HumanInLoopUI } from '../HumanInLoopUI.js';
 import { SimpleConfig } from '../../config/simple-config.js';
@@ -38,7 +40,9 @@ import { recallMemoryTool } from '../tools/recall-memory.js';
 import { createEntitiesTool } from '../tools/create-entities.js';
 import { addObservationsTool } from '../tools/add-observations.js';
 import { createRelationsTool } from '../tools/create-relations.js';
+import { generateTestsTool, GenerateTestsInput } from '../tools/generate-tests.js';
 import { handleBuddyRecordMistake, type BuddyRecordMistakeInput } from './BuddyRecordMistake.js';
+import { SamplingClient } from '../SamplingClient.js';
 import type { AgentType } from '../../orchestrator/types.js';
 import { handleError, logError } from '../../utils/errorHandler.js';
 import {
@@ -52,6 +56,7 @@ import {
   CreateEntitiesInputSchema,
   AddObservationsInputSchema,
   CreateRelationsInputSchema,
+  GenerateTestsInputSchema,
   formatValidationError,
   type ValidatedListSkillsInput,
   type ValidatedUninstallInput,
@@ -63,6 +68,7 @@ import {
   type ValidatedCreateEntitiesInput,
   type ValidatedAddObservationsInput,
   type ValidatedCreateRelationsInput,
+  type ValidatedGenerateTestsInput,
 } from '../validation.js';
 
 /**
@@ -91,6 +97,21 @@ export class ToolHandlers {
   private memoryRateLimiter: RateLimiter;
 
   /**
+   * ✅ Phase 0.7.0: Unified memory store for all memory operations
+   */
+  private unifiedMemoryStore: UnifiedMemoryStore;
+
+  /**
+   * ✅ Phase 0.7.0: Pattern engine for auto-extracting prevention rules
+   */
+  private mistakePatternEngine: MistakePatternEngine;
+
+  /**
+   * ✅ Phase 0.7.0: Preference engine for auto-learning user preferences
+   */
+  private userPreferenceEngine: UserPreferenceEngine;
+
+  /**
    * Create a new ToolHandlers instance
    *
    * @param router - Main task routing engine
@@ -104,10 +125,11 @@ export class ToolHandlers {
    * @param developmentButler - Workflow guidance engine
    * @param checkpointDetector - Development checkpoint detection
    * @param hookIntegration - Hook integration bridge
-   * @param planningEngine - Task decomposition and planning
    * @param projectMemoryManager - Project-specific memory system
    * @param knowledgeGraph - Knowledge graph for entity/relation storage
    * @param ui - Human-in-loop UI formatter
+   * @param samplingClient - Sampling client for AI-powered operations
+   * @param unifiedMemoryStore - Unified memory store (Phase 0.7.0)
    */
   constructor(
     private router: Router,
@@ -121,13 +143,19 @@ export class ToolHandlers {
     private developmentButler: DevelopmentButler,
     private checkpointDetector: CheckpointDetector,
     private hookIntegration: HookIntegration,
-    private planningEngine: PlanningEngine,
     private projectMemoryManager: ProjectMemoryManager,
     private knowledgeGraph: KnowledgeGraph,
-    private ui: HumanInLoopUI
+    private ui: HumanInLoopUI,
+    private samplingClient: SamplingClient,
+    unifiedMemoryStore: UnifiedMemoryStore
   ) {
     // ✅ FIX MAJOR-2: Initialize rate limiter for memory operations
     this.memoryRateLimiter = new RateLimiter({ requestsPerMinute: 10 });
+
+    // ✅ Phase 0.7.0: Initialize unified memory system
+    this.unifiedMemoryStore = unifiedMemoryStore;
+    this.mistakePatternEngine = new MistakePatternEngine(this.unifiedMemoryStore);
+    this.userPreferenceEngine = new UserPreferenceEngine(this.unifiedMemoryStore);
   }
 
   /**
@@ -602,116 +630,7 @@ export class ToolHandlers {
   /**
    * Handle generate-smart-plan tool (Phase 2)
    */
-  async handleGenerateSmartPlan(args: unknown): Promise<CallToolResult> {
-    try {
-      let validatedInput: ValidatedGenerateSmartPlanInput;
-      try {
-        validatedInput = GenerateSmartPlanInputSchema.parse(args);
-      } catch (error) {
-        if (error instanceof z.ZodError) {
-          throw new ValidationError(
-            formatValidationError(error),
-            {
-              component: 'ToolHandlers',
-              method: 'handleGenerateSmartPlan',
-              schema: 'GenerateSmartPlanInputSchema',
-              providedArgs: args,
-            }
-          );
-        }
-        throw error;
-      }
-
-      // Generate plan using PlanningEngine
-      const plan = await this.planningEngine.generatePlan({
-        featureDescription: validatedInput.featureDescription,
-        requirements: validatedInput.requirements,
-        constraints: validatedInput.constraints,
-      });
-
-      // Format plan as text
-      let planText = `# ${plan.title}\n\n`;
-      planText += `**Goal**: ${plan.goal}\n\n`;
-      planText += `**Architecture**: ${plan.architecture}\n\n`;
-      planText += `**Tech Stack**: ${plan.techStack.join(', ')}\n\n`;
-      planText += `**Total Estimated Time**: ${plan.totalEstimatedTime}\n\n`;
-      planText += `---\n\n`;
-      planText += `## Tasks\n\n`;
-
-      for (const task of plan.tasks) {
-        planText += `### ${task.id}: ${task.description}\n\n`;
-        planText += `- **Priority**: ${task.priority}\n`;
-        planText += `- **Estimated Duration**: ${task.estimatedDuration}\n`;
-
-        if (task.suggestedAgent) {
-          const capabilityHint = this.describeCapabilities(task.suggestedAgent);
-          if (capabilityHint) {
-            planText += `- **Suggested Capability**: ${capabilityHint}\n`;
-          }
-        }
-
-        if (task.dependencies.length > 0) {
-          planText += `- **Dependencies**: ${task.dependencies.join(', ')}\n`;
-        }
-
-        planText += `\n**Steps**:\n`;
-        task.steps.forEach((step, index) => {
-          planText += `${index + 1}. ${step}\n`;
-        });
-
-        if (task.files.create && task.files.create.length > 0) {
-          planText += `\n**Files to Create**: ${task.files.create.join(', ')}\n`;
-        }
-        if (task.files.modify && task.files.modify.length > 0) {
-          planText += `**Files to Modify**: ${task.files.modify.join(', ')}\n`;
-        }
-        if (task.files.test && task.files.test.length > 0) {
-          planText += `**Test Files**: ${task.files.test.join(', ')}\n`;
-        }
-
-        planText += `\n---\n\n`;
-      }
-
-      if (SimpleConfig.EVIDENCE_MODE || SimpleConfig.BEGINNER_MODE) {
-        planText += `## Quality Gates (Best Practices)\n\n`;
-        planText += `- **Code Review**: Group findings by severity and cite file paths/symbols for each issue.\n`;
-        planText += `- **Issue Fixes**: Provide reproduction steps, root cause evidence, minimal fix, and verification steps.\n`;
-        planText += `- **E2E Tests**: Run targeted tests and attach logs/screenshots; if not run, state "Not run".\n`;
-        planText += `- **Evidence Guard**: Separate facts vs assumptions and request missing inputs explicitly.\n`;
-        planText += `- **Release Hygiene**: Run lint/typecheck, update docs if APIs change, and note tests executed.\n\n`;
-      }
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: planText,
-          },
-        ],
-      };
-    } catch (error) {
-      logError(error, {
-        component: 'ToolHandlers',
-        method: 'handleGenerateSmartPlan',
-        operation: 'generating smart plan',
-        data: { featureDescription: (args as { featureDescription?: string } | null)?.featureDescription },
-      });
-
-      const handled = handleError(error, {
-        component: 'ToolHandlers',
-        method: 'handleGenerateSmartPlan',
-      });
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `❌ Smart plan generation failed: ${handled.message}`,
-          },
-        ],
-      };
-    }
-  }
+  // handleGenerateSmartPlan() removed - planning delegated to Claude's built-in capabilities
 
   /**
    * Handle recall-memory tool
@@ -929,10 +848,26 @@ export class ToolHandlers {
   /**
    * Handle buddy-record-mistake tool
    *
-   * Records AI mistakes for learning and prevention.
-   * This enables the "learn from feedback" feature.
+   * Phase 0.7.0: Records AI mistakes to UnifiedMemoryStore with auto-extraction
+   * of PreventionRule and UserPreference.
+   *
+   * This is the CRITICAL fix for Fatal Flaw #1:
+   * - Previously: Stored to FeedbackCollector (separate from KnowledgeGraph)
+   * - Now: Stored to UnifiedMemoryStore + auto-extracts rules and preferences
    */
   async handleBuddyRecordMistake(args: unknown): Promise<CallToolResult> {
+    // ✅ FIX MAJOR-2: Check rate limit before memory operation
+    if (!this.memoryRateLimiter.consume()) {
+      throw new OperationError(
+        'Memory operation rate limit exceeded. Please try again later.',
+        {
+          component: 'ToolHandlers',
+          method: 'handleBuddyRecordMistake',
+          rateLimitStatus: this.memoryRateLimiter.getStatus(),
+        }
+      );
+    }
+
     // Validate input
     if (!args || typeof args !== 'object') {
       throw new ValidationError('Invalid input: expected object', {
@@ -956,7 +891,13 @@ export class ToolHandlers {
       }
     }
 
-    return handleBuddyRecordMistake(input, this.feedbackCollector);
+    // ✅ Phase 0.7.0: Use UnifiedMemoryStore + auto-extraction
+    return handleBuddyRecordMistake(
+      input,
+      this.unifiedMemoryStore,
+      this.mistakePatternEngine,
+      this.userPreferenceEngine
+    );
   }
 
   /**
@@ -1184,6 +1125,66 @@ export class ToolHandlers {
           {
             type: 'text' as const,
             text: `❌ Failed to create relations: ${handled.message}`,
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Handle generate-tests tool
+   *
+   * Generates test cases from specifications or code using AI sampling.
+   */
+  async handleGenerateTests(args: unknown): Promise<CallToolResult> {
+    try {
+      // Validate input using Zod schema
+      const validatedInput = GenerateTestsInputSchema.parse(args);
+      const input = validatedInput as GenerateTestsInput;
+
+      // Generate tests
+      const result = await generateTestsTool(input, this.samplingClient);
+
+      // Format the result
+      let text = '🧪 Test Generation Result\n';
+      text += '━'.repeat(60) + '\n\n';
+      text += `${result.message}\n\n`;
+      text += '```typescript\n';
+      text += result.testCode;
+      text += '\n```\n\n';
+      text += '━'.repeat(60) + '\n';
+      text += '\n💡 Next Steps:\n';
+      text += '  • Review the generated tests for accuracy\n';
+      text += '  • Adjust test cases as needed\n';
+      text += '  • Add edge cases if necessary\n';
+      text += '  • Run tests to verify they pass\n';
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text,
+          },
+        ],
+      };
+    } catch (error) {
+      logError(error, {
+        component: 'ToolHandlers',
+        method: 'handleGenerateTests',
+        operation: 'generating tests',
+        data: { args },
+      });
+
+      const handled = handleError(error, {
+        component: 'ToolHandlers',
+        method: 'handleGenerateTests',
+      });
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `❌ Failed to generate tests: ${handled.message}`,
           },
         ],
       };

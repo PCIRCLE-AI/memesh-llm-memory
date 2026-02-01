@@ -182,7 +182,7 @@ Artifacts: 1
 Latest Message (assistant):
   Echo: Analyze the performance metrics for our API endpoints
 
-  [Phase 0.5 - Simplified executor response. Phase 1 will integrate Claude API.]
+  [Phase 0.5 - Simplified executor response. Phase 1 will delegate to MCP client.]
 ```
 
 **That's it!** You've successfully delegated a task between two agents.
@@ -329,9 +329,9 @@ const response = await fetch(`${agent.baseUrl}/a2a/tasks/${taskId}`);
 - Updates task state to COMPLETED
 
 **Phase 1 Upgrade**:
-- Will integrate Claude API for actual task execution
-- Will support streaming responses
-- Will handle tool calls and multi-turn conversations
+- Will delegate tasks to connected MCP client (Claude Code/Claude Desktop)
+- Will support streaming responses via MCP Protocol
+- Will handle tool calls and multi-turn conversations through MCP
 
 #### 6. MCP Tool Handlers
 
@@ -659,22 +659,27 @@ Use a2a-list-agents with:
 
 **Current Behavior**:
 - Tasks return **echo responses** only
-- No actual Claude API integration
+- No actual MCP client delegation
 - Response format: `"Echo: [original task description]"`
+
+**Why Echo Only in Phase 0.5**:
+- CCB is an MCP Server, not a standalone AI agent
+- Tasks should be delegated to connected MCP client (Claude Code/Claude Desktop)
+- Phase 0.5 validates A2A Protocol infrastructure without MCP delegation complexity
 
 **Example**:
 ```
 Task: "Analyze API performance"
 Response: "Echo: Analyze API performance
 
-[Phase 0.5 - Simplified executor response. Phase 1 will integrate Claude API.]"
+[Phase 0.5 - Simplified executor response. Phase 1 will delegate to MCP client.]"
 ```
 
 **Coming in Phase 1**:
-- Full Claude API integration
-- Real task execution with reasoning
-- Multi-turn conversations
-- Tool calling support
+- MCP client task delegation
+- Real task execution through connected Claude client
+- Multi-turn conversations via MCP Protocol
+- Tool calling support through MCP
 
 ---
 
@@ -756,17 +761,36 @@ Response: "Echo: Analyze API performance
 
 ## Roadmap
 
-### Phase 1: Claude Integration (Next)
+### Phase 1: MCP Client Task Delegation (Next)
 
-**Goal**: Replace echo responses with real Claude API execution.
+**Goal**: Delegate tasks to connected MCP client instead of echo responses.
 
 **Features**:
-- Claude API integration for task execution
-- Streaming responses via WebSocket
-- Multi-turn conversation support
-- Tool calling for tasks
+- MCP Protocol task delegation (to Claude Code/Claude Desktop)
+- Streaming responses via MCP connection
+- Multi-turn conversation support through MCP
+- Tool calling via MCP Protocol
 - `a2a-cancel-task` MCP tool
 - Real-time task notifications
+
+**Architecture**:
+```
+A2A Agent (CCB) receives task
+    ↓
+Delegates to connected MCP client (Claude Code)
+    ↓
+MCP client uses Claude API to execute
+    ↓
+Returns result to A2A Agent
+    ↓
+A2A Agent returns result to requester
+```
+
+**Why MCP Delegation, Not Direct API**:
+- CCB is an MCP Server, not a standalone AI agent
+- Maintains separation of concerns (MCP Server vs AI execution)
+- Leverages existing MCP client capabilities
+- No need to duplicate Claude API integration logic
 
 **Timeline**: Q1 2026
 

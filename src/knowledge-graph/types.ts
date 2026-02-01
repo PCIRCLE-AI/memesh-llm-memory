@@ -26,13 +26,16 @@ export type EntityType =
   | 'technical_debt'    // Technical debt items
   | 'optimization'      // Performance optimizations
   | 'refactoring'       // Refactoring decisions
+  | 'learning_experience' // Automatic learning experiences (success/failure patterns)
   // Memory/tracking types
   | 'code_change'       // Code change events
   | 'test_result'       // Test execution results
   | 'session_snapshot'  // Session state snapshots
   | 'project_snapshot'  // Project state snapshots
   | 'workflow_checkpoint' // Workflow phase completion checkpoints
-  | 'commit';           // Git commit events
+  | 'commit'            // Git commit events
+  | 'prevention_rule'   // Prevention rules from mistakes
+  | 'user_preference';  // User preferences
 
 export interface Relation {
   id?: number;

@@ -117,7 +117,10 @@ class ClaudeCodeBuddyMCPServer {
       {
         capabilities: {
           tools: {},
-          resources: {},
+          resources: {
+            subscribe: true,  // Enable resource updates
+            listChanged: false,  // Resource list is static (but templates are dynamic)
+          },
         },
       }
     );
@@ -259,12 +262,9 @@ class ClaudeCodeBuddyMCPServer {
       logger.error('Failed to close knowledge graph cleanly:', error);
     }
 
-    // 2. Close evolution monitor (includes database cleanup)
+    // 2. Evolution monitor cleanup (no cleanup needed after simplification)
     try {
-      logger.info('Closing evolution monitor...');
-      if (this.components.evolutionMonitor) {
-        await this.components.evolutionMonitor.close();
-      }
+      logger.info('Evolution monitor ready for shutdown...');
     } catch (error) {
       logError(error, {
         component: 'ClaudeCodeBuddyMCPServer',

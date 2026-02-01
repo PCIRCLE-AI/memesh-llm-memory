@@ -1,7 +1,11 @@
 /**
  * Task Executor
  * Phase 0.5 - Simplified executor that echoes responses
- * Phase 1 will add real Claude API execution
+ * Phase 1 will add MCP client task delegation
+ *
+ * IMPORTANT: CCB is an MCP Server, not a standalone AI agent.
+ * Tasks should be delegated to the connected MCP client (Claude Code/Claude Desktop),
+ * NOT executed directly via Claude API.
  */
 
 import type { TaskQueue } from '../storage/TaskQueue.js';
@@ -11,8 +15,8 @@ export class TaskExecutor {
   constructor(private taskQueue: TaskQueue) {}
 
   /**
-   * Execute a task (Phase 0.5: Simple echo, no Claude API)
-   * Phase 1 will replace this with real Claude API calls
+   * Execute a task (Phase 0.5: Simple echo, no MCP delegation)
+   * Phase 1 will delegate tasks to connected MCP client
    */
   async executeTask(taskId: string): Promise<void> {
     // Get the task
@@ -26,7 +30,7 @@ export class TaskExecutor {
 
     try {
       // Small delay to ensure WORKING state is observable in tests
-      // In production, this would be replaced by actual Claude API processing time
+      // In production, this would be replaced by MCP client processing time
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Extract user message content
@@ -85,9 +89,9 @@ export class TaskExecutor {
 
   /**
    * Generate simple echo response (Phase 0.5)
-   * Phase 1 will replace this with real Claude API calls
+   * Phase 1 will delegate to connected MCP client
    */
   private generateEchoResponse(userMessage: string): string {
-    return `Echo: ${userMessage}\n\n[Phase 0.5 - Simplified executor response. Phase 1 will integrate Claude API.]`;
+    return `Echo: ${userMessage}\n\n[Phase 0.5 - Simplified executor response. Phase 1 will delegate to MCP client.]`;
   }
 }

@@ -68,10 +68,10 @@ export interface PreventionSuggestion {
  * Requires API key (paid feature).
  */
 export class CloudEvolutionClient {
-  private config: Required<CloudEvolutionConfig>;
+  private _config: Required<CloudEvolutionConfig>;
 
   constructor(config: CloudEvolutionConfig) {
-    this.config = {
+    this._config = {
       apiKey: config.apiKey,
       baseUrl: config.baseUrl || 'https://api.memesh.ai',
       timeout: config.timeout || 10000,
@@ -83,13 +83,13 @@ export class CloudEvolutionClient {
    *
    * Language-agnostic, context-aware, high accuracy.
    *
-   * @param userMessage - The user's message
-   * @param conversation - Full conversation context
+   * @param _userMessage - The user's message
+   * @param _conversation - Full conversation context
    * @returns Advanced detection with classification and suggestions
    */
   async detectCorrectionAdvanced(
-    userMessage: string,
-    conversation: Message[]
+    _userMessage: string,
+    _conversation: Message[]
   ): Promise<AdvancedMistakeDetection> {
     // 🔒 Implementation in memesh-server
     throw new Error('CloudEvolutionClient: Implementation not available in open source version');
@@ -100,11 +100,11 @@ export class CloudEvolutionClient {
    *
    * Uses clustering and semantic analysis to identify recurring patterns.
    *
-   * @param mistakes - List of recorded mistakes
+   * @param _mistakes - List of recorded mistakes
    * @returns Identified patterns with insights
    */
   async recognizePatterns(
-    mistakes: AIMistake[]
+    _mistakes: AIMistake[]
   ): Promise<PatternRecognitionResult> {
     // 🔒 Implementation in memesh-server
     throw new Error('CloudEvolutionClient: Implementation not available in open source version');
@@ -115,11 +115,11 @@ export class CloudEvolutionClient {
    *
    * Context-aware suggestions based on past mistakes.
    *
-   * @param context - Current task context
+   * @param _context - Current task context
    * @returns List of prevention suggestions
    */
   async getPreventionSuggestions(
-    context: Record<string, unknown>
+    _context: Record<string, unknown>
   ): Promise<PreventionSuggestion[]> {
     // 🔒 Implementation in memesh-server
     throw new Error('CloudEvolutionClient: Implementation not available in open source version');
@@ -142,9 +142,9 @@ export class CloudEvolutionClient {
    *
    * Anonymizes data before upload.
    *
-   * @param mistakes - Mistakes to upload
+   * @param _mistakes - Mistakes to upload
    */
-  async syncMistakes(mistakes: AIMistake[]): Promise<void> {
+  async syncMistakes(_mistakes: AIMistake[]): Promise<void> {
     // 🔒 Implementation in memesh-server
     throw new Error('CloudEvolutionClient: Implementation not available in open source version');
   }

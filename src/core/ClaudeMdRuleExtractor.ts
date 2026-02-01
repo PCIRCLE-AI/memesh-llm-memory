@@ -177,13 +177,6 @@ export class ClaudeMdRuleExtractor {
           severity: 'critical',
         },
         conditionGenerator: (content) => {
-          // Check if code review is mandatory
-          const isMandatory =
-            content.includes('必須') ||
-            content.includes('MUST') ||
-            content.includes('强制') ||
-            content.includes('mandatory');
-
           if (content.includes('code review') || content.includes('代碼審查')) {
             return [
               {

@@ -771,7 +771,7 @@ export class SQLiteStore implements EvolutionStore {
     return this.patternRepository.updatePattern(patternId, updates);
   }
 
-  async deactivatePattern(patternId: string, reason?: string): Promise<void> {
+  async deactivatePattern(patternId: string, _reason?: string): Promise<void> {
     const stmt = this.db.prepare(`
       UPDATE patterns SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?
     `);

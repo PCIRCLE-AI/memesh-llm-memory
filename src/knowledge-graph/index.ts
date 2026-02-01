@@ -19,14 +19,12 @@ import { safeJsonParse } from '../utils/json.js';
 
 export class KnowledgeGraph {
   private db: Database.Database;
-  private dbPath: string;
   private queryCache: QueryCache<string, any>;
 
   /**
    * Private constructor - use KnowledgeGraph.create() instead
    */
-  private constructor(dbPath: string, db: Database.Database) {
-    this.dbPath = dbPath;
+  private constructor(_dbPath: string, db: Database.Database) {
     this.db = db;
 
     // Initialize query cache with 1000 entries, 5 minute TTL
@@ -208,13 +206,11 @@ export class KnowledgeGraph {
         metadata = excluded.metadata
     `);
 
-    const result = stmt.run(
+    stmt.run(
       entity.name,
       entity.entityType,
       JSON.stringify(entity.metadata || {})
     );
-
-    const entityId = result.lastInsertRowid as number;
 
     // Get actual entity ID if it was a conflict update
     const actualEntity = this.db

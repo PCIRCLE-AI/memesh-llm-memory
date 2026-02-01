@@ -132,13 +132,12 @@ export interface CheckCondition {
  * Enforces workflow rules at checkpoints to prevent violations.
  */
 export class WorkflowEnforcementEngine {
-  private preventionHook?: PreventionHook;
+  private _preventionHook?: PreventionHook;
   private workflowRules: Map<WorkflowPhase, WorkflowRule[]> = new Map();
   private ruleExtractor: ClaudeMdRuleExtractor;
-  private claudeMdRulesLoaded: boolean = false;
 
   constructor(preventionHook?: PreventionHook) {
-    this.preventionHook = preventionHook;
+    this._preventionHook = preventionHook;
     this.ruleExtractor = new ClaudeMdRuleExtractor();
     this.initializeDefaultRules();
     // Load CLAUDE.md rules asynchronously
@@ -316,7 +315,6 @@ export class WorkflowEnforcementEngine {
         this.addRule(rule);
       }
 
-      this.claudeMdRulesLoaded = true;
       logger.info('[WorkflowEnforcement] Loaded CLAUDE.md rules', {
         count: extractedRules.length,
       });

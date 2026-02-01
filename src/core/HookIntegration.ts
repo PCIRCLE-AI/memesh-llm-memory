@@ -55,7 +55,7 @@ import { DevelopmentButler } from '../agents/DevelopmentButler.js';
 import { ProjectAutoTracker } from '../memory/ProjectAutoTracker.js';
 import type { MCPToolInterface } from './MCPToolInterface.js';
 import { logger } from '../utils/logger.js';
-import { TestOutputParser, type FailedTest, type TestResults } from './TestOutputParser.js';
+import { TestOutputParser, type TestResults } from './TestOutputParser.js';
 
 /**
  * Tool use data from Claude Code hooks

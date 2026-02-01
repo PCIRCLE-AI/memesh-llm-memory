@@ -455,8 +455,8 @@ export class EvolutionBootstrap {
 
       for (const pattern of patterns) {
         try {
-          // Use the learning manager's public method to add pattern
-          learningManager.addPattern(pattern);
+          // Use the learning manager's public method to add bootstrap pattern
+          learningManager.addBootstrapPattern(pattern);
           importedCount++;
         } catch (error) {
           logger.error(`Error importing pattern ${pattern.id}:`, error);

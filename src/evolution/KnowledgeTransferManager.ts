@@ -70,38 +70,23 @@ export class KnowledgeTransferManager {
     const opts = { ...this.DEFAULT_OPTIONS, ...options };
 
     // Step 1: Get all patterns from source agent
-    const sourcePatterns = this.learningManager.getPatterns(sourceAgentId, {
-      minConfidence: opts.minConfidence,
-    });
+    const sourcePatterns = await this.learningManager.getLearnedPatterns(
+      sourceAgentId
+    );
 
-    // Step 2: Filter by observations thresholds
+    // Step 2: Filter by confidence and observations thresholds
     const qualifiedPatterns = sourcePatterns.filter(
-      (pattern) => pattern.observationCount >= opts.minObservations
+      (pattern) =>
+        pattern.confidence >= opts.minConfidence &&
+        pattern.observations >= opts.minObservations
     );
 
     // Step 3: Assess transferability for each qualified pattern
     const transferablePatterns: TransferablePattern[] = [];
 
     for (const pattern of qualifiedPatterns) {
-      // Convert LearnedPattern to ContextualPattern for compatibility
-      const contextualPattern = {
-        id: pattern.id,
-        type: pattern.type,
-        description: pattern.description,
-        confidence: pattern.confidence,
-        observations: pattern.observationCount,
-        success_rate: pattern.successRate,
-        avg_execution_time: 0, // Not tracked in simplified version
-        last_seen: pattern.updatedAt.toISOString(),
-        context: {
-          agent_type: pattern.agentId,
-          task_type: pattern.taskType,
-          complexity: pattern.conditions.taskComplexity,
-        },
-      };
-
       const assessment = this.transferabilityChecker.assessTransferability(
-        contextualPattern,
+        pattern,
         sourceAgentId,
         targetAgentId,
         targetContext
@@ -110,7 +95,7 @@ export class KnowledgeTransferManager {
       // Step 4: Filter by applicability score
       if (assessment.applicabilityScore >= opts.minApplicabilityScore) {
         transferablePatterns.push({
-          pattern: contextualPattern,
+          pattern,
           sourceAgentId,
           transferredAt: new Date(),
           originalConfidence: pattern.confidence,

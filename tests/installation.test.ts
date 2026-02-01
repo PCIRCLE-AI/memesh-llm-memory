@@ -33,7 +33,7 @@ describe('Installation Verification', () => {
   describe('Configuration Files', () => {
     it('should have package.json', () => {
       const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-      expect(pkg.name).toBe('@pcircle/claude-code-buddy-mcp');
+      expect(pkg.name).toBe('claude-code-buddy');
       expect(pkg.version).toMatch(/^\d+\.\d+\.\d+$/);
     });
 

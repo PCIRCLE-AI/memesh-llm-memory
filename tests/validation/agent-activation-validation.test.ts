@@ -289,21 +289,8 @@ describe('Agent Activation Validation', () => {
         'buddy-help',
         'get-session-health',
         'get-workflow-guidance',
-        // 'generate-smart-plan', // Removed - planning delegated to Claude's built-in capabilities
-        'buddy-record-mistake',
-        'create-entities',
-        // Secret Management Tools (Phase 0.7.0)
-        'buddy-secret-store',
-        'buddy-secret-get',
-        'buddy-secret-list',
-        'buddy-secret-delete',
-        // A2A Protocol Tools
-        'a2a-send-task',
-        'a2a-get-task',
-        'a2a-list-tasks',
-        'a2a-list-agents',
+        'generate-smart-plan',
         'hook-tool-use',
-        'generate-tests',
       ];
 
       expect(toolNames).toHaveLength(expectedTools.length);

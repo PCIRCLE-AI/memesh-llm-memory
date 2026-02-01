@@ -46,9 +46,6 @@
  */
 
 import type { LearningManager } from '../evolution/LearningManager.js';
-import type { UnifiedMemoryStore } from '../memory/UnifiedMemoryStore.js';
-import { MistakePatternManager, type MistakePattern } from './MistakePatternManager.js';
-import { SkillsKnowledgeIntegrator } from './SkillsKnowledgeIntegrator.js';
 import { StateError, ValidationError } from '../errors/index.js';
 
 /**
@@ -216,8 +213,7 @@ export interface WorkflowRecommendation {
  *     'Tests should be run after code changes',
  *     'Applied 3 learned pattern(s) from past successes'
  *   ],
- *   learnedFromPatterns: true,
- *   mistakePatterns: []
+ *   learnedFromPatterns: true
  * };
  * ```
  */
@@ -233,9 +229,6 @@ export interface WorkflowGuidance {
 
   /** Whether learned patterns influenced these recommendations */
   learnedFromPatterns: boolean;
-
-  /** Mistake patterns relevant to current phase (top 3 by weight) */
-  mistakePatterns: MistakePattern[];
 }
 
 /**
@@ -273,30 +266,13 @@ export class WorkflowGuidanceEngine {
   // Constants for pattern filtering
   private static readonly MIN_PATTERN_CONFIDENCE = 0.7;
   private static readonly MIN_OBSERVATION_COUNT = 5;
-  private static readonly MAX_MISTAKE_PATTERNS = 3; // Top 3 patterns by weight
-  private static readonly MISTAKE_WARNING_THRESHOLD = 0.7; // High weight patterns
-
-  private mistakePatternManager?: MistakePatternManager;
-  private skillsIntegrator: SkillsKnowledgeIntegrator;
 
   /**
    * Create a new WorkflowGuidanceEngine
    *
    * @param learningManager - LearningManager instance for accessing learned patterns
-   * @param memoryStore - Optional UnifiedMemoryStore for mistake pattern learning
    */
-  constructor(
-    private learningManager: LearningManager,
-    memoryStore?: UnifiedMemoryStore
-  ) {
-    if (memoryStore) {
-      this.mistakePatternManager = new MistakePatternManager(memoryStore);
-    }
-
-    // Initialize skills integrator and load skills asynchronously
-    this.skillsIntegrator = new SkillsKnowledgeIntegrator();
-    this.skillsIntegrator.scanSkills();
-  }
+  constructor(private learningManager: LearningManager) {}
 
   /**
    * Analyze workflow context and generate recommendations
@@ -359,7 +335,7 @@ export class WorkflowGuidanceEngine {
    * }
    * ```
    */
-  async analyzeWorkflow(context: WorkflowContext): Promise<WorkflowGuidance> {
+  analyzeWorkflow(context: WorkflowContext): WorkflowGuidance {
     // Input validation
     if (!context) {
       throw new StateError('WorkflowContext is required', {
@@ -384,30 +360,6 @@ export class WorkflowGuidanceEngine {
     const recommendations: WorkflowRecommendation[] = [];
     const reasoning: string[] = [];
     let learnedFromPatterns = false;
-
-    // Extract mistake patterns for current phase
-    let mistakePatterns: MistakePattern[] = [];
-    if (this.mistakePatternManager) {
-      mistakePatterns = await this.mistakePatternManager.getTopPatterns(
-        context.phase,
-        WorkflowGuidanceEngine.MAX_MISTAKE_PATTERNS
-      );
-
-      // Add warnings for high-weight patterns
-      const highWeightPatterns = mistakePatterns.filter(
-        (p) => p.weight >= WorkflowGuidanceEngine.MISTAKE_WARNING_THRESHOLD
-      );
-
-      if (highWeightPatterns.length > 0) {
-        reasoning.push(
-          `⚠️  Found ${highWeightPatterns.length} recurring mistake pattern(s) in this phase`
-        );
-        // Add prevention recommendations
-        highWeightPatterns.forEach((pattern) => {
-          reasoning.push(`  - ${pattern.description}: ${pattern.prevention}`);
-        });
-      }
-    }
 
     // Check learned patterns from LearningManager
     // Use 'workflow-guidance' as the agent ID for workflow-level patterns
@@ -448,17 +400,6 @@ export class WorkflowGuidanceEngine {
         });
         reasoning.push('Tests should be run after code changes');
       }
-
-      // Add skills-based enhancements for code-written phase
-      const skillsEnhancements = this.skillsIntegrator.getRecommendationEnhancements(
-        context.phase
-      );
-      if (skillsEnhancements.length > 0) {
-        reasoning.push('📚 Skills Knowledge:');
-        skillsEnhancements.forEach((enhancement) => {
-          reasoning.push(`  - ${enhancement}`);
-        });
-      }
     }
 
     if (context.phase === 'test-complete') {
@@ -485,17 +426,6 @@ export class WorkflowGuidanceEngine {
         });
         reasoning.push('Failing tests must be addressed');
       }
-
-      // Add skills-based enhancements for test-complete phase
-      const skillsEnhancements = this.skillsIntegrator.getRecommendationEnhancements(
-        context.phase
-      );
-      if (skillsEnhancements.length > 0) {
-        reasoning.push('📚 Skills Knowledge:');
-        skillsEnhancements.forEach((enhancement) => {
-          reasoning.push(`  - ${enhancement}`);
-        });
-      }
     }
 
     // Calculate confidence based on patterns and context clarity
@@ -510,7 +440,6 @@ export class WorkflowGuidanceEngine {
       confidence,
       reasoning,
       learnedFromPatterns,
-      mistakePatterns,
     };
   }
 

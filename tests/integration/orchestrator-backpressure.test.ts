@@ -28,26 +28,6 @@ describe('P1-11: Backpressure in Parallel Execution', () => {
     // Use in-memory database for tests to avoid schema migration issues
     orchestrator = new Orchestrator({ knowledgeDbPath: ':memory:' });
     await orchestrator.initialize();
-
-    // Mock callClaude to avoid real API calls
-    vi.spyOn(orchestrator as any, 'callClaude').mockResolvedValue({
-      id: 'msg_test',
-      type: 'message',
-      role: 'assistant',
-      content: [
-        {
-          type: 'text',
-          text: 'Task completed successfully',
-        },
-      ],
-      model: 'claude-sonnet-4-20250514',
-      stop_reason: 'end_turn',
-      stop_sequence: null,
-      usage: {
-        input_tokens: 100,
-        output_tokens: 50,
-      },
-    });
   });
 
   afterEach(() => {
@@ -319,8 +299,8 @@ describe('P1-11: Backpressure in Parallel Execution', () => {
       );
 
       // Higher concurrency should be faster (assuming healthy resources)
-      // Note: This is probabilistic, with higher tolerance when using mocks
-      expect(timeConcurrent3).toBeLessThanOrEqual(timeConcurrent2 * 2.0); // 100% tolerance for mock scenario
+      // Note: This is probabilistic, but generally holds
+      expect(timeConcurrent3).toBeLessThanOrEqual(timeConcurrent2 * 1.2); // 20% tolerance
     });
   });
 });

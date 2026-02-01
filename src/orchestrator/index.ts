@@ -28,7 +28,6 @@ import { Task, TaskAnalysis, RoutingDecision } from './types.js';
 import { Router } from './router.js';
 import { appConfig } from '../config/index.js';
 import { GlobalResourcePool } from './GlobalResourcePool.js';
-import { ProgressReporter } from '../mcp/ProgressReporter.js';
 import { randomBytes } from 'crypto';
 import { KnowledgeAgent, SimilarTask } from '../agents/knowledge/index.js';
 import { join } from 'path';
@@ -206,13 +205,13 @@ export class Orchestrator {
    * Added resource management:
    * - Dynamically adjust concurrency (based on system resources)
    * - E2E tests force serialization
-   * - Uses GlobalResourcePool for coordination
+   * - 使用 GlobalResourcePool 協調
    */
   async executeBatch(
     tasks: Task[],
     mode: 'sequential' | 'parallel' = 'sequential',
     options?: {
-      maxConcurrent?: number;  // Maximum concurrency (adjusted based on system resources)
+      maxConcurrent?: number;  // 最大並行數（會根據系統資源調整）
       forceSequential?: boolean;  // Force serialization (for E2E tests)
     }
   ): Promise<{
@@ -336,25 +335,15 @@ export class Orchestrator {
    */
   private async executeTasksInParallel(
     tasks: Task[],
-    maxConcurrent: number,
-    progressReporter?: ProgressReporter
+    maxConcurrent: number
   ): Promise<Awaited<ReturnType<Orchestrator['executeTask']>>[]> {
     const results: Awaited<ReturnType<Orchestrator['executeTask']>>[] = [];
     const executing: Promise<void>[] = [];
-    let completed = 0;
-    const total = tasks.length;
 
     for (const task of tasks) {
       // Create promise that removes itself from pool when complete
       const promise = this.executeTask(task).then(result => {
         results.push(result);
-        completed++;
-
-        // Report progress
-        if (progressReporter) {
-          progressReporter.report(completed, total, `Completed ${completed}/${total} tasks`);
-        }
-
         // Remove this promise from executing array
         const index = executing.indexOf(promise);
         if (index > -1) {

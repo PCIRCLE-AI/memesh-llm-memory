@@ -61,10 +61,6 @@ interface ArtifactRow {
   metadata: string | null;
 }
 
-interface CountRow {
-  count: number;
-}
-
 /**
  * Safely parse JSON string, returning null if invalid
  */

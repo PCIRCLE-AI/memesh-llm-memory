@@ -15,12 +15,71 @@
 
 ---
 
-### 🎥 **See It In Action** (90 seconds)
+### 🎥 **See It In Action** (Interactive Demo)
 
-> 📹 **[Watch Demo Video Here](#)** ← *Coming Soon: 90-second walkthrough*
+<table>
+<tr>
+<td width="50%" valign="top">
 
-<!-- TODO: Add demo GIF here -->
-<!-- ![CCB Demo](docs/assets/ccb-demo.gif) -->
+#### 🔴 **Without CCB**
+
+```bash
+# Session 1 (Monday)
+You: "We use JWT for auth because..."
+Claude: "Got it! ✅"
+
+# Session 2 (Tuesday)
+You: "Remember our auth approach?"
+Claude: "Sorry, I don't have context..."
+You: *explains everything again* 😤
+
+# Session 3 (Wednesday)
+You: "Our JWT implementation..."
+Claude: "What JWT implementation?"
+You: *RAGE QUITS* 💢
+```
+
+</td>
+<td width="50%" valign="top">
+
+#### ✅ **With CCB**
+
+```bash
+# Session 1 (Monday)
+You: buddy-do "setup JWT auth"
+CCB: ✅ Implemented + Saved to memory
+
+# Session 2 (Tuesday)
+You: buddy-remember "auth"
+CCB: 📚 "JWT auth implemented on 2024-01-15
+     ↳ Access tokens: 15min
+     ↳ Refresh tokens: 7 days
+     ↳ Secret rotation: monthly"
+
+# Session 3 (Any day, forever)
+You: buddy-do "add OAuth"
+CCB: 🧠 "I see you have JWT. Let's
+     integrate OAuth alongside it..."
+```
+
+</td>
+</tr>
+</table>
+
+<div align="center">
+
+**💡 Try it yourself:**
+
+```bash
+# In Claude Code/Cursor
+buddy-help                          # See all commands
+buddy-do "explain how CCB works"    # Watch it intelligently respond
+buddy-remember "project decisions"  # Query your project memory
+```
+
+**🎬 [Full Video Walkthrough Coming Soon]** • **📖 [Read User Guide](docs/USER_GUIDE.md)**
+
+</div>
 
 </div>
 
@@ -174,11 +233,17 @@ buddy-do "explain CCB features"
 ```bash
 You: buddy-do "create a real-time chat with WebSocket"
 
-CCB will:
-✅ Remember your tech stack (React, Node.js, etc.)
-✅ Apply your coding patterns from past work
-✅ Generate code matching your style
-✅ Auto-record this design decision for future
+CCB analyzes your project...
+🔍 Detected: React + Node.js + Express
+🧠 Recalled: Your preference for TypeScript strict mode
+📝 Applying: Error boundaries pattern from LoginPage.tsx
+
+✅ Generated:
+   ├─ server/chat.ts (WebSocket server)
+   ├─ components/ChatWindow.tsx (React component)
+   └─ hooks/useWebSocket.ts (Custom hook)
+
+💾 Saved to memory: "WebSocket chat architecture - 2024-01-20"
 ```
 
 ### Scenario 2: **"Wait, Why Did We Do That?"**
@@ -186,21 +251,39 @@ CCB will:
 ```bash
 You: buddy-remember "authentication approach"
 
-CCB instantly recalls:
-📚 JWT vs Session discussion from 3 weeks ago
-💻 Implementation code you wrote
-🔧 Error handling patterns you decided on
+CCB searches knowledge graph...
+
+📚 Found 3 related memories:
+
+┌─ 2024-01-15: Initial Auth Decision
+│  💬 "JWT chosen over sessions for stateless API"
+│  ⚡ Reasoning: Mobile app compatibility
+│
+├─ 2024-01-18: Token Expiry Implementation
+│  💻 Code: auth/middleware.ts:42-67
+│  🔧 Access: 15min | Refresh: 7 days
+│
+└─ 2024-01-22: Security Enhancement
+   🛡️ Added: Rate limiting + Token rotation
+   📝 Prevented: Token reuse vulnerability
 ```
 
 ### Scenario 3: **Continuous Development Flow**
 
 ```
-Day 1:  "Implement user login"
-        ↓ CCB remembers everything
-Day 5:  "Add password reset"
-        ↓ CCB recalls Day 1 architecture
-Day 10: "Add OAuth support"
-        ↓ CCB knows both previous designs
+Day 1 │  You: "Implement user login"
+      │  CCB: ✅ Created + 💾 Remembered
+      │
+Day 5 │  You: "Add password reset"
+      │  CCB: 🧠 "I see you use JWT tokens..."
+      │       ✅ Integrated seamlessly
+      │
+Day 10│  You: "Add OAuth support"
+      │  CCB: 🧠 "Based on your JWT + password reset..."
+      │       ✅ Consistent with existing auth
+      │
+Week 8│  You: "Why did we choose JWT again?"
+      │  CCB: 📚 *Instant recall from Day 1*
 ```
 
 **No context re-explanation. Ever again.**

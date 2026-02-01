@@ -12,7 +12,16 @@
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { ValidationError, NotFoundError, OperationError } from '../errors/index.js';
 import { RateLimiter } from '../utils/RateLimiter.js';
-import { ToolHandlers, BuddyHandlers, A2AToolHandlers } from './handlers/index.js';
+import {
+  ToolHandlers,
+  BuddyHandlers,
+  A2AToolHandlers,
+  handleBuddySecretStore,
+  handleBuddySecretGet,
+  handleBuddySecretList,
+  handleBuddySecretDelete,
+} from './handlers/index.js';
+import type { SecretManager } from '../memory/SecretManager.js';
 
 /**
  * Tool Router Configuration
@@ -22,6 +31,11 @@ export interface ToolRouterConfig {
   toolHandlers: ToolHandlers;
   buddyHandlers: BuddyHandlers;
   a2aHandlers: A2AToolHandlers;
+
+  /**
+   * Secret Manager for secure secret storage (Phase 0.7.0)
+   */
+  secretManager?: SecretManager;
 
   /**
    * ✅ FIX HIGH-5: CSRF protection for future HTTP transport
@@ -74,6 +88,7 @@ export class ToolRouter {
   private toolHandlers: ToolHandlers;
   private buddyHandlers: BuddyHandlers;
   private a2aHandlers: A2AToolHandlers;
+  private secretManager?: SecretManager;
 
   /**
    * ✅ FIX HIGH-5: CSRF protection configuration
@@ -91,6 +106,7 @@ export class ToolRouter {
     this.toolHandlers = config.toolHandlers;
     this.buddyHandlers = config.buddyHandlers;
     this.a2aHandlers = config.a2aHandlers;
+    this.secretManager = config.secretManager;
 
     // ✅ FIX HIGH-5: Initialize CSRF protection config
     this.allowedOrigins = config.allowedOrigins;
@@ -249,10 +265,7 @@ export class ToolRouter {
       return await this.toolHandlers.handleGetSessionHealth();
     }
 
-    // Planning tools
-    if (toolName === 'generate-smart-plan') {
-      return await this.toolHandlers.handleGenerateSmartPlan(args);
-    }
+    // Planning tools removed - planning delegated to LLM's built-in capabilities
 
     // Hook integration tools
     if (toolName === 'hook-tool-use') {
@@ -267,6 +280,68 @@ export class ToolRouter {
     // Knowledge Graph tools
     if (toolName === 'create-entities') {
       return await this.toolHandlers.handleCreateEntities(args);
+    }
+
+    // Test Generation tools
+    if (toolName === 'generate-tests') {
+      return await this.toolHandlers.handleGenerateTests(args);
+    }
+
+    // Secret Management tools (Phase 0.7.0)
+    if (toolName === 'buddy-secret-store') {
+      if (!this.secretManager) {
+        throw new OperationError(
+          'Secret management is not configured',
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+          }
+        );
+      }
+      return await handleBuddySecretStore(args, this.secretManager);
+    }
+
+    if (toolName === 'buddy-secret-get') {
+      if (!this.secretManager) {
+        throw new OperationError(
+          'Secret management is not configured',
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+          }
+        );
+      }
+      return await handleBuddySecretGet(args, this.secretManager);
+    }
+
+    if (toolName === 'buddy-secret-list') {
+      if (!this.secretManager) {
+        throw new OperationError(
+          'Secret management is not configured',
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+          }
+        );
+      }
+      return await handleBuddySecretList(args, this.secretManager);
+    }
+
+    if (toolName === 'buddy-secret-delete') {
+      if (!this.secretManager) {
+        throw new OperationError(
+          'Secret management is not configured',
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+          }
+        );
+      }
+      return await handleBuddySecretDelete(args, this.secretManager);
     }
 
     // A2A Protocol tools

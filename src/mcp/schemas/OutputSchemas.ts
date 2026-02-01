@@ -418,6 +418,18 @@ export const OutputSchemas = {
     },
     required: ['agents', 'count'],
   },
+
+  /**
+   * generate-tests output structure
+   */
+  generateTests: {
+    type: 'object' as const,
+    properties: {
+      testCode: { type: 'string' },
+      message: { type: 'string' },
+    },
+    required: ['testCode', 'message'],
+  },
 };
 
 /**
@@ -592,4 +604,9 @@ export type A2AListAgentsOutput = {
     metadata?: Record<string, unknown>;
   }>;
   count: number;
+};
+
+export type GenerateTestsOutput = {
+  testCode: string;
+  message: string;
 };

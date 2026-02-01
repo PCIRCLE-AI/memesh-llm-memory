@@ -2,13 +2,13 @@
  * Telemetry Module - Privacy-First Analytics
  */
 
-export { TelemetryStore } from './TelemetryStore';
-export { TelemetryCollector } from './TelemetryCollector';
-export { sanitizeEvent, hashStackTrace } from './sanitization';
-export type * from './types';
+export { TelemetryStore } from './TelemetryStore.js';
+export { TelemetryCollector } from './TelemetryCollector.js';
+export { sanitizeEvent, hashStackTrace } from './sanitization.js';
+export type * from './types.js';
 
-import { TelemetryStore } from './TelemetryStore';
-import { TelemetryCollector } from './TelemetryCollector';
+import { TelemetryStore } from './TelemetryStore.js';
+import { TelemetryCollector } from './TelemetryCollector.js';
 
 let globalTelemetryCollector: TelemetryCollector | null = null;
 let initializationPromise: Promise<TelemetryCollector> | null = null;

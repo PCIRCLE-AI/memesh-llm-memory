@@ -145,7 +145,7 @@ main().catch((error) => {
 });
 
 // Module exports
-export * from './telemetry';
+export * from './telemetry/index.js';
 
 // Core exports for library usage
 export { AgentRegistry } from './core/AgentRegistry.js';

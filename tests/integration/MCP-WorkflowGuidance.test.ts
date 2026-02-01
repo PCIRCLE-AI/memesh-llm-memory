@@ -50,7 +50,7 @@ describe('MCP Server - Workflow Guidance Tools', () => {
     expect(result.guidance).toBeDefined();
     expect(result.guidance.recommendations).toBeDefined();
     expect(result.guidance.recommendations.length).toBeGreaterThan(0);
-    expect(result.formattedRequest).toContain('Workflow Guidance');
+    expect(result.formattedRequest).toContain('CCB Workflow Guidance');
   });
 
   it('should check session health', () => {

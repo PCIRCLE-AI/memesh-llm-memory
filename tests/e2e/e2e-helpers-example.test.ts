@@ -99,8 +99,13 @@ describe('E2E Helper Functions - Usage Examples', () => {
    *
    * For tests that require multiple resource slots
    * (e.g., multi-agent coordination tests).
+   *
+   * ⚠️ SKIPPED: This test requires 2 E2E slots but maxConcurrentE2E = 1.
+   * Requesting more resources than available would cause deadlock.
+   * To enable this test, increase maxConcurrentE2E in global-setup.ts
+   * (but be aware this may cause system resource issues).
    */
-  describe('Example 3: Multi-Resource Coordination', () => {
+  describe.skip('Example 3: Multi-Resource Coordination', () => {
     it(
       'should manage multiple resources',
       withE2EResources(2, async (slots) => {

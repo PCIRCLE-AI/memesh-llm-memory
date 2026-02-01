@@ -25,7 +25,7 @@
  */
 
 import { randomBytes } from 'crypto';
-import { acquireE2ESlot, releaseE2ESlot } from '../../src/orchestrator/GlobalResourcePool.js';
+import { acquireE2ESlot, releaseE2ESlot, GlobalResourcePool } from '../../src/orchestrator/GlobalResourcePool.js';
 import { logger } from '../../src/utils/logger.js';
 
 /**
@@ -207,6 +207,19 @@ export function withE2EResources<T = void>(
   }
 
   return async () => {
+    // ✅ FIX: Deadlock prevention - check if requested count exceeds max concurrent
+    const pool = GlobalResourcePool.getInstance();
+    const status = pool.getStatus();
+    const maxConcurrent = status.e2e.max;
+
+    if (count > maxConcurrent) {
+      throw new Error(
+        `withE2EResources: Deadlock detected! Requested ${count} resources but maxConcurrentE2E is ${maxConcurrent}. ` +
+        `This would cause deadlock as the test would wait indefinitely for resources that can never be acquired. ` +
+        `Either reduce the number of resources needed (count <= ${maxConcurrent}) or increase maxConcurrentE2E in global setup.`
+      );
+    }
+
     const resourceIds: string[] = [];
     const acquiredIds: string[] = [];
 

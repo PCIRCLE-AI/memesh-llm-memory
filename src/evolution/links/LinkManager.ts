@@ -1,10 +1,10 @@
 /**
  * Link Manager - Connect rewards to operation spans
  */
+import { v4 as uuid } from 'uuid';
 import { SpanTracker } from '../instrumentation/SpanTracker.js';
 import type { EvolutionStore } from '../storage/EvolutionStore.js';
 import type { Span, Reward } from '../storage/types.js';
-import { v4 as uuid } from 'uuid';
 
 export interface RewardInput {
   value: number; // 0-1

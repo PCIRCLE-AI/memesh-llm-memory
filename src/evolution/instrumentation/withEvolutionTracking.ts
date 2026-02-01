@@ -11,7 +11,7 @@ import { logger } from '../../utils/logger.js';
 import { SpanTracker, getGlobalTracker } from './SpanTracker.js';
 import type { SpanAttributes } from '../storage/types.js';
 import type { TelemetryCollector } from '../../telemetry/TelemetryCollector.js';
-import { hashStackTrace, sanitizeEvent } from '../../telemetry/sanitization.js';
+import { hashStackTrace } from '../../telemetry/sanitization.js';
 
 export interface TrackingOptions {
   /**

@@ -20,7 +20,6 @@
 
 import { logger } from '../utils/logger.js';
 import type { LearnedPattern } from './types.js';
-import { v4 as uuidv4 } from 'uuid';
 
 export interface LearningConfig {
   /**

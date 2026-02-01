@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { validateSpan } from '../validation';
 import { safeJsonParse } from '../../../utils/json.js';
 import { ValidationError } from '../../../errors/index.js';
-import type { Span, SpanQuery, SpanRow, SQLParams, SQLParam } from '../types';
+import type { Span, SpanQuery, SpanRow, SQLParams } from '../types';
 
 /**
  * ✅ FIX CRITICAL-1: SQL injection protection constants

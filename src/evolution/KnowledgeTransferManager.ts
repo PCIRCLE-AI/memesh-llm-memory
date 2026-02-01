@@ -2,10 +2,8 @@
 import type { LearningManager } from './LearningManager.js';
 import type { TransferabilityChecker } from './TransferabilityChecker.js';
 import type {
-  ContextualPattern,
   PatternContext,
   TransferablePattern,
-  PatternTransferability,
 } from './types.js';
 
 /**

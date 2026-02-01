@@ -53,13 +53,10 @@ import type {
   TimeRange,
   SkillPerformance,
   SkillRecommendation,
-  TaskRow,
   SpanRow,
   PatternRow,
   AdaptationRow,
-  RewardRow,
   EvolutionStatsRow,
-  ContextualPatternRow,
   SQLParams,
   SQLParam,
 } from './types';

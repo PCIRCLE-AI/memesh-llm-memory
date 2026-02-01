@@ -91,32 +91,6 @@ const DEFAULT_WEIGHTS: Record<AgentCategory, LearningWeights> = {
 };
 
 /**
- * Default confidence thresholds by category
- */
-const DEFAULT_CONFIDENCE: Record<AgentCategory, number> = {
-  development: 0.75, // Higher threshold for critical development tasks
-  research: 0.7,
-  knowledge: 0.7,
-  operations: 0.8, // Highest threshold for ops (security, deployment)
-  creative: 0.65, // More flexible for creative tasks
-  utility: 0.7,
-  general: 0.5, // Lowest threshold for fallback agent
-};
-
-/**
- * Default minimum observations by category
- */
-const DEFAULT_MIN_OBSERVATIONS: Record<AgentCategory, number> = {
-  development: 15, // Need more data for critical development agents
-  research: 12,
-  knowledge: 10,
-  operations: 20, // Most conservative for ops agents
-  creative: 8, // Can adapt faster for creative tasks
-  utility: 10,
-  general: 5, // General agent can adapt quickly
-};
-
-/**
  * Agent evolution configurations
  */
 const AGENT_CONFIGS: Map<AgentType, AgentEvolutionConfig> = new Map([

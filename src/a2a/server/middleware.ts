@@ -14,7 +14,7 @@ export function errorHandler(
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void {
   logger.error('[A2A Server] Error', {
     error: err.message,
@@ -91,7 +91,7 @@ export function corsMiddleware(req: Request, res: Response, next: NextFunction):
  */
 export function jsonErrorHandler(
   err: Error,
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ): void {

@@ -141,15 +141,7 @@ describe('ToolHandlers', () => {
       }),
     } as unknown as PlanningEngine;
 
-    mockProjectMemoryManager = {
-      recallRecentWork: vi.fn().mockResolvedValue([
-        {
-          entityType: 'code_change',
-          observations: ['Test code change'],
-          metadata: { timestamp: new Date() },
-        },
-      ]),
-    } as unknown as ProjectMemoryManager;
+    mockProjectMemoryManager = {} as ProjectMemoryManager;
     mockKnowledgeGraph = {
       createEntity: vi.fn(),
       addObservation: vi.fn(),
@@ -161,11 +153,6 @@ describe('ToolHandlers', () => {
     mockUI = {
       formatConfirmationRequest: vi.fn().mockReturnValue('Formatted confirmation'),
     } as unknown as HumanInLoopUI;
-
-    const mockSamplingClient = {
-      generate: vi.fn(),
-      generateWithHistory: vi.fn(),
-    } as any;
 
     // Create ToolHandlers instance
     toolHandlers = new ToolHandlers(
@@ -183,8 +170,7 @@ describe('ToolHandlers', () => {
       mockPlanningEngine,
       mockProjectMemoryManager,
       mockKnowledgeGraph,
-      mockUI,
-      mockSamplingClient
+      mockUI
     );
   });
 
@@ -357,8 +343,37 @@ describe('ToolHandlers', () => {
     });
   });
 
-  // handleGenerateSmartPlan tests removed - method deleted per MCP compliance
-  // PlanningEngine removed → planning delegated to Claude's built-in capabilities
+  describe('handleGenerateSmartPlan', () => {
+    it('should generate and format a plan', async () => {
+      const result = await toolHandlers.handleGenerateSmartPlan({
+        featureDescription: 'User authentication system',
+        requirements: ['JWT tokens', 'OAuth2'],
+        constraints: ['< 1 week'],
+      });
+
+      expect(mockPlanningEngine.generatePlan).toHaveBeenCalledWith({
+        featureDescription: 'User authentication system',
+        requirements: ['JWT tokens', 'OAuth2'],
+        constraints: ['< 1 week'],
+      });
+
+      expect(result.content[0].text).toContain('Test Feature Plan');
+      expect(result.content[0].text).toContain('task-1');
+      expect(result.content[0].text).toContain('Setup project structure');
+    });
+
+    it('should handle plan generation errors', async () => {
+      vi.mocked(mockPlanningEngine.generatePlan).mockRejectedValue(
+        new Error('Planning failed')
+      );
+
+      const result = await toolHandlers.handleGenerateSmartPlan({
+        featureDescription: 'Test feature',
+      });
+
+      expect(result.content[0].text).toContain('❌ Smart plan generation failed');
+    });
+  });
 
   describe('handleRecallMemory', () => {
     it('should recall and format memories', async () => {

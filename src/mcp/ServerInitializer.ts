@@ -21,14 +21,13 @@ import { DevelopmentButler } from '../agents/DevelopmentButler.js';
 import { CheckpointDetector } from '../core/CheckpointDetector.js';
 import { HookIntegration } from '../core/HookIntegration.js';
 import { MCPToolInterface } from '../core/MCPToolInterface.js';
+import { PlanningEngine } from '../planning/PlanningEngine.js';
 import { KnowledgeGraph } from '../knowledge-graph/index.js';
 import type { EntityType } from '../knowledge-graph/types.js';
 import { ProjectMemoryManager } from '../memory/ProjectMemoryManager.js';
 import { ProjectAutoTracker } from '../memory/ProjectAutoTracker.js';
-import { UnifiedMemoryStore } from '../memory/UnifiedMemoryStore.js';
 import { RateLimiter } from '../utils/RateLimiter.js';
 import { ToolHandlers, BuddyHandlers, A2AToolHandlers } from './handlers/index.js';
-import { SamplingClient } from './SamplingClient.js';
 
 /**
  * Initialized Server Components
@@ -56,17 +55,16 @@ export interface ServerComponents {
   hookIntegration: HookIntegration;
   toolInterface: MCPToolInterface;
 
+  // Planning
+  planningEngine: PlanningEngine;
+
   // Memory & Knowledge
   knowledgeGraph: KnowledgeGraph;
   projectMemoryManager: ProjectMemoryManager;
   projectAutoTracker: ProjectAutoTracker;
-  unifiedMemoryStore: UnifiedMemoryStore;
 
   // Rate limiting
   rateLimiter: RateLimiter;
-
-  // Sampling
-  samplingClient: SamplingClient;
 
   // Handler modules
   toolHandlers: ToolHandlers;
@@ -103,7 +101,7 @@ export class ServerInitializer {
    * **Initialization Phases**:
    * 1. **Core Infrastructure**: Router, Formatter, AgentRegistry, UI
    * 2. **Evolution System**: Performance tracking, learning, adaptation
-   * 3. **Development Tools**: DevelopmentButler
+   * 3. **Development Tools**: DevelopmentButler, PlanningEngine
    * 4. **Memory Systems**: KnowledgeGraph, ProjectMemoryManager, ProjectAutoTracker
    * 5. **Hook Integration**: HookIntegration
    * 6. **Handler Modules**: ToolHandlers, BuddyHandlers
@@ -131,33 +129,34 @@ export class ServerInitializer {
 
     // Initialize evolution system
     const performanceTracker = new PerformanceTracker();
-    const learningManager = new LearningManager();
-    const feedbackCollector = new FeedbackCollector();
+    const learningManager = new LearningManager(performanceTracker);
+    const feedbackCollector = new FeedbackCollector(learningManager);
 
     // Initialize evolution monitor using Router's evolution components
     const evolutionMonitor = new EvolutionMonitor(
       router.getPerformanceTracker(),
-      router.getLearningManager()
+      router.getLearningManager(),
+      router.getAdaptationEngine()
     );
 
     // Initialize DevelopmentButler components
     const checkpointDetector = new CheckpointDetector();
     const toolInterface = new MCPToolInterface();
+    const developmentButler = new DevelopmentButler(
+      checkpointDetector,
+      toolInterface,
+      router.getLearningManager()
+    );
+
+    // Initialize PlanningEngine (Phase 2)
+    const planningEngine = new PlanningEngine(
+      agentRegistry,
+      router.getLearningManager()
+    );
 
     // Initialize Project Memory System
     const knowledgeGraph = KnowledgeGraph.createSync();
     const projectMemoryManager = new ProjectMemoryManager(knowledgeGraph);
-
-    // Initialize Unified Memory Store (Phase 0.7.0)
-    const unifiedMemoryStore = new UnifiedMemoryStore(knowledgeGraph);
-
-    // Initialize DevelopmentButler with UnifiedMemoryStore
-    const developmentButler = new DevelopmentButler(
-      checkpointDetector,
-      toolInterface,
-      router.getLearningManager(),
-      unifiedMemoryStore
-    );
     toolInterface.attachMemoryProvider({
       createEntities: async ({ entities }) => {
         for (const entity of entities) {
@@ -192,12 +191,6 @@ export class ServerInitializer {
       requestsPerMinute: 30, // Conservative limit to prevent DoS attacks
     });
 
-    // Initialize Sampling Client (placeholder - will be connected when server has sampling capability)
-    // Note: The actual sampleFn will be provided by the MCP server instance
-    const samplingClient = new SamplingClient(async (request) => {
-      throw new Error('Sampling not yet connected. This will be wired when MCP SDK sampling is available.');
-    });
-
     // Initialize handler modules
     const toolHandlers = new ToolHandlers(
       router,
@@ -211,11 +204,10 @@ export class ServerInitializer {
       developmentButler,
       checkpointDetector,
       hookIntegration,
+      planningEngine,
       projectMemoryManager,
       knowledgeGraph,
-      ui,
-      samplingClient,
-      unifiedMemoryStore
+      ui
     );
 
     const buddyHandlers = new BuddyHandlers(
@@ -244,12 +236,11 @@ export class ServerInitializer {
       checkpointDetector,
       hookIntegration,
       toolInterface,
+      planningEngine,
       knowledgeGraph,
       projectMemoryManager,
       projectAutoTracker,
-      unifiedMemoryStore,
       rateLimiter,
-      samplingClient,
       toolHandlers,
       buddyHandlers,
       a2aHandlers,

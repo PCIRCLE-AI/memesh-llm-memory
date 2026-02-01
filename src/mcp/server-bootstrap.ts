@@ -94,13 +94,11 @@ async function startA2AServer(): Promise<any> {
     });
 
     const port = await server.start();
-    // Note: No console output in MCP stdio mode to avoid polluting the protocol channel
-    // A2A server started silently on port ${port} with agent ID ${agentId}
+    console.error(`[A2A] Server started on port ${port} (Agent ID: ${agentId})`);
 
     return server;
   } catch (error) {
-    // Note: Errors are swallowed in MCP stdio mode to avoid polluting the protocol channel
-    // A2A server failed to start but MCP continues without it
+    console.error('[A2A] Failed to start A2A server:', error);
     // Don't fail MCP startup if A2A server fails
     return null;
   }
@@ -108,27 +106,26 @@ async function startA2AServer(): Promise<any> {
 
 /**
  * Graceful shutdown handler with timeout protection
- * Note: No console output in MCP stdio mode to avoid polluting the protocol channel
  */
 async function shutdown(signal: string): Promise<void> {
-  // Shutdown initiated by signal (no console output in stdio mode)
+  console.error(`\n[Shutdown] ${signal} received. Shutting down gracefully...`);
 
   // Set shutdown timeout to prevent hung processes
   const shutdownTimeout = setTimeout(() => {
-    // Timeout reached, forcing exit (no console output in stdio mode)
+    console.error('[Shutdown] ⚠️  Timeout reached (5s), forcing exit');
     process.exit(1);
   }, 5000);
 
   try {
     if (a2aServer) {
       await a2aServer.stop();
-      // A2A Server stopped (no console output in stdio mode)
+      console.error('[Shutdown] A2A Server stopped');
     }
 
     clearTimeout(shutdownTimeout);
     process.exit(0);
   } catch (error) {
-    // Error during shutdown (no console output in stdio mode)
+    console.error('[Shutdown] Error during shutdown:', error);
     clearTimeout(shutdownTimeout);
     process.exit(1);
   }

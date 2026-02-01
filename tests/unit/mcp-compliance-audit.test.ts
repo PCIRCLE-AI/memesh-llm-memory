@@ -20,10 +20,8 @@ describe('MCP Compliance Audit', () => {
   // Load tools once for all tests
   tools = getAllToolDefinitions();
 
-  it('should have exactly 17 tools defined', () => {
-    // 13 original + 4 secret management tools (Phase 0.7.0)
-    // generate-smart-plan removed - planning delegated to Claude's built-in capabilities
-    expect(tools).toHaveLength(17);
+  it('should have exactly 13 tools defined', () => {
+    expect(tools).toHaveLength(13);
   });
 
   it('should have all tools with outputSchema defined (MCP Spec 2025-11-25)', () => {
@@ -37,8 +35,7 @@ describe('MCP Compliance Audit', () => {
       });
     }
 
-    // 6 original + 4 secret management tools (Phase 0.7.0) without outputSchema
-    expect(toolsWithoutOutputSchema.length).toBeLessThanOrEqual(10);
+    expect(toolsWithoutOutputSchema.length).toBeLessThanOrEqual(6);
   });
 
   it('should have all tools with annotations defined (MCP Spec 2025-11-25)', () => {

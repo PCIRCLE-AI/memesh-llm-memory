@@ -1,14 +1,13 @@
 /**
- * Evolution System - Simplified
+ * Self-Evolving Agent System
  *
- * Stores and retrieves performance metrics and learned patterns.
- * Intelligence (pattern analysis, adaptation, learning) delegated to LLM via MCP tool descriptions.
+ * Enables agents to learn from experience and improve performance over time
  *
  * ## Components
  *
- * - **PerformanceTracker**: Records agent execution metrics
- * - **LearningManager**: Stores learned patterns
- * - **FeedbackCollector**: Records AI mistakes
+ * - **PerformanceTracker**: Records and analyzes agent execution metrics
+ * - **LearningManager**: Extracts patterns from performance data
+ * - **AdaptationEngine**: Applies learned patterns to modify agent behavior
  *
  * ## Usage
  *
@@ -16,7 +15,7 @@
  * import {
  *   PerformanceTracker,
  *   LearningManager,
- *   FeedbackCollector,
+ *   AdaptationEngine,
  * } from './evolution';
  *
  * // 1. Track performance
@@ -30,55 +29,103 @@
  *   qualityScore: 0.9,
  * });
  *
- * // 2. Store patterns (created by LLM)
- * const learner = new LearningManager();
- * learner.addPattern({
- *   id: 'pattern-1',
- *   type: 'success',
+ * // 2. Learn patterns
+ * const learner = new LearningManager(tracker);
+ * const patterns = learner.analyzePatterns('code-review-agent');
+ *
+ * // 3. Adapt behavior
+ * const adapter = new AdaptationEngine(learner, tracker);
+ * adapter.configureAgent('code-review-agent', {
  *   agentId: 'code-review-agent',
- *   taskType: 'code-review',
- *   description: 'High quality code review pattern',
- *   conditions: { taskComplexity: 'medium' },
- *   action: { type: 'adjust_prompt', parameters: { strategy: 'quality-focused' } },
- *   confidence: 0.85,
- *   observationCount: 25,
- *   successCount: 22,
- *   successRate: 0.88,
- *   createdAt: new Date(),
- *   updatedAt: new Date(),
+ *   enabledAdaptations: {
+ *     promptOptimization: true,
+ *     modelSelection: true,
+ *     timeoutAdjustment: true,
+ *   },
+ *   learningRate: 0.1,
+ *   minConfidence: 0.7,
+ *   minObservations: 10,
+ *   maxPatterns: 100,
  * });
  *
- * // 3. Record AI mistakes
- * const collector = new FeedbackCollector();
- * collector.recordAIMistake({
- *   action: 'Modified file without reading',
- *   errorType: AIErrorType.PROCEDURE_VIOLATION,
- *   userCorrection: 'Must read file before editing',
- *   correctMethod: 'Use Read tool first, then Edit',
- *   impact: 'Broke file indentation',
- *   preventionMethod: 'ALWAYS invoke Read before Edit',
- * });
+ * const adapted = await adapter.adaptExecution(
+ *   'code-review-agent',
+ *   'code-review',
+ *   { model: 'claude-sonnet-4-5', maxTokens: 4000 }
+ * );
  * ```
  */
 
 // Core components
 export { PerformanceTracker } from './PerformanceTracker.js';
 export { LearningManager, type LearningConfig } from './LearningManager.js';
-export { FeedbackCollector } from './FeedbackCollector.js';
-export { EvolutionMonitor } from './EvolutionMonitor.js';
+export {
+  AdaptationEngine,
+  type AdaptationResult,
+  type AdaptedExecution,
+} from './AdaptationEngine.js';
+export { EvolutionBootstrap } from './EvolutionBootstrap.js';
+
+// NEW: Mistake Detection & Learning (Main AI Evolution)
+export {
+  FeedbackCollector,
+  type FeedbackCollectorConfig,
+  type RoutingApprovalInput,
+  type TaskCompletionInput,
+} from './FeedbackCollector.js';
+export {
+  LocalMistakeDetector,
+  type CorrectionDetection,
+  type Message,
+} from './LocalMistakeDetector.js';
+export {
+  CloudEvolutionClient,
+  createCloudClient,
+  type CloudEvolutionConfig,
+  type AdvancedMistakeDetection,
+  type PatternRecognitionResult,
+  type PreventionSuggestion,
+} from './CloudEvolutionClient.js';
 
 // Types
 export type {
   PerformanceMetrics,
   LearnedPattern,
   AgentFeedback,
+  AdaptationConfig,
   EvolutionStats,
 } from './types.js';
 
-// AI Mistake Types
+// NEW: Main AI Mistake Types
 export {
   AIErrorType,
 } from './types.js';
 export type {
   AIMistake,
+  AIBehaviorPattern,
+} from './types.js';
+
+// Phase 3: Cross-Agent Knowledge Transfer
+export { TransferabilityChecker } from './TransferabilityChecker.js';
+export { KnowledgeTransferManager, type FindTransferableOptions } from './KnowledgeTransferManager.js';
+
+// Phase 3: A/B Testing Framework
+export { StatisticalAnalyzer, type WelchTTestResult } from './StatisticalAnalyzer.js';
+export { ABTestManager, type CreateExperimentOptions } from './ABTestManager.js';
+
+// Phase 3 Types
+export type {
+  PatternTransferability,
+  TransferablePattern,
+  ABTestExperiment,
+  ABTestVariant,
+  ABTestAssignment,
+  ABTestResults,
+  VariantStatistics,
+  FederatedLearningConfig,
+  LocalModelUpdate,
+  GlobalModel,
+  ContextualPattern,
+  PatternContext,
+  PatternExplanation,
 } from './types.js';

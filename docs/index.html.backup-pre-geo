@@ -1,0 +1,1451 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Claude Code Buddy - Open Source Plugin for Intelligent AI Coding
+    </title>
+    <meta
+      name="description"
+      content="Free & open-source Plugin that adds intelligence, memory, and task routing to Claude Code. AGPL-3.0 licensed. Transform Claude into a project-aware AI teammate."
+    />
+
+    <!-- Open Graph -->
+    <meta
+      property="og:title"
+      content="Claude Code Buddy - Intelligent Plugin"
+    />
+    <meta
+      property="og:description"
+      content="Add project memory, workflow guidance, and intelligent task routing to Claude Code"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ccb.pcircle.ai" />
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+    <style>
+      /* ================================
+           Warm Glassmorphism Design System
+           ================================ */
+
+      * {
+        font-family:
+          "Plus Jakarta Sans",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+      }
+
+      body {
+        background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+        min-height: 100vh;
+      }
+
+      /* Glassmorphism Card Effects */
+      .glass-card {
+        background: rgba(255, 255, 255, 0.25);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+        transition: all 0.3s ease;
+      }
+
+      .glass-card:hover {
+        background: rgba(255, 255, 255, 0.35);
+        box-shadow: 0 12px 40px rgba(31, 38, 135, 0.2);
+        transform: translateY(-4px);
+      }
+
+      /* Warm Gradient Backgrounds */
+      .warm-gradient {
+        background: linear-gradient(
+          135deg,
+          #fef3c7 0%,
+          #dbeafe 50%,
+          #fecaca 100%
+        );
+      }
+
+      .warm-gradient-blue {
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      }
+
+      .warm-gradient-orange {
+        background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%);
+      }
+
+      .warm-gradient .text-gray-600,
+      .warm-gradient .text-gray-700,
+      .warm-gradient-blue .text-gray-600,
+      .warm-gradient-blue .text-gray-700,
+      .warm-gradient-orange .text-gray-600,
+      .warm-gradient-orange .text-gray-700 {
+        color: #111827;
+      }
+
+      /* Soft Shadows */
+      .soft-shadow {
+        box-shadow: 0 4px 20px rgba(31, 38, 135, 0.1);
+      }
+
+      .soft-shadow-lg {
+        box-shadow: 0 10px 40px rgba(31, 38, 135, 0.15);
+      }
+
+      /* Smooth Animations */
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+
+      .float-animation {
+        animation: float 3s ease-in-out infinite;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .fade-in-up {
+        animation: fadeInUp 0.6s ease-out;
+      }
+
+      /* Buttons with Warm Glow */
+      .btn-primary {
+        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        color: white;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+      }
+
+      .btn-primary:hover {
+        box-shadow: 0 6px 25px rgba(249, 115, 22, 0.5);
+        transform: translateY(-2px);
+      }
+
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.4);
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(37, 99, 235, 0.3);
+        color: #2563eb;
+        transition: all 0.3s ease;
+      }
+
+      .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.6);
+        border-color: #2563eb;
+      }
+
+      /* Badges */
+      .badge {
+        background: rgba(255, 255, 255, 0.5);
+        backdrop-filter: blur(10px);
+        padding: 0.375rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .badge-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+      }
+
+      .badge-orange {
+        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        color: white;
+      }
+
+      /* Code Blocks */
+      pre {
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        padding: 1.5rem;
+        overflow-x: auto;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      code {
+        color: #e2e8f0;
+        font-size: 0.9em;
+        line-height: 1.6;
+      }
+
+      .inline-code {
+        background: rgba(226, 232, 240, 0.5);
+        color: #1e293b;
+        padding: 0.125rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.875em;
+      }
+
+      /* Syntax Highlighting */
+      .keyword {
+        color: #60a5fa;
+      }
+      .string {
+        color: #fca5a5;
+      }
+      .comment {
+        color: #94a3b8;
+      }
+
+      /* Icon Backgrounds */
+      .icon-blue {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        color: #2563eb;
+      }
+
+      .icon-orange {
+        background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%);
+        color: #ea580c;
+      }
+
+      /* Navigation Glass */
+      .nav-glass {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+      }
+
+      /* Lucide Icon Styles */
+      .icon-wrapper {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .icon-sm {
+        width: 1rem;
+        height: 1rem;
+      }
+      .icon-md {
+        width: 1.25rem;
+        height: 1.25rem;
+      }
+      .icon-lg {
+        width: 1.5rem;
+        height: 1.5rem;
+      }
+      .icon-xl {
+        width: 2rem;
+        height: 2rem;
+      }
+      .icon-2xl {
+        width: 2.5rem;
+        height: 2.5rem;
+      }
+
+      /* Quick Reference Card - Enhanced Text Visibility */
+      .quick-ref-code {
+        background: rgba(30, 41, 59, 0.9);
+        color: #f1f5f9;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+    </style>
+  </head>
+  <body class="antialiased">
+    <!-- Navigation -->
+    <nav class="nav-glass soft-shadow sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+          <div class="flex items-center space-x-3">
+            <span class="text-xl font-bold text-gray-900"
+              >Claude Code Buddy</span
+            >
+            <span class="badge badge-primary hidden sm:inline-block"
+              >Open Source</span
+            >
+          </div>
+          <!-- Mobile: Language + GitHub -->
+          <div class="flex md:hidden items-center space-x-3">
+            <a
+              href="index-zh.html"
+              class="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-semibold text-gray-700 transition"
+              >中文</a
+            >
+            <a
+              href="https://github.com/PCIRCLE-AI/claude-code-buddy"
+              class="p-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition"
+              aria-label="GitHub"
+            >
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path
+                  d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+                />
+              </svg>
+            </a>
+          </div>
+          <!-- Desktop Navigation -->
+          <div class="hidden md:flex items-center space-x-8">
+            <a
+              href="#features"
+              class="text-gray-700 hover:text-blue-600 transition font-medium"
+              >Features</a
+            >
+            <a
+              href="#quickstart"
+              class="text-gray-700 hover:text-blue-600 transition font-medium"
+              >Quick Start</a
+            >
+            <a
+              href="#how-to-use"
+              class="text-gray-700 hover:text-blue-600 transition font-medium"
+              >How to Use</a
+            >
+            <a
+              href="index-zh.html"
+              class="text-sm font-semibold text-gray-700 hover:text-blue-600"
+              >繁體中文</a
+            >
+            <a
+              href="https://github.com/PCIRCLE-AI/claude-code-buddy"
+              class="btn-primary px-6 py-2.5 rounded-lg font-semibold inline-flex items-center space-x-2"
+            >
+              <i data-lucide="star" class="icon-md"></i>
+              <span>Star on GitHub</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="warm-gradient py-20 md:py-28">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center fade-in-up">
+          <!-- GitHub Badges -->
+          <div class="flex justify-center flex-wrap gap-3 mb-8">
+            <img
+              src="https://img.shields.io/github/stars/PCIRCLE-AI/claude-code-buddy?style=social"
+              alt="GitHub stars"
+              loading="lazy"
+            />
+            <img
+              src="https://img.shields.io/github/forks/PCIRCLE-AI/claude-code-buddy?style=social"
+              alt="GitHub forks"
+              loading="lazy"
+            />
+            <img
+              src="https://img.shields.io/github/license/PCIRCLE-AI/claude-code-buddy"
+              alt="License"
+              loading="lazy"
+            />
+            <img
+              src="https://img.shields.io/badge/version-2.2.1-blue"
+              alt="Version"
+              loading="lazy"
+            />
+          </div>
+
+          <h1
+            class="text-5xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight"
+          >
+            Free & Open Source<br />
+            <span class="text-blue-600">Plugin for Claude Code</span>
+          </h1>
+
+          <p
+            class="text-xl md:text-2xl text-gray-700 mb-10 max-w-3xl mx-auto font-light"
+          >
+            Transform Claude Code from a powerful assistant into a
+            <strong>project-aware AI teammate</strong> with persistent memory
+            and intelligent task routing.
+          </p>
+
+          <div class="flex flex-col sm:flex-row justify-center gap-4 mb-12">
+            <a
+              href="https://github.com/PCIRCLE-AI/claude-code-buddy"
+              class="btn-primary px-10 py-4 rounded-lg font-semibold text-lg inline-flex items-center justify-center space-x-2"
+            >
+              <i data-lucide="rocket" class="icon-lg"></i>
+              <span>Get Started Free</span>
+            </a>
+            <a
+              href="#quickstart"
+              class="btn-secondary px-10 py-4 rounded-lg text-lg font-semibold inline-flex items-center justify-center space-x-2"
+            >
+              <i data-lucide="book-open" class="icon-lg"></i>
+              <span>View Documentation</span>
+            </a>
+          </div>
+
+          <!-- Quick Install -->
+          <div class="glass-card rounded-xl p-6 max-w-3xl mx-auto text-left">
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-gray-700 text-sm font-semibold"
+                >Quick Installation</span
+              >
+              <span
+                class="badge"
+                style="
+                  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                  color: white;
+                "
+                >AGPL-3.0 License</span
+              >
+            </div>
+            <pre><code><span class="comment"># Clone the repository</span>
+<span class="keyword">git</span> clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
+<span class="keyword">cd</span> @pcircle/claude-code-buddy-mcp
+
+<span class="comment"># Run the interactive installer</span>
+./scripts/install.sh</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Problems & Solutions -->
+    <section class="py-20 bg-white bg-opacity-60">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+          <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            Problems Claude Code Users Face
+          </h2>
+          <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+            CCB solves common frustrations with intelligent memory and
+            specialized expertise
+          </p>
+        </div>
+
+        <!-- Problem-Solution Pairs -->
+        <div class="grid md:grid-cols-2 gap-8 mb-12">
+          <!-- Problem 1 -->
+          <div class="glass-card rounded-2xl p-8">
+            <div class="flex items-start mb-4">
+              <div
+                class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0"
+              >
+                <i data-lucide="x-circle" class="icon-xl text-red-500"></i>
+              </div>
+              <div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">
+                  Problem: Context Loss
+                </h3>
+                <p class="text-gray-600">
+                  Claude forgets previous conversations. You have to repeat your
+                  project's architecture, coding standards, and decisions
+                  <strong>every single session</strong>.
+                </p>
+              </div>
+            </div>
+            <div class="mt-6 pt-6 border-t border-gray-200">
+              <div class="flex items-start">
+                <div
+                  class="w-12 h-12 icon-blue rounded-xl flex items-center justify-center mr-4 flex-shrink-0"
+                >
+                  <i data-lucide="brain" class="icon-xl"></i>
+                </div>
+                <div>
+                  <h4 class="text-xl font-bold text-blue-600 mb-2">
+                    Solution: Project Memory
+                  </h4>
+                  <p class="text-gray-700">
+                    <strong>Knowledge Graph</strong> remembers your architecture
+                    decisions, coding patterns, and past solutions
+                    <strong>permanently across sessions</strong>.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Problem 2 -->
+          <div class="glass-card rounded-2xl p-8">
+            <div class="flex items-start mb-4">
+              <div
+                class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0"
+              >
+                <i data-lucide="x-circle" class="icon-xl text-red-500"></i>
+              </div>
+              <div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">
+                  Problem: Generic Responses
+                </h3>
+                <p class="text-gray-600">
+                  Claude gives generic answers without understanding your
+                  <strong>specific project context</strong>, tech stack, or
+                  coding conventions.
+                </p>
+              </div>
+            </div>
+            <div class="mt-6 pt-6 border-t border-gray-200">
+              <div class="flex items-start">
+                <div
+                  class="w-12 h-12 icon-orange rounded-xl flex items-center justify-center mr-4 flex-shrink-0"
+                >
+                  <i data-lucide="target" class="icon-xl"></i>
+                </div>
+                <div>
+                  <h4 class="text-xl font-bold text-orange-600 mb-2">
+                    Solution: Smart Routing
+                  </h4>
+                  <p class="text-gray-700">
+                    Smart routing classifies the task type and applies the right
+                    capability profile for context-aware responses.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Problem 3 -->
+          <div class="glass-card rounded-2xl p-8">
+            <div class="flex items-start mb-4">
+              <div
+                class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0"
+              >
+                <i data-lucide="x-circle" class="icon-xl text-red-500"></i>
+              </div>
+              <div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">
+                  Problem: One-Size-Fits-All Responses
+                </h3>
+                <p class="text-gray-600">
+                  Every request gets the same generic response shape, even when
+                  the work needs a specific checklist, workflow, or guardrails.
+                </p>
+              </div>
+            </div>
+            <div class="mt-6 pt-6 border-t border-gray-200">
+              <div class="flex items-start">
+                <div
+                  class="w-12 h-12 icon-green rounded-xl flex items-center justify-center mr-4 flex-shrink-0"
+                >
+                  <i data-lucide="route" class="icon-xl text-green-600"></i>
+                </div>
+                <div>
+                  <h4 class="text-xl font-bold text-green-600 mb-2">
+                    Solution: Capability Routing
+                  </h4>
+                  <p class="text-gray-700">
+                    Routes tasks by intent (review, debugging, design, planning)
+                    and injects the right structure, checklists, and constraints.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Problem 4 -->
+          <div class="glass-card rounded-2xl p-8">
+            <div class="flex items-start mb-4">
+              <div
+                class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0"
+              >
+                <i data-lucide="x-circle" class="icon-xl text-red-500"></i>
+              </div>
+              <div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">
+                  Problem: Repetitive Context
+                </h3>
+                <p class="text-gray-600">
+                  Explaining your
+                  <strong
+                    >project structure and decisions every conversation</strong
+                  >
+                  wastes time and breaks flow.
+                </p>
+              </div>
+            </div>
+            <div class="mt-6 pt-6 border-t border-gray-200">
+              <div class="flex items-start">
+                <div
+                  class="w-12 h-12 icon-purple rounded-xl flex items-center justify-center mr-4 flex-shrink-0"
+                >
+                  <i data-lucide="folder" class="icon-xl text-purple-600"></i>
+                </div>
+                <div>
+                  <h4 class="text-xl font-bold text-purple-600 mb-2">
+                    Solution: Project Memory
+                  </h4>
+                  <p class="text-gray-700">
+                    Record decisions and changes in the local knowledge graph →
+                    Recall with <strong>buddy-remember</strong> →
+                    <strong>No repeated explanations</strong> needed.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Evolution Section -->
+    <section class="py-20 bg-white">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+          <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            Designed to Evolve with Your Project
+          </h2>
+          <p class="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
+            Instead of treating each prompt as a clean slate, CCB maintains a
+            persistent understanding of your codebase, architectural decisions,
+            and workflow patterns.
+          </p>
+          <p
+            class="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed mt-4"
+          >
+            As you use it, the plugin progressively aligns with how your project
+            is structured and how you prefer to work—reducing repetition,
+            improving consistency, and making AI assistance feel less like a
+            tool and more like a long-term collaborator.
+          </p>
+        </div>
+
+        <div
+          class="glass-card rounded-2xl p-10 max-w-5xl mx-auto warm-gradient-blue border border-blue-100"
+        >
+          <h3 class="text-2xl font-bold text-gray-900 mb-8 text-center">
+            How It Works: Behavioral Evolution
+          </h3>
+          <p class="text-center text-gray-700 mb-8 max-w-3xl mx-auto text-lg">
+            CCB does not retrain models. Instead, it uses a
+            <strong>persistent system layer</strong> inside the Plugin:
+          </p>
+
+          <div class="grid md:grid-cols-2 gap-8">
+            <div class="bg-white bg-opacity-80 rounded-xl p-6 shadow-sm">
+              <div class="flex items-center mb-3">
+                <span
+                  class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3"
+                >
+                  <i data-lucide="database" class="icon-md"></i>
+                </span>
+                <h4 class="font-bold text-gray-900">
+                  Project Memory Accumulation
+                </h4>
+              </div>
+              <p class="text-gray-600 text-sm">
+                Architectural decisions, conventions, and resolved discussions
+                are stored as structured context.
+              </p>
+            </div>
+
+            <div class="bg-white bg-opacity-80 rounded-xl p-6 shadow-sm">
+              <div class="flex items-center mb-3">
+                <span
+                  class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 mr-3"
+                >
+                  <i data-lucide="zap" class="icon-md"></i>
+                </span>
+                <h4 class="font-bold text-gray-900">Pattern Reinforcement</h4>
+              </div>
+              <p class="text-gray-600 text-sm">
+                Repeated approvals, refactors, and preferred solutions gradually
+                shape how future prompts are constructed.
+              </p>
+            </div>
+
+            <div class="bg-white bg-opacity-80 rounded-xl p-6 shadow-sm">
+              <div class="flex items-center mb-3">
+                <span
+                  class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 mr-3"
+                >
+                  <i data-lucide="layers" class="icon-md"></i>
+                </span>
+                <h4 class="font-bold text-gray-900">
+                  Task-Type Differentiation
+                </h4>
+              </div>
+              <p class="text-gray-600 text-sm">
+                Review, debugging, refactoring, and design tasks are handled
+                with different internal prompting strategies.
+              </p>
+            </div>
+
+            <div class="bg-white bg-opacity-80 rounded-xl p-6 shadow-sm">
+              <div class="flex items-center mb-3">
+                <span
+                  class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 mr-3"
+                >
+                  <i data-lucide="repeat" class="icon-md"></i>
+                </span>
+                <h4 class="font-bold text-gray-900">Context Reuse</h4>
+              </div>
+              <p class="text-gray-600 text-sm">
+                Relevant memory is selectively injected, avoiding prompt bloat
+                while preserving continuity.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Key Features -->
+    <section id="features" class="py-20 warm-gradient-blue">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+          <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            Powerful Features
+          </h2>
+          <p class="text-xl text-gray-600">Built for professional developers</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Focused Capabilities -->
+          <div class="glass-card rounded-2xl p-8 md:col-span-2">
+            <h3 class="text-3xl font-bold text-gray-900 mb-6 flex items-center">
+              <span
+                class="w-12 h-12 icon-orange rounded-lg flex items-center justify-center mr-4"
+                ><i data-lucide="zap" class="icon-xl"></i
+              ></span>
+              Focused Capabilities
+            </h3>
+            <p class="text-gray-600 mb-6 text-lg">
+              Automatic routing applies the right guidance profile per task.
+            </p>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div class="warm-gradient-blue rounded-lg p-4">
+                <code class="inline-code text-base font-semibold"
+                  >code review</code
+                >
+                <p class="text-gray-600 text-sm mt-2">
+                  Security, quality, anti-patterns
+                </p>
+              </div>
+              <div class="warm-gradient-orange rounded-lg p-4">
+                <code class="inline-code text-base font-semibold"
+                  >debugging</code
+                >
+                <p class="text-gray-600 text-sm mt-2">
+                  Systematic debugging methodology
+                </p>
+              </div>
+              <div class="warm-gradient-blue rounded-lg p-4">
+                <code class="inline-code text-base font-semibold"
+                  >frontend UX</code
+                >
+                <p class="text-gray-600 text-sm mt-2">
+                  UI/UX, accessibility, responsive
+                </p>
+              </div>
+              <div class="warm-gradient-orange rounded-lg p-4">
+                <code class="inline-code text-base font-semibold"
+                  >backend systems</code
+                >
+                <p class="text-gray-600 text-sm mt-2">
+                  API design, database optimization
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Project Memory -->
+          <div class="glass-card rounded-2xl p-8">
+            <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+              <span
+                class="w-12 h-12 icon-blue rounded-lg flex items-center justify-center mr-3"
+                ><i data-lucide="hard-drive" class="icon-xl"></i
+              ></span>
+              Project Memory
+            </h3>
+            <div class="space-y-5">
+              <div>
+                <h4 class="font-bold text-gray-900 mb-2">Change Timeline</h4>
+                <p class="text-gray-600 text-sm">
+                  Records code changes, tests, and milestones automatically
+                </p>
+              </div>
+              <div>
+                <h4 class="font-bold text-gray-900 mb-2">Knowledge Graph</h4>
+                <p class="text-gray-600 text-sm">
+                  Recalls decisions, alternatives, tradeoffs
+                </p>
+              </div>
+              <div>
+                <h4 class="font-bold text-gray-900 mb-2">Project Context</h4>
+                <p class="text-gray-600 text-sm">
+                  Remembers standards, conventions, patterns
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Workflow Guidance -->
+          <div class="glass-card rounded-2xl p-8">
+            <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+              <span
+                class="w-12 h-12 icon-blue rounded-lg flex items-center justify-center mr-3"
+                ><i data-lucide="route" class="icon-xl"></i
+              ></span>
+              Workflow Guidance
+            </h3>
+            <p class="text-gray-600 mb-5">
+              Phase-aware recommendations based on your current work
+            </p>
+            <div class="glass-card rounded-lg p-5">
+              <pre><code><span class="comment"># Ask for next steps</span>
+get-workflow-guidance <span class="string">{"phase":"code-written"}</span>
+
+<span class="comment"># Generate a plan</span>
+generate-smart-plan <span class="string">{"featureDescription":"Add login flow"}</span></code></pre>
+            </div>
+          </div>
+
+          <!-- Capability Routing -->
+          <div class="glass-card rounded-2xl p-8 md:col-span-2">
+            <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+              <span
+                class="w-12 h-12 icon-orange rounded-lg flex items-center justify-center mr-3"
+                ><i data-lucide="route" class="icon-xl"></i
+              ></span>
+              Capability Routing
+            </h3>
+            <p class="text-gray-600 mb-5">
+              Focused prompts based on task type and project context
+            </p>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div class="flex items-start">
+                <span class="text-green-500 mr-3 text-xl">✓</span>
+                <span class="text-gray-700"
+                  >Code review checklists and security focus</span
+                >
+              </div>
+              <div class="flex items-start">
+                <span class="text-green-500 mr-3 text-xl">✓</span>
+                <span class="text-gray-700"
+                  >Debugging workflows with root-cause steps</span
+                >
+              </div>
+              <div class="flex items-start">
+                <span class="text-green-500 mr-3 text-xl">✓</span>
+                <span class="text-gray-700"
+                  >Planning and refactor structure with tradeoffs</span
+                >
+              </div>
+              <div class="flex items-start">
+                <span class="text-green-500 mr-3 text-xl">✓</span>
+                <span class="text-gray-700"
+                  >UI/UX guidance with usability heuristics</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Start -->
+    <section id="quickstart" class="py-20 warm-gradient-blue">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+          <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            Quick Start
+          </h2>
+          <p class="text-xl text-gray-600">
+            Get up and running in <strong>2 minutes</strong>
+          </p>
+        </div>
+
+        <!-- One-Click Installation -->
+        <div class="glass-card rounded-2xl p-8 mb-12">
+          <div class="text-center mb-8">
+            <h3 class="text-3xl font-bold text-gray-900 mb-4">
+              🚀 One-Click Installation
+            </h3>
+            <p class="text-gray-600">
+              Install CCB to your IDE in seconds
+            </p>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-6 mb-6">
+            <!-- Cursor Installation -->
+            <div class="bg-white rounded-xl p-6 border-2 border-blue-200 hover:border-blue-400 transition-all">
+              <h4 class="text-xl font-bold text-gray-900 mb-3">
+                For Cursor Users
+              </h4>
+              <a
+                href="cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ=="
+                class="block text-center mb-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 hover:from-blue-100 hover:to-blue-200 transition-all border-2 border-blue-300 hover:border-blue-500 hover:shadow-lg"
+              >
+                <img src="https://cursor.com/deeplink/mcp-install-light.png" alt="Add to Cursor" style="max-height: 40px; margin: 0 auto;" />
+              </a>
+              <p class="text-sm text-gray-700 font-semibold mt-4">
+                Or paste this link in your browser:
+              </p>
+              <code class="text-xs bg-gray-800 text-gray-100 px-3 py-2 rounded-lg break-all block mt-2">cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==</code>
+            </div>
+
+            <!-- VS Code / Claude Code Installation -->
+            <div class="bg-white rounded-xl p-6 border-2 border-purple-200 hover:border-purple-400 transition-all">
+              <h4 class="text-xl font-bold text-gray-900 mb-3">
+                For VS Code / Claude Code
+              </h4>
+              <div class="bg-gray-900 rounded-lg p-4 text-sm mb-3">
+                <pre class="text-gray-300 overflow-x-auto text-xs"><code>{
+  "mcpServers": {
+    "@pcircle/claude-code-buddy-mcp": {
+      "command": "npx",
+      "args": ["-y", "@pcircle/claude-code-buddy-mcp"]
+    }
+  }
+}</code></pre>
+              </div>
+              <p class="text-gray-600 text-sm">
+                Add to <code class="bg-gray-100 px-2 py-1 rounded text-xs">~/.claude/mcp_settings.json</code>
+              </p>
+            </div>
+          </div>
+
+          <div class="text-center">
+            <a
+              href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/QUICK_INSTALL.md"
+              target="_blank"
+              class="text-blue-600 hover:text-blue-700 font-medium"
+            >
+              📖 Detailed Installation Guide →
+            </a>
+          </div>
+        </div>
+
+        <div class="text-center mb-8">
+          <p class="text-gray-600">
+            Or use the manual installation below
+          </p>
+        </div>
+
+        <div class="space-y-6">
+          <!-- Step 1 -->
+          <div class="glass-card rounded-2xl p-8">
+            <div class="flex items-start">
+              <div class="flex-shrink-0">
+                <div
+                  class="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center font-bold text-xl"
+                >
+                  1
+                </div>
+              </div>
+              <div class="ml-6 flex-1">
+                <h3 class="text-2xl font-bold text-gray-900 mb-3">
+                  Prerequisites
+                </h3>
+                <p class="text-gray-600 mb-4">
+                  Node.js 20+ and Claude Code installed
+                </p>
+                <div class="glass-card rounded-lg p-5">
+                  <pre><code><span class="comment"># Check Node.js version</span>
+node --version  <span class="comment"># Should be v20 or higher</span></code></pre>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="glass-card rounded-2xl p-8">
+            <div class="flex items-start">
+              <div class="flex-shrink-0">
+                <div
+                  class="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center font-bold text-xl"
+                >
+                  2
+                </div>
+              </div>
+              <div class="ml-6 flex-1">
+                <h3 class="text-2xl font-bold text-gray-900 mb-3">
+                  Clone & Install
+                </h3>
+                <div class="glass-card rounded-lg p-5">
+                  <pre><code><span class="comment"># Clone the repository</span>
+git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
+cd @pcircle/claude-code-buddy-mcp
+
+<span class="comment"># Run interactive installer</span>
+./scripts/install.sh</code></pre>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="glass-card rounded-2xl p-8">
+            <div class="flex items-start">
+              <div class="flex-shrink-0">
+                <div
+                  class="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center font-bold text-xl"
+                >
+                  3
+                </div>
+              </div>
+              <div class="ml-6 flex-1">
+                <h3 class="text-2xl font-bold text-gray-900 mb-3">
+                  Start Using
+                </h3>
+                <p class="text-gray-600 mb-4">
+                  Restart Claude Code and try natural language commands:
+                </p>
+                <div class="grid md:grid-cols-2 gap-3">
+                  <div class="warm-gradient-blue rounded-lg p-4">
+                    <code class="text-blue-700 font-semibold text-sm"
+                      >"Analyze my codebase"</code
+                    >
+                  </div>
+                  <div class="warm-gradient-orange rounded-lg p-4">
+                    <code class="text-orange-700 font-semibold text-sm"
+                      >"Review for security"</code
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Important Note -->
+        <div
+          class="mt-8 warm-gradient-blue border-l-4 border-blue-600 rounded-xl p-6"
+        >
+          <p class="text-gray-700 text-lg mb-2">
+            <strong>No API keys needed in MCP server mode</strong> - CCB uses
+            your existing Claude Code subscription.
+          </p>
+          <p class="text-gray-700 text-sm">
+            Note: If running the standalone orchestrator, set
+            <code class="inline-code">MCP_SERVER_MODE=false</code> and
+            <code class="inline-code">ANTHROPIC_API_KEY</code> in
+            <code class="inline-code">.env</code>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- How to Use Section -->
+    <section id="how-to-use" class="py-20 bg-white">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+          <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            How to Use CCB
+          </h2>
+          <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+            Two ways to use: <strong>Automatic</strong> (just talk normally) or
+            <strong>Buddy Commands</strong> (explicit control)
+          </p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-8 mb-12">
+          <!-- Automatic Mode -->
+          <div class="glass-card rounded-2xl p-8">
+            <div class="text-4xl mb-4">
+              <i data-lucide="bot" class="icon-2xl text-blue-600"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-4">
+              Automatic Mode
+            </h3>
+            <p class="text-gray-600 mb-4">
+              Just use Claude Code normally. CCB enhances your requests in the
+              background:
+            </p>
+            <div class="bg-gray-900 rounded-lg p-4 text-sm">
+              <pre
+                class="text-gray-300"
+              ><code>You: "Review this code for security"
+     ↓
+CCB: Detects → code review task
+CCB: Applies → review guidance profile
+CCB: Enhances → security checklist
+     ↓
+Claude: Expert security review</code></pre>
+            </div>
+          </div>
+
+          <!-- Buddy Commands -->
+          <div class="glass-card rounded-2xl p-8">
+            <div class="text-4xl mb-4">
+              <i
+                data-lucide="message-square"
+                class="icon-2xl text-orange-600"
+              ></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-4">
+              Buddy Commands
+            </h3>
+            <p class="text-gray-600 mb-4">
+              Use explicit commands for specific features:
+            </p>
+            <div class="space-y-3">
+              <div class="warm-gradient-blue rounded-lg p-3">
+                <code class="text-blue-800 font-mono text-sm"
+                  >buddy-do "setup authentication"</code
+                >
+                <p class="text-gray-600 text-xs mt-1">
+                  Execute with smart routing
+                </p>
+              </div>
+              <div class="warm-gradient-orange rounded-lg p-3">
+                <code class="text-orange-800 font-mono text-sm"
+                  >buddy-remember "API decisions"</code
+                >
+                <p class="text-gray-600 text-xs mt-1">Search project memory</p>
+              </div>
+              <div class="warm-gradient-blue rounded-lg p-3">
+                <code class="text-blue-800 font-mono text-sm"
+                  >get-session-health</code
+                >
+                <p class="text-gray-600 text-xs mt-1">
+                  Check session health
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8 mb-12">
+          <!-- Project Memory -->
+          <div class="glass-card rounded-2xl p-6">
+            <div class="text-3xl mb-3">
+              <i data-lucide="brain" class="icon-xl text-blue-600"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-3">
+              Project Memory
+            </h3>
+            <div class="space-y-2 text-sm">
+              <div class="bg-gray-100 rounded p-2">
+                <code class="text-gray-800">buddy-remember "API decisions"</code>
+                <span class="text-gray-500 text-xs block"
+                  >Recall design choices</span
+                >
+              </div>
+              <div class="bg-gray-100 rounded p-2">
+                <code class="text-gray-800">buddy-remember "test failures"</code>
+                <span class="text-gray-500 text-xs block"
+                  >Track recent issues</span
+                >
+              </div>
+              <div class="bg-gray-100 rounded p-2">
+                <code class="text-gray-800">buddy-remember "naming conventions"</code>
+                <span class="text-gray-500 text-xs block"
+                  >Stay consistent</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Smart Planning -->
+          <div class="glass-card rounded-2xl p-6">
+            <div class="text-3xl mb-3">
+              <i data-lucide="clipboard-list" class="icon-xl text-purple-600"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-3">Smart Planning</h3>
+            <p class="text-gray-600 text-sm mb-3">
+              Break down features into small, ordered steps:
+            </p>
+            <div class="bg-gray-900 rounded-lg p-3 text-xs">
+              <pre
+                class="text-gray-300"
+              ><code>generate-smart-plan {"featureDescription":"OAuth login"}</code></pre>
+            </div>
+            <p class="text-gray-500 text-xs mt-2">
+              Includes tasks, dependencies, and testing guidance.
+            </p>
+          </div>
+
+          <!-- Session Health -->
+          <div class="glass-card rounded-2xl p-6">
+            <div class="text-3xl mb-3">
+              <i data-lucide="heart-pulse" class="icon-xl text-green-600"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-3">Session Health</h3>
+            <p class="text-gray-600 text-sm mb-3">
+              Monitor context quality and token usage:
+            </p>
+            <div class="space-y-2 text-sm">
+              <div class="bg-gray-100 rounded p-2">
+                <code class="text-gray-800">get-session-health</code>
+                <span class="text-gray-500 text-xs block"
+                  >Check token usage and warnings</span
+                >
+              </div>
+              <div class="bg-gray-100 rounded p-2">
+                <code class="text-gray-800">buddy-remember "auth decisions"</code>
+                <span class="text-gray-500 text-xs block">Recall project memory</span>
+              </div>
+              <div class="bg-gray-100 rounded p-2">
+                <code class="text-gray-800">generate-smart-plan</code>
+                <span class="text-gray-500 text-xs block"
+                  >Break down the next feature</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Reference -->
+        <div class="bg-gray-900 rounded-2xl p-8 text-white">
+          <h3
+            class="text-2xl font-bold mb-6 text-center flex items-center justify-center gap-2"
+          >
+            <i data-lucide="zap" class="icon-lg text-yellow-400"></i> Quick
+            Reference Card
+          </h3>
+          <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
+            <div>
+              <h4 class="font-bold text-blue-400 mb-3 flex items-center gap-2">
+                <i data-lucide="bot" class="icon-sm"></i> Automatic
+              </h4>
+              <ul class="space-y-1">
+                <li class="quick-ref-code">buddy do debug login</li>
+                <li class="quick-ref-code mt-1">buddy do review code</li>
+                <li class="quick-ref-code mt-1">buddy do design API</li>
+              </ul>
+            </div>
+            <div>
+              <h4
+                class="font-bold text-orange-400 mb-3 flex items-center gap-2"
+              >
+                <i data-lucide="target" class="icon-sm"></i> Buddy
+              </h4>
+              <ul class="space-y-1">
+                <li class="quick-ref-code">buddy-do "task"</li>
+                <li class="quick-ref-code mt-1">buddy-remember "query"</li>
+                <li class="quick-ref-code mt-1">buddy-help</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-bold text-green-400 mb-3 flex items-center gap-2">
+                <i data-lucide="activity" class="icon-sm"></i> Workflow
+              </h4>
+              <ul class="space-y-1">
+                <li class="quick-ref-code">get-workflow-guidance</li>
+                <li class="quick-ref-code mt-1">generate-smart-plan</li>
+                <li class="quick-ref-code mt-1">get-session-health</li>
+              </ul>
+            </div>
+            <div>
+              <h4
+                class="font-bold text-purple-400 mb-3 flex items-center gap-2"
+              >
+                <i data-lucide="brain" class="icon-sm"></i> Memory
+              </h4>
+              <ul class="space-y-1">
+                <li class="quick-ref-code">buddy-remember "decisions"</li>
+                <li class="quick-ref-code mt-1">buddy-remember "api auth"</li>
+                <li class="quick-ref-code mt-1">buddy-remember "bug fixes"</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 warm-gradient">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+          Ready to supercharge your Claude Code?
+        </h2>
+        <p class="text-xl md:text-2xl mb-10 text-gray-700">
+          Install Claude Code Buddy now. Free, open source, and ready in 2
+          minutes.
+        </p>
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+          <a
+            href="https://github.com/PCIRCLE-AI/claude-code-buddy"
+            class="btn-primary px-10 py-4 rounded-lg text-lg font-bold inline-flex items-center justify-center space-x-2"
+          >
+            <i data-lucide="rocket" class="icon-lg"></i>
+            <span>Get Started Free</span>
+          </a>
+          <a
+            href="https://github.com/PCIRCLE-AI/claude-code-buddy"
+            class="btn-secondary px-10 py-4 rounded-lg text-lg font-bold inline-flex items-center justify-center space-x-2"
+          >
+            <i data-lucide="star" class="icon-lg"></i>
+            <span>Star on GitHub</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-16">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid md:grid-cols-4 gap-10 mb-12">
+          <div>
+            <h4 class="font-bold text-lg mb-5 text-gray-100">Project</h4>
+            <ul class="space-y-3">
+              <li>
+                <a
+                  href="https://github.com/PCIRCLE-AI/claude-code-buddy"
+                  class="text-gray-400 hover:text-white transition"
+                  >GitHub Repository</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://github.com/PCIRCLE-AI/claude-code-buddy/releases"
+                  class="text-gray-400 hover:text-white transition"
+                  >Releases</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/CHANGELOG.md"
+                  class="text-gray-400 hover:text-white transition"
+                  >Changelog</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-bold text-lg mb-5 text-gray-100">Documentation</h4>
+            <ul class="space-y-3">
+              <li>
+                <a
+                  href="https://github.com/PCIRCLE-AI/claude-code-buddy#quick-start-2-minutes"
+                  class="text-gray-400 hover:text-white transition"
+                  >Quick Start</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/README.md"
+                  class="text-gray-400 hover:text-white transition"
+                  >Docs Index</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/TROUBLESHOOTING.md"
+                  class="text-gray-400 hover:text-white transition"
+                  >Troubleshooting</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-bold text-lg mb-5 text-gray-100">Community</h4>
+            <ul class="space-y-3">
+              <li>
+                <a
+                  href="https://github.com/PCIRCLE-AI/claude-code-buddy/discussions"
+                  class="text-gray-400 hover:text-white transition"
+                  >Discussions</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/CONTRIBUTING.md"
+                  class="text-gray-400 hover:text-white transition"
+                  >Contributing</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://github.com/PCIRCLE-AI/claude-code-buddy/graphs/contributors"
+                  class="text-gray-400 hover:text-white transition"
+                  >Contributors</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-bold text-lg mb-5 text-gray-100">PCIRCLE AI</h4>
+            <ul class="space-y-3">
+              <li>
+                <a
+                  href="https://pcircle.ai"
+                  class="text-gray-400 hover:text-white transition"
+                  >Organization Website</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://github.com/PCIRCLE-AI"
+                  class="text-gray-400 hover:text-white transition"
+                  >GitHub Organization</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://toonify.pcircle.ai"
+                  class="text-gray-400 hover:text-white transition"
+                  >Toonify MCP</a
+                >
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="border-t border-gray-800 pt-10">
+          <div class="flex flex-col md:flex-row justify-between items-center">
+            <div class="mb-5 md:mb-0">
+              <p class="text-gray-400 text-sm">
+                © 2026 PCIRCLE AI. Licensed under
+                <a
+                  href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/LICENSE"
+                  class="text-blue-400 hover:text-blue-300 transition"
+                  >AGPL-3.0</a
+                >
+              </p>
+              <p class="text-gray-400 text-sm mt-2">
+                <a href="privacy.html" class="hover:text-blue-400">Privacy</a> •
+                <a href="terms.html" class="hover:text-blue-400 ml-2">Terms</a>
+              </p>
+              <p class="text-gray-400 text-sm mt-2">
+                <span class="text-white font-semibold">English</span> |
+                <a href="index-zh.html" class="hover:text-blue-400 ml-2"
+                  >繁體中文</a
+                >
+              </p>
+            </div>
+            <div class="flex space-x-6">
+              <a
+                href="https://github.com/PCIRCLE-AI/claude-code-buddy"
+                class="text-gray-400 hover:text-white transition"
+                aria-label="GitHub"
+              >
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path
+                    d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+                  />
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Initialize Lucide Icons -->
+    <script>
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

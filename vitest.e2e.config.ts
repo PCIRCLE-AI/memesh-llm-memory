@@ -18,7 +18,6 @@ export default defineConfig({
 
     // Global setup
     globals: true,
-    globalSetup: './tests/setup/global-setup.ts',
 
     // Coverage (optional)
     coverage: {
@@ -42,18 +41,14 @@ export default defineConfig({
     // - Each E2E test spawns multiple services (Express, Vectra, WebSocket, RAG)
     // - Parallel execution causes 48+ concurrent processes → system freeze
     // - Must use sequential execution for stability
-    //
-    // 2026-02-02: Added GlobalResourcePool management (Solution C - Phase 1)
-    // - Global setup ensures resource pool initialization and cleanup
-    // - Provides baseline protection against resource leaks
-    // - Tests can optionally use helper functions for explicit control (Phase 2)
-
-    // Parallel execution (Vitest 4 format)
-    // Migration from Vitest 3.x: poolOptions.threads -> top-level options
     pool: 'threads',
-    maxWorkers: 1,     // CRITICAL: Only 1 worker to prevent freeze (was maxThreads)
-    isolate: false,    // Equivalent to singleThread: true (prevents resource explosion)
-    // Rationale: Each test spawns ~4 services, 2 workers × retry = 12+ instances = freeze
+    poolOptions: {
+      threads: {
+        singleThread: true, // MUST be true - prevents resource explosion
+        maxThreads: 1, // CRITICAL: Only 1 thread to prevent freeze
+        // Rationale: Each test spawns ~4 services, 2 threads × retry = 12+ instances = freeze
+      },
+    },
 
     // Retry configuration
     // CRITICAL: NO RETRIES - auth failures indicate config problems, not transient issues

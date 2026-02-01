@@ -90,7 +90,7 @@ describe('DevelopmentButler + WorkflowGuidanceEngine Integration', () => {
 
       // Assert - formatted request should be human-readable
       expect(result.formattedRequest).toBeDefined();
-      expect(result.formattedRequest).toContain('CCB Workflow Guidance');
+      expect(result.formattedRequest).toContain('Workflow Guidance');
       expect(result.formattedRequest).toContain('run-tests');
       expect(result.formattedRequest).toContain('high');
 

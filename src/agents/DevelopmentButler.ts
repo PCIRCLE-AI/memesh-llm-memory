@@ -8,15 +8,13 @@
 import { CheckpointDetector } from '../core/CheckpointDetector.js';
 import { MCPToolInterface } from '../core/MCPToolInterface.js';
 import { WorkflowGuidanceEngine, WorkflowContext, WorkflowGuidance, WorkflowPhase } from '../core/WorkflowGuidanceEngine.js';
-import { WorkflowEnforcementEngine } from '../core/WorkflowEnforcementEngine.js';
 import { FeedbackCollector } from '../evolution/FeedbackCollector.js';
 import type { LearningManager } from '../evolution/LearningManager.js';
-import type { UnifiedMemoryStore } from '../memory/UnifiedMemoryStore.js';
 import { SessionTokenTracker } from '../core/SessionTokenTracker.js';
 import { SessionContextMonitor } from '../core/SessionContextMonitor.js';
 import { ClaudeMdReloader } from '../mcp/ClaudeMdReloader.js';
 import type { SessionHealth } from '../core/SessionContextMonitor.js';
-import { StateError, NotFoundError, OperationError } from '../errors/index.js';
+import { StateError, NotFoundError } from '../errors/index.js';
 
 /**
  * Code analysis result
@@ -114,7 +112,6 @@ export class DevelopmentButler {
 
   // Workflow guidance integration
   private guidanceEngine?: WorkflowGuidanceEngine;
-  private enforcementEngine: WorkflowEnforcementEngine;
   private feedbackCollector?: FeedbackCollector;
   private activeRequests: Map<string, WorkflowGuidance> = new Map();
 
@@ -126,20 +123,16 @@ export class DevelopmentButler {
   constructor(
     checkpointDetector: CheckpointDetector,
     toolInterface: MCPToolInterface,
-    learningManager?: LearningManager,
-    memoryStore?: UnifiedMemoryStore
+    learningManager?: LearningManager
   ) {
     this.checkpointDetector = checkpointDetector;
     this.toolInterface = toolInterface;
 
     // Initialize workflow guidance if learning manager provided
     if (learningManager) {
-      this.guidanceEngine = new WorkflowGuidanceEngine(learningManager, memoryStore);
-      this.feedbackCollector = new FeedbackCollector();
+      this.guidanceEngine = new WorkflowGuidanceEngine(learningManager);
+      this.feedbackCollector = new FeedbackCollector(learningManager);
     }
-
-    // Initialize workflow enforcement
-    this.enforcementEngine = new WorkflowEnforcementEngine();
 
     // Initialize context monitoring
     this.tokenTracker = new SessionTokenTracker({ tokenLimit: 200000 });
@@ -238,72 +231,52 @@ export class DevelopmentButler {
   }
 
   /**
-   * Get enforcement engine (for testing and configuration)
-   */
-  getEnforcementEngine(): WorkflowEnforcementEngine {
-    return this.enforcementEngine;
-  }
-
-  /**
    * Analyze code changes
    *
    * @param data - Code change data
    * @returns Promise<CodeAnalysisResult>
-   * @throws {OperationError} If analysis fails
    */
   async analyzeCodeChanges(
     data: Record<string, unknown>
   ): Promise<CodeAnalysisResult> {
-    try {
-      // Update workflow state
-      this.workflowState.phase = 'code-analysis';
-      this.workflowState.lastCheckpoint = 'code-written';
+    // Update workflow state
+    this.workflowState.phase = 'code-analysis';
+    this.workflowState.lastCheckpoint = 'code-written';
 
-      const files = (data.files as string[]) || [];
-      const hasTests = data.hasTests as boolean;
-      const type = data.type as string;
+    const files = (data.files as string[]) || [];
+    const hasTests = data.hasTests as boolean;
+    const type = data.type as string;
 
-      const recommendations: string[] = [];
-      const warnings: string[] = [];
-      const suggestedAgents: string[] = [];
-      const suggestedActions: string[] = [];
+    const recommendations: string[] = [];
+    const warnings: string[] = [];
+    const suggestedAgents: string[] = [];
+    const suggestedActions: string[] = [];
 
-      // Analyze new files
-      if (type === 'new-file') {
-        recommendations.push('Add tests for new endpoint');
-        recommendations.push('Update API documentation');
-      }
-
-      // Check for missing tests
-      if (hasTests === false) {
-        warnings.push('No tests found for modified code');
-        suggestedAgents.push('test-writer');
-        suggestedActions.push('Generate tests');
-      }
-
-      // Check for test deletions
-      if (type === 'test-deletion') {
-        suggestedAgents.push('test-writer');
-      }
-
-      return {
-        analyzed: true,
-        recommendations,
-        warnings,
-        suggestedAgents,
-        suggestedActions,
-      };
-    } catch (error) {
-      throw new OperationError(
-        `Code analysis failed: ${error instanceof Error ? error.message : String(error)}`,
-        {
-          component: 'DevelopmentButler',
-          method: 'analyzeCodeChanges',
-          data,
-          cause: error,
-        }
-      );
+    // Analyze new files
+    if (type === 'new-file') {
+      recommendations.push('Add tests for new endpoint');
+      recommendations.push('Update API documentation');
     }
+
+    // Check for missing tests
+    if (hasTests === false) {
+      warnings.push('No tests found for modified code');
+      suggestedAgents.push('test-writer');
+      suggestedActions.push('Generate tests');
+    }
+
+    // Check for test deletions
+    if (type === 'test-deletion') {
+      suggestedAgents.push('test-writer');
+    }
+
+    return {
+      analyzed: true,
+      recommendations,
+      warnings,
+      suggestedAgents,
+      suggestedActions,
+    };
   }
 
   /**
@@ -311,102 +284,77 @@ export class DevelopmentButler {
    *
    * @param data - Test result data
    * @returns Promise<TestAnalysisResult>
-   * @throws {OperationError} If analysis fails
    */
   async analyzeTestResults(
     data: Record<string, unknown>
   ): Promise<TestAnalysisResult> {
-    try {
-      // Update workflow state
-      this.workflowState.phase = 'test-analysis';
-      this.workflowState.lastCheckpoint = 'test-complete';
+    // Update workflow state
+    this.workflowState.phase = 'test-analysis';
+    this.workflowState.lastCheckpoint = 'test-complete';
 
-      const total = (data.total as number) || 0;
-      const passed = (data.passed as number) || 0;
-      const failed = (data.failed as number) || 0;
+    const total = (data.total as number) || 0;
+    const passed = (data.passed as number) || 0;
+    const failed = (data.failed as number) || 0;
 
-      // Store test results
-      this.workflowState.lastTestResults = { total, passed, failed };
+    // Store test results
+    this.workflowState.lastTestResults = { total, passed, failed };
 
-      let status: 'success' | 'needs-attention' | 'failed';
-      let readyToCommit: boolean;
-      const recommendations: string[] = [];
+    let status: 'success' | 'needs-attention' | 'failed';
+    let readyToCommit: boolean;
+    const recommendations: string[] = [];
 
-      // Calculate failure percentage
-      const failurePercentage = total > 0 ? (failed / total) * 100 : 0;
+    // Calculate failure percentage
+    const failurePercentage = total > 0 ? (failed / total) * 100 : 0;
 
-      if (failed === 0) {
-        status = 'success';
-        readyToCommit = true;
-      } else if (failurePercentage < 10) {
-        // Small percentage of failures
-        status = 'needs-attention';
-        readyToCommit = false;
-      } else {
-        // Large percentage of failures
-        status = 'failed';
-        readyToCommit = false;
-        recommendations.push('Fix failing tests before committing');
-      }
-
-      return {
-        analyzed: true,
-        status,
-        readyToCommit,
-        recommendations: recommendations.length > 0 ? recommendations : undefined,
-      };
-    } catch (error) {
-      throw new OperationError(
-        `Test analysis failed: ${error instanceof Error ? error.message : String(error)}`,
-        {
-          component: 'DevelopmentButler',
-          method: 'analyzeTestResults',
-          data,
-          cause: error,
-        }
-      );
+    if (failed === 0) {
+      status = 'success';
+      readyToCommit = true;
+    } else if (failurePercentage < 10) {
+      // Small percentage of failures
+      status = 'needs-attention';
+      readyToCommit = false;
+    } else {
+      // Large percentage of failures
+      status = 'failed';
+      readyToCommit = false;
+      recommendations.push('Fix failing tests before committing');
     }
+
+    return {
+      analyzed: true,
+      status,
+      readyToCommit,
+      recommendations: recommendations.length > 0 ? recommendations : undefined,
+    };
   }
 
   /**
    * Check commit readiness
    *
    * @returns Promise<CommitReadinessResult>
-   * @throws {OperationError} If check fails
    */
   async checkCommitReadiness(): Promise<CommitReadinessResult> {
-    try {
-      const blockers: string[] = [];
-      const preCommitActions: string[] = [
-        'Run tests',
-        'Check code quality',
-      ];
+    const blockers: string[] = [];
+    const preCommitActions: string[] = [
+      'Run tests',
+      'Check code quality',
+    ];
 
-      // Check if tests are passing
-      if (
-        this.workflowState.lastTestResults &&
-        this.workflowState.lastTestResults.failed > 0
-      ) {
-        blockers.push('Tests failing');
-      }
-
-      const ready = blockers.length === 0;
-
-      return {
-        ready,
-        blockers,
-        preCommitActions,
-      };
-    } catch (error) {
-      throw new OperationError(
-        `Commit readiness check failed: ${error instanceof Error ? error.message : String(error)}`,
-        {
-          component: 'DevelopmentButler',
-          method: 'checkCommitReadiness',
-          cause: error,
-        }
-      );
+    // Check if tests are passing
+    if (
+      this.workflowState.lastTestResults &&
+      this.workflowState.lastTestResults.failed > 0
+    ) {
+      blockers.push('Tests failing');
     }
+
+    const ready = blockers.length === 0;
+
+    return {
+      ready,
+      blockers,
+      preCommitActions,
+    };
   }
 
   /**
@@ -435,25 +383,12 @@ export class DevelopmentButler {
 
   /**
    * Mark commit as completed
-   *
-   * @throws {OperationError} If commit completion processing fails
    */
   async commitCompleted(): Promise<void> {
-    try {
-      // Reset workflow state
-      this.workflowState = {
-        phase: 'idle',
-      };
-    } catch (error) {
-      throw new OperationError(
-        `Commit completion failed: ${error instanceof Error ? error.message : String(error)}`,
-        {
-          component: 'DevelopmentButler',
-          method: 'commitCompleted',
-          cause: error,
-        }
-      );
-    }
+    // Reset workflow state
+    this.workflowState = {
+      phase: 'idle',
+    };
   }
 
   /**
@@ -471,8 +406,6 @@ export class DevelopmentButler {
    * @param checkpointName - Name of the checkpoint
    * @param data - Checkpoint data
    * @returns Workflow guidance with formatted request and session health
-   * @throws {StateError} If workflow guidance not initialized
-   * @throws {OperationError} If checkpoint processing fails
    */
   async processCheckpoint(
     checkpointName: string,
@@ -482,20 +415,14 @@ export class DevelopmentButler {
     formattedRequest: string;
     requestId: string;
     sessionHealth: SessionHealth;
-    enforcement?: {
-      blocked: boolean;
-      reason?: string;
-      requiredActions: string[];
-    };
   }> {
-    try {
-      if (!this.guidanceEngine) {
-        throw new StateError('Workflow guidance not initialized. Provide LearningManager to constructor.', {
-          component: 'DevelopmentButler',
-          method: 'processCheckpoint',
-          requiredDependency: 'LearningManager',
-        });
-      }
+    if (!this.guidanceEngine) {
+      throw new StateError('Workflow guidance not initialized. Provide LearningManager to constructor.', {
+        component: 'DevelopmentButler',
+        method: 'processCheckpoint',
+        requiredDependency: 'LearningManager',
+      });
+    }
 
     // Build workflow context from checkpoint data
     const context: WorkflowContext = {
@@ -505,52 +432,14 @@ export class DevelopmentButler {
       reviewed: data.reviewed as boolean | undefined,
     };
 
-    // ===== CRITICAL: Enforce workflow rules BEFORE providing guidance =====
-    const enforcementResult = await this.enforcementEngine.canProceedFromCheckpoint(
-      checkpointName as WorkflowPhase,
-      {
-        phase: checkpointName as WorkflowPhase,
-        filesChanged: data.filesChanged as string[] | undefined,
-        testsPassing: data.testsPassing as boolean | undefined,
-        reviewed: data.reviewed as boolean | undefined,
-        recentTools: data.recentTools as string[] | undefined,
-        filesRead: data.filesRead as string[] | undefined,
-      }
-    );
-
-    // If blocked, return enforcement message instead of guidance
-    if (!enforcementResult.proceed) {
-      const enforcementMessage = this.enforcementEngine.formatEnforcementMessage(enforcementResult);
-      const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const sessionHealth = this.contextMonitor.checkSessionHealth();
-
-      return {
-        guidance: {
-          recommendations: [],
-          confidence: 1.0,
-          reasoning: enforcementResult.violations,
-          learnedFromPatterns: false,
-          mistakePatterns: [],
-        },
-        formattedRequest: enforcementMessage,
-        requestId,
-        sessionHealth,
-        enforcement: {
-          blocked: true,
-          reason: enforcementResult.reason,
-          requiredActions: enforcementResult.requiredActions,
-        },
-      };
-    }
-
     // Get workflow guidance
-    const guidance = await this.guidanceEngine.analyzeWorkflow(context);
+    const guidance = this.guidanceEngine.analyzeWorkflow(context);
 
     // Handle empty recommendations case
     if (!guidance.recommendations || guidance.recommendations.length === 0) {
       const noRecommendationsMessage = `
 ═══════════════════════════════════════════════════
-🤖 CCB Workflow Guidance
+🔄 Workflow Guidance
 ═══════════════════════════════════════════════════
 
 ℹ️ No specific recommendations at this time.
@@ -613,44 +502,15 @@ ${criticalRecs}
 ${formattedRequest}
       `.trim();
 
-      return {
-        guidance,
-        formattedRequest: enhancedRequest,
-        requestId,
-        sessionHealth,
-        enforcement: enforcementResult.warnings.length > 0 ? {
-          blocked: false,
-          requiredActions: enforcementResult.requiredActions,
-        } : undefined,
-      };
+      return { guidance, formattedRequest: enhancedRequest, requestId, sessionHealth };
     }
 
-      return {
-        guidance,
-        formattedRequest,
-        requestId,
-        sessionHealth,
-        enforcement: enforcementResult.warnings.length > 0 ? {
-          blocked: false,
-          requiredActions: enforcementResult.requiredActions,
-        } : undefined,
-      };
-    } catch (error) {
-      // Re-throw custom errors as-is
-      if (error instanceof StateError || error instanceof OperationError) {
-        throw error;
-      }
-
-      throw new OperationError(
-        `Checkpoint processing failed: ${error instanceof Error ? error.message : String(error)}`,
-        {
-          component: 'DevelopmentButler',
-          method: 'processCheckpoint',
-          checkpointName,
-          cause: error,
-        }
-      );
-    }
+    return {
+      guidance,
+      formattedRequest,
+      requestId,
+      sessionHealth,
+    };
   }
 
   /**
@@ -666,22 +526,9 @@ ${formattedRequest}
 
     // Header
     lines.push('═══════════════════════════════════════════════════');
-    lines.push('🤖 CCB Workflow Guidance');
+    lines.push('🔄 Workflow Guidance');
     lines.push('═══════════════════════════════════════════════════');
     lines.push('');
-
-    // Mistake patterns warnings (if present in reasoning)
-    const mistakeWarnings = reasoning.filter((r) => r.includes('⚠️') || r.includes('recurring mistake'));
-    if (mistakeWarnings.length > 0) {
-      lines.push('🔴 RECURRING MISTAKES IN THIS PHASE:');
-      lines.push('');
-      mistakeWarnings.forEach((warning) => {
-        lines.push(`   ${warning}`);
-      });
-      lines.push('');
-      lines.push('───────────────────────────────────────────────────');
-      lines.push('');
-    }
 
     // Top recommendation
     const confidencePercent = Math.round(confidence * 100);
@@ -693,20 +540,15 @@ ${formattedRequest}
     lines.push(`📝 ${topRecommendation.description}`);
     lines.push('');
 
-    // Reasoning (excluding mistake warnings already shown)
-    const otherReasoning = reasoning.filter((r) => !mistakeWarnings.includes(r));
-    if (otherReasoning.length > 0 || topRecommendation.reasoning) {
-      lines.push('💡 Reasoning:');
-      otherReasoning.forEach((reason) => {
-        if (reason && reason.trim()) {
-          lines.push(`   • ${reason}`);
-        }
-      });
-      if (topRecommendation.reasoning) {
-        lines.push(`   • ${topRecommendation.reasoning}`);
+    // Reasoning
+    lines.push('💡 Reasoning:');
+    reasoning.forEach((reason) => {
+      if (reason && reason.trim()) {
+        lines.push(`   • ${reason}`);
       }
-      lines.push('');
-    }
+    });
+    lines.push(`   • ${topRecommendation.reasoning}`);
+    lines.push('');
 
     // Estimated time
     if (topRecommendation.estimatedTime) {
@@ -733,9 +575,6 @@ ${formattedRequest}
    *
    * @param requestId - Request identifier
    * @param response - User's response
-   * @throws {NotFoundError} If request not found
-   * @throws {StateError} If feedback collector not initialized
-   * @throws {OperationError} If recording fails
    */
   async recordUserResponse(
     requestId: string,
@@ -745,43 +584,35 @@ ${formattedRequest}
       selectedAction?: string;
     }
   ): Promise<void> {
-    try {
-      const guidance = this.activeRequests.get(requestId);
-      if (!guidance) {
-        throw new NotFoundError(
-          `Request ${requestId} not found in active requests`,
-          'request',
-          requestId,
-          { activeRequestsCount: this.activeRequests.size }
-        );
-      }
-
-      if (!this.feedbackCollector) {
-        throw new StateError('Feedback collector not initialized', {
-          component: 'DevelopmentButler',
-          method: 'recordUserResponse',
-          requiredDependency: 'FeedbackCollector (via LearningManager)',
-        });
-      }
-
-      // Clean up
-      this.activeRequests.delete(requestId);
-    } catch (error) {
-      // Re-throw custom errors as-is
-      if (error instanceof NotFoundError || error instanceof StateError) {
-        throw error;
-      }
-
-      throw new OperationError(
-        `Failed to record user response: ${error instanceof Error ? error.message : String(error)}`,
-        {
-          component: 'DevelopmentButler',
-          method: 'recordUserResponse',
-          requestId,
-          cause: error,
-        }
+    const guidance = this.activeRequests.get(requestId);
+    if (!guidance) {
+      throw new NotFoundError(
+        `Request ${requestId} not found in active requests`,
+        'request',
+        requestId,
+        { activeRequestsCount: this.activeRequests.size }
       );
     }
+
+    if (!this.feedbackCollector) {
+      throw new StateError('Feedback collector not initialized', {
+        component: 'DevelopmentButler',
+        method: 'recordUserResponse',
+        requiredDependency: 'FeedbackCollector (via LearningManager)',
+      });
+    }
+
+    // Record feedback for learning
+    await this.feedbackCollector.recordRoutingApproval({
+      taskId: requestId,
+      recommendedAgent: guidance.recommendations[0].action as any, // Cast to AgentType for compatibility
+      selectedAgent: (response.selectedAction || guidance.recommendations[0].action) as any,
+      wasOverridden: response.wasOverridden,
+      confidence: guidance.confidence,
+    });
+
+    // Clean up
+    this.activeRequests.delete(requestId);
   }
 
   /**

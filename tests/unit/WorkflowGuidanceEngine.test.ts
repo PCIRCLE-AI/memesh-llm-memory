@@ -14,14 +14,14 @@ describe('WorkflowGuidanceEngine', () => {
     engine = new WorkflowGuidanceEngine(mockLearningManager);
   });
 
-  it('should analyze workflow context and generate recommendations', async () => {
+  it('should analyze workflow context and generate recommendations', () => {
     const context = {
       phase: 'code-written' as const,
       filesChanged: ['src/api/users.ts'],
       testsPassing: false,
     };
 
-    const guidance = await engine.analyzeWorkflow(context);
+    const guidance = engine.analyzeWorkflow(context);
 
     expect(guidance.recommendations).toBeDefined();
     expect(guidance.recommendations.length).toBeGreaterThan(0);
@@ -29,14 +29,14 @@ describe('WorkflowGuidanceEngine', () => {
     expect(guidance.confidence).toBeLessThanOrEqual(1);
   });
 
-  it('should suggest running tests when code written but tests not run', async () => {
+  it('should suggest running tests when code written but tests not run', () => {
     const context = {
       phase: 'code-written' as const,
       filesChanged: ['src/api/users.ts'],
       testsPassing: false,
     };
 
-    const guidance = await engine.analyzeWorkflow(context);
+    const guidance = engine.analyzeWorkflow(context);
 
     expect(guidance.recommendations).toContainEqual(
       expect.objectContaining({
@@ -46,7 +46,7 @@ describe('WorkflowGuidanceEngine', () => {
     );
   });
 
-  it('should suggest code review when tests passing but not reviewed', async () => {
+  it('should suggest code review when tests passing but not reviewed', () => {
     const context = {
       phase: 'test-complete' as const,
       filesChanged: ['src/api/users.ts'],
@@ -54,7 +54,7 @@ describe('WorkflowGuidanceEngine', () => {
       reviewed: false,
     };
 
-    const guidance = await engine.analyzeWorkflow(context);
+    const guidance = engine.analyzeWorkflow(context);
 
     expect(guidance.recommendations).toContainEqual(
       expect.objectContaining({
@@ -63,7 +63,7 @@ describe('WorkflowGuidanceEngine', () => {
     );
   });
 
-  it('should integrate with LearningManager patterns', async () => {
+  it('should integrate with LearningManager patterns', () => {
     // Mock successful pattern from past with correct structure
     vi.spyOn(mockLearningManager, 'getPatterns').mockReturnValue([
       {
@@ -93,7 +93,7 @@ describe('WorkflowGuidanceEngine', () => {
       testsPassing: false,
     };
 
-    const guidance = await engine.analyzeWorkflow(context);
+    const guidance = engine.analyzeWorkflow(context);
 
     expect(guidance.learnedFromPatterns).toBe(true);
     expect(guidance.reasoning).toContainEqual(
@@ -101,28 +101,28 @@ describe('WorkflowGuidanceEngine', () => {
     );
   });
 
-  it('should throw error for null context', async () => {
-    await expect(engine.analyzeWorkflow(null as any)).rejects.toThrow(
+  it('should throw error for null context', () => {
+    expect(() => engine.analyzeWorkflow(null as any)).toThrow(
       'WorkflowContext is required'
     );
   });
 
-  it('should throw error for invalid phase', async () => {
+  it('should throw error for invalid phase', () => {
     const context = {
       phase: 'invalid-phase' as any,
     };
-    await expect(engine.analyzeWorkflow(context)).rejects.toThrow(
+    expect(() => engine.analyzeWorkflow(context)).toThrow(
       'Invalid workflow phase'
     );
   });
 
-  it('should distinguish between tests not run vs tests failed', async () => {
+  it('should distinguish between tests not run vs tests failed', () => {
     // Tests not run (undefined)
     const contextNotRun = {
       phase: 'code-written' as const,
       testsPassing: undefined,
     };
-    const guidanceNotRun = await engine.analyzeWorkflow(contextNotRun);
+    const guidanceNotRun = engine.analyzeWorkflow(contextNotRun);
     expect(guidanceNotRun.recommendations[0].reasoning).toContain(
       'not been run'
     );
@@ -132,7 +132,7 @@ describe('WorkflowGuidanceEngine', () => {
       phase: 'code-written' as const,
       testsPassing: false,
     };
-    const guidanceFailed = await engine.analyzeWorkflow(contextFailed);
+    const guidanceFailed = engine.analyzeWorkflow(contextFailed);
     expect(guidanceFailed.recommendations[0].reasoning).toContain('failing');
   });
 });

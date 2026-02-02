@@ -83,8 +83,8 @@ describe('MCPTaskDelegator', () => {
 
   describe('checkTimeouts', () => {
     beforeEach(() => {
-      // Mock TaskQueue.updateTask
-      mockQueue.updateTask = vi.fn().mockResolvedValue(undefined);
+      // Mock TaskQueue.updateTaskStatus
+      mockQueue.updateTaskStatus = vi.fn().mockReturnValue(true);
     });
 
     it('should timeout tasks older than configured timeout', async () => {
@@ -98,10 +98,9 @@ describe('MCPTaskDelegator', () => {
 
       await delegator.checkTimeouts();
 
-      expect(mockQueue.updateTask).toHaveBeenCalledWith('task-1', {
-        status: 'TIMEOUT',
-        error: expect.stringContaining('Task execution timeout'),
-        completedAt: expect.any(Number)
+      expect(mockQueue.updateTaskStatus).toHaveBeenCalledWith('task-1', {
+        state: 'TIMEOUT',
+        metadata: { error: expect.stringContaining('Task execution timeout') }
       });
 
       const pending = await delegator.getPendingTasks('agent-1');
@@ -116,7 +115,7 @@ describe('MCPTaskDelegator', () => {
 
       await delegator.checkTimeouts();
 
-      expect(mockQueue.updateTask).not.toHaveBeenCalled();
+      expect(mockQueue.updateTaskStatus).not.toHaveBeenCalled();
 
       const pending = await delegator.getPendingTasks('agent-1');
       expect(pending).toHaveLength(1);

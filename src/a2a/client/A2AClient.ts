@@ -112,10 +112,21 @@ export class A2AClient {
    * - ✅ Retry on: 5xx server errors, 429 rate limit, network errors (ETIMEDOUT, ECONNREFUSED)
    * - ❌ Don't retry on: 4xx client errors, local validation errors (no status code)
    *
+   * **Security Considerations**:
+   * - Local validation errors (schema validation, missing agent) are NOT retried
+   *   to prevent wasting resources on invalid requests
+   * - Authentication errors (401, 403) are NOT retried to prevent brute force attempts
+   * - Only transient errors (5xx, 429, network) are retried with exponential backoff
+   *
+   * **Performance**:
+   * - Not retrying validation errors saves 7-10s per invalid request
+   * - Exponential backoff with jitter prevents thundering herd
+   * - Typical retry sequence: 1s → 2s → 4s (max 3 attempts)
+   *
    * **Local errors are NOT retryable**:
-   * - AGENT_NOT_FOUND (no HTTP status)
-   * - Zod validation errors (no HTTP status)
-   * - createError() without status (no HTTP status)
+   * - AGENT_NOT_FOUND (no HTTP status) - agent doesn't exist, retry won't help
+   * - Zod validation errors (no HTTP status) - invalid request schema, retry won't fix
+   * - createError() without status (no HTTP status) - local logic error
    *
    * This prevents wasting 7-10s on errors that will never succeed on retry.
    *

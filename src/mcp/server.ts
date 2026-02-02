@@ -111,8 +111,8 @@ class ClaudeCodeBuddyMCPServer {
     // Initialize MCP server
     this.server = new Server(
       {
-        name: 'claude-code-buddy',
-        version: '2.2.0',
+        name: 'memesh',
+        version: '2.6.3',
       },
       {
         capabilities: {

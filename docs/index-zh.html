@@ -905,9 +905,9 @@ get-session-health</code></pre>
                 <p class="text-xl text-gray-600">只需 <strong>2 分鐘</strong>即可開始使用</p>
             </div>
 
-            <!-- One-Click Installation -->
+            <!-- Quick Installation -->
             <div class="glass-card rounded-2xl p-8 mb-12">
-                <h3 class="text-2xl font-bold text-gray-900 mb-6">🚀 一鍵安裝</h3>
+                <h3 class="text-2xl font-bold text-gray-900 mb-6">🚀 快速安裝</h3>
 
                 <div class="grid md:grid-cols-2 gap-6 mb-6">
                     <!-- Cursor Installation -->
@@ -922,24 +922,20 @@ get-session-health</code></pre>
                         <code class="text-xs bg-gray-800 text-gray-100 px-3 py-2 rounded-lg break-all block mt-2">cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==</code>
                     </div>
 
-                    <!-- VS Code Installation -->
+                    <!-- Claude Code Plugin Installation -->
                     <div class="bg-white rounded-xl p-6 shadow-lg">
-                        <h4 class="text-xl font-bold text-gray-900 mb-4">VS Code / Claude Code 用戶</h4>
-                        <p class="text-gray-600 mb-4">將以下配置添加到您的 MCP 設定檔：</p>
+                        <h4 class="text-xl font-bold text-gray-900 mb-4">⭐ Claude Code 用戶（Plugin 安裝 - 推薦方式）</h4>
+                        <p class="text-gray-600 mb-4">使用一鍵安裝腳本：</p>
                         <div class="glass-card rounded-xl p-4 mb-4">
-                            <pre><code>{
-  "mcpServers": {
-    "@pcircle/claude-code-buddy-mcp": {
-      "command": "npx",
-      "args": ["-y", "@pcircle/claude-code-buddy-mcp"]
-    }
-  }
-}</code></pre>
+                            <pre><code>git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
+cd claude-code-buddy
+./scripts/quick-install.sh
+
+# 然後啟動：
+claude --plugin-dir /path/to/claude-code-buddy</code></pre>
                         </div>
                         <p class="text-sm text-gray-600">
-                            <strong>配置檔位置：</strong><br>
-                            • macOS/Linux: <code class="text-xs bg-gray-100 px-1">~/.claude/mcp_settings.json</code><br>
-                            • Windows: <code class="text-xs bg-gray-100 px-1">%APPDATA%\Claude\mcp_settings.json</code>
+                            <strong>注意：</strong> 每次啟動 Claude Code 都需要指定 <code class="text-xs bg-gray-100 px-1">--plugin-dir</code> 參數。
                         </p>
                     </div>
                 </div>

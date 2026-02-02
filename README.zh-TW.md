@@ -107,37 +107,48 @@ buddy-help                       # 需要幫助時
 
 ## 🚀 2 分鐘快速開始
 
-### 步驟 1：安裝（選擇你的 IDE）
+### 步驟 1：快速安裝
 
 <details>
-<summary><strong>🎯 Cursor 使用者</strong>（點擊展開）</summary>
+<summary><strong>⚡ Claude Code 使用者</strong>（點擊展開）⭐ 推薦方式</summary>
 
-只需點擊這個魔法連結：
-```
-cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==
+**三個簡單命令：**
+
+```bash
+git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
+cd claude-code-buddy
+./scripts/quick-install.sh
 ```
 
-**完成。**重啟 Cursor 就好了。
+安裝腳本會：
+- ✅ 檢查前置需求（Node.js 20+）
+- ✅ 安裝相依套件
+- ✅ 建置 CCB
+- ✅ 顯示如何啟動 plugin
+
+**然後用以下方式啟動 Claude Code：**
+
+```bash
+claude --plugin-dir /path/to/claude-code-buddy
+```
+
+**完成！**CCB 現在可以作為 plugin 使用了。
+
+<Note>
+  `--plugin-dir` 標記用於載入本地 plugin。如需團隊分發，請參閱 [Plugin Marketplaces](https://code.claude.com/docs/en/plugin-marketplaces) 建立共享的 marketplace。
+</Note>
 
 </details>
 
 <details>
-<summary><strong>⚡ Claude Code 使用者</strong>（點擊展開）</summary>
+<summary><strong>🎯 Cursor 使用者</strong>（點擊展開）</summary>
 
-將這段加到 `~/.claude/mcp_settings.json`：
-
-```json
-{
-  "mcpServers": {
-    "@pcircle/claude-code-buddy-mcp": {
-      "command": "npx",
-      "args": ["-y", "@pcircle/claude-code-buddy-mcp"]
-    }
-  }
-}
+Cursor 使用相同的 MCP 協議。你可以使用快速安裝連結：
+```
+cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==
 ```
 
-**重啟 Claude Code** 就搞定了。
+**重啟 Cursor** 就完成了。
 
 </details>
 
@@ -348,7 +359,7 @@ buddy-remember "auth"  # 回傳 project-B 的 auth 決策
 <details>
 <summary><strong>Q：支援 Cursor 嗎？</strong></summary>
 
-**A：** 支援！Cursor 原生支援 MCP。一鍵安裝。
+**A：** 支援！Cursor 原生支援 MCP。快速安裝。
 
 </details>
 

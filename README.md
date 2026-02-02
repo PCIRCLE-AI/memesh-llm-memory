@@ -173,37 +173,48 @@ buddy-help                          # When stuck
 
 ## 🚀 2-Minute Quick Start
 
-### Step 1: Install (Choose Your IDE)
+### Step 1: Quick Install
 
 <details>
-<summary><strong>🎯 Cursor Users</strong> (Click to expand)</summary>
+<summary><strong>⚡ Claude Code Users</strong> (Click to expand) ⭐ RECOMMENDED</summary>
 
-Just click this magic link:
-```
-cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==
+**Three simple commands:**
+
+```bash
+git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
+cd claude-code-buddy
+./scripts/quick-install.sh
 ```
 
-**Done.** Restart Cursor and you're ready.
+The script will:
+- ✅ Check prerequisites (Node.js 20+)
+- ✅ Install dependencies
+- ✅ Build CCB
+- ✅ Show you how to activate the plugin
+
+**Then start Claude Code with:**
+
+```bash
+claude --plugin-dir /path/to/claude-code-buddy
+```
+
+**Done!** CCB is now available as a plugin.
+
+<Note>
+  The `--plugin-dir` flag loads your local plugin. For team distribution, see [Plugin Marketplaces](https://code.claude.com/docs/en/plugin-marketplaces) to create a shared marketplace.
+</Note>
 
 </details>
 
 <details>
-<summary><strong>⚡ Claude Code Users</strong> (Click to expand)</summary>
+<summary><strong>🎯 Cursor Users</strong> (Click to expand)</summary>
 
-Add this to `~/.claude/mcp_settings.json`:
-
-```json
-{
-  "mcpServers": {
-    "@pcircle/claude-code-buddy-mcp": {
-      "command": "npx",
-      "args": ["-y", "@pcircle/claude-code-buddy-mcp"]
-    }
-  }
-}
+Cursor uses the same MCP protocol. You can use the quick install link:
+```
+cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==
 ```
 
-**Restart Claude Code** and you're golden.
+**Restart Cursor** and you're set.
 
 </details>
 

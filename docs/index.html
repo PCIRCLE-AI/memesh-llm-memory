@@ -1158,11 +1158,11 @@ generate-tests <span class="string">{"filePath":"src/auth.ts"}</span></code></pr
           </p>
         </div>
 
-        <!-- One-Click Installation -->
+        <!-- Quick Installation -->
         <div class="glass-card rounded-2xl p-8 mb-12">
           <div class="text-center mb-8">
             <h3 class="text-3xl font-bold text-gray-900 mb-4">
-              🚀 One-Click Installation
+              🚀 Quick Installation
             </h3>
             <p class="text-gray-600">
               Install CCB to your IDE in seconds
@@ -1187,23 +1187,21 @@ generate-tests <span class="string">{"filePath":"src/auth.ts"}</span></code></pr
               <code class="text-xs bg-gray-800 text-gray-100 px-3 py-2 rounded-lg break-all block mt-2">cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==</code>
             </div>
 
-            <!-- VS Code / Claude Code Installation -->
+            <!-- Claude Code Plugin Installation -->
             <div class="bg-white rounded-xl p-6 border-2 border-purple-200 hover:border-purple-400 transition-all">
               <h4 class="text-xl font-bold text-gray-900 mb-3">
-                For VS Code / Claude Code
+                ⭐ For Claude Code (Plugin Installation - Recommended)
               </h4>
               <div class="bg-gray-900 rounded-lg p-4 text-sm mb-3">
-                <pre class="text-gray-300 overflow-x-auto text-xs"><code>{
-  "mcpServers": {
-    "@pcircle/claude-code-buddy-mcp": {
-      "command": "npx",
-      "args": ["-y", "@pcircle/claude-code-buddy-mcp"]
-    }
-  }
-}</code></pre>
+                <pre class="text-gray-300 overflow-x-auto text-xs"><code>git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
+cd claude-code-buddy
+./scripts/quick-install.sh
+
+# Then start with:
+claude --plugin-dir /path/to/claude-code-buddy</code></pre>
               </div>
               <p class="text-gray-600 text-sm">
-                Add to <code class="bg-gray-100 px-2 py-1 rounded text-xs">~/.claude/mcp_settings.json</code>
+                <strong>Note:</strong> Specify <code class="bg-gray-100 px-2 py-1 rounded text-xs">--plugin-dir</code> each time you start Claude Code.
               </p>
             </div>
           </div>

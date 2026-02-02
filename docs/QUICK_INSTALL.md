@@ -2,7 +2,7 @@
 
 Claude Code Buddy (CCB) can be installed to Cursor and VS Code in just one click!
 
-## 🚀 One-Click Installation
+## 🚀 Quick Installation
 
 ### For Cursor Users
 
@@ -19,45 +19,42 @@ cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-m
 
 ---
 
-### For VS Code / Claude Code Users
+### For Claude Code Users (Recommended Plugin Installation)
 
-#### Option 1: Automatic Configuration (Recommended)
+#### Quick Install Script
 
-1. **Copy the configuration below:**
-
-```json
-{
-  "mcpServers": {
-    "@pcircle/claude-code-buddy-mcp": {
-      "command": "npx",
-      "args": ["-y", "@pcircle/claude-code-buddy-mcp"]
-    }
-  }
-}
-```
-
-2. **Add to your MCP configuration:**
-   - **macOS/Linux**: `~/.claude/mcp_settings.json`
-   - **Windows**: `%APPDATA%\Claude\mcp_settings.json`
-
-3. **Restart Claude Code**
-
-#### Option 2: Interactive Installer
-
-Run the interactive installer (includes automatic MCP configuration):
+Run the quick install script:
 
 ```bash
 git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
-cd @pcircle/claude-code-buddy-mcp
-./scripts/install.sh
+cd claude-code-buddy
+./scripts/quick-install.sh
 ```
 
 The installer will:
-- ✅ Check prerequisites
+- ✅ Check prerequisites (Node.js 20+)
 - ✅ Install dependencies
 - ✅ Build the project
-- ✅ Configure MCP integration automatically
-- ✅ Test the installation
+- ✅ Show you how to activate the plugin
+
+#### Activate CCB Plugin
+
+After installation, start Claude Code with the plugin directory:
+
+```bash
+claude --plugin-dir /path/to/claude-code-buddy
+```
+
+**That's it!** CCB will be available as a plugin in your Claude Code session.
+
+**Note**: The `--plugin-dir` flag needs to be specified each time you start Claude Code. For team-wide distribution without command-line flags, consider creating a [Plugin Marketplace](https://code.claude.com/docs/en/plugin-marketplaces).
+
+#### Why Plugin Installation?
+
+- ✅ **Automatic Management**: No manual config files to edit
+- ✅ **Clean Integration**: Works seamlessly with Claude Code's plugin system
+- ✅ **Easy Updates**: Just git pull and rebuild
+- ✅ **Multiple Plugins**: Load multiple plugins at once
 
 ---
 

@@ -17,7 +17,8 @@ function resolveConfigPath(preferredPath) {
     return preferredPath;
   }
 
-  const envPath = process.env.MeMesh_MCP_CONFIG_PATH;
+  // Check for environment variable (with backward compatibility)
+  const envPath = process.env.MEMESH_MCP_CONFIG_PATH || process.env.CCB_MCP_CONFIG_PATH;
   if (envPath) {
     return envPath;
   }

@@ -2,7 +2,7 @@
 
 ## 🔍 Problem Statement
 
-**Issue**: When users run `npx -y @pcircle/claude-code-buddy-mcp` manually, the process appears to "hang" after entering Y, causing confusion.
+**Issue**: When users run `npx -y @pcircle/memesh` manually, the process appears to "hang" after entering Y, causing confusion.
 
 **User Impact**:
 - Users mistake the MCP server startup command for an installation command
@@ -14,7 +14,7 @@
 
 ### What Was Happening
 
-1. User executes: `npx -y @pcircle/claude-code-buddy-mcp`
+1. User executes: `npx -y @pcircle/memesh`
 2. npm downloads and runs the `bin` script: `dist/mcp/server-bootstrap.js`
 3. MCP server starts and enters stdio listening mode
 4. Server waits indefinitely for JSON-RPC input from stdin

@@ -32,7 +32,7 @@ The mistake learning system enables CCB/memesh to automatically:
 ### Basic Setup (Free Tier)
 
 ```typescript
-import { FeedbackCollector, LearningManager } from '@pcircle/claude-code-buddy-mcp/evolution';
+import { FeedbackCollector, LearningManager } from '@pcircle/memesh/evolution';
 
 // Initialize
 const learningManager = new LearningManager();
@@ -55,7 +55,7 @@ console.log(`Recorded ${mistakes.length} mistakes`);
 ### Advanced Setup (Paid Tier)
 
 ```typescript
-import { FeedbackCollector, LearningManager } from '@pcircle/claude-code-buddy-mcp/evolution';
+import { FeedbackCollector, LearningManager } from '@pcircle/memesh/evolution';
 
 const feedbackCollector = new FeedbackCollector(learningManager, {
   enableAutoDetection: true,
@@ -78,7 +78,7 @@ if (feedbackCollector.isCloudEnabled()) {
 ### Manual Recording (Legacy)
 
 ```typescript
-import { AIErrorType } from '@pcircle/claude-code-buddy-mcp/evolution';
+import { AIErrorType } from '@pcircle/memesh/evolution';
 
 // Manual recording (still supported)
 feedbackCollector.recordAIMistake({
@@ -162,7 +162,7 @@ enum AIErrorType {
 ## 🧪 Testing
 
 ```typescript
-import { LocalMistakeDetector } from '@pcircle/claude-code-buddy-mcp/evolution';
+import { LocalMistakeDetector } from '@pcircle/memesh/evolution';
 
 const detector = new LocalMistakeDetector();
 

@@ -104,7 +104,7 @@ echo "✅ Step 6/6: Verifying deployment..."
 echo "Waiting 10 seconds for npm registry to update..."
 sleep 10
 
-PUBLISHED_VERSION=$(npm view @pcircle/claude-code-buddy-mcp version 2>/dev/null || echo "unknown")
+PUBLISHED_VERSION=$(npm view @pcircle/memesh version 2>/dev/null || echo "unknown")
 
 if [ "$PUBLISHED_VERSION" = "$NEW_VERSION" ]; then
   echo "✅ Successfully published v$NEW_VERSION to npm"
@@ -114,7 +114,7 @@ else
   echo "   Got: $PUBLISHED_VERSION"
   echo ""
   echo "This might be a registry delay. Wait a few minutes and check:"
-  echo "  npm view @pcircle/claude-code-buddy-mcp version"
+  echo "  npm view @pcircle/memesh version"
 fi
 echo ""
 
@@ -123,10 +123,10 @@ echo "================================"
 echo "🎊 Release Complete!"
 echo ""
 echo "Version: v$NEW_VERSION"
-echo "npm: https://www.npmjs.com/package/@pcircle/claude-code-buddy-mcp/v/$NEW_VERSION"
+echo "npm: https://www.npmjs.com/package/@pcircle/memesh/v/$NEW_VERSION"
 echo "GitHub: https://github.com/PCIRCLE-AI/claude-code-buddy/releases/tag/v$NEW_VERSION"
 echo ""
 echo "Next steps:"
 echo "1. Monitor GitHub Issues for any reports"
-echo "2. Test installation: npm install -g @pcircle/claude-code-buddy-mcp@latest"
+echo "2. Test installation: npm install -g @pcircle/memesh@latest"
 echo "3. Verify functionality: claude-code-buddy --version"

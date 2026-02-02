@@ -49,7 +49,7 @@ We take security seriously. If you discover a security vulnerability in Claude C
 ## Scope
 
 This security policy covers:
-- The `@pcircle/claude-code-buddy-mcp` npm package
+- The `@pcircle/memesh` npm package
 - Official documentation and examples
 - GitHub Actions workflows in this repository
 

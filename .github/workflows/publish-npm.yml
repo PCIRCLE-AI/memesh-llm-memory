@@ -51,5 +51,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: releaseId,
-              body: `✅ Successfully published to npm: [@pcircle/claude-code-buddy-mcp@${version}](https://www.npmjs.com/package/@pcircle/claude-code-buddy-mcp/v/${version})`
+              body: `✅ Successfully published to npm: [@pcircle/memesh@${version}](https://www.npmjs.com/package/@pcircle/memesh/v/${version})`
             });

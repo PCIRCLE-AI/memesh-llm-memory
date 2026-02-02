@@ -53,16 +53,17 @@ async function bootstrap() {
 }
 
 /**
- * MCP Client Watchdog
+ * MCP Installation Helper
  *
- * Detects if the server was started incorrectly (e.g., by user running `npx` manually).
+ * Detects if the server was started manually (e.g., by user running `npx` directly)
+ * and shows friendly installation instructions instead of hanging indefinitely.
  *
  * MCP clients communicate via stdin/stdout. When a client connects, it immediately sends
  * JSON-RPC requests. If stdin remains silent for 3 seconds after startup, this indicates
- * the server was likely started manually (not by an MCP client), which is incorrect usage.
+ * the server was likely started manually (not by an MCP client).
  *
- * This prevents user confusion when they accidentally run `npx @pcircle/claude-code-buddy-mcp`
- * directly, expecting it to be an installation command rather than a long-running server.
+ * In this case, we show helpful installation instructions with a success message,
+ * making it clear that the package is installed and ready to be configured.
  *
  * Can be disabled by setting DISABLE_MCP_WATCHDOG=1 environment variable (for testing).
  */
@@ -84,46 +85,13 @@ function startMCPClientWatchdog(): void {
   // Check after 3 seconds if any MCP client connected
   setTimeout(() => {
     if (!mcpClientConnected) {
-      // No MCP client connected - likely started incorrectly by user
-      console.error(`
-╔════════════════════════════════════════════════════════════════════════╗
-║                                                                        ║
-║   ❌ ERROR: MCP Server Started Incorrectly                            ║
-║                                                                        ║
-╚════════════════════════════════════════════════════════════════════════╝
+      // No MCP client connected - show success message
+      console.log(`
+✅ Claude Code Buddy installed successfully!
 
-This is an MCP server that should be started by Claude Code or Cursor,
-not run directly from the command line.
-
-🔧 To install Claude Code Buddy:
-
-   1. Add this to your MCP configuration file:
-
-      • macOS/Linux: ~/.claude/mcp_settings.json
-      • Windows: %APPDATA%\\Claude\\mcp_settings.json
-
-   2. Add the following configuration:
-
-      {
-        "mcpServers": {
-          "@pcircle/claude-code-buddy-mcp": {
-            "command": "npx",
-            "args": ["-y", "@pcircle/claude-code-buddy-mcp"]
-          }
-        }
-      }
-
-   3. Restart Claude Code
-
-📖 Full installation guide:
-   https://github.com/PCIRCLE-AI/claude-code-buddy#installation
-
-💡 For Cursor users:
-   Click this link to auto-install:
-   cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==
-
+📖 Configuration guide: https://github.com/PCIRCLE-AI/claude-code-buddy#installation
 `);
-      process.exit(1);
+      process.exit(0);
     }
   }, 3000); // 3 second timeout
 }

@@ -623,7 +623,103 @@ MeMesh provides secure local storage for API keys, tokens, passwords, and other 
 
 MeMesh includes an Agent-to-Agent (A2A) Protocol for multi-agent collaboration, enabling Claude instances to delegate tasks to each other.
 
-**Current Status**: Phase 0.5 - Local-only communication (same machine)
+**Current Status**: Phase 1.0 - MCP Client Delegation (localhost HTTP server)
+
+---
+
+#### Phase 1.0: MCP Client Delegation
+
+**What's New in Phase 1.0:**
+- ✅ HTTP-based task delegation (localhost only)
+- ✅ Bearer token authentication for security
+- ✅ MCP Client polling mechanism (every 5 seconds)
+- ✅ Complete task lifecycle management (PENDING → IN_PROGRESS → COMPLETED/FAILED)
+- ✅ Task timeout configuration
+
+**Architecture:**
+
+```
+┌─────────────────────────────────────────────────┐
+│          Agent A (Task Sender)                   │
+│  a2a-send-task → HTTP POST to localhost:3000    │
+└──────────────────┬──────────────────────────────┘
+                   │
+                   │ Authorization: Bearer <token>
+                   ▼
+┌─────────────────────────────────────────────────┐
+│          A2A HTTP Server (MeMesh)                │
+│  TaskQueue: PENDING → IN_PROGRESS → COMPLETED   │
+└──────────────────┬──────────────────────────────┘
+                   │
+                   │ Poll every 5s
+                   ▼
+┌─────────────────────────────────────────────────┐
+│          MCP Client (Agent B)                    │
+│  1. a2a-list-tasks → Get pending tasks          │
+│  2. buddy-do → Execute task                     │
+│  3. a2a-report-result → Report completion       │
+└─────────────────────────────────────────────────┘
+```
+
+**Workflow Example:**
+
+```typescript
+// Agent A: Send task to Agent B
+const result = await mcpTool('a2a-send-task', {
+  agentId: 'code-reviewer',
+  task: 'Review src/auth.ts for security issues',
+  priority: 'high'
+});
+// → Returns: { taskId: 'task-abc123', status: 'PENDING' }
+
+// Agent B (MCP Client): Poll for tasks (automatically every 5s)
+const tasks = await mcpTool('a2a-list-tasks', {});
+// → Returns: [{ taskId: 'task-abc123', task: '...', priority: 'high' }]
+
+// Agent B: Execute task
+const executionResult = await mcpTool('buddy-do', {
+  task: tasks[0].task
+});
+
+// Agent B: Report result
+await mcpTool('a2a-report-result', {
+  taskId: 'task-abc123',
+  result: JSON.stringify(executionResult),
+  success: true
+});
+
+// Agent A: Check task status
+const status = await mcpTool('a2a-get-task', {
+  taskId: 'task-abc123',
+  agentId: 'code-reviewer'
+});
+// → Returns: { status: 'COMPLETED', result: '...' }
+```
+
+**Setup Guide:**
+
+For complete setup instructions including token generation and configuration, see **[A2A_SETUP_GUIDE.md](./A2A_SETUP_GUIDE.md)**.
+
+**Quick Start:**
+
+```bash
+# 1. Generate authentication token
+bash scripts/generate-a2a-token.sh
+
+# 2. Start MeMesh MCP Server
+npm run mcp
+
+# 3. Use A2A tools in Claude Code
+a2a-send-task { "agentId": "test", "task": "Test task" }
+a2a-list-tasks {}
+a2a-report-result { "taskId": "...", "result": "...", "success": true }
+```
+
+**Phase 1.0 Limitations:**
+- 🔒 Localhost-only (no remote agents)
+- 🔒 Single task per agent (no concurrent execution)
+- 🔒 No cross-machine communication
+- 🔒 Manual agent configuration (no discovery)
 
 #### a2a-send-task
 

@@ -390,7 +390,13 @@ Permanently delete a stored secret.
 
 ### `a2a-send-task`
 
-Send a task to another agent for execution (Agent-to-Agent Protocol).
+Send a task to another agent for execution (Agent-to-Agent Protocol - Phase 1.0).
+
+**What it does:**
+- Delegates task to MCP Client via HTTP POST
+- MCP Client polls tasks every 5 seconds via `a2a-list-tasks`
+- Requires Bearer token authentication (`MEMESH_A2A_TOKEN`)
+- Returns task ID for status tracking
 
 **Input Schema:**
 ```json
@@ -410,7 +416,12 @@ Send a task to another agent for execution (Agent-to-Agent Protocol).
 }
 ```
 
-**Current Status:** Phase 0.5 - Local-only communication
+**Authentication:**
+- Requires `Authorization: Bearer <token>` header
+- Token must match `MEMESH_A2A_TOKEN` environment variable
+- See [A2A_SETUP_GUIDE.md](./A2A_SETUP_GUIDE.md) for token configuration
+
+**Current Status:** Phase 1.0 - MCP Client Delegation (localhost-only)
 
 ---
 
@@ -435,7 +446,13 @@ Query status and results of a sent task.
 
 ### `a2a-list-tasks`
 
-List all tasks assigned to this agent.
+List all tasks assigned to this agent (Phase 1.0: MCP Client Polling).
+
+**What it does:**
+- MCP Client polls this tool every 5 seconds
+- Returns pending tasks from task queue
+- Tasks transition to IN_PROGRESS when retrieved
+- Used for MCP Client Delegation workflow
 
 **Input Schema:**
 ```json
@@ -446,6 +463,62 @@ List all tasks assigned to this agent.
 - Array of task objects
 - Task status and metadata
 - Priority and timing information
+
+**MCP Client Workflow:**
+1. Poll `a2a-list-tasks` every 5 seconds
+2. Retrieve pending tasks
+3. Execute tasks using `buddy-do` or other MCP tools
+4. Report results via `a2a-report-result`
+
+**Polling Configuration:**
+- Interval: 5 seconds (configurable via `MEMESH_A2A_POLL_INTERVAL`)
+- Timeout: 30 seconds per task (configurable via `MEMESH_A2A_TASK_TIMEOUT`)
+
+---
+
+### `a2a-report-result`
+
+Report task execution result (Phase 1.0: MCP Client → Task Queue).
+
+**What it does:**
+- MCP Client reports task execution result
+- Updates TaskQueue status to COMPLETED or FAILED
+- Removes task from MCPTaskDelegator pending queue
+- Completes the MCP Client Delegation workflow
+
+**Input Schema:**
+```json
+{
+  "taskId": "string (required) - Task ID to report result for",
+  "result": "string (required) - Execution output or result",
+  "success": "boolean (required) - Whether execution succeeded",
+  "error": "string (optional) - Error message if success=false"
+}
+```
+
+**Example (Success):**
+```json
+{
+  "taskId": "task-abc123",
+  "result": "Code review completed. Found 2 security issues in auth.ts",
+  "success": true
+}
+```
+
+**Example (Failure):**
+```json
+{
+  "taskId": "task-abc123",
+  "result": "",
+  "success": false,
+  "error": "File src/auth.ts not found"
+}
+```
+
+**When to Use:**
+- After MCP Client completes task execution
+- To update task status from IN_PROGRESS to COMPLETED/FAILED
+- Required for proper task lifecycle management
 
 ---
 

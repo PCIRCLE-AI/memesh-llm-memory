@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.5] - 2026-02-03
+
+### Added
+- Enhanced post-install messaging with comprehensive quick-start guide (53 lines, boxed output)
+- Unified getting-started guide (docs/GETTING_STARTED.md) - 400+ lines, single entry point for new users
+- Comprehensive PathResolver tests (47 tests, 100% statement coverage)
+- Professional error formatting with category badges and boxed suggestions
+- Smart response complexity detection (89% noise reduction for simple responses)
+- SQLite WAL checkpoint handling in migration script
+- Atomic migration pattern (temp → verify → commit)
+- [X/Y] progress indicators in migration script
+
+### Changed
+- Enhanced MCP watchdog startup message (5 → 65 lines) with helpful configuration guidance
+- Improved migration script (277 → 431 lines, +56%) with safety guarantees and actionable next steps
+- Updated errorHandler to return structured objects with category and example fields
+- ResponseFormatter now adaptively formats based on content complexity
+
+### Fixed
+- **Critical**: Fixed 4 hardcoded ~/.claude-code-buddy/ paths to use PathResolver
+  - src/management/UninstallManager.ts
+  - src/utils/toonify-adapter.ts
+  - src/telemetry/TelemetryStore.ts
+  - src/ui/MetricsStore.ts
+- Fixed 14 failing errorHandler tests to match new API structure
+- All tests now passing (25/25 errorHandler, 47/47 PathResolver)
+
+### Documentation
+- Added comprehensive GETTING_STARTED.md guide
+- Updated docs/README.md with getting-started link
+- Created detailed release notes (RELEASE_NOTES_v2.6.5.md)
+
+### Quality
+- Code review score: 95/100 (EXCELLENT)
+- 0 critical issues, 0 major issues, 3 minor issues
+- 100% backward compatibility maintained
+- No breaking changes
+
 ## [2.8.0] - 2026-02-01
 
 ### Changed

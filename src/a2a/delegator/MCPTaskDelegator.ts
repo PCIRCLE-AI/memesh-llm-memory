@@ -71,10 +71,9 @@ export class MCPTaskDelegator {
         this.logger.warn(`Task timeout detected: ${taskId}`);
 
         // Update TaskQueue status
-        await this.taskQueue.updateTask(taskId, {
-          status: 'TIMEOUT' as any, // TaskStatus enum
-          error: `Task execution timeout (${timeout / 1000}s)`,
-          completedAt: now
+        this.taskQueue.updateTaskStatus(taskId, {
+          state: 'TIMEOUT',
+          metadata: { error: `Task execution timeout (${timeout / 1000}s)` }
         });
 
         // Remove from pending queue

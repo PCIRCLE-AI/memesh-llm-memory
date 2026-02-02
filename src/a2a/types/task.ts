@@ -15,7 +15,8 @@ export type TaskState =
   | 'COMPLETED'
   | 'FAILED'
   | 'CANCELED'
-  | 'REJECTED';
+  | 'REJECTED'
+  | 'TIMEOUT';
 
 /**
  * Task priority levels

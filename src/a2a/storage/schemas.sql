@@ -4,7 +4,7 @@
 -- Tasks table
 CREATE TABLE IF NOT EXISTS tasks (
     id TEXT PRIMARY KEY,
-    state TEXT NOT NULL CHECK(state IN ('SUBMITTED', 'WORKING', 'INPUT_REQUIRED', 'COMPLETED', 'FAILED', 'CANCELED', 'REJECTED')),
+    state TEXT NOT NULL CHECK(state IN ('SUBMITTED', 'WORKING', 'INPUT_REQUIRED', 'COMPLETED', 'FAILED', 'CANCELED', 'REJECTED', 'TIMEOUT')),
     name TEXT,
     description TEXT,
     priority TEXT CHECK(priority IN ('low', 'normal', 'high', 'urgent')) DEFAULT 'normal',

@@ -18,6 +18,8 @@ import {
   jsonErrorHandler,
 } from './middleware.js';
 import { authenticateToken } from './middleware/auth.js';
+import { MCPTaskDelegator } from '../delegator/MCPTaskDelegator.js';
+import { TimeoutChecker } from '../jobs/TimeoutChecker.js';
 
 export interface A2AServerConfig {
   agentId: string;
@@ -35,12 +37,16 @@ export class A2AServer {
   private routes: A2ARoutes;
   private heartbeatTimer: NodeJS.Timeout | null = null;
   private port: number = 0;
+  private delegator: MCPTaskDelegator;
+  private timeoutChecker: TimeoutChecker;
 
   constructor(private config: A2AServerConfig) {
     this.taskQueue = new TaskQueue(config.agentId);
     this.registry = AgentRegistry.getInstance();
     this.routes = new A2ARoutes(config.agentId, this.taskQueue, config.agentCard);
     this.app = this.createApp();
+    this.delegator = new MCPTaskDelegator(this.taskQueue, logger);
+    this.timeoutChecker = new TimeoutChecker(this.delegator);
   }
 
   private createApp(): Express {
@@ -83,6 +89,9 @@ export class A2AServer {
 
         this.startHeartbeat();
 
+        // Start timeout checker (every 60 seconds)
+        this.timeoutChecker.start();
+
         resolve(port);
       });
 
@@ -93,6 +102,9 @@ export class A2AServer {
   }
 
   async stop(): Promise<void> {
+    // Stop timeout checker
+    this.timeoutChecker.stop();
+
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = null;

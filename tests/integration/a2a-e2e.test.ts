@@ -49,6 +49,9 @@ describe('Phase 0.5: A2A Protocol End-to-End Integration', () => {
   };
 
   beforeAll(() => {
+    // Set authentication token for tests
+    process.env.MEMESH_A2A_TOKEN = 'test-token-e2e';
+
     // Create temporary database for tests
     const tempId = randomBytes(8).toString('hex');
     dbPath = join(tmpdir(), `a2a-test-${tempId}.db`);
@@ -57,6 +60,9 @@ describe('Phase 0.5: A2A Protocol End-to-End Integration', () => {
   });
 
   afterAll(async () => {
+    // Clean up environment
+    delete process.env.MEMESH_A2A_TOKEN;
+
     // Clean up servers
     if (server1) {
       await server1.stop();

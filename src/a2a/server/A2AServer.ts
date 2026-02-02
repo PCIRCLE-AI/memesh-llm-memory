@@ -17,6 +17,7 @@ import {
   corsMiddleware,
   jsonErrorHandler,
 } from './middleware.js';
+import { authenticateToken } from './middleware/auth.js';
 
 export interface A2AServerConfig {
   agentId: string;
@@ -49,11 +50,14 @@ export class A2AServer {
     app.use(corsMiddleware);
     app.use(requestLogger);
 
-    app.post('/a2a/send-message', this.routes.sendMessage);
-    app.get('/a2a/tasks/:taskId', this.routes.getTask);
-    app.get('/a2a/tasks', this.routes.listTasks);
+    // Protected routes - require authentication
+    app.post('/a2a/send-message', authenticateToken, this.routes.sendMessage);
+    app.get('/a2a/tasks/:taskId', authenticateToken, this.routes.getTask);
+    app.get('/a2a/tasks', authenticateToken, this.routes.listTasks);
+    app.post('/a2a/tasks/:taskId/cancel', authenticateToken, this.routes.cancelTask);
+
+    // Public route - agent card discovery
     app.get('/a2a/agent-card', this.routes.getAgentCard);
-    app.post('/a2a/tasks/:taskId/cancel', this.routes.cancelTask);
 
     app.use(jsonErrorHandler);
     app.use(errorHandler);

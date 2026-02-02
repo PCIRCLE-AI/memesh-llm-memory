@@ -45,9 +45,9 @@ describe('Rate Limit Middleware', () => {
   });
 
   describe('Token Bucket Algorithm', () => {
-    it('should allow requests within rate limit', () => {
+    it('should allow requests within rate limit', async () => {
       // First request should pass
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext
@@ -57,12 +57,12 @@ describe('Rate Limit Middleware', () => {
       expect(mockRes.status).not.toHaveBeenCalled();
     });
 
-    it('should block requests exceeding rate limit', () => {
+    it('should block requests exceeding rate limit', async () => {
       // Set environment variable for testing (1 request per minute)
       process.env.MEMESH_A2A_RATE_LIMIT_SEND_MESSAGE = '1';
 
       // First request should pass
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext
@@ -71,7 +71,7 @@ describe('Rate Limit Middleware', () => {
 
       // Second request should be blocked
       mockNext = vi.fn();
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext
@@ -97,11 +97,11 @@ describe('Rate Limit Middleware', () => {
       // See tests/integration/a2a-rate-limit.test.ts for refill verification.
     });
 
-    it('should have correct retry-after header', () => {
+    it('should have correct retry-after header', async () => {
       process.env.MEMESH_A2A_RATE_LIMIT_SEND_MESSAGE = '1';
 
       // Consume token
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext
@@ -109,7 +109,7 @@ describe('Rate Limit Middleware', () => {
 
       // Next request should be blocked with retry-after
       mockNext = vi.fn();
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext
@@ -129,12 +129,12 @@ describe('Rate Limit Middleware', () => {
   });
 
   describe('Per-Agent Isolation', () => {
-    it('should isolate rate limits per agent', () => {
+    it('should isolate rate limits per agent', async () => {
       process.env.MEMESH_A2A_RATE_LIMIT_SEND_MESSAGE = '1';
 
       // Agent 1 consumes token
       mockReq.agentId = 'agent-1';
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext
@@ -143,7 +143,7 @@ describe('Rate Limit Middleware', () => {
 
       // Agent 1 blocked
       mockNext = vi.fn();
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext
@@ -154,7 +154,7 @@ describe('Rate Limit Middleware', () => {
       mockReq.agentId = 'agent-2';
       mockNext = vi.fn();
       mockRes.status = vi.fn().mockReturnThis();
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext
@@ -167,13 +167,13 @@ describe('Rate Limit Middleware', () => {
   });
 
   describe('Endpoint-Specific Limits', () => {
-    it('should apply different limits per endpoint', () => {
+    it('should apply different limits per endpoint', async () => {
       process.env.MEMESH_A2A_RATE_LIMIT_SEND_MESSAGE = '1';
       process.env.MEMESH_A2A_RATE_LIMIT_GET_TASK = '2';
 
       // send-message: 1 request allowed
       mockReq.path = '/a2a/send-message';
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext
@@ -181,7 +181,7 @@ describe('Rate Limit Middleware', () => {
       expect(mockNext).toHaveBeenCalledTimes(1);
 
       mockNext = vi.fn();
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext
@@ -192,7 +192,7 @@ describe('Rate Limit Middleware', () => {
       mockReq.path = '/a2a/tasks/task-123';
       mockNext = vi.fn();
       mockRes.status = vi.fn().mockReturnThis();
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext
@@ -201,7 +201,7 @@ describe('Rate Limit Middleware', () => {
 
       mockNext = vi.fn();
       mockRes.status = vi.fn().mockReturnThis();
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext
@@ -210,7 +210,7 @@ describe('Rate Limit Middleware', () => {
 
       // Third request blocked
       mockNext = vi.fn();
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext
@@ -221,12 +221,12 @@ describe('Rate Limit Middleware', () => {
       delete process.env.MEMESH_A2A_RATE_LIMIT_GET_TASK;
     });
 
-    it('should normalize endpoint paths correctly', () => {
+    it('should normalize endpoint paths correctly', async () => {
       process.env.MEMESH_A2A_RATE_LIMIT_GET_TASK = '1';
 
       // First request with task-123
       mockReq.path = '/a2a/tasks/task-123';
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext
@@ -236,7 +236,7 @@ describe('Rate Limit Middleware', () => {
       // Second request with task-456 (same normalized endpoint)
       mockReq.path = '/a2a/tasks/task-456';
       mockNext = vi.fn();
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext
@@ -248,10 +248,10 @@ describe('Rate Limit Middleware', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle missing agentId gracefully', () => {
+    it('should handle missing agentId gracefully', async () => {
       mockReq.agentId = undefined;
 
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext
@@ -271,11 +271,11 @@ describe('Rate Limit Middleware', () => {
   });
 
   describe('Statistics Tracking', () => {
-    it('should track rate limit statistics', () => {
+    it('should track rate limit statistics', async () => {
       process.env.MEMESH_A2A_RATE_LIMIT_SEND_MESSAGE = '1';
 
       // First request
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext
@@ -283,7 +283,7 @@ describe('Rate Limit Middleware', () => {
 
       // Second request (blocked)
       mockNext = vi.fn();
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext
@@ -317,7 +317,7 @@ describe('Rate Limit Middleware', () => {
   });
 
   describe('Environment Variable Overrides', () => {
-    it('should use default rate limit if no env var set', () => {
+    it('should use default rate limit if no env var set', async () => {
       // Default for send-message is 60 RPM
       mockReq.path = '/a2a/send-message';
 
@@ -325,7 +325,7 @@ describe('Rate Limit Middleware', () => {
       for (let i = 0; i < 5; i++) {
         mockNext = vi.fn();
         mockRes.status = vi.fn().mockReturnThis();
-        rateLimitMiddleware(
+        await rateLimitMiddleware(
           mockReq as AuthenticatedRequest,
           mockRes as Response,
           mockNext
@@ -334,11 +334,11 @@ describe('Rate Limit Middleware', () => {
       }
     });
 
-    it('should respect global default override', () => {
+    it('should respect global default override', async () => {
       process.env.MEMESH_A2A_RATE_LIMIT_DEFAULT = '1';
       mockReq.path = '/a2a/unknown-endpoint';
 
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext
@@ -346,7 +346,7 @@ describe('Rate Limit Middleware', () => {
       expect(mockNext).toHaveBeenCalled();
 
       mockNext = vi.fn();
-      rateLimitMiddleware(
+      await rateLimitMiddleware(
         mockReq as AuthenticatedRequest,
         mockRes as Response,
         mockNext

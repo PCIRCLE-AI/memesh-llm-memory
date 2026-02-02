@@ -38,6 +38,7 @@ import {
   startCleanup,
   stopCleanup,
 } from './middleware/rateLimit.js';
+import { requestTimeoutMiddleware } from './middleware/timeout.js';
 import { MCPTaskDelegator } from '../delegator/MCPTaskDelegator.js';
 import { TimeoutChecker } from '../jobs/TimeoutChecker.js';
 import { TIME, NETWORK } from '../constants.js';
@@ -124,6 +125,9 @@ export class A2AServer {
 
     // Enable distributed tracing for all requests
     app.use(tracingMiddleware());
+
+    // Request timeout middleware (must be before all route handlers)
+    app.use(requestTimeoutMiddleware());
 
     app.use(requestLogger);
 

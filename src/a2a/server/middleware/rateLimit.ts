@@ -43,6 +43,13 @@ const stats = new Map<string, RateLimitStats>();
 let cleanupTimer: NodeJS.Timeout | null = null;
 
 /**
+ * Mutex for refill operations to prevent race conditions
+ * Key: `${agentId}:${endpoint}`
+ * Value: Promise that resolves when refill is complete
+ */
+const refillMutex = new Map<string, Promise<void>>();
+
+/**
  * Get rate limit configuration from environment or defaults
  */
 function getRateLimitConfig(endpoint: string): number {
@@ -129,23 +136,43 @@ function getBucket(agentId: string, endpoint: string): TokenBucket {
 }
 
 /**
- * Refill tokens based on elapsed time
+ * Refill tokens based on elapsed time (with mutex protection)
+ * @param key - Bucket key for lock identification
+ * @param bucket - Token bucket to refill
  */
-function refillTokens(bucket: TokenBucket): void {
-  const now = Date.now();
-  const elapsed = now - bucket.lastRefill;
-  const tokensToAdd = elapsed * bucket.refillRate;
+async function refillTokens(key: string, bucket: TokenBucket): Promise<void> {
+  // Check if refill is already in progress
+  const existingRefill = refillMutex.get(key);
+  if (existingRefill) {
+    await existingRefill;
+    return;
+  }
 
-  bucket.tokens = Math.min(bucket.maxTokens, bucket.tokens + tokensToAdd);
-  bucket.lastRefill = now;
+  // Start refill operation
+  const refillPromise = (async () => {
+    const now = Date.now();
+    const elapsed = now - bucket.lastRefill;
+    const tokensToAdd = elapsed * bucket.refillRate;
+
+    if (tokensToAdd > 0) {
+      bucket.tokens = Math.min(bucket.maxTokens, bucket.tokens + tokensToAdd);
+      bucket.lastRefill = now;
+    }
+  })();
+
+  refillMutex.set(key, refillPromise);
+  await refillPromise;
+  refillMutex.delete(key);
 }
 
 /**
  * Try to consume a token from the bucket
+ * @param key - Bucket key for lock identification
+ * @param bucket - Token bucket to consume from
  * @returns true if token was consumed, false if rate limit exceeded
  */
-function tryConsume(bucket: TokenBucket): boolean {
-  refillTokens(bucket);
+async function tryConsume(key: string, bucket: TokenBucket): Promise<boolean> {
+  await refillTokens(key, bucket);
 
   if (bucket.tokens >= 1) {
     bucket.tokens -= 1;
@@ -278,11 +305,11 @@ export function clearRateLimitData(): void {
  * );
  * ```
  */
-export function rateLimitMiddleware(
+export async function rateLimitMiddleware(
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
-): void {
+): Promise<void> {
   const agentId = req.agentId;
 
   if (!agentId) {
@@ -299,8 +326,9 @@ export function rateLimitMiddleware(
   }
 
   const endpoint = normalizeEndpoint(req.path);
+  const key = `${agentId}:${endpoint}`;
   const bucket = getBucket(agentId, endpoint);
-  const allowed = tryConsume(bucket);
+  const allowed = await tryConsume(key, bucket);
 
   updateStats(agentId, endpoint, !allowed);
 

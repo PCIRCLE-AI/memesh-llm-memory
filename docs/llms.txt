@@ -1,11 +1,12 @@
-# Claude Code Buddy - AI Assistant Context
+# MeMesh - AI Assistant Context
 
 > Free & Open Source Plugin that adds intelligence, memory, and task routing to Claude Code
 > Transform Claude Code into a project-aware AI teammate with persistent memory
+> Formerly known as "Claude Code Buddy (CCB)" - renamed to avoid trademark issues
 
 ## Project Overview
 
-Claude Code Buddy (CCB) is an MCP (Model Context Protocol) server that extends Claude Code with:
+MeMesh is an MCP (Model Context Protocol) server that extends Claude Code with:
 - **Project Memory**: Knowledge graph remembering architecture decisions and coding patterns
 - **Smart Task Routing**: Automatic routing to specialized capabilities (code review, debugging, frontend, backend)
 - **Workflow Guidance**: Phase-aware recommendations and smart planning
@@ -14,13 +15,13 @@ Claude Code Buddy (CCB) is an MCP (Model Context Protocol) server that extends C
 **License**: AGPL-3.0
 **Language**: TypeScript
 **Platform**: Node.js 20+
-**Latest Version**: 2.5.0 (2026-01-30)
+**Latest Version**: 2.6.4 (2026-02-02)
 
 ## Quick Start
 
 ### Installation (NPM)
 ```bash
-npx -y @pcircle/claude-code-buddy-mcp
+npx -y @pcircle/memesh
 ```
 
 ### Installation (Git Clone)
@@ -35,10 +36,10 @@ Add to `~/.claude/config.json`:
 ```json
 {
   "mcpServers": {
-    "claude-code-buddy": {
+    "memesh": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@pcircle/claude-code-buddy-mcp"],
+      "args": ["-y", "@pcircle/memesh"],
       "env": {
         "NODE_ENV": "production"
       }
@@ -65,9 +66,9 @@ Automatic routing to specialized capabilities:
 - `test-automation`: Test strategy and implementation
 - `architecture-review`: System design validation
 
-### 3. Process Management (v2.5.0)
+### 3. Process Management (v2.5.0+)
 New CLI tools for managing MCP server processes:
-- `npm run processes:list` - List all CCB MCP processes
+- `npm run processes:list` - List all MeMesh MCP processes
 - `npm run processes:kill` - Terminate all processes
 - `npm run processes:orphaned` - Find orphaned processes
 - `npm run processes:config` - Check configuration
@@ -223,26 +224,26 @@ Process management guide: `docs/MCP_PROCESS_MANAGEMENT.md`
 ## Resources
 
 - **GitHub**: https://github.com/PCIRCLE-AI/claude-code-buddy
-- **NPM**: https://www.npmjs.com/package/@pcircle/claude-code-buddy-mcp
+- **NPM**: https://www.npmjs.com/package/@pcircle/memesh
 - **Documentation**: https://github.com/PCIRCLE-AI/claude-code-buddy#readme
-- **Website**: https://ccb.pcircle.ai
+- **Website**: https://memesh.pcircle.ai (ccb.pcircle.com redirects to GitHub repo)
 - **Issues**: https://github.com/PCIRCLE-AI/claude-code-buddy/issues
 - **Discussions**: https://github.com/PCIRCLE-AI/claude-code-buddy/discussions
 
-## Recent Updates (v2.5.0)
+## Recent Updates (v2.6.4)
 
-### New in v2.5.0 (2026-01-30)
-- ✨ Process management CLI tools
-- ✨ Pre-release comprehensive checklist
-- ✨ MCP process management documentation
-- 🌍 All code comments converted to English (i18n)
-- 📝 README updated with process management section
+### New in v2.6.4 (2026-02-02)
+- 🏷️ **Rebrand**: Renamed to MeMesh to avoid trademark issues
+- 📦 **NPM Package**: Now available as @pcircle/memesh
+- 🔧 **Binary Fix**: Fixed execute permissions for memesh command
+- 📝 **Documentation**: Updated all references to new brand
+- 🌐 **Domain**: Removed website, ccb.pcircle.com redirects to GitHub
 
 ### Previous Versions
+- v2.5.0: Process management CLI tools
 - v2.4.2: Fixed config path fallback logic
 - v2.4.1: Corrected Claude Code CLI config path
 - v2.4.0: Enhanced test parsing and memory deduplication
-- v2.3.x: Core memory and routing features
 
 ## Contributing
 

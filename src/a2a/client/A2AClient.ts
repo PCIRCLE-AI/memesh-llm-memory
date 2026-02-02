@@ -20,6 +20,21 @@ export class A2AClient {
     this.registry = AgentRegistry.getInstance();
   }
 
+  /**
+   * Get authentication headers with Bearer token
+   * @throws Error if MEMESH_A2A_TOKEN is not configured
+   */
+  private getAuthHeaders(): HeadersInit {
+    const token = process.env.MEMESH_A2A_TOKEN;
+    if (!token) {
+      throw new Error('MEMESH_A2A_TOKEN not configured');
+    }
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    };
+  }
+
   async sendMessage(
     targetAgentId: string,
     request: SendMessageRequest
@@ -34,7 +49,7 @@ export class A2AClient {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAuthHeaders(),
         body: JSON.stringify(request),
       });
 
@@ -57,7 +72,7 @@ export class A2AClient {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAuthHeaders(),
       });
 
       return await this.handleResponse<Task>(response);
@@ -87,7 +102,7 @@ export class A2AClient {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAuthHeaders(),
       });
 
       return await this.handleResponse<TaskStatus[]>(response);
@@ -109,7 +124,7 @@ export class A2AClient {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAuthHeaders(),
       });
 
       return await this.handleResponse<AgentCard>(response);
@@ -131,7 +146,7 @@ export class A2AClient {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAuthHeaders(),
       });
 
       await this.handleResponse<{ taskId: string; status: string }>(response);
@@ -144,6 +159,11 @@ export class A2AClient {
 
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
+      // Handle 401 Unauthorized specifically
+      if (response.status === 401) {
+        throw new Error('Authentication failed - invalid A2A token');
+      }
+
       let errorMessage = `HTTP error ${response.status}`;
       try {
         const errorData = (await response.json()) as ServiceResponse<T>;

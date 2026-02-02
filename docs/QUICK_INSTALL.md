@@ -132,7 +132,7 @@ You can customize the MCP server configuration:
 
 ## ✅ Verify Installation
 
-After installation, verify CCB is working:
+After installation, verify MeMesh is working:
 
 ### In Cursor
 1. Open a project

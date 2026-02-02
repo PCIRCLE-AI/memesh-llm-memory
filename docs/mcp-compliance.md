@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-MeMesh (CCB) is **fully compliant** with the Model Context Protocol (MCP) Specification 2025-11-25 for **Phase 1 requirements** (Tool Annotations and Output Schemas).
+MeMesh (MeMesh) is **fully compliant** with the Model Context Protocol (MCP) Specification 2025-11-25 for **Phase 1 requirements** (Tool Annotations and Output Schemas).
 
 **Compliance Status:**
 
@@ -65,7 +65,7 @@ All 14 MCP tools include comprehensive annotations per specification requirement
 - Examples: `buddy-remember`, `get-session-health`, `a2a-list-agents`
 
 **destructiveHint: false** (14/14 tools)
-- No CCB tools perform destructive operations
+- No MeMesh tools perform destructive operations
 - All state changes are additive (memory creation, task delegation)
 - Rollback-safe operations only
 
@@ -254,7 +254,7 @@ const validatedInput = buddyDoInputSchema.parse(rawInput);
 
 ### Error Codes
 
-CCB defines standard error codes for consistent error handling:
+MeMesh defines standard error codes for consistent error handling:
 
 | Code | Description | Retry Safe? |
 |------|-------------|-------------|
@@ -329,7 +329,7 @@ interface ToolResponse<T> {
 
 ## Best Practices
 
-### For CCB Developers
+### For MeMesh Developers
 
 1. **Adding New Tools:**
    - Define annotations in `ToolDefinitions.ts`
@@ -355,7 +355,7 @@ interface ToolResponse<T> {
 1. **Using Annotations:**
    - Check `readOnlyHint` before speculative execution
    - Check `idempotentHint` before retry logic
-   - Respect `destructiveHint` warnings (none in CCB)
+   - Respect `destructiveHint` warnings (none in MeMesh)
    - Use `openWorldHint` to determine input flexibility
 
 2. **Handling Responses:**

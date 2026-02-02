@@ -4,7 +4,7 @@
 
 ## 🎯 Overview
 
-The mistake learning system enables CCB/memesh to automatically:
+The mistake learning system enables MeMesh/memesh to automatically:
 1. **Detect** when users correct AI behavior (multi-language support)
 2. **Record** mistakes with context and classification
 3. **Learn** patterns from recurring errors

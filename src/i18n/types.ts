@@ -1,5 +1,5 @@
 /**
- * Supported locales for CCB internationalization
+ * Supported locales for MeMesh internationalization
  */
 export type Locale = 'en' | 'zh-TW' | 'zh-CN' | 'ja';
 

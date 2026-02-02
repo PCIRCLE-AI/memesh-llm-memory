@@ -86,7 +86,7 @@ A2A is an HTTP-based protocol that allows AI agents to:
 
 ### Step 1: Start Multiple Agents
 
-Each CCB instance needs a unique agent ID and will automatically get a port.
+Each MeMesh instance needs a unique agent ID and will automatically get a port.
 
 **Terminal 1 - Start Alice:**
 ```bash
@@ -663,7 +663,7 @@ Use a2a-list-agents with:
 - Response format: `"Echo: [original task description]"`
 
 **Why Echo Only in Phase 0.5**:
-- CCB is an MCP Server, not a standalone AI agent
+- MeMesh is an MCP Server, not a standalone AI agent
 - Tasks should be delegated to connected MCP client (Claude Code/Claude Desktop)
 - Phase 0.5 validates A2A Protocol infrastructure without MCP delegation complexity
 
@@ -775,7 +775,7 @@ Response: "Echo: Analyze API performance
 
 **Architecture**:
 ```
-A2A Agent (CCB) receives task
+A2A Agent (MeMesh) receives task
     ↓
 Delegates to connected MCP client (Claude Code)
     ↓
@@ -787,7 +787,7 @@ A2A Agent returns result to requester
 ```
 
 **Why MCP Delegation, Not Direct API**:
-- CCB is an MCP Server, not a standalone AI agent
+- MeMesh is an MCP Server, not a standalone AI agent
 - Maintains separation of concerns (MCP Server vs AI execution)
 - Leverages existing MCP client capabilities
 - No need to duplicate Claude API integration logic

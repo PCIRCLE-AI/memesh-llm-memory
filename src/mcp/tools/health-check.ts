@@ -14,7 +14,7 @@ export const HealthCheckInputSchema = z.object({});
 export type ValidatedHealthCheckInput = z.infer<typeof HealthCheckInputSchema>;
 
 /**
- * get-session-health tool - Check CCB system health
+ * get-session-health tool - Check MeMesh system health
  *
  * Returns health status for core components:
  * - database, filesystem, memory

@@ -45,7 +45,7 @@ body:
       label: Steps to Reproduce
       description: How can we reproduce this bug?
       placeholder: |
-        1. Configure CCB with...
+        1. Configure MeMesh with...
         2. Call the tool...
         3. See error...
     validations:
@@ -63,7 +63,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: CCB Version
+      label: MeMesh Version
       description: Run `npm list @pcircle/memesh`
       placeholder: "2.5.3"
     validations:

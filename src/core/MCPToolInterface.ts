@@ -605,7 +605,7 @@ export class MCPToolInterface {
   }
 
   /**
-   * Invoke a CCB tool directly via in-process dispatcher
+   * Invoke a MeMesh tool directly via in-process dispatcher
    *
    * @param toolName - MCP tool name (e.g., "buddy-do", "get-session-health")
    * @param args - Tool arguments

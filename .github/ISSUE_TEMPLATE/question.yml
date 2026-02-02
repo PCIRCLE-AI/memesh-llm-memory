@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Have a question about CCB? We're happy to help!
+        Have a question about MeMesh? We're happy to help!
 
         Before asking, please check:
         - [README.md](https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/README.md)

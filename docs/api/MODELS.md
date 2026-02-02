@@ -1,7 +1,7 @@
 # 🤖 Model Recommendation Guide
 
-CCB provides **model recommendations** inside enhanced prompts. In MCP server mode,
-Claude Code performs the actual model execution, while CCB focuses on capability
+MeMesh provides **model recommendations** inside enhanced prompts. In MCP server mode,
+Claude Code performs the actual model execution, while MeMesh focuses on capability
 routing, prompt enrichment, and cost estimation.
 
 ## Claude Model Series (Primary)
@@ -92,7 +92,7 @@ console.log(result.routing.enhancedPrompt?.suggestedModel);
 
 ## Recommendation Logic
 
-CCB recommends models based on task complexity and capability focus:
+MeMesh recommends models based on task complexity and capability focus:
 
 ```typescript
 import { Router } from '../../src/orchestrator/router.js';
@@ -110,7 +110,7 @@ console.log(`Suggested model: ${suggestedModel ?? 'default'}`);
 
 ## Cost Awareness
 
-CCB tracks estimated costs for budgeting and reporting:
+MeMesh tracks estimated costs for budgeting and reporting:
 
 ```typescript
 const report = router.getCostTracker().generateReport();

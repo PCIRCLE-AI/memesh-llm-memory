@@ -5,7 +5,7 @@ import type { ProjectAutoTracker } from '../../memory/ProjectAutoTracker.js';
 import { logger } from '../../utils/logger.js';
 
 export const BuddyDoInputSchema = z.object({
-  task: z.string().trim().min(1).describe('Task description for CCB to execute with smart routing'),
+  task: z.string().trim().min(1).describe('Task description for MeMesh to execute with smart routing'),
 });
 
 export type ValidatedBuddyDoInput = z.infer<typeof BuddyDoInputSchema>;

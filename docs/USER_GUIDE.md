@@ -148,7 +148,7 @@ Each phase triggers different recommendations and automation.
 
 ### Capability Model
 
-CCB routes work by capability rather than exposing individual agents. Capabilities are grouped to keep UX predictable:
+MeMesh routes work by capability rather than exposing individual agents. Capabilities are grouped to keep UX predictable:
 
 - **Code Quality**: review, refactor, debugging, best practices
 - **Testing**: test generation, coverage, e2e validation
@@ -163,7 +163,7 @@ The router selects the best internal implementation automatically based on your 
 
 ## Using Capabilities
 
-CCB exposes a small, focused toolset. Describe outcomes in natural language and CCB routes the work to the best internal capability.
+MeMesh exposes a small, focused toolset. Describe outcomes in natural language and MeMesh routes the work to the best internal capability.
 
 ### Core Task Execution
 

@@ -34,10 +34,10 @@ We take security seriously. If you discover a security vulnerability in Claude C
 
 ### Security Best Practices for Users
 
-1. **Keep CCB Updated**: Always use the latest version
+1. **Keep MeMesh Updated**: Always use the latest version
 2. **Protect API Keys**: Never commit `.env` files or API keys
 3. **Review MCP Config**: Ensure your MCP configuration doesn't expose sensitive data
-4. **Memory Data**: Be aware that CCB stores project context in local SQLite databases
+4. **Memory Data**: Be aware that MeMesh stores project context in local SQLite databases
 
 ### Security Features
 

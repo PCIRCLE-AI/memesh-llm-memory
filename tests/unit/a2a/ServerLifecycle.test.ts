@@ -1,6 +1,6 @@
 /**
  * Server Lifecycle Management Tests
- * Tests for automatic A2A server start/stop on CCB initialization
+ * Tests for automatic A2A server start/stop on MeMesh initialization
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -37,7 +37,7 @@ describe('Server Lifecycle Management', () => {
   });
 
   describe('Auto-start Server', () => {
-    it('should start A2A server on CCB initialization', async () => {
+    it('should start A2A server on MeMesh initialization', async () => {
       // Arrange
       const agentId = 'test-agent-001';
       const agentCard: AgentCard = {
@@ -368,8 +368,8 @@ describe('Server Lifecycle Management', () => {
     });
   });
 
-  describe('Integration with CCB Main', () => {
-    it('should not break existing CCB functionality', async () => {
+  describe('Integration with MeMesh Main', () => {
+    it('should not break existing MeMesh functionality', async () => {
       // Arrange
       const agentId = 'ccb-main';
       const agentCard: AgentCard = {
@@ -394,7 +394,7 @@ describe('Server Lifecycle Management', () => {
         },
       };
 
-      // Act: Start server (simulating CCB initialization)
+      // Act: Start server (simulating MeMesh initialization)
       server = new A2AServer({
         agentId,
         agentCard,

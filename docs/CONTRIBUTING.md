@@ -1,6 +1,6 @@
 # Contributing to Claude Code Buddy
 
-**Welcome! We're excited that you're interested in contributing to Claude Code Buddy (CCB).**
+**Welcome! We're excited that you're interested in contributing to Claude Code Buddy (MeMesh).**
 
 This document provides guidelines for contributing code, documentation, bug reports, and feature requests.
 
@@ -776,7 +776,7 @@ git push origin feature/my-awesome-feature
 <!-- What actually happens -->
 
 ## Environment
-- CCB Version: 2.2.0
+- MeMesh Version: 2.2.0
 - Node.js Version: 20.0.0
 - OS: macOS 13.0
 - Claude Code Version: 1.5.0

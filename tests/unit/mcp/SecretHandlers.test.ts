@@ -2,7 +2,7 @@
  * SecretHandlers Test Suite
  *
  * TDD tests for MCP Secret Management Tools.
- * Part of Phase 0.7.0 CCB Memory System Upgrade.
+ * Part of Phase 0.7.0 MeMesh Memory System Upgrade.
  *
  * Tests cover:
  * - buddy-secret-store: Store secrets securely
@@ -357,8 +357,8 @@ describe('SecretHandlers', () => {
 
       const result = await handleBuddySecretStore(input, mockSecretManager);
 
-      // Message should be translated (CCB branding)
-      expect(result.content[0].text).toContain('CCB');
+      // Message should be translated (MeMesh branding)
+      expect(result.content[0].text).toContain('MeMesh');
     });
 
     it('should use i18n message for not found error', async () => {
@@ -368,7 +368,7 @@ describe('SecretHandlers', () => {
 
       const result = await handleBuddySecretGet(input, mockSecretManager);
 
-      expect(result.content[0].text).toContain('CCB');
+      expect(result.content[0].text).toContain('MeMesh');
     });
 
     it('should use i18n message for delete success', async () => {
@@ -376,7 +376,7 @@ describe('SecretHandlers', () => {
 
       const result = await handleBuddySecretDelete(input, mockSecretManager);
 
-      expect(result.content[0].text).toContain('CCB');
+      expect(result.content[0].text).toContain('MeMesh');
     });
   });
 

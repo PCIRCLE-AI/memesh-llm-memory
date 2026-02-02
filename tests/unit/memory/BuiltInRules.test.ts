@@ -340,10 +340,10 @@ describe('BuiltInRules', () => {
       });
     });
 
-    it('should have CCB branding in messages', () => {
-      expect(en['ccb.rule.readBeforeEdit']).toContain('CCB');
-      expect(en['ccb.rule.verifyBeforeClaim']).toContain('CCB');
-      expect(en['ccb.rule.scopeCreep']).toContain('CCB');
+    it('should have MeMesh branding in messages', () => {
+      expect(en['ccb.rule.readBeforeEdit']).toContain('MeMesh');
+      expect(en['ccb.rule.verifyBeforeClaim']).toContain('MeMesh');
+      expect(en['ccb.rule.scopeCreep']).toContain('MeMesh');
     });
   });
 });

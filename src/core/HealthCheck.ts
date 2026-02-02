@@ -1,7 +1,7 @@
 /**
  * HealthCheck - Component Health Monitoring System
  *
- * Provides health status for all CCB components:
+ * Provides health status for all MeMesh components:
  * - Database connectivity (SQLite)
  * - MCP server status
  * - External API availability

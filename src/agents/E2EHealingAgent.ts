@@ -54,7 +54,7 @@ export interface E2EHealingOptions {
  * - Code fix generation and application
  * - Safety mechanisms (circuit breaker, scope limiting, rollback)
  * - Graduated autonomy model
- * - Integration with CCB's memory and filesystem tools
+ * - Integration with MeMesh's memory and filesystem tools
  *
  * Classification: REAL_IMPLEMENTATION
  * MCP Tools: playwright, filesystem, bash, memory

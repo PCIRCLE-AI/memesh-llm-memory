@@ -66,7 +66,7 @@ describe('Workflow Guidance System - Complete E2E', () => {
     expect(topRecommendation.priority).toBe('high');
 
     // Verify formatted request contains key information
-    expect(codeWrittenResult.formattedRequest).toContain('CCB Workflow Guidance');
+    expect(codeWrittenResult.formattedRequest).toContain('MeMesh Workflow Guidance');
     expect(codeWrittenResult.formattedRequest).toContain('run-tests');
 
     // ===== STEP 2: Tests Complete (Passing) =====

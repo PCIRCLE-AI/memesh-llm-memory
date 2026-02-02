@@ -2,7 +2,7 @@
  * Secret Management Handlers
  *
  * MCP tool handlers for secure secret storage operations.
- * Part of Phase 0.7.0 CCB Memory System Upgrade.
+ * Part of Phase 0.7.0 MeMesh Memory System Upgrade.
  *
  * Features:
  * - Store secrets with AES-256-GCM encryption
@@ -97,7 +97,7 @@ function mapSecretType(type: string): SecretType {
 /**
  * Handle buddy-secret-store tool
  *
- * Store a secret securely with CCB. The secret is encrypted with AES-256-GCM
+ * Store a secret securely with MeMesh. The secret is encrypted with AES-256-GCM
  * and stored locally. It is NEVER transmitted over the network.
  *
  * @param input - Store input parameters
@@ -286,7 +286,7 @@ export async function handleBuddySecretList(
         content: [
           {
             type: 'text' as const,
-            text: '**CCB Secret Storage** - No secrets stored.',
+            text: '**MeMesh Secret Storage** - No secrets stored.',
           },
         ],
         isError: false,
@@ -294,7 +294,7 @@ export async function handleBuddySecretList(
     }
 
     // Format secret list
-    let output = '**CCB Secret Storage** - Stored Secrets:\n\n';
+    let output = '**MeMesh Secret Storage** - Stored Secrets:\n\n';
 
     for (const secret of secrets) {
       output += `- **${secret.name}**\n`;

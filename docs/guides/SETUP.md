@@ -26,7 +26,7 @@ The installer will guide you through core setup and a basic usage demo:
 
 **No API keys needed in MCP server mode** - uses your Claude Code subscription.
 
-**After installation**: Restart Claude Code and start using CCB!
+**After installation**: Restart Claude Code and start using MeMesh!
 
 ---
 

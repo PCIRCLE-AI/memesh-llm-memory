@@ -1,7 +1,7 @@
 /**
  * MCP Resources Tests
  *
- * Verify that CCB MCP resources are properly declared and accessible
+ * Verify that MeMesh MCP resources are properly declared and accessible
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';

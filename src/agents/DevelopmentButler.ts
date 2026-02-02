@@ -549,7 +549,7 @@ export class DevelopmentButler {
     if (!guidance.recommendations || guidance.recommendations.length === 0) {
       const noRecommendationsMessage = `
 ═══════════════════════════════════════════════════
-🤖 CCB Workflow Guidance
+🤖 MeMesh Workflow Guidance
 ═══════════════════════════════════════════════════
 
 ℹ️ No specific recommendations at this time.
@@ -665,7 +665,7 @@ ${formattedRequest}
 
     // Header
     lines.push('═══════════════════════════════════════════════════');
-    lines.push('🤖 CCB Workflow Guidance');
+    lines.push('🤖 MeMesh Workflow Guidance');
     lines.push('═══════════════════════════════════════════════════');
     lines.push('');
 

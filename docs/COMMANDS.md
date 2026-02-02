@@ -1,6 +1,6 @@
 # MeMesh Commands Reference
 
-Complete reference for all CCB commands and tools.
+Complete reference for all MeMesh commands and tools.
 
 ## Table of Contents
 
@@ -43,7 +43,7 @@ buddy do optimize this database query
 - `buddy task`
 
 **Routing Logic:**
-- CCB evaluates task complexity and capability keywords
+- MeMesh evaluates task complexity and capability keywords
 - Specialized prompt context is added for the detected capability focus
 - Estimated cost and complexity are included for transparency
 

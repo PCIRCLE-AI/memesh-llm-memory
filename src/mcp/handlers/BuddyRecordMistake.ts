@@ -239,7 +239,7 @@ function formatDetailedResponse(
   input: BuddyRecordMistakeInput
 ): string {
   const lines: string[] = [
-    '**CCB Mistake Recorded**',
+    '**MeMesh Mistake Recorded**',
     '',
     `Memory ID: \`${memoryId}\``,
     `Error Type: ${input.errorType}`,

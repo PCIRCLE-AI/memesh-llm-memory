@@ -68,7 +68,7 @@
   color: "0e8a16"
   description: Ready to be picked up
 
-# Component Labels (CCB specific)
+# Component Labels (MeMesh specific)
 - name: "area: mcp"
   color: "c5def5"
   description: MCP Server and tools

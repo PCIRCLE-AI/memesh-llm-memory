@@ -92,7 +92,7 @@ describe('i18n Module', () => {
     describe('Basic key resolution', () => {
       it('should resolve a simple key', () => {
         const result = t('ccb.rule.readBeforeEdit');
-        expect(result).toContain('CCB');
+        expect(result).toContain('MeMesh');
         expect(result.length).toBeGreaterThan(0);
       });
 
@@ -106,14 +106,14 @@ describe('i18n Module', () => {
       it('should interpolate single parameter', () => {
         const result = t('ccb.reminder.memories', { count: 5 });
         expect(result).toContain('5');
-        expect(result).toContain('CCB');
+        expect(result).toContain('MeMesh');
       });
 
       it('should interpolate multiple parameters', () => {
         const result = t('ccb.reminder.mistakes', { count: 3, days: 7 });
         expect(result).toContain('3');
         expect(result).toContain('7');
-        expect(result).toContain('CCB');
+        expect(result).toContain('MeMesh');
       });
 
       it('should leave unreplaced params as placeholders', () => {
@@ -135,7 +135,7 @@ describe('i18n Module', () => {
       it('should translate to Traditional Chinese', () => {
         setLocale('zh-TW');
         const result = t('ccb.rule.readBeforeEdit');
-        expect(result).toContain('CCB');
+        expect(result).toContain('MeMesh');
         // Should not be the English version
         expect(result).not.toBe(
           (() => {
@@ -148,13 +148,13 @@ describe('i18n Module', () => {
       it('should translate to Simplified Chinese', () => {
         setLocale('zh-CN');
         const result = t('ccb.rule.readBeforeEdit');
-        expect(result).toContain('CCB');
+        expect(result).toContain('MeMesh');
       });
 
       it('should translate to Japanese', () => {
         setLocale('ja');
         const result = t('ccb.rule.readBeforeEdit');
-        expect(result).toContain('CCB');
+        expect(result).toContain('MeMesh');
       });
 
       it('should fallback to English for missing keys in other locales', () => {
@@ -166,7 +166,7 @@ describe('i18n Module', () => {
       });
     });
 
-    describe('CCB Branding requirement', () => {
+    describe('MeMesh Branding requirement', () => {
       const ccbKeys = [
         'ccb.reminder.mistakes',
         'ccb.reminder.memories',
@@ -178,18 +178,18 @@ describe('i18n Module', () => {
       ];
 
       for (const key of ccbKeys) {
-        it(`should include CCB branding in ${key}`, () => {
+        it(`should include MeMesh branding in ${key}`, () => {
           const result = t(key, { count: 1, days: 1, secretName: 'test', expiresIn: '1d' });
-          expect(result).toContain('CCB');
+          expect(result).toContain('MeMesh');
         });
       }
 
-      it('should include CCB branding in all locales', () => {
+      it('should include MeMesh branding in all locales', () => {
         const locales: Locale[] = ['en', 'zh-TW', 'zh-CN', 'ja'];
         for (const locale of locales) {
           setLocale(locale);
           const result = t('ccb.reminder.memories', { count: 5 });
-          expect(result).toContain('CCB');
+          expect(result).toContain('MeMesh');
         }
       });
     });
@@ -198,7 +198,7 @@ describe('i18n Module', () => {
   describe('Edge cases', () => {
     it('should handle empty params object', () => {
       const result = t('ccb.rule.readBeforeEdit', {});
-      expect(result).toContain('CCB');
+      expect(result).toContain('MeMesh');
     });
 
     it('should handle numeric zero as param', () => {
@@ -219,7 +219,7 @@ describe('i18n Module', () => {
       setLocale(undefined);
       // Should fallback to English or previous locale
       const result = t('ccb.rule.readBeforeEdit');
-      expect(result).toContain('CCB');
+      expect(result).toContain('MeMesh');
     });
   });
 });

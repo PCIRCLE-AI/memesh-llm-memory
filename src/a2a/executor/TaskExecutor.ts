@@ -3,7 +3,7 @@
  * Phase 0.5 - Simplified executor that echoes responses
  * Phase 1 will add MCP client task delegation
  *
- * IMPORTANT: CCB is an MCP Server, not a standalone AI agent.
+ * IMPORTANT: MeMesh is an MCP Server, not a standalone AI agent.
  * Tasks should be delegated to the connected MCP client (Claude Code/Claude Desktop),
  * NOT executed directly via Claude API.
  */

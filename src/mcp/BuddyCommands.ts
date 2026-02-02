@@ -104,7 +104,7 @@ export class BuddyCommands {
       do: `
 buddy do <task>
 
-Execute tasks with smart routing. CCB analyzes complexity and applies
+Execute tasks with smart routing. MeMesh analyzes complexity and applies
 capability-focused prompt enhancement.
 
 Examples:
@@ -116,7 +116,7 @@ Examples:
       remember: `
 buddy remember <query>
 
-Recall project memory and decisions. CCB searches your:
+Recall project memory and decisions. MeMesh searches your:
 - Knowledge graph (entities, relations)
 - Project history
 - Past decisions
@@ -147,7 +147,7 @@ Examples:
    */
   private static getGeneralHelp(): string {
     return `
-MeMesh (CCB) v2.2 - Your friendly AI companion
+MeMesh (MeMesh) v2.2 - Your friendly AI companion
 
 Commands:
   buddy do <task>        Execute tasks with smart routing

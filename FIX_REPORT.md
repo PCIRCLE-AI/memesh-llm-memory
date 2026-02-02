@@ -7,7 +7,7 @@
 **User Impact**:
 - Users mistake the MCP server startup command for an installation command
 - Process runs indefinitely without feedback
-- Users don't know how to properly configure CCB
+- Users don't know how to properly configure MeMesh
 - Poor user experience during installation
 
 ## 🎯 Root Cause Analysis

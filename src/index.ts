@@ -103,7 +103,7 @@ async function startA2AServer(): Promise<void> {
   } catch (error) {
     logger.error('Failed to start A2A server:', error);
     // Don't fail startup if A2A server fails
-    // CCB can still function without A2A capabilities
+    // MeMesh can still function without A2A capabilities
   }
 }
 

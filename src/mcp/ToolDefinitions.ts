@@ -121,7 +121,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
 
   const buddyHelpTool: MCPToolDefinition = {
     name: 'buddy-help',
-    description: '📖 CCB: Get help for all buddy commands or a specific command.',
+    description: '📖 MeMesh: Get help for all buddy commands or a specific command.',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -204,7 +204,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
 
   const buddyRecordMistakeTool: MCPToolDefinition = {
     name: 'buddy-record-mistake',
-    description: `📝 CCB: Record AI mistakes for learning and prevention - enable systematic improvement from user feedback.
+    description: `📝 MeMesh: Record AI mistakes for learning and prevention - enable systematic improvement from user feedback.
 
 **When to Record:**
 • User explicitly corrects behavior or approach
@@ -360,7 +360,7 @@ Record:
 
   const createEntitiesTool: MCPToolDefinition = {
     name: 'create-entities',
-    description: `✨ CCB: Create entities in Knowledge Graph - record decisions, features, bug fixes, and lessons learned.
+    description: `✨ MeMesh: Create entities in Knowledge Graph - record decisions, features, bug fixes, and lessons learned.
 
 **What to Record:**
 • Technical decisions (e.g., "chose JWT over sessions for auth")
@@ -384,7 +384,7 @@ Record:
 • Domain: "domain:authentication", "domain:api", "domain:frontend"
 • Pattern: "pattern:repository", "pattern:singleton", "pattern:observer"
 • Use lowercase, hyphens for multi-word (e.g., "error-handling")
-• CCB automatically adds scope tags (scope:project:xxx)
+• MeMesh automatically adds scope tags (scope:project:xxx)
 
 **Example:**
 name: "JWT authentication implementation for API"
@@ -450,7 +450,7 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
 
   const a2aSendTaskTool: MCPToolDefinition = {
     name: 'a2a-send-task',
-    description: '🤝 CCB A2A: Send a task to another A2A agent for execution.',
+    description: '🤝 MeMesh A2A: Send a task to another A2A agent for execution.',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -490,7 +490,7 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
 
   const a2aGetTaskTool: MCPToolDefinition = {
     name: 'a2a-get-task',
-    description: '🔍 CCB A2A: Get task status and details from another A2A agent.',
+    description: '🔍 MeMesh A2A: Get task status and details from another A2A agent.',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -517,7 +517,7 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
 
   const a2aListTasksTool: MCPToolDefinition = {
     name: 'a2a-list-tasks',
-    description: '📋 CCB A2A: List own tasks (tasks assigned to this agent).',
+    description: '📋 MeMesh A2A: List own tasks (tasks assigned to this agent).',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -551,7 +551,7 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
 
   const a2aListAgentsTool: MCPToolDefinition = {
     name: 'a2a-list-agents',
-    description: '🤖 CCB A2A: List available A2A agents in the registry.',
+    description: '🤖 MeMesh A2A: List available A2A agents in the registry.',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -608,7 +608,7 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
 
   const buddySecretStoreTool: MCPToolDefinition = {
     name: 'buddy-secret-store',
-    description: '🔐 CCB: Store a secret (API key, token, password) securely with AES-256-GCM encryption. Never transmitted over network.',
+    description: '🔐 MeMesh: Store a secret (API key, token, password) securely with AES-256-GCM encryption. Never transmitted over network.',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -647,7 +647,7 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
 
   const buddySecretGetTool: MCPToolDefinition = {
     name: 'buddy-secret-get',
-    description: '🔓 CCB: Retrieve a stored secret by name from CCB secure storage.',
+    description: '🔓 MeMesh: Retrieve a stored secret by name from MeMesh secure storage.',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -669,7 +669,7 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
 
   const buddySecretListTool: MCPToolDefinition = {
     name: 'buddy-secret-list',
-    description: '📋 CCB: List all secrets stored in CCB (names and metadata only, NOT values).',
+    description: '📋 MeMesh: List all secrets stored in MeMesh (names and metadata only, NOT values).',
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -685,7 +685,7 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
 
   const buddySecretDeleteTool: MCPToolDefinition = {
     name: 'buddy-secret-delete',
-    description: '🗑️ CCB: Delete a stored secret from CCB secure storage.',
+    description: '🗑️ MeMesh: Delete a stored secret from MeMesh secure storage.',
     inputSchema: {
       type: 'object' as const,
       properties: {

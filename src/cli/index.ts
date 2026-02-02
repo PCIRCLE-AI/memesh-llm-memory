@@ -19,6 +19,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { runSetupWizard } from './setup-wizard.js';
+import { runTutorial } from './tutorial.js';
 import { logger } from '../utils/logger.js';
 
 // Read version from package.json
@@ -47,14 +48,18 @@ program
     }
   });
 
-// Tutorial command (placeholder for now)
+// Tutorial command
 program
   .command('tutorial')
   .description('Interactive 5-minute tutorial')
-  .action(() => {
-    console.log(chalk.yellow('\n🎓 Interactive Tutorial'));
-    console.log(chalk.dim('Coming soon! For now, see:'));
-    console.log(chalk.cyan('https://memesh.pcircle.ai/tutorial\n'));
+  .action(async () => {
+    try {
+      await runTutorial();
+    } catch (error) {
+      logger.error('Tutorial failed', { error });
+      console.error(chalk.red('Tutorial failed:'), error);
+      process.exit(1);
+    }
   });
 
 // Dashboard command (placeholder)

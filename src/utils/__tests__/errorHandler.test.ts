@@ -19,80 +19,102 @@ describe('errorHandler', () => {
   describe('getRecoverySuggestion', () => {
     it('should return git repository suggestion for git errors', () => {
       const error = new Error('fatal: not a git repository');
-      const suggestion = getRecoverySuggestion(error);
-      expect(suggestion).toContain('git init');
+      const result = getRecoverySuggestion(error);
+      expect(result).toBeDefined();
+      expect(result?.suggestion).toContain('git init');
+      expect(result?.category).toBe('GIT');
     });
 
     it('should return suggestion for nothing to commit', () => {
       const error = new Error('nothing to commit, working tree clean');
-      const suggestion = getRecoverySuggestion(error);
-      expect(suggestion).toContain('No changes detected');
+      const result = getRecoverySuggestion(error);
+      expect(result).toBeDefined();
+      expect(result?.suggestion).toContain('No changes detected');
     });
 
     it('should return suggestion for invalid reference', () => {
       const error = new Error('invalid reference: HEAD~100');
-      const suggestion = getRecoverySuggestion(error);
-      expect(suggestion).toContain('git log');
+      const result = getRecoverySuggestion(error);
+      expect(result).toBeDefined();
+      expect(result?.suggestion).toContain('git log');
     });
 
     it('should return suggestion for permission denied', () => {
       const error = new Error('EACCES: permission denied');
-      const suggestion = getRecoverySuggestion(error);
-      expect(suggestion).toContain('permissions');
+      const result = getRecoverySuggestion(error);
+      expect(result).toBeDefined();
+      expect(result?.suggestion).toContain('permissions');
+      expect(result?.category).toBe('FILESYSTEM');
     });
 
     it('should return suggestion for file not found', () => {
       const error = new Error('ENOENT: no such file or directory');
-      const suggestion = getRecoverySuggestion(error);
-      expect(suggestion).toContain('path');
+      const result = getRecoverySuggestion(error);
+      expect(result).toBeDefined();
+      expect(result?.suggestion).toContain('path');
+      expect(result?.category).toBe('FILESYSTEM');
     });
 
     it('should return suggestion for disk space errors', () => {
       const error = new Error('insufficient disk space');
-      const suggestion = getRecoverySuggestion(error);
-      expect(suggestion).toContain('disk space');
+      const result = getRecoverySuggestion(error);
+      expect(result).toBeDefined();
+      expect(result?.suggestion).toContain('disk space');
     });
 
     it('should return suggestion for connection refused', () => {
       const error = new Error('ECONNREFUSED: connection refused');
-      const suggestion = getRecoverySuggestion(error);
-      expect(suggestion).toContain('service');
+      const result = getRecoverySuggestion(error);
+      expect(result).toBeDefined();
+      expect(result?.suggestion).toContain('service');
+      expect(result?.category).toBe('NETWORK');
     });
 
     it('should return suggestion for timeout errors', () => {
       const error = new Error('ETIMEDOUT: connection timed out');
-      const suggestion = getRecoverySuggestion(error);
-      expect(suggestion).toContain('network');
+      const result = getRecoverySuggestion(error);
+      expect(result).toBeDefined();
+      expect(result?.suggestion).toContain('network');
+      expect(result?.category).toBe('NETWORK');
     });
 
     it('should return suggestion for DNS errors', () => {
       const error = new Error('ENOTFOUND: DNS lookup failed');
-      const suggestion = getRecoverySuggestion(error);
-      expect(suggestion).toContain('hostname');
+      const result = getRecoverySuggestion(error);
+      expect(result).toBeDefined();
+      expect(result?.suggestion).toContain('hostname');
+      expect(result?.category).toBe('NETWORK');
     });
 
     it('should return suggestion for validation errors', () => {
       const error = new Error('validation failed: invalid input');
-      const suggestion = getRecoverySuggestion(error);
-      expect(suggestion).toContain('input');
+      const result = getRecoverySuggestion(error);
+      expect(result).toBeDefined();
+      expect(result?.suggestion).toContain('input');
+      expect(result?.category).toBe('VALIDATION');
     });
 
     it('should return suggestion for unauthorized errors', () => {
       const error = new Error('unauthorized: authentication failed');
-      const suggestion = getRecoverySuggestion(error);
-      expect(suggestion).toContain('credentials');
+      const result = getRecoverySuggestion(error);
+      expect(result).toBeDefined();
+      expect(result?.suggestion).toContain('credentials');
+      expect(result?.category).toBe('AUTH');
     });
 
     it('should return suggestion for database locked errors', () => {
       const error = new Error('SQLITE_BUSY: database is locked');
-      const suggestion = getRecoverySuggestion(error);
-      expect(suggestion).toContain('database');
+      const result = getRecoverySuggestion(error);
+      expect(result).toBeDefined();
+      expect(result?.suggestion).toContain('database');
+      expect(result?.category).toBe('DATABASE');
     });
 
     it('should return suggestion for rate limit errors', () => {
       const error = new Error('rate limit exceeded');
-      const suggestion = getRecoverySuggestion(error);
-      expect(suggestion).toContain('rate limit');
+      const result = getRecoverySuggestion(error);
+      expect(result).toBeDefined();
+      expect(result?.suggestion).toContain('rate limit');
     });
 
     it('should return undefined for unknown errors', () => {
@@ -102,8 +124,9 @@ describe('errorHandler', () => {
     });
 
     it('should handle string errors', () => {
-      const suggestion = getRecoverySuggestion('not a git repository');
-      expect(suggestion).toContain('git init');
+      const result = getRecoverySuggestion('not a git repository');
+      expect(result).toBeDefined();
+      expect(result?.suggestion).toContain('git init');
     });
   });
 

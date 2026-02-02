@@ -83,14 +83,69 @@ function startMCPClientWatchdog(): void {
   process.stdin.once('data', stdinHandler);
 
   // Check after 3 seconds if any MCP client connected
-  setTimeout(() => {
+  setTimeout(async () => {
     if (!mcpClientConnected) {
-      // No MCP client connected - show success message
-      console.log(`
-✅ MeMesh installed successfully!
+      // No MCP client connected - show installation status and guidance
+      const chalk = await import('chalk');
+      const { default: boxen } = await import('boxen');
 
-📖 Configuration guide: https://github.com/PCIRCLE-AI/claude-code-buddy#installation
-`);
+      // Get package location
+      const { fileURLToPath } = await import('url');
+      const { dirname, join } = await import('path');
+      const __filename = fileURLToPath(import.meta.url);
+      const __dirname = dirname(__filename);
+      const packageRoot = join(__dirname, '../..');
+
+      const message = `
+${chalk.default.bold.yellow('⚠️  Manual Startup Detected')}
+
+${chalk.default.bold('Why am I seeing this?')}
+  You started the MCP server manually (e.g., ${chalk.default.cyan('npx @pcircle/memesh')}).
+  MeMesh is designed to be launched ${chalk.default.bold('automatically by MCP clients')}
+  (Claude Code, Cursor, etc.), not run directly by users.
+
+${chalk.default.bold('Installation Status:')}
+  ${chalk.default.green('✅')} Package installed successfully
+  ${chalk.default.green('✅')} Location: ${chalk.default.dim(packageRoot)}
+  ${chalk.default.yellow('⚠️')}  Not connected to any MCP client
+
+${chalk.default.bold('Next Steps:')}
+
+  ${chalk.default.yellow('1.')} ${chalk.default.bold('Configure your MCP client')}
+     Add MeMesh to Claude Code or Cursor settings
+
+  ${chalk.default.yellow('2.')} ${chalk.default.bold('Restart your IDE')}
+     Reload window to enable MCP integration
+
+  ${chalk.default.yellow('3.')} ${chalk.default.bold('Test the connection')}
+     Ask Claude: ${chalk.default.italic('"List available MCP tools"')}
+
+${chalk.default.bold('Configuration Example:')}
+
+  ${chalk.default.dim('Add to your MCP settings.json:')}
+
+  ${chalk.default.cyan('"mcpServers"')}: {
+    ${chalk.default.cyan('"memesh"')}: {
+      ${chalk.default.cyan('"command"')}: ${chalk.default.green('"npx"')},
+      ${chalk.default.cyan('"args"')}: [${chalk.default.green('"-y"')}, ${chalk.default.green('"@pcircle/memesh"')}]
+    }
+  }
+
+${chalk.default.bold('For Developers:')}
+  Testing MCP protocol? Use ${chalk.default.cyan('DISABLE_MCP_WATCHDOG=1')} to disable this message.
+
+${chalk.default.bold('Documentation:')}
+  ${chalk.default.underline('https://github.com/PCIRCLE-AI/claude-code-buddy#installation')}
+`;
+
+      console.log(
+        boxen(message, {
+          padding: 1,
+          margin: 1,
+          borderStyle: 'round',
+          borderColor: 'yellow',
+        })
+      );
       process.exit(0);
     }
   }, 3000); // 3 second timeout

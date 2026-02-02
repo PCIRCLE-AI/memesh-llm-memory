@@ -54,12 +54,119 @@ export class ResponseFormatter {
   // Configuration constants
   private readonly MAX_PROMPT_LENGTH = 300;
   private readonly MAX_STACK_LENGTH = 500;
+  private readonly LARGE_RESULT_THRESHOLD = 500; // characters
+
   /**
    * Format complete agent response
    * @param response Agent execution result
    * @returns Formatted string for Terminal output
    */
   format(response: AgentResponse): string {
+    // Detect response complexity
+    const complexity = this.detectComplexity(response);
+
+    // Route to appropriate formatter based on complexity
+    switch (complexity) {
+      case 'simple':
+        return this.formatSimple(response);
+      case 'medium':
+        return this.formatMedium(response);
+      case 'complex':
+        return this.formatComplex(response);
+      default:
+        return this.formatComplex(response); // Fallback to full format
+    }
+  }
+
+  /**
+   * Detect response complexity
+   * @param response Agent execution result
+   * @returns Complexity level: 'simple' | 'medium' | 'complex'
+   */
+  private detectComplexity(response: AgentResponse): 'simple' | 'medium' | 'complex' {
+    // Complex if:
+    // - Has error
+    // - Has enhanced prompt (Prompt Enhancement Mode)
+    // - Has large results (>500 chars)
+    if (response.error) {
+      return 'complex';
+    }
+
+    if (response.enhancedPrompt) {
+      return 'complex';
+    }
+
+    if (response.results) {
+      const resultString = this.resultsToString(response.results);
+      if (resultString.length > this.LARGE_RESULT_THRESHOLD) {
+        return 'complex';
+      }
+    }
+
+    // Medium if:
+    // - Has structured object results
+    if (response.results && typeof response.results === 'object' && !Array.isArray(response.results)) {
+      return 'medium';
+    }
+
+    // Simple otherwise
+    return 'simple';
+  }
+
+  /**
+   * Format simple response (minimal formatting)
+   * @param response Agent execution result
+   * @returns Single-line or minimal formatted output
+   */
+  private formatSimple(response: AgentResponse): string {
+    const statusIcon = this.getStatusIcon(response.status);
+    return `${statusIcon} ${response.taskDescription}`;
+  }
+
+  /**
+   * Format medium complexity response
+   * @param response Agent execution result
+   * @returns Multi-line format without heavy borders
+   */
+  private formatMedium(response: AgentResponse): string {
+    const sections: string[] = [];
+
+    // Icon + bold task description
+    const statusIcon = this.getStatusIcon(response.status);
+    sections.push(chalk.bold(`${statusIcon} ${response.taskDescription}`));
+
+    // Results (no box)
+    if (response.results && response.status === 'success') {
+      try {
+        sections.push(''); // Empty line for separation
+        sections.push(this.formatResults(response.results));
+      } catch (error) {
+        sections.push(chalk.green('Results: [Error formatting results]'));
+      }
+    }
+
+    // Metadata (if available)
+    if (response.metadata) {
+      try {
+        const metadataStr = this.formatMetadata(response.metadata);
+        if (metadataStr) {
+          sections.push(''); // Empty line for separation
+          sections.push(metadataStr);
+        }
+      } catch (error) {
+        // Silently skip metadata on error (non-critical)
+      }
+    }
+
+    return sections.join('\n');
+  }
+
+  /**
+   * Format complex response (full boxed format)
+   * @param response Agent execution result
+   * @returns Full formatted output with boxes and borders
+   */
+  private formatComplex(response: AgentResponse): string {
     const sections: string[] = [];
 
     // Header - Agent Type and Status
@@ -112,14 +219,43 @@ export class ResponseFormatter {
       }
     }
 
-    // Attribution Footer
-    try {
-      sections.push(this.formatAttribution());
-    } catch (error) {
-      // Silently skip attribution on error (non-critical)
+    // Attribution Footer (conditional)
+    if (this.shouldShowAttribution(response)) {
+      try {
+        sections.push(this.formatAttribution());
+      } catch (error) {
+        // Silently skip attribution on error (non-critical)
+      }
     }
 
     return sections.join('\n\n');
+  }
+
+  /**
+   * Convert results to string for size checking
+   */
+  private resultsToString(results: unknown): string {
+    if (typeof results === 'string') {
+      return results;
+    } else if (Array.isArray(results) || typeof results === 'object') {
+      return JSON.stringify(results);
+    } else {
+      return String(results);
+    }
+  }
+
+  /**
+   * Determine if attribution footer should be shown
+   */
+  private shouldShowAttribution(response: AgentResponse): boolean {
+    // Always show if SHOW_ATTRIBUTION=always
+    if (process.env.SHOW_ATTRIBUTION === 'always') {
+      return true;
+    }
+
+    // Show for complex responses
+    const complexity = this.detectComplexity(response);
+    return complexity === 'complex';
   }
 
   /**
@@ -373,7 +509,11 @@ export class ResponseFormatter {
       return text;
     }
 
-    return chars.slice(0, maxLength).join('') + chalk.gray('... (truncated)');
+    const truncated = chars.length - maxLength;
+    const truncatedChars = this.formatNumber(truncated);
+
+    return chars.slice(0, maxLength).join('') +
+      chalk.yellow(`\n... (truncated ${truncatedChars} characters, use --full to see complete output)`);
   }
 
   /**

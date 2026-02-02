@@ -10,6 +10,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { SkillManager } from '../skills/SkillManager.js';
 import { logger } from '../utils/logger.js';
+import { getDataDirectory } from '../utils/PathResolver.js';
 
 /**
  * Uninstall options
@@ -43,8 +44,8 @@ export class UninstallManager {
   constructor(skillManager?: SkillManager) {
     this.skillManager = skillManager || new SkillManager();
 
-    // Default directories
-    this.smartAgentsDir = path.join(os.homedir(), '.claude-code-buddy');
+    // Use PathResolver for data directory
+    this.smartAgentsDir = getDataDirectory();
     this.dataDir = path.join(this.smartAgentsDir, 'data');
   }
 
@@ -128,10 +129,10 @@ export class UninstallManager {
             } else {
               // Remove entire directory including data
               await fs.rm(this.smartAgentsDir, { recursive: true, force: true });
-              report.removed.push(`${actionVerb} configuration directory (~/.claude-code-buddy/)`);
+              report.removed.push(`${actionVerb} configuration directory (${this.smartAgentsDir})`);
             }
           } else {
-            report.removed.push(`${actionVerb} configuration directory (~/.claude-code-buddy/)`);
+            report.removed.push(`${actionVerb} configuration directory (${this.smartAgentsDir})`);
           }
         } else {
           report.removed.push('Configuration directory not found (already clean)');
@@ -141,7 +142,7 @@ export class UninstallManager {
         report.errors.push(`Configuration: ${errorMessage}`);
       }
     } else {
-      report.kept.push(`${keepVerb} configuration files (~/.claude-code-buddy/)`);
+      report.kept.push(`${keepVerb} configuration files (${this.smartAgentsDir})`);
     }
 
     // 3. Clean data files (optional)

@@ -14,6 +14,7 @@ import type {
 } from './types';
 import type { SQLParams } from '../evolution/storage/types.js';
 import { NotFoundError } from '../errors/index.js';
+import { getDataPath } from '../utils/PathResolver.js';
 
 export interface TelemetryStoreOptions {
   storagePath?: string;
@@ -28,7 +29,7 @@ export class TelemetryStore {
     const isTestEnv = process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST);
     const defaultPath = isTestEnv
       ? path.join(os.tmpdir(), 'claude-code-buddy', 'telemetry')
-      : path.join(os.homedir(), '.claude-code-buddy', 'telemetry');
+      : getDataPath('telemetry');
     this.storagePath = options.storagePath || defaultPath;
   }
 

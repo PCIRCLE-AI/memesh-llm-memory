@@ -9,6 +9,7 @@ This directory contains all user-facing documentation and website pages.
 ## 📚 Documentation Structure
 
 ### 🚀 Getting Started
+- **[Getting Started Guide](./GETTING_STARTED.md)** - Complete 2-minute guide for new users ⭐ **START HERE**
 - **[Quick Start Card](./QUICK_START.md)** - 30-second setup
 - **[Quick Start Guide](./guides/QUICK_START.md)** - 15-minute walkthrough
 - **[Setup Guide](./guides/SETUP.md)** - Full installation and configuration

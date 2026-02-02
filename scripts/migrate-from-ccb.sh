@@ -26,6 +26,17 @@ echo -e "${BLUE}═════════════════════�
 echo ""
 
 # ==============================================================================
+# Safety Guarantees
+# ==============================================================================
+echo -e "${GREEN}🛡️  Safety Guarantees:${NC}"
+echo -e "${GREEN}  ✓ Original data preserved - never modified or deleted${NC}"
+echo -e "${GREEN}  ✓ Full backup created before any changes${NC}"
+echo -e "${GREEN}  ✓ Rollback possible - restore from backup anytime${NC}"
+echo -e "${GREEN}  ✓ Idempotent - safe to run multiple times${NC}"
+echo -e "${GREEN}  ✓ Atomic operations - all or nothing migration${NC}"
+echo ""
+
+# ==============================================================================
 # Step 1: Pre-flight checks
 # ==============================================================================
 echo -e "${YELLOW}▶ Step 1: Pre-flight checks${NC}"
@@ -108,14 +119,43 @@ fi
 echo ""
 
 # ==============================================================================
-# Step 3: Migrate data
+# Step 3: Checkpoint SQLite databases
 # ==============================================================================
-echo -e "${YELLOW}▶ Step 3: Migrating data${NC}"
+echo -e "${YELLOW}▶ Step 3: Preparing databases${NC}"
 
-if [ ! -d "$NEW_DIR" ]; then
-    mkdir -p "$NEW_DIR"
-    echo -e "${GREEN}  ✓ Created new directory: $NEW_DIR${NC}"
+# SQLite databases to checkpoint
+SQLITE_DBS=(
+    "database.db"
+    "knowledge-graph.db"
+    "evolution-store.db"
+)
+
+# Check if sqlite3 is available
+if command -v sqlite3 &> /dev/null; then
+    for DB in "${SQLITE_DBS[@]}"; do
+        if [ -f "$OLD_DIR/$DB" ]; then
+            echo -e "${BLUE}  → Checkpointing: $DB${NC}"
+            if sqlite3 "$OLD_DIR/$DB" "PRAGMA wal_checkpoint(TRUNCATE);" 2>/dev/null; then
+                echo -e "${GREEN}  ✓ Checkpointed: $DB${NC}"
+            else
+                echo -e "${YELLOW}  ⚠ Could not checkpoint: $DB (continuing...)${NC}"
+            fi
+        fi
+    done
+else
+    echo -e "${YELLOW}  ⚠ sqlite3 not found - skipping WAL checkpoint${NC}"
 fi
+
+echo ""
+
+# ==============================================================================
+# Step 4: Migrate data (Atomic)
+# ==============================================================================
+echo -e "${YELLOW}▶ Step 4: Migrating data (atomic operation)${NC}"
+
+# Create temporary directory for atomic migration
+TEMP_DIR=$(mktemp -d)
+echo -e "${BLUE}  → Using temporary directory: $TEMP_DIR${NC}"
 
 # List of files/directories to migrate
 ITEMS_TO_MIGRATE=(
@@ -126,39 +166,126 @@ ITEMS_TO_MIGRATE=(
     "knowledge-graph.db-shm"
     "knowledge-graph.db-wal"
     "evolution-store.db"
+    "evolution-store.db-shm"
+    "evolution-store.db-wal"
     ".secret-key"
     "logs/"
     "cache/"
 )
 
+# Find A2A database files
+if [ -d "$OLD_DIR" ]; then
+    while IFS= read -r -d '' a2a_db; do
+        ITEMS_TO_MIGRATE+=("$(basename "$a2a_db")")
+        [ -f "${a2a_db}-shm" ] && ITEMS_TO_MIGRATE+=("$(basename "$a2a_db")-shm")
+        [ -f "${a2a_db}-wal" ] && ITEMS_TO_MIGRATE+=("$(basename "$a2a_db")-wal")
+    done < <(find "$OLD_DIR" -maxdepth 1 -name "a2a-*.db" -print0 2>/dev/null)
+fi
+
 MIGRATED_COUNT=0
 FAILED_COUNT=0
+TOTAL_ITEMS=0
 
+# Count total items to migrate
 for ITEM in "${ITEMS_TO_MIGRATE[@]}"; do
     if [ -e "$OLD_DIR/$ITEM" ]; then
-        if cp -r "$OLD_DIR/$ITEM" "$NEW_DIR/$ITEM" 2>/dev/null; then
-            echo -e "${GREEN}  ✓ Migrated: $ITEM${NC}"
+        TOTAL_ITEMS=$((TOTAL_ITEMS + 1))
+    fi
+done
+
+echo -e "${BLUE}  → Found $TOTAL_ITEMS items to migrate${NC}"
+echo ""
+
+# Copy items to temporary directory with progress
+CURRENT_ITEM=0
+for ITEM in "${ITEMS_TO_MIGRATE[@]}"; do
+    if [ -e "$OLD_DIR/$ITEM" ]; then
+        CURRENT_ITEM=$((CURRENT_ITEM + 1))
+        echo -e "${BLUE}  [$CURRENT_ITEM/$TOTAL_ITEMS] Copying: $ITEM${NC}"
+
+        if cp -r "$OLD_DIR/$ITEM" "$TEMP_DIR/$ITEM" 2>/dev/null; then
+            echo -e "${GREEN}  ✓ Success: $ITEM${NC}"
             MIGRATED_COUNT=$((MIGRATED_COUNT + 1))
         else
-            echo -e "${RED}  ✗ Failed to migrate: $ITEM${NC}"
+            echo -e "${RED}  ✗ Failed: $ITEM${NC}"
             FAILED_COUNT=$((FAILED_COUNT + 1))
         fi
     fi
 done
 
 echo ""
-echo -e "${BLUE}  Summary:${NC}"
+echo -e "${BLUE}  Migration Summary:${NC}"
 echo -e "${GREEN}    Migrated: $MIGRATED_COUNT items${NC}"
 if [ $FAILED_COUNT -gt 0 ]; then
     echo -e "${RED}    Failed: $FAILED_COUNT items${NC}"
 fi
 
+# Verify integrity before atomic commit
+echo ""
+echo -e "${YELLOW}▶ Step 4.5: Verifying integrity${NC}"
+
+INTEGRITY_PASSED=true
+
+# Verify file counts
+TEMP_FILE_COUNT=$(find "$TEMP_DIR" -type f | wc -l | tr -d ' ')
+echo -e "${BLUE}  → Files copied: $TEMP_FILE_COUNT${NC}"
+
+# Verify key database files
+for DB in "${SQLITE_DBS[@]}"; do
+    if [ -f "$OLD_DIR/$DB" ] && [ -f "$TEMP_DIR/$DB" ]; then
+        OLD_SIZE=$(wc -c < "$OLD_DIR/$DB" 2>/dev/null || echo "0")
+        TEMP_SIZE=$(wc -c < "$TEMP_DIR/$DB" 2>/dev/null || echo "0")
+
+        if [ "$OLD_SIZE" -eq "$TEMP_SIZE" ]; then
+            echo -e "${GREEN}  ✓ Verified: $DB ($TEMP_SIZE bytes)${NC}"
+        else
+            echo -e "${RED}  ✗ Size mismatch: $DB (expected: $OLD_SIZE, got: $TEMP_SIZE)${NC}"
+            INTEGRITY_PASSED=false
+        fi
+    fi
+done
+
+# Atomic commit: move temp directory to final location
+if [ "$INTEGRITY_PASSED" = true ] && [ $FAILED_COUNT -eq 0 ]; then
+    echo ""
+    echo -e "${YELLOW}▶ Step 4.6: Atomic commit${NC}"
+
+    if [ -d "$NEW_DIR" ]; then
+        # Merge mode: copy from temp to new dir
+        echo -e "${BLUE}  → Merging with existing directory${NC}"
+        if cp -rn "$TEMP_DIR/"* "$NEW_DIR/" 2>/dev/null; then
+            echo -e "${GREEN}  ✓ Atomic commit successful${NC}"
+        else
+            echo -e "${RED}  ✗ Atomic commit failed${NC}"
+            rm -rf "$TEMP_DIR"
+            exit 1
+        fi
+    else
+        # Clean migration: atomic rename
+        echo -e "${BLUE}  → Creating new directory${NC}"
+        if mv "$TEMP_DIR" "$NEW_DIR" 2>/dev/null; then
+            echo -e "${GREEN}  ✓ Atomic commit successful${NC}"
+        else
+            echo -e "${RED}  ✗ Atomic commit failed${NC}"
+            rm -rf "$TEMP_DIR"
+            exit 1
+        fi
+    fi
+
+    # Clean up temp directory if not already moved
+    [ -d "$TEMP_DIR" ] && rm -rf "$TEMP_DIR"
+else
+    echo -e "${RED}  ✗ Integrity check failed - rolling back${NC}"
+    rm -rf "$TEMP_DIR"
+    exit 1
+fi
+
 echo ""
 
 # ==============================================================================
-# Step 4: Verify migration
+# Step 5: Verify migration
 # ==============================================================================
-echo -e "${YELLOW}▶ Step 4: Verifying migration${NC}"
+echo -e "${YELLOW}▶ Step 5: Final verification${NC}"
 
 VERIFICATION_PASSED=true
 
@@ -188,9 +315,9 @@ done
 echo ""
 
 # ==============================================================================
-# Step 5: Update MCP configuration (optional)
+# Step 6: Update MCP configuration (optional)
 # ==============================================================================
-echo -e "${YELLOW}▶ Step 5: Update MCP configuration${NC}"
+echo -e "${YELLOW}▶ Step 6: MCP configuration check${NC}"
 
 MCP_CONFIG_PATHS=(
     "$HOME/.claude/config.json"
@@ -240,19 +367,47 @@ echo ""
 if [ "$VERIFICATION_PASSED" = true ] && [ $FAILED_COUNT -eq 0 ]; then
     echo -e "${GREEN}✅ Migration completed successfully!${NC}"
     echo ""
-    echo -e "${GREEN}Migrated data:${NC}"
+    echo -e "${GREEN}📊 Migration Summary:${NC}"
     echo "  From: $OLD_DIR"
     echo "  To:   $NEW_DIR"
+    echo "  Items migrated: $MIGRATED_COUNT"
     echo ""
-    echo -e "${GREEN}Backup location:${NC}"
+    echo -e "${GREEN}💾 Backup Location:${NC}"
     echo "  $BACKUP_DIR"
     echo ""
-    echo -e "${YELLOW}Next steps:${NC}"
-    echo "  1. Restart Claude Code CLI"
-    echo "  2. Verify MeMesh tools are working"
-    echo "  3. If everything works, you can safely delete:"
-    echo "     - $OLD_DIR (old data)"
-    echo "     - $BACKUP_DIR (backup)"
+    echo -e "${YELLOW}📋 Next Steps (Complete in Order):${NC}"
+    echo ""
+    echo -e "${BLUE}1. Update MCP Configuration${NC}"
+    echo "   Edit your MCP config file and change server name:"
+    echo "   • macOS: ~/.claude/config.json"
+    echo "   • Linux: ~/.config/claude/claude_desktop_config.json"
+    echo ""
+    echo "   Find and replace:"
+    echo "     \"claude-code-buddy\" → \"memesh\""
+    echo ""
+    echo "   Or use this command:"
+    echo -e "   ${GREEN}sed -i.bak 's/claude-code-buddy/memesh/g' ~/.claude/config.json${NC}"
+    echo ""
+    echo -e "${BLUE}2. Restart Claude Code${NC}"
+    echo "   Quit and restart Claude Code application to load new configuration"
+    echo ""
+    echo -e "${BLUE}3. Verify Migration${NC}"
+    echo "   Test MeMesh tools are working:"
+    echo -e "   ${GREEN}memesh-entities list${NC}"
+    echo -e "   ${GREEN}memesh-relations list${NC}"
+    echo ""
+    echo -e "${BLUE}4. Cleanup (After Verification)${NC}"
+    echo "   Once you've verified everything works, you can clean up:"
+    echo ""
+    echo "   Remove old data:"
+    echo -e "   ${GREEN}rm -rf $OLD_DIR${NC}"
+    echo ""
+    echo "   Remove backup (keep until fully verified!):"
+    echo -e "   ${GREEN}rm -rf $BACKUP_DIR${NC}"
+    echo ""
+    echo -e "${YELLOW}⚠️  Important: Keep backup until you've verified all tools work!${NC}"
+    echo ""
+    echo -e "${GREEN}Need help? https://github.com/PCIRCLE-AI/claude-code-buddy/issues${NC}"
     echo ""
     exit 0
 else

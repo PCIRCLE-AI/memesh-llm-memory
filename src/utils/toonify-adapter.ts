@@ -20,6 +20,7 @@ import { LRUCache } from './lru-cache.js';
 import { logger } from './logger.js';
 import { join } from 'path';
 import { getHomeDir } from './paths.js';
+import { getDataPath } from './PathResolver.js';
 
 export interface ToonifyConfig {
   enabled: boolean;
@@ -79,8 +80,7 @@ export class ToonifyAdapter {
     };
 
     // Initialize LRU cache with persistence
-    const homeDir = getHomeDir();
-    const cachePath = join(homeDir, '.claude-code-buddy', 'cache', 'toonify-cache.json');
+    const cachePath = getDataPath(join('cache', 'toonify-cache.json'));
 
     this.cache = new LRUCache<OptimizationResult>({
       maxSize: 1000,

@@ -5,6 +5,7 @@ import { randomBytes } from 'crypto';
 import type { SessionMetrics, AttributionMessage } from './types.js';
 import { resolveUserPath } from '../utils/paths.js';
 import { logger } from '../utils/logger.js';
+import { getDataPath } from '../utils/PathResolver.js';
 
 /**
  * Stores and manages productivity metrics
@@ -13,9 +14,9 @@ export class MetricsStore {
   private storePath: string;
   private currentSession: SessionMetrics;
 
-  constructor(storePath: string = '~/.claude-code-buddy/metrics.json') {
-    // Expand home directory and normalize to an absolute path
-    this.storePath = resolveUserPath(storePath);
+  constructor(storePath?: string) {
+    // Use PathResolver for default path, or resolve user-provided path
+    this.storePath = storePath ? resolveUserPath(storePath) : getDataPath('metrics.json');
     this.currentSession = this.createNewSession();
   }
 

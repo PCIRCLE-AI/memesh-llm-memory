@@ -2,6 +2,8 @@
 
 # 🧠 MeMesh
 
+> **Note**: Formerly known as "Claude Code Buddy (CCB)". Renamed to MeMesh to avoid potential trademark issues.
+
 ### **The Only MCP Server That Remembers**
 
 **Make Claude Code remember everything. Build faster. Vibe harder.**

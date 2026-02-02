@@ -2,6 +2,8 @@
 
 # 🧠 MeMesh
 
+> **說明**：原名為「Claude Code Buddy (CCB)」，為避免商標侵權問題已更名為 MeMesh。
+
 ### **唯一會記住一切的 MCP Server**
 
 **讓 Claude Code 記住所有事情。開發更快。Vibe 更爽。**

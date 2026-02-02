@@ -572,6 +572,41 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
     },
   };
 
+  const a2aReportResultTool: MCPToolDefinition = {
+    name: 'a2a-report-result',
+    description: '✅ MeMesh A2A: Report task execution result back to MeMesh Server (used by MCP Clients).',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        taskId: {
+          type: 'string',
+          description: 'Task ID to report result for',
+        },
+        result: {
+          type: 'string',
+          description: 'Execution output or result',
+        },
+        success: {
+          type: 'boolean',
+          description: 'Whether execution succeeded (true) or failed (false)',
+        },
+        error: {
+          type: 'string',
+          description: 'Error message if success=false (optional)',
+        },
+      },
+      required: ['taskId', 'result', 'success'],
+    },
+    outputSchema: OutputSchemas.a2aReportResult,
+    annotations: {
+      title: 'A2A Result Reporter',
+      readOnlyHint: false,      // Updates task status
+      destructiveHint: false,
+      idempotentHint: true,     // Reporting same result multiple times is safe
+      openWorldHint: false,     // Requires specific task ID
+    },
+  };
+
   // ========================================
   // Test Generation Tools
   // ========================================
@@ -734,6 +769,7 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
     a2aGetTaskTool,
     a2aListTasksTool,
     a2aListAgentsTool,
+    a2aReportResultTool,
 
     // Hook Integration
     hookToolUseTool,

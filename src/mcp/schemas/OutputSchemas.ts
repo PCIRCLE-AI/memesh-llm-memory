@@ -420,6 +420,22 @@ export const OutputSchemas = {
   },
 
   /**
+   * a2a-report-result output structure
+   */
+  a2aReportResult: {
+    type: 'object' as const,
+    properties: {
+      success: { type: 'boolean' },
+      taskId: { type: 'string' },
+      status: {
+        type: 'string',
+        enum: ['COMPLETED', 'FAILED'],
+      },
+    },
+    required: ['success', 'taskId', 'status'],
+  },
+
+  /**
    * generate-tests output structure
    */
   generateTests: {

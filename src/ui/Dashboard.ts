@@ -1,5 +1,5 @@
 /**
- * Dashboard - Terminal UI Dashboard for Claude Code Buddy
+ * Dashboard - Terminal UI Dashboard for MeMesh
  *
  * Central dashboard that coordinates UI updates, tracks active agents,
  * monitors resources, and displays session metrics in real-time.

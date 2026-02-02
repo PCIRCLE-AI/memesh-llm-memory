@@ -1,4 +1,4 @@
-# Claude Code Buddy Quick Reference
+# MeMesh Quick Reference
 
 **Version: 2.6.0
 

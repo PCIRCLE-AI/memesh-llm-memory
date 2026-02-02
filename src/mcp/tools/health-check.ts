@@ -1,7 +1,7 @@
 /**
  * MCP Tool: get-session-health
  *
- * Provides system health status for Claude Code Buddy.
+ * Provides system health status for MeMesh.
  * Checks database, filesystem, and memory.
  */
 

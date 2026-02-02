@@ -1,4 +1,4 @@
-# Claude Code Buddy Best Practices
+# MeMesh Best Practices
 
 **Version: 2.6.0
 

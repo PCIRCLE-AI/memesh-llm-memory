@@ -61,7 +61,7 @@ export function setupResourceHandlers(server: Server): void {
     const staticResources = [
       {
         uri: 'claude-code-buddy://usage-guide',
-        name: 'Claude Code Buddy Complete Usage Guide',
+        name: 'MeMesh Complete Usage Guide',
         mimeType: 'text/markdown',
         description: 'Comprehensive guide to core capabilities with examples and best practices',
       },

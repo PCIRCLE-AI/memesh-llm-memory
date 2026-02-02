@@ -87,7 +87,7 @@ function startMCPClientWatchdog(): void {
     if (!mcpClientConnected) {
       // No MCP client connected - show success message
       console.log(`
-✅ Claude Code Buddy installed successfully!
+✅ MeMesh installed successfully!
 
 📖 Configuration guide: https://github.com/PCIRCLE-AI/claude-code-buddy#installation
 `);
@@ -111,14 +111,14 @@ async function startA2AServer(): Promise<any> {
     // Create agent card
     const agentCard = {
       id: agentId,
-      name: 'Claude Code Buddy (MCP)',
+      name: 'MeMesh (MCP)',
       description: 'AI development assistant via MCP protocol',
       version: '2.5.3',
       capabilities: {
         skills: [
           {
             name: 'buddy-do',
-            description: 'Execute tasks with Claude Code Buddy',
+            description: 'Execute tasks with MeMesh',
           },
           {
             name: 'buddy-remember',

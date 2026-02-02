@@ -1,7 +1,7 @@
 /**
  * Uninstall Manager
  *
- * Handles clean uninstallation of Claude Code Buddy with user control over data retention.
+ * Handles clean uninstallation of MeMesh with user control over data retention.
  * Provides detailed reporting of removed, kept, and failed items.
  */
 
@@ -33,7 +33,7 @@ export interface UninstallReport {
 /**
  * Uninstall Manager Class
  *
- * Manages the uninstallation process for Claude Code Buddy.
+ * Manages the uninstallation process for MeMesh.
  */
 export class UninstallManager {
   private skillManager: SkillManager;
@@ -65,7 +65,7 @@ export class UninstallManager {
     const actionVerb = options.dryRun ? 'Would remove' : 'Removed';
     const keepVerb = options.dryRun ? 'Would keep' : 'Kept';
 
-    // 1. Remove Claude Code Buddy skills (sa:* prefix)
+    // 1. Remove MeMesh skills (sa:* prefix)
     try {
       const skills = await this.skillManager.listSmartAgentsSkills();
 
@@ -76,10 +76,10 @@ export class UninstallManager {
           }
         }
         report.removed.push(
-          `${actionVerb} ${skills.length} Claude Code Buddy skill${skills.length === 1 ? '' : 's'}: ${skills.join(', ')}`
+          `${actionVerb} ${skills.length} MeMesh skill${skills.length === 1 ? '' : 's'}: ${skills.join(', ')}`
         );
       } else {
-        report.removed.push('No Claude Code Buddy skills found');
+        report.removed.push('No MeMesh skills found');
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -209,8 +209,8 @@ export class UninstallManager {
     const boxTop = '╔' + '═'.repeat(62) + '╗';
     const boxBottom = '╚' + '═'.repeat(62) + '╝';
     const title = report.dryRun
-      ? '  🔍  Claude Code Buddy Uninstallation Preview (Dry Run)'
-      : '  🗑️  Claude Code Buddy Uninstallation Report';
+      ? '  🔍  MeMesh Uninstallation Preview (Dry Run)'
+      : '  🗑️  MeMesh Uninstallation Report';
 
     let output = boxTop + '\n';
     output += '║' + title.padEnd(62) + '║\n';

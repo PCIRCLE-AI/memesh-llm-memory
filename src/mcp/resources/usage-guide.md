@@ -1,17 +1,17 @@
-# Claude Code Buddy Complete Usage Guide
+# MeMesh Complete Usage Guide
 
 **Version: 2.6.0
 **Last Updated**: 2025-12-29
 
 ## 📖 Overview
 
-Claude Code Buddy is a capability-routing system for Claude Code. It focuses on:
+MeMesh is a capability-routing system for Claude Code. It focuses on:
 - Smart task routing
 - Project memory
 - Workflow guidance
 - Structured planning
 
-You describe the outcome, and CCB selects the best internal capability automatically.
+You describe the outcome, and MeMesh selects the best internal capability automatically.
 
 ## 🚀 Quick Start
 
@@ -57,7 +57,7 @@ Use natural language and include intent, constraints, and file names when possib
 
 ## 🔄 Workflow Guidance
 
-CCB recognizes five phases:
+MeMesh recognizes five phases:
 - idle
 - code-written
 - test-complete

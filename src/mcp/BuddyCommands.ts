@@ -1,5 +1,5 @@
 /**
- * BuddyCommands - User-friendly command layer for Claude Code Buddy
+ * BuddyCommands - User-friendly command layer for MeMesh
  *
  * Provides natural language command interface:
  * - buddy do <task>         - Execute tasks with smart routing
@@ -147,7 +147,7 @@ Examples:
    */
   private static getGeneralHelp(): string {
     return `
-Claude Code Buddy (CCB) v2.2 - Your friendly AI companion
+MeMesh (CCB) v2.2 - Your friendly AI companion
 
 Commands:
   buddy do <task>        Execute tasks with smart routing

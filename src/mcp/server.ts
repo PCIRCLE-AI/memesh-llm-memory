@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Claude Code Buddy MCP Server
+ * MeMesh MCP Server
  *
  * Features:
  * - Exposes 7 focused MCP tools
@@ -33,9 +33,9 @@ import { logError } from '../utils/errorHandler.js';
 import { generateRequestId } from '../utils/requestId.js'; // ✅ FIX HIGH-10: Request ID generation
 
 /**
- * Claude Code Buddy MCP Server
+ * MeMesh MCP Server
  *
- * Main server class that integrates Model Context Protocol (MCP) with the Claude Code Buddy
+ * Main server class that integrates Model Context Protocol (MCP) with the MeMesh
  * multi-agent system. Provides intelligent task routing, agent orchestration, and enhanced
  * prompt generation for software development workflows.
  *

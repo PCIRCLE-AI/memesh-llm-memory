@@ -1,6 +1,6 @@
-# Claude Code Buddy (CCB) - Complete Tool Guide
+# MeMesh - Complete Tool Guide
 
-**For LLMs**: This guide helps you actively use CCB's 17 tools. Use tools proactively based on triggers, not just when explicitly requested.
+**For LLMs**: This guide helps you actively use MeMesh's 17 tools. Use tools proactively based on triggers, not just when explicitly requested.
 
 ## Quick Reference: When to Use Each Tool
 
@@ -379,4 +379,4 @@ a2a-send-task({
 4. Store knowledge after work (future you will thank you)
 5. Learn from mistakes (use buddy-record-mistake)
 
-**Remember**: CCB tools are meant to be ACTIVELY used, not passively available. When you see trigger keywords or situations, use the appropriate tool to provide better service to users.
+**Remember**: MeMesh tools are meant to be ACTIVELY used, not passively available. When you see trigger keywords or situations, use the appropriate tool to provide better service to users.

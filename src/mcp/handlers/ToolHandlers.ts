@@ -187,7 +187,7 @@ export class ToolHandlers {
       switch (filter) {
         case 'claude-code-buddy':
           skills = await this.skillManager.listSmartAgentsSkills();
-          title = '🎓 Claude Code Buddy Skills (sa: prefix)';
+          title = '🎓 MeMesh Skills (sa: prefix)';
           break;
         case 'user':
           skills = await this.skillManager.listUserSkills();
@@ -208,7 +208,7 @@ export class ToolHandlers {
       if (skills.length === 0) {
         output += '  No skills found.\n\n';
         if (filter === 'claude-code-buddy') {
-          output += '💡 Claude Code Buddy can generate skills automatically.\n';
+          output += '💡 MeMesh can generate skills automatically.\n';
           output += '   Skills will appear here once generated.\n';
         }
       } else {
@@ -220,7 +220,7 @@ export class ToolHandlers {
 
         if (filter === 'all') {
           if (saSkills.length > 0) {
-            output += '🎓 Claude Code Buddy Skills:\n';
+            output += '🎓 MeMesh Skills:\n';
             output += '─'.repeat(60) + '\n';
             saSkills.forEach(skill => {
               output += `  • ${skill}\n`;
@@ -250,7 +250,7 @@ export class ToolHandlers {
       output += '  • buddy_skills --filter claude-code-buddy - List only sa: skills\n';
       output += '  • buddy_skills --filter user - List only user skills\n';
       output += '\n📚 Skill Naming Convention:\n';
-      output += '  • sa:<name> - Claude Code Buddy generated skills\n';
+      output += '  • sa:<name> - MeMesh generated skills\n';
       output += '  • <name> - User-installed skills\n';
 
       return {
@@ -286,7 +286,7 @@ export class ToolHandlers {
   }
 
   /**
-   * Handle buddy_uninstall tool - Uninstall Claude Code Buddy
+   * Handle buddy_uninstall tool - Uninstall MeMesh
    */
   async handleUninstall(args: unknown): Promise<CallToolResult> {
     try {
@@ -326,7 +326,7 @@ export class ToolHandlers {
       logError(error, {
         component: 'ToolHandlers',
         method: 'handleUninstall',
-        operation: 'uninstalling Claude Code Buddy',
+        operation: 'uninstalling MeMesh',
         data: { options: args },
       });
 

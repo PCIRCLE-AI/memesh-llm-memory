@@ -1,5 +1,5 @@
 /**
- * Claude Code Buddy Terminal UI System
+ * MeMesh Terminal UI System
  *
  * MCP Server Response Formatting for Beautiful Terminal Output
  *

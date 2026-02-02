@@ -1,5 +1,5 @@
 /**
- * Claude Code Buddy - Main Entry Point
+ * MeMesh - Main Entry Point
  * Intelligent AI Agent Ecosystem
  */
 
@@ -14,7 +14,7 @@ import crypto from 'crypto';
 let a2aServer: A2AServer | null = null;
 
 async function main() {
-  logger.info('🤖 Claude Code Buddy starting...');
+  logger.info('🤖 MeMesh starting...');
   logger.info(`Mode: ${appConfig.orchestrator.mode}`);
   logger.info(`Claude Model: ${appConfig.claude.models.sonnet}`);
 
@@ -34,7 +34,7 @@ async function main() {
     registry.getAllAgents().flatMap(agent => agent.capabilities || [])
   );
 
-  logger.info('\n✅ Claude Code Buddy ready!');
+  logger.info('\n✅ MeMesh ready!');
   logger.info(`\n📋 Capabilities loaded: ${capabilities.size}\n`);
 
   // Start A2A server for agent-to-agent communication
@@ -57,7 +57,7 @@ async function startA2AServer(): Promise<void> {
     // Create agent card
     const agentCard: AgentCard = {
       id: agentId,
-      name: 'Claude Code Buddy',
+      name: 'MeMesh',
       description: 'AI development assistant and workflow automation agent',
       version: '2.5.3',
       capabilities: {
@@ -140,7 +140,7 @@ process.once('SIGINT', () => shutdown('SIGINT'));
 
 // Run
 main().catch((error) => {
-  logger.error('Failed to start Claude Code Buddy:', error);
+  logger.error('Failed to start MeMesh:', error);
   process.exit(1);
 });
 

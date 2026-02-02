@@ -1,4 +1,4 @@
-# Claude Code Buddy Examples
+# MeMesh Examples
 
 **Version: 2.6.0
 

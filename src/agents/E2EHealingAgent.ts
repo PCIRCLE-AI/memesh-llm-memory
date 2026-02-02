@@ -45,7 +45,7 @@ export interface E2EHealingOptions {
 /**
  * E2EHealingAgent - MCP Integration for E2E Self-Healing
  *
- * Integrates the E2E Self-Healing system with Claude Code Buddy's MCP architecture.
+ * Integrates the E2E Self-Healing system with MeMesh's MCP architecture.
  * Provides automated test execution, failure analysis, and code fixing with safety gates.
  *
  * Features:

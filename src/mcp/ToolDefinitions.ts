@@ -1,7 +1,7 @@
 /**
  * MCP Tool Definitions
  *
- * Centralized definitions for all Claude Code Buddy MCP tools.
+ * Centralized definitions for all MeMesh MCP tools.
  * Separated from server.ts for better maintainability.
  */
 
@@ -180,7 +180,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
 
   const getSessionHealthTool: MCPToolDefinition = {
     name: 'get-session-health',
-    description: '💊 Claude Code Buddy: Check session health including token usage and quality metrics',
+    description: '💊 MeMesh: Check session health including token usage and quality metrics',
     inputSchema: {
       type: 'object' as const,
       properties: {},

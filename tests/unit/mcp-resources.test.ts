@@ -78,7 +78,7 @@ describe('MCP Resources', () => {
       );
 
       expect(usageGuide).toBeDefined();
-      expect(usageGuide.name).toBe('Claude Code Buddy Complete Usage Guide');
+      expect(usageGuide.name).toBe('MeMesh Complete Usage Guide');
       expect(usageGuide.mimeType).toBe('text/markdown');
       expect(usageGuide.description).toContain('Comprehensive guide');
     });
@@ -146,7 +146,7 @@ describe('MCP Resources', () => {
       expect(result.contents).toHaveLength(1);
       expect(result.contents[0].uri).toBe('claude-code-buddy://usage-guide');
       expect(result.contents[0].mimeType).toBe('text/markdown');
-      expect(result.contents[0].text).toContain('Claude Code Buddy Complete Usage Guide');
+      expect(result.contents[0].text).toContain('MeMesh Complete Usage Guide');
     });
 
     it('should read best-practices content successfully', async () => {
@@ -157,7 +157,7 @@ describe('MCP Resources', () => {
         params: { uri: 'claude-code-buddy://best-practices' },
       });
 
-      expect(result.contents[0].text).toContain('Claude Code Buddy Best Practices');
+      expect(result.contents[0].text).toContain('MeMesh Best Practices');
       expect(result.contents[0].text).toContain('✅');
     });
 
@@ -184,7 +184,7 @@ describe('MCP Resources', () => {
       const content = result.contents[0].text;
       expect(content).toContain('buddy-do');
       expect(content).toContain('buddy-remember');
-      expect(content).toContain('generate-smart-plan');
+      // Note: generate-smart-plan tool was removed - planning delegated to Claude's built-in capabilities
     });
 
     it('best-practices should contain actionable tips', async () => {

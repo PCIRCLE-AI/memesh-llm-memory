@@ -13,7 +13,7 @@
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-1.25.3-purple.svg)](https://modelcontextprotocol.io)
 
-[🚀 Quick Start](#-2-minute-quick-start) • [📖 Docs](docs/) • [🌐 Website](https://memesh.pcircle.ai) • [💬 Discussions](https://github.com/PCIRCLE-AI/memesh/discussions)
+[🚀 Quick Start](#-2-minute-quick-start) • [📖 Docs](docs/) • [🌐 Website](https://memesh.pcircle.ai) • [💬 Discussions](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
 
 ---
 
@@ -428,9 +428,9 @@ See complete list: [ToolDefinitions.ts](src/mcp/ToolDefinitions.ts)
 
 We'd love your help making MeMesh better!
 
-- 🐛 **Found a bug?** [Open an issue](https://github.com/PCIRCLE-AI/memesh/issues/new)
-- 💡 **Have an idea?** [Start a discussion](https://github.com/PCIRCLE-AI/memesh/discussions)
-- 🛠️ **Want to code?** Check [Good First Issues](https://github.com/PCIRCLE-AI/memesh/labels/good%20first%20issue)
+- 🐛 **Found a bug?** [Open an issue](https://github.com/PCIRCLE-AI/claude-code-buddy/issues/new)
+- 💡 **Have an idea?** [Start a discussion](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
+- 🛠️ **Want to code?** Check [Good First Issues](https://github.com/PCIRCLE-AI/claude-code-buddy/labels/good%20first%20issue)
 
 **Contributing Guide**: [CONTRIBUTING.md](docs/CONTRIBUTING.md)
 
@@ -497,7 +497,7 @@ Built on the shoulders of giants:
 
 - [Model Context Protocol (MCP)](https://github.com/anthropics/mcp) - The foundation
 - [Claude Code](https://claude.com/claude-code) - The platform
-- All our amazing [contributors](https://github.com/PCIRCLE-AI/memesh/graphs/contributors) and early testers
+- All our amazing [contributors](https://github.com/PCIRCLE-AI/claude-code-buddy/graphs/contributors) and early testers
 
 ---
 
@@ -521,7 +521,7 @@ Built on the shoulders of giants:
 
 **Stop repeating yourself. Start vibing.**
 
-[🚀 Get Started](#-2-minute-quick-start) • [📖 Read the Docs](docs/) • [💬 Join the Discussion](https://github.com/PCIRCLE-AI/memesh/discussions)
+[🚀 Get Started](#-2-minute-quick-start) • [📖 Read the Docs](docs/) • [💬 Join the Discussion](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
 
 ---
 

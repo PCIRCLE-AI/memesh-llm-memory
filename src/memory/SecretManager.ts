@@ -18,6 +18,7 @@ import { join } from 'path';
 import { promises as fsPromises, existsSync, mkdirSync } from 'fs';
 import { homedir } from 'os';
 import { v4 as uuidv4 } from 'uuid';
+import { getDataPath, getDataDirectory } from '../utils/PathResolver.js';
 import { logger } from '../utils/logger.js';
 import type {
   DetectedSecret,
@@ -84,11 +85,12 @@ export class SecretManager {
    * @returns Promise<SecretManager> Initialized secret manager instance
    */
   static async create(dbPath?: string): Promise<SecretManager> {
-    const defaultPath = join(homedir(), '.claude-code-buddy', 'secrets.db');
+    // Use PathResolver for automatic fallback to legacy location
+    const defaultPath = getDataPath('secrets.db');
     const resolvedPath = dbPath || defaultPath;
 
-    // Ensure .claude-code-buddy directory exists
-    const dataDir = join(homedir(), '.claude-code-buddy');
+    // Ensure data directory exists (handles both new and legacy paths)
+    const dataDir = getDataDirectory();
     try {
       await fsPromises.access(dataDir);
     } catch {

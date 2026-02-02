@@ -198,10 +198,10 @@ describe('ToolHandlers', () => {
       expect(result.content[0].text).toContain('user-skill1');
     });
 
-    it('should filter Claude Code Buddy skills', async () => {
+    it('should filter MeMesh skills', async () => {
       const result = await toolHandlers.handleListSkills({ filter: 'claude-code-buddy' });
 
-      expect(result.content[0].text).toContain('Claude Code Buddy Skills');
+      expect(result.content[0].text).toContain('MeMesh Skills');
       expect(mockSkillManager.listSmartAgentsSkills).toHaveBeenCalled();
     });
 

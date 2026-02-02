@@ -16,6 +16,7 @@
  */
 
 import { logger } from '../utils/logger.js';
+import { getDataPath } from '../utils/PathResolver.js';
 import path from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { expandHome, getHomeDir, resolveUserPath } from '../utils/paths.js';
@@ -101,8 +102,12 @@ export class SimpleConfig {
    * ```
    */
   static get DATABASE_PATH(): string {
+    // Support multiple environment variable names for backward compatibility
     const raw = process.env.DATABASE_PATH
-      || path.join(getHomeDir(), '.claude-code-buddy', 'database.db');
+      || process.env.MEMESH_DATABASE_PATH
+      || process.env.CCB_DATABASE_PATH
+      || process.env.CLAUDE_CODE_BUDDY_DATABASE_PATH
+      || getDataPath('database.db'); // Use PathResolver for automatic fallback
     return expandHome(raw);
   }
 

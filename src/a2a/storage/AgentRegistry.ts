@@ -8,6 +8,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { logger } from '../../utils/logger.js';
+import { getDataPath } from '../../utils/PathResolver.js';
 import type {
   AgentRegistryEntry,
   RegisterAgentParams,
@@ -51,13 +52,8 @@ export class AgentRegistry {
   private static instance: AgentRegistry | null = null;
 
   private constructor(dbPath?: string) {
-    const path =
-      dbPath ||
-      join(
-        process.env.HOME || process.env.USERPROFILE || '~',
-        '.claude-code-buddy',
-        'a2a-registry.db'
-      );
+    // Use PathResolver for automatic fallback to legacy location
+    const path = dbPath || getDataPath('a2a-registry.db');
 
     this.db = new Database(path);
     this.initializeSchema();

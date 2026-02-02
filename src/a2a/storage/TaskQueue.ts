@@ -9,6 +9,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../../utils/logger.js';
+import { getDataPath } from '../../utils/PathResolver.js';
 import type {
   Task,
   TaskState,
@@ -81,13 +82,8 @@ export class TaskQueue {
   private db: Database.Database;
 
   constructor(agentId: string, dbPath?: string) {
-    const path =
-      dbPath ||
-      join(
-        process.env.HOME || process.env.USERPROFILE || '~',
-        '.claude-code-buddy',
-        `a2a-tasks-${agentId}.db`
-      );
+    // Use PathResolver for automatic fallback to legacy location
+    const path = dbPath || getDataPath(`a2a-tasks-${agentId}.db`);
 
     this.db = new Database(path);
     this.initializeSchema();

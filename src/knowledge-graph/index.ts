@@ -16,6 +16,7 @@ import type { SQLParams } from '../evolution/storage/types.js';
 import { logger } from '../utils/logger.js';
 import { QueryCache } from '../db/QueryCache.js';
 import { safeJsonParse } from '../utils/json.js';
+import { getDataPath, getDataDirectory } from '../utils/PathResolver.js';
 
 export class KnowledgeGraph {
   private db: Database.Database;
@@ -51,12 +52,12 @@ export class KnowledgeGraph {
    * ```
    */
   static async create(dbPath?: string): Promise<KnowledgeGraph> {
-    // ✅ FIX: Default to ~/.claude-code-buddy/knowledge-graph.db (not ./data/)
-    const defaultPath = join(homedir(), '.claude-code-buddy', 'knowledge-graph.db');
+    // Use PathResolver for automatic fallback to legacy location
+    const defaultPath = getDataPath('knowledge-graph.db');
     const resolvedPath = dbPath || defaultPath;
 
-    // Ensure .claude-code-buddy directory exists (async)
-    const dataDir = join(homedir(), '.claude-code-buddy');
+    // Ensure data directory exists (handles both new and legacy paths)
+    const dataDir = getDataDirectory();
     try {
       await fsPromises.access(dataDir);
     } catch {
@@ -88,12 +89,12 @@ export class KnowledgeGraph {
    * @returns KnowledgeGraph instance
    */
   static createSync(dbPath?: string): KnowledgeGraph {
-    // ✅ FIX: Default to ~/.claude-code-buddy/knowledge-graph.db (not ./data/)
-    const defaultPath = join(homedir(), '.claude-code-buddy', 'knowledge-graph.db');
+    // Use PathResolver for automatic fallback to legacy location
+    const defaultPath = getDataPath('knowledge-graph.db');
     const resolvedPath = dbPath || defaultPath;
 
-    // Ensure .claude-code-buddy directory exists (sync)
-    const dataDir = join(homedir(), '.claude-code-buddy');
+    // Ensure data directory exists (handles both new and legacy paths)
+    const dataDir = getDataDirectory();
     if (!existsSync(dataDir)) {
       mkdirSync(dataDir, { recursive: true });
     }

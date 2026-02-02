@@ -1,17 +1,17 @@
 <div align="center">
 
-# 🧠 MeMesh
+# 🧠 Claude Code Buddy (CCB)
 
 ### **唯一會記住一切的 MCP Server**
 
 **讓 Claude Code 記住所有事情。開發更快。Vibe 更爽。**
 
 [![GitHub Stars](https://img.shields.io/github/stars/PCIRCLE-AI/claude-code-buddy?style=social)](https://github.com/PCIRCLE-AI/claude-code-buddy)
-[![npm version](https://img.shields.io/npm/v/@pcircle/memesh)](https://www.npmjs.com/package/@pcircle/memesh)
+[![npm version](https://img.shields.io/npm/v/@pcircle/claude-code-buddy-mcp)](https://www.npmjs.com/package/@pcircle/claude-code-buddy-mcp)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-1.25.3-purple.svg)](https://modelcontextprotocol.io)
 
-[🚀 快速開始](#-2-分鐘快速開始) • [📖 文檔](docs/) • [🌐 官網](https://memesh.pcircle.ai) • [💬 討論區](https://github.com/PCIRCLE-AI/memesh/discussions)
+[🚀 快速開始](#-2-分鐘快速開始) • [📖 文檔](docs/) • [🌐 官網](https://ccb.pcircle.ai) • [💬 討論區](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
 
 ---
 
@@ -40,7 +40,7 @@ Session 4: 😤
 <tr>
 <td width="50%" valign="top">
 
-### ❌ **使用 MeMesh 之前**
+### ❌ **使用 CCB 之前**
 
 - 每次 session 都要重新解釋架構
 - 重複回答相同問題
@@ -51,7 +51,7 @@ Session 4: 😤
 </td>
 <td width="50%" valign="top">
 
-### ✅ **使用 MeMesh 之後**
+### ✅ **使用 CCB 之後**
 
 - **記住**專案架構
 - **瞬間回想**過去決策
@@ -75,7 +75,7 @@ Session 4: 😤
 
 # Session 42（今天）
 你: buddy-remember "為什麼選 PostgreSQL？"
-MeMesh: "根據你在 2024-01-15 的決策：選擇 PostgreSQL 是因為
+CCB: "根據你在 2024-01-15 的決策：選擇 PostgreSQL 是因為
       JSONB 支援和進階查詢能力..."
 ```
 
@@ -85,7 +85,7 @@ MeMesh: "根據你在 2024-01-15 的決策：選擇 PostgreSQL 是因為
 
 ```bash
 你: "Review 這段程式碼"
-MeMesh: *偵測任務類型*
+CCB: *偵測任務類型*
      *啟動程式碼審查模式*
      *套用最佳實踐*
      *提供結構化審查*
@@ -112,7 +112,7 @@ buddy-help                       # 需要幫助時
 ### 🏆 官方 Marketplace（即將推出）
 一旦獲得 Anthropic 批准，一行命令即可安裝：
 ```bash
-/plugin install memesh@claude-plugins-official
+/plugin install claude-code-buddy@claude-plugins-official
 ```
 
 ### ⚡ GitHub Marketplace（現已可用）
@@ -121,7 +121,7 @@ buddy-help                       # 需要幫助時
 /plugin marketplace add PCIRCLE-AI/claude-code-buddy
 
 # 安裝 plugin
-/plugin install memesh@pcircle-ai
+/plugin install claude-code-buddy@pcircle-ai
 ```
 
 ### 📦 快速安裝腳本（本地開發推薦）
@@ -134,7 +134,7 @@ claude --plugin-dir /path/to/claude-code-buddy
 
 ### 🎯 Cursor 使用者
 ```
-cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/memesh&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL21lbWVzaCJdfQ==
+cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==
 ```
 
 ---
@@ -157,7 +157,7 @@ cd claude-code-buddy
 安裝腳本會：
 - ✅ 檢查前置需求（Node.js 20+）
 - ✅ 安裝相依套件
-- ✅ 建置 MeMesh
+- ✅ 建置 CCB
 - ✅ 顯示如何啟動 plugin
 
 **然後用以下方式啟動 Claude Code：**
@@ -179,7 +179,7 @@ claude --plugin-dir /path/to/claude-code-buddy
 
 Cursor 使用相同的 MCP 協議。你可以使用快速安裝連結：
 ```
-cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/memesh&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL21lbWVzaCJdfQ==
+cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==
 ```
 
 **重啟 Cursor** 就完成了。
@@ -192,9 +192,9 @@ cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/memesh&config=eyJjb
 # 在 Claude Code/Cursor 中輸入：
 buddy-help
 
-# 你應該會看到 MeMesh 的命令列表
+# 你應該會看到 CCB 的命令列表
 # 現在試試：
-buddy-do "解釋 MeMesh 功能"
+buddy-do "解釋 CCB 功能"
 
 # 見證魔法 ✨
 ```
@@ -212,7 +212,7 @@ buddy-do "解釋 MeMesh 功能"
 ```bash
 你: buddy-do "建立 WebSocket 即時聊天"
 
-MeMesh 會：
+CCB 會：
 ✅ 記住你的技術棧（React, Node.js 等）
 ✅ 套用你過去的程式碼模式
 ✅ 生成符合你風格的程式碼
@@ -224,7 +224,7 @@ MeMesh 會：
 ```bash
 你: buddy-remember "身份驗證方式"
 
-MeMesh 立即回想：
+CCB 立即回想：
 📚 3 週前的 JWT vs Session 討論
 💻 你寫的實作程式碼
 🔧 你決定的錯誤處理模式
@@ -234,20 +234,20 @@ MeMesh 立即回想：
 
 ```
 第 1 天：「實作使用者登入」
-        ↓ MeMesh 記住所有事情
+        ↓ CCB 記住所有事情
 第 5 天：「新增密碼重設」
-        ↓ MeMesh 回想第 1 天的架構
+        ↓ CCB 回想第 1 天的架構
 第 10 天：「新增 OAuth 支援」
-        ↓ MeMesh 知道前兩次的設計
+        ↓ CCB 知道前兩次的設計
 ```
 
 **再也不用重複解釋 context。**
 
 ---
 
-## 📊 MeMesh vs 其他工具
+## 📊 CCB vs 其他工具
 
-| 功能 | 純 Claude Code | 其他 MCP 工具 | MeMesh |
+| 功能 | 純 Claude Code | 其他 MCP 工具 | CCB |
 |------|---------------|--------------|-----|
 | **持久化記憶** | ❌ | ⚠️ 基本功能 | ✅ **完整知識圖譜** |
 | **智能路由** | ❌ | ❌ | ✅ **自動偵測任務類型** |
@@ -334,11 +334,11 @@ buddy-remember "auth"  # 回傳 project-B 的 auth 決策
 
 ## 🤝 貢獻
 
-我們很樂意你的幫助讓 MeMesh 變得更好！
+我們很樂意你的幫助讓 CCB 變得更好！
 
-- 🐛 **發現 bug？**[開啟 issue](https://github.com/PCIRCLE-AI/memesh/issues/new)
-- 💡 **有想法？**[開始討論](https://github.com/PCIRCLE-AI/memesh/discussions)
-- 🛠️ **想寫程式？**查看 [Good First Issues](https://github.com/PCIRCLE-AI/memesh/labels/good%20first%20issue)
+- 🐛 **發現 bug？**[開啟 issue](https://github.com/PCIRCLE-AI/claude-code-buddy/issues/new)
+- 💡 **有想法？**[開始討論](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
+- 🛠️ **想寫程式？**查看 [Good First Issues](https://github.com/PCIRCLE-AI/claude-code-buddy/labels/good%20first%20issue)
 
 **貢獻指南**：[CONTRIBUTING.md](docs/CONTRIBUTING.md)
 
@@ -373,7 +373,7 @@ buddy-remember "auth"  # 回傳 project-B 的 auth 決策
 <details>
 <summary><strong>Q：和純 Claude Code 有什麼不同？</strong></summary>
 
-**A：** MeMesh 加入兩大超能力：
+**A：** CCB 加入兩大超能力：
 1. **持久化記憶** - Claude 能跨 session 記住你的專案
 2. **智能路由** - 自動偵測和處理不同任務類型
 
@@ -405,7 +405,7 @@ buddy-remember "auth"  # 回傳 project-B 的 auth 決策
 
 - [Model Context Protocol (MCP)](https://github.com/anthropics/mcp) - 基礎
 - [Claude Code](https://claude.com/claude-code) - 平台
-- 所有我們出色的[貢獻者](https://github.com/PCIRCLE-AI/memesh/graphs/contributors)和早期測試者
+- 所有我們出色的[貢獻者](https://github.com/PCIRCLE-AI/claude-code-buddy/graphs/contributors)和早期測試者
 
 ---
 
@@ -429,11 +429,11 @@ buddy-remember "auth"  # 回傳 project-B 的 auth 決策
 
 **別再重複自己。開始 vibe 吧。**
 
-[🚀 開始使用](#-2-分鐘快速開始) • [📖 閱讀文檔](docs/) • [💬 加入討論](https://github.com/PCIRCLE-AI/memesh/discussions)
+[🚀 開始使用](#-2-分鐘快速開始) • [📖 閱讀文檔](docs/) • [💬 加入討論](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
 
 ---
 
-### ⭐ **如果 MeMesh 今天幫你省時間，給它一個 star！**
+### ⭐ **如果 CCB 今天幫你省時間，給它一個 star！**
 
 這能幫助其他人發現這個工具。
 

@@ -1,6 +1,6 @@
-# Contributing to Claude Code Buddy
+# Contributing to MeMesh
 
-Thank you for your interest in contributing to Claude Code Buddy! This document provides guidelines for contributing.
+Thank you for your interest in contributing to MeMesh! This document provides guidelines for contributing.
 
 ## Getting Started
 

@@ -3,7 +3,7 @@
 **Version**: 2.2.0
 **Last Updated**: 2026-01-20
 
-This guide helps you diagnose and resolve common issues with Claude Code Buddy.
+This guide helps you diagnose and resolve common issues with MeMesh.
 
 ---
 
@@ -280,7 +280,7 @@ cat ~/.claude.json
 
 4. **Verify required tools**:
 ```typescript
-// Required MCP tools for Claude Code Buddy:
+// Required MCP tools for MeMesh:
 - filesystem (read, write, list)
 - memory (knowledge graph operations)
 - bash (command execution)
@@ -382,7 +382,7 @@ rm -rf ~/.claude/knowledge-graph/*
 ### Issue: High Memory Usage
 
 **Symptoms**:
-- Claude Code Buddy consumes excessive memory
+- MeMesh consumes excessive memory
 - System slows down
 - Out of memory errors
 
@@ -511,7 +511,7 @@ docker run -v $(pwd):/app node:20 bash -c "cd /app && npm ci && npm test && npm 
 ### Report a Bug
 
 **Before reporting, collect**:
-- Claude Code Buddy version (`cat package.json | grep version`)
+- MeMesh version (`cat package.json | grep version`)
 - Node.js version (`node --version`)
 - Operating system
 - Error messages and stack traces
@@ -570,7 +570,7 @@ node --version
 npm --version
 pwd
 
-# Claude Code Buddy status
+# MeMesh status
 cd /path/to/claude-code-buddy
 npm run build
 ls dist/mcp/server-bootstrap.js
@@ -626,7 +626,7 @@ ls -lh ~/.claude/knowledge-graph/
 **Q: Do I need an API key?**  
 A: Only for standalone orchestrator usage. MCP Server Mode uses Claude Code's access.
 
-**Q: How do I update Claude Code Buddy?**  
+**Q: How do I update MeMesh?**  
 A: `git pull origin main && npm install && npm run build`
 
 **Q: Can I customize capability behavior?**  

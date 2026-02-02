@@ -5,7 +5,7 @@
 
 set -e
 
-echo "🚀 Claude Code Buddy - Quick Install"
+echo "🚀 MeMesh - Quick Install"
 echo "===================================="
 echo ""
 
@@ -41,7 +41,7 @@ cd "$PROJECT_DIR"
 npm install
 
 # Build the project
-echo "🔨 Building CCB..."
+echo "🔨 Building MeMesh..."
 npm run build
 
 # Check if build was successful
@@ -54,7 +54,7 @@ echo ""
 echo "✅ Installation complete!"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "📝 To use CCB, run:"
+echo "📝 To use MeMesh, run:"
 echo ""
 echo "   claude --plugin-dir $PROJECT_DIR"
 echo ""
@@ -65,4 +65,4 @@ echo "📚 For team distribution, see:"
 echo "   https://code.claude.com/docs/en/plugin-marketplaces"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "🎉 Happy coding with CCB!"
+echo "🎉 Happy coding with MeMesh!"

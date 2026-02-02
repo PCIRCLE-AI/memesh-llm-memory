@@ -1,4 +1,4 @@
-# Claude Code Buddy Commands Reference
+# MeMesh Commands Reference
 
 Complete reference for all CCB commands and tools.
 
@@ -13,7 +13,7 @@ Complete reference for all CCB commands and tools.
 
 ## Buddy Commands
 
-Buddy commands provide a natural, conversational interface to Claude Code Buddy's functionality.
+Buddy commands provide a natural, conversational interface to MeMesh's functionality.
 
 ### `buddy do <task>`
 

@@ -21,7 +21,7 @@
 
 ## Overview
 
-The **A2A (Agent-to-Agent) Protocol** enables multiple Claude Code Buddy instances to collaborate by delegating tasks to each other. This opens up powerful multi-agent workflows where specialized agents can work together on complex projects.
+The **A2A (Agent-to-Agent) Protocol** enables multiple MeMesh instances to collaborate by delegating tasks to each other. This opens up powerful multi-agent workflows where specialized agents can work together on complex projects.
 
 ### What is A2A?
 
@@ -80,7 +80,7 @@ A2A is an HTTP-based protocol that allows AI agents to:
 ### Prerequisites
 
 - Node.js 18+
-- Claude Code Buddy installed
+- MeMesh installed
 - Multiple terminal windows/tabs
 - Claude Desktop (or compatible MCP client)
 
@@ -1025,7 +1025,7 @@ Includes:
 ---
 
 **Document Version**: 1.0
-**Author**: Claude Code Buddy Team
+**Author**: MeMesh Team
 **License**: AGPL-3.0
 
 ---

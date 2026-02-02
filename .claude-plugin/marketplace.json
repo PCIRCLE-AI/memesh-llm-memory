@@ -10,13 +10,13 @@
   },
   "plugins": [
     {
-      "name": "claude-code-buddy",
-      "description": "Your friendly AI companion for Claude Code - smart routing, prompt enhancement, and project memory that actually works",
+      "name": "memesh",
+      "description": "MeMesh - Your AI memory mesh for Claude Code. Persistent memory, smart routing, and intelligent task management that actually works.",
       "version": "2.6.3",
       "author": {
         "name": "PCIRCLE AI"
       },
-      "homepage": "https://ccb.pcircle.ai",
+      "homepage": "https://memesh.pcircle.ai",
       "repository": "https://github.com/PCIRCLE-AI/claude-code-buddy",
       "license": "AGPL-3.0",
       "source": {

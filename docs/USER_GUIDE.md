@@ -1,7 +1,7 @@
-# Claude Code Buddy (CCB) v2.2 User Guide
+# MeMesh v2.6 User Guide
 
-**Version**: 2.2.0
-**Last Updated**: 2026-01-20
+**Version**: 2.6.3
+**Last Updated**: 2026-02-02
 
 ---
 
@@ -67,7 +67,7 @@ npm run build
 ```json
 {
   "mcpServers": {
-    "claude-code-buddy": {
+    "memesh": {
       "type": "stdio",
       "command": "node",
       "args": ["/path/to/claude-code-buddy/dist/mcp/server-bootstrap.js"],
@@ -86,7 +86,7 @@ npm run build
 **1. Verify Installation**
 ```
 # In Claude Code, test MCP server
-"Show me the Claude Code Buddy system status"
+"Show me the MeMesh system status"
 ```
 
 **2. Use Your First Capability**
@@ -111,12 +111,12 @@ npm run build
 
 ### Three-Layer Architecture
 
-Claude Code Buddy uses a three-layer architecture for intelligence and automation:
+MeMesh uses a three-layer architecture for intelligence and automation:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │           Layer 1: MCP Server Interface                         │
-│  (Communication between Claude Code and Claude Code Buddy)      │
+│  (Communication between Claude Code and MeMesh)      │
 └───────────────────────────┬─────────────────────────────────────┘
                             │
 ┌───────────────────────────▼─────────────────────────────────────┐
@@ -136,7 +136,7 @@ Claude Code Buddy uses a three-layer architecture for intelligence and automatio
 
 ### Workflow Phases
 
-Claude Code Buddy tracks your development workflow through 5 phases:
+MeMesh tracks your development workflow through 5 phases:
 
 1. **idle** - No active work, ready for new task
 2. **code-written** - Code implementation complete, tests needed
@@ -550,7 +550,7 @@ RESTful API with stateless JWT authentication. Password hashing using bcrypt. To
 
 **Required**:
 ```bash
-# None - Claude Code Buddy works out of the box
+# None - MeMesh works out of the box
 ```
 
 **Optional**:
@@ -631,7 +631,7 @@ For more issues, see [TROUBLESHOOTING.md](./TROUBLESHOOTING.md).
 
 ---
 
-**Happy coding with Claude Code Buddy! 🚀**
+**Happy coding with MeMesh! 🚀**
 
 **Version**: 2.2.0
 **Documentation**: https://github.com/PCIRCLE-AI/claude-code-buddy

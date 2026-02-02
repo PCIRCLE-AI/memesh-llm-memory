@@ -1,20 +1,20 @@
 # Quick Install Guide
 
-Claude Code Buddy (CCB) can be installed to Cursor and VS Code in just one click!
+MeMesh can be installed to Cursor and VS Code in just one click!
 
 ## 🚀 Quick Installation
 
 ### For Cursor Users
 
-Click the button below to install CCB to Cursor:
+Click the button below to install MeMesh to Cursor:
 
-<a href="cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==">
+<a href="cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/memesh&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL21lbWVzaCJdfQ==">
   <img src="https://cursor.com/deeplink/mcp-install-dark.png" alt="Add to Cursor" />
 </a>
 
 **Or paste this link in your browser:**
 ```
-cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==
+cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/memesh&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL21lbWVzaCJdfQ==
 ```
 
 ---
@@ -37,7 +37,7 @@ The installer will:
 - ✅ Build the project
 - ✅ Show you how to activate the plugin
 
-#### Activate CCB Plugin
+#### Activate MeMesh Plugin
 
 After installation, start Claude Code with the plugin directory:
 
@@ -45,7 +45,7 @@ After installation, start Claude Code with the plugin directory:
 claude --plugin-dir /path/to/claude-code-buddy
 ```
 
-**That's it!** CCB will be available as a plugin in your Claude Code session.
+**That's it!** MeMesh will be available as a plugin in your Claude Code session.
 
 **Note**: The `--plugin-dir` flag needs to be specified each time you start Claude Code. For team-wide distribution without command-line flags, consider creating a [Plugin Marketplace](https://code.claude.com/docs/en/plugin-marketplaces).
 
@@ -60,7 +60,7 @@ claude --plugin-dir /path/to/claude-code-buddy
 
 ## 📋 What Gets Installed?
 
-When you install CCB, you get:
+When you install MeMesh, you get:
 
 ### 7 MCP Tools
 1. **buddy-do** - Smart task execution with capability routing
@@ -89,16 +89,16 @@ For contributors or users who want to run from source:
 ```bash
 # Clone and install
 git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
-cd @pcircle/claude-code-buddy-mcp
+cd claude-code-buddy
 npm install
 npm run build
 
 # Configure MCP to use local installation
 {
   "mcpServers": {
-    "@pcircle/claude-code-buddy-mcp": {
+    "memesh": {
       "command": "node",
-      "args": ["/path/to/@pcircle/claude-code-buddy-mcp/dist/mcp/server-bootstrap.js"]
+      "args": ["/path/to/claude-code-buddy/dist/mcp/server-bootstrap.js"]
     }
   }
 }
@@ -111,9 +111,9 @@ You can customize the MCP server configuration:
 ```json
 {
   "mcpServers": {
-    "@pcircle/claude-code-buddy-mcp": {
+    "memesh": {
       "command": "npx",
-      "args": ["-y", "@pcircle/claude-code-buddy-mcp"],
+      "args": ["-y", "@pcircle/memesh"],
       "env": {
         "CCB_LOG_LEVEL": "debug",
         "CCB_KNOWLEDGE_DB_PATH": "/custom/path/knowledge.db"
@@ -137,7 +137,7 @@ After installation, verify CCB is working:
 ### In Cursor
 1. Open a project
 2. Open the MCP panel (View → MCP Servers)
-3. Look for "@pcircle/claude-code-buddy-mcp" in the server list
+3. Look for "@pcircle/memesh" in the server list
 4. Status should show "Connected ✓"
 
 ### In Claude Code
@@ -200,17 +200,17 @@ After installation:
 
 ---
 
-## 🔄 Updating CCB
+## 🔄 Updating MeMesh
 
 ### For npx users (default):
-CCB automatically uses the latest version. To verify:
+MeMesh automatically uses the latest version. To verify:
 ```bash
-npx @pcircle/claude-code-buddy-mcp --version
+npx @pcircle/memesh --version
 ```
 
 ### For local installation users:
 ```bash
-cd /path/to/@pcircle/claude-code-buddy-mcp
+cd /path/to/claude-code-buddy
 git pull origin main
 npm install
 npm run build

@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-Claude Code Buddy (CCB) is **fully compliant** with the Model Context Protocol (MCP) Specification 2025-11-25 for **Phase 1 requirements** (Tool Annotations and Output Schemas).
+MeMesh (CCB) is **fully compliant** with the Model Context Protocol (MCP) Specification 2025-11-25 for **Phase 1 requirements** (Tool Annotations and Output Schemas).
 
 **Compliance Status:**
 
@@ -508,4 +508,4 @@ npm run compliance:check
 
 **Last Review:** 2026-01-31
 **Next Review:** Q2 2026 (Phase 2 planning)
-**Document Owner:** Claude Code Buddy Development Team
+**Document Owner:** MeMesh Development Team

@@ -112,7 +112,7 @@ class ClaudeCodeBuddyMCPServer {
     this.server = new Server(
       {
         name: 'memesh',
-        version: '2.6.3',
+        version: '2.6.4',
       },
       {
         capabilities: {

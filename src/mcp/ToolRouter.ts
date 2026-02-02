@@ -22,6 +22,10 @@ import {
   handleBuddySecretDelete,
 } from './handlers/index.js';
 import type { SecretManager } from '../memory/SecretManager.js';
+import type { TaskQueue } from '../a2a/storage/TaskQueue.js';
+import type { MCPTaskDelegator } from '../a2a/delegator/MCPTaskDelegator.js';
+import { a2aListTasks } from './tools/a2a-list-tasks.js';
+import { a2aReportResult } from './tools/a2a-report-result.js';
 
 /**
  * Tool Router Configuration
@@ -36,6 +40,16 @@ export interface ToolRouterConfig {
    * Secret Manager for secure secret storage (Phase 0.7.0)
    */
   secretManager?: SecretManager;
+
+  /**
+   * Task Queue for A2A task management
+   */
+  taskQueue?: TaskQueue;
+
+  /**
+   * MCP Task Delegator for A2A task delegation
+   */
+  mcpTaskDelegator?: MCPTaskDelegator;
 
   /**
    * ✅ FIX HIGH-5: CSRF protection for future HTTP transport
@@ -89,6 +103,8 @@ export class ToolRouter {
   private buddyHandlers: BuddyHandlers;
   private a2aHandlers: A2AToolHandlers;
   private secretManager?: SecretManager;
+  private taskQueue?: TaskQueue;
+  private mcpTaskDelegator?: MCPTaskDelegator;
 
   /**
    * ✅ FIX HIGH-5: CSRF protection configuration
@@ -107,6 +123,8 @@ export class ToolRouter {
     this.buddyHandlers = config.buddyHandlers;
     this.a2aHandlers = config.a2aHandlers;
     this.secretManager = config.secretManager;
+    this.taskQueue = config.taskQueue;
+    this.mcpTaskDelegator = config.mcpTaskDelegator;
 
     // ✅ FIX HIGH-5: Initialize CSRF protection config
     this.allowedOrigins = config.allowedOrigins;
@@ -354,11 +372,37 @@ export class ToolRouter {
     }
 
     if (toolName === 'a2a-list-tasks') {
-      return await this.a2aHandlers.handleA2AListTasks(args);
+      // MCP Client polling interface - queries MCPTaskDelegator's in-memory queue
+      if (!this.mcpTaskDelegator) {
+        throw new OperationError(
+          'MCPTaskDelegator is not configured',
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+          }
+        );
+      }
+      return await a2aListTasks(args as any, this.mcpTaskDelegator);
     }
 
     if (toolName === 'a2a-list-agents') {
       return await this.a2aHandlers.handleA2AListAgents(args);
+    }
+
+    if (toolName === 'a2a-report-result') {
+      // MCP Client reports task result back to MeMesh Server
+      if (!this.taskQueue || !this.mcpTaskDelegator) {
+        throw new OperationError(
+          'TaskQueue or MCPTaskDelegator is not configured',
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+          }
+        );
+      }
+      return await a2aReportResult(args as any, this.taskQueue, this.mcpTaskDelegator);
     }
 
     throw new NotFoundError(

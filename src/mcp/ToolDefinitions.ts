@@ -578,7 +578,7 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
 
   const generateTestsTool: MCPToolDefinition = {
     name: 'generate-tests',
-    description: 'Automatically generate test cases from specifications or code using AI',
+    description: 'Automatically generate test cases from specifications or code using AI. Provide either specification or code (at least one required).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -591,10 +591,6 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
           description: 'Source code to generate tests for',
         },
       },
-      oneOf: [
-        { required: ['specification'] },
-        { required: ['code'] },
-      ],
     },
     outputSchema: OutputSchemas.generateTests,
     annotations: {

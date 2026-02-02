@@ -1,596 +1,914 @@
-# MeMesh v2.6 User Guide
+# User Guide
+## Complete Reference for MeMesh
 
-**Version**: 2.6.3
-**Last Updated**: 2026-02-02
+Welcome to the complete MeMesh User Guide! This guide provides detailed information about all commands, features, and workflows.
 
 ---
 
 ## Table of Contents
 
-1. [Getting Started](#getting-started)
-2. [Core Concepts](#core-concepts)
-3. [Using Capabilities](#using-capabilities)
-4. [Event-Driven Butler](#event-driven-butler)
-5. [Workflow Guidance System](#workflow-guidance-system)
-6. [Smart Planning System](#smart-planning-system)
-7. [Best Practices](#best-practices)
-8. [Configuration](#configuration)
+1. [Introduction](#introduction)
+2. [Core Commands](#core-commands)
+3. [MCP Tools](#mcp-tools)
+4. [CLI Commands](#cli-commands)
+5. [Memory System](#memory-system)
+6. [Smart Routing](#smart-routing)
+7. [Configuration](#configuration)
+8. [Advanced Usage](#advanced-usage)
 9. [Troubleshooting](#troubleshooting)
 
 ---
 
-## Getting Started
+## Introduction
 
-### Prerequisites
+### What is MeMesh?
 
-- **Claude Code** (latest version)
-- **Node.js** >= 20.0.0
-- **npm** >= 9.0.0
+MeMesh is your AI memory mesh for Claude Code - a persistent memory and smart routing system that helps you:
 
-### Installation
+- **Execute tasks with intelligence**: Smart routing to specialized capabilities
+- **Remember across sessions**: Persistent knowledge graph storage
+- **Learn from experience**: Auto-tracking and pattern recognition
+- **Work efficiently**: Context-aware assistance
 
-**Option 1: Interactive Installer (Recommended)**
-```bash
-# Clone repository
-git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
-cd claude-code-buddy
+### Architecture Overview
 
-# Run the interactive installer
-./scripts/install.sh
+```
+┌─────────────────────────────────────────────────┐
+│                  Claude Code                     │
+│                 (User Interface)                 │
+└──────────────────┬──────────────────────────────┘
+                   │ MCP Protocol
+                   ▼
+┌─────────────────────────────────────────────────┐
+│              MeMesh MCP Server                   │
+├─────────────────────────────────────────────────┤
+│  • buddy-do        Smart task routing            │
+│  • buddy-remember  Memory storage/recall         │
+│  • buddy-help      Quick help & guidance         │
+│  • Health monitoring & session tracking          │
+└──────────────────┬──────────────────────────────┘
+                   │
+    ┌──────────────┼──────────────┐
+    ▼              ▼              ▼
+┌─────────┐  ┌───────────┐  ┌──────────┐
+│ Router  │  │ Knowledge │  │  Project │
+│         │  │   Graph   │  │  Tracker │
+└─────────┘  └───────────┘  └──────────┘
 ```
 
-The installer will:
-- Check prerequisites (Node.js 20+, npm)
-- Install dependencies
-- Build the project
-- Create `.env` from `.env.example`
-- Configure Claude Code MCP integration
-- Run validation tests
+---
 
-**Option 2: Manual Installation**
-```bash
-# Clone repository
-git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
-cd claude-code-buddy
+## Core Commands
 
-# Install dependencies
-npm install
+### buddy-do
 
-# Create env file (optional, uses defaults)
-cp .env.example .env
+**Purpose**: Execute tasks with smart routing to specialized capabilities
 
-# Build the project
-npm run build
+**Syntax**:
+```
+buddy-do "<task description>"
 ```
 
-**Configure MCP server** (edit `~/.claude.json`):
+**How it works**:
+1. Analyzes task complexity and required capabilities
+2. Routes to the best-suited capability (backend, frontend, devops, etc.)
+3. Enhances prompt with project context
+4. Returns routing decision and enhanced prompt
+
+**Examples**:
+
+```bash
+# Backend development
+buddy-do "implement user authentication with JWT"
+# → Routes to backend-developer capability
+# → Analyzes database requirements, security considerations
+# → Provides enhanced prompt with project context
+
+# Frontend development
+buddy-do "create responsive navbar with dark mode toggle"
+# → Routes to frontend-developer capability
+# → Considers existing design system
+# → Suggests component structure
+
+# DevOps tasks
+buddy-do "setup CI/CD pipeline with GitHub Actions"
+# → Routes to devops capability
+# → Analyzes deployment requirements
+# → Provides workflow configuration
+
+# Bug fixes
+buddy-do "fix memory leak in user service"
+# → Routes to debugging capability
+# → Analyzes potential causes
+# → Suggests investigation steps
+```
+
+**Task Metadata Extraction**:
+
+buddy-do automatically extracts metadata from your task description:
+
+- **Goal**: What you want to achieve
+- **Reason**: Why you're doing this (if mentioned)
+- **Expected Outcome**: What success looks like
+
+Example:
+```
+buddy-do "add email verification because users need to confirm accounts"
+
+Extracted:
+- Goal: "add email verification"
+- Reason: "users need to confirm accounts"
+- Expected Outcome: (inferred from context)
+```
+
+**Response Structure**:
+
+```
+✓ BUDDY-DO SUCCESS
+
+📋 Task
+Setup user authentication with JWT
+
+────────────────────────────────────
+
+✓ Results
+  routing:
+    approved: true
+    message: Task routed to backend-developer
+    complexity: medium
+    estimatedTokens: 2500
+    estimatedCost: $0.0125
+
+────────────────────────────────────
+
+💡 Next Steps
+  1. Verify implementation meets requirements
+  2. Run tests to ensure nothing broke
+  3. Store decision: buddy-remember
+
+Duration: 2.3s • Tokens: 2,500
+```
+
+**Complexity Levels**:
+
+- **Simple** (< 1000 tokens): Quick tasks, simple queries
+- **Medium** (1000-5000 tokens): Standard features, moderate refactoring
+- **Complex** (> 5000 tokens): Architectural changes, large features
+
+**When to Use**:
+- ✅ Any development task (coding, testing, debugging)
+- ✅ Architectural decisions
+- ✅ Code reviews
+- ✅ Documentation tasks
+- ✅ Planning and analysis
+
+**When NOT to Use**:
+- ❌ Simple questions (use buddy-help instead)
+- ❌ Memory queries (use buddy-remember instead)
+
+---
+
+### buddy-remember
+
+**Purpose**: Store and recall knowledge from your project's memory graph
+
+**Syntax**:
+```bash
+# Store knowledge
+buddy-remember "<information to store>"
+
+# Recall knowledge (search)
+buddy-remember "<search query>"
+```
+
+**How it works**:
+
+**Storage Mode**:
+- Detects when you're providing information (not a question)
+- Stores in Knowledge Graph with auto-generated tags
+- Records timestamp and context
+- Returns confirmation
+
+**Recall Mode**:
+- Searches Knowledge Graph by keywords and semantic similarity
+- Ranks results by relevance
+- Returns matching memories with context
+- Suggests next steps if no results found
+
+**Storage Examples**:
+
+```bash
+# Store decisions
+buddy-remember "We decided to use PostgreSQL because it supports JSON and has better performance for complex queries"
+
+# Store patterns
+buddy-remember "All API endpoints follow RESTful conventions with /api/v1 prefix"
+
+# Store lessons learned
+buddy-remember "Login bug was caused by session timeout not being reset on activity. Fixed by updating session middleware"
+
+# Store configuration
+buddy-remember "Production uses AWS RDS with t3.medium instances, staging uses t3.micro"
+```
+
+**Recall Examples**:
+
+```bash
+# Search for decisions
+buddy-remember "why did we choose PostgreSQL?"
+# → Returns: Database selection decisions and reasons
+
+# Find patterns
+buddy-remember "API endpoint conventions"
+# → Returns: RESTful patterns, versioning strategy
+
+# Find solutions to similar problems
+buddy-remember "session timeout issues"
+# → Returns: Past bugs, solutions, and lessons learned
+
+# Check configuration
+buddy-remember "database configuration"
+# → Returns: Database settings, connection strings (sanitized)
+```
+
+**Response Structure (Storage)**:
+
+```
+✓ Memory Stored Successfully
+
+📋 Task
+Store project decision about database choice
+
+────────────────────────────────────
+
+✓ Results
+  status: stored
+  knowledge_id: "kb_1234567890"
+  tags: ["decision", "database", "postgresql"]
+  timestamp: "2026-01-20T10:30:00Z"
+
+────────────────────────────────────
+
+💡 Next Steps
+  1. Memory is now searchable
+  2. Try: buddy-remember "postgresql" to verify
+
+Duration: 0.8s • Tokens: 300
+```
+
+**Response Structure (Recall - With Results)**:
+
+```
+✓ Memory Search Complete
+
+📋 Query
+postgresql
+
+────────────────────────────────────
+
+✓ Results
+  count: 3
+  memories:
+    1. [2026-01-15] Decision: PostgreSQL for production
+       "We decided to use PostgreSQL because..."
+       Tags: decision, database, postgresql
+
+    2. [2026-01-18] Configuration: Database connection
+       "Production: aws-rds-pg.xyz, port 5432..."
+       Tags: configuration, database, postgresql
+
+    3. [2026-01-19] Lesson: Connection pooling
+       "Fixed timeout issues by increasing pool size..."
+       Tags: lesson, database, performance
+
+────────────────────────────────────
+
+💡 Next Steps
+  1. Review memories above for relevant context
+  2. Apply these learnings to your current task
+
+Duration: 1.2s • Tokens: 800
+```
+
+**Response Structure (Recall - No Results)**:
+
+```
+✓ Memory Search Complete
+
+📋 Query
+microservices
+
+────────────────────────────────────
+
+✓ Results
+  count: 0
+
+────────────────────────────────────
+
+💡 Next Steps
+  1. Try a broader search term
+  2. Create new memory: buddy-do
+
+Duration: 0.5s • Tokens: 200
+```
+
+**Best Practices**:
+
+**Storage**:
+- ✅ Be specific and concise
+- ✅ Include context (why, when, what)
+- ✅ Store as you work, not later
+- ✅ Use natural language (the system handles tagging)
+
+**Recall**:
+- ✅ Use keywords from your question
+- ✅ Try broader terms if no results
+- ✅ Search before starting new work
+- ✅ Combine with buddy-do for context-aware tasks
+
+**Auto-Tagging**:
+
+The system automatically generates tags based on content:
+- **Entities**: Users, products, services, technologies
+- **Actions**: Created, updated, fixed, decided
+- **Concepts**: Authentication, database, API, testing
+- **Types**: Decision, lesson, pattern, configuration
+
+---
+
+### buddy-help
+
+**Purpose**: Quick help and command reference
+
+**Syntax**:
+```bash
+# Basic help
+buddy-help
+
+# Detailed help for all commands
+buddy-help --all
+```
+
+**Output**:
+
+```
+🤖 MeMesh Quick Start
+
+Essential Commands
+
+┌────────────────────────────────────────────┐
+│ buddy-do "<task>"                          │
+└────────────────────────────────────────────┘
+❯ buddy-do "add user authentication"
+→ Routes to backend-developer, creates auth system
+
+┌────────────────────────────────────────────┐
+│ buddy-remember "<info>"                    │
+└────────────────────────────────────────────┘
+❯ buddy-remember "Using JWT for sessions"
+→ Stores in Knowledge Graph with auto-tags
+
+┌────────────────────────────────────────────┐
+│ buddy-remember "<query>"                   │
+└────────────────────────────────────────────┘
+❯ buddy-remember "why JWT?"
+→ Searches and recalls past decisions
+
+💡 New to MeMesh?
+Run: memesh tutorial
+
+📖 Full reference: buddy-help --all
+```
+
+**When to Use**:
+- ✅ First-time setup (verify MeMesh is working)
+- ✅ Quick command reference
+- ✅ Syntax reminders
+
+---
+
+## MCP Tools
+
+### Advanced MCP Tools
+
+These tools provide lower-level access to MeMesh capabilities:
+
+#### create-entities
+
+**Purpose**: Create knowledge entities with explicit relationships
+
+**Usage**: Advanced users who need fine-grained control over knowledge graph structure
+
+**Example**:
+```json
+{
+  "entities": [
+    {
+      "name": "PostgreSQL",
+      "type": "Technology",
+      "properties": {
+        "version": "15",
+        "purpose": "Production database"
+      }
+    }
+  ],
+  "relations": [
+    {
+      "from": "ProductionSystem",
+      "to": "PostgreSQL",
+      "type": "USES"
+    }
+  ]
+}
+```
+
+**When to Use**:
+- Building complex knowledge graphs
+- Migrating external knowledge
+- Integrating with other systems
+
+#### recall-memory
+
+**Purpose**: Low-level memory search with advanced filters
+
+**Parameters**:
+- `query`: Search text
+- `limit`: Maximum results (default: 10)
+- `timeRange`: Filter by date range
+- `tags`: Filter by specific tags
+- `types`: Filter by entity types
+
+**Example**:
+```json
+{
+  "query": "authentication",
+  "limit": 5,
+  "tags": ["decision", "security"],
+  "timeRange": {
+    "start": "2026-01-01",
+    "end": "2026-01-31"
+  }
+}
+```
+
+#### health-check
+
+**Purpose**: Monitor MeMesh system health
+
+**Returns**:
+- MCP server status
+- Knowledge Graph connectivity
+- Storage metrics
+- Recent errors
+
+**Example Response**:
+```json
+{
+  "status": "healthy",
+  "uptime": 43200,
+  "knowledgeGraph": {
+    "connected": true,
+    "entities": 1234,
+    "relations": 5678
+  },
+  "storage": {
+    "used": "45MB",
+    "available": "955MB"
+  }
+}
+```
+
+---
+
+## CLI Commands
+
+### memesh setup
+
+**Purpose**: Interactive configuration wizard
+
+**Features**:
+- Auto-detects Claude Code installation
+- Generates MCP configuration
+- Validates setup
+- Tests connection
+
+**Usage**:
+```bash
+memesh setup
+```
+
+**When to Use**:
+- First-time installation
+- Troubleshooting connection issues
+- Reconfiguring after updates
+
+See [QUICK_START.md](./QUICK_START.md) for detailed setup guide.
+
+---
+
+### memesh tutorial
+
+**Purpose**: Interactive 5-minute guided tutorial
+
+**Features**:
+- 7-step walkthrough
+- Hands-on practice with buddy-do and buddy-remember
+- Progress tracking
+- Completion certificate
+
+**Usage**:
+```bash
+memesh tutorial
+```
+
+**Steps**:
+1. Welcome & Overview
+2. Setup Verification
+3. First buddy-do Command
+4. Memory Storage Demo
+5. Memory Recall Demo
+6. Advanced Features Preview
+7. Next Steps & Resources
+
+**When to Use**:
+- Learning MeMesh for the first time
+- Refreshing your knowledge
+- Training team members
+
+---
+
+### memesh dashboard
+
+**Purpose**: View session health and metrics (Coming Soon)
+
+**Planned Features**:
+- Real-time MCP server status
+- Memory usage statistics
+- Recent command history
+- Performance metrics
+- Error log summary
+
+**Usage**:
+```bash
+memesh dashboard
+```
+
+---
+
+### memesh stats
+
+**Purpose**: View usage statistics (Coming Soon)
+
+**Planned Features**:
+- Command frequency analysis
+- Token usage trends
+- Cost tracking
+- Capability usage breakdown
+- Memory growth over time
+
+**Usage**:
+```bash
+memesh stats
+```
+
+---
+
+### memesh config
+
+**Purpose**: Manage MeMesh configuration
+
+**Subcommands**:
+
+```bash
+# Show current configuration
+memesh config show
+
+# Validate MCP setup
+memesh config validate
+
+# Edit configuration (Coming Soon)
+memesh config edit
+
+# Reset to defaults (Coming Soon)
+memesh config reset
+```
+
+**When to Use**:
+- Verifying setup after installation
+- Troubleshooting connection issues
+- Checking configuration paths
+
+---
+
+### memesh report-issue
+
+**Purpose**: Report bugs or issues
+
+**Usage**:
+```bash
+memesh report-issue
+```
+
+**What it does**:
+- Provides GitHub issues link
+- Collects system information (future)
+- Suggests troubleshooting steps
+
+---
+
+## Memory System
+
+### Knowledge Graph Architecture
+
+MeMesh uses a graph-based knowledge storage system:
+
+```
+    ┌─────────────┐
+    │  Entities   │  (Users, APIs, Technologies, etc.)
+    └──────┬──────┘
+           │
+           │ has properties
+           │
+    ┌──────▼──────┐
+    │ Properties  │  (name, type, metadata)
+    └──────┬──────┘
+           │
+           │ connected by
+           │
+    ┌──────▼──────┐
+    │  Relations  │  (USES, DEPENDS_ON, CREATED_BY)
+    └─────────────┘
+```
+
+### Entity Types
+
+**Automatic Classification**:
+- `Decision`: Architecture choices, technology selections
+- `Pattern`: Code patterns, conventions, standards
+- `Lesson`: Bug fixes, learnings, best practices
+- `Configuration`: Settings, environment variables
+- `Technology`: Tools, frameworks, libraries
+- `Feature`: Application features, capabilities
+- `Bug`: Issues, problems, error cases
+- `Person`: Team members, stakeholders
+- `Project`: Projects, repositories, systems
+
+### Relationship Types
+
+- `USES`: Entity A uses Entity B
+- `DEPENDS_ON`: Entity A depends on Entity B
+- `CREATED_BY`: Entity A created by Entity B
+- `RELATES_TO`: General relationship
+- `PART_OF`: Entity A is part of Entity B
+
+### Auto-Tracking (Phase 0.6)
+
+**Task Start Tracking**:
+When you use `buddy-do`, MeMesh automatically records:
+- Task description
+- Goal (extracted)
+- Reason (if provided)
+- Expected outcome (if mentioned)
+- Start timestamp
+
+**Memory Linking**:
+Memories created during a task are automatically linked to that task.
+
+**Example**:
+```bash
+buddy-do "implement login feature because users need authentication"
+
+# Auto-tracked:
+{
+  task: "implement login feature",
+  goal: "implement login feature",
+  reason: "users need authentication",
+  timestamp: "2026-01-20T10:00:00Z"
+}
+
+# Later memories automatically linked:
+buddy-remember "Using bcrypt for password hashing"
+# → Links to login feature task
+```
+
+---
+
+## Smart Routing
+
+### How Task Routing Works
+
+**1. Task Analysis**:
+```
+Input: "setup user authentication with JWT"
+
+Analysis:
+- Complexity: Medium (~2500 tokens)
+- Domain: Backend development
+- Required capabilities: [authentication, backend, database]
+- Keywords: [authentication, JWT, user, setup]
+```
+
+**2. Capability Matching**:
+```
+Available capabilities:
+- backend-developer: 90% match (authentication, database)
+- frontend-developer: 20% match (user interface)
+- devops: 30% match (deployment considerations)
+
+Selected: backend-developer (highest match)
+```
+
+**3. Prompt Enhancement**:
+```
+Enhanced Prompt:
+[System Context]
+Project: e-commerce-platform
+Tech Stack: Node.js, Express, PostgreSQL
+Recent Work: User registration endpoint completed
+
+[Task]
+Setup user authentication with JWT
+
+[Context]
+- Existing user model in database
+- JWT library already installed (jsonwebtoken)
+- Environment variables configured for secrets
+```
+
+### Capability Catalog
+
+**backend-developer**:
+- API development
+- Database design
+- Server-side logic
+- Authentication/authorization
+- Data validation
+
+**frontend-developer**:
+- UI components
+- State management
+- Styling and layout
+- Client-side logic
+- Responsive design
+
+**devops**:
+- CI/CD pipelines
+- Deployment automation
+- Infrastructure configuration
+- Monitoring and logging
+- Container orchestration
+
+**database-admin**:
+- Schema design
+- Query optimization
+- Migrations
+- Backups and recovery
+- Performance tuning
+
+**security-expert**:
+- Vulnerability assessment
+- Authentication systems
+- Data encryption
+- Security audits
+- Compliance
+
+**general-agent**:
+- Default fallback
+- General questions
+- Documentation
+- Planning and analysis
+
+---
+
+## Configuration
+
+### MCP Configuration File
+
+**Location**:
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux**: `~/.config/Claude/claude_desktop_config.json`
+
+**Structure**:
 ```json
 {
   "mcpServers": {
     "memesh": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["/path/to/claude-code-buddy/dist/mcp/server-bootstrap.js"],
+      "command": "npx",
+      "args": ["-y", "@pcircle/memesh"],
       "env": {
-        "NODE_ENV": "production"
+        "DEBUG": "false"
       }
     }
   }
 }
 ```
 
-**API keys**: Not required in MCP server mode (`MCP_SERVER_MODE=true`). If running standalone orchestrator, set `MCP_SERVER_MODE=false` and `ANTHROPIC_API_KEY` in `.env`.
+**Environment Variables**:
 
-### Quick Start
+- `DEBUG`: Enable debug logging (true/false)
+- `MEMESH_DATA_DIR`: Custom data directory (default: ~/.memesh)
+- `MEMESH_LOG_LEVEL`: Log level (error/warn/info/debug)
 
-**1. Verify Installation**
-```
-# In Claude Code, test MCP server
-"Show me the MeMesh system status"
-```
-
-**2. Use Your First Capability**
-```
-# Code review capability
-"Review src/utils.ts for quality and edge cases"
-
-# Test generation capability
-"Write tests for src/utils.ts with vitest"
-```
-
-**3. Enable Workflow Guidance**
-```
-# Track token usage and get recommendations
-"Show my session health status"
-"Get workflow guidance for my current phase"
-```
-
----
-
-## Core Concepts
-
-### Three-Layer Architecture
-
-MeMesh uses a three-layer architecture for intelligence and automation:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│           Layer 1: MCP Server Interface                         │
-│  (Communication between Claude Code and MeMesh)      │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-┌───────────────────────────▼─────────────────────────────────────┐
-│      Layer 2: Orchestration & Intelligence                      │
-│  - TaskAnalyzer: Understand user intent                         │
-│  - Capability Router: Select best capability for the task       │
-│  - PromptEnhancer: Optimize prompts with domain expertise       │
-│  - PerformanceTracker: Monitor cost and quality                 │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-┌───────────────────────────▼─────────────────────────────────────┐
-│           Layer 3: Capability Implementations                   │
-│  - Capability modules and prompt templates                      │
-│  - Workflow automation and memory systems                       │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Workflow Phases
-
-MeMesh tracks your development workflow through 5 phases:
-
-1. **idle** - No active work, ready for new task
-2. **code-written** - Code implementation complete, tests needed
-3. **test-complete** - Tests passing, ready for commit
-4. **commit-ready** - Changes staged, commit message ready
-5. **committed** - Changes committed, ready for next task
-
-Each phase triggers different recommendations and automation.
-
-### Capability Model
-
-MeMesh routes work by capability rather than exposing individual agents. Capabilities are grouped to keep UX predictable:
-
-- **Code Quality**: review, refactor, debugging, best practices
-- **Testing**: test generation, coverage, e2e validation
-- **Architecture & Performance**: architecture, scalability, profiling
-- **Data & Backend**: API design, database/query work, integrations
-- **UI/UX**: frontend, UI design, accessibility
-- **Product & Docs**: product planning, documentation
-
-The router selects the best internal implementation automatically based on your request.
-
----
-
-## Using Capabilities
-
-MeMesh exposes a small, focused toolset. Describe outcomes in natural language and MeMesh routes the work to the best internal capability.
-
-### Core Task Execution
-
-Use `buddy-do` for most tasks:
-
-```
-"Review src/api/auth.ts for security and correctness"
-"Refactor the user service to reduce duplication"
-"Write vitest tests for src/utils/date.ts"
-"Design a REST API for user sessions"
-```
-
-### Memory and Project Context
-
-Use `buddy-remember` to recall decisions and patterns:
-
-```
-"Remember how we implemented authentication"
-"Remember why we chose SQLite for local storage"
-```
-
-### Auto Test Generation
-
-Use `generate-tests` to automatically create comprehensive tests:
-
-```
-"Generate tests for src/auth/login.ts with full coverage"
-```
-
-### Workflow Guidance
-
-Use workflow guidance when you change phases:
-
-```
-"Get workflow guidance for code-written"
-"Get session health"
-```
-
-## Event-Driven Butler
-
-### Checkpoint Detection
-
-The Development Butler automatically detects workflow checkpoints:
-
-**Detection Logic**:
-```typescript
-interface CheckpointContext {
-  hasUncommittedChanges: boolean;
-  hasTests: boolean;
-  testsPassing: boolean;
-  stagedFiles: string[];
-}
-
-// Checkpoint Priority (first match wins)
-1. committed: No uncommitted changes
-2. commit-ready: Changes staged, tests passing
-3. test-complete: Tests exist and passing
-4. code-written: Uncommitted changes exist
-5. idle: No active work
-```
-
-### Automatic Recommendations
-
-**code-written Checkpoint**:
-```
-✨ Detected: New code without tests
-
-Recommendations:
-1. Use testing capabilities to generate tests
-2. Run existing tests to verify no regressions
-3. Review changes before testing
-```
-
-**test-complete Checkpoint**:
-```
-✅ Detected: Tests passing
-
-Recommendations:
-1. Review changes
-2. Stage changes
-3. Prepare a commit message
-```
-
-**commit-ready Checkpoint**:
-```
-🚀 Detected: Ready to commit
-
-Recommendations:
-1. Review changes
-2. Commit changes
-3. Push to remote if configured
-```
-
-### Integration with Workflow Guidance
-
-The Butler integrates with the Workflow Guidance System for intelligent recommendations:
-
-```
-Butler Checkpoint Detection → Workflow Guidance → Smart Recommendations
-```
-
----
-
-## Workflow Guidance System
-
-### Session Token Tracking
-
-**Purpose**: Monitor token usage and prevent session degradation.
-
-**Token Thresholds**:
-- **Healthy** (<80%): Normal operation
-- **Warning** (80-90%): Proactive recommendations
-- **Critical** (≥90%): Automatic CLAUDE.md reload
-
-**MCP Tools**:
-```
-# Record token usage
-"Record 50000 tokens used in current session"
-
-# Check session health
-"Show my session health status"
-
-# Get workflow guidance
-"Get workflow guidance for current phase"
-
-# Manual context reload (if needed)
-"Reload CLAUDE.md context"
-```
-
-**Automatic Behavior**:
-```typescript
-// Token tracking happens automatically
-Session starts → Token usage: 0%
-Work progresses → Token usage: 75% → Continue normally
-More work → Token usage: 85% → Warning + recommendations
-Continued work → Token usage: 92% → Auto-reload CLAUDE.md
-```
-
-### Workflow Recommendations
-
-**Phase-Aware Guidance**:
-
-**code-written Phase**:
-```
-📝 Recommendations:
-- Run tests to verify no regressions
-- Generate missing tests if needed
-- Consider code review before committing
-```
-
-**test-complete Phase**:
-```
-✅ Recommendations:
-- Review changes
-- Prepare commit with semantic message
-- Update documentation if needed
-```
-
-**commit-ready Phase**:
-```
-🚀 Recommendations:
-- Verify all tests passing
-- Commit changes
-- Push changes to remote
-```
-
-### Session Health Monitoring
-
-**Health Status**:
-```typescript
-interface SessionHealth {
-  tokenUsagePercentage: number;
-  quality: 'healthy' | 'warning' | 'critical';
-  recommendations: string[];
-  shouldReload: boolean;
-}
-
-// Example output
-{
-  tokenUsagePercentage: 87,
-  quality: 'warning',
-  recommendations: [
-    'Consider summarizing conversation',
-    'Complete current task before starting new complex work',
-    'CLAUDE.md reload approaching at 90%'
-  ],
-  shouldReload: false
-}
-```
-
-### CLAUDE.md Reload
-
-**Automatic Reload** (at 90% threshold):
-```
-Token usage: 90% → Auto-reload CLAUDE.md → Fresh context → Token usage: ~5%
-```
-
-**Cooldown Protection**:
-- Minimum 5 minutes between reloads
-- Prevents reload spam
-- Uses mutex for concurrency control
-
----
-
-## Smart Planning System
-
-### Intelligent Planning
-
-**Purpose**: Generate implementation plans that leverage capability signals and learned patterns.
-
-**Key Features**:
-1. **Capability-Aware Task Breakdown** - Assigns tasks to appropriate capabilities
-2. **Learned Pattern Application** - Uses successful patterns from Evolution System
-3. **Bite-Sized Tasks** - Breaks features into 2-5 minute incremental tasks
-4. **TDD-First Structure** - Every task follows Test → Implement → Verify workflow
-
-### Using the Planning System
-
-**MCP Tool Usage**:
-```
-# Generate implementation plan
-"Generate smart plan for user authentication with JWT"
-
-# With specific requirements
-"Generate smart plan for:
- Feature: Real-time notifications
- Requirements: WebSocket support, browser notifications, offline queue
- Tech stack: Node.js, Socket.IO, Redis"
-```
-
-### Plan Output Structure
-
-```typescript
-interface ImplementationPlan {
-  title: string;
-  goal: string;
-  architecture: string;
-  techStack: string[];
-  tasks: Task[];
-}
-
-interface Task {
-  id: number;
-  title: string;
-  description: string;
-  capability: string;         // Primary capability (e.g., 'backend', 'api')
-  dependencies: number[];      // Task IDs this depends on
-  phase: string;              // 'backend', 'frontend', 'testing', etc.
-  tddSteps: TDDStep[];
-  files: FileOperation[];
-}
-
-interface TDDStep {
-  step: number;
-  action: string;             // 'Write test', 'Run test (fail)', 'Implement', etc.
-  command?: string;           // Command to execute
-  expected?: string;          // Expected outcome
-}
-```
-
-### Example Generated Plan
-
-```
-# User Authentication Implementation Plan
-
-## Goal
-Add JWT-based authentication to the API with secure password hashing and session management.
-
-## Architecture
-RESTful API with stateless JWT authentication. Password hashing using bcrypt. Token validation middleware for protected routes.
-
-## Tech Stack
-- Node.js (runtime)
-- Express (web framework)
-- JWT (token generation)
-- bcrypt (password hashing)
-- PostgreSQL (user storage)
-
-## Tasks
-
-### Task 1: User Model and Database Schema
-**Capability**: backend, database
-**Phase**: backend
-**Dependencies**: []
-
-**TDD Steps**:
-1. Write failing test for User model creation
-2. Run test to verify it fails
-3. Implement User model with password hashing
-4. Run test to verify it passes
-5. Commit with message: "feat: add User model with password hashing"
-
-**Files**:
-- Create: src/models/User.ts
-- Create: tests/models/User.test.ts
-- Modify: src/database/migrations/create-users-table.sql
-
-### Task 2: Authentication API Endpoints
-**Capability**: api-design, backend
-**Phase**: backend
-**Dependencies**: [1]
-
-**TDD Steps**:
-1. Write failing test for /api/auth/register endpoint
-2. Write failing test for /api/auth/login endpoint
-3. Run tests to verify they fail
-4. Implement registration endpoint
-5. Implement login endpoint with JWT generation
-6. Run tests to verify they pass
-7. Commit with message: "feat: add authentication endpoints"
-
-... (more tasks)
-```
-
----
-
-## Best Practices
-
-### Test-Driven Development
-
-**Always follow TDD workflow**:
-```
-1. Write failing test
-2. Run test (verify it fails)
-3. Implement minimal code
-4. Run test (verify it passes)
-5. Commit changes
-```
-
-**Generate Tests When Needed**:
-```
-# After implementing new function
-"Generate tests for src/utils/validation.ts"
-
-# Before refactoring
-"Ensure complete test coverage before refactoring"
-```
-
-### Version Control
-
-**Initialize and save work early**:
-```
-# First thing in new project
-"Initialize Git in the project root"
-
-# Before sharing work
-"Commit changes with a clear message"
-```
-
-### Documentation
-
-**Keep documentation updated**:
-- Update README.md when adding features
-- Document API changes immediately
-- Use Knowledge Graph for architectural decisions
-
-### Workflow Optimization
-
-**Monitor token usage**:
-```
-# Check session health regularly
-"Show my session health status"
-```
-
-**Complete phases before context switch**:
-```
-✅ Good: code-written → test-complete → commit-ready → committed
-❌ Bad: code-written → context switch → lose progress
-```
-
-### Capability Selection
-
-**Use the right capability for the task**:
-- New code → test guidance and validation
-- Bug fixing → systematic debugging and root-cause analysis
-- Code review → security and correctness checks
-- Architecture design → tradeoff analysis and system planning
-
----
-
-## Configuration
-
-### Environment Variables
-
-**Required**:
-```bash
-# None - MeMesh works out of the box
-```
-
-**Optional**:
-```bash
-# For custom evolution database location
-EVOLUTION_DB_PATH=/path/to/evolution.db
-
-# Guidance modes
-BEGINNER_MODE=true
-EVIDENCE_MODE=true
-```
-
-### MCP Server Configuration
-
-**Add to Claude Code config** (`~/.claude.json`):
+**Custom Configuration**:
 ```json
 {
   "mcpServers": {
-    "claude-code-buddy": {
-      "command": "node",
-      "args": ["/path/to/claude-code-buddy/dist/mcp/server-bootstrap.js"]
+    "memesh": {
+      "command": "npx",
+      "args": ["-y", "@pcircle/memesh"],
+      "env": {
+        "DEBUG": "true",
+        "MEMESH_DATA_DIR": "/custom/path/to/data",
+        "MEMESH_LOG_LEVEL": "debug"
+      }
     }
   }
 }
 ```
 
-### Workflow Guidance Configuration
+---
 
-**Customize token thresholds** (advanced):
-```typescript
-// src/config/workflow-config.ts
-export const workflowConfig = {
-  tokenThresholds: {
-    healthy: 0.80,    // 80%
-    warning: 0.90,    // 90%
-    critical: 0.95    // 95%
-  },
-  reloadCooldown: 300000, // 5 minutes in ms
-  autoReload: true
-};
+## Advanced Usage
+
+### Workflow Examples
+
+#### Workflow 1: Starting a New Feature
+
+```bash
+# 1. Recall relevant context
+buddy-remember "similar features"
+buddy-remember "architectural patterns"
+
+# 2. Plan implementation
+buddy-do "plan user profile feature with avatar upload"
+
+# 3. Execute implementation
+buddy-do "implement user profile API endpoints"
+buddy-do "create profile UI component"
+
+# 4. Store decisions
+buddy-remember "User profile feature uses S3 for avatar storage because it scales better"
+
+# 5. Document patterns
+buddy-remember "Profile endpoints follow /api/v1/users/:id/profile pattern"
+```
+
+#### Workflow 2: Debugging a Bug
+
+```bash
+# 1. Search for similar issues
+buddy-remember "login errors"
+buddy-remember "session timeout"
+
+# 2. Analyze and fix
+buddy-do "investigate why sessions expire immediately after login"
+
+# 3. Record solution
+buddy-remember "Login session bug was caused by cookie domain mismatch. Fixed by setting domain to null in session config."
+```
+
+#### Workflow 3: Code Review
+
+```bash
+# 1. Recall standards
+buddy-remember "code review checklist"
+buddy-remember "security best practices"
+
+# 2. Review implementation
+buddy-do "review authentication implementation for security issues"
+
+# 3. Store findings
+buddy-remember "Security review found: need rate limiting on login endpoint to prevent brute force"
+```
+
+### Integration with Other Tools
+
+**Git Integration**:
+```bash
+# Store commit messages as memories
+buddy-remember "feat(auth): add JWT authentication"
+
+# Recall to maintain consistency
+buddy-remember "recent authentication changes"
+```
+
+**CI/CD Integration** (Future):
+```bash
+# Store deployment info
+buddy-remember "Deployment v1.2.3 to production on 2026-01-20, includes authentication feature"
+
+# Query deployment history
+buddy-remember "recent deployments"
+```
+
+**Testing Integration**:
+```bash
+# Store test results
+buddy-remember "Test suite passing: 245/245 tests, coverage 87%"
+
+# Track test patterns
+buddy-remember "Authentication tests use mock JWT tokens"
 ```
 
 ---
@@ -599,40 +917,124 @@ export const workflowConfig = {
 
 ### Common Issues
 
-**Issue: MCP server not responding**
-```
-Solution:
-1. Check if claude-code-buddy server is running
-2. Verify config.json path is correct
-3. Restart Claude Code
-4. Check logs: cat ~/.claude/logs/claude-code-buddy.log
+For detailed troubleshooting, see [TROUBLESHOOTING.md](./TROUBLESHOOTING.md).
+
+**Quick Fixes**:
+
+1. **buddy-help not working**
+   ```bash
+   memesh setup
+   # Restart Claude Code
+   # Try: buddy-help
+   ```
+
+2. **Connection errors**
+   ```bash
+   memesh config validate
+   # Check configuration
+   # Restart Claude Code
+   ```
+
+3. **Slow responses**
+   - Simplify task descriptions
+   - Check network connection
+   - Review token limits
+
+### Debug Mode
+
+Enable debug logging:
+
+```json
+{
+  "mcpServers": {
+    "memesh": {
+      "command": "npx",
+      "args": ["-y", "@pcircle/memesh"],
+      "env": {
+        "DEBUG": "true",
+        "MEMESH_LOG_LEVEL": "debug"
+      }
+    }
+  }
+}
 ```
 
-**Issue: Test generation capability not producing tests**
-```
-Solution:
-1. Verify source file exists and is readable
-2. Check file contains exported functions
-3. Ensure filesystem MCP tools are available
-4. Try with simpler source file first
-```
+Check logs:
+- **macOS**: `~/Library/Logs/Claude/`
+- **Windows**: `%APPDATA%\Claude\Logs\`
 
-For more issues, see [TROUBLESHOOTING.md](./TROUBLESHOOTING.md).
+### Getting Help
+
+1. **Check Documentation**:
+   - [QUICK_START.md](./QUICK_START.md) - Getting started
+   - [BEST_PRACTICES.md](./BEST_PRACTICES.md) - Effective workflows
+   - [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - Common issues
+
+2. **Run Commands**:
+   ```bash
+   memesh tutorial       # Interactive learning
+   memesh config validate # Check setup
+   memesh report-issue   # Get support
+   ```
+
+3. **Community Support**:
+   - GitHub Issues: https://github.com/PCIRCLE-AI/claude-code-buddy/issues
+   - Discussions: https://github.com/PCIRCLE-AI/claude-code-buddy/discussions
 
 ---
 
-## Next Steps
+## Appendix
 
-- **Explore Capabilities**: Try different capabilities for various tasks
-- **Save Work**: Commit changes in your VCS
-- **Monitor Progress**: Use workflow guidance for optimization
-- **Learn Patterns**: Smart Planning improves over time
-- **Join Community**: Share feedback and best practices
+### Command Quick Reference
+
+```
+┌─────────────────────────────────────────────────────┐
+│              MeMesh Command Reference               │
+├─────────────────────────────────────────────────────┤
+│ MCP Tools (In Claude Code)                          │
+│   buddy-do "<task>"       Smart task execution      │
+│   buddy-remember "<info>" Store/recall memory       │
+│   buddy-help              Quick help guide           │
+│                                                      │
+│ CLI Commands (In Terminal)                          │
+│   memesh setup            Interactive setup wizard  │
+│   memesh tutorial         5-minute guided tour      │
+│   memesh dashboard        Session health (Soon)     │
+│   memesh stats            Usage statistics (Soon)   │
+│   memesh config           Manage configuration      │
+│   memesh report-issue     Bug reporting             │
+└─────────────────────────────────────────────────────┘
+```
+
+### Glossary
+
+- **MCP**: Model Context Protocol - Standard for AI tool integration
+- **Knowledge Graph**: Graph database storing entities and relationships
+- **Capability**: Specialized skill set for task execution
+- **Entity**: Node in knowledge graph (user, technology, decision, etc.)
+- **Relation**: Edge connecting entities (USES, DEPENDS_ON, etc.)
+- **Task Metadata**: Extracted information from task description
+- **Prompt Enhancement**: Adding project context to task prompts
+
+### Version History
+
+- **v2.6.6**: ErrorClassifier integration, Enhanced error handling
+- **v2.6.5**: Interactive tutorial, Improved QUICK_START
+- **v2.6.4**: Response formatting improvements, Visual hierarchy
+- **v2.6.3**: Interactive setup wizard
+- **v2.6.2**: Phase 0.6 - Auto-tracking and memory linking
+- **v2.6.1**: Performance optimizations
+- **v2.6.0**: Smart routing with capability matching
 
 ---
 
-**Happy coding with MeMesh! 🚀**
+**Next Steps**:
 
-**Version**: 2.2.0
-**Documentation**: https://github.com/PCIRCLE-AI/claude-code-buddy
-**Issues**: https://github.com/PCIRCLE-AI/claude-code-buddy/issues
+1. **Learn More**: Read [BEST_PRACTICES.md](./BEST_PRACTICES.md) for effective workflows
+2. **Try It Out**: Run `memesh tutorial` for hands-on practice
+3. **Get Support**: Visit our [GitHub Discussions](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
+4. **Contribute**: Check [CONTRIBUTING.md](../CONTRIBUTING.md) to get involved
+
+---
+
+**MeMesh** - Your AI memory mesh for Claude Code

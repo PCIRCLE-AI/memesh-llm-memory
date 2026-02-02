@@ -607,15 +607,13 @@
           <h1
             class="text-5xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight"
           >
-            Free & Open Source<br />
-            <span class="text-blue-600">Plugin for Claude Code</span>
+            <span class="text-blue-600">The Only MCP Server<br />That Remembers</span>
           </h1>
 
           <p
             class="text-xl md:text-2xl text-gray-700 mb-10 max-w-3xl mx-auto font-light"
           >
-            Add <strong>project memory</strong> and <strong>smart routing</strong> to Claude Code.
-            Reduce repetitive prompts. Focus on building vibe coding apps.
+            <strong>Make Claude Code remember everything. Build faster. Vibe harder.</strong>
           </p>
 
           <div class="flex flex-col sm:flex-row justify-center gap-4 mb-12">
@@ -656,6 +654,91 @@
 
 <span class="comment"># Run the interactive installer</span>
 ./scripts/install.sh</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- See It In Action (Interactive Demo) -->
+    <section class="py-20 bg-white">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+          <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            🎥 See It In Action
+          </h2>
+          <p class="text-xl text-gray-600">Interactive Demo</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-8 mb-8">
+          <!-- Without CCB -->
+          <div class="glass-card rounded-2xl p-8 border-2 border-red-200">
+            <h3 class="text-2xl font-bold text-red-600 mb-6 flex items-center">
+              <span class="mr-3">🔴</span> Without CCB
+            </h3>
+            <div class="bg-gray-900 rounded-lg p-5">
+              <pre class="text-gray-300 text-sm"><code><span class="comment"># Session 1 (Monday)</span>
+You: "We use JWT for auth because..."
+Claude: "Got it! ✅"
+
+<span class="comment"># Session 2 (Tuesday)</span>
+You: "Remember our auth approach?"
+Claude: "Sorry, I don't have context..."
+You: *explains everything again* 😤
+
+<span class="comment"># Session 3 (Wednesday)</span>
+You: "Our JWT implementation..."
+Claude: "What JWT implementation?"
+You: *RAGE QUITS* 💢</code></pre>
+            </div>
+          </div>
+
+          <!-- With CCB -->
+          <div class="glass-card rounded-2xl p-8 border-2 border-green-200">
+            <h3 class="text-2xl font-bold text-green-600 mb-6 flex items-center">
+              <span class="mr-3">✅</span> With CCB
+            </h3>
+            <div class="bg-gray-900 rounded-lg p-5">
+              <pre class="text-gray-300 text-sm"><code><span class="comment"># Session 1 (Monday)</span>
+You: buddy-do "setup JWT auth"
+CCB: ✅ Implemented + Saved to memory
+
+<span class="comment"># Session 2 (Tuesday)</span>
+You: buddy-remember "auth"
+CCB: 📚 "JWT auth implemented on 2024-01-15
+     ↳ Access tokens: 15min
+     ↳ Refresh tokens: 7 days
+     ↳ Secret rotation: monthly"
+
+<span class="comment"># Session 3 (Any day, forever)</span>
+You: buddy-do "add OAuth"
+CCB: 🧠 "I see you have JWT. Let's
+     integrate OAuth alongside it..."</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Try it yourself -->
+        <div class="text-center glass-card rounded-2xl p-8 warm-gradient-blue">
+          <h3 class="text-2xl font-bold text-gray-900 mb-4">💡 Try it yourself:</h3>
+          <div class="bg-gray-900 rounded-lg p-5 max-w-3xl mx-auto">
+            <pre class="text-gray-300 text-sm text-left"><code><span class="comment"># In Claude Code/Cursor</span>
+buddy-help                          <span class="comment"># See all commands</span>
+buddy-do "explain how CCB works"    <span class="comment"># Watch it intelligently respond</span>
+buddy-remember "project decisions"  <span class="comment"># Query your project memory</span></code></pre>
+          </div>
+          <div class="mt-6 flex justify-center gap-6">
+            <a
+              href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/USER_GUIDE.md"
+              class="text-blue-600 hover:text-blue-700 font-semibold"
+            >
+              📖 Read User Guide
+            </a>
+            <a
+              href="https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/api/API_REFERENCE.md"
+              class="text-blue-600 hover:text-blue-700 font-semibold"
+            >
+              🔧 API Reference
+            </a>
           </div>
         </div>
       </div>
@@ -838,103 +921,72 @@
       </div>
     </section>
 
-    <!-- Evolution Section -->
-    <section class="py-20 bg-white">
+    <!-- The Solution -->
+    <section class="py-20 warm-gradient-blue">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-16">
           <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            Designed to Evolve with Your Project
+            ✨ The Solution
           </h2>
-          <p class="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-            Instead of treating each prompt as a clean slate, CCB maintains a
-            persistent understanding of your codebase, architectural decisions,
-            and workflow patterns.
-          </p>
-          <p
-            class="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed mt-4"
-          >
-            As you use it, the plugin progressively aligns with how your project
-            is structured and how you prefer to work—reducing repetition,
-            improving consistency, and making AI assistance feel less like a
-            tool and more like a long-term collaborator.
-          </p>
         </div>
 
-        <div
-          class="glass-card rounded-2xl p-10 max-w-5xl mx-auto warm-gradient-blue border border-blue-100"
-        >
-          <h3 class="text-2xl font-bold text-gray-900 mb-8 text-center">
-            How It Works: Behavioral Evolution
-          </h3>
-          <p class="text-center text-gray-700 mb-8 max-w-3xl mx-auto text-lg">
-            CCB does not retrain models. Instead, it uses a
-            <strong>persistent system layer</strong> inside the Plugin:
-          </p>
+        <div class="grid md:grid-cols-2 gap-8">
+          <!-- Before CCB -->
+          <div class="glass-card rounded-2xl p-8 border-2 border-gray-300">
+            <h3 class="text-3xl font-bold text-gray-900 mb-6 flex items-center">
+              <span class="mr-3">❌</span> Before CCB
+            </h3>
+            <ul class="space-y-4 text-gray-700 text-lg">
+              <li class="flex items-start">
+                <span class="mr-3">•</span>
+                <span>Re-explain architecture every session</span>
+              </li>
+              <li class="flex items-start">
+                <span class="mr-3">•</span>
+                <span>Answer same questions repeatedly</span>
+              </li>
+              <li class="flex items-start">
+                <span class="mr-3">•</span>
+                <span>Forget design decisions overnight</span>
+              </li>
+              <li class="flex items-start">
+                <span class="mr-3">•</span>
+                <span>Write similar prompts over and over</span>
+              </li>
+              <li class="flex items-start">
+                <span class="mr-3">•</span>
+                <span>Claude has amnesia 🤕</span>
+              </li>
+            </ul>
+          </div>
 
-          <div class="grid md:grid-cols-2 gap-8">
-            <div class="bg-white bg-opacity-80 rounded-xl p-6 shadow-sm">
-              <div class="flex items-center mb-3">
-                <span
-                  class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3"
-                >
-                  <i data-lucide="database" class="icon-md"></i>
-                </span>
-                <h4 class="font-bold text-gray-900">
-                  Project Memory Accumulation
-                </h4>
-              </div>
-              <p class="text-gray-600 text-sm">
-                Architectural decisions, conventions, and resolved discussions
-                are stored as structured context.
-              </p>
-            </div>
-
-            <div class="bg-white bg-opacity-80 rounded-xl p-6 shadow-sm">
-              <div class="flex items-center mb-3">
-                <span
-                  class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 mr-3"
-                >
-                  <i data-lucide="zap" class="icon-md"></i>
-                </span>
-                <h4 class="font-bold text-gray-900">Pattern Reinforcement</h4>
-              </div>
-              <p class="text-gray-600 text-sm">
-                Repeated approvals, refactors, and preferred solutions gradually
-                shape how future prompts are constructed.
-              </p>
-            </div>
-
-            <div class="bg-white bg-opacity-80 rounded-xl p-6 shadow-sm">
-              <div class="flex items-center mb-3">
-                <span
-                  class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 mr-3"
-                >
-                  <i data-lucide="layers" class="icon-md"></i>
-                </span>
-                <h4 class="font-bold text-gray-900">
-                  Task-Type Differentiation
-                </h4>
-              </div>
-              <p class="text-gray-600 text-sm">
-                Review, debugging, refactoring, and design tasks are handled
-                with different internal prompting strategies.
-              </p>
-            </div>
-
-            <div class="bg-white bg-opacity-80 rounded-xl p-6 shadow-sm">
-              <div class="flex items-center mb-3">
-                <span
-                  class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 mr-3"
-                >
-                  <i data-lucide="repeat" class="icon-md"></i>
-                </span>
-                <h4 class="font-bold text-gray-900">Context Reuse</h4>
-              </div>
-              <p class="text-gray-600 text-sm">
-                Relevant memory is selectively injected, avoiding prompt bloat
-                while preserving continuity.
-              </p>
-            </div>
+          <!-- After CCB -->
+          <div class="glass-card rounded-2xl p-8 border-2 border-green-300 bg-green-50 bg-opacity-30">
+            <h3 class="text-3xl font-bold text-gray-900 mb-6 flex items-center">
+              <span class="mr-3">✅</span> After CCB
+            </h3>
+            <ul class="space-y-4 text-gray-700 text-lg">
+              <li class="flex items-start">
+                <span class="mr-3">•</span>
+                <span><strong>Remembers</strong> project architecture</span>
+              </li>
+              <li class="flex items-start">
+                <span class="mr-3">•</span>
+                <span><strong>Recalls</strong> past decisions instantly</span>
+              </li>
+              <li class="flex items-start">
+                <span class="mr-3">•</span>
+                <span><strong>Organizes</strong> knowledge automatically</span>
+              </li>
+              <li class="flex items-start">
+                <span class="mr-3">•</span>
+                <span><strong>Routes</strong> tasks intelligently</span>
+              </li>
+              <li class="flex items-start">
+                <span class="mr-3">•</span>
+                <span>Claude becomes your AI teammate 🤝</span>
+              </li>
+            </ul>
           </div>
         </div>
       </div>

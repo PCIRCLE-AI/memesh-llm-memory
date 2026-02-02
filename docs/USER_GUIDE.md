@@ -10,6 +10,10 @@ Welcome to the complete MeMesh User Guide! This guide provides detailed informat
 1. [Introduction](#introduction)
 2. [Core Commands](#core-commands)
 3. [MCP Tools](#mcp-tools)
+   - [Advanced MCP Tools](#advanced-mcp-tools)
+   - [Secret Management](#secret-management)
+   - [A2A Protocol](#a2a-protocol-agent-to-agent-communication)
+   - [Learning & Error Tracking](#learning--error-tracking)
 4. [CLI Commands](#cli-commands)
 5. [Memory System](#memory-system)
 6. [Smart Routing](#smart-routing)
@@ -504,6 +508,256 @@ These tools provide lower-level access to MeMesh capabilities. For complete API 
 **Note**: Provide either specification or code.
 
 📖 **Full Documentation**: [API_REFERENCE.md - generate-tests](./api/API_REFERENCE.md#generate-tests)
+
+---
+
+### Secret Management
+
+MeMesh provides secure local storage for API keys, tokens, passwords, and other sensitive data using AES-256-GCM encryption.
+
+#### buddy-secret-store
+
+**Purpose**: Securely store sensitive information (API keys, tokens, passwords)
+
+**Parameters**:
+- `name`: Unique identifier for the secret
+- `value`: The secret value to store
+- `ttl`: Optional time-to-live in seconds (auto-delete after expiry)
+
+**Security Features**:
+- AES-256-GCM encryption
+- Secrets stored locally only
+- Never transmitted over network
+- Optional automatic expiry
+
+**Quick Example**:
+```json
+{
+  "name": "openai-api-key",
+  "value": "sk-proj-...",
+  "ttl": 2592000
+}
+```
+
+**When to Use**:
+- Storing API keys for development
+- Managing authentication tokens
+- Securing database credentials
+- Temporary access tokens
+
+📖 **Full Documentation**: [API_REFERENCE.md - buddy-secret-store](./api/API_REFERENCE.md#buddy-secret-store)
+
+---
+
+#### buddy-secret-get
+
+**Purpose**: Retrieve a previously stored secret
+
+**Parameters**:
+- `name`: The identifier of the secret to retrieve
+
+**Returns**:
+- The decrypted secret value
+- Creation timestamp
+- Expiry information (if TTL was set)
+
+**Quick Example**:
+```json
+{
+  "name": "openai-api-key"
+}
+```
+
+📖 **Full Documentation**: [API_REFERENCE.md - buddy-secret-get](./api/API_REFERENCE.md#buddy-secret-get)
+
+---
+
+#### buddy-secret-list
+
+**Purpose**: List all stored secrets (names only, not values)
+
+**Returns**:
+- Array of secret names
+- Creation timestamps
+- Expiry information
+- Does NOT return secret values for security
+
+**Quick Example**:
+```json
+{}
+```
+
+**When to Use**:
+- Auditing stored secrets
+- Checking what credentials are available
+- Managing secret lifecycle
+
+📖 **Full Documentation**: [API_REFERENCE.md - buddy-secret-list](./api/API_REFERENCE.md#buddy-secret-list)
+
+---
+
+#### buddy-secret-delete
+
+**Purpose**: Permanently delete a stored secret
+
+**Parameters**:
+- `name`: The identifier of the secret to delete
+
+**Quick Example**:
+```json
+{
+  "name": "old-api-key"
+}
+```
+
+**When to Use**:
+- Rotating credentials
+- Removing expired access
+- Cleaning up test secrets
+
+📖 **Full Documentation**: [API_REFERENCE.md - buddy-secret-delete](./api/API_REFERENCE.md#buddy-secret-delete)
+
+---
+
+### A2A Protocol (Agent-to-Agent Communication)
+
+MeMesh includes an Agent-to-Agent (A2A) Protocol for multi-agent collaboration, enabling Claude instances to delegate tasks to each other.
+
+**Current Status**: Phase 0.5 - Local-only communication (same machine)
+
+#### a2a-send-task
+
+**Purpose**: Send a task to another agent for execution
+
+**Parameters**:
+- `agentId`: Target agent identifier
+- `task`: Task description or command
+- `priority`: Optional priority level (high/medium/low)
+
+**Quick Example**:
+```json
+{
+  "agentId": "code-reviewer",
+  "task": "Review src/auth.ts for security issues",
+  "priority": "high"
+}
+```
+
+**When to Use**:
+- Delegating specialized tasks
+- Parallel execution workflows
+- Multi-agent collaboration
+
+📖 **Full Documentation**: [API_REFERENCE.md - a2a-send-task](./api/API_REFERENCE.md#a2a-send-task)
+
+---
+
+#### a2a-get-task
+
+**Purpose**: Query status and results of a sent task
+
+**Parameters**:
+- `taskId`: Task identifier from a2a-send-task
+- `agentId`: Target agent identifier
+
+**Returns**:
+- Task status (pending/in_progress/completed/failed)
+- Task results (if completed)
+- Error information (if failed)
+
+**Quick Example**:
+```json
+{
+  "taskId": "task-abc123",
+  "agentId": "code-reviewer"
+}
+```
+
+📖 **Full Documentation**: [API_REFERENCE.md - a2a-get-task](./api/API_REFERENCE.md#a2a-get-task)
+
+---
+
+#### a2a-list-tasks
+
+**Purpose**: List all tasks assigned to this agent
+
+**Returns**:
+- Array of task objects
+- Task status and metadata
+- Priority and timing information
+
+**Quick Example**:
+```json
+{}
+```
+
+**When to Use**:
+- Monitoring agent workload
+- Task queue management
+- Debugging multi-agent workflows
+
+📖 **Full Documentation**: [API_REFERENCE.md - a2a-list-tasks](./api/API_REFERENCE.md#a2a-list-tasks)
+
+---
+
+#### a2a-list-agents
+
+**Purpose**: Discover available agents for task delegation
+
+**Returns**:
+- Array of agent identifiers
+- Agent capabilities
+- Agent status (online/offline)
+
+**Quick Example**:
+```json
+{}
+```
+
+**When to Use**:
+- Finding specialized agents
+- Multi-agent system discovery
+- Capability-based routing
+
+📖 **Full Documentation**: [API_REFERENCE.md - a2a-list-agents](./api/API_REFERENCE.md#a2a-list-agents)
+
+---
+
+### Learning & Error Tracking
+
+#### buddy-record-mistake
+
+**Purpose**: Record errors and mistakes for learning and prevention
+
+**Parameters**:
+- `mistake`: Description of what went wrong
+- `context`: Situation where the error occurred
+- `correctApproach`: The right way to handle it
+- `tags`: Optional categorization tags
+
+**Quick Example**:
+```json
+{
+  "mistake": "Used synchronous file read in async function",
+  "context": "Loading configuration at startup",
+  "correctApproach": "Use fs.promises.readFile() instead of fs.readFileSync()",
+  "tags": ["nodejs", "async", "filesystem"]
+}
+```
+
+**When to Use**:
+- After fixing bugs
+- Learning from errors
+- Building team knowledge
+- Preventing repeated mistakes
+
+**Benefits**:
+- Automatically stored in knowledge graph
+- Searchable via buddy-remember
+- Helps prevent repeating errors
+- Builds institutional knowledge
+
+📖 **Full Documentation**: [API_REFERENCE.md - buddy-record-mistake](./api/API_REFERENCE.md#buddy-record-mistake)
 
 ---
 

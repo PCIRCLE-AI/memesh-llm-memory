@@ -236,6 +236,235 @@ Internal hook event ingestion for workflow automation and memory tracking.
 
 ---
 
+### `buddy-record-mistake`
+
+Record errors and mistakes for learning and prevention.
+
+**Input Schema:**
+```json
+{
+  "mistake": "string (required) - Description of what went wrong",
+  "context": "string (required) - Situation where error occurred",
+  "correctApproach": "string (required) - The right way to handle it",
+  "tags": "array (optional) - Categorization tags"
+}
+```
+
+**Example:**
+```json
+{
+  "mistake": "Used synchronous file read in async function",
+  "context": "Loading configuration at startup",
+  "correctApproach": "Use fs.promises.readFile() instead",
+  "tags": ["nodejs", "async", "filesystem"]
+}
+```
+
+---
+
+### `create-entities`
+
+Create knowledge entities with explicit relationships for fine-grained control over the knowledge graph.
+
+**Input Schema:**
+```json
+{
+  "entities": "array (required) - Array of entity objects",
+  "entity.name": "string (required) - Unique entity name",
+  "entity.entityType": "string (required) - Entity type",
+  "entity.observations": "array (optional) - Array of observation strings",
+  "entity.tags": "array (optional) - Array of tag strings"
+}
+```
+
+**Example:**
+```json
+{
+  "entities": [
+    {
+      "name": "PostgreSQL Database Choice",
+      "entityType": "decision",
+      "observations": [
+        "Chose PostgreSQL over MySQL",
+        "Better JSON support and performance"
+      ],
+      "tags": ["database", "postgresql"]
+    }
+  ]
+}
+```
+
+---
+
+### `buddy-secret-store`
+
+Securely store sensitive information (API keys, tokens, passwords) using AES-256-GCM encryption.
+
+**Input Schema:**
+```json
+{
+  "name": "string (required) - Unique identifier for the secret",
+  "value": "string (required) - Secret value to store",
+  "ttl": "number (optional) - Time-to-live in seconds"
+}
+```
+
+**Example:**
+```json
+{
+  "name": "openai-api-key",
+  "value": "sk-proj-...",
+  "ttl": 2592000
+}
+```
+
+**Security Features:**
+- AES-256-GCM encryption
+- Local storage only
+- Never transmitted over network
+- Optional automatic expiry
+
+---
+
+### `buddy-secret-get`
+
+Retrieve a previously stored secret.
+
+**Input Schema:**
+```json
+{
+  "name": "string (required) - Secret identifier"
+}
+```
+
+**Example:**
+```json
+{
+  "name": "openai-api-key"
+}
+```
+
+**Returns:**
+- Decrypted secret value
+- Creation timestamp
+- Expiry information (if TTL was set)
+
+---
+
+### `buddy-secret-list`
+
+List all stored secrets (names only, not values).
+
+**Input Schema:**
+```json
+{}
+```
+
+**Returns:**
+- Array of secret names
+- Creation timestamps
+- Expiry information
+- Does NOT return secret values for security
+
+---
+
+### `buddy-secret-delete`
+
+Permanently delete a stored secret.
+
+**Input Schema:**
+```json
+{
+  "name": "string (required) - Secret identifier"
+}
+```
+
+**Example:**
+```json
+{
+  "name": "old-api-key"
+}
+```
+
+---
+
+### `a2a-send-task`
+
+Send a task to another agent for execution (Agent-to-Agent Protocol).
+
+**Input Schema:**
+```json
+{
+  "agentId": "string (required) - Target agent identifier",
+  "task": "string (required) - Task description or command",
+  "priority": "enum (optional) - high | medium | low"
+}
+```
+
+**Example:**
+```json
+{
+  "agentId": "code-reviewer",
+  "task": "Review src/auth.ts for security issues",
+  "priority": "high"
+}
+```
+
+**Current Status:** Phase 0.5 - Local-only communication
+
+---
+
+### `a2a-get-task`
+
+Query status and results of a sent task.
+
+**Input Schema:**
+```json
+{
+  "taskId": "string (required) - Task identifier from a2a-send-task",
+  "agentId": "string (required) - Target agent identifier"
+}
+```
+
+**Returns:**
+- Task status (pending/in_progress/completed/failed)
+- Task results (if completed)
+- Error information (if failed)
+
+---
+
+### `a2a-list-tasks`
+
+List all tasks assigned to this agent.
+
+**Input Schema:**
+```json
+{}
+```
+
+**Returns:**
+- Array of task objects
+- Task status and metadata
+- Priority and timing information
+
+---
+
+### `a2a-list-agents`
+
+Discover available agents for task delegation.
+
+**Input Schema:**
+```json
+{}
+```
+
+**Returns:**
+- Array of agent identifiers
+- Agent capabilities
+- Agent status (online/offline)
+
+---
+
 ## Command Aliases
 
 All buddy commands support multiple aliases for convenience:

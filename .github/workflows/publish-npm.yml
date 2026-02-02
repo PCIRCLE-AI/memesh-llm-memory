@@ -41,15 +41,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Create GitHub comment
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const releaseId = context.payload.release.id;
-            const version = context.payload.release.tag_name;
-            github.rest.repos.createReleaseComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: releaseId,
-              body: `✅ Successfully published to npm: [@pcircle/memesh@${version}](https://www.npmjs.com/package/@pcircle/memesh/v/${version})`
-            });
+      - name: Log success
+        run: |
+          echo "✅ Successfully published @pcircle/memesh@${{ github.event.release.tag_name }} to npm"
+          echo "📦 Package URL: https://www.npmjs.com/package/@pcircle/memesh"

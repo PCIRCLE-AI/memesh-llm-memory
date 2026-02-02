@@ -1098,8 +1098,8 @@ buddy-remember "project decisions"  <span class="comment"># Query your project m
               <pre><code><span class="comment"># Ask for next steps</span>
 get-workflow-guidance <span class="string">{"phase":"code-written"}</span>
 
-<span class="comment"># Generate a plan</span>
-generate-smart-plan <span class="string">{"featureDescription":"Add login flow"}</span></code></pre>
+<span class="comment"># Generate tests automatically</span>
+generate-tests <span class="string">{"filePath":"src/auth.ts"}</span></code></pre>
             </div>
           </div>
 
@@ -1440,22 +1440,22 @@ Claude: Expert security review</code></pre>
             </div>
           </div>
 
-          <!-- Smart Planning -->
+          <!-- Auto Testing -->
           <div class="glass-card rounded-2xl p-6">
             <div class="text-3xl mb-3">
-              <i data-lucide="clipboard-list" class="icon-xl text-purple-600"></i>
+              <i data-lucide="clipboard-check" class="icon-xl text-purple-600"></i>
             </div>
-            <h3 class="text-xl font-bold text-gray-900 mb-3">Smart Planning</h3>
+            <h3 class="text-xl font-bold text-gray-900 mb-3">Auto Testing</h3>
             <p class="text-gray-600 text-sm mb-3">
-              Break down features into small, ordered steps:
+              Generate comprehensive tests automatically:
             </p>
             <div class="bg-gray-900 rounded-lg p-3 text-xs">
               <pre
                 class="text-gray-300"
-              ><code>generate-smart-plan {"featureDescription":"OAuth login"}</code></pre>
+              ><code>generate-tests {"filePath":"src/auth.ts"}</code></pre>
             </div>
             <p class="text-gray-500 text-xs mt-2">
-              Includes tasks, dependencies, and testing guidance.
+              Creates unit tests with full coverage and edge cases.
             </p>
           </div>
 
@@ -1480,9 +1480,9 @@ Claude: Expert security review</code></pre>
                 <span class="text-gray-500 text-xs block">Recall project memory</span>
               </div>
               <div class="bg-gray-100 rounded p-2">
-                <code class="text-gray-800">generate-smart-plan</code>
+                <code class="text-gray-800">generate-tests "src/auth.ts"</code>
                 <span class="text-gray-500 text-xs block"
-                  >Break down the next feature</span
+                  >Auto-generate test coverage</span
                 >
               </div>
             </div>
@@ -1526,7 +1526,7 @@ Claude: Expert security review</code></pre>
               </h4>
               <ul class="space-y-1">
                 <li class="quick-ref-code">get-workflow-guidance</li>
-                <li class="quick-ref-code mt-1">generate-smart-plan</li>
+                <li class="quick-ref-code mt-1">generate-tests</li>
                 <li class="quick-ref-code mt-1">get-session-health</li>
               </ul>
             </div>

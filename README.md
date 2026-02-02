@@ -10,6 +10,7 @@
 
 [![GitHub Stars](https://img.shields.io/github/stars/PCIRCLE-AI/claude-code-buddy?style=social)](https://github.com/PCIRCLE-AI/claude-code-buddy)
 [![npm version](https://img.shields.io/npm/v/@pcircle/memesh)](https://www.npmjs.com/package/@pcircle/memesh)
+[![npm publish](https://github.com/PCIRCLE-AI/claude-code-buddy/actions/workflows/publish-npm.yml/badge.svg)](https://github.com/PCIRCLE-AI/claude-code-buddy/actions/workflows/publish-npm.yml)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-1.25.3-purple.svg)](https://modelcontextprotocol.io)
 

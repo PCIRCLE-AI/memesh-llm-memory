@@ -124,9 +124,9 @@ export class ResponseFormatter {
   }
 
   /**
-   * Format medium complexity response
+   * Format medium complexity response with Next Steps
    * @param response Agent execution result
-   * @returns Multi-line format without heavy borders
+   * @returns Multi-line format without heavy borders but with actionable guidance
    */
   private formatMedium(response: AgentResponse): string {
     const sections: string[] = [];
@@ -142,6 +142,17 @@ export class ResponseFormatter {
         sections.push(this.formatResults(response.results));
       } catch (error) {
         sections.push(chalk.green('Results: [Error formatting results]'));
+      }
+    }
+
+    // Next Steps / Actionable Guidance (if available)
+    const nextSteps = this.generateNextSteps(response);
+    if (nextSteps) {
+      try {
+        sections.push(''); // Empty line for separation
+        sections.push(nextSteps);
+      } catch (error) {
+        // Silently skip next steps on error (non-critical)
       }
     }
 

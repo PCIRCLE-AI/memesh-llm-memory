@@ -297,11 +297,12 @@ describe('Agent Activation Validation', () => {
         'buddy-secret-get',
         'buddy-secret-list',
         'buddy-secret-delete',
-        // A2A Protocol Tools
+        // A2A Protocol Tools (Phase 1.0)
         'a2a-send-task',
         'a2a-get-task',
         'a2a-list-tasks',
         'a2a-list-agents',
+        'a2a-report-result',
         'hook-tool-use',
         'generate-tests',
       ];

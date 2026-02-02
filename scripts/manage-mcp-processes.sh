@@ -38,7 +38,7 @@ list_processes() {
     echo ""
 
     # Find all MeMesh processes
-    PROCESSES=$(ps aux | grep -E "claude-code-buddy|server-bootstrap" | grep -v grep | grep -v "manage-mcp-processes")
+    PROCESSES=$(ps aux | grep -E "memesh|claude-code-buddy|server-bootstrap" | grep -v grep | grep -v "manage-mcp-processes")
 
     if [ -z "$PROCESSES" ]; then
         print_success "No MeMesh MCP server processes found"
@@ -72,7 +72,7 @@ kill_all_processes() {
     print_warning "Preparing to terminate all MeMesh MCP server processes..."
 
     # Find all MeMesh processes
-    PIDS=$(ps aux | grep -E "claude-code-buddy|server-bootstrap" | grep -v grep | grep -v "manage-mcp-processes" | awk '{print $2}')
+    PIDS=$(ps aux | grep -E "memesh|claude-code-buddy|server-bootstrap" | grep -v grep | grep -v "manage-mcp-processes" | awk '{print $2}')
 
     if [ -z "$PIDS" ]; then
         print_success "No MeMesh MCP server processes found"
@@ -103,13 +103,13 @@ kill_all_processes() {
     # Wait a bit and check if any processes are still running
     sleep 1
 
-    REMAINING=$(ps aux | grep -E "claude-code-buddy|server-bootstrap" | grep -v grep | grep -v "manage-mcp-processes" | wc -l | tr -d ' ')
+    REMAINING=$(ps aux | grep -E "memesh|claude-code-buddy|server-bootstrap" | grep -v grep | grep -v "manage-mcp-processes" | wc -l | tr -d ' ')
 
     if [ "$REMAINING" -eq 0 ]; then
         print_success "All MeMesh MCP server processes terminated"
     else
         print_warning "Still $REMAINING process(es) running, attempting force termination..."
-        PIDS=$(ps aux | grep -E "claude-code-buddy|server-bootstrap" | grep -v grep | grep -v "manage-mcp-processes" | awk '{print $2}')
+        PIDS=$(ps aux | grep -E "memesh|claude-code-buddy|server-bootstrap" | grep -v grep | grep -v "manage-mcp-processes" | awk '{print $2}')
         for PID in $PIDS; do
             if kill -9 "$PID" 2>/dev/null; then
                 print_success "Force-terminated process $PID"
@@ -133,7 +133,7 @@ check_config() {
     print_success "Configuration file exists: $CONFIG_PATH"
 
     # Check if MeMesh is configured
-    if grep -q "claude-code-buddy" "$CONFIG_PATH"; then
+    if grep -q "memesh|claude-code-buddy" "$CONFIG_PATH"; then
         print_success "MeMesh MCP server is configured"
 
         # Extract MeMesh config
@@ -141,9 +141,9 @@ check_config() {
         print_info "MeMesh Configuration:"
         # Use jq if available, otherwise use grep
         if command -v jq > /dev/null 2>&1; then
-            jq '.mcpServers["claude-code-buddy"]' "$CONFIG_PATH"
+            jq '.mcpServers["memesh|claude-code-buddy"]' "$CONFIG_PATH"
         else
-            grep -A 10 "claude-code-buddy" "$CONFIG_PATH"
+            grep -A 10 "memesh|claude-code-buddy" "$CONFIG_PATH"
         fi
     else
         print_warning "MeMesh MCP server not configured in $CONFIG_PATH"
@@ -169,7 +169,7 @@ show_orphaned() {
     print_info "Listing orphaned processes (parent process no longer exists)..."
     echo ""
 
-    PROCESSES=$(ps aux | grep -E "claude-code-buddy|server-bootstrap" | grep -v grep | grep -v "manage-mcp-processes")
+    PROCESSES=$(ps aux | grep -E "memesh|claude-code-buddy|server-bootstrap" | grep -v grep | grep -v "manage-mcp-processes")
 
     if [ -z "$PROCESSES" ]; then
         print_success "No MeMesh MCP server processes found"

@@ -86,10 +86,10 @@ if [ -z "$CONFIG_PATH" ]; then
     echo -e "   ${YELLOW}⚠${NC}  MCP config file not found"
     WARNINGS=$((WARNINGS + 1))
 else
-    if node -e "const fs=require('fs'); const config=JSON.parse(fs.readFileSync(process.argv[2], 'utf8')); if (config?.mcpServers?.['claude-code-buddy']) process.exit(0); process.exit(1);" "$CONFIG_PATH" 2>/dev/null; then
-        echo -e "   ${GREEN}✓${NC} claude-code-buddy registered in $CONFIG_PATH"
+    if node -e "const fs=require('fs'); const config=JSON.parse(fs.readFileSync(process.argv[2], 'utf8')); if (config?.mcpServers?.['memesh|claude-code-buddy']) process.exit(0); process.exit(1);" "$CONFIG_PATH" 2>/dev/null; then
+        echo -e "   ${GREEN}✓${NC} memesh|claude-code-buddy registered in $CONFIG_PATH"
     else
-        echo -e "   ${YELLOW}⚠${NC}  claude-code-buddy not found in $CONFIG_PATH"
+        echo -e "   ${YELLOW}⚠${NC}  memesh|claude-code-buddy not found in $CONFIG_PATH"
         WARNINGS=$((WARNINGS + 1))
     fi
 fi

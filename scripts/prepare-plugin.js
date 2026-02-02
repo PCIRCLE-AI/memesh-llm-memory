@@ -20,17 +20,28 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const projectRoot = join(__dirname, '..');
-const pluginDir = join(projectRoot, '.claude-plugin', 'claude-code-buddy');
 
-console.log('🔧 Preparing plugin directory for Claude Code installation...\n');
+// Backward compatibility: Support both directory names
+const legacyPluginDir = join(projectRoot, '.claude-plugin', 'claude-code-buddy');
+const newPluginDir = join(projectRoot, '.claude-plugin', 'memesh');
+
+// Determine which directory to use (prefer existing for backward compatibility)
+let pluginDir;
+if (existsSync(legacyPluginDir)) {
+  pluginDir = legacyPluginDir;
+  console.log('🔧 Preparing plugin directory for Claude Code installation (legacy location)...\n');
+} else {
+  pluginDir = newPluginDir;
+  console.log('🔧 Preparing plugin directory for Claude Code installation...\n');
+}
 
 // Step 1: Ensure plugin directory exists
 console.log('1️⃣ Creating plugin directory structure...');
 if (!existsSync(pluginDir)) {
   mkdirSync(pluginDir, { recursive: true });
-  console.log('   ✅ Created: .claude-plugin/claude-code-buddy/');
+  console.log(`   ✅ Created: ${pluginDir.replace(projectRoot, '.')}`);
 } else {
-  console.log('   ✅ Directory exists: .claude-plugin/claude-code-buddy/');
+  console.log(`   ✅ Directory exists: ${pluginDir.replace(projectRoot, '.')}`);
 }
 
 // Step 2: Copy compiled dist/ to plugin directory
@@ -130,7 +141,11 @@ if (!allFilesExist) {
 console.log('\n7️⃣ Registering MCP server in Claude Code...');
 
 const mcpServerPath = join(pluginDir, 'dist', 'mcp', 'server.js');
-const mcpServerName = 'claude-code-buddy';
+
+// Backward compatibility: Use existing server name or default to 'memesh'
+const legacyServerName = 'claude-code-buddy';
+const newServerName = 'memesh';
+let mcpServerName = newServerName; // Default to new name
 
 try {
   // Check if MCP server is already registered
@@ -140,6 +155,14 @@ try {
   } catch (error) {
     console.log('   ⚠️  Could not check existing MCP servers');
     mcpList = '';
+  }
+
+  // Check if legacy name exists (backward compatibility)
+  if (mcpList.includes(legacyServerName)) {
+    mcpServerName = legacyServerName;
+    console.log(`   ✓ Using existing server name: ${legacyServerName} (legacy)`);
+  } else if (mcpList.includes(newServerName)) {
+    console.log(`   ✓ Using existing server name: ${newServerName}`);
   }
 
   if (mcpList.includes(mcpServerName)) {

@@ -49,14 +49,35 @@ function addToMcpConfig(ccbPath, preferredConfigPath) {
     config.mcpServers = {};
   }
 
-  // Add or update MeMesh entry with required 'type' field
-  config.mcpServers['claude-code-buddy'] = {
+  // Backward compatibility: Support both 'memesh' and legacy 'claude-code-buddy'
+  // Prefer 'memesh' for new installations, but keep existing 'claude-code-buddy' if present
+  const serverConfig = {
     type: 'stdio',  // Required field for Claude Code MCP servers
     command: 'node',
     args: [ccbPath],
     env: {
       NODE_ENV: 'production'
     }
+  };
+
+  // Use existing server name or default to 'memesh' for new installations
+  const existingLegacyServer = config.mcpServers['claude-code-buddy'];
+  const existingNewServer = config.mcpServers['memesh'];
+
+  if (existingLegacyServer) {
+    // User has legacy name, keep it for backward compatibility
+    config.mcpServers['claude-code-buddy'] = serverConfig;
+    console.log('✓ Updated existing MCP server: claude-code-buddy (legacy name maintained)');
+  } else {
+    // New installation or user upgrading, use new name
+    config.mcpServers['memesh'] = serverConfig;
+    console.log('✓ Configured MCP server: memesh');
+
+    // Clean up legacy entry if upgrading
+    if (existingNewServer) {
+      delete config.mcpServers['claude-code-buddy'];
+    }
+  }
   };
 
   try {

@@ -28,18 +28,18 @@ fi
 # Step 2: Check if MeMesh is in MCP server list
 echo ""
 echo "Step 2: Checking MCP server registration..."
-if claude mcp list | grep -q "claude-code-buddy"; then
+if claude mcp list | grep -q "memesh|claude-code-buddy"; then
     echo -e "${GREEN}✓${NC} MeMesh is registered in MCP server list"
 else
     echo -e "${RED}✗${NC} MeMesh is not registered"
-    echo "Please run: claude mcp add claude-code-buddy -- node $(pwd)/dist/mcp/server-bootstrap.js"
+    echo "Please run: claude mcp add memesh|claude-code-buddy -- node $(pwd)/dist/mcp/server-bootstrap.js"
     exit 1
 fi
 
 # Step 3: Check connection status
 echo ""
 echo "Step 3: Checking MCP server connection..."
-if claude mcp list | grep "claude-code-buddy" | grep -q "✓ Connected"; then
+if claude mcp list | grep "memesh|claude-code-buddy" | grep -q "✓ Connected"; then
     echo -e "${GREEN}✓${NC} MeMesh MCP server is connected"
 else
     echo -e "${RED}✗${NC} MeMesh MCP server failed to connect"
@@ -71,7 +71,7 @@ echo "MeMesh v2.6.0 is successfully installed and working."
 echo ""
 echo "Next steps:"
 echo "1. Restart your Claude Code session to load the new MCP server"
-echo "2. Use 'mcp__claude-code-buddy__*' tools in Claude Code"
+echo "2. Use 'mcp__memesh|claude-code-buddy__*' tools in Claude Code"
 echo ""
 echo "Available MeMesh tools:"
 echo "  - buddy-do: Execute tasks with intelligent routing"

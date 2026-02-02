@@ -177,7 +177,7 @@ describe('ResponseFormatter', () => {
     });
 
     describe('formatError', () => {
-      it('should format error with icon and prominence', () => {
+      it('should format error with ErrorClassifier details', () => {
         const testError = new Error('Test error message');
         const response: AgentResponse = {
           agentType: 'test-agent',
@@ -188,12 +188,13 @@ describe('ResponseFormatter', () => {
 
         const formatted = formatter.format(response);
 
-        expect(formatted).toContain('✗'); // Error icon
-        expect(formatted).toContain('Error');
-        expect(formatted).toContain('Test error message');
+        expect(formatted).toContain('✗'); // Error icon in header box
+        expect(formatted).toContain('Root Cause:'); // ErrorClassifier output
+        expect(formatted).toContain('Fix Steps:'); // ErrorClassifier output
+        // Note: ErrorClassifier may categorize the error, so original message might not appear verbatim
       });
 
-      it('should include stack trace for errors', () => {
+      it('should include enhanced error details with ErrorClassifier', () => {
         const testError = new Error('Test error');
         testError.stack = 'Error: Test error\n    at test.ts:10:5';
 
@@ -206,8 +207,13 @@ describe('ResponseFormatter', () => {
 
         const formatted = formatter.format(response);
 
-        expect(formatted).toContain('Stack Trace');
-        expect(formatted).toContain('test.ts:10:5');
+        // Should include ErrorClassifier output
+        expect(formatted).toContain('Root Cause:');
+        expect(formatted).toContain('Fix Steps:');
+        expect(formatted).toContain('Need more help?');
+
+        // Stack trace only shown in DEBUG mode
+        // (not asserting stack trace presence in normal mode)
       });
     });
 

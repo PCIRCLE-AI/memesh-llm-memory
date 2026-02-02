@@ -15,6 +15,7 @@ import chalk from 'chalk';
 import boxen from 'boxen';
 import Table from 'cli-table3';
 import { theme, icons } from './theme.js';
+import { ErrorClassifier } from '../errors/ErrorClassifier.js';
 
 /**
  * Agent Response Interface
@@ -55,6 +56,13 @@ export class ResponseFormatter {
   private readonly MAX_PROMPT_LENGTH = 300;
   private readonly MAX_STACK_LENGTH = 500;
   private readonly LARGE_RESULT_THRESHOLD = 500; // characters
+
+  // Error classification
+  private readonly errorClassifier: ErrorClassifier;
+
+  constructor() {
+    this.errorClassifier = new ErrorClassifier();
+  }
 
   /**
    * Format complete agent response
@@ -469,26 +477,109 @@ export class ResponseFormatter {
 
   /**
    * Format error with enhanced prominence and actionability
+   * Uses ErrorClassifier for intelligent error analysis and recovery guidance
    */
   private formatError(error: Error): string {
+    // Classify error for enhanced formatting
+    const classified = this.errorClassifier.classify(error, {});
+
     const sections: string[] = [];
 
-    // CRITICAL: Error banner with icon
+    // CRITICAL: Error header with severity badge
     const errorIcon = icons.error || '❌';
-    const header = `${chalk.red(errorIcon)} ${chalk.bold.red('Error')}`;
+    const header = `${chalk.red(errorIcon)} ${chalk.bold.red(classified.title)}`;
     sections.push(header);
+    sections.push('');
 
-    // Error message (prominent)
-    sections.push(chalk.red(`${error.name}: ${error.message}`));
+    // Severity and category badge
+    const severityBadge = this.getSeverityBadge(classified.severity);
+    sections.push(`${severityBadge} ${chalk.bold(classified.category.toUpperCase())}`);
+    sections.push('');
 
-    // Stack trace (subtle, truncated)
-    if (error.stack) {
+    // Error description
+    sections.push(chalk.white(classified.description));
+    sections.push('');
+
+    // Root cause analysis
+    sections.push(chalk.bold('Root Cause:'));
+    sections.push(chalk.yellow(`  ${classified.rootCause}`));
+    sections.push('');
+
+    // Fix steps (actionable guidance)
+    if (classified.fixSteps.length > 0) {
+      sections.push(chalk.bold('Fix Steps:'));
+      classified.fixSteps.forEach((step, i) => {
+        sections.push(chalk.white(`  ${i + 1}. ${step}`));
+      });
       sections.push('');
-      sections.push(chalk.dim('Stack Trace:'));
-      sections.push(chalk.dim(this.truncateText(error.stack, this.MAX_STACK_LENGTH)));
     }
 
+    // Auto-fix notification
+    if (classified.autoFixAvailable) {
+      sections.push(chalk.cyan(`${icons.lightbulb || '💡'} Auto-fix available!`));
+      sections.push(chalk.dim('  Run: buddy-fix --auto'));
+      sections.push('');
+    }
+
+    // Related documentation
+    if (classified.relatedDocs.length > 0) {
+      sections.push(chalk.bold('Related Documentation:'));
+      classified.relatedDocs.forEach((doc) => {
+        sections.push(chalk.cyan(`  • ${doc.title}: ${chalk.underline(doc.url)}`));
+      });
+      sections.push('');
+    }
+
+    // Related commands
+    if (classified.relatedCommands.length > 0) {
+      sections.push(chalk.bold('Related Commands:'));
+      classified.relatedCommands.forEach((cmd) => {
+        sections.push(chalk.cyan(`  $ ${cmd}`));
+      });
+      sections.push('');
+    }
+
+    // Troubleshooting tips
+    if (classified.troubleshootingTips.length > 0) {
+      sections.push(chalk.bold('Troubleshooting Tips:'));
+      classified.troubleshootingTips.forEach((tip) => {
+        sections.push(chalk.dim(`  • ${tip}`));
+      });
+      sections.push('');
+    }
+
+    // Stack trace (if debug mode) - subtle, truncated
+    if (error.stack && process.env.DEBUG) {
+      sections.push(chalk.dim('Stack Trace (DEBUG):'));
+      sections.push(chalk.dim(this.truncateText(error.stack, this.MAX_STACK_LENGTH)));
+      sections.push('');
+    }
+
+    // Get help footer
+    sections.push(chalk.dim('─'.repeat(60)));
+    sections.push(chalk.dim('Need more help?'));
+    sections.push(chalk.cyan('  $ memesh report-issue'));
+    sections.push(chalk.dim('  https://github.com/PCIRCLE-AI/claude-code-buddy/issues'));
+
     return sections.join('\n');
+  }
+
+  /**
+   * Get severity badge with appropriate color
+   */
+  private getSeverityBadge(severity: string): string {
+    switch (severity) {
+      case 'critical':
+        return chalk.red.bold('[CRITICAL]');
+      case 'high':
+        return chalk.red('[HIGH]');
+      case 'medium':
+        return chalk.yellow('[MEDIUM]');
+      case 'low':
+        return chalk.gray('[LOW]');
+      default:
+        return chalk.gray('[UNKNOWN]');
+    }
   }
 
   /**

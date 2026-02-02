@@ -121,6 +121,13 @@ export const icons = {
   bullet: '•',
   chevronRight: '›',
   chevronDown: '∨',
+
+  // Task & Workflow
+  task: '📋',
+  lightbulb: '💡',
+  rocket: '🚀',
+  gear: '⚙️',
+  memory: '🧠',
 } as const;
 
 export const borders = {

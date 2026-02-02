@@ -162,23 +162,27 @@ export class ResponseFormatter {
   }
 
   /**
-   * Format complex response (full boxed format)
+   * Format complex response (full boxed format with enhanced visual hierarchy)
    * @param response Agent execution result
-   * @returns Full formatted output with boxes and borders
+   * @returns Full formatted output with improved scannability and structure
    */
   private formatComplex(response: AgentResponse): string {
     const sections: string[] = [];
 
-    // Header - Agent Type and Status
+    // Header - Agent Type and Status (CRITICAL - Always prominent)
     try {
       sections.push(this.formatHeader(response));
     } catch (error) {
       sections.push(chalk.red('[Error formatting header]'));
     }
 
-    // Task Description
+    // Task Description with icon
     try {
-      sections.push(this.formatTaskDescription(response.taskDescription));
+      sections.push(this.formatSection(
+        icons.task || '📋',
+        'Task',
+        response.taskDescription
+      ));
     } catch (error) {
       sections.push(chalk.gray('Task: [Error formatting description]'));
     }
@@ -186,34 +190,52 @@ export class ResponseFormatter {
     // Enhanced Prompt (if Prompt Enhancement Mode)
     if (response.enhancedPrompt) {
       try {
+        sections.push(this.formatDivider());
         sections.push(this.formatEnhancedPrompt(response.enhancedPrompt));
       } catch (error) {
         sections.push(chalk.magenta('[Error formatting enhanced prompt]'));
       }
     }
 
-    // Results (if available)
+    // Results (if available) - HIGH PRIORITY
     if (response.results && response.status === 'success') {
       try {
+        sections.push(this.formatDivider());
         sections.push(this.formatResults(response.results));
       } catch (error) {
         sections.push(chalk.green('Results: [Error formatting results]'));
       }
     }
 
-    // Error (if failed)
+    // Error (if failed) - CRITICAL PRIORITY
     if (response.error && response.status === 'error') {
       try {
+        sections.push(this.formatDivider());
         sections.push(this.formatError(response.error));
       } catch (error) {
         sections.push(chalk.red('[Error formatting error details]'));
       }
     }
 
-    // Metadata - Duration, Tokens, Model
+    // Next Steps / Actionable Guidance (if available)
+    const nextSteps = this.generateNextSteps(response);
+    if (nextSteps) {
+      try {
+        sections.push(this.formatDivider());
+        sections.push(nextSteps);
+      } catch (error) {
+        // Silently skip next steps on error (non-critical)
+      }
+    }
+
+    // Metadata - Duration, Tokens, Model (LOW PRIORITY - Subtle)
     if (response.metadata) {
       try {
-        sections.push(this.formatMetadata(response.metadata));
+        const metadataStr = this.formatMetadata(response.metadata);
+        if (metadataStr) {
+          sections.push('');
+          sections.push(metadataStr);
+        }
       } catch (error) {
         // Silently skip metadata on error (non-critical)
       }
@@ -228,7 +250,7 @@ export class ResponseFormatter {
       }
     }
 
-    return sections.join('\n\n');
+    return sections.join('\n');
   }
 
   /**
@@ -277,19 +299,95 @@ export class ResponseFormatter {
 
   /**
    * Format task description
+   * @deprecated Use formatSection instead for better visual hierarchy
    */
   private formatTaskDescription(description: string): string {
     return chalk.gray('Task: ') + chalk.white(description);
   }
 
   /**
-   * Format enhanced prompt (for Prompt Enhancement Mode)
+   * Format a section with consistent styling
+   * @param icon Section icon (emoji or symbol)
+   * @param title Section title
+   * @param content Section content
+   * @returns Formatted section with icon, title, and content
+   */
+  private formatSection(icon: string, title: string, content: string): string {
+    const header = `${icon} ${chalk.bold(title)}`;
+    return `${header}\n${chalk.white(content)}`;
+  }
+
+  /**
+   * Format a visual section divider
+   * @returns Subtle divider line
+   */
+  private formatDivider(): string {
+    return chalk.dim('─'.repeat(60));
+  }
+
+  /**
+   * Generate actionable next steps based on response context
+   * @param response Agent execution result
+   * @returns Formatted next steps section or null if not applicable
+   */
+  private generateNextSteps(response: AgentResponse): string | null {
+    const suggestions: string[] = [];
+
+    // Error-specific next steps
+    if (response.status === 'error' && response.error) {
+      suggestions.push('Review the error message and stack trace above');
+      suggestions.push('Check recent changes that might have caused this error');
+      suggestions.push('Try: buddy-remember "similar errors" to find past solutions');
+    }
+
+    // Success-specific next steps (based on agent type)
+    if (response.status === 'success') {
+      switch (response.agentType) {
+        case 'buddy-do':
+          suggestions.push('Verify the implementation meets requirements');
+          suggestions.push('Run tests to ensure nothing broke');
+          suggestions.push('Consider: buddy-remember "this implementation" to store decision');
+          break;
+        case 'buddy-remember':
+          // Check if results were found
+          const hasResults = response.results &&
+            typeof response.results === 'object' &&
+            'count' in response.results &&
+            (response.results.count as number) > 0;
+
+          if (!hasResults) {
+            suggestions.push('Try a broader search term');
+            suggestions.push('Use buddy-do to create new memories for this topic');
+          } else {
+            suggestions.push('Review the memories above for relevant context');
+            suggestions.push('Apply these learnings to your current task');
+          }
+          break;
+      }
+    }
+
+    // No suggestions? Don't show section
+    if (suggestions.length === 0) {
+      return null;
+    }
+
+    const header = `${icons.lightbulb || '💡'} ${chalk.bold.cyan('Next Steps')}`;
+    const items = suggestions.map((s, i) => `  ${i + 1}. ${chalk.white(s)}`).join('\n');
+
+    return `${header}\n${items}`;
+  }
+
+  /**
+   * Format enhanced prompt (for Prompt Enhancement Mode) with improved hierarchy
    */
   private formatEnhancedPrompt(prompt: EnhancedPrompt): string {
-    const sections: string[] = [chalk.bold.magenta('Enhanced Prompt:')];
+    const icon = icons.rocket || '🚀';
+    const header = `${chalk.magenta(icon)} ${chalk.bold.magenta('Enhanced Prompt')}`;
+    const sections: string[] = [header];
 
     // System Prompt
-    sections.push(chalk.gray('System:'));
+    sections.push('');
+    sections.push(chalk.bold('System:'));
     sections.push(chalk.white(this.truncateText(prompt.systemPrompt, this.MAX_PROMPT_LENGTH)));
 
     const guardrails = this.extractGuardrails(prompt.metadata);
@@ -298,17 +396,21 @@ export class ResponseFormatter {
       : prompt.userPrompt;
 
     // User Prompt
-    sections.push(chalk.gray('User:'));
+    sections.push('');
+    sections.push(chalk.bold('User:'));
     sections.push(chalk.white(this.truncateText(userPrompt, this.MAX_PROMPT_LENGTH)));
 
+    // Guardrails (if present) - highlighted
     if (guardrails) {
-      sections.push(chalk.bold.yellow('Guardrails:'));
+      sections.push('');
+      sections.push(chalk.bold.yellow(`${icons.warning || '⚠️'} Guardrails:`));
       sections.push(chalk.white(guardrails));
     }
 
     // Suggested Model
     if (prompt.suggestedModel) {
-      sections.push(chalk.gray('Suggested Model: ') + chalk.cyan(prompt.suggestedModel));
+      sections.push('');
+      sections.push(chalk.dim('Suggested Model: ') + chalk.cyan(prompt.suggestedModel));
     }
 
     return sections.join('\n');
@@ -333,10 +435,12 @@ export class ResponseFormatter {
   }
 
   /**
-   * Format results
+   * Format results with enhanced visual hierarchy
    */
   private formatResults(results: unknown): string {
-    const sections: string[] = [chalk.bold.green('Results:')];
+    const icon = icons.success || '✓';
+    const header = `${chalk.green(icon)} ${chalk.bold.green('Results')}`;
+    const sections: string[] = [header];
 
     // Handle different result types
     if (typeof results === 'string') {
@@ -353,42 +457,50 @@ export class ResponseFormatter {
   }
 
   /**
-   * Format error
+   * Format error with enhanced prominence and actionability
    */
   private formatError(error: Error): string {
-    const sections: string[] = [chalk.bold.red('Error:')];
+    const sections: string[] = [];
 
-    sections.push(chalk.red(`${icons.error} ${error.name}: ${error.message}`));
+    // CRITICAL: Error banner with icon
+    const errorIcon = icons.error || '❌';
+    const header = `${chalk.red(errorIcon)} ${chalk.bold.red('Error')}`;
+    sections.push(header);
 
+    // Error message (prominent)
+    sections.push(chalk.red(`${error.name}: ${error.message}`));
+
+    // Stack trace (subtle, truncated)
     if (error.stack) {
-      sections.push(chalk.gray('Stack Trace:'));
-      sections.push(chalk.gray(this.truncateText(error.stack, this.MAX_STACK_LENGTH)));
+      sections.push('');
+      sections.push(chalk.dim('Stack Trace:'));
+      sections.push(chalk.dim(this.truncateText(error.stack, this.MAX_STACK_LENGTH)));
     }
 
     return sections.join('\n');
   }
 
   /**
-   * Format metadata (duration, tokens, model)
+   * Format metadata (duration, tokens, model) - Subtle, low visual priority
    */
   private formatMetadata(metadata: AgentResponse['metadata']): string {
     const items: string[] = [];
 
     if (metadata?.duration !== undefined) {
       const duration = this.formatDuration(metadata.duration);
-      items.push(chalk.gray('Duration: ') + chalk.cyan(duration));
+      items.push(chalk.dim(`Duration: ${duration}`));
     }
 
     if (metadata?.tokensUsed !== undefined) {
       const tokens = this.formatNumber(metadata.tokensUsed);
-      items.push(chalk.gray('Tokens: ') + chalk.cyan(tokens));
+      items.push(chalk.dim(`Tokens: ${tokens}`));
     }
 
     if (metadata?.model) {
-      items.push(chalk.gray('Model: ') + chalk.cyan(metadata.model));
+      items.push(chalk.dim(`Model: ${metadata.model}`));
     }
 
-    return items.length > 0 ? items.join(' | ') : '';
+    return items.length > 0 ? chalk.dim(items.join(' • ')) : '';
   }
 
   /**

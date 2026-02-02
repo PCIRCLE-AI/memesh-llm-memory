@@ -143,6 +143,64 @@ When adding new MCP tools:
 - Use `buddy-` prefix for user-facing tools
 - Use `a2a-` prefix for A2A protocol tools
 
+## Release Process
+
+### For Maintainers
+
+MeMesh uses an automated release process triggered by GitHub Releases:
+
+1. **Update Version**
+   ```bash
+   # Bump version (patch/minor/major)
+   npm version patch --no-git-tag-version
+   ```
+
+2. **Update CHANGELOG.md**
+   - Add entry for the new version
+   - Document all user-facing changes
+   - Follow [Keep a Changelog](https://keepachangelog.com/) format
+
+3. **Commit and Push**
+   ```bash
+   git add package.json CHANGELOG.md
+   git commit -m "chore(release): bump version to X.Y.Z"
+   git push origin main
+   ```
+
+4. **Create GitHub Release**
+   ```bash
+   # Create release (triggers automated npm publish)
+   gh release create vX.Y.Z \
+     --title "vX.Y.Z - Release Title" \
+     --notes "Release notes..."
+   ```
+
+5. **Automated Publishing**
+   - GitHub Actions workflow automatically:
+     - Builds the project
+     - Runs tests
+     - Publishes to npm registry
+     - Logs success
+
+6. **Verify**
+   ```bash
+   # Check npm package
+   npm view @pcircle/memesh version
+
+   # Verify workflow
+   gh run list --workflow=publish-npm.yml --limit 1
+   ```
+
+### GitHub Actions Workflow
+
+The `.github/workflows/publish-npm.yml` workflow:
+- **Trigger**: On GitHub release publication
+- **Steps**: Checkout → Build → Test → Publish → Log
+- **Provenance**: Publishes with npm provenance
+- **Access**: Public package with NPM_TOKEN authentication
+
+See [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md) for detailed instructions.
+
 ## Questions?
 
 - Open a [Discussion](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)

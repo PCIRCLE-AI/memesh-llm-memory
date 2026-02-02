@@ -1,6 +1,16 @@
 name: Publish to npm
 
-# Trigger on GitHub release publication
+# This workflow automatically publishes the package to npm when a GitHub Release is published.
+#
+# Workflow: Create GitHub Release → Trigger this workflow → Build → Test → Publish to npm
+# Duration: ~2-3 minutes
+#
+# Requirements:
+#   - NPM_TOKEN secret must be configured in repository settings
+#   - Token must have publish permissions for @pcircle scope
+#
+# For detailed release instructions, see docs/RELEASE_PROCESS.md
+
 on:
   release:
     types: [published]
@@ -41,6 +51,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      # Log publication success (replaced invalid GitHub API call with simple logging)
       - name: Log success
         run: |
           echo "✅ Successfully published @pcircle/memesh@${{ github.event.release.tag_name }} to npm"

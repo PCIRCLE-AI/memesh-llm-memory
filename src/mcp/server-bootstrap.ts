@@ -23,11 +23,17 @@ process.env.MCP_SERVER_MODE = 'true';
 // Global reference to A2A server for shutdown
 let a2aServer: any = null;
 
+// Track if MCP client has connected
+let mcpClientConnected = false;
+
 // ============================================================================
 // 🚨 STEP 2: Use dynamic import (NOT static import!)
 // ============================================================================
 async function bootstrap() {
   try {
+    // Start initialization watchdog to detect incorrect usage
+    startMCPClientWatchdog();
+
     // Dynamic import ensures environment variable is set BEFORE module loading
     const { ClaudeCodeBuddyMCPServer } = await import('./server.js');
 
@@ -44,6 +50,82 @@ async function bootstrap() {
     console.error('Fatal error in MCP server bootstrap:', error);
     process.exit(1);
   }
+}
+
+/**
+ * MCP Client Watchdog
+ *
+ * Detects if the server was started incorrectly (e.g., by user running `npx` manually).
+ *
+ * MCP clients communicate via stdin/stdout. When a client connects, it immediately sends
+ * JSON-RPC requests. If stdin remains silent for 3 seconds after startup, this indicates
+ * the server was likely started manually (not by an MCP client), which is incorrect usage.
+ *
+ * This prevents user confusion when they accidentally run `npx @pcircle/claude-code-buddy-mcp`
+ * directly, expecting it to be an installation command rather than a long-running server.
+ *
+ * Can be disabled by setting DISABLE_MCP_WATCHDOG=1 environment variable (for testing).
+ */
+function startMCPClientWatchdog(): void {
+  // Allow disabling watchdog for testing
+  if (process.env.DISABLE_MCP_WATCHDOG === '1') {
+    return;
+  }
+
+  // Listen for any data on stdin (MCP protocol communication)
+  const stdinHandler = () => {
+    mcpClientConnected = true;
+    // Don't remove the listener - let the MCP server handle stdin
+  };
+
+  // Set once listener to detect first MCP message
+  process.stdin.once('data', stdinHandler);
+
+  // Check after 3 seconds if any MCP client connected
+  setTimeout(() => {
+    if (!mcpClientConnected) {
+      // No MCP client connected - likely started incorrectly by user
+      console.error(`
+╔════════════════════════════════════════════════════════════════════════╗
+║                                                                        ║
+║   ❌ ERROR: MCP Server Started Incorrectly                            ║
+║                                                                        ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+This is an MCP server that should be started by Claude Code or Cursor,
+not run directly from the command line.
+
+🔧 To install Claude Code Buddy:
+
+   1. Add this to your MCP configuration file:
+
+      • macOS/Linux: ~/.claude/mcp_settings.json
+      • Windows: %APPDATA%\\Claude\\mcp_settings.json
+
+   2. Add the following configuration:
+
+      {
+        "mcpServers": {
+          "@pcircle/claude-code-buddy-mcp": {
+            "command": "npx",
+            "args": ["-y", "@pcircle/claude-code-buddy-mcp"]
+          }
+        }
+      }
+
+   3. Restart Claude Code
+
+📖 Full installation guide:
+   https://github.com/PCIRCLE-AI/claude-code-buddy#installation
+
+💡 For Cursor users:
+   Click this link to auto-install:
+   cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/claude-code-buddy-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL2NsYXVkZS1jb2RlLWJ1ZGR5LW1jcCJdfQ==
+
+`);
+      process.exit(1);
+    }
+  }, 3000); // 3 second timeout
 }
 
 /**

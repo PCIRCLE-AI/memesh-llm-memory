@@ -118,7 +118,7 @@ test_step "Step 4: Testing MCP server startup"
 # Test 1: Server starts without crashing
 STARTUP_TEST=$(mktemp)
 (
-    node dist/mcp/server-bootstrap.js > "$STARTUP_TEST" 2>&1 &
+    DISABLE_MCP_WATCHDOG=1 node dist/mcp/server-bootstrap.js > "$STARTUP_TEST" 2>&1 &
     SERVER_PID=$!
     sleep 3
     if kill -0 $SERVER_PID 2>/dev/null; then
@@ -144,7 +144,7 @@ rm -f "$STARTUP_TEST"
 # Test 2: No stdout pollution
 POLLUTION_TEST=$(mktemp)
 (
-    node dist/mcp/server-bootstrap.js > "$POLLUTION_TEST" 2>&1 &
+    DISABLE_MCP_WATCHDOG=1 node dist/mcp/server-bootstrap.js > "$POLLUTION_TEST" 2>&1 &
     SERVER_PID=$!
     sleep 1
     kill $SERVER_PID 2>/dev/null || true
@@ -172,7 +172,7 @@ INIT_REQUEST='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolV
 
 # Send initialize request
 (
-    echo "$INIT_REQUEST" | node dist/mcp/server-bootstrap.js > "$JSONRPC_TEST" 2>&1 &
+    echo "$INIT_REQUEST" | DISABLE_MCP_WATCHDOG=1 node dist/mcp/server-bootstrap.js > "$JSONRPC_TEST" 2>&1 &
     RPC_PID=$!
     sleep 2
     kill $RPC_PID 2>/dev/null || true

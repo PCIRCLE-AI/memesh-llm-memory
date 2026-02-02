@@ -9,12 +9,14 @@
   },
   "files": [
     "dist/",
+    "scripts/postinstall.js",
     "plugin.json",
     "README.md",
     "README.zh-TW.md",
     "LICENSE"
   ],
   "scripts": {
+    "postinstall": "node scripts/postinstall.js",
     "dev": "tsx watch src/index.ts",
     "build": "tsc && npm run copy:resources",
     "copy:resources": "mkdir -p dist/mcp/resources && cp -r src/mcp/resources/*.md dist/mcp/resources/ && mkdir -p dist/a2a/storage && cp src/a2a/storage/*.sql dist/a2a/storage/",

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Claude Code Buddy MCP Server Setup Verification Script
+# MeMesh MCP Server Setup Verification Script
 # Checks if everything is properly configured before Claude Code integration
 
 set -e
 
-echo "🔍 Claude Code Buddy MCP Server Setup Verification"
+echo "🔍 MeMesh MCP Server Setup Verification"
 echo "=============================================="
 echo ""
 
@@ -123,7 +123,7 @@ if [ $ERRORS -eq 0 ] && [ $WARNINGS -eq 0 ]; then
     echo -e "${GREEN}✓ All checks passed!${NC}"
     echo ""
     echo "Next steps:"
-    echo "1. Add Claude Code Buddy to ~/.claude.json"
+    echo "1. Add MeMesh to ~/.claude.json"
     echo "   See: docs/guides/SETUP.md"
     echo "2. Restart Claude Code"
     echo "3. Verify tools appear in Claude Code"

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Quick Install Script for Claude Code Buddy
-# This script installs CCB as a Claude Code plugin
+# Quick Install Script for MeMesh
+# This script installs MeMesh as a Claude Code plugin
 
 set -e
 
@@ -31,7 +31,7 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 # Check if we're in the right directory
 if [ ! -f "$PROJECT_DIR/package.json" ]; then
-    echo "❌ Cannot find package.json. Please run this script from the CCB directory."
+    echo "❌ Cannot find package.json. Please run this script from the MeMesh directory."
     exit 1
 fi
 

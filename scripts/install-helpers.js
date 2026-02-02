@@ -17,7 +17,7 @@ function resolveConfigPath(preferredPath) {
     return preferredPath;
   }
 
-  const envPath = process.env.CCB_MCP_CONFIG_PATH;
+  const envPath = process.env.MeMesh_MCP_CONFIG_PATH;
   if (envPath) {
     return envPath;
   }
@@ -28,7 +28,7 @@ function resolveConfigPath(preferredPath) {
 }
 
 /**
- * Add CCB to MCP config (defaults to ~/.claude.json).
+ * Add MeMesh to MCP config (defaults to ~/.claude.json).
  */
 function addToMcpConfig(ccbPath, preferredConfigPath) {
   const configPath = resolveConfigPath(preferredConfigPath);
@@ -48,7 +48,7 @@ function addToMcpConfig(ccbPath, preferredConfigPath) {
     config.mcpServers = {};
   }
 
-  // Add or update CCB entry with required 'type' field
+  // Add or update MeMesh entry with required 'type' field
   config.mcpServers['claude-code-buddy'] = {
     type: 'stdio',  // Required field for Claude Code MCP servers
     command: 'node',
@@ -67,7 +67,7 @@ function addToMcpConfig(ccbPath, preferredConfigPath) {
     process.exit(1);
   }
 
-  console.log(`✓ Added CCB to MCP configuration at ${configPath}`);
+  console.log(`✓ Added MeMesh to MCP configuration at ${configPath}`);
 }
 
 /**
@@ -106,6 +106,6 @@ switch (command) {
   default:
     console.log('Usage: node install-helpers.js <command> [args]');
     console.log('Commands:');
-    console.log('  add-to-mcp <path> [config]  - Add CCB to MCP config');
+    console.log('  add-to-mcp <path> [config]  - Add MeMesh to MCP config');
     console.log('  verify             - Verify installation');
 }

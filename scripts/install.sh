@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Claude Code Buddy - Interactive Installation Script
-# This script guides you through CCB setup step-by-step
+# MeMesh - Interactive Installation Script
+# This script guides you through MeMesh setup step-by-step
 
 set -e  # Exit on error
 
@@ -47,8 +47,8 @@ cat << "EOF"
 EOF
 
 echo ""
-echo "Welcome to Claude Code Buddy installation!"
-echo "This interactive guide will set up CCB and show you how to use it."
+echo "Welcome to MeMesh installation!"
+echo "This interactive guide will set up MeMesh and show you how to use it."
 echo ""
 
 # Step 1: Check prerequisites
@@ -83,7 +83,7 @@ else
 fi
 
 echo ""
-print_info "💡 Tip: CCB uses your Claude Code subscription - no extra API keys needed!"
+print_info "💡 Tip: MeMesh uses your Claude Code subscription - no extra API keys needed!"
 echo ""
 
 # Step 2: Install dependencies
@@ -92,16 +92,16 @@ npm install
 print_success "Dependencies installed"
 
 echo ""
-print_info "💡 What CCB does: Provides workflow guidance, smart planning, and project memory"
+print_info "💡 What MeMesh does: Provides workflow guidance, smart planning, and project memory"
 echo ""
 
 # Step 3: Build project
-print_step "Step 3/9: Building CCB..."
+print_step "Step 3/9: Building MeMesh..."
 npm run build
 print_success "Build completed"
 
 echo ""
-print_info "💡 CCB focuses on high-signal guidance without extra overhead"
+print_info "💡 MeMesh focuses on high-signal guidance without extra overhead"
 echo ""
 
 # Step 4: Check system resources
@@ -124,7 +124,7 @@ else
     cp .env.example .env
     print_success ".env file created from template"
     echo ""
-    echo "Note: Claude Code Buddy uses your existing Claude Code subscription."
+    echo "Note: MeMesh uses your existing Claude Code subscription."
     echo "No API keys are needed - it works through Claude Code's MCP integration."
     echo ""
 fi
@@ -132,11 +132,11 @@ fi
 # Step 6: Configure MCP
 print_step "Step 6/9: Configuring MCP integration..."
 
-CCB_PATH="$(pwd)/dist/mcp/server-bootstrap.js"
+MeMesh_PATH="$(pwd)/dist/mcp/server-bootstrap.js"
 
-# Add CCB to MCP config using Node.js helper
-if node scripts/install-helpers.js add-to-mcp "$CCB_PATH"; then
-    print_success "CCB added to Claude Code MCP configuration"
+# Add MeMesh to MCP config using Node.js helper
+if node scripts/install-helpers.js add-to-mcp "$MeMesh_PATH"; then
+    print_success "MeMesh added to Claude Code MCP configuration"
 else
     print_warning "Could not update Claude Code config automatically."
     echo ""
@@ -148,7 +148,7 @@ else
     echo "       \"claude-code-buddy\": {"
     echo "         \"type\": \"stdio\","
     echo "         \"command\": \"node\","
-    echo "         \"args\": [\"$CCB_PATH\"],"
+    echo "         \"args\": [\"$MeMesh_PATH\"],"
     echo "         \"env\": { \"NODE_ENV\": \"production\" }"
     echo "       }"
     echo "     }"
@@ -156,7 +156,7 @@ else
 fi
 
 echo ""
-print_info "💡 CCB is now registered with Claude Code - it will activate when you start Claude Code"
+print_info "💡 MeMesh is now registered with Claude Code - it will activate when you start Claude Code"
 echo ""
 
 # Step 7: Test installation
@@ -237,11 +237,11 @@ rm -f "$TEST_OUTPUT_FILE"
 print_step "Step 8/9: Basic Usage Demo"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "What can CCB do for you?"
+echo "What can MeMesh do for you?"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "${CYAN}🤖 Smart Task Routing${NC}"
-echo "   CCB routes requests through a focused workflow engine"
+echo "   MeMesh routes requests through a focused workflow engine"
 echo "   to provide actionable guidance and higher-quality outputs."
 echo ""
 echo "${CYAN}💡 Example Prompts to Try in Claude Code:${NC}"
@@ -252,11 +252,11 @@ echo "   \"Optimize this database query\""
 echo "   \"Help me debug this async bug\""
 echo ""
 echo "${CYAN}📊 Project Memory:${NC}"
-echo "   CCB records decisions, changes, and test outcomes"
+echo "   MeMesh records decisions, changes, and test outcomes"
 echo "   into a local knowledge graph for future recall."
 echo ""
 echo "${CYAN}🎯 Capability Routing:${NC}"
-echo "   CCB tailors prompts based on task type and project context"
+echo "   MeMesh tailors prompts based on task type and project context"
 echo "   to keep responses focused and actionable."
 echo ""
 

@@ -4,7 +4,7 @@ set -e
 # Trap errors and provide helpful context
 trap 'echo ""; echo "❌ Setup failed at line $LINENO"; echo "   You can run the script again or see README.md for manual setup"; exit 1' ERR
 
-echo "🚀 Claude Code Buddy - Automated Setup"
+echo "🚀 MeMesh - Automated Setup"
 echo "=================================="
 echo ""
 

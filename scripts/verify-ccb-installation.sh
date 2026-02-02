@@ -1,11 +1,11 @@
 #!/bin/bash
-# CCB Installation Verification Script
-# Verifies that Claude Code Buddy MCP Server is properly installed and working
+# MeMesh Installation Verification Script
+# Verifies that MeMesh MCP Server is properly installed and working
 
 set -e
 
 echo "======================================"
-echo "CCB Installation Verification"
+echo "MeMesh Installation Verification"
 echo "======================================"
 echo ""
 
@@ -25,13 +25,13 @@ else
     exit 1
 fi
 
-# Step 2: Check if CCB is in MCP server list
+# Step 2: Check if MeMesh is in MCP server list
 echo ""
 echo "Step 2: Checking MCP server registration..."
 if claude mcp list | grep -q "claude-code-buddy"; then
-    echo -e "${GREEN}✓${NC} CCB is registered in MCP server list"
+    echo -e "${GREEN}✓${NC} MeMesh is registered in MCP server list"
 else
-    echo -e "${RED}✗${NC} CCB is not registered"
+    echo -e "${RED}✗${NC} MeMesh is not registered"
     echo "Please run: claude mcp add claude-code-buddy -- node $(pwd)/dist/mcp/server-bootstrap.js"
     exit 1
 fi
@@ -40,9 +40,9 @@ fi
 echo ""
 echo "Step 3: Checking MCP server connection..."
 if claude mcp list | grep "claude-code-buddy" | grep -q "✓ Connected"; then
-    echo -e "${GREEN}✓${NC} CCB MCP server is connected"
+    echo -e "${GREEN}✓${NC} MeMesh MCP server is connected"
 else
-    echo -e "${RED}✗${NC} CCB MCP server failed to connect"
+    echo -e "${RED}✗${NC} MeMesh MCP server failed to connect"
     echo "Please check logs and verify the build is up to date"
     exit 1
 fi
@@ -54,11 +54,11 @@ node dist/mcp/server-bootstrap.js 2>&1 &
 NODE_PID=$!
 sleep 3
 if kill -0 $NODE_PID 2>/dev/null; then
-    echo -e "${GREEN}✓${NC} CCB MCP server runs successfully"
+    echo -e "${GREEN}✓${NC} MeMesh MCP server runs successfully"
     kill -SIGTERM $NODE_PID 2>/dev/null || true
     wait $NODE_PID 2>/dev/null || true
 else
-    echo -e "${RED}✗${NC} CCB MCP server crashed during startup"
+    echo -e "${RED}✗${NC} MeMesh MCP server crashed during startup"
     exit 1
 fi
 
@@ -67,13 +67,13 @@ echo "======================================"
 echo -e "${GREEN}✓ All checks passed!${NC}"
 echo "======================================"
 echo ""
-echo "CCB v2.6.0 is successfully installed and working."
+echo "MeMesh v2.6.0 is successfully installed and working."
 echo ""
 echo "Next steps:"
 echo "1. Restart your Claude Code session to load the new MCP server"
 echo "2. Use 'mcp__claude-code-buddy__*' tools in Claude Code"
 echo ""
-echo "Available CCB tools:"
+echo "Available MeMesh tools:"
 echo "  - buddy-do: Execute tasks with intelligent routing"
 echo "  - buddy-remember: Store and retrieve knowledge"
 echo "  - buddy-plan: Generate implementation plans"

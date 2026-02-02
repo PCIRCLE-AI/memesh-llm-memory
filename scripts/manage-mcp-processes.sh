@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# CCB MCP Process Management Script
-# Helps users manage CCB MCP server processes
+# MeMesh MCP Process Management Script
+# Helps users manage MeMesh MCP server processes
 
 set -e
 
@@ -32,16 +32,16 @@ print_error() {
     echo -e "${RED}✗${NC} $1"
 }
 
-# Function to list all CCB MCP processes
+# Function to list all MeMesh MCP processes
 list_processes() {
-    print_info "Listing all CCB MCP server processes..."
+    print_info "Listing all MeMesh MCP server processes..."
     echo ""
 
-    # Find all CCB processes
+    # Find all MeMesh processes
     PROCESSES=$(ps aux | grep -E "claude-code-buddy|server-bootstrap" | grep -v grep | grep -v "manage-mcp-processes")
 
     if [ -z "$PROCESSES" ]; then
-        print_success "No CCB MCP server processes found"
+        print_success "No MeMesh MCP server processes found"
         return 0
     fi
 
@@ -64,18 +64,18 @@ list_processes() {
 
     # Count processes
     COUNT=$(echo "$PROCESSES" | wc -l | tr -d ' ')
-    print_info "Found $COUNT CCB MCP server process(es)"
+    print_info "Found $COUNT MeMesh MCP server process(es)"
 }
 
-# Function to kill all CCB MCP processes
+# Function to kill all MeMesh MCP processes
 kill_all_processes() {
-    print_warning "Preparing to terminate all CCB MCP server processes..."
+    print_warning "Preparing to terminate all MeMesh MCP server processes..."
 
-    # Find all CCB processes
+    # Find all MeMesh processes
     PIDS=$(ps aux | grep -E "claude-code-buddy|server-bootstrap" | grep -v grep | grep -v "manage-mcp-processes" | awk '{print $2}')
 
     if [ -z "$PIDS" ]; then
-        print_success "No CCB MCP server processes found"
+        print_success "No MeMesh MCP server processes found"
         return 0
     fi
 
@@ -106,7 +106,7 @@ kill_all_processes() {
     REMAINING=$(ps aux | grep -E "claude-code-buddy|server-bootstrap" | grep -v grep | grep -v "manage-mcp-processes" | wc -l | tr -d ' ')
 
     if [ "$REMAINING" -eq 0 ]; then
-        print_success "All CCB MCP server processes terminated"
+        print_success "All MeMesh MCP server processes terminated"
     else
         print_warning "Still $REMAINING process(es) running, attempting force termination..."
         PIDS=$(ps aux | grep -E "claude-code-buddy|server-bootstrap" | grep -v grep | grep -v "manage-mcp-processes" | awk '{print $2}')
@@ -118,9 +118,9 @@ kill_all_processes() {
     fi
 }
 
-# Function to check CCB MCP configuration
+# Function to check MeMesh MCP configuration
 check_config() {
-    print_info "Checking CCB MCP configuration..."
+    print_info "Checking MeMesh MCP configuration..."
     echo ""
 
     CONFIG_PATH="$HOME/.claude/config.json"
@@ -132,13 +132,13 @@ check_config() {
 
     print_success "Configuration file exists: $CONFIG_PATH"
 
-    # Check if CCB is configured
+    # Check if MeMesh is configured
     if grep -q "claude-code-buddy" "$CONFIG_PATH"; then
-        print_success "CCB MCP server is configured"
+        print_success "MeMesh MCP server is configured"
 
-        # Extract CCB config
+        # Extract MeMesh config
         echo ""
-        print_info "CCB Configuration:"
+        print_info "MeMesh Configuration:"
         # Use jq if available, otherwise use grep
         if command -v jq > /dev/null 2>&1; then
             jq '.mcpServers["claude-code-buddy"]' "$CONFIG_PATH"
@@ -146,21 +146,21 @@ check_config() {
             grep -A 10 "claude-code-buddy" "$CONFIG_PATH"
         fi
     else
-        print_warning "CCB MCP server not configured in $CONFIG_PATH"
+        print_warning "MeMesh MCP server not configured in $CONFIG_PATH"
         print_info "Please run: npm run setup"
     fi
 }
 
-# Function to restart CCB MCP server
+# Function to restart MeMesh MCP server
 restart_server() {
-    print_info "Restarting CCB MCP server..."
+    print_info "Restarting MeMesh MCP server..."
     echo ""
 
     # Kill existing processes
     kill_all_processes
 
     echo ""
-    print_info "CCB MCP server stopped"
+    print_info "MeMesh MCP server stopped"
     print_info "MCP server will automatically restart when you launch Claude Code CLI"
 }
 
@@ -172,7 +172,7 @@ show_orphaned() {
     PROCESSES=$(ps aux | grep -E "claude-code-buddy|server-bootstrap" | grep -v grep | grep -v "manage-mcp-processes")
 
     if [ -z "$PROCESSES" ]; then
-        print_success "No CCB MCP server processes found"
+        print_success "No MeMesh MCP server processes found"
         return 0
     fi
 
@@ -202,15 +202,15 @@ show_orphaned() {
 # Function to show help
 show_help() {
     cat << EOF
-${BLUE}CCB MCP Process Management Script${NC}
+${BLUE}MeMesh MCP Process Management Script${NC}
 
 Usage: $0 [COMMAND]
 
 ${YELLOW}Available commands:${NC}
-  ${GREEN}list${NC}        List all CCB MCP server processes
-  ${GREEN}kill${NC}        Terminate all CCB MCP server processes
-  ${GREEN}restart${NC}     Restart CCB MCP server (terminate all processes)
-  ${GREEN}config${NC}      Check CCB MCP configuration
+  ${GREEN}list${NC}        List all MeMesh MCP server processes
+  ${GREEN}kill${NC}        Terminate all MeMesh MCP server processes
+  ${GREEN}restart${NC}     Restart MeMesh MCP server (terminate all processes)
+  ${GREEN}config${NC}      Check MeMesh MCP configuration
   ${GREEN}orphaned${NC}    List orphaned processes (parent process no longer exists)
   ${GREEN}help${NC}        Show this help message
 

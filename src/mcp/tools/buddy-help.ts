@@ -6,7 +6,7 @@ export const BuddyHelpInputSchema = z.object({
   command: z
     .string()
     .optional()
-    .describe('Specific command to get help for (e.g., "do", "remember")'),
+    .describe('Specific command to get help for (e.g., "do", "remember", "--all" for full reference)'),
 });
 
 export type ValidatedBuddyHelpInput = z.infer<typeof BuddyHelpInputSchema>;
@@ -29,25 +29,20 @@ export async function executeBuddyHelp(
   formatter: ResponseFormatter
 ): Promise<{ content: Array<{ type: 'text'; text: string }> }> {
   try {
-    const helpText = BuddyCommands.getHelp(input.command);
+    // Check for --all flag
+    const showFull = input.command === '--all' || input.command === 'all';
+    const command = showFull ? undefined : input.command;
+    const options = { full: showFull };
 
-    const formattedResponse = formatter.format({
-      agentType: 'buddy-help',
-      taskDescription: input.command
-        ? `Help for command: ${input.command}`
-        : 'Show all commands',
-      status: 'success',
-      results: {
-        help: helpText,
-        command: input.command,
-      },
-    });
+    const helpText = BuddyCommands.getHelp(command, options);
 
+    // For help command, return the formatted help directly without wrapper
+    // This gives us better control over the visual presentation
     return {
       content: [
         {
           type: 'text' as const,
-          text: formattedResponse,
+          text: helpText,
         },
       ],
     };

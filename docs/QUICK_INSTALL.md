@@ -71,7 +71,7 @@ When you install CCB, you get:
 3. **buddy-help** - Command documentation
 4. **get-session-health** - Session monitoring
 5. **get-workflow-guidance** - Workflow recommendations
-6. **generate-smart-plan** - Implementation planning
+6. **generate-tests** - Implementation planning
 7. **hook-tool-use** - Tool usage tracking
 
 ### Features

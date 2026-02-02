@@ -202,18 +202,19 @@ Get intelligent workflow recommendations based on current development context.
 
 ---
 
-### `generate-smart-plan`
+### `generate-tests`
 
-Generate an implementation plan with TDD-friendly steps and clear task breakdown.
+Automatically generate comprehensive test cases from specifications or source code using AI.
 
 **Input Schema:**
 ```json
 {
-  "featureDescription": "string (required) - Feature to plan",
-  "requirements": "array (optional) - Specific requirements",
-  "constraints": "object (optional) - Project constraints"
+  "specification": "string (optional) - Feature or function specification",
+  "code": "string (optional) - Source code to generate tests for"
 }
 ```
+
+**Note:** Must provide either `specification` or `code`.
 
 ---
 

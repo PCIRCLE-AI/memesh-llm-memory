@@ -75,7 +75,7 @@ To maximize the effectiveness of automatic memory tracking, structure task descr
 
 `buddy-do` works seamlessly with:
 - **buddy-remember**: Query knowledge captured from previous tasks
-- **generate-smart-plan**: Create implementation plans that reference past tasks
+- **generate-tests**: Create implementation plans that reference past tasks
 - **get-workflow-guidance**: Get contextual recommendations based on project phase
 
 ## See Also

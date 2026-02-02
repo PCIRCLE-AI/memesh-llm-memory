@@ -185,12 +185,12 @@ Use `buddy-remember` to recall decisions and patterns:
 "Remember why we chose SQLite for local storage"
 ```
 
-### Planning and Breakdown
+### Auto Test Generation
 
-Use `generate-smart-plan` for structured plans:
+Use `generate-tests` to automatically create comprehensive tests:
 
 ```
-"Generate a plan for adding email-based login with rate limiting"
+"Generate tests for src/auth/login.ts with full coverage"
 ```
 
 ### Workflow Guidance

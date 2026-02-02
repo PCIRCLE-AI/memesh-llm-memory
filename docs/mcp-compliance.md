@@ -47,7 +47,7 @@ All 14 MCP tools include comprehensive annotations per specification requirement
 | buddy-help | true | false | true | false |
 | get-session-health | true | false | true | false |
 | get-workflow-guidance | true | false | false | false |
-| generate-smart-plan | true | false | true | false |
+| generate-tests | true | false | true | false |
 | hook-tool-use | false | false | true | false |
 | buddy-record-mistake | false | false | true | false |
 | create-entities | false | false | true | false |
@@ -72,7 +72,7 @@ All 14 MCP tools include comprehensive annotations per specification requirement
 **idempotentHint: true** (9/14 tools)
 - Tools where repeated calls with same inputs produce same results
 - Safe to retry on failure
-- Examples: `buddy-remember`, `buddy-help`, `generate-smart-plan`
+- Examples: `buddy-remember`, `buddy-help`, `generate-tests`
 
 **openWorldHint: true** (2/14 tools)
 - Tools that accept open-ended, natural language inputs
@@ -478,7 +478,7 @@ npm run compliance:check
    - Annotations: `readOnlyHint: true`
    - Schema: Includes suggested actions, rationale
 
-6. **generate-smart-plan** - Implementation planning
+6. **generate-tests** - Implementation planning
    - Annotations: `readOnlyHint: true`, `idempotentHint: true`
    - Schema: Includes task breakdown, dependencies
 

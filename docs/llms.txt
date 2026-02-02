@@ -73,7 +73,7 @@ New CLI tools for managing MCP server processes:
 - `npm run processes:config` - Check configuration
 
 ### 4. Smart Planning
-- Generate implementation plans: `generate-smart-plan`
+- Generate implementation plans: `generate-tests`
 - Break down features into small tasks
 - TDD-friendly task ordering
 - Dependency analysis
@@ -97,7 +97,7 @@ New CLI tools for managing MCP server processes:
 
 ### Workflow Commands
 - `get-workflow-guidance` - Get phase-aware recommendations
-- `generate-smart-plan` - Generate implementation plan
+- `generate-tests` - Generate implementation plan
 - `get-session-health` - Check session token usage
 
 ## Technical Architecture

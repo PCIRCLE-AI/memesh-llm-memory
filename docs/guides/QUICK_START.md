@@ -132,7 +132,7 @@ Connected MCP Servers:
 ✅ claude-code-buddy (7 tools available)
    - buddy-do, buddy-help, buddy-remember
    - get-session-health, get-workflow-guidance
-   - generate-smart-plan, hook-tool-use
+   - generate-tests, hook-tool-use
 ```
 
 ---
@@ -155,7 +155,7 @@ Claude Code Buddy provides 7 tools:
 3. buddy-remember - Recall project memory
 4. get-session-health - Session health snapshot
 5. get-workflow-guidance - Next-step suggestions
-6. generate-smart-plan - Implementation planning
+6. generate-tests - Implementation planning
 7. hook-tool-use - Internal hook ingestion (automatic)
 ```
 

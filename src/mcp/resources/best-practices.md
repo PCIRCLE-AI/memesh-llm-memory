@@ -1,6 +1,6 @@
 # Claude Code Buddy Best Practices
 
-**Version**: 2.2.0
+**Version: 2.6.0
 
 ## ✅ Write Precise Requests
 
@@ -28,9 +28,9 @@ buddy-do "review src/api/auth.ts for security issues"
 
 ## ✅ Break Down Large Features
 
-Use `generate-smart-plan` before large changes:
+Use `generate-tests` before large changes:
 ```
-generate-smart-plan "add email-based login with rate limiting"
+generate-tests "add email-based login with rate limiting"
 ```
 
 Then execute tasks one by one.

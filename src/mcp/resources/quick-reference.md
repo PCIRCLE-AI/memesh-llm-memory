@@ -1,6 +1,6 @@
 # Claude Code Buddy Quick Reference
 
-**Version**: 2.2.0
+**Version: 2.6.0
 
 ## 🚀 Quick Commands
 
@@ -10,7 +10,7 @@ buddy-remember "<query>"             # Recall project memory
 buddy-help                             # Command help
 get-session-health                     # Session health snapshot
 get-workflow-guidance '{"phase":"code-written"}'
-generate-smart-plan '{"featureDescription":"..."}'
+generate-tests '{"featureDescription":"..."}'
 ```
 
 Note: `hook-tool-use` is internal and used by Claude Code hooks.
@@ -33,7 +33,7 @@ Note: `hook-tool-use` is internal and used by Claude Code hooks.
 
 ### Feature Development
 ```
-1. generate-smart-plan "<feature>"
+1. generate-tests "<feature>"
 2. buddy-do "implement <feature>"
 3. buddy-do "write tests for <feature>"
 4. buddy-do "review <feature> for quality"

@@ -1,6 +1,6 @@
 # Claude Code Buddy Examples
 
-**Version**: 2.2.0
+**Version: 2.6.0
 
 ## Example 1: Code Review
 
@@ -17,7 +17,7 @@ buddy-do "review src/auth/login.ts for security issues and edge cases"
 
 **Request**:
 ```
-generate-smart-plan "add email-based login with rate limiting"
+generate-tests "add email-based login with rate limiting"
 ```
 
 **Result**: A structured plan with TDD-friendly steps and estimated durations.

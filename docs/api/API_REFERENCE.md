@@ -57,7 +57,7 @@ Claude Code Buddy exposes 7 MCP tools:
 | `buddy-remember` | Memory | Recall project memory |
 | `get-session-health` | Health | Session health snapshot |
 | `get-workflow-guidance` | Workflow | Next-step recommendations |
-| `generate-smart-plan` | Planning | Implementation planning |
+| `generate-tests` | Planning | Implementation planning |
 | `hook-tool-use` | Internal | Claude Code tool-use hooks (auto-ingested) |
 
 ---

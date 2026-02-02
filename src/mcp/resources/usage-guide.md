@@ -1,6 +1,6 @@
 # Claude Code Buddy Complete Usage Guide
 
-**Version**: 2.2.0
+**Version: 2.6.0
 **Last Updated**: 2025-12-29
 
 ## 📖 Overview
@@ -27,7 +27,7 @@ buddy-remember "authentication decisions"
 
 ### 3) Generate a plan
 ```
-generate-smart-plan "add email-based login"
+generate-tests "add email-based login"
 ```
 
 ## 🧰 Tool Overview
@@ -37,7 +37,7 @@ generate-smart-plan "add email-based login"
 - **buddy-help**: Command help and usage
 - **get-session-health**: Check session health
 - **get-workflow-guidance**: Next-step recommendations by phase
-- **generate-smart-plan**: Implementation plan generation
+- **generate-tests**: Implementation plan generation
 
 Note: `hook-tool-use` is internal and used by Claude Code hooks.
 

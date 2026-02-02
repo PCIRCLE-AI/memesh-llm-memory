@@ -24,8 +24,8 @@ import {
 import type { SecretManager } from '../memory/SecretManager.js';
 import type { TaskQueue } from '../a2a/storage/TaskQueue.js';
 import type { MCPTaskDelegator } from '../a2a/delegator/MCPTaskDelegator.js';
-import { a2aListTasks } from './tools/a2a-list-tasks.js';
-import { a2aReportResult } from './tools/a2a-report-result.js';
+import { a2aListTasks, A2AListTasksInputSchema } from './tools/a2a-list-tasks.js';
+import { a2aReportResult, A2AReportResultInputSchema } from './tools/a2a-report-result.js';
 
 /**
  * Tool Router Configuration
@@ -383,7 +383,20 @@ export class ToolRouter {
           }
         );
       }
-      return await a2aListTasks(args as any, this.mcpTaskDelegator);
+      // Validate input using Zod schema
+      const validationResult = A2AListTasksInputSchema.safeParse(args);
+      if (!validationResult.success) {
+        throw new ValidationError(
+          `Invalid input for ${toolName}: ${validationResult.error.message}`,
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+            zodError: validationResult.error,
+          }
+        );
+      }
+      return await a2aListTasks(validationResult.data, this.mcpTaskDelegator);
     }
 
     if (toolName === 'a2a-list-agents') {
@@ -402,7 +415,20 @@ export class ToolRouter {
           }
         );
       }
-      return await a2aReportResult(args as any, this.taskQueue, this.mcpTaskDelegator);
+      // Validate input using Zod schema
+      const validationResult = A2AReportResultInputSchema.safeParse(args);
+      if (!validationResult.success) {
+        throw new ValidationError(
+          `Invalid input for ${toolName}: ${validationResult.error.message}`,
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+            zodError: validationResult.error,
+          }
+        );
+      }
+      return await a2aReportResult(validationResult.data, this.taskQueue, this.mcpTaskDelegator);
     }
 
     throw new NotFoundError(

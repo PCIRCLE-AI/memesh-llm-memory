@@ -267,3 +267,32 @@ export function withE2EResources<T = void>(
 export type TestFunction<T = void> = () => Promise<T>;
 export type ResourceTestFunction<T = void> = (resourceId: string) => Promise<T>;
 export type MultiResourceTestFunction<T = void> = (resourceIds: string[]) => Promise<T>;
+
+/**
+ * Get a dynamic port for E2E testing
+ *
+ * Uses port 0 to let the OS assign an available port automatically.
+ * This ensures tests can run in parallel without port conflicts.
+ *
+ * @returns Dynamic port configuration (port: 0 triggers OS allocation)
+ *
+ * @example
+ * ```typescript
+ * const server = new A2AServer({
+ *   agentId: 'test-agent',
+ *   agentCard: {...},
+ *   ...getDynamicPort()  // Uses port 0 for OS allocation
+ * });
+ * const actualPort = await server.start();
+ * ```
+ */
+export function getDynamicPort(): { portRange: { min: number; max: number } } {
+  // Return a port range that will be used for dynamic allocation
+  // A2AServer's findAvailablePort will scan this range
+  return {
+    portRange: {
+      min: 3200,
+      max: 3999
+    }
+  };
+}

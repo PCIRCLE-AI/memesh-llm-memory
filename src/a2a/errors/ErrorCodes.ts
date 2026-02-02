@@ -1,0 +1,44 @@
+/**
+ * A2A Error Codes
+ * Centralized error code definitions for consistent error handling
+ */
+
+export const ErrorCodes = {
+  // Authentication & Authorization
+  AUTH_TOKEN_NOT_CONFIGURED: 'AUTH_TOKEN_NOT_CONFIGURED',
+  AUTH_FAILED: 'AUTH_FAILED',
+  AUTH_TOKEN_MISSING: 'AUTH_TOKEN_MISSING',
+
+  // Agent Operations
+  AGENT_NOT_FOUND: 'AGENT_NOT_FOUND',
+  AGENT_ALREADY_PROCESSING: 'AGENT_ALREADY_PROCESSING',
+  AGENT_REGISTRY_ERROR: 'AGENT_REGISTRY_ERROR',
+
+  // Task Operations
+  TASK_NOT_FOUND: 'TASK_NOT_FOUND',
+  TASK_TIMEOUT: 'TASK_TIMEOUT',
+  TASK_SEND_FAILED: 'TASK_SEND_FAILED',
+  TASK_GET_FAILED: 'TASK_GET_FAILED',
+  TASK_LIST_FAILED: 'TASK_LIST_FAILED',
+  TASK_CANCEL_FAILED: 'TASK_CANCEL_FAILED',
+
+  // Server Operations
+  PORT_NOT_AVAILABLE: 'PORT_NOT_AVAILABLE',
+  SERVER_ERROR: 'SERVER_ERROR',
+
+  // Data Operations
+  INVALID_JSON: 'INVALID_JSON',
+  DATABASE_ERROR: 'DATABASE_ERROR',
+
+  // Timeout Checker
+  TIMEOUT_CHECKER_ERROR: 'TIMEOUT_CHECKER_ERROR',
+  TIMEOUT_CHECKER_CIRCUIT_OPEN: 'TIMEOUT_CHECKER_CIRCUIT_OPEN',
+
+  // HTTP Errors
+  HTTP_ERROR: 'HTTP_ERROR',
+
+  // Generic
+  UNKNOWN_ERROR: 'UNKNOWN_ERROR',
+} as const;
+
+export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];

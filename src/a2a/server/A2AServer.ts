@@ -1,6 +1,21 @@
 /**
  * A2A HTTP Server
- * Express.js server implementing A2A Protocol HTTP+JSON binding
+ *
+ * Express.js server implementing A2A Protocol HTTP+JSON binding.
+ * Provides RESTful endpoints for agent-to-agent communication:
+ * - POST /a2a/send-message - Send message and create task
+ * - GET /a2a/tasks/:taskId - Get task status and result
+ * - GET /a2a/tasks - List tasks with filtering
+ * - POST /a2a/tasks/:taskId/cancel - Cancel a task
+ * - GET /a2a/agent-card - Get agent capabilities (public)
+ *
+ * Features:
+ * - Dynamic port allocation
+ * - Agent registry with heartbeat
+ * - Task timeout detection
+ * - Bearer token authentication
+ *
+ * @module a2a/server
  */
 
 import express, { type Express } from 'express';
@@ -18,17 +33,64 @@ import {
   jsonErrorHandler,
 } from './middleware.js';
 import { authenticateToken } from './middleware/auth.js';
+import {
+  rateLimitMiddleware,
+  startCleanup,
+  stopCleanup,
+} from './middleware/rateLimit.js';
 import { MCPTaskDelegator } from '../delegator/MCPTaskDelegator.js';
 import { TimeoutChecker } from '../jobs/TimeoutChecker.js';
+import { TIME, NETWORK } from '../constants.js';
+import { tracingMiddleware, spanMiddleware } from '../../utils/tracing/index.js';
 
+/**
+ * A2A Server Configuration
+ */
 export interface A2AServerConfig {
+  /** Agent identifier */
   agentId: string;
+  /** Agent card with capabilities and metadata */
   agentCard: AgentCard;
+  /** Fixed port number (optional, will use dynamic port if not specified) */
   port?: number;
+  /** Port range for dynamic allocation (default: 3000-3999) */
   portRange?: { min: number; max: number };
+  /** Heartbeat interval in milliseconds (default: TIME.HEARTBEAT_INTERVAL_MS = 60,000ms) */
   heartbeatInterval?: number;
 }
 
+/**
+ * A2AServer class
+ *
+ * HTTP server implementing A2A Protocol for agent-to-agent communication.
+ * Handles task creation, management, and inter-agent messaging.
+ *
+ * @example
+ * ```typescript
+ * const server = new A2AServer({
+ *   agentId: 'my-agent',
+ *   agentCard: {
+ *     id: 'my-agent',
+ *     name: 'My Agent',
+ *     version: '1.0.0',
+ *     capabilities: {
+ *       delegation: {
+ *         supportsMCPDelegation: true,
+ *         maxConcurrentTasks: 1
+ *       }
+ *     }
+ *   },
+ *   portRange: { min: 3000, max: 3999 },
+ *   heartbeatInterval: 60_000
+ * });
+ *
+ * const port = await server.start();
+ * console.log(`Server running on port ${port}`);
+ *
+ * // Later...
+ * await server.stop();
+ * ```
+ */
 export class A2AServer {
   private app: Express;
   private server: Server | null = null;
@@ -40,6 +102,11 @@ export class A2AServer {
   private delegator: MCPTaskDelegator;
   private timeoutChecker: TimeoutChecker;
 
+  /**
+   * Create a new A2A Server
+   *
+   * @param config - Server configuration including agent ID, card, and port settings
+   */
   constructor(private config: A2AServerConfig) {
     this.taskQueue = new TaskQueue(config.agentId);
     this.registry = AgentRegistry.getInstance();
@@ -54,16 +121,44 @@ export class A2AServer {
 
     app.use(express.json({ limit: '10mb' }));
     app.use(corsMiddleware);
+
+    // Enable distributed tracing for all requests
+    app.use(tracingMiddleware());
+
     app.use(requestLogger);
 
-    // Protected routes - require authentication
-    app.post('/a2a/send-message', authenticateToken, this.routes.sendMessage);
-    app.get('/a2a/tasks/:taskId', authenticateToken, this.routes.getTask);
-    app.get('/a2a/tasks', authenticateToken, this.routes.listTasks);
-    app.post('/a2a/tasks/:taskId/cancel', authenticateToken, this.routes.cancelTask);
+    // Protected routes - require authentication and rate limiting
+    app.post(
+      '/a2a/send-message',
+      authenticateToken,
+      rateLimitMiddleware,
+      spanMiddleware('a2a.send-message'),
+      this.routes.sendMessage
+    );
+    app.get(
+      '/a2a/tasks/:taskId',
+      authenticateToken,
+      rateLimitMiddleware,
+      spanMiddleware('a2a.get-task'),
+      this.routes.getTask
+    );
+    app.get(
+      '/a2a/tasks',
+      authenticateToken,
+      rateLimitMiddleware,
+      spanMiddleware('a2a.list-tasks'),
+      this.routes.listTasks
+    );
+    app.post(
+      '/a2a/tasks/:taskId/cancel',
+      authenticateToken,
+      rateLimitMiddleware,
+      spanMiddleware('a2a.cancel-task'),
+      this.routes.cancelTask
+    );
 
     // Public route - agent card discovery
-    app.get('/a2a/agent-card', this.routes.getAgentCard);
+    app.get('/a2a/agent-card', spanMiddleware('a2a.agent-card'), this.routes.getAgentCard);
 
     app.use(jsonErrorHandler);
     app.use(errorHandler);
@@ -71,6 +166,25 @@ export class A2AServer {
     return app;
   }
 
+  /**
+   * Start the A2A server
+   *
+   * Performs the following operations:
+   * 1. Finds an available port (if not specified)
+   * 2. Starts the HTTP server
+   * 3. Registers agent in the registry
+   * 4. Starts heartbeat mechanism
+   * 5. Starts timeout checker
+   *
+   * @returns Promise resolving to the actual port number the server is listening on
+   * @throws Error if server fails to start or no available port found
+   *
+   * @example
+   * ```typescript
+   * const port = await server.start();
+   * console.log(`Server started on port ${port}`);
+   * ```
+   */
   async start(): Promise<number> {
     const port = await this.findAvailablePort();
     this.port = port;
@@ -92,6 +206,9 @@ export class A2AServer {
         // Start timeout checker (every 60 seconds)
         this.timeoutChecker.start();
 
+        // Start rate limit cleanup (every 5 minutes)
+        startCleanup();
+
         resolve(port);
       });
 
@@ -101,9 +218,30 @@ export class A2AServer {
     });
   }
 
+  /**
+   * Stop the A2A server
+   *
+   * Performs graceful shutdown:
+   * 1. Stops timeout checker
+   * 2. Stops heartbeat
+   * 3. Deactivates agent in registry
+   * 4. Closes HTTP server
+   * 5. Closes task queue database connection
+   *
+   * @returns Promise resolving when server is fully stopped
+   *
+   * @example
+   * ```typescript
+   * await server.stop();
+   * console.log('Server stopped gracefully');
+   * ```
+   */
   async stop(): Promise<void> {
     // Stop timeout checker
     this.timeoutChecker.stop();
+
+    // Stop rate limit cleanup
+    stopCleanup();
 
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);
@@ -123,20 +261,36 @@ export class A2AServer {
     }
   }
 
+  /**
+   * Get the port the server is listening on
+   *
+   * @returns Port number (0 if server not started)
+   */
   getPort(): number {
     return this.port;
   }
 
+  /**
+   * Get the task queue instance
+   *
+   * @returns TaskQueue instance used by this server
+   */
   getTaskQueue(): TaskQueue {
     return this.taskQueue;
   }
 
+  /**
+   * Find an available port for the server
+   *
+   * @returns Available port number
+   * @throws Error if no available port found in range
+   */
   private async findAvailablePort(): Promise<number> {
     if (this.config.port) {
       return this.config.port;
     }
 
-    const range = this.config.portRange || { min: 3000, max: 3999 };
+    const range = this.config.portRange || NETWORK.DEFAULT_PORT_RANGE;
 
     for (let port = range.min; port <= range.max; port++) {
       if (await this.isPortAvailable(port)) {
@@ -169,8 +323,13 @@ export class A2AServer {
     });
   }
 
+  /**
+   * Start heartbeat mechanism
+   *
+   * Sends periodic heartbeats to the registry to maintain agent active status.
+   */
   private startHeartbeat(): void {
-    const interval = this.config.heartbeatInterval || 60000;
+    const interval = this.config.heartbeatInterval || TIME.HEARTBEAT_INTERVAL_MS;
 
     this.heartbeatTimer = setInterval(() => {
       this.registry.heartbeat(this.config.agentId);

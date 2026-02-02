@@ -38,6 +38,7 @@
 import winston from 'winston';
 import { existsSync, mkdirSync } from 'fs';
 import path from 'path';
+import { getTraceContext } from './tracing/index.js';
 
 /**
  * Log severity levels
@@ -55,20 +56,39 @@ export enum LogLevel {
   DEBUG = 'debug',
 }
 
-// Custom format for console output
+// Custom format for console output with trace context
 const consoleFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   winston.format.colorize(),
   winston.format.printf(({ timestamp, level, message, ...meta }) => {
+    // Inject trace context if available
+    const traceContext = getTraceContext();
+    const traceInfo = traceContext
+      ? `[TraceID: ${traceContext.traceId}] [SpanID: ${traceContext.spanId}] `
+      : '';
+
     const metaStr = Object.keys(meta).length ? JSON.stringify(meta, null, 2) : '';
-    return `${timestamp} [${level}]: ${message} ${metaStr}`;
+    return `${timestamp} ${traceInfo}[${level}]: ${message} ${metaStr}`;
   })
 );
 
-// Custom format for file output (JSON)
+// Custom format for file output (JSON) with trace context
 const fileFormat = winston.format.combine(
   winston.format.timestamp(),
   winston.format.errors({ stack: true }),
+  winston.format((info) => {
+    // Inject trace context into log entry
+    const traceContext = getTraceContext();
+    if (traceContext) {
+      return {
+        ...info,
+        traceId: traceContext.traceId,
+        spanId: traceContext.spanId,
+        parentSpanId: traceContext.parentSpanId,
+      };
+    }
+    return info;
+  })(),
   winston.format.json()
 );
 

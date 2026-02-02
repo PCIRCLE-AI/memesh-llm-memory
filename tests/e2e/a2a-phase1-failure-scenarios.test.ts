@@ -10,14 +10,14 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { withE2EResource } from '../utils/e2e-helpers.js';
+import { withE2EResource, getDynamicPort } from '../utils/e2e-helpers.js';
 import { A2AServer } from '../../src/a2a/server/A2AServer.js';
 import { logger } from '../../src/utils/logger.js';
 
 describe('A2A Phase 1.0 - E2E Failure Scenarios', () => {
   let server: A2AServer;
-  const testPort = 3301; // Different port to avoid conflicts
-  const baseUrl = `http://localhost:${testPort}`;
+  let actualPort: number;
+  let baseUrl: string;
   const validToken = 'test-e2e-token-failure-scenarios';
   const invalidToken = 'invalid-token-12345';
   const agentId = 'test-agent-failure';
@@ -40,13 +40,16 @@ describe('A2A Phase 1.0 - E2E Failure Scenarios', () => {
       description: 'E2E test agent for failure scenarios'
     };
 
-    // Start server with proper config
+    // Start server with dynamic port allocation
     server = new A2AServer({
       agentId: agentId,
       agentCard: testAgentCard,
-      port: testPort
+      ...getDynamicPort()
     });
-    await server.start();
+    actualPort = await server.start();
+    baseUrl = `http://localhost:${actualPort}`;
+
+    logger.info(`[Test] Server started on dynamic port: ${actualPort}`);
   });
 
   afterAll(async () => {

@@ -50,3 +50,11 @@ export type {
   AgentRegistryEntry,
   RegisterAgentParams,
 } from './agent-card.js';
+
+// Rate limit types
+export type {
+  RateLimitConfig,
+  TokenBucket,
+  RateLimitError,
+  RateLimitStats,
+} from './rateLimit.js';

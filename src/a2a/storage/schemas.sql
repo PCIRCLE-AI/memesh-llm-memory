@@ -19,6 +19,16 @@ CREATE INDEX IF NOT EXISTS idx_tasks_state ON tasks(state);
 CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at);
 CREATE INDEX IF NOT EXISTS idx_tasks_session_id ON tasks(session_id);
 
+-- PERFORMANCE OPTIMIZATION: Composite indexes for common query patterns
+-- Used by listTasks() with state + priority filters
+CREATE INDEX IF NOT EXISTS idx_tasks_state_priority ON tasks(state, priority);
+-- Used by listTasks() with state + created_at for sorting
+CREATE INDEX IF NOT EXISTS idx_tasks_state_created_at ON tasks(state, created_at DESC);
+-- Used by listTasks() with session_id + state
+CREATE INDEX IF NOT EXISTS idx_tasks_session_state ON tasks(session_id, state);
+-- Used by listTasks() with priority + created_at
+CREATE INDEX IF NOT EXISTS idx_tasks_priority_created_at ON tasks(priority, created_at DESC);
+
 -- Messages table
 CREATE TABLE IF NOT EXISTS messages (
     id TEXT PRIMARY KEY,

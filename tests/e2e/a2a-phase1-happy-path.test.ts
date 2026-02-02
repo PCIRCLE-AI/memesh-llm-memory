@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { withE2EResource } from '../utils/e2e-helpers.js';
+import { withE2EResource, getDynamicPort } from '../utils/e2e-helpers.js';
 import { A2AServer } from '../../src/a2a/server/A2AServer.js';
 import { TaskQueue } from '../../src/a2a/storage/TaskQueue.js';
 import { MCPTaskDelegator } from '../../src/a2a/delegator/MCPTaskDelegator.js';
@@ -23,8 +23,8 @@ describe('A2A Phase 1.0 - E2E Happy Path', () => {
   let taskQueue: TaskQueue;
   let delegator: MCPTaskDelegator;
   let registry: AgentRegistry;
-  const testPort = 3300;
-  const baseUrl = `http://localhost:${testPort}`;
+  let actualPort: number;
+  let baseUrl: string;
   const testToken = 'test-e2e-token-12345';
   const agentId = 'test-agent-e2e';
 
@@ -46,13 +46,16 @@ describe('A2A Phase 1.0 - E2E Happy Path', () => {
       description: 'E2E test agent for Phase 1.0'
     };
 
-    // Start server with proper config
+    // Start server with dynamic port allocation
     server = new A2AServer({
       agentId: agentId,
       agentCard: testAgentCard,
-      port: testPort
+      ...getDynamicPort()
     });
-    await server.start();
+    actualPort = await server.start();
+    baseUrl = `http://localhost:${actualPort}`;
+
+    logger.info(`[Test] Server started on dynamic port: ${actualPort}`);
 
     // Get components from server
     taskQueue = (server as any).taskQueue;

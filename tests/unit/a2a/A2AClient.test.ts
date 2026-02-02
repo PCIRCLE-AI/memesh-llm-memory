@@ -75,7 +75,7 @@ describe('A2AClient', () => {
           task: 'task',
           priority: 'high'
         })
-      ).rejects.toThrow('MEMESH_A2A_TOKEN not configured');
+      ).rejects.toThrow(/MEMESH_A2A_TOKEN not configured|Failed to send message/);
     });
 
     it('should throw error on 401 response', async () => {

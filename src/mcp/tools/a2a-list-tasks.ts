@@ -8,8 +8,21 @@
 import { z } from 'zod';
 import type { MCPTaskDelegator } from '../../a2a/delegator/MCPTaskDelegator.js';
 
+/**
+ * Agent ID validation pattern
+ * Enforces alphanumeric characters, hyphens, and underscores only
+ * Length: 1-100 characters
+ */
+const AGENT_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
+const MAX_AGENT_ID_LENGTH = 100;
+
 export const A2AListTasksInputSchema = z.object({
-  agentId: z.string().describe('Agent ID to list pending tasks for'),
+  agentId: z
+    .string()
+    .min(1, 'Agent ID cannot be empty')
+    .max(MAX_AGENT_ID_LENGTH, `Agent ID too long (max ${MAX_AGENT_ID_LENGTH} characters)`)
+    .regex(AGENT_ID_PATTERN, 'Agent ID must contain only alphanumeric characters, hyphens, and underscores')
+    .describe('Agent ID to list pending tasks for'),
 });
 
 export type ValidatedA2AListTasksInput = z.infer<typeof A2AListTasksInputSchema>;

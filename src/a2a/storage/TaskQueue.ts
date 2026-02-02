@@ -80,12 +80,24 @@ function safeJsonParse<T>(jsonString: string | null | undefined): T | null {
 
 export class TaskQueue {
   private db: Database.Database;
+  // PERFORMANCE OPTIMIZATION: Cache prepared statements for reuse
+  private preparedStatements: Map<string, Database.Statement>;
 
   constructor(agentId: string, dbPath?: string) {
     // Use PathResolver for automatic fallback to legacy location
     const path = dbPath || getDataPath(`a2a-tasks-${agentId}.db`);
 
     this.db = new Database(path);
+    this.preparedStatements = new Map();
+
+    // Configure busy timeout for automatic retry on SQLITE_BUSY
+    // This provides built-in resilience for concurrent access
+    const busyTimeoutMs = parseInt(process.env.DB_BUSY_TIMEOUT_MS || '5000', 10);
+    this.db.pragma(`busy_timeout = ${busyTimeoutMs}`);
+
+    // Enable WAL mode for better concurrency
+    this.db.pragma('journal_mode = WAL');
+
     this.initializeSchema();
   }
 
@@ -93,6 +105,19 @@ export class TaskQueue {
     const schemaPath = join(__dirname, 'schemas.sql');
     const schema = readFileSync(schemaPath, 'utf-8');
     this.db.exec(schema);
+  }
+
+  /**
+   * PERFORMANCE OPTIMIZATION: Get or create cached prepared statement
+   * Reduces statement compilation overhead for frequently used queries
+   */
+  private getStatement(key: string, sql: string): Database.Statement {
+    let stmt = this.preparedStatements.get(key);
+    if (!stmt) {
+      stmt = this.db.prepare(sql);
+      this.preparedStatements.set(key, stmt);
+    }
+    return stmt;
   }
 
   createTask(params: CreateTaskParams): Task {
@@ -113,10 +138,12 @@ export class TaskQueue {
       metadata: params.metadata,
     };
 
-    const stmt = this.db.prepare(`
-      INSERT INTO tasks (id, state, name, description, priority, session_id, created_at, updated_at, metadata)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    // PERFORMANCE OPTIMIZATION: Use cached prepared statement
+    const stmt = this.getStatement(
+      'insertTask',
+      `INSERT INTO tasks (id, state, name, description, priority, session_id, created_at, updated_at, metadata)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
 
     stmt.run(
       task.id,
@@ -143,9 +170,8 @@ export class TaskQueue {
   }
 
   getTask(taskId: string): Task | null {
-    const stmt = this.db.prepare(`
-      SELECT * FROM tasks WHERE id = ?
-    `);
+    // PERFORMANCE OPTIMIZATION: Use cached prepared statement
+    const stmt = this.getStatement('getTask', 'SELECT * FROM tasks WHERE id = ?');
 
     const row = stmt.get(taskId) as TaskRow | undefined;
     if (!row) return null;
@@ -401,6 +427,18 @@ export class TaskQueue {
   }
 
   close(): void {
+    // PERFORMANCE OPTIMIZATION: Finalize all prepared statements before closing
+    for (const stmt of this.preparedStatements.values()) {
+      try {
+        // better-sqlite3 doesn't have finalize(), statements are auto-finalized
+        // This is just for clarity and future-proofing
+      } catch (error) {
+        logger.error('[TaskQueue] Error finalizing statement', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+    this.preparedStatements.clear();
     this.db.close();
   }
 

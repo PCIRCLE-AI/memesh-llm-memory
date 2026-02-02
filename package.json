@@ -63,7 +63,7 @@
   "homepage": "https://github.com/PCIRCLE-AI/claude-code-buddy",
   "repository": {
     "type": "git",
-    "url": "https://github.com/PCIRCLE-AI/claude-code-buddy.git"
+    "url": "git+https://github.com/PCIRCLE-AI/claude-code-buddy.git"
   },
   "bugs": {
     "url": "https://github.com/PCIRCLE-AI/claude-code-buddy/issues"

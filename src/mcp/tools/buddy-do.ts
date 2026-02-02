@@ -3,6 +3,7 @@ import type { Router } from '../../orchestrator/router.js';
 import type { ResponseFormatter } from '../../ui/ResponseFormatter.js';
 import type { ProjectAutoTracker } from '../../memory/ProjectAutoTracker.js';
 import { logger } from '../../utils/logger.js';
+import { ProgressIndicator } from '../../ui/ProgressIndicator.js';
 
 export const BuddyDoInputSchema = z.object({
   task: z.string().trim().min(1).describe('Task description for MeMesh to execute with smart routing'),

@@ -382,6 +382,23 @@ generate-tests "<file>"       # Auto-generate tests for a file
 
 ---
 
+## Learn More
+
+**Comprehensive Documentation**:
+
+- **[User Guide](./USER_GUIDE.md)** - Complete feature reference and workflows
+- **[API Reference](./api/API_REFERENCE.md)** - Detailed MCP tool documentation with schemas and examples
+- **[Best Practices](./BEST_PRACTICES.md)** - Effective patterns and workflows
+- **[Commands Reference](./COMMANDS.md)** - All available commands
+- **[Troubleshooting](./TROUBLESHOOTING.md)** - Common issues and solutions
+
+**Advanced Topics**:
+- [Knowledge Graph Tools](./api/API_REFERENCE.md#knowledge-graph-tools) - Build complex entity relationships
+- [Integration Examples](./api/API_REFERENCE.md#integration-examples) - Complete workflow patterns
+- [Error Reference](./api/API_REFERENCE.md#error-reference) - Error codes and handling
+
+---
+
 **Ready to code with memory?** 🚀
 
 Install MeMesh, run `buddy-help`, and never explain your architecture twice again.

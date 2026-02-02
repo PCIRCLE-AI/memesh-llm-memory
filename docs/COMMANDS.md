@@ -367,10 +367,12 @@ If tools fail to execute:
 
 ## Next Steps
 
-- **Learn More:** See [README.md](../README.md) for full documentation
-- **Installation:** See [INSTALL.md](INSTALL.md) for setup guide
-- **Examples:** See [EXAMPLES.md](EXAMPLES.md) for more use cases
-- **Contributing:** See [CONTRIBUTING.md](CONTRIBUTING.md) to add features
+- **API Reference:** See [API_REFERENCE.md](./api/API_REFERENCE.md) for detailed MCP tool documentation
+- **User Guide:** See [USER_GUIDE.md](./USER_GUIDE.md) for complete feature reference
+- **Best Practices:** See [BEST_PRACTICES.md](./BEST_PRACTICES.md) for effective workflows
+- **Installation:** See [GETTING_STARTED.md](./GETTING_STARTED.md) for setup guide
+- **Troubleshooting:** See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for common issues
+- **Contributing:** See [CONTRIBUTING.md](./CONTRIBUTING.md) to add features
 
 ---
 

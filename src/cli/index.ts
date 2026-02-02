@@ -20,6 +20,9 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { runSetupWizard } from './setup-wizard.js';
 import { runTutorial } from './tutorial.js';
+import { runDashboard } from './dashboard.js';
+import { runStats } from './stats.js';
+import { showConfig, validateConfig, editConfig, resetConfig } from './config.js';
 import { logger } from '../utils/logger.js';
 
 // Read version from package.json
@@ -62,22 +65,54 @@ program
     }
   });
 
-// Dashboard command (placeholder)
+// Dashboard command
 program
   .command('dashboard')
-  .description('View session health dashboard')
-  .action(() => {
-    console.log(chalk.yellow('\n📊 Session Dashboard'));
-    console.log(chalk.dim('Coming soon! For now, use buddy tools in Claude Code.\n'));
+  .description('View session health dashboard with real-time monitoring')
+  .action(async () => {
+    try {
+      await runDashboard();
+    } catch (error) {
+      logger.error('Dashboard failed', { error });
+      console.error(chalk.red('Dashboard failed:'), error);
+      process.exit(1);
+    }
   });
 
-// Stats command (placeholder)
+// Stats command
 program
   .command('stats')
-  .description('View usage statistics')
-  .action(() => {
-    console.log(chalk.yellow('\n📈 Usage Statistics'));
-    console.log(chalk.dim('Coming soon! Track your MeMesh usage.\n'));
+  .description('View usage statistics and analytics')
+  .option('-d, --day', 'Show last 24 hours')
+  .option('-w, --week', 'Show last 7 days')
+  .option('-m, --month', 'Show last 30 days')
+  .option('-a, --all', 'Show all time (default)')
+  .option('--json', 'Export as JSON')
+  .option('--csv', 'Export as CSV')
+  .option('-v, --verbose', 'Show detailed statistics')
+  .action(async (options) => {
+    try {
+      // Determine time range
+      let range: 'day' | 'week' | 'month' | 'all' = 'all';
+      if (options.day) range = 'day';
+      else if (options.week) range = 'week';
+      else if (options.month) range = 'month';
+
+      // Determine export format
+      let exportFormat: 'json' | 'csv' | undefined;
+      if (options.json) exportFormat = 'json';
+      else if (options.csv) exportFormat = 'csv';
+
+      await runStats({
+        range,
+        export: exportFormat,
+        verbose: options.verbose,
+      });
+    } catch (error) {
+      logger.error('Stats command failed', { error });
+      console.error(chalk.red('Stats failed:'), error);
+      process.exit(1);
+    }
   });
 
 // Report issue command (placeholder)
@@ -100,17 +135,53 @@ const config = program
 config
   .command('show')
   .description('Show current configuration')
-  .action(() => {
-    console.log(chalk.yellow('\n⚙️  Configuration'));
-    console.log(chalk.dim('Coming soon! View your MeMesh config.\n'));
+  .action(async () => {
+    try {
+      await showConfig();
+    } catch (error) {
+      logger.error('Failed to show config', { error });
+      console.error(chalk.red('Failed to show configuration:'), error);
+      process.exit(1);
+    }
   });
 
 config
   .command('validate')
   .description('Validate MCP configuration')
-  .action(() => {
-    console.log(chalk.yellow('\n✓ Validate Configuration'));
-    console.log(chalk.dim('Coming soon! Test your MeMesh setup.\n'));
+  .action(async () => {
+    try {
+      await validateConfig();
+    } catch (error) {
+      logger.error('Failed to validate config', { error });
+      console.error(chalk.red('Failed to validate configuration:'), error);
+      process.exit(1);
+    }
+  });
+
+config
+  .command('edit')
+  .description('Edit configuration in default editor')
+  .action(async () => {
+    try {
+      await editConfig();
+    } catch (error) {
+      logger.error('Failed to edit config', { error });
+      console.error(chalk.red('Failed to edit configuration:'), error);
+      process.exit(1);
+    }
+  });
+
+config
+  .command('reset')
+  .description('Reset configuration to defaults')
+  .action(async () => {
+    try {
+      await resetConfig();
+    } catch (error) {
+      logger.error('Failed to reset config', { error });
+      console.error(chalk.red('Failed to reset configuration:'), error);
+      process.exit(1);
+    }
   });
 
 // Help command (override default to show better format)

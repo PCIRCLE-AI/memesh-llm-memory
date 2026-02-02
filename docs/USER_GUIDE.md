@@ -391,7 +391,7 @@ Run: memesh tutorial
 
 ### Advanced MCP Tools
 
-These tools provide lower-level access to MeMesh capabilities:
+These tools provide lower-level access to MeMesh capabilities. For complete API documentation with detailed schemas, examples, and error handling, see **[API_REFERENCE.md](./api/API_REFERENCE.md)**.
 
 #### create-entities
 
@@ -399,24 +399,18 @@ These tools provide lower-level access to MeMesh capabilities:
 
 **Usage**: Advanced users who need fine-grained control over knowledge graph structure
 
-**Example**:
+**Quick Example**:
 ```json
 {
   "entities": [
     {
-      "name": "PostgreSQL",
-      "type": "Technology",
-      "properties": {
-        "version": "15",
-        "purpose": "Production database"
-      }
-    }
-  ],
-  "relations": [
-    {
-      "from": "ProductionSystem",
-      "to": "PostgreSQL",
-      "type": "USES"
+      "name": "PostgreSQL Database Choice 2026-02-03",
+      "entityType": "decision",
+      "observations": [
+        "Chose PostgreSQL over MySQL",
+        "Better JSON support and performance"
+      ],
+      "tags": ["database", "postgresql", "architecture"]
     }
   ]
 }
@@ -427,56 +421,102 @@ These tools provide lower-level access to MeMesh capabilities:
 - Migrating external knowledge
 - Integrating with other systems
 
+📖 **Full Documentation**: [API_REFERENCE.md - create-entities](./api/API_REFERENCE.md#create-entities)
+
 #### recall-memory
 
 **Purpose**: Low-level memory search with advanced filters
 
 **Parameters**:
-- `query`: Search text
 - `limit`: Maximum results (default: 10)
-- `timeRange`: Filter by date range
-- `tags`: Filter by specific tags
-- `types`: Filter by entity types
+- `query`: Optional search query
 
-**Example**:
+**Quick Example**:
 ```json
 {
   "query": "authentication",
-  "limit": 5,
-  "tags": ["decision", "security"],
-  "timeRange": {
-    "start": "2026-01-01",
-    "end": "2026-01-31"
-  }
+  "limit": 5
 }
 ```
+
+📖 **Full Documentation**: [API_REFERENCE.md - recall-memory](./api/API_REFERENCE.md#recall-memory)
+
+#### add-observations
+
+**Purpose**: Add new observations to existing entities
+
+**Quick Example**:
+```json
+{
+  "observations": [
+    {
+      "entityName": "PostgreSQL Database Choice 2026-02-03",
+      "contents": [
+        "Added read replicas for scalability",
+        "Performance improved by 40%"
+      ]
+    }
+  ]
+}
+```
+
+📖 **Full Documentation**: [API_REFERENCE.md - add-observations](./api/API_REFERENCE.md#add-observations)
+
+#### create-relations
+
+**Purpose**: Create typed relationships between entities
+
+**Quick Example**:
+```json
+{
+  "relations": [
+    {
+      "from": "User Service",
+      "to": "PostgreSQL Database Choice",
+      "relationType": "depends_on"
+    }
+  ]
+}
+```
+
+📖 **Full Documentation**: [API_REFERENCE.md - create-relations](./api/API_REFERENCE.md#create-relations)
 
 #### health-check
 
 **Purpose**: Monitor MeMesh system health
 
 **Returns**:
-- MCP server status
-- Knowledge Graph connectivity
-- Storage metrics
-- Recent errors
+- System status (healthy/degraded/unhealthy)
+- Component statuses (database, filesystem, memory)
+- Resource metrics
+- Recommendations
 
-**Example Response**:
-```json
-{
-  "status": "healthy",
-  "uptime": 43200,
-  "knowledgeGraph": {
-    "connected": true,
-    "entities": 1234,
-    "relations": 5678
-  },
-  "storage": {
-    "used": "45MB",
-    "available": "955MB"
-  }
-}
-```
+📖 **Full Documentation**: [API_REFERENCE.md - health-check](./api/API_REFERENCE.md#health-check)
+
+#### generate-tests
+
+**Purpose**: Generate automated test cases
+
+**Parameters**:
+- `specification`: Feature spec (optional)
+- `code`: Source code (optional)
+
+**Note**: Provide either specification or code.
+
+📖 **Full Documentation**: [API_REFERENCE.md - generate-tests](./api/API_REFERENCE.md#generate-tests)
+
+---
+
+### Complete API Reference
+
+For comprehensive documentation including:
+- Detailed input/output schemas
+- JSON examples for all tools
+- Error codes and handling
+- Integration patterns
+- Performance characteristics
+
+See **[API_REFERENCE.md](./api/API_REFERENCE.md)**
 
 ---
 

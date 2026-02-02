@@ -25,6 +25,7 @@
  */
 
 import ora, { type Ora } from 'ora';
+import type { Options as OraOptions } from 'ora';
 import chalk from 'chalk';
 
 export interface ProgressStep {
@@ -35,7 +36,7 @@ export interface ProgressStep {
 export interface ProgressOptions {
   showElapsed?: boolean; // Show elapsed time
   showEstimate?: boolean; // Show estimated completion
-  spinner?: string; // Spinner style (default: 'dots')
+  spinner?: OraOptions['spinner']; // Spinner style (default: 'dots')
 }
 
 export class ProgressIndicator {
@@ -250,7 +251,7 @@ export class ProgressIndicator {
   /**
    * Create a simple progress indicator for a single task
    */
-  static simple(message: string, spinner: string = 'dots'): Ora {
+  static simple(message: string, spinner: OraOptions['spinner'] = 'dots'): Ora {
     return ora({
       text: chalk.cyan(message),
       spinner,

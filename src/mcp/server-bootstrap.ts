@@ -1,35 +1,59 @@
 #!/usr/bin/env node
 /**
- * MCP Server Bootstrap
+ * MCP Server Bootstrap & CLI Entry Point
  *
- * This file MUST be the entry point for the MCP server (not server.ts directly).
+ * This file serves two purposes:
+ * 1. MCP Server: When called without arguments (by MCP client)
+ * 2. CLI Commands: When called with arguments (memesh setup, etc.)
  *
- * Problem: ES6 imports are hoisted, so setting environment variables in server.ts
- * happens AFTER modules are loaded and logger is initialized.
+ * MCP Server Mode:
+ * - Must set MCP_SERVER_MODE environment variable FIRST
+ * - Uses dynamic import() to load server.ts (NOT static import)
+ * - Dynamic import executes AFTER this code, so env var is set in time
  *
- * Solution: This bootstrap file:
- * 1. Sets MCP_SERVER_MODE environment variable FIRST
- * 2. Uses dynamic import() to load server.ts (NOT static import)
- * 3. Dynamic import executes AFTER this code, so env var is set in time
+ * CLI Mode:
+ * - Detects command-line arguments
+ * - Delegates to CLI handler for interactive commands
  *
  * CRITICAL: This file must have ZERO static imports except for types.
  */
 
 // ============================================================================
-// 🚨 STEP 1: Set MCP_SERVER_MODE before ANY imports
+// 🚨 STEP 0: Check if this is a CLI command
 // ============================================================================
-process.env.MCP_SERVER_MODE = 'true';
+const args = process.argv.slice(2);
+const hasCliArgs = args.length > 0;
 
-// Global reference to A2A server for shutdown
-let a2aServer: any = null;
+if (hasCliArgs) {
+  // CLI mode - delegate to CLI handler
+  (async () => {
+    const { runCLI } = await import('../cli/index.js');
+    await runCLI();
+  })().catch((error) => {
+    console.error('CLI error:', error);
+    process.exit(1);
+  });
+} else {
+  // MCP Server mode - continue with normal bootstrap
+  startMCPServer();
+}
 
-// Track if MCP client has connected
-let mcpClientConnected = false;
+function startMCPServer() {
+  // ============================================================================
+  // 🚨 STEP 1: Set MCP_SERVER_MODE before ANY imports
+  // ============================================================================
+  process.env.MCP_SERVER_MODE = 'true';
 
-// ============================================================================
-// 🚨 STEP 2: Use dynamic import (NOT static import!)
-// ============================================================================
-async function bootstrap() {
+  // Global reference to A2A server for shutdown
+  let a2aServer: any = null;
+
+  // Track if MCP client has connected
+  let mcpClientConnected = false;
+
+  // ============================================================================
+  // 🚨 STEP 2: Use dynamic import (NOT static import!)
+  // ============================================================================
+  async function bootstrap() {
   try {
     // Start initialization watchdog to detect incorrect usage
     startMCPClientWatchdog();
@@ -239,9 +263,10 @@ async function shutdown(signal: string): Promise<void> {
   }
 }
 
-// Setup signal handlers for graceful shutdown (using once to prevent multiple invocations)
-process.once('SIGTERM', () => shutdown('SIGTERM'));
-process.once('SIGINT', () => shutdown('SIGINT'));
+  // Setup signal handlers for graceful shutdown (using once to prevent multiple invocations)
+  process.once('SIGTERM', () => shutdown('SIGTERM'));
+  process.once('SIGINT', () => shutdown('SIGINT'));
 
-// Start bootstrap
-bootstrap();
+  // Start bootstrap
+  bootstrap();
+}

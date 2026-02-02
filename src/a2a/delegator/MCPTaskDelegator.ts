@@ -46,4 +46,40 @@ export class MCPTaskDelegator {
     }
     return tasks;
   }
+
+  async markTaskInProgress(taskId: string): Promise<void> {
+    const taskInfo = this.pendingTasks.get(taskId);
+    if (taskInfo) {
+      taskInfo.status = 'IN_PROGRESS';
+      this.logger.info(`Task marked as in-progress: ${taskId}`);
+    }
+  }
+
+  async removeTask(taskId: string): Promise<void> {
+    const removed = this.pendingTasks.delete(taskId);
+    if (removed) {
+      this.logger.info(`Task removed from delegation queue: ${taskId}`);
+    }
+  }
+
+  async checkTimeouts(): Promise<void> {
+    const now = Date.now();
+    const timeout = parseInt(process.env.MEMESH_A2A_TASK_TIMEOUT || '300000'); // 5 min default
+
+    for (const [taskId, taskInfo] of this.pendingTasks) {
+      if (now - taskInfo.createdAt > timeout) {
+        this.logger.warn(`Task timeout detected: ${taskId}`);
+
+        // Update TaskQueue status
+        await this.taskQueue.updateTask(taskId, {
+          status: 'TIMEOUT' as any, // TaskStatus enum
+          error: `Task execution timeout (${timeout / 1000}s)`,
+          completedAt: now
+        });
+
+        // Remove from pending queue
+        this.pendingTasks.delete(taskId);
+      }
+    }
+  }
 }

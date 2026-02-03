@@ -13,7 +13,7 @@
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-1.25.3-purple.svg)](https://modelcontextprotocol.io)
 
-[🚀 快速開始](#-2-分鐘快速開始) • [📖 文檔](docs/) • [🌐 官網](https://memesh.pcircle.ai) • [💬 討論區](https://github.com/PCIRCLE-AI/memesh/discussions)
+[🚀 快速開始](#-2-分鐘快速開始) • [📖 文檔](docs/) • [🌐 GitHub](https://github.com/PCIRCLE-AI/claude-code-buddy) • [💬 討論區](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
 
 ---
 

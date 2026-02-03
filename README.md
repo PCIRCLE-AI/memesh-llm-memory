@@ -14,7 +14,7 @@
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-1.25.3-purple.svg)](https://modelcontextprotocol.io)
 
-[🚀 Quick Start](#-2-minute-quick-start) • [📖 Docs](docs/) • [🌐 Website](https://memesh.pcircle.ai) • [💬 Discussions](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
+[🚀 Quick Start](#-2-minute-quick-start) • [📖 Docs](docs/) • [🌐 GitHub](https://github.com/PCIRCLE-AI/claude-code-buddy) • [💬 Discussions](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
 
 ---
 

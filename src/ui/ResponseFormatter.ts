@@ -16,6 +16,7 @@ import boxen from 'boxen';
 import Table from 'cli-table3';
 import { theme, icons } from './theme.js';
 import { ErrorClassifier } from '../errors/ErrorClassifier.js';
+import { getOperationDisplayName, getOperationIcon } from './design-tokens.js';
 
 /**
  * Agent Response Interface
@@ -127,8 +128,8 @@ export class ResponseFormatter {
    * @returns Single-line or minimal formatted output
    */
   private formatSimple(response: AgentResponse): string {
-    const statusIcon = this.getStatusIcon(response.status);
-    return `${statusIcon} ${response.taskDescription}`;
+    // Use minimal header for consistency
+    return this.formatMinimalHeader(response);
   }
 
   /**
@@ -139,9 +140,9 @@ export class ResponseFormatter {
   private formatMedium(response: AgentResponse): string {
     const sections: string[] = [];
 
-    // Icon + bold task description
-    const statusIcon = this.getStatusIcon(response.status);
-    sections.push(chalk.bold(`${statusIcon} ${response.taskDescription}`));
+    // Use minimal header (consistent with complex format)
+    sections.push(this.formatMinimalHeader(response));
+    sections.push(this.formatDivider());
 
     // Results (no box)
     if (response.results && response.status === 'success') {
@@ -300,20 +301,95 @@ export class ResponseFormatter {
   }
 
   /**
+   * Format header - Minimal Design (Design B)
+   * No boxes, just icon + operation + result
+   */
+  private formatMinimalHeader(response: AgentResponse): string {
+    const sections: string[] = [];
+
+    // Get contextual operation name
+    const operationName = getOperationDisplayName(response.agentType);
+
+    // Status icon
+    const statusIcon = this.getStatusIcon(response.status);
+
+    // Get contextual result summary
+    const resultSummary = this.getResultSummary(response);
+
+    // Format: ✓ Operation Name
+    //         Result summary
+    sections.push(`${statusIcon} ${operationName}`);
+
+    if (resultSummary) {
+      sections.push(`  ${resultSummary}`);
+    }
+
+    // Add deprecation notice if using old buddy-* naming
+    if (response.agentType.startsWith('buddy-')) {
+      const newName = response.agentType.replace('buddy-', 'memesh-');
+      sections.push('');
+      sections.push(chalk.yellow(`⚠ Deprecation Notice`));
+      sections.push(chalk.dim(`  ${response.agentType} is deprecated, use ${newName} instead`));
+      sections.push(chalk.dim(`  buddy-* commands will be removed in v3.0.0 (2026-08)`));
+    }
+
+    return sections.join('\n');
+  }
+
+  /**
+   * Get contextual result summary based on operation and results
+   */
+  private getResultSummary(response: AgentResponse): string {
+    if (response.status !== 'success' || !response.results) {
+      return '';
+    }
+
+    const results = response.results;
+
+    // Memory search
+    if (response.agentType.includes('remember')) {
+      if (typeof results === 'object' && 'count' in results) {
+        const count = results.count as number;
+        return count > 0
+          ? `Found ${count} ${count === 1 ? 'memory' : 'memories'}`
+          : 'No memories found';
+      }
+    }
+
+    // Agent list
+    if (response.agentType.includes('list-agents')) {
+      if (typeof results === 'object' && 'agents' in results) {
+        const agents = results.agents as unknown[];
+        return `${agents.length} ${agents.length === 1 ? 'agent' : 'agents'} available`;
+      }
+    }
+
+    // Entity creation
+    if (response.agentType.includes('create-entities')) {
+      if (typeof results === 'object' && 'created' in results) {
+        const count = results.created as number;
+        return `Created ${count} ${count === 1 ? 'entity' : 'entities'}`;
+      }
+    }
+
+    // Task routing
+    if (response.agentType.includes('do')) {
+      if (typeof results === 'object' && 'agent' in results) {
+        const agent = results.agent as string;
+        return `Routed to ${agent}`;
+      }
+    }
+
+    // Generic fallback
+    return 'Completed successfully';
+  }
+
+  /**
    * Format header with agent type and status
    */
   private formatHeader(response: AgentResponse): string {
-    const statusIcon = this.getStatusIcon(response.status);
-    const statusColor = this.getStatusColor(response.status);
-    const agentName = chalk.bold.cyan(response.agentType.toUpperCase());
-
-    const headerText = `${statusIcon} ${agentName} ${statusColor(response.status.toUpperCase())}`;
-
-    return boxen(headerText, {
-      padding: { top: 0, bottom: 0, left: 2, right: 2 },
-      borderColor: 'cyan',
-      borderStyle: 'round',
-    });
+    // Use minimal header for all responses
+    return this.formatMinimalHeader(response);
   }
 
   /**

@@ -29,8 +29,8 @@ describe('ResponseFormatter', () => {
 
       const formatted = formatter.format(response);
 
-      // Simple format: just icon + description (no boxes, no dividers)
-      expect(formatted).toContain('Simple task');
+      // Simple format: minimal header with operation name (no boxes, no dividers)
+      expect(formatted).toContain('Test Agent'); // Operation name
       expect(formatted).not.toContain('─'.repeat(60)); // No dividers
       expect(formatted).not.toContain('╭'); // No boxes
     });
@@ -48,8 +48,8 @@ describe('ResponseFormatter', () => {
 
       const formatted = formatter.format(response);
 
-      // Medium format: multi-line, no heavy borders
-      expect(formatted).toContain('Medium task');
+      // Medium format: minimal header + results, no heavy borders
+      expect(formatted).toContain('Test Agent'); // Operation name
       expect(formatted).toContain('key1');
       expect(formatted).not.toContain('╭'); // No boxes
     });
@@ -64,8 +64,8 @@ describe('ResponseFormatter', () => {
 
       const formatted = formatter.format(response);
 
-      // Complex format: boxes and dividers
-      expect(formatted).toContain('╭'); // Has box
+      // Complex format: minimal header + dividers (no boxes)
+      expect(formatted).toContain('Test Agent'); // Operation name
       expect(formatted).toContain('─'.repeat(60)); // Has dividers
       expect(formatted).toContain('Error');
     });
@@ -83,8 +83,8 @@ describe('ResponseFormatter', () => {
 
       const formatted = formatter.format(response);
 
-      // Complex format: boxes and dividers
-      expect(formatted).toContain('╭'); // Has box
+      // Complex format: minimal header + dividers (no boxes)
+      expect(formatted).toContain('Test Agent'); // Operation name
       expect(formatted).toContain('─'.repeat(60)); // Has dividers
       expect(formatted).toContain('Enhanced Prompt');
     });
@@ -100,8 +100,8 @@ describe('ResponseFormatter', () => {
 
       const formatted = formatter.format(response);
 
-      // Complex format for large results
-      expect(formatted).toContain('╭'); // Has box
+      // Complex format for large results: minimal header (no box)
+      expect(formatted).toContain('Test Agent'); // Operation name
     });
   });
 
@@ -134,9 +134,9 @@ describe('ResponseFormatter', () => {
 
         const formatted = formatter.format(response);
 
-        // Simple format: just icon + task description
+        // Simple format: minimal header with operation name
         expect(formatted).toContain('✓');
-        expect(formatted).toContain('Test task');
+        expect(formatted).toContain('Test Agent'); // Operation name
         // String results are treated as simple, so full content not shown
       });
 
@@ -170,9 +170,9 @@ describe('ResponseFormatter', () => {
 
         const formatted = formatter.format(response);
 
-        // Simple array is treated as simple format
+        // Simple array is treated as simple format with minimal header
         expect(formatted).toContain('✓');
-        expect(formatted).toContain('Test task');
+        expect(formatted).toContain('Test Agent'); // Operation name
       });
     });
 
@@ -484,8 +484,8 @@ describe('ResponseFormatter', () => {
 
       const formatted = formatter.format(response);
 
-      expect(formatted).toContain('測試任務');
-      expect(formatted).toContain('🚀');
+      // Operation name shown instead of task description
+      expect(formatted).toContain('Test Agent');
       expect(formatted).toContain('結果');
       expect(formatted).toContain('✅');
     });
@@ -502,7 +502,8 @@ describe('ResponseFormatter', () => {
       const formatted = formatter.format(response);
 
       expect(formatted).toBeTruthy();
-      expect(formatted).toContain('Task');
+      // Operation name shown instead of task description
+      expect(formatted).toContain('Test Agent');
     });
 
     it('should handle missing metadata gracefully', () => {
@@ -572,7 +573,7 @@ describe('ResponseFormatter', () => {
       expect(formatted).not.toContain('─'.repeat(60));
     });
 
-    it('should include boxed header for complex responses', () => {
+    it('should use minimal header for complex responses (no boxes)', () => {
       const response: AgentResponse = {
         agentType: 'test-agent',
         taskDescription: 'Test',
@@ -585,8 +586,10 @@ describe('ResponseFormatter', () => {
 
       const formatted = formatter.format(response);
 
-      expect(formatted).toContain('╭');
-      expect(formatted).toContain('╰');
+      // Minimal header - no boxes
+      expect(formatted).toContain('Test Agent');
+      expect(formatted).not.toContain('╭');
+      expect(formatted).not.toContain('╰');
     });
 
     it('should include attribution footer for complex responses', () => {
@@ -601,6 +604,114 @@ describe('ResponseFormatter', () => {
 
       expect(formatted).toContain('Powered by');
       expect(formatted).toContain('MeMesh');
+    });
+  });
+
+  // ============================================================================
+  // Minimal Design (Design B) Tests
+  // ============================================================================
+  describe('ResponseFormatter - Minimal Design (Design B)', () => {
+    describe('Minimal Header (no boxes)', () => {
+      it('should format success with operation name and result summary', () => {
+        const response: AgentResponse = {
+          agentType: 'memesh-remember',
+          taskDescription: 'Search memory for "api design"',
+          status: 'success',
+          results: {
+            count: 3,
+            memories: [{}, {}, {}],
+          },
+        };
+
+        const formatted = formatter.format(response);
+
+        // Should have operation name (not MEMESH-REMEMBER)
+        expect(formatted).toContain('Memory Search');
+
+        // Should have result summary (not generic SUCCESS)
+        expect(formatted).toContain('Found 3 memories');
+
+        // Should NOT have boxes
+        expect(formatted).not.toContain('╭');
+        expect(formatted).not.toContain('╰');
+
+        // Should have minimal divider
+        expect(formatted).toContain('─'.repeat(60));
+      });
+
+      it('should use contextual operation names for all tools', () => {
+        const testCases = [
+          { agentType: 'memesh-do', expected: 'Task Router' },
+          { agentType: 'memesh-help', expected: 'Help Center' },
+          { agentType: 'create-entities', expected: 'Knowledge Storage' },
+          { agentType: 'a2a-send-task', expected: 'Agent Communication' },
+        ];
+
+        testCases.forEach(({ agentType, expected }) => {
+          const response: AgentResponse = {
+            agentType,
+            taskDescription: 'Test',
+            status: 'success',
+            results: 'Test result',
+          };
+
+          const formatted = formatter.format(response);
+          expect(formatted).toContain(expected);
+        });
+      });
+
+      it('should format contextual success messages', () => {
+        const testCases = [
+          {
+            agentType: 'memesh-remember',
+            results: { count: 2, memories: [{}, {}] },
+            expected: 'Found 2 memories',
+          },
+          {
+            agentType: 'a2a-list-agents',
+            results: { agents: [{}, {}, {}, {}, {}] },
+            expected: '5 agents available',
+          },
+          {
+            agentType: 'create-entities',
+            results: { created: 3 },
+            expected: 'Created 3 entities',
+          },
+        ];
+
+        testCases.forEach(({ agentType, results, expected }) => {
+          const response: AgentResponse = {
+            agentType,
+            taskDescription: 'Test',
+            status: 'success',
+            results,
+          };
+
+          const formatted = formatter.format(response);
+          expect(formatted).toContain(expected);
+        });
+      });
+    });
+
+    describe('Backward Compatibility', () => {
+      it('should handle buddy-* prefixed tools with deprecation notice', () => {
+        const response: AgentResponse = {
+          agentType: 'buddy-remember',
+          taskDescription: 'Search memory',
+          status: 'success',
+          results: { count: 1, memories: [{}] },
+        };
+
+        const formatted = formatter.format(response);
+
+        // Should show deprecation notice
+        expect(formatted).toContain('⚠ Deprecation Notice');
+        expect(formatted).toContain('buddy-remember is deprecated');
+        expect(formatted).toContain('use memesh-remember instead');
+
+        // But still work correctly
+        expect(formatted).toContain('Memory Search');
+      });
     });
   });
 });

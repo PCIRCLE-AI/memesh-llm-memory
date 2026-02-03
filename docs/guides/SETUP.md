@@ -1,8 +1,8 @@
-# 🚀 Claude Code Buddy Setup Guide (v2.2 MCP Server Pattern)
+# 🚀 MeMesh Setup Guide (v2.2 MCP Server Pattern)
 
 ## Quick Installation (Recommended)
 
-**The easiest way to install Claude Code Buddy is using the automated installer:**
+**The easiest way to install MeMesh is using the automated installer:**
 
 ```bash
 # 1. Clone the repository

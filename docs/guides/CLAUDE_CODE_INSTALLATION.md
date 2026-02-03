@@ -23,7 +23,7 @@ Claude Code will:
 **Restart Claude Code**, then you can:
 
 ```
-"List available Claude Code Buddy tools"
+"List available MeMesh tools"
 "Make code review focus on security"
 "Create a capability for API documentation"
 "Show me the system architecture"

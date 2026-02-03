@@ -23,11 +23,12 @@ This guide explains how to configure the Agent-to-Agent (A2A) Protocol Phase 1.0
 
 1. [Prerequisites](#prerequisites)
 2. [Token Generation](#token-generation)
-3. [Environment Configuration](#environment-configuration)
-4. [MCP Client Configuration](#mcp-client-configuration)
-5. [Testing Your Setup](#testing-your-setup)
-6. [Troubleshooting](#troubleshooting)
-7. [Advanced Configuration](#advanced-configuration)
+3. [Token Management](#token-management)
+4. [Environment Configuration](#environment-configuration)
+5. [MCP Client Configuration](#mcp-client-configuration)
+6. [Testing Your Setup](#testing-your-setup)
+7. [Troubleshooting](#troubleshooting)
+8. [Advanced Configuration](#advanced-configuration)
 
 ---
 
@@ -83,6 +84,71 @@ python3 -c "import secrets; print(secrets.token_hex(32))"
 **Example Output:**
 ```
 a7f3b2c1d4e5f6789abc012def345678901234567890abcdef1234567890abcd
+```
+
+---
+
+## Token Management
+
+### Token Lifecycle
+
+**IMPORTANT:** A2A tokens should be **shared across all sessions**, not regenerated per session.
+
+**Why?**
+- Regenerating tokens breaks all existing agents using the old token
+- All agents must use the same token for authentication
+- Token should only change when compromised or rotated for security
+
+### When to Regenerate
+
+**✅ Regenerate token when:**
+- Token is compromised or leaked
+- Security audit requires token rotation
+- Migrating to new infrastructure
+
+**❌ Do NOT regenerate token when:**
+- Installing updates or patches
+- Restarting the server
+- Adding new agents (they use the existing token)
+
+### Token Management Commands
+
+**Generate token (first time only):**
+```bash
+npm run a2a:generate-token
+# Or: bash scripts/generate-a2a-token.sh
+```
+
+**Show current token:**
+```bash
+npm run a2a:show-token
+```
+
+**Force regenerate (WARNING: breaks existing agents):**
+```bash
+npm run a2a:regenerate-token
+# Or: bash scripts/generate-a2a-token.sh --force
+```
+
+### Automatic Token Preservation
+
+The installation scripts automatically preserve existing tokens:
+
+```bash
+# These commands will NOT replace existing tokens:
+bash scripts/install.sh
+bash scripts/quick-install.sh
+
+# Token generation only happens on first installation
+# Reinstallation or updates will skip token generation
+```
+
+**Example output when token exists:**
+```
+✓ MEMESH_A2A_TOKEN already exists in .env
+  Token is preserved to maintain agent connectivity.
+  To regenerate (WARNING: breaks existing agents):
+    bash scripts/generate-a2a-token.sh --force
 ```
 
 ---

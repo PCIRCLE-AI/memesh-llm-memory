@@ -168,7 +168,7 @@ cd claude-code-buddy
 claude --plugin-dir /path/to/claude-code-buddy
 ```
 
-**完成！**CCB 現在可以作為 plugin 使用了。
+**完成！**MeMesh 現在可以作為 plugin 使用了。
 
 <Note>
   `--plugin-dir` 標記用於載入本地 plugin。如需團隊分發，請參閱 [Plugin Marketplaces](https://code.claude.com/docs/en/plugin-marketplaces) 建立共享的 marketplace。
@@ -264,13 +264,13 @@ MeMesh 立即回想：
 <details>
 <summary><strong>自動記憶系統</strong></summary>
 
-當你使用 `buddy-do` 時，CCB 會自動記錄：
+當你使用 `buddy-do` 時，MeMesh 會自動記錄：
 - ✅ 任務目標和結果
 - ✅ 技術決策和理由
 - ✅ 遇到的錯誤和解決方案
 - ✅ 開發里程碑
 
-**你不用想記憶的事。CCB 會處理。**
+**你不用想記憶的事。MeMesh 會處理。**
 
 </details>
 

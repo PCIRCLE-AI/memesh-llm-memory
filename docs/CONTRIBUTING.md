@@ -1,6 +1,6 @@
-# Contributing to Claude Code Buddy
+# Contributing to MeMesh
 
-**Welcome! We're excited that you're interested in contributing to Claude Code Buddy (MeMesh).**
+**Welcome! We're excited that you're interested in contributing to MeMesh.**
 
 This document provides guidelines for contributing code, documentation, bug reports, and feature requests.
 
@@ -916,10 +916,10 @@ By contributing, you agree that your contributions will be licensed under the AG
 - Check [existing issues](https://github.com/PCIRCLE-AI/claude-code-buddy/issues)
 - Read the [documentation](./README.md)
 
-**Thank you for contributing to Claude Code Buddy!** 🎉
+**Thank you for contributing to MeMesh!** 🎉
 
 ---
 
 **Version**: 2.2.0
 **Last Updated**: 2026-01-20
-**Maintainer**: Claude Code Buddy Team
+**Maintainer**: MeMesh Team

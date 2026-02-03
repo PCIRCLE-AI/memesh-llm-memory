@@ -1,6 +1,6 @@
-# Claude Code Buddy Documentation
+# MeMesh Documentation
 
-**Welcome to the Claude Code Buddy documentation!**
+**Welcome to the MeMesh documentation!**
 
 This directory contains all user-facing documentation and website pages.
 

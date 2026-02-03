@@ -338,7 +338,7 @@ Now that MeMesh is running, explore more:
 - **[API Reference](api/API_REFERENCE.md)** - All commands and tools explained
 - **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
 
-### For CCB Users
+### For Legacy Users
 - **[Migration Guide](MEMORY_MIGRATION_GUIDE.md)** - Switching from Claude Code Buddy (old name) to MeMesh
 
 ### Advanced Topics

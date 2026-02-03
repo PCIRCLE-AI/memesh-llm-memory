@@ -10,7 +10,7 @@
 
 ## Reporting a Vulnerability
 
-We take security seriously. If you discover a security vulnerability in Claude Code Buddy, please report it responsibly.
+We take security seriously. If you discover a security vulnerability in MeMesh, please report it responsibly.
 
 ### How to Report
 

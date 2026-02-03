@@ -1,6 +1,6 @@
 # Quick Start Guide (15 Minutes)
 
-Get started with Claude Code Buddy in 15 minutes - from zero to your first enhanced Claude Code query.
+Get started with MeMesh in 15 minutes - from zero to your first enhanced Claude Code query.
 
 ## 📋 Prerequisites
 
@@ -72,7 +72,7 @@ LOG_LEVEL=info
 
 ### Step 3: Configure Claude Code (5 minutes)
 
-Add Claude Code Buddy as an MCP server to Claude Code:
+Add MeMesh as an MCP server to Claude Code:
 
 #### macOS / Linux
 
@@ -119,7 +119,7 @@ notepad %USERPROFILE%\.claude\config.json
 
 ### Step 4: Verify Connection (1 minute)
 
-Test that Claude Code can connect to Claude Code Buddy:
+Test that Claude Code can connect to MeMesh:
 
 ```bash
 # In Claude Code, run:
@@ -139,16 +139,16 @@ Connected MCP Servers:
 
 ### Step 5: Test Capability Integration (2 minutes)
 
-Verify Claude Code Buddy is working by checking available capabilities:
+Verify MeMesh is working by checking available capabilities:
 
 ```bash
 # In Claude Code
-"List available Claude Code Buddy capabilities"
+"List available MeMesh capabilities"
 ```
 
 **Expected response:**
 ```
-Claude Code Buddy provides 7 tools:
+MeMesh provides 7 tools:
 
 1. buddy-do - Route any task to the right capability
 2. buddy-help - Command reference and examples
@@ -183,7 +183,7 @@ function login(username, password) {
 ```
 
 **What happens:**
-1. Claude Code Buddy detects "code review" capability needed
+1. MeMesh detects "code review" capability needed
 2. Routes to code review capability
 3. Enhances prompt with security best practices checklist
 4. Claude Code receives enhanced prompt with context
@@ -204,7 +204,7 @@ Ask for next-step suggestions based on your current phase:
 ```
 
 **What happens:**
-1. Claude Code Buddy evaluates your workflow context
+1. MeMesh evaluates your workflow context
 2. Provides actionable next steps (tests, review, commit)
 3. Suggests the most relevant tool to use next
 
@@ -225,7 +225,7 @@ Now that you're up and running, explore more:
 
 ### "MCP server not found"
 
-**Symptom:** Claude Code can't connect to Claude Code Buddy
+**Symptom:** Claude Code can't connect to MeMesh
 
 **Solutions:**
 1. Verify `config.json` path is correct:
@@ -398,7 +398,7 @@ If you're still stuck after trying the troubleshooting steps:
 
 ## 🎉 What's Next?
 
-You've successfully set up Claude Code Buddy! Here are recommended next steps:
+You've successfully set up MeMesh! Here are recommended next steps:
 
 1. **Try Different Capabilities:**
    - Code review with security focus
@@ -416,4 +416,4 @@ You've successfully set up Claude Code Buddy! Here are recommended next steps:
    - Configure logging and metrics
    - Set up custom routing rules
 
-**Happy coding with Claude Code Buddy! 🚀**
+**Happy coding with MeMesh! 🚀**

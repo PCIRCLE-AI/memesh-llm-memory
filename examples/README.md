@@ -1,6 +1,6 @@
-# Claude Code Buddy Examples
+# MeMesh Examples
 
-Example scripts demonstrating claude-code-buddy features.
+Example scripts demonstrating MeMesh features.
 
 ## Available Example
 

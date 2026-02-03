@@ -174,7 +174,7 @@ export class ClaudeMdRuleExtractor {
         ruleTemplate: {
           name: 'Mandatory Code Review',
           phase: 'test-complete',
-          severity: 'critical',
+          severity: 'medium', // Changed from 'critical' - test-complete should provide guidance, not block
         },
         conditionGenerator: (content) => {
           if (content.includes('code review') || content.includes('代碼審查')) {
@@ -210,7 +210,7 @@ export class ClaudeMdRuleExtractor {
         ruleTemplate: {
           name: 'Fix All Issues',
           phase: 'test-complete',
-          severity: 'critical',
+          severity: 'medium', // Changed from 'critical' - test-complete should provide guidance, not block
         },
         conditionGenerator: (content) => {
           // Check for fix-all-issues requirement

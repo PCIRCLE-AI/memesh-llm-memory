@@ -10,7 +10,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdirSync, rmSync } from 'fs';
 import { TaskQueue } from '../TaskQueue.js';
-import { ValidationError } from '../ValidationError.js';
+import { ValidationError } from '../../../errors/index.js';
 
 describe('TaskQueue - Input Validation Security (HIGH-3)', () => {
   let queue: TaskQueue;
@@ -246,6 +246,201 @@ describe('TaskQueue - Input Validation Security (HIGH-3)', () => {
       // Verify only valid queries work
       const validResults = queue.listTasks({ state: 'SUBMITTED' });
       expect(validResults).toBeDefined();
+    });
+  });
+
+  describe('CRITICAL-1: SQL Query Construction Safety', () => {
+    it('should build correct placeholders for 1 state', () => {
+      const states = ['SUBMITTED'];
+
+      const results = queue.listTasks({ state: states });
+
+      expect(results).toBeDefined();
+      expect(Array.isArray(results)).toBe(true);
+    });
+
+    it('should build correct placeholders for 2 states', () => {
+      const states = ['SUBMITTED', 'WORKING'];
+
+      const results = queue.listTasks({ state: states });
+
+      expect(results).toBeDefined();
+      expect(Array.isArray(results)).toBe(true);
+    });
+
+    it('should build correct placeholders for 5 states', () => {
+      const states = ['SUBMITTED', 'WORKING', 'COMPLETED', 'FAILED', 'COMPLETED'];
+
+      const results = queue.listTasks({ state: states });
+
+      expect(results).toBeDefined();
+      expect(Array.isArray(results)).toBe(true);
+    });
+
+    it('should build correct placeholders for 10 states', () => {
+      const states = Array(10).fill('SUBMITTED');
+
+      const results = queue.listTasks({ state: states });
+
+      expect(results).toBeDefined();
+      expect(Array.isArray(results)).toBe(true);
+    });
+
+    it('should build correct placeholders for 1 priority', () => {
+      const priorities = ['high'];
+
+      const results = queue.listTasks({ priority: priorities });
+
+      expect(results).toBeDefined();
+      expect(Array.isArray(results)).toBe(true);
+    });
+
+    it('should build correct placeholders for multiple priorities', () => {
+      const priorities = ['low', 'normal', 'high', 'urgent'];
+
+      const results = queue.listTasks({ priority: priorities });
+
+      expect(results).toBeDefined();
+      expect(Array.isArray(results)).toBe(true);
+    });
+
+    it('should match placeholder count to parameter count for states', () => {
+      // Create tasks with known states
+      queue.createTask({ name: 'Task A', priority: 'normal' });
+      queue.createTask({ name: 'Task B', priority: 'normal' });
+
+      // Query with multiple states - should not throw
+      const results = queue.listTasks({
+        state: ['SUBMITTED', 'WORKING', 'COMPLETED']
+      });
+
+      // Verify results (all should be SUBMITTED since we just created them)
+      expect(results.length).toBeGreaterThan(0);
+    });
+
+    it('should match placeholder count to parameter count for priorities', () => {
+      // Create tasks with different priorities
+      queue.createTask({ name: 'Task X', priority: 'low' });
+      queue.createTask({ name: 'Task Y', priority: 'high' });
+
+      // Query with multiple priorities - should not throw
+      const results = queue.listTasks({
+        priority: ['low', 'normal', 'high']
+      });
+
+      // Verify results
+      expect(results.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('MAJOR-2: Timestamp Validation', () => {
+    it('should accept valid past timestamps', () => {
+      const now = new Date();
+      const oneHourAgo = new Date(now.getTime() - 3600 * 1000);
+      const oneDayAgo = new Date(now.getTime() - 86400 * 1000);
+
+      expect(() => queue.listTasks({ createdAfter: oneHourAgo.toISOString() })).not.toThrow();
+      expect(() => queue.listTasks({ createdBefore: now.toISOString() })).not.toThrow();
+      expect(() => queue.listTasks({
+        createdAfter: oneDayAgo.toISOString(),
+        createdBefore: now.toISOString()
+      })).not.toThrow();
+    });
+
+    it('should accept epoch timestamp', () => {
+      const epoch = new Date(0).toISOString();
+      expect(() => queue.listTasks({ createdAfter: epoch })).not.toThrow();
+      expect(() => queue.listTasks({ createdBefore: epoch })).not.toThrow();
+    });
+
+    it('should reject invalid timestamp string for createdAfter', () => {
+      expect(() => queue.listTasks({ createdAfter: 'invalid-date' })).toThrow(ValidationError);
+      expect(() => queue.listTasks({ createdAfter: 'not a timestamp' })).toThrow(ValidationError);
+    });
+
+    it('should reject invalid timestamp string for createdBefore', () => {
+      expect(() => queue.listTasks({ createdBefore: 'invalid-date' })).toThrow(ValidationError);
+      expect(() => queue.listTasks({ createdBefore: 'not a timestamp' })).toThrow(ValidationError);
+    });
+
+    it('should reject empty string timestamp for createdAfter', () => {
+      expect(() => queue.listTasks({ createdAfter: '' })).toThrow(ValidationError);
+    });
+
+    it('should reject empty string timestamp for createdBefore', () => {
+      expect(() => queue.listTasks({ createdBefore: '' })).toThrow(ValidationError);
+    });
+
+    it('should reject timestamp before epoch for createdAfter', () => {
+      const beforeEpoch = new Date(-1000).toISOString();
+      expect(() => queue.listTasks({ createdAfter: beforeEpoch })).toThrow(ValidationError);
+    });
+
+    it('should reject timestamp before epoch for createdBefore', () => {
+      const beforeEpoch = new Date(-1000).toISOString();
+      expect(() => queue.listTasks({ createdBefore: beforeEpoch })).toThrow(ValidationError);
+    });
+
+    it('should reject timestamp too far in future for createdAfter', () => {
+      const farFuture = new Date(Date.now() + 200 * 365 * 24 * 60 * 60 * 1000).toISOString();
+      expect(() => queue.listTasks({ createdAfter: farFuture })).toThrow(ValidationError);
+    });
+
+    it('should reject timestamp too far in future for createdBefore', () => {
+      const farFuture = new Date(Date.now() + 200 * 365 * 24 * 60 * 60 * 1000).toISOString();
+      expect(() => queue.listTasks({ createdBefore: farFuture })).toThrow(ValidationError);
+    });
+
+    it('should work with valid timestamp range', () => {
+      // Create a task
+      const task = queue.createTask({ name: 'Timed Task', priority: 'normal' });
+
+      // Query with valid range around the task creation time
+      const taskDate = new Date(task.createdAt);
+      const before = new Date(taskDate.getTime() + 1000).toISOString(); // 1 second after
+      const after = new Date(taskDate.getTime() - 1000).toISOString(); // 1 second before
+
+      const results = queue.listTasks({
+        createdAfter: after,
+        createdBefore: before
+      });
+
+      // Should find the task
+      expect(results.some(t => t.id === task.id)).toBe(true);
+    });
+
+    it('should reject both timestamps if one is invalid', () => {
+      const validTimestamp = new Date().toISOString();
+
+      // Invalid createdAfter with valid createdBefore
+      expect(() => queue.listTasks({
+        createdAfter: 'invalid',
+        createdBefore: validTimestamp
+      })).toThrow(ValidationError);
+
+      // Valid createdAfter with invalid createdBefore
+      expect(() => queue.listTasks({
+        createdAfter: validTimestamp,
+        createdBefore: 'invalid'
+      })).toThrow(ValidationError);
+    });
+
+    it('should provide clear error message for invalid timestamps', () => {
+      try {
+        queue.listTasks({ createdAfter: 'not-a-date' });
+        expect.fail('Should have thrown ValidationError');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        expect((error as ValidationError).message).toContain('createdAfter');
+      }
+
+      try {
+        queue.listTasks({ createdBefore: '' });
+        expect.fail('Should have thrown ValidationError');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        expect((error as ValidationError).message).toContain('createdBefore');
+      }
     });
   });
 });

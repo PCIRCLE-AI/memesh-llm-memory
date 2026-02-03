@@ -5,7 +5,7 @@
  * Validates array sizes, enum values, and data constraints.
  */
 
-import { ValidationError } from './ValidationError.js';
+import { ValidationError } from '../../errors/index.js';
 import type { TaskState, TaskPriority } from '../types/index.js';
 
 /**
@@ -123,6 +123,44 @@ export function validatePositiveInteger(
       constraints: { min: 0, max },
       severity: 'MEDIUM',
       reason: 'Only positive integers are allowed',
+    });
+  }
+}
+
+/**
+ * Validate ISO 8601 timestamp string
+ *
+ * @param value - ISO timestamp string to validate
+ * @param fieldName - Field name for error message
+ * @throws ValidationError if timestamp is invalid
+ */
+export function validateISOTimestamp(value: string, fieldName: string): void {
+  // Check if it's a valid ISO 8601 string
+  const date = new Date(value);
+
+  // Check if date is valid
+  if (Number.isNaN(date.getTime())) {
+    throw new ValidationError(`Invalid ${fieldName}`, {
+      field: fieldName,
+      providedValue: value,
+      severity: 'MEDIUM',
+      reason: 'Must be a valid ISO 8601 timestamp string',
+    });
+  }
+
+  // Check if the timestamp is reasonable (not too far in past/future)
+  const timestamp = date.getTime();
+  const now = Date.now();
+  const oneHundredYears = 100 * 365 * 24 * 60 * 60 * 1000;
+
+  if (timestamp < 0 || timestamp > now + oneHundredYears) {
+    throw new ValidationError(`Invalid ${fieldName}`, {
+      field: fieldName,
+      providedValue: value,
+      timestamp,
+      constraints: { min: 0, max: now + oneHundredYears },
+      severity: 'MEDIUM',
+      reason: 'Timestamp must be a reasonable date (not before epoch or too far in future)',
     });
   }
 }

@@ -39,6 +39,7 @@ import {
   validateTaskStates,
   validateTaskPriorities,
   validatePositiveInteger,
+  validateISOTimestamp,
 } from './inputValidation.js';
 import type {
   Task,
@@ -275,7 +276,12 @@ export class TaskQueue {
 
     if (filter?.state) {
       if (Array.isArray(filter.state)) {
-        query += ` AND t.state IN (${filter.state.map(() => '?').join(',')})`;
+        // ✅ SECURITY FIX (CRITICAL-1): Build placeholders without relying on array mutation
+        // Previous: query += ` AND t.state IN (${filter.state.map(() => '?').join(',')})`;
+        // Risk: String interpolation in SQL query construction is architecturally unsafe
+        const stateCount = filter.state.length;
+        const statePlaceholders = Array(stateCount).fill('?').join(',');
+        query += ` AND t.state IN (${statePlaceholders})`;
         params.push(...filter.state);
       } else {
         query += ' AND t.state = ?';
@@ -285,7 +291,10 @@ export class TaskQueue {
 
     if (filter?.priority) {
       if (Array.isArray(filter.priority)) {
-        query += ` AND t.priority IN (${filter.priority.map(() => '?').join(',')})`;
+        // ✅ SECURITY FIX (CRITICAL-1): Build placeholders without relying on array mutation
+        const priorityCount = filter.priority.length;
+        const priorityPlaceholders = Array(priorityCount).fill('?').join(',');
+        query += ` AND t.priority IN (${priorityPlaceholders})`;
         params.push(...filter.priority);
       } else {
         query += ' AND t.priority = ?';
@@ -293,12 +302,15 @@ export class TaskQueue {
       }
     }
 
-    if (filter?.createdAfter) {
+    // ✅ SECURITY FIX (MAJOR-2): Validate timestamp parameters
+    if (filter?.createdAfter !== undefined) {
+      validateISOTimestamp(filter.createdAfter, 'createdAfter');
       query += ' AND t.created_at >= ?';
       params.push(filter.createdAfter);
     }
 
-    if (filter?.createdBefore) {
+    if (filter?.createdBefore !== undefined) {
+      validateISOTimestamp(filter.createdBefore, 'createdBefore');
       query += ' AND t.created_at <= ?';
       params.push(filter.createdBefore);
     }

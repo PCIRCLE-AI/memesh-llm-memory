@@ -324,15 +324,6 @@ export class ResponseFormatter {
       sections.push(`  ${resultSummary}`);
     }
 
-    // Add deprecation notice if using old buddy-* naming
-    if (response.agentType.startsWith('buddy-')) {
-      const newName = response.agentType.replace('buddy-', 'memesh-');
-      sections.push('');
-      sections.push(chalk.yellow(`⚠ Deprecation Notice`));
-      sections.push(chalk.dim(`  ${response.agentType} is deprecated, use ${newName} instead`));
-      sections.push(chalk.dim(`  buddy-* commands will be removed in v3.0.0 (2026-08)`));
-    }
-
     return sections.join('\n');
   }
 

@@ -694,7 +694,7 @@ describe('ResponseFormatter', () => {
     });
 
     describe('Backward Compatibility', () => {
-      it('should handle buddy-* prefixed tools with deprecation notice', () => {
+      it('should handle buddy-* prefixed tools correctly', () => {
         const response: AgentResponse = {
           agentType: 'buddy-remember',
           taskDescription: 'Search memory',
@@ -704,13 +704,12 @@ describe('ResponseFormatter', () => {
 
         const formatted = formatter.format(response);
 
-        // Should show deprecation notice
-        expect(formatted).toContain('⚠ Deprecation Notice');
-        expect(formatted).toContain('buddy-remember is deprecated');
-        expect(formatted).toContain('use memesh-remember instead');
-
-        // But still work correctly
+        // Should display with correct operation name
         expect(formatted).toContain('Memory Search');
+        expect(formatted).toContain('Found 1 memory');
+
+        // Should NOT show deprecation notice (buddy-* is the primary naming)
+        expect(formatted).not.toContain('Deprecation Notice');
       });
     });
   });

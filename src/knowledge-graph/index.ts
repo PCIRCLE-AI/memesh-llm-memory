@@ -184,15 +184,16 @@ export class KnowledgeGraph {
   /**
    * Escape special characters in LIKE patterns to prevent SQL injection
    *
-   * Escapes: %, _, \, [
+   * Escapes: !, %, _, [
    * These characters have special meaning in SQL LIKE patterns
+   * Uses '!' as the ESCAPE character (safer than '\' - no conflict with paths/strings)
    */
   private escapeLikePattern(pattern: string): string {
     return pattern
-      .replace(/\\/g, '\\\\')  // Backslash first (escape character)
-      .replace(/%/g, '\\%')    // Percent (matches any sequence)
-      .replace(/_/g, '\\_')    // Underscore (matches single character)
-      .replace(/\[/g, '\\[');  // Left bracket (character class)
+      .replace(/!/g, '!!')     // Exclamation first (our escape character)
+      .replace(/%/g, '!%')     // Percent (matches any sequence)
+      .replace(/_/g, '!_')     // Underscore (matches single character)
+      .replace(/\[/g, '![');   // Left bracket (character class)
   }
 
   /**
@@ -364,7 +365,7 @@ export class KnowledgeGraph {
     }
 
     if (query.namePattern) {
-      sql += " AND e.name LIKE ? ESCAPE '\\'";
+      sql += " AND e.name LIKE ? ESCAPE '!'";
       params.push(`%${this.escapeLikePattern(query.namePattern)}%`);
     }
 

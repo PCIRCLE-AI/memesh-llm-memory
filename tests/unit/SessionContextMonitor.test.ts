@@ -276,4 +276,79 @@ describe('SessionContextMonitor', () => {
     );
     expect(timeDiff).toBeLessThanOrEqual(1);
   });
+
+  // CRITICAL-4: Empty recent array check
+  describe('CRITICAL-4: Empty arrays in quality degradation check', () => {
+    it('should handle empty recent array (should not happen but defensive)', () => {
+      // Force edge case with less than 3 scores
+      monitor.recordQualityScore(0.9);
+      monitor.recordQualityScore(0.85);
+
+      const health = monitor.checkSessionHealth();
+
+      // Should not crash, no quality warning
+      const qualityWarnings = health.warnings.filter(
+        (w) => w.type === 'quality-degradation'
+      );
+      expect(qualityWarnings).toHaveLength(0);
+    });
+
+    it('should handle NaN in quality scores array (defensive)', () => {
+      // Add some valid scores
+      monitor.recordQualityScore(0.9);
+      monitor.recordQualityScore(0.88);
+      monitor.recordQualityScore(0.87);
+
+      // Force NaN into array (should not happen due to validation, but test defensive code)
+      (monitor as any).qualityHistory.push(NaN);
+      (monitor as any).qualityHistory.push(0.7);
+      (monitor as any).qualityHistory.push(0.68);
+
+      const health = monitor.checkSessionHealth();
+
+      // Should handle gracefully - will compute NaN average and return null
+      // This is defensive behavior - normal code path prevents NaN
+      expect(health.status).toBeDefined();
+    });
+
+    it('should handle all NaN scores (defensive)', () => {
+      // Force all NaN (should not happen, but test defensive code)
+      (monitor as any).qualityHistory = [NaN, NaN, NaN, NaN, NaN, NaN];
+
+      const health = monitor.checkSessionHealth();
+
+      // Should not crash - defensive check will return null
+      const qualityWarnings = health.warnings.filter(
+        (w) => w.type === 'quality-degradation'
+      );
+      expect(qualityWarnings).toHaveLength(0);
+    });
+
+    it('should handle Infinity in quality scores (defensive)', () => {
+      // Force Infinity (should not happen, but test defensive code)
+      (monitor as any).qualityHistory = [0.9, 0.88, 0.87, Infinity, Infinity, Infinity];
+
+      const health = monitor.checkSessionHealth();
+
+      // Should not crash
+      expect(health.status).toBeDefined();
+    });
+
+    it('should correctly handle exactly 6 valid scores for degradation', () => {
+      monitor.recordQualityScore(0.9);
+      monitor.recordQualityScore(0.88);
+      monitor.recordQualityScore(0.87); // Previous avg = 0.883
+      monitor.recordQualityScore(0.7);
+      monitor.recordQualityScore(0.68);
+      monitor.recordQualityScore(0.65); // Recent avg = 0.677 (23% drop)
+
+      const health = monitor.checkSessionHealth();
+
+      const qualityWarnings = health.warnings.filter(
+        (w) => w.type === 'quality-degradation'
+      );
+      expect(qualityWarnings.length).toBeGreaterThan(0);
+      expect(qualityWarnings[0].data?.dropPercentage).toBeGreaterThan(15);
+    });
+  });
 });

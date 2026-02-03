@@ -15,6 +15,7 @@
 
 import type { UnifiedMemoryStore } from '../memory/UnifiedMemoryStore.js';
 import type { UnifiedMemory } from '../memory/types/unified-memory.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Mistake pattern extracted from multiple similar mistakes
@@ -230,7 +231,9 @@ export class MistakePatternManager {
    */
   private createPattern(signature: string, mistakes: UnifiedMemory[]): MistakePattern {
     // Calculate average importance
-    const avgImportance = mistakes.reduce((sum, m) => sum + m.importance, 0) / mistakes.length;
+    const avgImportance = mistakes.length > 0
+      ? mistakes.reduce((sum, m) => sum + m.importance, 0) / mistakes.length
+      : 0.5; // Default importance if no mistakes
 
     // Extract occurrences
     const occurrences = mistakes.map(m => m.timestamp);
@@ -285,8 +288,39 @@ export class MistakePatternManager {
     // Recent mistakes = higher weight
     const now = new Date();
     const lastOccurrence = occurrences[occurrences.length - 1];
-    const daysSinceLast = (now.getTime() - lastOccurrence.getTime()) / (1000 * 60 * 60 * 24);
-    const recencyFactor = 1 / (1 + daysSinceLast * this.config.decayRate);
+
+    // Validate timestamp
+    const timeDiff = now.getTime() - lastOccurrence.getTime();
+    if (timeDiff < 0) {
+      logger.warn('[MistakePatternManager] Invalid timestamp: lastOccurrence in future', {
+        lastOccurrence,
+        now,
+      });
+      return 0; // Future timestamp = invalid
+    }
+
+    const daysSinceLast = timeDiff / (1000 * 60 * 60 * 24);
+
+    // Validate decayRate
+    const decayRate = this.config.decayRate || 0.01;
+    if (!Number.isFinite(decayRate) || decayRate <= 0) {
+      logger.warn('[MistakePatternManager] Invalid decayRate', {
+        decayRate: this.config.decayRate,
+      });
+      return 0.5; // Default recency factor
+    }
+
+    const recencyFactor = 1 / (1 + daysSinceLast * decayRate);
+
+    // Defensive check
+    if (!Number.isFinite(recencyFactor)) {
+      logger.warn('[MistakePatternManager] Invalid recencyFactor calculation', {
+        daysSinceLast,
+        decayRate,
+        recencyFactor,
+      });
+      return 0.5;
+    }
 
     // Combined weight
     const weight = baseImportance * repetitionFactor * recencyFactor;

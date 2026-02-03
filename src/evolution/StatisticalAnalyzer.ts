@@ -1,5 +1,7 @@
 // src/evolution/StatisticalAnalyzer.ts
 
+import { logger } from '../utils/logger.js';
+
 /**
  * Result of Welch's t-test
  */
@@ -18,6 +20,11 @@ export interface WelchTTestResult {
    * Degrees of freedom
    */
   degreesOfFreedom: number;
+
+  /**
+   * Whether the result is statistically significant
+   */
+  significant: boolean;
 }
 
 /**
@@ -65,27 +72,88 @@ export class StatisticalAnalyzer {
    * @returns t-test result
    */
   welchTTest(control: number[], treatment: number[]): WelchTTestResult {
+    const n1 = control.length;
+    const n2 = treatment.length;
+
+    // ✅ Validate sample sizes
+    if (n1 < 2 || n2 < 2) {
+      throw new Error('Sample sizes must be at least 2 for t-test');
+    }
+
     const mean1 = this.calculateMean(control);
     const mean2 = this.calculateMean(treatment);
 
     const stdDev1 = this.calculateStdDev(control);
     const stdDev2 = this.calculateStdDev(treatment);
 
-    const n1 = control.length;
-    const n2 = treatment.length;
-
     // Calculate t-statistic
     const variance1 = Math.pow(stdDev1, 2) / n1;
     const variance2 = Math.pow(stdDev2, 2) / n2;
 
-    const tStatistic = (mean1 - mean2) / Math.sqrt(variance1 + variance2);
+    const varianceSum = variance1 + variance2;
+
+    // ✅ Check for zero variance sum (both groups have no variance)
+    if (varianceSum === 0) {
+      // Both groups have zero variance
+      return {
+        tStatistic: 0,
+        pValue: 1.0,
+        degreesOfFreedom: n1 + n2 - 2,
+        significant: false,
+      };
+    }
+
+    const tStatistic = (mean1 - mean2) / Math.sqrt(varianceSum);
+
+    // ✅ Check for invalid t-statistic (Infinity or NaN)
+    if (!Number.isFinite(tStatistic)) {
+      logger.warn('[StatisticalAnalyzer] Invalid t-statistic', {
+        mean1,
+        mean2,
+        variance1,
+        variance2,
+        tStatistic,
+      });
+      return {
+        tStatistic: 0,
+        pValue: 1.0,
+        degreesOfFreedom: n1 + n2 - 2,
+        significant: false,
+      };
+    }
 
     // Calculate Welch-Satterthwaite degrees of freedom
-    const numerator = Math.pow(variance1 + variance2, 2);
+    const numerator = Math.pow(varianceSum, 2);
     const denominator =
       Math.pow(variance1, 2) / (n1 - 1) + Math.pow(variance2, 2) / (n2 - 1);
 
+    // ✅ Check for zero denominator
+    if (denominator === 0 || !Number.isFinite(denominator)) {
+      // Both groups have zero variance - no difference to test
+      return {
+        tStatistic: 0,
+        pValue: 1.0,
+        degreesOfFreedom: n1 + n2 - 2,
+        significant: false,
+      };
+    }
+
     const degreesOfFreedom = numerator / denominator;
+
+    // ✅ Validate result
+    if (!Number.isFinite(degreesOfFreedom)) {
+      logger.warn('[StatisticalAnalyzer] Invalid degrees of freedom', {
+        numerator,
+        denominator,
+        degreesOfFreedom,
+      });
+      return {
+        tStatistic: 0,
+        pValue: 1.0,
+        degreesOfFreedom: n1 + n2 - 2,
+        significant: false,
+      };
+    }
 
     // Calculate p-value (two-tailed) using t-distribution approximation
     const pValue = this.tDistributionPValue(
@@ -93,10 +161,27 @@ export class StatisticalAnalyzer {
       degreesOfFreedom
     );
 
+    // ✅ Validate p-value
+    const twoTailedPValue = pValue * 2;
+    if (!Number.isFinite(twoTailedPValue)) {
+      logger.warn('[StatisticalAnalyzer] Invalid p-value', {
+        tStatistic,
+        degreesOfFreedom,
+        pValue,
+      });
+      return {
+        tStatistic,
+        pValue: 1.0,
+        degreesOfFreedom,
+        significant: false,
+      };
+    }
+
     return {
       tStatistic,
-      pValue: pValue * 2, // Two-tailed
+      pValue: twoTailedPValue, // Two-tailed
       degreesOfFreedom,
+      significant: twoTailedPValue < 0.05, // 95% confidence level
     };
   }
 

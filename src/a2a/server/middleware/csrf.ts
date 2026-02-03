@@ -1,11 +1,18 @@
 /**
  * CSRF Protection Middleware
  *
- * ✅ SECURITY FIX (MEDIUM-3): Protects against Cross-Site Request Forgery attacks
+ * ✅ SECURITY FIX (MEDIUM-3 + CRITICAL-3): Protects against Cross-Site Request Forgery attacks
+ *
+ * Security Model:
+ * - Cookie-based sessions: CSRF protection REQUIRED
+ * - Bearer token auth: CSRF protection NOT NEEDED (tokens not auto-sent by browser)
+ *
+ * This middleware automatically exempts Bearer-authenticated requests from CSRF checks
+ * as they are not vulnerable to CSRF attacks.
  *
  * Implements double-submit cookie pattern:
  * - Server generates CSRF token on first request
- * - Client must include token in subsequent state-changing requests
+ * - Client must include token in subsequent state-changing requests (cookie auth only)
  * - Token validated on server before processing request
  *
  * Features:
@@ -13,6 +20,11 @@
  * - Double-submit cookie pattern
  * - Automatic token rotation
  * - Safe method exemption (GET, HEAD, OPTIONS)
+ * - Bearer token exemption (not vulnerable to CSRF)
+ *
+ * References:
+ * - CSRF Attacks: https://owasp.org/www-community/attacks/csrf
+ * - OAuth 2.0 Bearer Tokens: https://datatracker.ietf.org/doc/html/rfc6750
  *
  * @module a2a/server/middleware/csrf
  */
@@ -166,6 +178,18 @@ export function csrfProtection(
 ): void {
   // Skip CSRF check for safe methods
   if (SAFE_METHODS.includes(req.method)) {
+    return next();
+  }
+
+  // ✅ CRITICAL FIX: Skip CSRF for Bearer token authentication
+  // Bearer tokens are not automatically sent by browsers, so CSRF doesn't apply
+  // This is industry standard: REST APIs with Bearer auth don't need CSRF protection
+  const authHeader = req.header('Authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    logger.debug('[CSRF] Skipping CSRF check for Bearer token authentication', {
+      method: req.method,
+      path: req.path,
+    });
     return next();
   }
 

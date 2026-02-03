@@ -152,10 +152,12 @@ export class A2AServer {
 
     // Protected routes - require authentication and rate limiting
     // POST routes also require CSRF protection (state-changing operations)
+    // ✅ CSRF Protection (SECURITY FIX - CRITICAL-3)
+    // Note: Automatically exempts Bearer token authentication (not vulnerable to CSRF)
     app.post(
       '/a2a/send-message',
       authenticateToken,
-      csrfProtection, // 🔒 CSRF protection for POST
+      csrfProtection, // 🔒 CSRF protection for cookie-based auth, skips Bearer tokens
       rateLimitMiddleware,
       spanMiddleware('a2a.send-message'),
       this.routes.sendMessage

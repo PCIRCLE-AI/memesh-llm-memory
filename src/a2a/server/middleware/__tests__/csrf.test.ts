@@ -302,6 +302,69 @@ describe('CSRF Protection', () => {
     });
   });
 
+  describe('Bearer Token Authentication Exemption', () => {
+    it('should skip CSRF validation for Bearer token auth', () => {
+      const req = mockRequest({
+        method: 'POST',
+        header: vi.fn((name: string) => {
+          if (name === 'Authorization') return 'Bearer test-token-12345';
+          return undefined;
+        }),
+        body: {}, // NO CSRF token
+      });
+      const res = mockResponse();
+      const next = vi.fn();
+
+      csrfProtection(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled(); // Should not reject
+    });
+
+    it('should still require CSRF for requests without Bearer token', () => {
+      const req = mockRequest({
+        method: 'POST',
+        header: vi.fn().mockReturnValue(undefined), // NO Authorization header
+        body: {}, // NO CSRF token
+      });
+      const res = mockResponse();
+      const next = vi.fn();
+
+      csrfProtection(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({ code: 'CSRF_TOKEN_MISSING' })
+        })
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('should require CSRF for non-Bearer Authorization headers', () => {
+      const req = mockRequest({
+        method: 'POST',
+        header: vi.fn((name: string) => {
+          if (name === 'Authorization') return 'Basic dXNlcjpwYXNz'; // Basic auth
+          return undefined;
+        }),
+        body: {}, // NO CSRF token
+      });
+      const res = mockResponse();
+      const next = vi.fn();
+
+      csrfProtection(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({ code: 'CSRF_TOKEN_MISSING' })
+        })
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Security edge cases', () => {
     it('should generate cryptographically secure tokens', () => {
       const tokens = new Set<string>();

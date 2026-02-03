@@ -24,6 +24,7 @@ import type {
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger.js';
 import { ValidationError, OperationError, NotFoundError } from '../errors/index.js';
+import { SmartMemoryQuery } from './SmartMemoryQuery.js';
 
 /**
  * Mapping from MemoryType to KnowledgeGraph EntityType
@@ -371,9 +372,14 @@ export class UnifiedMemoryStore {
     options?: SearchOptions & { projectPath?: string; techStack?: string[] }
   ): Promise<UnifiedMemory[]> {
     try {
-      // Use basic search (SQLite FTS5 + tag matching)
-      // Semantic understanding and relevance ranking delegated to Claude via MCP tool descriptions
-      return this.traditionalSearch(query, options);
+      // Step 1: Use traditional search (SQLite FTS5 + tag matching) to get base results
+      const baseResults = await this.traditionalSearch(query, options);
+
+      // Step 2: Apply SmartMemoryQuery for context-aware ranking
+      const smartQuery = new SmartMemoryQuery();
+      const rankedResults = smartQuery.search(query, baseResults, options);
+
+      return rankedResults;
     } catch (error) {
       logger.error(`[UnifiedMemoryStore] Search failed: ${error}`);
       throw new OperationError(

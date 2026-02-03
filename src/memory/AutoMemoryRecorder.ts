@@ -271,6 +271,13 @@ export class AutoMemoryRecorder {
       throw new Error(`Invalid linesChanged: cannot be negative (${data.linesChanged})`);
     }
 
+    // CRITICAL-7: Prevent integer overflow for linesChanged
+    if (data.linesChanged > Number.MAX_SAFE_INTEGER) {
+      throw new Error(
+        `Invalid linesChanged: exceeds MAX_SAFE_INTEGER (${Number.MAX_SAFE_INTEGER})`
+      );
+    }
+
     // Base importance
     let importance = 0.3;
 
@@ -306,12 +313,46 @@ export class AutoMemoryRecorder {
     insertions: number;
     deletions: number;
   }): number {
+    // Validate inputs to prevent integer overflow and invalid data
+    if (!Number.isFinite(data.filesChanged) || data.filesChanged < 0) {
+      throw new Error(
+        `Invalid filesChanged: must be a non-negative finite number, got ${data.filesChanged}`
+      );
+    }
+    if (!Number.isFinite(data.insertions) || data.insertions < 0) {
+      throw new Error(
+        `Invalid insertions: must be a non-negative finite number, got ${data.insertions}`
+      );
+    }
+    if (!Number.isFinite(data.deletions) || data.deletions < 0) {
+      throw new Error(
+        `Invalid deletions: must be a non-negative finite number, got ${data.deletions}`
+      );
+    }
+
+    // Prevent overflow for individual values
+    if (
+      data.filesChanged > Number.MAX_SAFE_INTEGER ||
+      data.insertions > Number.MAX_SAFE_INTEGER ||
+      data.deletions > Number.MAX_SAFE_INTEGER
+    ) {
+      throw new Error('Commit metrics exceed MAX_SAFE_INTEGER');
+    }
+
     // Base importance
     let importance = 0.4;
 
     // Boost for multiple files
     if (data.filesChanged > 5) {
       importance += 0.2;
+    }
+
+    // CRITICAL-8: Prevent integer overflow when calculating totalChanges
+    // Check if addition would overflow before performing it
+    if (data.insertions + data.deletions > Number.MAX_SAFE_INTEGER) {
+      throw new Error(
+        `Total changes (${data.insertions} + ${data.deletions}) would exceed MAX_SAFE_INTEGER`
+      );
     }
 
     // Boost for large commits

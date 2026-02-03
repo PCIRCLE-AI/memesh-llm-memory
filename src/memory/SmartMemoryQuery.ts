@@ -98,6 +98,27 @@ export class SmartMemoryQuery {
     queryLower: string,
     techStack: string[]
   ): number {
+    // Validate importance at the start to prevent invalid scoring
+    let importance = memory.importance;
+    if (importance === undefined || importance === null) {
+      importance = 0.5; // Default to medium importance
+    }
+    if (!Number.isFinite(importance)) {
+      console.warn(
+        `[SmartMemoryQuery] Invalid importance value: ${importance}, using 0.5`
+      );
+      importance = 0.5;
+    }
+    if (importance < 0 || importance > 1) {
+      console.warn(
+        `[SmartMemoryQuery] Importance out of range [0,1]: ${importance}, clamping`
+      );
+      importance = Math.max(0, Math.min(1, importance));
+    }
+    // Prevent zero multiplication - use minimum threshold
+    // This ensures even low-importance memories get non-zero scores for perfect matches
+    importance = Math.max(importance, 0.01);
+
     let score = 0;
 
     const contentLower = memory.content.toLowerCase();
@@ -143,7 +164,7 @@ export class SmartMemoryQuery {
     }
 
     // 4. Importance boost (multiply by importance)
-    score *= memory.importance;
+    score *= importance;
 
     // 5. Recency boost (favor recent memories)
     const daysSinceCreation =

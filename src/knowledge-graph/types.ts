@@ -12,6 +12,7 @@ export interface Entity {
   observations: string[];
   tags?: string[];
   metadata?: Record<string, unknown>;
+  contentHash?: string;
   createdAt?: Date;
 }
 

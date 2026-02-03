@@ -172,6 +172,30 @@ export class UnifiedMemoryStore {
         });
       }
 
+      // Validate importance (CRITICAL: prevents NaN, Infinity, negative values)
+      if (memory.importance !== undefined) {
+        if (!Number.isFinite(memory.importance)) {
+          throw new ValidationError(
+            `Importance must be a finite number, got ${memory.importance}`,
+            {
+              component: 'UnifiedMemoryStore',
+              method: 'store',
+              data: { importance: memory.importance, type: typeof memory.importance },
+            }
+          );
+        }
+        if (memory.importance < 0 || memory.importance > 1) {
+          throw new ValidationError(
+            `Importance must be between 0 and 1, got ${memory.importance}`,
+            {
+              component: 'UnifiedMemoryStore',
+              method: 'store',
+              data: { importance: memory.importance },
+            }
+          );
+        }
+      }
+
       // Validate and generate memory ID
       let id: string;
       if (memory.id !== undefined) {
@@ -197,47 +221,11 @@ export class UnifiedMemoryStore {
       } else {
         // Auto-generate ID
         id = `${MEMORY_ID_PREFIX}${uuidv4()}`;
-
-        // Deduplication check: prevent creating duplicate memories with same content
-        // This prevents race conditions where concurrent store() calls create duplicates
-        const contentHash = createHash('sha256').update(memory.content).digest('hex');
-        const dedupeStartTime = Date.now();
-
-        // Search for existing memory with same content hash
-        const existingMemories = await this.search(memory.content, {
-          limit: 10,
-          offset: 0,
-        });
-
-        const dedupeEndTime = Date.now();
-        const dedupeDuration = dedupeEndTime - dedupeStartTime;
-
-        // Check if any existing memory has identical content
-        const duplicate = existingMemories.find(
-          existing => existing.content === memory.content
-        );
-
-        if (duplicate && duplicate.id) {
-          // Found duplicate - potential race condition detected
-          // Log with sufficient detail for race condition analysis
-          logger.warn(
-            `[UnifiedMemoryStore] RACE CONDITION DETECTED: Duplicate content found (hash: ${contentHash.substring(0, 8)}), ` +
-              `using existing memory ${duplicate.id} instead of creating new one. ` +
-              `Deduplication check took ${dedupeDuration}ms. ` +
-              `This suggests concurrent store() calls for identical content.`
-          );
-          return duplicate.id;
-        }
-
-        // No duplicate found - log for race condition detection
-        if (dedupeDuration > 100) {
-          // If deduplication took > 100ms, there's higher risk of race condition
-          logger.warn(
-            `[UnifiedMemoryStore] Slow deduplication check (${dedupeDuration}ms) for content hash ${contentHash.substring(0, 8)}. ` +
-              `Higher risk of race condition if concurrent stores occur.`
-          );
-        }
       }
+
+      // CRITICAL-1: Calculate content hash for database-level deduplication
+      // Database UNIQUE constraint on content_hash provides atomic deduplication
+      const contentHash = createHash('sha256').update(memory.content).digest('hex');
 
       // Ensure timestamp is provided (default to now if missing)
       const timestamp = memory.timestamp || new Date();
@@ -307,11 +295,13 @@ export class UnifiedMemoryStore {
       }
 
       // Create entity in KnowledgeGraph
+      // CRITICAL-1: Include contentHash for deduplication
       const entity: Entity = {
         name: id,
         entityType,
         observations,
         tags: tagsToUse,
+        contentHash,  // CRITICAL-1: Pass content hash for atomic deduplication
         metadata: {
           memoryType: memory.type,
           importance: memory.importance,
@@ -322,37 +312,65 @@ export class UnifiedMemoryStore {
 
       // Create entity and relations atomically within a transaction
       // This ensures data consistency: either all succeed or all fail together
+      // CRITICAL-1: actualId may differ from id if deduplication occurred
+      let actualId: string = id;  // Initialize to id, will be updated if deduplicated
       try {
         this.knowledgeGraph.transaction(() => {
-          // Step 1: Create entity
-          this.knowledgeGraph.createEntity(entity);
+          // Step 1: Create entity (returns actual name, may be existing if deduplicated)
+          actualId = this.knowledgeGraph.createEntity(entity);
+
+          // CRITICAL-1: Log if deduplication occurred
+          if (actualId !== id) {
+            logger.info(
+              `[UnifiedMemoryStore] Deduplicated: generated id ${id}, using existing ${actualId}`
+            );
+          }
 
           // Step 2: Create all relations (if any)
-          // Only create relations to entities that exist (graceful degradation)
+          // CRITICAL-4: Collect all failures and throw at end to prevent partial success
           if (memory.relations && memory.relations.length > 0) {
+            const relationFailures: Array<{ relatedId: string; error: string }> = [];
+
             for (const relatedId of memory.relations) {
-              try {
-                // Check if target entity exists before creating relation
-                const targetEntity = this.knowledgeGraph.getEntity(relatedId);
-                if (targetEntity) {
-                  this.knowledgeGraph.createRelation({
-                    from: id,
-                    to: relatedId,
-                    relationType: 'depends_on',
-                    metadata: { createdAt: new Date().toISOString() },
-                  });
-                } else {
-                  logger.warn(
-                    `[UnifiedMemoryStore] Skipping relation to non-existent entity: ${relatedId}`
-                  );
-                }
-              } catch (error: unknown) {
-                // If target doesn't exist or relation fails, log but don't fail the transaction
-                const errorInfo = extractErrorInfo(error);
+              // Check if target entity exists before creating relation
+              const targetEntity = this.knowledgeGraph.getEntity(relatedId);
+              if (!targetEntity) {
+                relationFailures.push({
+                  relatedId,
+                  error: 'Target entity does not exist',
+                });
                 logger.warn(
+                  `[UnifiedMemoryStore] Cannot create relation to non-existent entity: ${relatedId}`
+                );
+                continue;
+              }
+
+              try {
+                this.knowledgeGraph.createRelation({
+                  from: actualId,  // CRITICAL-1: Use actualId (may be deduplicated)
+                  to: relatedId,
+                  relationType: 'depends_on',
+                  metadata: { createdAt: new Date().toISOString() },
+                });
+              } catch (error: unknown) {
+                const errorInfo = extractErrorInfo(error);
+                relationFailures.push({
+                  relatedId,
+                  error: errorInfo.message,
+                });
+                logger.error(
                   `[UnifiedMemoryStore] Failed to create relation to ${relatedId}: ${errorInfo.message}`
                 );
               }
+            }
+
+            // If any relations failed, throw to rollback entire transaction
+            // This ensures atomicity: all succeed or all fail together
+            if (relationFailures.length > 0) {
+              throw new Error(
+                `Failed to create ${relationFailures.length} relation(s): ` +
+                relationFailures.map(f => `${f.relatedId} (${f.error})`).join(', ')
+              );
             }
           }
 
@@ -376,8 +394,8 @@ export class UnifiedMemoryStore {
         });
       }
 
-      logger.info(`[UnifiedMemoryStore] Stored memory: ${id} (type: ${memory.type})`);
-      return id;
+      logger.info(`[UnifiedMemoryStore] Stored memory: ${actualId} (type: ${memory.type})`);
+      return actualId;  // CRITICAL-1: Return actual ID (may be deduplicated)
     } catch (error) {
       // Re-throw custom errors as-is
       if (error instanceof ValidationError || error instanceof OperationError) {

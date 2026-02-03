@@ -356,9 +356,10 @@ export function isStringArray(value: unknown): value is string[] {
 }
 
 /**
- * Safely stringify an object to JSON
+ * Safely stringify an object to JSON with circular reference detection
  *
- * Returns fallback value if serialization fails.
+ * Handles circular references by replacing them with '[Circular]' marker.
+ * Returns fallback value if serialization fails for other reasons.
  * Useful for logging and storing complex objects.
  *
  * @param value - Value to stringify
@@ -370,15 +371,31 @@ export function isStringArray(value: unknown): value is string[] {
  * const json = safeJsonStringify({ name: 'test' });
  * // Returns '{"name":"test"}'
  *
- * const circular: Record<string, unknown> = {};
+ * const circular: Record<string, unknown> = { name: 'test' };
  * circular.self = circular;
- * const safe = safeJsonStringify(circular, 'null');
- * // Returns 'null' (fallback) because of circular reference
+ * const safe = safeJsonStringify(circular);
+ * // Returns '{"name":"test","self":"[Circular]"}' (circular reference handled)
  * ```
  */
 export function safeJsonStringify(value: unknown, fallback: string = '{}'): string {
   try {
-    return JSON.stringify(value);
+    // CRITICAL-3: Use circular reference detection replacer
+    const seen = new WeakSet();
+    return JSON.stringify(value, (key, val) => {
+      // Handle null/undefined/primitives
+      if (val === null || typeof val !== 'object') {
+        return val;
+      }
+
+      // Detect circular reference
+      if (seen.has(val)) {
+        return '[Circular]';
+      }
+
+      // Track this object
+      seen.add(val);
+      return val;
+    });
   } catch (error) {
     logger.warn('JSON stringify error:', {
       error: error instanceof Error ? error.message : String(error),

@@ -15,7 +15,7 @@ import type { Entity, Relation, SearchQuery, RelationTrace, EntityType, Relation
 import type { SQLParams } from '../evolution/storage/types.js';
 import { logger } from '../utils/logger.js';
 import { QueryCache } from '../db/QueryCache.js';
-import { safeJsonParse } from '../utils/json.js';
+import { safeJsonParse, safeJsonStringify } from '../utils/json.js';
 import { getDataPath, getDataDirectory } from '../utils/PathResolver.js';
 
 export class KnowledgeGraph {
@@ -179,14 +179,69 @@ export class KnowledgeGraph {
     `;
 
     this.db.exec(schema);
+
+    // Run schema migrations
+    this.runMigrations();
+  }
+
+  /**
+   * Run schema migrations
+   *
+   * ✅ CRITICAL-1: Add content_hash column for deduplication
+   *
+   * Migrations are idempotent and safe to run multiple times.
+   * Each migration checks if it's needed before applying changes.
+   */
+  private runMigrations(): void {
+    // Migration 1: Add content_hash column to entities table
+    // This enables database-level deduplication and prevents TOCTOU race conditions
+    try {
+      // Check if content_hash column exists
+      const tableInfo = this.db.pragma('table_info(entities)') as Array<{ name: string }>;
+      const hasContentHash = tableInfo.some(
+        (col) => col.name === 'content_hash'
+      );
+
+      if (!hasContentHash) {
+        logger.info('[KG] Running migration: Adding content_hash column to entities table');
+
+        // Add content_hash column
+        this.db.exec(`
+          ALTER TABLE entities ADD COLUMN content_hash TEXT;
+        `);
+
+        // Create unique index on content_hash
+        // This prevents duplicate entities with same content at database level
+        this.db.exec(`
+          CREATE UNIQUE INDEX IF NOT EXISTS idx_entities_content_hash
+          ON entities(content_hash)
+          WHERE content_hash IS NOT NULL;
+        `);
+
+        logger.info('[KG] Migration complete: content_hash column added with unique index');
+      }
+    } catch (error) {
+      logger.error('[KG] Migration failed:', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
   }
 
   /**
    * Escape special characters in LIKE patterns to prevent SQL injection
    *
+   * ✅ CRITICAL-9: SQL injection protection - proper LIKE pattern escaping
+   *
    * Escapes: !, %, _, [, ]
    * These characters have special meaning in SQL LIKE patterns
    * Uses '!' as the ESCAPE character (safer than '\' - no conflict with paths/strings)
+   *
+   * Security guarantees:
+   * 1. Input type validation (rejects non-strings)
+   * 2. Escape character (!) escaped first (critical ordering)
+   * 3. All LIKE wildcards properly escaped
+   * 4. Used with parameterized queries only
    */
   private escapeLikePattern(pattern: string): string {
     // Validate input type to prevent type coercion attacks
@@ -204,62 +259,118 @@ export class KnowledgeGraph {
 
   /**
    * Create a new entity in the knowledge graph
+   *
+   * CRITICAL-1 FIX: Uses content_hash for atomic deduplication
+   * Returns the actual entity name (may differ from input if deduplicated)
+   *
+   * @param entity Entity to create
+   * @returns Actual entity name (same as input if new, existing name if deduplicated)
    */
-  createEntity(entity: Entity): number {
-    const stmt = this.db.prepare(`
-      INSERT INTO entities (name, type, metadata)
-      VALUES (?, ?, json(?))
-      ON CONFLICT(name) DO UPDATE SET
-        type = excluded.type,
-        metadata = excluded.metadata
-    `);
+  createEntity(entity: Entity): string {
+    try {
+      // CRITICAL-1: Check content_hash first for deduplication
+      // This prevents most duplicate cases before attempting INSERT
+      // IMPORTANT: Only deduplicate if name is DIFFERENT (real duplicate)
+      // If name is same, this is an update operation, not a duplicate
+      if (entity.contentHash) {
+        const existing = this.db
+          .prepare('SELECT name FROM entities WHERE content_hash = ?')
+          .get(entity.contentHash) as { name: string } | undefined;
 
-    stmt.run(
-      entity.name,
-      entity.entityType,
-      JSON.stringify(entity.metadata || {})
-    );
+        if (existing && existing.name !== entity.name) {
+          // Different name + same content = real deduplication
+          logger.info(
+            `[KG] Deduplicated: content_hash match, using existing entity ${existing.name}`
+          );
+          return existing.name;
+        }
+        // If existing.name === entity.name, this is an update (same entity)
+        // Continue to INSERT ... ON CONFLICT(name) DO UPDATE
+      }
 
-    // Get actual entity ID if it was a conflict update
-    const actualEntity = this.db
-      .prepare('SELECT id FROM entities WHERE name = ?')
-      .get(entity.name) as { id: number };
-
-    const actualId = actualEntity.id;
-
-    // Clear old observations if updating
-    this.db.prepare('DELETE FROM observations WHERE entity_id = ?').run(actualId);
-    this.db.prepare('DELETE FROM tags WHERE entity_id = ?').run(actualId);
-
-    // Add observations
-    if (entity.observations && entity.observations.length > 0) {
-      const obsStmt = this.db.prepare(`
-        INSERT INTO observations (entity_id, content)
-        VALUES (?, ?)
+      // CRITICAL-1: INSERT with content_hash to prevent race conditions
+      // Database UNIQUE constraint provides atomic deduplication
+      const stmt = this.db.prepare(`
+        INSERT INTO entities (name, type, metadata, content_hash)
+        VALUES (?, ?, json(?), ?)
+        ON CONFLICT(name) DO UPDATE SET
+          type = excluded.type,
+          metadata = excluded.metadata,
+          content_hash = excluded.content_hash
       `);
 
-      for (const obs of entity.observations) {
-        obsStmt.run(actualId, obs);
+      stmt.run(
+        entity.name,
+        entity.entityType,
+        // CRITICAL-3: Use safeJsonStringify to handle circular references
+        safeJsonStringify(entity.metadata || {}, '{}'),
+        entity.contentHash || null
+      );
+
+      // Get actual entity ID
+      const actualEntity = this.db
+        .prepare('SELECT id FROM entities WHERE name = ?')
+        .get(entity.name) as { id: number };
+
+      const actualId = actualEntity.id;
+
+      // Clear old observations/tags if updating
+      this.db.prepare('DELETE FROM observations WHERE entity_id = ?').run(actualId);
+      this.db.prepare('DELETE FROM tags WHERE entity_id = ?').run(actualId);
+
+      // Add observations
+      if (entity.observations && entity.observations.length > 0) {
+        const obsStmt = this.db.prepare(`
+          INSERT INTO observations (entity_id, content)
+          VALUES (?, ?)
+        `);
+
+        for (const obs of entity.observations) {
+          obsStmt.run(actualId, obs);
+        }
       }
-    }
 
-    // Add tags
-    if (entity.tags && entity.tags.length > 0) {
-      const tagStmt = this.db.prepare(`
-        INSERT INTO tags (entity_id, tag)
-        VALUES (?, ?)
-      `);
+      // Add tags
+      if (entity.tags && entity.tags.length > 0) {
+        const tagStmt = this.db.prepare(`
+          INSERT INTO tags (entity_id, tag)
+          VALUES (?, ?)
+        `);
 
-      for (const tag of entity.tags) {
-        tagStmt.run(actualId, tag);
+        for (const tag of entity.tags) {
+          tagStmt.run(actualId, tag);
+        }
       }
+
+      // Invalidate cache for entity queries
+      this.queryCache.invalidatePattern(/^entities:/);
+
+      logger.info(`[KG] Created entity: ${entity.name} (type: ${entity.entityType})`);
+      return entity.name;
+    } catch (error) {
+      // CRITICAL-1: Handle race condition - if UNIQUE constraint on content_hash fails
+      // This can happen if two concurrent requests pass the initial check
+      if (
+        error instanceof Error &&
+        error.message.includes('UNIQUE constraint failed') &&
+        error.message.includes('content_hash')
+      ) {
+        // Query existing entity by content_hash
+        const existing = this.db
+          .prepare('SELECT name FROM entities WHERE content_hash = ?')
+          .get(entity.contentHash) as { name: string } | undefined;
+
+        if (existing) {
+          logger.warn(
+            `[KG] Race condition detected: content_hash conflict, using existing entity ${existing.name}`
+          );
+          return existing.name;
+        }
+      }
+
+      // Re-throw if not a content_hash conflict or couldn't find existing entity
+      throw error;
     }
-
-    // Invalidate cache for entity queries
-    this.queryCache.invalidatePattern(/^entities:/);
-
-    logger.info(`[KG] Created entity: ${entity.name} (type: ${entity.entityType})`);
-    return actualId;
   }
 
   /**
@@ -299,7 +410,8 @@ export class KnowledgeGraph {
       fromEntity.id,
       toEntity.id,
       relation.relationType,
-      JSON.stringify(relation.metadata || {})
+      // CRITICAL-3: Use safeJsonStringify to handle circular references
+      safeJsonStringify(relation.metadata || {}, '{}')
     );
 
     // Invalidate cache for relation queries
@@ -313,6 +425,13 @@ export class KnowledgeGraph {
    * Search entities
    *
    * ✅ FIX LOW-2: Added limit/offset validation
+   * ✅ CRITICAL-9: SQL injection safe - all user inputs use parameterized queries
+   *
+   * Security: This method is SQL-injection-safe because:
+   * 1. All user inputs (entityType, tag, namePattern, limit, offset) use ? placeholders
+   * 2. LIKE patterns are properly escaped with escapeLikePattern()
+   * 3. All values are passed through params array to stmt.all(...params)
+   * 4. No string concatenation of user input into SQL
    */
   searchEntities(query: SearchQuery): Entity[] {
     // ✅ FIX LOW-2: Validate limit and offset parameters
@@ -603,8 +722,20 @@ export class KnowledgeGraph {
    * ```
    */
   transaction<T>(fn: () => T): T {
-    // better-sqlite3 transaction method handles begin/commit/rollback automatically
-    return this.db.transaction(fn)();
+    // CRITICAL-10: Proper transaction error handling with logging
+    try {
+      // better-sqlite3 transaction method handles begin/commit/rollback automatically
+      const transactionFn = this.db.transaction(fn);
+      return transactionFn();
+    } catch (error) {
+      // Log transaction failure with context
+      logger.error('[KG] Transaction failed and rolled back:', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      // Re-throw to propagate error to caller
+      throw error;
+    }
   }
 
   /**

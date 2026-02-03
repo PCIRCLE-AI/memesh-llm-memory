@@ -73,7 +73,7 @@ describe('UnifiedMemoryStore', () => {
         tags: ['typescript', 'architecture', 'best-practice'],
         importance: 0.85,
         timestamp: new Date('2024-01-15'),
-        relations: ['previous-decision-id'],
+        // Note: relations tested separately in "should create relations between memories"
         metadata: { author: 'team-lead', approved: true },
       };
 

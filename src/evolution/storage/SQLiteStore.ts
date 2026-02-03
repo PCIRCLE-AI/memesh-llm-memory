@@ -141,8 +141,12 @@ export class SQLiteStore implements EvolutionStore {
   // ========================================================================
 
   /**
-   * Escape special characters for LIKE patterns to prevent SQL injection
-   * Escapes: % _ \ ' "
+   * ✅ DEPRECATED (HIGH-2 Security Fix): This method is no longer used.
+   *
+   * Replaced with JSON_EACH queries for exact matching instead of LIKE patterns.
+   * Keeping for backward compatibility (marked as deprecated).
+   *
+   * @deprecated Use JSON_EACH queries with parameterized values instead
    */
   private escapeLikePattern(pattern: string): string {
     return pattern
@@ -527,18 +531,39 @@ export class SQLiteStore implements EvolutionStore {
     return spans;
   }
 
+  /**
+   * ✅ SECURITY FIX (HIGH-2): SQL Injection Prevention in Tag Queries
+   *
+   * Replaced LIKE pattern matching with JSON_EACH for exact matching.
+   * This eliminates SQL injection risks from escaped string patterns.
+   *
+   * Previous approach (DANGEROUS):
+   * - Used LIKE with escaped patterns: '%"' + this.escapeLikePattern(tag) + '"%'
+   * - Error-prone: Double escaping, edge cases in LIKE matching
+   * - Risk: Potential SQL injection through pattern crafting
+   *
+   * New approach (SECURE):
+   * - Uses JSON_EACH with parameterized queries
+   * - Exact matching only (no pattern matching)
+   * - Pure parameterization (no string concatenation)
+   */
   async queryByTags(tags: string[], mode: 'any' | 'all' = 'any'): Promise<Span[]> {
-    if (mode === 'any') {
-      // Match any tag - escape to prevent LIKE injection
-      const conditions = tags.map(() => 'tags LIKE ? ESCAPE \'\\\'').join(' OR ');
-      // Build LIKE patterns without string interpolation (anti-pattern)
-      const params = tags.map((tag) => '%"' + this.escapeLikePattern(tag) + '"%');
+    if (tags.length === 0) return [];
 
+    if (mode === 'any') {
+      // Match any tag using JSON_EACH for exact matching
+      const placeholders = tags.map(() => '?').join(',');
       const stmt = this.db.prepare(`
-        SELECT * FROM spans WHERE tags IS NOT NULL AND (${conditions})
+        SELECT * FROM spans
+        WHERE tags IS NOT NULL
+          AND json_valid(tags)
+          AND EXISTS (
+            SELECT 1 FROM json_each(tags)
+            WHERE value IN (${placeholders})
+          )
       `);
 
-      const rows = stmt.all(...params) as SpanRow[];
+      const rows = stmt.all(...tags) as SpanRow[];
 
       // Optimized: Pre-allocate array with known length
       const spans: Span[] = new Array(rows.length);
@@ -547,16 +572,23 @@ export class SQLiteStore implements EvolutionStore {
       }
       return spans;
     } else {
-      // Match all tags - escape to prevent LIKE injection
-      const conditions = tags.map(() => 'tags LIKE ? ESCAPE \'\\\'').join(' AND ');
-      // Build LIKE patterns without string interpolation (anti-pattern)
-      const params = tags.map((tag) => '%"' + this.escapeLikePattern(tag) + '"%');
+      // Match all tags - check that all required tags exist in the JSON array
+      // For each tag, there must exist an element that matches it
+      const conditions = tags.map(() => `
+        EXISTS (
+          SELECT 1 FROM json_each(tags)
+          WHERE value = ?
+        )
+      `).join(' AND ');
 
       const stmt = this.db.prepare(`
-        SELECT * FROM spans WHERE tags IS NOT NULL AND ${conditions}
+        SELECT * FROM spans
+        WHERE tags IS NOT NULL
+          AND json_valid(tags)
+          AND ${conditions}
       `);
 
-      const rows = stmt.all(...params) as SpanRow[];
+      const rows = stmt.all(...tags) as SpanRow[];
 
       // Optimized: Pre-allocate array with known length
       const spans: Span[] = new Array(rows.length);

@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { timingSafeEqual } from 'crypto';
+import { timingSafeEqual, createHash } from 'crypto';
 import { logger } from '../../../utils/logger.js';
 
 /**
@@ -88,10 +88,24 @@ export function authenticateToken(
   if (body?.agentCard?.id) {
     authReq.agentId = body.agentCard.id;
   } else {
-    // For endpoints without agentCard in body (GET requests),
-    // use a fallback identifier based on the token
-    // In production, this should be extracted from JWT or similar
-    authReq.agentId = `token-${token.substring(0, 8)}`;
+    // ✅ SECURITY FIX (HIGH-4): Token Exposure Prevention
+    //
+    // Previous approach (VULNERABLE):
+    // - Used token.substring(0, 8) → exposes 8 characters of token
+    // - Risk: Partial token exposure aids brute force attacks
+    // - Risk: Token correlation across logs/metrics
+    //
+    // New approach (SECURE):
+    // - Hash the token with SHA-256
+    // - Use first 16 chars of hash (safe - hash is one-way)
+    // - No token information leaked
+    // - Consistent identifier for rate limiting
+    const tokenHash = createHash('sha256')
+      .update(token)
+      .digest('hex')
+      .substring(0, 16); // Hash substring is safe (not token substring)
+
+    authReq.agentId = `token-${tokenHash}`;
   }
 
   next();

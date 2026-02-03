@@ -33,6 +33,13 @@ import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../../utils/logger.js';
 import { getDataPath } from '../../utils/PathResolver.js';
+// ✅ SECURITY FIX (HIGH-3): Import input validation helpers
+import {
+  validateArraySize,
+  validateTaskStates,
+  validateTaskPriorities,
+  validatePositiveInteger,
+} from './inputValidation.js';
 import type {
   Task,
   TaskState,
@@ -202,8 +209,50 @@ export class TaskQueue {
     return this.rowToTask(row);
   }
 
+  /**
+   * ✅ SECURITY FIX (HIGH-3): Input Validation for DoS Prevention
+   *
+   * Added comprehensive input validation to prevent DoS attacks:
+   * 1. Array size limits (max 100 items in filter arrays)
+   * 2. Enum validation (only known states/priorities allowed)
+   * 3. Numeric bounds checking (limit/offset)
+   *
+   * Previous approach (VULNERABLE):
+   * - No validation on filter arrays → DoS via massive arrays
+   * - No enum validation → potential SQL injection via crafted strings
+   * - No bounds checking → integer overflow risks
+   *
+   * New approach (SECURE):
+   * - Validates all array sizes before query construction
+   * - Validates all enum values against whitelist
+   * - Validates numeric parameters within safe bounds
+   */
   listTasks(filter?: TaskFilter): TaskStatus[] {
-    // Optimized query with JOINs to avoid N+1 problem
+    // ✅ SECURITY: Validate input arrays to prevent DoS attacks
+    if (filter?.state) {
+      const states = Array.isArray(filter.state) ? filter.state : [filter.state];
+      validateArraySize(states, 'state filter');
+      validateTaskStates(states);
+    }
+
+    if (filter?.priority) {
+      const priorities = Array.isArray(filter.priority)
+        ? filter.priority
+        : [filter.priority];
+      validateArraySize(priorities, 'priority filter');
+      validateTaskPriorities(priorities);
+    }
+
+    // ✅ SECURITY: Validate numeric parameters
+    if (filter?.limit !== undefined) {
+      validatePositiveInteger(filter.limit, 'limit', 10000);
+    }
+
+    if (filter?.offset !== undefined) {
+      validatePositiveInteger(filter.offset, 'offset');
+    }
+
+    // Build query with validated inputs
     let query = `
       SELECT
         t.*,

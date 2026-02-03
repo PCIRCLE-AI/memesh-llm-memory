@@ -29,6 +29,31 @@ import { SmartMemoryQuery } from './SmartMemoryQuery.js';
 import { AutoTagger } from './AutoTagger.js';
 
 /**
+ * Extract error message safely from unknown error type
+ *
+ * @param error - Unknown error object
+ * @returns Error message string and type information
+ */
+function extractErrorInfo(error: unknown): { message: string; type: string } {
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      type: error.constructor.name,
+    };
+  }
+  if (typeof error === 'string') {
+    return {
+      message: error,
+      type: 'string',
+    };
+  }
+  return {
+    message: String(error),
+    type: typeof error,
+  };
+}
+
+/**
  * Mapping from MemoryType to KnowledgeGraph EntityType
  */
 const MEMORY_TYPE_MAPPING: Record<MemoryType, EntityType> = {
@@ -102,17 +127,18 @@ export class UnifiedMemoryStore {
 
       logger.info(`[UnifiedMemoryStore] Initialized with database at: ${dbPath || 'default'}`);
       return instance;
-    } catch (error) {
-      logger.error(`[UnifiedMemoryStore] Initialization failed: ${error}`);
-      throw new OperationError(
-        `Failed to create UnifiedMemoryStore: ${error instanceof Error ? error.message : String(error)}`,
-        {
-          component: 'UnifiedMemoryStore',
-          method: 'create',
-          dbPath,
-          cause: error,
-        }
+    } catch (error: unknown) {
+      const errorInfo = extractErrorInfo(error);
+      logger.error(
+        `[UnifiedMemoryStore] Initialization failed: ${errorInfo.message} (type: ${errorInfo.type})`
       );
+      throw new OperationError(`Failed to create UnifiedMemoryStore: ${errorInfo.message}`, {
+        component: 'UnifiedMemoryStore',
+        method: 'create',
+        dbPath,
+        errorType: errorInfo.type,
+        cause: error,
+      });
     }
   }
 
@@ -175,6 +201,7 @@ export class UnifiedMemoryStore {
         // Deduplication check: prevent creating duplicate memories with same content
         // This prevents race conditions where concurrent store() calls create duplicates
         const contentHash = createHash('sha256').update(memory.content).digest('hex');
+        const dedupeStartTime = Date.now();
 
         // Search for existing memory with same content hash
         const existingMemories = await this.search(memory.content, {
@@ -182,17 +209,33 @@ export class UnifiedMemoryStore {
           offset: 0,
         });
 
+        const dedupeEndTime = Date.now();
+        const dedupeDuration = dedupeEndTime - dedupeStartTime;
+
         // Check if any existing memory has identical content
         const duplicate = existingMemories.find(
           existing => existing.content === memory.content
         );
 
         if (duplicate && duplicate.id) {
-          // Found duplicate - return existing ID instead of creating new memory
-          logger.info(
-            `[UnifiedMemoryStore] Duplicate content detected, using existing memory: ${duplicate.id}`
+          // Found duplicate - potential race condition detected
+          // Log with sufficient detail for race condition analysis
+          logger.warn(
+            `[UnifiedMemoryStore] RACE CONDITION DETECTED: Duplicate content found (hash: ${contentHash.substring(0, 8)}), ` +
+              `using existing memory ${duplicate.id} instead of creating new one. ` +
+              `Deduplication check took ${dedupeDuration}ms. ` +
+              `This suggests concurrent store() calls for identical content.`
           );
           return duplicate.id;
+        }
+
+        // No duplicate found - log for race condition detection
+        if (dedupeDuration > 100) {
+          // If deduplication took > 100ms, there's higher risk of race condition
+          logger.warn(
+            `[UnifiedMemoryStore] Slow deduplication check (${dedupeDuration}ms) for content hash ${contentHash.substring(0, 8)}. ` +
+              `Higher risk of race condition if concurrent stores occur.`
+          );
         }
       }
 
@@ -277,39 +320,60 @@ export class UnifiedMemoryStore {
         },
       };
 
-      // Create entity with error handling
+      // Create entity and relations atomically within a transaction
+      // This ensures data consistency: either all succeed or all fail together
       try {
-        this.knowledgeGraph.createEntity(entity);
-      } catch (error) {
-        logger.error(`[UnifiedMemoryStore] Failed to create entity: ${error}`);
-        throw new OperationError(
-          `Failed to store memory: ${error instanceof Error ? error.message : String(error)}`,
-          {
-            component: 'UnifiedMemoryStore',
-            method: 'store',
-            operation: 'createEntity',
-            memoryId: id,
-            memoryType: memory.type,
-            cause: error,
-          }
-        );
-      }
+        this.knowledgeGraph.transaction(() => {
+          // Step 1: Create entity
+          this.knowledgeGraph.createEntity(entity);
 
-      // Create relations if specified
-      if (memory.relations && memory.relations.length > 0) {
-        for (const relatedId of memory.relations) {
-          try {
-            this.knowledgeGraph.createRelation({
-              from: id,
-              to: relatedId,
-              relationType: 'depends_on',
-              metadata: { createdAt: new Date().toISOString() },
-            });
-          } catch (error) {
-            // Log but don't fail if relation creation fails
-            logger.warn(`Failed to create relation from ${id} to ${relatedId}: ${error}`);
+          // Step 2: Create all relations (if any)
+          // Only create relations to entities that exist (graceful degradation)
+          if (memory.relations && memory.relations.length > 0) {
+            for (const relatedId of memory.relations) {
+              try {
+                // Check if target entity exists before creating relation
+                const targetEntity = this.knowledgeGraph.getEntity(relatedId);
+                if (targetEntity) {
+                  this.knowledgeGraph.createRelation({
+                    from: id,
+                    to: relatedId,
+                    relationType: 'depends_on',
+                    metadata: { createdAt: new Date().toISOString() },
+                  });
+                } else {
+                  logger.warn(
+                    `[UnifiedMemoryStore] Skipping relation to non-existent entity: ${relatedId}`
+                  );
+                }
+              } catch (error: unknown) {
+                // If target doesn't exist or relation fails, log but don't fail the transaction
+                const errorInfo = extractErrorInfo(error);
+                logger.warn(
+                  `[UnifiedMemoryStore] Failed to create relation to ${relatedId}: ${errorInfo.message}`
+                );
+              }
+            }
           }
-        }
+
+          // Transaction succeeds - all operations committed together
+        });
+      } catch (error: unknown) {
+        // Transaction failed - all operations rolled back automatically
+        const errorInfo = extractErrorInfo(error);
+        logger.error(
+          `[UnifiedMemoryStore] Failed to create memory (transaction rolled back): ${errorInfo.message} (type: ${errorInfo.type})`
+        );
+        throw new OperationError(`Failed to store memory: ${errorInfo.message}`, {
+          component: 'UnifiedMemoryStore',
+          method: 'store',
+          operation: 'createEntityWithRelations',
+          memoryId: id,
+          memoryType: memory.type,
+          relationCount: memory.relations?.length || 0,
+          errorType: errorInfo.type,
+          cause: error,
+        });
       }
 
       logger.info(`[UnifiedMemoryStore] Stored memory: ${id} (type: ${memory.type})`);
@@ -395,14 +459,38 @@ export class UnifiedMemoryStore {
     options?: SearchOptions & { projectPath?: string; techStack?: string[] }
   ): Promise<UnifiedMemory[]> {
     try {
+      // Normalize and validate limit
+      let finalLimit = options?.limit ?? 50; // DEFAULT_SEARCH_LIMIT
+      if (finalLimit <= 0) {
+        finalLimit = 50;
+      }
+      if (finalLimit > 1000) {
+        // MAX_SEARCH_LIMIT
+        logger.warn(
+          `[UnifiedMemoryStore] Limit ${finalLimit} exceeds maximum 1000, capping to 1000`
+        );
+        finalLimit = 1000;
+      }
+
+      // Create modified options with "soft limit" for fetching candidates
+      // Fetch 10x the final limit to ensure we have enough candidates for ranking
+      const candidateOptions = {
+        ...options,
+        limit: Math.min(finalLimit * 10, 1000),
+      };
+
       // Step 1: Use traditional search (SQLite FTS5 + tag matching) to get base results
-      const baseResults = await this.traditionalSearch(query, options);
+      // Using soft limit to get more candidates for better ranking
+      const baseResults = await this.traditionalSearch(query, candidateOptions);
 
       // Step 2: Apply SmartMemoryQuery for context-aware ranking
       const smartQuery = new SmartMemoryQuery();
       const rankedResults = smartQuery.search(query, baseResults, options);
 
-      return rankedResults;
+      // Step 3: Apply final limit AFTER ranking (ensures we get highest-scored results)
+      const finalResults = rankedResults.slice(0, finalLimit);
+
+      return finalResults;
     } catch (error) {
       logger.error(`[UnifiedMemoryStore] Search failed: ${error}`);
       throw new OperationError(
@@ -828,12 +916,24 @@ export class UnifiedMemoryStore {
     // Get memory type from entity type
     const memoryType = ENTITY_TYPE_MAPPING[entity.entityType] || 'knowledge';
 
+    // Validate tags is an array (defense against data corruption)
+    let validatedTags: string[] = [];
+    if (Array.isArray(entity.tags)) {
+      // Filter out non-string tags for extra safety
+      validatedTags = entity.tags.filter((tag): tag is string => typeof tag === 'string');
+    } else if (entity.tags !== undefined && entity.tags !== null) {
+      // Log warning if tags is not an array (potential data corruption)
+      logger.warn(
+        `[UnifiedMemoryStore] Invalid tags type for entity ${entity.name}: ${typeof entity.tags}`
+      );
+    }
+
     return {
       id: entity.name,
       type: memoryType,
       content,
       context,
-      tags: entity.tags || [],
+      tags: validatedTags,
       importance,
       timestamp,
       metadata,

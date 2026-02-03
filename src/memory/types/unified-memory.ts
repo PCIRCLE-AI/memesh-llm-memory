@@ -66,12 +66,27 @@ export interface SearchOptions {
   /** Filter by time range */
   timeRange?: 'last-24h' | 'last-7-days' | 'last-30-days' | 'all';
 
-  /** Maximum number of results */
+  /**
+   * Maximum number of results (default: 50, max: 1000)
+   *
+   * Default prevents OOM on large datasets. Max limit prevents abuse.
+   * Limit is applied AFTER ranking to ensure highest-scored results.
+   */
   limit?: number;
 
   /** Minimum importance score (0-1) */
   minImportance?: number;
 }
+
+/**
+ * Default limit for search results to prevent OOM on large datasets
+ */
+export const DEFAULT_SEARCH_LIMIT = 50;
+
+/**
+ * Maximum allowed limit for search results to prevent abuse
+ */
+export const MAX_SEARCH_LIMIT = 1000;
 
 /**
  * Result of a memory search with scoring

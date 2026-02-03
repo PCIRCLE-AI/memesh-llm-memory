@@ -133,7 +133,26 @@ export class AutoTagger {
     const allTech = [...languages, ...frameworks, ...databases, ...tools];
 
     for (const tech of allTech) {
-      if (content.includes(tech)) {
+      // Use word boundary regex to avoid false positives
+      // E.g., "go" matches "go" but not "going", "logo", "good"
+      // Special handling for tech names with special characters (C++, C#, Next.js)
+      let pattern: string;
+      if (tech.includes('+') || tech.includes('#') || tech.includes('.')) {
+        // For special characters, escape them and use lookahead/lookbehind
+        // to ensure they're not part of a larger word
+        const escapedTech = tech
+          .replace(/\+/g, '\\+')
+          .replace(/#/g, '#')
+          .replace(/\./g, '\\.');
+        pattern = `(?<!\\w)${escapedTech}(?!\\w)`;
+      } else {
+        // For normal words, use word boundaries
+        const escapedTech = tech.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        pattern = `\\b${escapedTech}\\b`;
+      }
+
+      const regex = new RegExp(pattern, 'i');
+      if (regex.test(content)) {
         tags.push(`tech:${tech}`);
       }
     }
@@ -172,7 +191,23 @@ export class AutoTagger {
     };
 
     for (const [tag, keywords] of Object.entries(domains)) {
-      if (keywords.some((kw) => content.includes(kw))) {
+      // Use flexible matching: allow both exact matches and word parts
+      // E.g., "test" matches both "test" and "testing"
+      const matched = keywords.some((kw) => {
+        // For single words, allow partial matches (e.g., "test" in "testing")
+        // For multi-word phrases, require exact match
+        if (kw.includes(' ')) {
+          // Multi-word keyword - require exact phrase match
+          const escapedKw = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const wordBoundaryRegex = new RegExp(`\\b${escapedKw}\\b`, 'i');
+          return wordBoundaryRegex.test(content);
+        } else {
+          // Single word - allow partial match (word start or contains)
+          return content.includes(kw);
+        }
+      });
+
+      if (matched) {
         tags.push(tag);
       }
     }
@@ -211,7 +246,11 @@ export class AutoTagger {
     ];
 
     for (const pattern of patterns) {
-      if (content.includes(pattern)) {
+      // Use word boundary regex to avoid false positives
+      const escapedPattern = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const wordBoundaryRegex = new RegExp(`\\b${escapedPattern}\\b`, 'i');
+
+      if (wordBoundaryRegex.test(content)) {
         tags.push(`pattern:${pattern}`);
       }
     }

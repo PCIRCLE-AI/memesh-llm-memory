@@ -583,6 +583,31 @@ export class KnowledgeGraph {
   }
 
   /**
+   * Execute operations within a transaction
+   *
+   * Provides atomic operations with automatic rollback on error.
+   * This ensures data consistency when performing multiple operations.
+   *
+   * @param fn - Callback function containing operations to execute
+   * @returns Result from the callback function
+   * @throws Error if transaction fails (automatically rolls back)
+   *
+   * @example
+   * ```typescript
+   * await kg.transaction(() => {
+   *   kg.createEntity(entity);
+   *   kg.createRelation(relation1);
+   *   kg.createRelation(relation2);
+   *   // All succeed or all fail together
+   * });
+   * ```
+   */
+  transaction<T>(fn: () => T): T {
+    // better-sqlite3 transaction method handles begin/commit/rollback automatically
+    return this.db.transaction(fn)();
+  }
+
+  /**
    * Get cache statistics (for monitoring and debugging)
    */
   getCacheStats() {

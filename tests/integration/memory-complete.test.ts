@@ -502,7 +502,10 @@ describe('Memory System Integration', () => {
 
       // Search should also be fast
       const searchStart = Date.now();
-      const results = await memoryStore.search('TypeScript', { techStack: [] });
+      const results = await memoryStore.search('TypeScript', {
+        techStack: [],
+        limit: 100, // Explicitly request 100 results (default is 50)
+      });
       const searchTime = Date.now() - searchStart;
 
       console.log(`Searched ${results.length} memories in ${searchTime}ms`);

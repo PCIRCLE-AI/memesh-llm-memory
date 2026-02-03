@@ -188,26 +188,49 @@ class MemoryMigrator {
   private validateMetadata(metadata?: any): any {
     if (!metadata) return undefined;
 
-    const MAX_SIZE = 10 * 1024; // 10KB
+    // Current system uses 1MB total limit (not per-field)
+    const MAX_TOTAL_SIZE = 1024 * 1024; // 1MB
     const validated: any = {};
     let hasOversizedField = false;
 
-    for (const [key, value] of Object.entries(metadata)) {
-      const size = JSON.stringify(value).length;
-      if (size > MAX_SIZE) {
-        console.warn(
-          `  ⚠️  Metadata field '${key}' exceeds 10KB (${size} bytes) - truncating`
-        );
-        // Truncate to fit limit
-        const stringValue = JSON.stringify(value);
-        validated[key] = JSON.parse(stringValue.slice(0, MAX_SIZE - 100));
-        hasOversizedField = true;
-      } else {
-        validated[key] = value;
+    // Check total size first
+    const totalJson = JSON.stringify(metadata);
+    const totalSize = Buffer.byteLength(totalJson, 'utf8');
+
+    if (totalSize > MAX_TOTAL_SIZE) {
+      console.warn(
+        `  ⚠️  Total metadata size ${totalSize} bytes exceeds ${MAX_TOTAL_SIZE} bytes - dropping oversized fields`
+      );
+
+      // Drop fields one by one (largest first) until under limit
+      const fields = Object.entries(metadata).map(([key, value]) => ({
+        key,
+        value,
+        size: Buffer.byteLength(JSON.stringify(value), 'utf8'),
+      }));
+
+      // Sort by size (largest first)
+      fields.sort((a, b) => b.size - a.size);
+
+      let currentSize = 0;
+      for (const field of fields) {
+        const fieldJson = JSON.stringify(field.value);
+        const fieldSize = Buffer.byteLength(fieldJson, 'utf8');
+
+        if (currentSize + fieldSize <= MAX_TOTAL_SIZE) {
+          validated[field.key] = field.value;
+          currentSize += fieldSize;
+        } else {
+          console.warn(`    → Dropped field '${field.key}' (${fieldSize} bytes)`);
+          hasOversizedField = true;
+        }
       }
+
+      return validated;
     }
 
-    return hasOversizedField ? validated : metadata;
+    // Total size OK - return as-is
+    return metadata;
   }
 
   private async importMemories(memories: UnifiedMemory[]): Promise<void> {

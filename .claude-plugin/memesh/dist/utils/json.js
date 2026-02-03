@@ -73,7 +73,17 @@ export function isStringArray(value) {
 }
 export function safeJsonStringify(value, fallback = '{}') {
     try {
-        return JSON.stringify(value);
+        const seen = new WeakSet();
+        return JSON.stringify(value, (key, val) => {
+            if (val === null || typeof val !== 'object') {
+                return val;
+            }
+            if (seen.has(val)) {
+                return '[Circular]';
+            }
+            seen.add(val);
+            return val;
+        });
     }
     catch (error) {
         logger.warn('JSON stringify error:', {

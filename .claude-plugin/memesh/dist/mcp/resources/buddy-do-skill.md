@@ -2,7 +2,7 @@
 
 ## Overview
 
-`buddy-do` is the primary task execution tool in Claude Code Buddy. It provides smart routing to appropriate capabilities based on task description and automatically captures task metadata to the Knowledge Graph.
+`buddy-do` is the primary task execution tool in MeMesh. It provides smart routing to appropriate capabilities based on task description and automatically captures task metadata to the Knowledge Graph.
 
 ## Basic Usage
 

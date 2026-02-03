@@ -25,7 +25,7 @@ export class ResponseFormatter {
         }
     }
     detectComplexity(response) {
-        if (response.error) {
+        if (response.status === 'error') {
             return 'complex';
         }
         if (response.enhancedPrompt) {
@@ -112,10 +112,11 @@ export class ResponseFormatter {
                 sections.push(chalk.green('Results: [Error formatting results]'));
             }
         }
-        if (response.error && response.status === 'error') {
+        if (response.status === 'error') {
             try {
                 sections.push(this.formatDivider());
-                sections.push(this.formatError(response.error));
+                const errorToFormat = response.error || new Error('Unknown error occurred');
+                sections.push(this.formatError(errorToFormat));
             }
             catch (error) {
                 sections.push(chalk.red('[Error formatting error details]'));
@@ -176,13 +177,6 @@ export class ResponseFormatter {
         sections.push(`${statusIcon} ${operationName}`);
         if (resultSummary) {
             sections.push(`  ${resultSummary}`);
-        }
-        if (response.agentType.startsWith('buddy-')) {
-            const newName = response.agentType.replace('buddy-', 'memesh-');
-            sections.push('');
-            sections.push(chalk.yellow(`⚠ Deprecation Notice`));
-            sections.push(chalk.dim(`  ${response.agentType} is deprecated, use ${newName} instead`));
-            sections.push(chalk.dim(`  buddy-* commands will be removed in v3.0.0 (2026-08)`));
         }
         return sections.join('\n');
     }
@@ -327,6 +321,9 @@ export class ResponseFormatter {
         return sections.join('\n');
     }
     formatError(error) {
+        if (!error) {
+            error = new Error('Unknown error occurred');
+        }
         const classified = this.errorClassifier.classify(error, {});
         const sections = [];
         const errorIcon = icons.error || '❌';

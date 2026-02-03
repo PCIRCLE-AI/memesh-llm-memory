@@ -8,6 +8,8 @@ import { errorHandler, requestLogger, corsMiddleware, jsonErrorHandler, } from '
 import { authenticateToken } from './middleware/auth.js';
 import { rateLimitMiddleware, startCleanup, stopCleanup, } from './middleware/rateLimit.js';
 import { requestTimeoutMiddleware } from './middleware/timeout.js';
+import { resourceProtectionMiddleware, startResourceProtectionCleanup, stopResourceProtectionCleanup, } from './middleware/resourceProtection.js';
+import { csrfTokenMiddleware, csrfProtection, startCsrfCleanup, stopCsrfCleanup, } from './middleware/csrf.js';
 import { MCPTaskDelegator } from '../delegator/MCPTaskDelegator.js';
 import { TimeoutChecker } from '../jobs/TimeoutChecker.js';
 import { TIME, NETWORK } from '../constants.js';
@@ -34,15 +36,17 @@ export class A2AServer {
     }
     createApp() {
         const app = express();
+        app.use(resourceProtectionMiddleware());
         app.use(express.json({ limit: '10mb' }));
         app.use(corsMiddleware);
         app.use(tracingMiddleware());
         app.use(requestTimeoutMiddleware());
         app.use(requestLogger);
-        app.post('/a2a/send-message', authenticateToken, rateLimitMiddleware, spanMiddleware('a2a.send-message'), this.routes.sendMessage);
+        app.use(csrfTokenMiddleware);
+        app.post('/a2a/send-message', authenticateToken, csrfProtection, rateLimitMiddleware, spanMiddleware('a2a.send-message'), this.routes.sendMessage);
         app.get('/a2a/tasks/:taskId', authenticateToken, rateLimitMiddleware, spanMiddleware('a2a.get-task'), this.routes.getTask);
         app.get('/a2a/tasks', authenticateToken, rateLimitMiddleware, spanMiddleware('a2a.list-tasks'), this.routes.listTasks);
-        app.post('/a2a/tasks/:taskId/cancel', authenticateToken, rateLimitMiddleware, spanMiddleware('a2a.cancel-task'), this.routes.cancelTask);
+        app.post('/a2a/tasks/:taskId/cancel', authenticateToken, csrfProtection, rateLimitMiddleware, spanMiddleware('a2a.cancel-task'), this.routes.cancelTask);
         app.get('/a2a/agent-card', spanMiddleware('a2a.agent-card'), this.routes.getAgentCard);
         app.use(jsonErrorHandler);
         app.use(errorHandler);
@@ -64,6 +68,8 @@ export class A2AServer {
                 this.startHeartbeat();
                 this.timeoutChecker.start();
                 startCleanup();
+                startResourceProtectionCleanup();
+                startCsrfCleanup();
                 resolve(port);
             });
             this.server.on('error', (err) => {
@@ -74,6 +80,8 @@ export class A2AServer {
     async stop() {
         this.timeoutChecker.stop();
         stopCleanup();
+        stopResourceProtectionCleanup();
+        stopCsrfCleanup();
         if (this.heartbeatTimer) {
             clearInterval(this.heartbeatTimer);
             this.heartbeatTimer = null;

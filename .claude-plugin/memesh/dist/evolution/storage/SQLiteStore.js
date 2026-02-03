@@ -301,13 +301,20 @@ export class SQLiteStore {
         return spans;
     }
     async queryByTags(tags, mode = 'any') {
+        if (tags.length === 0)
+            return [];
         if (mode === 'any') {
-            const conditions = tags.map(() => 'tags LIKE ? ESCAPE \'\\\'').join(' OR ');
-            const params = tags.map((tag) => '%"' + this.escapeLikePattern(tag) + '"%');
+            const placeholders = tags.map(() => '?').join(',');
             const stmt = this.db.prepare(`
-        SELECT * FROM spans WHERE tags IS NOT NULL AND (${conditions})
+        SELECT * FROM spans
+        WHERE tags IS NOT NULL
+          AND json_valid(tags)
+          AND EXISTS (
+            SELECT 1 FROM json_each(tags)
+            WHERE value IN (${placeholders})
+          )
       `);
-            const rows = stmt.all(...params);
+            const rows = stmt.all(...tags);
             const spans = new Array(rows.length);
             for (let i = 0; i < rows.length; i++) {
                 spans[i] = this.rowToSpan(rows[i]);
@@ -315,12 +322,19 @@ export class SQLiteStore {
             return spans;
         }
         else {
-            const conditions = tags.map(() => 'tags LIKE ? ESCAPE \'\\\'').join(' AND ');
-            const params = tags.map((tag) => '%"' + this.escapeLikePattern(tag) + '"%');
+            const conditions = tags.map(() => `
+        EXISTS (
+          SELECT 1 FROM json_each(tags)
+          WHERE value = ?
+        )
+      `).join(' AND ');
             const stmt = this.db.prepare(`
-        SELECT * FROM spans WHERE tags IS NOT NULL AND ${conditions}
+        SELECT * FROM spans
+        WHERE tags IS NOT NULL
+          AND json_valid(tags)
+          AND ${conditions}
       `);
-            const rows = stmt.all(...params);
+            const rows = stmt.all(...tags);
             const spans = new Array(rows.length);
             for (let i = 0; i < rows.length; i++) {
                 spans[i] = this.rowToSpan(rows[i]);

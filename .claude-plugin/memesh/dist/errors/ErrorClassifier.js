@@ -29,6 +29,12 @@ export var RecoveryStrategy;
 })(RecoveryStrategy || (RecoveryStrategy = {}));
 export class ErrorClassifier {
     classify(error, context = {}) {
+        if (!error) {
+            error = new Error('Unknown error occurred');
+        }
+        if (!error.message || error.message.trim() === '') {
+            error = new Error('An error occurred with no message');
+        }
         const category = this.detectCategory(error, context);
         const errorDetails = this.getErrorDetails(error, category, context);
         return {
@@ -94,11 +100,15 @@ export class ErrorClassifier {
         const stack = error.stack?.toLowerCase() || '';
         if (message.includes('config') ||
             message.includes('configuration') ||
-            message.includes('not found') && context.configPath) {
+            message.includes('not configured') ||
+            message.includes('environment variable') ||
+            message.includes('memesh_') ||
+            (message.includes('not found') && context.configPath)) {
             return ErrorCategory.CONFIGURATION;
         }
         if (message.includes('connect') ||
             message.includes('timeout') ||
+            message.includes('too long') ||
             message.includes('econnrefused') ||
             message.includes('network')) {
             return ErrorCategory.CONNECTION;
@@ -106,7 +116,10 @@ export class ErrorClassifier {
         if (message.includes('permission') ||
             message.includes('eacces') ||
             message.includes('forbidden') ||
-            message.includes('unauthorized')) {
+            message.includes('unauthorized') ||
+            message.includes('invalid token') ||
+            message.includes('expired token') ||
+            message.includes('invalid or expired')) {
             return ErrorCategory.PERMISSION;
         }
         if (message.includes('memory') ||
@@ -118,7 +131,8 @@ export class ErrorClassifier {
         if (message.includes('invalid') ||
             message.includes('validation') ||
             message.includes('schema') ||
-            message.includes('required')) {
+            message.includes('required') ||
+            message.includes('must be one of')) {
             return ErrorCategory.VALIDATION;
         }
         if (message.includes('database') ||
@@ -155,25 +169,52 @@ export class ErrorClassifier {
         }
     }
     getConfigurationErrorDetails(error, context) {
+        const message = error.message.toLowerCase();
+        if (message.includes('memesh_a2a_token') || message.includes('a2a token')) {
+            return {
+                code: 'A2A_TOKEN_MISSING',
+                severity: ErrorSeverity.CRITICAL,
+                title: 'Configuration Missing',
+                description: 'MEMESH_A2A_TOKEN environment variable is not configured.',
+                rootCause: 'A2A operations require a valid MeMesh token for agent communication.',
+                recoveryStrategy: RecoveryStrategy.MANUAL,
+                fixSteps: [
+                    'Get your token from memesh.dev/settings',
+                    'Add to .env file: MEMESH_A2A_TOKEN=your_token_here',
+                    'Restart the MCP server',
+                    'Try the command again',
+                ],
+                autoFixAvailable: false,
+                relatedDocs: [
+                    { title: 'A2A Setup Guide', url: 'docs/A2A_SETUP_GUIDE.md' },
+                    { title: 'MeMesh Settings', url: 'https://memesh.dev/settings' },
+                ],
+                relatedCommands: ['buddy-help a2a'],
+                troubleshootingTips: [
+                    'Verify token is valid and not expired',
+                    'Check .env file exists in project root',
+                    'Ensure no trailing spaces in token value',
+                ],
+            };
+        }
         return {
             code: 'CONFIG_ERROR',
             severity: ErrorSeverity.CRITICAL,
             title: 'Configuration Error',
             description: 'MeMesh configuration is missing or invalid.',
-            rootCause: 'The MCP server configuration is not set up correctly in Claude Code.',
+            rootCause: error.message || 'The MCP server configuration is not set up correctly.',
             recoveryStrategy: RecoveryStrategy.MANUAL,
             fixSteps: [
-                'Run interactive setup: memesh setup',
-                'Verify configuration: memesh config validate',
-                'Restart Claude Code',
+                'Check .env file for missing variables',
+                'Verify configuration file syntax',
+                'Restart the MCP server',
                 'Try again: buddy-help',
             ],
-            autoFixAvailable: true,
+            autoFixAvailable: false,
             relatedDocs: [
-                { title: 'Quick Start', url: 'https://memesh.pcircle.ai/quick-start' },
-                { title: 'Manual Setup', url: 'https://memesh.pcircle.ai/manual-setup' },
+                { title: 'Setup Guide', url: 'docs/guides/SETUP.md' },
             ],
-            relatedCommands: ['memesh setup', 'memesh config validate'],
+            relatedCommands: ['buddy-help'],
             troubleshootingTips: [
                 'Check Claude Code is running',
                 'Verify Node.js is in PATH',
@@ -182,24 +223,49 @@ export class ErrorClassifier {
         };
     }
     getConnectionErrorDetails(error, context) {
+        const message = error.message.toLowerCase();
+        if (message.includes('timeout') || message.includes('too long')) {
+            return {
+                code: 'TIMEOUT_ERROR',
+                severity: ErrorSeverity.MEDIUM,
+                title: 'Request Timeout',
+                description: 'The operation took too long to complete.',
+                rootCause: error.message || 'Request exceeded the maximum allowed time.',
+                recoveryStrategy: RecoveryStrategy.RETRY,
+                fixSteps: [
+                    'Wait a moment and try again',
+                    'Check network connectivity',
+                    'Simplify the request if possible',
+                    'Contact support if timeouts persist',
+                ],
+                autoFixAvailable: false,
+                relatedDocs: [],
+                relatedCommands: [],
+                troubleshootingTips: [
+                    'Try a simpler query first',
+                    'Check if server is under heavy load',
+                    'Verify internet connection is stable',
+                ],
+            };
+        }
         return {
             code: 'CONNECTION_ERROR',
             severity: ErrorSeverity.HIGH,
             title: 'MCP Server Connection Failed',
             description: 'Cannot connect to MeMesh MCP server.',
-            rootCause: 'The MCP server is not running or not responding.',
+            rootCause: error.message || 'The MCP server is not running or not responding.',
             recoveryStrategy: RecoveryStrategy.RETRY,
             fixSteps: [
                 'Restart Claude Code',
                 'Wait 5-10 seconds for MCP server to start',
                 'Check server logs for errors',
-                'If problem persists, run: memesh setup',
+                'Try the command again',
             ],
             autoFixAvailable: false,
             relatedDocs: [
-                { title: 'Troubleshooting MCP', url: 'https://memesh.pcircle.ai/troubleshoot/mcp' },
+                { title: 'Troubleshooting', url: 'docs/guides/TROUBLESHOOTING.md' },
             ],
-            relatedCommands: ['memesh config validate'],
+            relatedCommands: ['buddy-help'],
             troubleshootingTips: [
                 'Check Claude Code logs for MCP errors',
                 'Verify network connectivity',

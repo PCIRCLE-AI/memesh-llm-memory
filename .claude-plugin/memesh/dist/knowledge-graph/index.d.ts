@@ -6,8 +6,9 @@ export declare class KnowledgeGraph {
     static create(dbPath?: string): Promise<KnowledgeGraph>;
     static createSync(dbPath?: string): KnowledgeGraph;
     private initialize;
+    private runMigrations;
     private escapeLikePattern;
-    createEntity(entity: Entity): number;
+    createEntity(entity: Entity): string;
     createRelation(relation: Relation): void;
     searchEntities(query: SearchQuery): Entity[];
     getEntity(name: string): Entity | null;
@@ -19,6 +20,7 @@ export declare class KnowledgeGraph {
     };
     deleteEntity(name: string): boolean;
     close(): void;
+    transaction<T>(fn: () => T): T;
     getCacheStats(): import("../db/QueryCache.js").CacheStats;
     clearCache(): void;
 }

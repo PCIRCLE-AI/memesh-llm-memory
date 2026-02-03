@@ -2,6 +2,7 @@ import os from 'os';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { logger } from './logger.js';
+import { safeDivide, bytesToMB } from './index.js';
 const execAsync = promisify(exec);
 export class SystemResourceManager {
     config;
@@ -17,10 +18,10 @@ export class SystemResourceManager {
     }
     async getResources() {
         const cpuCores = os.cpus().length;
-        const totalMemoryMB = os.totalmem() / (1024 * 1024);
-        const freeMemoryMB = os.freemem() / (1024 * 1024);
+        const totalMemoryMB = bytesToMB(os.totalmem());
+        const freeMemoryMB = bytesToMB(os.freemem());
         const usedMemoryMB = totalMemoryMB - freeMemoryMB;
-        const memoryUsage = (usedMemoryMB / totalMemoryMB) * 100;
+        const memoryUsage = safeDivide(usedMemoryMB, totalMemoryMB, 0) * 100;
         const cpuUsage = await this.getCPUUsage();
         const availableCPU = 100 - cpuUsage;
         const recommendedThreads = this.calculateRecommendedThreads(cpuCores, cpuUsage, memoryUsage);
@@ -90,10 +91,10 @@ export class SystemResourceManager {
         }
         const availableCPU = 100 - cpuUsage;
         const availableMemoryPercent = 100 - memoryUsage;
-        const cpuBasedE2E = Math.floor(availableCPU / 25);
-        const memoryBasedE2E = Math.floor(availableMemoryPercent / 25);
+        const cpuBasedE2E = Math.floor(safeDivide(availableCPU, 25, 0));
+        const memoryBasedE2E = Math.floor(safeDivide(availableMemoryPercent, 25, 0));
         let e2e = Math.min(cpuBasedE2E, memoryBasedE2E);
-        e2e = Math.min(e2e, Math.floor(cpuCores / 2));
+        e2e = Math.min(e2e, Math.floor(safeDivide(cpuCores, 2, 1)));
         e2e = Math.max(1, Math.min(4, e2e));
         return e2e;
     }
@@ -104,17 +105,14 @@ export class SystemResourceManager {
             const endUsage = this.getCPUSnapshot();
             const totalDiff = endUsage.total - startUsage.total;
             const idleDiff = endUsage.idle - startUsage.idle;
-            if (totalDiff === 0) {
-                return 0;
-            }
-            const usagePercent = ((totalDiff - idleDiff) / totalDiff) * 100;
+            const usagePercent = safeDivide(totalDiff - idleDiff, totalDiff, 0) * 100;
             return Math.max(0, Math.min(100, usagePercent));
         }
         catch (error) {
             logger.warn('Failed to get CPU usage, using fallback:', error);
             const loadavg = os.loadavg()[0];
             const cpuCores = os.cpus().length;
-            return Math.min(100, (loadavg / cpuCores) * 100);
+            return Math.min(100, safeDivide(loadavg, cpuCores, 0.5) * 100);
         }
     }
     getCPUSnapshot() {

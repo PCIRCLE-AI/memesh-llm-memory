@@ -55,6 +55,9 @@ export class ValidationError extends BaseError {
     constructor(message, context) {
         super(message, ErrorCode.VALIDATION_FAILED, context);
     }
+    get details() {
+        return this.context;
+    }
 }
 export class StateError extends BaseError {
     constructor(message, context) {

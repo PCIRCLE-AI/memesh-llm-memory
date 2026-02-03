@@ -28,7 +28,7 @@ class ClaudeCodeBuddyMCPServer {
     constructor(components) {
         this.server = new Server({
             name: 'memesh',
-            version: '2.6.4',
+            version: '2.6.6',
         }, {
             capabilities: {
                 tools: {},
@@ -134,6 +134,34 @@ class ClaudeCodeBuddyMCPServer {
                 operation: 'closing evolution monitor',
             });
             logger.error('Failed to close evolution monitor cleanly:', error);
+        }
+        try {
+            logger.info('Closing secret manager database...');
+            if (this.components.secretManager) {
+                this.components.secretManager.close();
+            }
+        }
+        catch (error) {
+            logError(error, {
+                component: 'ClaudeCodeBuddyMCPServer',
+                method: 'shutdown',
+                operation: 'closing secret manager',
+            });
+            logger.error('Failed to close secret manager cleanly:', error);
+        }
+        try {
+            logger.info('Closing task queue database...');
+            if (this.components.taskQueue) {
+                this.components.taskQueue.close();
+            }
+        }
+        catch (error) {
+            logError(error, {
+                component: 'ClaudeCodeBuddyMCPServer',
+                method: 'shutdown',
+                operation: 'closing task queue',
+            });
+            logger.error('Failed to close task queue cleanly:', error);
         }
         try {
             logger.info('Stopping rate limiter...');

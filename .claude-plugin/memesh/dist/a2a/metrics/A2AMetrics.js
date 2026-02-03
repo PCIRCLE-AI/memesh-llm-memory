@@ -22,6 +22,22 @@ export class A2AMetrics {
     incrementCounter(name, labels = {}, value = 1) {
         if (!this.enabled)
             return;
+        if (!Number.isFinite(value)) {
+            logger.error('[A2A Metrics] Counter increment value must be finite', {
+                name,
+                value,
+                labels
+            });
+            return;
+        }
+        if (value < 0) {
+            logger.error('[A2A Metrics] Counter increment value must be non-negative', {
+                name,
+                value,
+                labels
+            });
+            return;
+        }
         const key = this.getKey(name, labels);
         const existing = this.metrics.get(key);
         if (existing) {
@@ -41,6 +57,14 @@ export class A2AMetrics {
     setGauge(name, value, labels = {}) {
         if (!this.enabled)
             return;
+        if (!Number.isFinite(value)) {
+            logger.error('[A2A Metrics] Gauge value must be finite', {
+                name,
+                value,
+                labels
+            });
+            return;
+        }
         const key = this.getKey(name, labels);
         this.metrics.set(key, {
             type: 'gauge',
@@ -53,6 +77,22 @@ export class A2AMetrics {
     recordHistogram(name, value, labels = {}) {
         if (!this.enabled)
             return;
+        if (!Number.isFinite(value)) {
+            logger.error('[A2A Metrics] Histogram value must be finite', {
+                name,
+                value,
+                labels
+            });
+            return;
+        }
+        if (value < 0) {
+            logger.error('[A2A Metrics] Histogram value must be non-negative', {
+                name,
+                value,
+                labels
+            });
+            return;
+        }
         const key = this.getKey(name, labels);
         this.metrics.set(key, {
             type: 'histogram',

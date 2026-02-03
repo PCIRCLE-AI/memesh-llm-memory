@@ -62,7 +62,7 @@ export const spacing = {
 };
 export const icons = {
     success: '✓',
-    error: '✗',
+    error: '❌',
     warning: '⚠',
     info: 'ℹ',
     pending: '○',
@@ -83,7 +83,7 @@ export const icons = {
     filter: '⏺',
     star: '⭐',
     check: '✓',
-    cross: '✗',
+    cross: '❌',
     bullet: '•',
     chevronRight: '›',
     chevronDown: '∨',

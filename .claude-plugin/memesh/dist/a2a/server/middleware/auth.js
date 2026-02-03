@@ -1,4 +1,4 @@
-import { timingSafeEqual } from 'crypto';
+import { timingSafeEqual, createHash } from 'crypto';
 import { logger } from '../../../utils/logger.js';
 function constantTimeCompare(a, b) {
     if (a.length !== b.length) {
@@ -53,7 +53,11 @@ export function authenticateToken(req, res, next) {
         authReq.agentId = body.agentCard.id;
     }
     else {
-        authReq.agentId = `token-${token.substring(0, 8)}`;
+        const tokenHash = createHash('sha256')
+            .update(token)
+            .digest('hex')
+            .substring(0, 16);
+        authReq.agentId = `token-${tokenHash}`;
     }
     next();
 }

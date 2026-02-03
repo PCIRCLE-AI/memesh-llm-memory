@@ -34,6 +34,7 @@ export declare class BaseError extends Error {
 }
 export declare class ValidationError extends BaseError {
     constructor(message: string, context?: Record<string, unknown>);
+    get details(): Record<string, unknown> | undefined;
 }
 export declare class StateError extends BaseError {
     constructor(message: string, context?: Record<string, unknown>);

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../../utils/logger.js';
 import { getDataPath } from '../../utils/PathResolver.js';
+import { validateArraySize, validateTaskStates, validateTaskPriorities, validatePositiveInteger, validateISOTimestamp, } from './inputValidation.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 function safeJsonParse(jsonString) {
@@ -83,6 +84,24 @@ export class TaskQueue {
         return this.rowToTask(row);
     }
     listTasks(filter) {
+        if (filter?.state) {
+            const states = Array.isArray(filter.state) ? filter.state : [filter.state];
+            validateArraySize(states, 'state filter');
+            validateTaskStates(states);
+        }
+        if (filter?.priority) {
+            const priorities = Array.isArray(filter.priority)
+                ? filter.priority
+                : [filter.priority];
+            validateArraySize(priorities, 'priority filter');
+            validateTaskPriorities(priorities);
+        }
+        if (filter?.limit !== undefined) {
+            validatePositiveInteger(filter.limit, 'limit', 10000);
+        }
+        if (filter?.offset !== undefined) {
+            validatePositiveInteger(filter.offset, 'offset');
+        }
         let query = `
       SELECT
         t.*,
@@ -104,7 +123,9 @@ export class TaskQueue {
         const params = [];
         if (filter?.state) {
             if (Array.isArray(filter.state)) {
-                query += ` AND t.state IN (${filter.state.map(() => '?').join(',')})`;
+                const stateCount = filter.state.length;
+                const statePlaceholders = Array(stateCount).fill('?').join(',');
+                query += ` AND t.state IN (${statePlaceholders})`;
                 params.push(...filter.state);
             }
             else {
@@ -114,7 +135,9 @@ export class TaskQueue {
         }
         if (filter?.priority) {
             if (Array.isArray(filter.priority)) {
-                query += ` AND t.priority IN (${filter.priority.map(() => '?').join(',')})`;
+                const priorityCount = filter.priority.length;
+                const priorityPlaceholders = Array(priorityCount).fill('?').join(',');
+                query += ` AND t.priority IN (${priorityPlaceholders})`;
                 params.push(...filter.priority);
             }
             else {
@@ -122,11 +145,13 @@ export class TaskQueue {
                 params.push(filter.priority);
             }
         }
-        if (filter?.createdAfter) {
+        if (filter?.createdAfter !== undefined) {
+            validateISOTimestamp(filter.createdAfter, 'createdAfter');
             query += ' AND t.created_at >= ?';
             params.push(filter.createdAfter);
         }
-        if (filter?.createdBefore) {
+        if (filter?.createdBefore !== undefined) {
+            validateISOTimestamp(filter.createdBefore, 'createdBefore');
             query += ' AND t.created_at <= ?';
             params.push(filter.createdBefore);
         }

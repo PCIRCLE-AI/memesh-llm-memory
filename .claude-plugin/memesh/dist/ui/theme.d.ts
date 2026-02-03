@@ -62,7 +62,7 @@ export declare const spacing: {
 };
 export declare const icons: {
     readonly success: "✓";
-    readonly error: "✗";
+    readonly error: "❌";
     readonly warning: "⚠";
     readonly info: "ℹ";
     readonly pending: "○";
@@ -83,7 +83,7 @@ export declare const icons: {
     readonly filter: "⏺";
     readonly star: "⭐";
     readonly check: "✓";
-    readonly cross: "✗";
+    readonly cross: "❌";
     readonly bullet: "•";
     readonly chevronRight: "›";
     readonly chevronDown: "∨";
@@ -212,7 +212,7 @@ export declare const theme: {
     };
     readonly icons: {
         readonly success: "✓";
-        readonly error: "✗";
+        readonly error: "❌";
         readonly warning: "⚠";
         readonly info: "ℹ";
         readonly pending: "○";
@@ -233,7 +233,7 @@ export declare const theme: {
         readonly filter: "⏺";
         readonly star: "⭐";
         readonly check: "✓";
-        readonly cross: "✗";
+        readonly cross: "❌";
         readonly bullet: "•";
         readonly chevronRight: "›";
         readonly chevronDown: "∨";

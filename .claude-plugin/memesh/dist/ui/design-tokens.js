@@ -35,7 +35,7 @@ export const operationIcons = {
     send: '📤',
     receive: '📥',
     success: '✓',
-    error: '✗',
+    error: '❌',
     warning: '⚠',
     info: 'ℹ',
     pending: '○',

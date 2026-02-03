@@ -1,7 +1,28 @@
 import { KnowledgeGraph } from '../knowledge-graph/index.js';
 import { v4 as uuidv4 } from 'uuid';
+import { createHash } from 'crypto';
 import { logger } from '../utils/logger.js';
 import { ValidationError, OperationError } from '../errors/index.js';
+import { SmartMemoryQuery } from './SmartMemoryQuery.js';
+import { AutoTagger } from './AutoTagger.js';
+function extractErrorInfo(error) {
+    if (error instanceof Error) {
+        return {
+            message: error.message,
+            type: error.constructor.name,
+        };
+    }
+    if (typeof error === 'string') {
+        return {
+            message: error,
+            type: 'string',
+        };
+    }
+    return {
+        message: String(error),
+        type: typeof error,
+    };
+}
 const MEMORY_TYPE_MAPPING = {
     mistake: 'lesson_learned',
     conversation: 'session_snapshot',
@@ -21,6 +42,7 @@ const ENTITY_TYPE_MAPPING = {
     user_preference: 'user-preference',
 };
 const MEMORY_ID_PREFIX = 'unified-memory-';
+const MAX_METADATA_SIZE = 1024 * 1024;
 export class UnifiedMemoryStore {
     knowledgeGraph;
     constructor(knowledgeGraph) {
@@ -34,11 +56,13 @@ export class UnifiedMemoryStore {
             return instance;
         }
         catch (error) {
-            logger.error(`[UnifiedMemoryStore] Initialization failed: ${error}`);
-            throw new OperationError(`Failed to create UnifiedMemoryStore: ${error instanceof Error ? error.message : String(error)}`, {
+            const errorInfo = extractErrorInfo(error);
+            logger.error(`[UnifiedMemoryStore] Initialization failed: ${errorInfo.message} (type: ${errorInfo.type})`);
+            throw new OperationError(`Failed to create UnifiedMemoryStore: ${errorInfo.message}`, {
                 component: 'UnifiedMemoryStore',
                 method: 'create',
                 dbPath,
+                errorType: errorInfo.type,
                 cause: error,
             });
         }
@@ -58,14 +82,50 @@ export class UnifiedMemoryStore {
                     method: 'store',
                 });
             }
-            const id = memory.id || `${MEMORY_ID_PREFIX}${uuidv4()}`;
-            const timestamp = memory.timestamp || new Date();
-            let tagsToUse = [...memory.tags];
-            const hasScope = tagsToUse.some(tag => tag.startsWith('scope:'));
-            if (!hasScope) {
-                const scopeTag = context?.projectPath ? 'scope:project' : 'scope:global';
-                tagsToUse.push(scopeTag);
+            if (memory.importance !== undefined) {
+                if (!Number.isFinite(memory.importance)) {
+                    throw new ValidationError(`Importance must be a finite number, got ${memory.importance}`, {
+                        component: 'UnifiedMemoryStore',
+                        method: 'store',
+                        data: { importance: memory.importance, type: typeof memory.importance },
+                    });
+                }
+                if (memory.importance < 0 || memory.importance > 1) {
+                    throw new ValidationError(`Importance must be between 0 and 1, got ${memory.importance}`, {
+                        component: 'UnifiedMemoryStore',
+                        method: 'store',
+                        data: { importance: memory.importance },
+                    });
+                }
             }
+            let id;
+            if (memory.id !== undefined) {
+                if (memory.id.trim() === '') {
+                    throw new ValidationError('Memory ID cannot be empty', {
+                        component: 'UnifiedMemoryStore',
+                        method: 'store',
+                        data: { providedId: memory.id },
+                    });
+                }
+                if (!memory.id.startsWith(MEMORY_ID_PREFIX)) {
+                    throw new ValidationError(`Memory ID must start with prefix: ${MEMORY_ID_PREFIX}`, {
+                        component: 'UnifiedMemoryStore',
+                        method: 'store',
+                        data: {
+                            providedId: memory.id,
+                            requiredPrefix: MEMORY_ID_PREFIX,
+                        },
+                    });
+                }
+                id = memory.id;
+            }
+            else {
+                id = `${MEMORY_ID_PREFIX}${uuidv4()}`;
+            }
+            const contentHash = createHash('sha256').update(memory.content).digest('hex');
+            const timestamp = memory.timestamp || new Date();
+            const autoTagger = new AutoTagger();
+            const tagsToUse = autoTagger.generateTags(memory.content, memory.tags, context);
             if (context) {
                 logger.info(`[UnifiedMemoryStore] Storing memory with tags: ${tagsToUse.join(', ')}`);
             }
@@ -88,9 +148,25 @@ export class UnifiedMemoryStore {
             }
             if (memory.metadata) {
                 try {
-                    observations.push(`metadata: ${JSON.stringify(memory.metadata)}`);
+                    const metadataJson = JSON.stringify(memory.metadata);
+                    const sizeInBytes = Buffer.byteLength(metadataJson, 'utf8');
+                    if (sizeInBytes >= MAX_METADATA_SIZE) {
+                        throw new ValidationError(`Metadata size exceeds limit: ${(sizeInBytes / 1024).toFixed(2)}KB / ${(MAX_METADATA_SIZE / 1024).toFixed(2)}KB`, {
+                            component: 'UnifiedMemoryStore',
+                            method: 'store',
+                            data: {
+                                metadataSize: sizeInBytes,
+                                limit: MAX_METADATA_SIZE,
+                                sizeMB: (sizeInBytes / (1024 * 1024)).toFixed(2),
+                            },
+                        });
+                    }
+                    observations.push(`metadata: ${metadataJson}`);
                 }
                 catch (error) {
+                    if (error instanceof ValidationError) {
+                        throw error;
+                    }
                     logger.warn(`[UnifiedMemoryStore] Failed to serialize metadata: ${error}`);
                 }
             }
@@ -99,6 +175,7 @@ export class UnifiedMemoryStore {
                 entityType,
                 observations,
                 tags: tagsToUse,
+                contentHash,
                 metadata: {
                     memoryType: memory.type,
                     importance: memory.importance,
@@ -106,37 +183,65 @@ export class UnifiedMemoryStore {
                     ...(memory.metadata || {}),
                 },
             };
+            let actualId = id;
             try {
-                this.knowledgeGraph.createEntity(entity);
+                this.knowledgeGraph.transaction(() => {
+                    actualId = this.knowledgeGraph.createEntity(entity);
+                    if (actualId !== id) {
+                        logger.info(`[UnifiedMemoryStore] Deduplicated: generated id ${id}, using existing ${actualId}`);
+                    }
+                    if (memory.relations && memory.relations.length > 0) {
+                        const relationFailures = [];
+                        for (const relatedId of memory.relations) {
+                            const targetEntity = this.knowledgeGraph.getEntity(relatedId);
+                            if (!targetEntity) {
+                                relationFailures.push({
+                                    relatedId,
+                                    error: 'Target entity does not exist',
+                                });
+                                logger.warn(`[UnifiedMemoryStore] Cannot create relation to non-existent entity: ${relatedId}`);
+                                continue;
+                            }
+                            try {
+                                this.knowledgeGraph.createRelation({
+                                    from: actualId,
+                                    to: relatedId,
+                                    relationType: 'depends_on',
+                                    metadata: { createdAt: new Date().toISOString() },
+                                });
+                            }
+                            catch (error) {
+                                const errorInfo = extractErrorInfo(error);
+                                relationFailures.push({
+                                    relatedId,
+                                    error: errorInfo.message,
+                                });
+                                logger.error(`[UnifiedMemoryStore] Failed to create relation to ${relatedId}: ${errorInfo.message}`);
+                            }
+                        }
+                        if (relationFailures.length > 0) {
+                            throw new Error(`Failed to create ${relationFailures.length} relation(s): ` +
+                                relationFailures.map(f => `${f.relatedId} (${f.error})`).join(', '));
+                        }
+                    }
+                });
             }
             catch (error) {
-                logger.error(`[UnifiedMemoryStore] Failed to create entity: ${error}`);
-                throw new OperationError(`Failed to store memory: ${error instanceof Error ? error.message : String(error)}`, {
+                const errorInfo = extractErrorInfo(error);
+                logger.error(`[UnifiedMemoryStore] Failed to create memory (transaction rolled back): ${errorInfo.message} (type: ${errorInfo.type})`);
+                throw new OperationError(`Failed to store memory: ${errorInfo.message}`, {
                     component: 'UnifiedMemoryStore',
                     method: 'store',
-                    operation: 'createEntity',
+                    operation: 'createEntityWithRelations',
                     memoryId: id,
                     memoryType: memory.type,
+                    relationCount: memory.relations?.length || 0,
+                    errorType: errorInfo.type,
                     cause: error,
                 });
             }
-            if (memory.relations && memory.relations.length > 0) {
-                for (const relatedId of memory.relations) {
-                    try {
-                        this.knowledgeGraph.createRelation({
-                            from: id,
-                            to: relatedId,
-                            relationType: 'depends_on',
-                            metadata: { createdAt: new Date().toISOString() },
-                        });
-                    }
-                    catch (error) {
-                        logger.warn(`Failed to create relation from ${id} to ${relatedId}: ${error}`);
-                    }
-                }
-            }
-            logger.info(`[UnifiedMemoryStore] Stored memory: ${id} (type: ${memory.type})`);
-            return id;
+            logger.info(`[UnifiedMemoryStore] Stored memory: ${actualId} (type: ${memory.type})`);
+            return actualId;
         }
         catch (error) {
             if (error instanceof ValidationError || error instanceof OperationError) {
@@ -180,7 +285,23 @@ export class UnifiedMemoryStore {
     }
     async search(query, options) {
         try {
-            return this.traditionalSearch(query, options);
+            let finalLimit = options?.limit ?? 50;
+            if (finalLimit <= 0) {
+                finalLimit = 50;
+            }
+            if (finalLimit > 1000) {
+                logger.warn(`[UnifiedMemoryStore] Limit ${finalLimit} exceeds maximum 1000, capping to 1000`);
+                finalLimit = 1000;
+            }
+            const candidateOptions = {
+                ...options,
+                limit: Math.min(finalLimit * 10, 1000),
+            };
+            const baseResults = await this.traditionalSearch(query, candidateOptions);
+            const smartQuery = new SmartMemoryQuery();
+            const rankedResults = smartQuery.search(query, baseResults, options);
+            const finalResults = rankedResults.slice(0, finalLimit);
+            return finalResults;
         }
         catch (error) {
             logger.error(`[UnifiedMemoryStore] Search failed: ${error}`);
@@ -389,7 +510,13 @@ export class UnifiedMemoryStore {
             }
             else if (obs.startsWith('metadata: ')) {
                 try {
-                    metadata = JSON.parse(obs.substring('metadata: '.length));
+                    const metadataStr = obs.substring('metadata: '.length);
+                    const sizeInBytes = Buffer.byteLength(metadataStr, 'utf8');
+                    if (sizeInBytes > MAX_METADATA_SIZE) {
+                        console.warn(`Metadata too large on retrieval: ${sizeInBytes} bytes (max: ${MAX_METADATA_SIZE})`);
+                        continue;
+                    }
+                    metadata = JSON.parse(metadataStr);
                 }
                 catch {
                 }
@@ -399,12 +526,19 @@ export class UnifiedMemoryStore {
             importance = entity.metadata.importance;
         }
         const memoryType = ENTITY_TYPE_MAPPING[entity.entityType] || 'knowledge';
+        let validatedTags = [];
+        if (Array.isArray(entity.tags)) {
+            validatedTags = entity.tags.filter((tag) => typeof tag === 'string');
+        }
+        else if (entity.tags !== undefined && entity.tags !== null) {
+            logger.warn(`[UnifiedMemoryStore] Invalid tags type for entity ${entity.name}: ${typeof entity.tags}`);
+        }
         return {
             id: entity.name,
             type: memoryType,
             content,
             context,
-            tags: entity.tags || [],
+            tags: validatedTags,
             importance,
             timestamp,
             metadata,

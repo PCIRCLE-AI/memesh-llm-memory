@@ -6,6 +6,7 @@ import { logger } from '../utils/logger.js';
 import { AttributionManager } from '../ui/AttributionManager.js';
 import { ValidationError, NotFoundError, StateError } from '../errors/index.js';
 import { looksLikeSensitive, hashValue } from '../telemetry/sanitization.js';
+import { validateFiniteNumber, validateSafeInteger } from '../utils/validation.js';
 export class TimeoutError extends Error {
     constructor(duration) {
         super(`Task timed out after ${duration}ms. Consider breaking down the task into smaller operations or increasing maxDuration in config.resourceLimits.`);
@@ -51,33 +52,12 @@ export class BackgroundExecutor {
                     type: typeof duration,
                 });
             }
-            if (!Number.isFinite(duration)) {
-                throw new ValidationError('maxDuration must be a finite number', {
+            validateFiniteNumber(duration, 'maxDuration', { min: 1, max: MAX_ALLOWED_DURATION });
+            validateSafeInteger(duration, 'maxDuration');
+            if (Object.is(duration, -0)) {
+                throw new ValidationError('maxDuration must be positive (> 0)', {
                     provided: duration,
-                    isNaN: Number.isNaN(duration),
-                    isFinite: Number.isFinite(duration),
-                    reason: Number.isNaN(duration)
-                        ? 'NaN causes immediate timeout (DoS attack vector)'
-                        : 'Infinity causes task to never timeout (resource leak)',
-                });
-            }
-            if (!Number.isSafeInteger(duration)) {
-                throw new ValidationError('maxDuration must be a safe integer', {
-                    provided: duration,
-                    isSafeInteger: Number.isSafeInteger(duration),
-                    maxSafeInteger: Number.MAX_SAFE_INTEGER,
-                });
-            }
-            if (duration <= 0) {
-                throw new ValidationError('maxDuration must be greater than 0', {
-                    provided: duration,
-                    isNegativeZero: Object.is(duration, -0),
-                });
-            }
-            if (duration > MAX_ALLOWED_DURATION) {
-                throw new ValidationError(`maxDuration cannot exceed ${MAX_ALLOWED_DURATION}ms (1 hour)`, {
-                    provided: duration,
-                    max: MAX_ALLOWED_DURATION,
+                    isNegativeZero: true,
                 });
             }
         }

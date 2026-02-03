@@ -5,6 +5,7 @@ export interface Entity {
     observations: string[];
     tags?: string[];
     metadata?: Record<string, unknown>;
+    contentHash?: string;
     createdAt?: Date;
 }
 export type EntityType = 'decision' | 'bug_fix' | 'feature' | 'lesson_learned' | 'best_practice' | 'problem_solution' | 'technical_debt' | 'optimization' | 'refactoring' | 'learning_experience' | 'code_change' | 'test_result' | 'session_snapshot' | 'project_snapshot' | 'workflow_checkpoint' | 'commit' | 'prevention_rule' | 'user_preference';

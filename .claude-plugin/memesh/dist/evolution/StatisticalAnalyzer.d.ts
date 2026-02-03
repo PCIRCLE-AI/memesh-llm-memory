@@ -2,6 +2,7 @@ export interface WelchTTestResult {
     tStatistic: number;
     pValue: number;
     degreesOfFreedom: number;
+    significant: boolean;
 }
 export declare class StatisticalAnalyzer {
     calculateMean(data: number[]): number;

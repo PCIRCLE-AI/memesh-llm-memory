@@ -1,3 +1,5 @@
+export const DEFAULT_SEARCH_LIMIT = 50;
+export const MAX_SEARCH_LIMIT = 1000;
 export const MEMORY_TYPE_TO_ENTITY_TYPE = {
     mistake: 'lesson_learned',
     conversation: 'session_snapshot',

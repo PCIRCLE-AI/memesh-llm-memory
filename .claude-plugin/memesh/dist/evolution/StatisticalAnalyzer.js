@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger.js';
 export class StatisticalAnalyzer {
     calculateMean(data) {
         if (data.length === 0) {
@@ -16,23 +17,86 @@ export class StatisticalAnalyzer {
         return Math.sqrt(variance);
     }
     welchTTest(control, treatment) {
+        const n1 = control.length;
+        const n2 = treatment.length;
+        if (n1 < 2 || n2 < 2) {
+            throw new Error('Sample sizes must be at least 2 for t-test');
+        }
         const mean1 = this.calculateMean(control);
         const mean2 = this.calculateMean(treatment);
         const stdDev1 = this.calculateStdDev(control);
         const stdDev2 = this.calculateStdDev(treatment);
-        const n1 = control.length;
-        const n2 = treatment.length;
         const variance1 = Math.pow(stdDev1, 2) / n1;
         const variance2 = Math.pow(stdDev2, 2) / n2;
-        const tStatistic = (mean1 - mean2) / Math.sqrt(variance1 + variance2);
-        const numerator = Math.pow(variance1 + variance2, 2);
+        const varianceSum = variance1 + variance2;
+        if (varianceSum === 0) {
+            return {
+                tStatistic: 0,
+                pValue: 1.0,
+                degreesOfFreedom: n1 + n2 - 2,
+                significant: false,
+            };
+        }
+        const tStatistic = (mean1 - mean2) / Math.sqrt(varianceSum);
+        if (!Number.isFinite(tStatistic)) {
+            logger.warn('[StatisticalAnalyzer] Invalid t-statistic', {
+                mean1,
+                mean2,
+                variance1,
+                variance2,
+                tStatistic,
+            });
+            return {
+                tStatistic: 0,
+                pValue: 1.0,
+                degreesOfFreedom: n1 + n2 - 2,
+                significant: false,
+            };
+        }
+        const numerator = Math.pow(varianceSum, 2);
         const denominator = Math.pow(variance1, 2) / (n1 - 1) + Math.pow(variance2, 2) / (n2 - 1);
+        if (denominator === 0 || !Number.isFinite(denominator)) {
+            return {
+                tStatistic: 0,
+                pValue: 1.0,
+                degreesOfFreedom: n1 + n2 - 2,
+                significant: false,
+            };
+        }
         const degreesOfFreedom = numerator / denominator;
+        if (!Number.isFinite(degreesOfFreedom)) {
+            logger.warn('[StatisticalAnalyzer] Invalid degrees of freedom', {
+                numerator,
+                denominator,
+                degreesOfFreedom,
+            });
+            return {
+                tStatistic: 0,
+                pValue: 1.0,
+                degreesOfFreedom: n1 + n2 - 2,
+                significant: false,
+            };
+        }
         const pValue = this.tDistributionPValue(Math.abs(tStatistic), degreesOfFreedom);
+        const twoTailedPValue = pValue * 2;
+        if (!Number.isFinite(twoTailedPValue)) {
+            logger.warn('[StatisticalAnalyzer] Invalid p-value', {
+                tStatistic,
+                degreesOfFreedom,
+                pValue,
+            });
+            return {
+                tStatistic,
+                pValue: 1.0,
+                degreesOfFreedom,
+                significant: false,
+            };
+        }
         return {
             tStatistic,
-            pValue: pValue * 2,
+            pValue: twoTailedPValue,
             degreesOfFreedom,
+            significant: twoTailedPValue < 0.05,
         };
     }
     tDistributionPValue(t, df) {

@@ -59,9 +59,24 @@ export class MultiObjectiveOptimizer {
             logger.warn('[MultiObjectiveOptimizer] No valid weights provided');
             return undefined;
         }
-        if (weightValues.some(w => w < 0 || !Number.isFinite(w))) {
-            logger.error('[MultiObjectiveOptimizer] Invalid weights detected', { weights });
-            return undefined;
+        for (const [key, value] of Object.entries(weights)) {
+            if (value === undefined)
+                continue;
+            if (!Number.isFinite(value)) {
+                logger.error('[MultiObjectiveOptimizer] Weight must be finite', {
+                    objective: key,
+                    value
+                });
+                return undefined;
+            }
+            if (value < 0 || value > 1) {
+                logger.error('[MultiObjectiveOptimizer] Weight must be between 0 and 1', {
+                    objective: key,
+                    value,
+                    constraint: '0 <= weight <= 1'
+                });
+                return undefined;
+            }
         }
         let bestCandidate;
         let bestScore = -Infinity;

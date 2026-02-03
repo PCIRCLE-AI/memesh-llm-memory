@@ -14,6 +14,70 @@ export class GlobalResourcePool {
     e2eWaitQueue = [];
     staleCheckTimer = null;
     constructor(config = {}) {
+        if (config.cpuThreshold !== undefined) {
+            if (!Number.isFinite(config.cpuThreshold)) {
+                throw new Error('cpuThreshold must be finite');
+            }
+            if (config.cpuThreshold <= 0 || config.cpuThreshold > 100) {
+                throw new Error('cpuThreshold must be between 0 and 100');
+            }
+        }
+        if (config.memoryThreshold !== undefined) {
+            if (!Number.isFinite(config.memoryThreshold)) {
+                throw new Error('memoryThreshold must be finite');
+            }
+            if (config.memoryThreshold <= 0 || config.memoryThreshold > 100) {
+                throw new Error('memoryThreshold must be between 0 and 100');
+            }
+        }
+        if (config.maxConcurrentE2E !== undefined) {
+            if (!Number.isFinite(config.maxConcurrentE2E)) {
+                throw new Error('maxConcurrentE2E must be finite');
+            }
+            if (!Number.isSafeInteger(config.maxConcurrentE2E) || config.maxConcurrentE2E < 0) {
+                throw new Error('maxConcurrentE2E must be a non-negative integer');
+            }
+        }
+        if (config.e2eWaitTimeout !== undefined) {
+            if (!Number.isFinite(config.e2eWaitTimeout)) {
+                throw new Error('e2eWaitTimeout must be finite');
+            }
+            if (config.e2eWaitTimeout <= 0) {
+                throw new Error('e2eWaitTimeout must be positive');
+            }
+        }
+        if (config.maxConcurrentBuilds !== undefined) {
+            if (!Number.isFinite(config.maxConcurrentBuilds)) {
+                throw new Error('maxConcurrentBuilds must be finite');
+            }
+            if (!Number.isSafeInteger(config.maxConcurrentBuilds) || config.maxConcurrentBuilds < 0) {
+                throw new Error('maxConcurrentBuilds must be a non-negative integer');
+            }
+        }
+        if (config.buildWaitTimeout !== undefined) {
+            if (!Number.isFinite(config.buildWaitTimeout)) {
+                throw new Error('buildWaitTimeout must be finite');
+            }
+            if (config.buildWaitTimeout <= 0) {
+                throw new Error('buildWaitTimeout must be positive');
+            }
+        }
+        if (config.staleCheckInterval !== undefined) {
+            if (!Number.isFinite(config.staleCheckInterval)) {
+                throw new Error('staleCheckInterval must be finite');
+            }
+            if (config.staleCheckInterval <= 0) {
+                throw new Error('staleCheckInterval must be positive');
+            }
+        }
+        if (config.staleLockThreshold !== undefined) {
+            if (!Number.isFinite(config.staleLockThreshold)) {
+                throw new Error('staleLockThreshold must be finite');
+            }
+            if (config.staleLockThreshold <= 0) {
+                throw new Error('staleLockThreshold must be positive');
+            }
+        }
         this.config = {
             cpuThreshold: config.cpuThreshold ?? 80,
             memoryThreshold: config.memoryThreshold ?? 85,
@@ -124,6 +188,12 @@ export class GlobalResourcePool {
         }
     }
     async canRunE2E(count = 1) {
+        if (!Number.isFinite(count)) {
+            throw new Error('count must be finite');
+        }
+        if (!Number.isSafeInteger(count) || count <= 0) {
+            throw new Error('count must be a positive integer');
+        }
         const availableSlots = this.config.maxConcurrentE2E - this.activeE2E.size;
         if (count > availableSlots) {
             return {

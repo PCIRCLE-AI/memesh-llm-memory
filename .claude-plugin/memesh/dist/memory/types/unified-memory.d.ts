@@ -18,6 +18,8 @@ export interface SearchOptions {
     limit?: number;
     minImportance?: number;
 }
+export declare const DEFAULT_SEARCH_LIMIT = 50;
+export declare const MAX_SEARCH_LIMIT = 1000;
 export interface SearchResult {
     memory: UnifiedMemory;
     score: number;

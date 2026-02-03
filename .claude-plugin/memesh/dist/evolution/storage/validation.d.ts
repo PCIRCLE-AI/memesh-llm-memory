@@ -1,7 +1,6 @@
 import type { Span, Pattern, Adaptation, Reward } from './types';
-export declare class ValidationError extends Error {
-    constructor(message: string);
-}
+import { ValidationError } from '../../errors/index.js';
+export { ValidationError };
 export declare class NotFoundError extends Error {
     constructor(resource: string, id: string);
 }

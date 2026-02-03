@@ -113,11 +113,14 @@ export class SessionContextMonitor {
         }
         const recent = this.qualityHistory.slice(-3);
         const previous = this.qualityHistory.slice(-6, -3);
-        if (previous.length === 0) {
+        if (previous.length === 0 || recent.length === 0) {
             return null;
         }
         const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
         const previousAvg = previous.reduce((a, b) => a + b, 0) / previous.length;
+        if (!Number.isFinite(recentAvg) || !Number.isFinite(previousAvg)) {
+            return null;
+        }
         if (previousAvg === 0) {
             return null;
         }

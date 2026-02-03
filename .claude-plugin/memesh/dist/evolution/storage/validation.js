@@ -1,9 +1,5 @@
-export class ValidationError extends Error {
-    constructor(message) {
-        super(message);
-        this.name = 'ValidationError';
-    }
-}
+import { ValidationError } from '../../errors/index.js';
+export { ValidationError };
 export class NotFoundError extends Error {
     constructor(resource, id) {
         super(`${resource} not found: ${id}`);

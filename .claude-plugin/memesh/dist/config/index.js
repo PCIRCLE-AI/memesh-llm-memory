@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ConfigurationError } from '../errors/index.js';
+import { safeParseInt, safeParseFloat } from '../utils/index.js';
 const envSchema = z.object({
     MCP_SERVER_MODE: z.string().default('true').transform(val => val === 'true'),
     ANTHROPIC_API_KEY: z.string().optional(),
@@ -68,26 +69,26 @@ export const appConfig = {
     },
     quotaLimits: {
         claude: {
-            daily: parseInt(env.CLAUDE_DAILY_LIMIT),
-            monthly: parseInt(env.CLAUDE_MONTHLY_LIMIT),
+            daily: safeParseInt(env.CLAUDE_DAILY_LIMIT, 150, 1, 10000),
+            monthly: safeParseInt(env.CLAUDE_MONTHLY_LIMIT, 4500, 1, 100000),
         },
     },
     costs: {
-        monthlyBudget: parseFloat(env.MONTHLY_BUDGET_USD),
-        alertThreshold: parseFloat(env.COST_ALERT_THRESHOLD),
+        monthlyBudget: safeParseFloat(env.MONTHLY_BUDGET_USD, 50, 0, 10000),
+        alertThreshold: safeParseFloat(env.COST_ALERT_THRESHOLD, 0.8, 0, 1),
     },
     logging: {
         level: env.LOG_LEVEL,
         enableMetrics: env.ENABLE_METRICS === 'true',
-        metricsPort: parseInt(env.METRICS_PORT),
+        metricsPort: safeParseInt(env.METRICS_PORT, 9090, 1024, 65535),
     },
     server: {
         env: env.NODE_ENV,
-        port: parseInt(env.PORT),
+        port: safeParseInt(env.PORT, 3000, 1024, 65535),
     },
     orchestrator: {
         mode: env.ORCHESTRATOR_MODE,
-        maxMemoryMB: parseInt(env.ORCHESTRATOR_MAX_MEMORY_MB),
+        maxMemoryMB: safeParseInt(env.ORCHESTRATOR_MAX_MEMORY_MB, 6144, 512, 32768),
     },
 };
 export default appConfig;

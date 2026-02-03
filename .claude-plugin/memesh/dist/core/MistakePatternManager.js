@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger.js';
 const DEFAULT_CONFIG = {
     decayRate: 0.1,
     minImportance: 0.5,
@@ -72,7 +73,9 @@ export class MistakePatternManager {
         return `${errorType}:${phase}:${words.join('-')}`;
     }
     createPattern(signature, mistakes) {
-        const avgImportance = mistakes.reduce((sum, m) => sum + m.importance, 0) / mistakes.length;
+        const avgImportance = mistakes.length > 0
+            ? mistakes.reduce((sum, m) => sum + m.importance, 0) / mistakes.length
+            : 0.5;
         const occurrences = mistakes.map(m => m.timestamp);
         const phases = new Set();
         for (const m of mistakes) {
@@ -98,8 +101,31 @@ export class MistakePatternManager {
         const repetitionFactor = Math.log(1 + occurrenceCount);
         const now = new Date();
         const lastOccurrence = occurrences[occurrences.length - 1];
-        const daysSinceLast = (now.getTime() - lastOccurrence.getTime()) / (1000 * 60 * 60 * 24);
-        const recencyFactor = 1 / (1 + daysSinceLast * this.config.decayRate);
+        const timeDiff = now.getTime() - lastOccurrence.getTime();
+        if (timeDiff < 0) {
+            logger.warn('[MistakePatternManager] Invalid timestamp: lastOccurrence in future', {
+                lastOccurrence,
+                now,
+            });
+            return 0;
+        }
+        const daysSinceLast = timeDiff / (1000 * 60 * 60 * 24);
+        const decayRate = this.config.decayRate || 0.01;
+        if (!Number.isFinite(decayRate) || decayRate <= 0) {
+            logger.warn('[MistakePatternManager] Invalid decayRate', {
+                decayRate: this.config.decayRate,
+            });
+            return 0.5;
+        }
+        const recencyFactor = 1 / (1 + daysSinceLast * decayRate);
+        if (!Number.isFinite(recencyFactor)) {
+            logger.warn('[MistakePatternManager] Invalid recencyFactor calculation', {
+                daysSinceLast,
+                decayRate,
+                recencyFactor,
+            });
+            return 0.5;
+        }
         const weight = baseImportance * repetitionFactor * recencyFactor;
         return Math.min(weight, 1.0);
     }

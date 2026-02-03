@@ -2,6 +2,7 @@ import os from 'os';
 import { PromptEnhancer } from '../core/PromptEnhancer.js';
 import { toDollars } from '../utils/money.js';
 import { logger } from '../utils/logger.js';
+import { safeDivide, bytesToMB } from '../utils/index.js';
 export class AgentRouter {
     promptEnhancer;
     constructor() {
@@ -40,9 +41,9 @@ export class AgentRouter {
         const freeMemory = os.freemem();
         const usedMemory = totalMemory - freeMemory;
         return {
-            totalMemoryMB: Math.floor(totalMemory / 1024 / 1024),
-            availableMemoryMB: Math.floor(freeMemory / 1024 / 1024),
-            memoryUsagePercent: Math.floor((usedMemory / totalMemory) * 100),
+            totalMemoryMB: Math.floor(bytesToMB(totalMemory)),
+            availableMemoryMB: Math.floor(bytesToMB(freeMemory)),
+            memoryUsagePercent: Math.floor(safeDivide(usedMemory, totalMemory, 0) * 100),
             cpuUsagePercent: this.getCPUUsage(),
         };
     }
@@ -244,7 +245,7 @@ export class AgentRouter {
             }
             totalIdle += cpu.times.idle;
         }
-        const idlePercentage = (100 * totalIdle) / totalTick;
+        const idlePercentage = safeDivide(100 * totalIdle, totalTick, 50);
         const usage = Math.round(100 - idlePercentage);
         this.cpuUsageCache = { value: usage, timestamp: now };
         return usage;

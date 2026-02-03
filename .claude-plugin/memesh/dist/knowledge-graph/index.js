@@ -3,7 +3,7 @@ import { NotFoundError, ValidationError } from '../errors/index.js';
 import { SimpleDatabaseFactory } from '../config/simple-config.js';
 import { logger } from '../utils/logger.js';
 import { QueryCache } from '../db/QueryCache.js';
-import { safeJsonParse } from '../utils/json.js';
+import { safeJsonParse, safeJsonStringify } from '../utils/json.js';
 import { getDataPath, getDataDirectory } from '../utils/PathResolver.js';
 export class KnowledgeGraph {
     db;
@@ -106,50 +106,105 @@ export class KnowledgeGraph {
       CREATE INDEX IF NOT EXISTS idx_tags_entity_tag ON tags(entity_id, tag);
     `;
         this.db.exec(schema);
+        this.runMigrations();
+    }
+    runMigrations() {
+        try {
+            const tableInfo = this.db.pragma('table_info(entities)');
+            const hasContentHash = tableInfo.some((col) => col.name === 'content_hash');
+            if (!hasContentHash) {
+                logger.info('[KG] Running migration: Adding content_hash column to entities table');
+                this.db.exec(`
+          ALTER TABLE entities ADD COLUMN content_hash TEXT;
+        `);
+                this.db.exec(`
+          CREATE UNIQUE INDEX IF NOT EXISTS idx_entities_content_hash
+          ON entities(content_hash)
+          WHERE content_hash IS NOT NULL;
+        `);
+                logger.info('[KG] Migration complete: content_hash column added with unique index');
+            }
+        }
+        catch (error) {
+            logger.error('[KG] Migration failed:', {
+                error: error instanceof Error ? error.message : String(error),
+            });
+            throw error;
+        }
     }
     escapeLikePattern(pattern) {
+        if (typeof pattern !== 'string') {
+            throw new Error(`Pattern must be a string, got ${typeof pattern}`);
+        }
         return pattern
-            .replace(/\\/g, '\\\\')
-            .replace(/%/g, '\\%')
-            .replace(/_/g, '\\_')
-            .replace(/\[/g, '\\[');
+            .replace(/!/g, '!!')
+            .replace(/%/g, '!%')
+            .replace(/_/g, '!_')
+            .replace(/\[/g, '![')
+            .replace(/\]/g, '!]');
     }
     createEntity(entity) {
-        const stmt = this.db.prepare(`
-      INSERT INTO entities (name, type, metadata)
-      VALUES (?, ?, json(?))
-      ON CONFLICT(name) DO UPDATE SET
-        type = excluded.type,
-        metadata = excluded.metadata
-    `);
-        stmt.run(entity.name, entity.entityType, JSON.stringify(entity.metadata || {}));
-        const actualEntity = this.db
-            .prepare('SELECT id FROM entities WHERE name = ?')
-            .get(entity.name);
-        const actualId = actualEntity.id;
-        this.db.prepare('DELETE FROM observations WHERE entity_id = ?').run(actualId);
-        this.db.prepare('DELETE FROM tags WHERE entity_id = ?').run(actualId);
-        if (entity.observations && entity.observations.length > 0) {
-            const obsStmt = this.db.prepare(`
-        INSERT INTO observations (entity_id, content)
-        VALUES (?, ?)
-      `);
-            for (const obs of entity.observations) {
-                obsStmt.run(actualId, obs);
+        try {
+            if (entity.contentHash) {
+                const existing = this.db
+                    .prepare('SELECT name FROM entities WHERE content_hash = ?')
+                    .get(entity.contentHash);
+                if (existing && existing.name !== entity.name) {
+                    logger.info(`[KG] Deduplicated: content_hash match, using existing entity ${existing.name}`);
+                    return existing.name;
+                }
             }
-        }
-        if (entity.tags && entity.tags.length > 0) {
-            const tagStmt = this.db.prepare(`
-        INSERT INTO tags (entity_id, tag)
-        VALUES (?, ?)
+            const stmt = this.db.prepare(`
+        INSERT INTO entities (name, type, metadata, content_hash)
+        VALUES (?, ?, json(?), ?)
+        ON CONFLICT(name) DO UPDATE SET
+          type = excluded.type,
+          metadata = excluded.metadata,
+          content_hash = excluded.content_hash
       `);
-            for (const tag of entity.tags) {
-                tagStmt.run(actualId, tag);
+            stmt.run(entity.name, entity.entityType, safeJsonStringify(entity.metadata || {}, '{}'), entity.contentHash || null);
+            const actualEntity = this.db
+                .prepare('SELECT id FROM entities WHERE name = ?')
+                .get(entity.name);
+            const actualId = actualEntity.id;
+            this.db.prepare('DELETE FROM observations WHERE entity_id = ?').run(actualId);
+            this.db.prepare('DELETE FROM tags WHERE entity_id = ?').run(actualId);
+            if (entity.observations && entity.observations.length > 0) {
+                const obsStmt = this.db.prepare(`
+          INSERT INTO observations (entity_id, content)
+          VALUES (?, ?)
+        `);
+                for (const obs of entity.observations) {
+                    obsStmt.run(actualId, obs);
+                }
             }
+            if (entity.tags && entity.tags.length > 0) {
+                const tagStmt = this.db.prepare(`
+          INSERT INTO tags (entity_id, tag)
+          VALUES (?, ?)
+        `);
+                for (const tag of entity.tags) {
+                    tagStmt.run(actualId, tag);
+                }
+            }
+            this.queryCache.invalidatePattern(/^entities:/);
+            logger.info(`[KG] Created entity: ${entity.name} (type: ${entity.entityType})`);
+            return entity.name;
         }
-        this.queryCache.invalidatePattern(/^entities:/);
-        logger.info(`[KG] Created entity: ${entity.name} (type: ${entity.entityType})`);
-        return actualId;
+        catch (error) {
+            if (error instanceof Error &&
+                error.message.includes('UNIQUE constraint failed') &&
+                error.message.includes('content_hash')) {
+                const existing = this.db
+                    .prepare('SELECT name FROM entities WHERE content_hash = ?')
+                    .get(entity.contentHash);
+                if (existing) {
+                    logger.warn(`[KG] Race condition detected: content_hash conflict, using existing entity ${existing.name}`);
+                    return existing.name;
+                }
+            }
+            throw error;
+        }
     }
     createRelation(relation) {
         const getEntityId = this.db.prepare('SELECT id FROM entities WHERE name = ?');
@@ -167,7 +222,7 @@ export class KnowledgeGraph {
       ON CONFLICT(from_entity_id, to_entity_id, relation_type) DO UPDATE SET
         metadata = excluded.metadata
     `);
-        stmt.run(fromEntity.id, toEntity.id, relation.relationType, JSON.stringify(relation.metadata || {}));
+        stmt.run(fromEntity.id, toEntity.id, relation.relationType, safeJsonStringify(relation.metadata || {}, '{}'));
         this.queryCache.invalidatePattern(/^relations:/);
         this.queryCache.invalidatePattern(/^trace:/);
         logger.info(`[KG] Created relation: ${relation.from} -[${relation.relationType}]-> ${relation.to}`);
@@ -216,7 +271,7 @@ export class KnowledgeGraph {
             params.push(query.tag);
         }
         if (query.namePattern) {
-            sql += " AND e.name LIKE ? ESCAPE '\\'";
+            sql += " AND e.name LIKE ? ESCAPE '!'";
             params.push(`%${this.escapeLikePattern(query.namePattern)}%`);
         }
         sql += ' ORDER BY e.created_at DESC';
@@ -340,6 +395,19 @@ export class KnowledgeGraph {
         this.queryCache.destroy();
         this.db.close();
         logger.info('[KG] Database connection and cache closed');
+    }
+    transaction(fn) {
+        try {
+            const transactionFn = this.db.transaction(fn);
+            return transactionFn();
+        }
+        catch (error) {
+            logger.error('[KG] Transaction failed and rolled back:', {
+                error: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+            });
+            throw error;
+        }
     }
     getCacheStats() {
         return this.queryCache.getStats();

@@ -14,7 +14,7 @@ export declare const operationIcons: {
     readonly send: "📤";
     readonly receive: "📥";
     readonly success: "✓";
-    readonly error: "✗";
+    readonly error: "❌";
     readonly warning: "⚠";
     readonly info: "ℹ";
     readonly pending: "○";

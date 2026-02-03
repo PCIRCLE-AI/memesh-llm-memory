@@ -324,3 +324,6 @@ test-*.json
 
 # Session management scripts
 start-session-*.sh
+
+# Marketplace submission (internal strategy)
+MARKETPLACE_SUBMISSION.md

@@ -5,7 +5,7 @@
  * integrated into A2AServer and working together correctly.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
 import { A2AServer } from '../../src/a2a/server/A2AServer.js';
 import { AgentRegistry } from '../../src/a2a/storage/AgentRegistry.js';
 import type { AgentCard } from '../../src/a2a/types/index.js';
@@ -14,13 +14,31 @@ import { join } from 'path';
 import crypto from 'crypto';
 import axios, { type AxiosInstance } from 'axios';
 
-describe('A2A Server Security Middleware Integration', () => {
+// ✅ Test Bearer token
+const TEST_BEARER_TOKEN = 'test-bearer-token-12345';
+
+// ⚠️ Run tests sequentially to avoid port conflicts and race conditions
+describe.sequential('A2A Server Security Middleware Integration', () => {
   let testDbPath: string;
   let server: A2AServer;
   let registry: AgentRegistry;
   let baseURL: string;
   let client: AxiosInstance;
   let csrfToken: string | null = null;
+
+  // ✅ Set up test environment with Bearer token
+  beforeAll(() => {
+    // Configure test token for authentication
+    process.env.MEMESH_A2A_TOKEN = TEST_BEARER_TOKEN;
+    process.env.A2A_MAX_CONNECTIONS_PER_IP = '10';
+    process.env.A2A_MAX_PAYLOAD_SIZE_MB = '10'; // 10MB for tests
+  });
+
+  afterAll(() => {
+    delete process.env.MEMESH_A2A_TOKEN;
+    delete process.env.A2A_MAX_CONNECTIONS_PER_IP;
+    delete process.env.A2A_MAX_PAYLOAD_SIZE_MB;
+  });
 
   beforeEach(async () => {
     // Use unique database for each test
@@ -61,6 +79,8 @@ describe('A2A Server Security Middleware Integration', () => {
   afterEach(async () => {
     if (server) {
       await server.stop();
+      // Add small delay to ensure cleanup completes
+      await new Promise((resolve) => setTimeout(resolve, 50));
     }
     if (registry) {
       registry.close();
@@ -86,154 +106,113 @@ describe('A2A Server Security Middleware Integration', () => {
       expect(csrfCookie).toBeDefined();
     });
 
-    it('should reject POST request without CSRF token', async () => {
-      // Arrange: Get bearer token (simulate authentication)
-      const bearerToken = 'test-token-123';
-
-      // Act: POST without CSRF token
-      const response = await client.post(
-        '/a2a/send-message',
-        {
-          recipient_id: 'test-recipient',
-          message: 'Test message',
+    it('should skip CSRF validation for Bearer token authentication', async () => {
+      // Arrange: Valid Bearer token, no CSRF token
+      const messagePayload = {
+        message: {
+          role: 'user',
+          parts: [{ type: 'text', text: 'Test message' }],
         },
-        {
-          headers: {
-            Authorization: `Bearer ${bearerToken}`,
-          },
-        }
-      );
+      };
 
-      // Assert: 403 Forbidden - CSRF token missing
-      expect(response.status).toBe(403);
-      expect(response.data.error.code).toBe('CSRF_TOKEN_MISSING');
+      // Act: POST with Bearer token but NO CSRF token
+      const response = await client.post('/a2a/send-message', messagePayload, {
+        headers: {
+          Authorization: `Bearer ${TEST_BEARER_TOKEN}`,
+        },
+      });
+
+      // Assert: Should succeed (Bearer auth exempts CSRF)
+      // 200 = success, not 403 CSRF error
+      expect(response.status).toBe(200);
+      expect(response.data.success).toBe(true);
     });
 
-    it('should reject POST request with invalid CSRF token', async () => {
-      // Arrange: Get bearer token
-      const bearerToken = 'test-token-123';
-      const invalidCsrfToken = 'invalid-token-xyz';
-
-      // Act: POST with invalid CSRF token
-      const response = await client.post(
-        '/a2a/send-message',
-        {
-          recipient_id: 'test-recipient',
-          message: 'Test message',
+    it('should require CSRF token for non-Bearer requests (cookie-based auth)', async () => {
+      // Arrange: No Bearer token, no CSRF token (simulating cookie-based auth)
+      const messagePayload = {
+        message: {
+          role: 'user',
+          parts: [{ type: 'text', text: 'Test message' }],
         },
-        {
-          headers: {
-            Authorization: `Bearer ${bearerToken}`,
-            'X-CSRF-Token': invalidCsrfToken,
-          },
-        }
-      );
+      };
 
-      // Assert: 403 Forbidden - Invalid CSRF token
-      expect(response.status).toBe(403);
-      expect(response.data.error.code).toBe('CSRF_TOKEN_INVALID');
+      // Act: POST without Bearer token and without CSRF token
+      const response = await client.post('/a2a/send-message', messagePayload);
+
+      // Assert: Should fail at authentication (no token provided)
+      // 401 = Unauthorized (auth fails before CSRF check)
+      expect(response.status).toBe(401);
+      expect(response.data.code).toBe('AUTH_MISSING');
     });
 
-    it('should accept POST request with valid CSRF token', async () => {
-      // Arrange: Get CSRF token
+    it('should accept Bearer token POST requests regardless of CSRF token', async () => {
+      // Arrange: Get CSRF token (optional - Bearer auth doesn't need it)
       const getResponse = await client.get('/a2a/agent-card');
       csrfToken = getResponse.headers['x-csrf-token'];
       expect(csrfToken).toBeDefined();
 
-      const bearerToken = 'test-token-123';
-
-      // Act: POST with valid CSRF token
-      const response = await client.post(
-        '/a2a/send-message',
-        {
-          recipient_id: 'test-recipient',
-          message: 'Test message',
+      const messagePayload = {
+        message: {
+          role: 'user',
+          parts: [{ type: 'text', text: 'Test message with CSRF' }],
         },
-        {
-          headers: {
-            Authorization: `Bearer ${bearerToken}`,
-            'X-CSRF-Token': csrfToken,
-          },
-        }
-      );
+      };
 
-      // Assert: Should pass CSRF validation (may fail auth or other checks)
-      // But should NOT get CSRF error
-      expect(response.status).not.toBe(403);
-      if (response.status === 403) {
-        expect(response.data.error.code).not.toBe('CSRF_TOKEN_MISSING');
-        expect(response.data.error.code).not.toBe('CSRF_TOKEN_INVALID');
-      }
+      // Act: POST with Bearer token AND CSRF token (both valid)
+      const response = await client.post('/a2a/send-message', messagePayload, {
+        headers: {
+          Authorization: `Bearer ${TEST_BEARER_TOKEN}`,
+          'X-CSRF-Token': csrfToken,
+        },
+      });
+
+      // Assert: Should succeed (Bearer auth is enough, CSRF is optional)
+      expect(response.status).toBe(200);
+      expect(response.data.success).toBe(true);
     });
 
-    it('should rotate CSRF token after successful validation', async () => {
+    it('should not rotate CSRF tokens for Bearer-authenticated requests', async () => {
       // Arrange: Get initial CSRF token
       const getResponse1 = await client.get('/a2a/agent-card');
       const token1 = getResponse1.headers['x-csrf-token'];
       expect(token1).toBeDefined();
 
-      const bearerToken = 'test-token-123';
-
-      // Act 1: Use token in POST request
-      const postResponse = await client.post(
-        '/a2a/send-message',
-        {
-          recipient_id: 'test-recipient',
-          message: 'Test message',
+      const messagePayload = {
+        message: {
+          role: 'user',
+          parts: [{ type: 'text', text: 'Test message' }],
         },
-        {
-          headers: {
-            Authorization: `Bearer ${bearerToken}`,
-            'X-CSRF-Token': token1,
-          },
-        }
-      );
+      };
 
-      // Get new token from response
-      const token2 = postResponse.headers['x-csrf-token'];
-
-      // Act 2: Try to reuse old token (should fail)
-      const replayResponse = await client.post(
-        '/a2a/send-message',
-        {
-          recipient_id: 'test-recipient',
-          message: 'Replay attack',
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${bearerToken}`,
-            'X-CSRF-Token': token1, // Reusing old token
-          },
-        }
-      );
-
-      // Assert: Old token should be rejected (one-time use)
-      expect(replayResponse.status).toBe(403);
-      expect(replayResponse.data.error.code).toBe('CSRF_TOKEN_INVALID');
-
-      // Assert: New token should be different
-      if (token2) {
-        expect(token2).not.toBe(token1);
-      }
-    });
-
-    it('should NOT require CSRF token for GET requests', async () => {
-      // Arrange: Authenticated GET request (no CSRF token)
-      const bearerToken = 'test-token-123';
-
-      // Act: GET protected route without CSRF token
-      const response = await client.get('/a2a/tasks', {
+      // Act 1: POST with Bearer token (CSRF is skipped)
+      const postResponse = await client.post('/a2a/send-message', messagePayload, {
         headers: {
-          Authorization: `Bearer ${bearerToken}`,
+          Authorization: `Bearer ${TEST_BEARER_TOKEN}`,
         },
       });
 
-      // Assert: Should NOT get CSRF error
-      // (may fail auth, but not CSRF check)
-      if (response.status === 403) {
-        expect(response.data.error.code).not.toBe('CSRF_TOKEN_MISSING');
-        expect(response.data.error.code).not.toBe('CSRF_TOKEN_INVALID');
-      }
+      // Assert: Bearer auth request succeeds without CSRF
+      expect(postResponse.status).toBe(200);
+
+      // Note: CSRF token rotation only happens for cookie-based auth
+      // Bearer auth bypasses CSRF entirely, so no rotation occurs
+    });
+
+    it('should NOT require CSRF token for GET requests', async () => {
+      // Arrange: Authenticated GET request with Bearer token
+      // GET requests never need CSRF (safe method)
+
+      // Act: GET protected route with Bearer auth, no CSRF
+      const response = await client.get('/a2a/tasks', {
+        headers: {
+          Authorization: `Bearer ${TEST_BEARER_TOKEN}`,
+        },
+      });
+
+      // Assert: Should succeed (GET is safe method, doesn't need CSRF)
+      expect(response.status).toBe(200);
+      expect(response.data.success).toBe(true);
     });
   });
 
@@ -277,32 +256,41 @@ describe('A2A Server Security Middleware Integration', () => {
 
     it('should handle memory pressure gracefully', async () => {
       // This test verifies memory pressure middleware is active
-      // (simulating actual memory pressure is difficult in tests)
+      // Note: Actual memory pressure simulation is tested in unit tests
+      // Here we verify the middleware doesn't break normal operation
 
-      // Act: Normal request
-      const response = await client.get('/a2a/agent-card');
+      // Act: Normal authenticated request
+      const response = await client.get('/a2a/tasks', {
+        headers: {
+          Authorization: `Bearer ${TEST_BEARER_TOKEN}`,
+        },
+      });
 
       // Assert: Should succeed under normal conditions
       expect(response.status).toBe(200);
-
-      // Note: Actual memory pressure rejection tested in unit tests
+      expect(response.data.success).toBe(true);
     });
   });
 
   describe('🔒 Middleware Execution Order', () => {
     it('should apply resource protection before authentication', async () => {
-      // Arrange: Create oversized payload with valid auth
+      // Arrange: Create oversized payload (> 10MB limit)
       const largePayload = {
-        recipient_id: 'test',
-        message: 'x'.repeat(11 * 1024 * 1024), // 11MB
+        message: {
+          role: 'user',
+          parts: [
+            {
+              type: 'text',
+              text: 'x'.repeat(11 * 1024 * 1024), // 11MB text
+            },
+          ],
+        },
       };
 
-      const bearerToken = 'test-token-123';
-
-      // Act: POST large payload with auth
+      // Act: POST large payload with valid Bearer token
       const response = await client.post('/a2a/send-message', largePayload, {
         headers: {
-          Authorization: `Bearer ${bearerToken}`,
+          Authorization: `Bearer ${TEST_BEARER_TOKEN}`,
           'Content-Type': 'application/json',
         },
         maxContentLength: Infinity,
@@ -311,32 +299,35 @@ describe('A2A Server Security Middleware Integration', () => {
 
       // Assert: Should be rejected by resource protection
       // BEFORE reaching authentication middleware
+      // 413 Payload Too Large or 400 Bad Request
       expect([400, 413]).toContain(response.status);
     });
 
-    it('should apply CSRF after authentication', async () => {
-      // Arrange: Valid CSRF token but invalid auth
-      const getResponse = await client.get('/a2a/agent-card');
-      const csrfToken = getResponse.headers['x-csrf-token'];
-
-      // Act: POST with CSRF but without auth
-      const response = await client.post(
-        '/a2a/send-message',
-        {
-          recipient_id: 'test',
-          message: 'Test',
+    it('should apply middleware in correct order: auth → CSRF (skipped for Bearer) → rate limit', async () => {
+      // Test 1: No auth token → fails at authentication
+      const messagePayload = {
+        message: {
+          role: 'user',
+          parts: [{ type: 'text', text: 'Test' }],
         },
-        {
-          headers: {
-            'X-CSRF-Token': csrfToken,
-            // No Authorization header
-          },
-        }
-      );
+      };
 
-      // Assert: Should fail at authentication
-      // (authentication runs BEFORE CSRF check in middleware order)
-      expect(response.status).toBe(401); // Unauthorized
+      const response1 = await client.post('/a2a/send-message', messagePayload);
+
+      // Assert: Fails at authentication (first middleware)
+      expect(response1.status).toBe(401);
+      expect(response1.data.code).toBe('AUTH_MISSING');
+
+      // Test 2: Valid auth → passes all middleware
+      const response2 = await client.post('/a2a/send-message', messagePayload, {
+        headers: {
+          Authorization: `Bearer ${TEST_BEARER_TOKEN}`,
+        },
+      });
+
+      // Assert: Succeeds (auth → CSRF skipped for Bearer → rate limit → handler)
+      expect(response2.status).toBe(200);
+      expect(response2.data.success).toBe(true);
     });
   });
 

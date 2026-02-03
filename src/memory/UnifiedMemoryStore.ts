@@ -206,7 +206,8 @@ export class UnifiedMemoryStore {
           const metadataJson = JSON.stringify(memory.metadata);
 
           // Validate metadata size (1MB limit)
-          const sizeInBytes = new Blob([metadataJson]).size;
+          // Use Buffer for accurate byte size (Node.js compatible, works in all versions)
+          const sizeInBytes = Buffer.byteLength(metadataJson, 'utf8');
           const MAX_METADATA_SIZE = 1024 * 1024; // 1MB in bytes
 
           if (sizeInBytes >= MAX_METADATA_SIZE) {

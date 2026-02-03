@@ -184,16 +184,22 @@ export class KnowledgeGraph {
   /**
    * Escape special characters in LIKE patterns to prevent SQL injection
    *
-   * Escapes: !, %, _, [
+   * Escapes: !, %, _, [, ]
    * These characters have special meaning in SQL LIKE patterns
    * Uses '!' as the ESCAPE character (safer than '\' - no conflict with paths/strings)
    */
   private escapeLikePattern(pattern: string): string {
+    // Validate input type to prevent type coercion attacks
+    if (typeof pattern !== 'string') {
+      throw new Error(`Pattern must be a string, got ${typeof pattern}`);
+    }
+
     return pattern
       .replace(/!/g, '!!')     // Exclamation first (our escape character)
       .replace(/%/g, '!%')     // Percent (matches any sequence)
       .replace(/_/g, '!_')     // Underscore (matches single character)
-      .replace(/\[/g, '![');   // Left bracket (character class)
+      .replace(/\[/g, '![')    // Left bracket (character class start)
+      .replace(/\]/g, '!]');   // Right bracket (character class end)
   }
 
   /**

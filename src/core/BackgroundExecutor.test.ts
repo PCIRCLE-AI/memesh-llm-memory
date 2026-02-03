@@ -61,16 +61,27 @@ describe('BackgroundExecutor', () => {
       expect(taskId).toMatch(/^bg-[a-f0-9]+$/);
     });
 
-    it('should throw error when resources are insufficient', async () => {
-      // Create monitor with no capacity
-      const limitedMonitor = new ResourceMonitor(0);
+    it('should queue task when max concurrent agents reached', async () => {
+      // Create monitor with minimal capacity and fill it
+      const limitedMonitor = new ResourceMonitor(1);
       const limitedExecutor = new BackgroundExecutor(limitedMonitor);
+
+      // Fill up the single slot
+      limitedMonitor.registerBackgroundTask();
 
       const task = async () => 'test';
 
-      await expect(
-        limitedExecutor.executeTask(task, createTestConfig())
-      ).rejects.toThrow('Cannot execute background task');
+      // Task should be queued (not rejected) when capacity is reached
+      const taskId = await limitedExecutor.executeTask(task, createTestConfig());
+      expect(taskId).toBeDefined();
+
+      // Task should be in queued status
+      const taskInfo = limitedExecutor.getTask(taskId);
+      expect(taskInfo?.status).toBe('queued');
+
+      // Cleanup
+      limitedMonitor.unregisterBackgroundTask();
+      limitedExecutor.cancelTask(taskId);
     });
 
     it('should register task with resource monitor', async () => {

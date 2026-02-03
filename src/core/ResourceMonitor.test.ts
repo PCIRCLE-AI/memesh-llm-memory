@@ -124,6 +124,148 @@ describe('ResourceMonitor', () => {
     });
   });
 
+  describe('NaN/Infinity validation', () => {
+    describe('constructor', () => {
+      it('should reject NaN maxBackgroundAgents', () => {
+        expect(() => new ResourceMonitor(NaN)).toThrow('Max background agents must be finite');
+      });
+
+      it('should reject Infinity maxBackgroundAgents', () => {
+        expect(() => new ResourceMonitor(Infinity)).toThrow('Max background agents must be finite');
+      });
+
+      it('should reject -Infinity maxBackgroundAgents', () => {
+        expect(() => new ResourceMonitor(-Infinity)).toThrow('Max background agents must be finite');
+      });
+
+      it('should reject negative maxBackgroundAgents', () => {
+        expect(() => new ResourceMonitor(0)).toThrow('Max background agents must be >= 1');
+      });
+
+      it('should reject non-integer maxBackgroundAgents', () => {
+        expect(() => new ResourceMonitor(3.5)).toThrow('Max background agents must be safe integer');
+      });
+
+      it('should reject unsafe integer maxBackgroundAgents', () => {
+        expect(() => new ResourceMonitor(Number.MAX_SAFE_INTEGER + 1)).toThrow(
+          'Max background agents must be safe integer'
+        );
+      });
+
+      it('should reject NaN maxCPU', () => {
+        expect(() => new ResourceMonitor(6, { maxCPU: NaN })).toThrow('Max CPU must be finite');
+      });
+
+      it('should reject Infinity maxCPU', () => {
+        expect(() => new ResourceMonitor(6, { maxCPU: Infinity })).toThrow('Max CPU must be finite');
+      });
+
+      it('should reject maxCPU > 100', () => {
+        expect(() => new ResourceMonitor(6, { maxCPU: 150 })).toThrow('Max CPU must be 0-100');
+      });
+
+      it('should reject maxCPU < 0', () => {
+        expect(() => new ResourceMonitor(6, { maxCPU: -10 })).toThrow('Max CPU must be 0-100');
+      });
+
+      it('should reject NaN maxMemory', () => {
+        expect(() => new ResourceMonitor(6, { maxMemory: NaN })).toThrow(
+          'Max memory must be finite'
+        );
+      });
+
+      it('should reject Infinity maxMemory', () => {
+        expect(() => new ResourceMonitor(6, { maxMemory: Infinity })).toThrow(
+          'Max memory must be finite'
+        );
+      });
+
+      it('should reject negative maxMemory', () => {
+        expect(() => new ResourceMonitor(6, { maxMemory: -1000 })).toThrow(
+          'Max memory must be non-negative'
+        );
+      });
+
+      it('should accept valid constructor parameters', () => {
+        expect(() => new ResourceMonitor(8, { maxCPU: 80, maxMemory: 16384 })).not.toThrow();
+      });
+    });
+
+    describe('setMaxCPU', () => {
+      it('should reject NaN', () => {
+        expect(() => monitor.setMaxCPU(NaN)).toThrow('CPU percentage must be finite');
+      });
+
+      it('should reject Infinity', () => {
+        expect(() => monitor.setMaxCPU(Infinity)).toThrow('CPU percentage must be finite');
+      });
+
+      it('should reject -Infinity', () => {
+        expect(() => monitor.setMaxCPU(-Infinity)).toThrow('CPU percentage must be finite');
+      });
+
+      it('should accept valid CPU percentage', () => {
+        expect(() => monitor.setMaxCPU(75)).not.toThrow();
+        expect(() => monitor.setMaxCPU(0)).not.toThrow();
+        expect(() => monitor.setMaxCPU(100)).not.toThrow();
+      });
+    });
+
+    describe('setMaxMemory', () => {
+      it('should reject NaN', () => {
+        expect(() => monitor.setMaxMemory(NaN)).toThrow('Memory must be finite');
+      });
+
+      it('should reject Infinity', () => {
+        expect(() => monitor.setMaxMemory(Infinity)).toThrow('Memory must be finite');
+      });
+
+      it('should reject -Infinity', () => {
+        expect(() => monitor.setMaxMemory(-Infinity)).toThrow('Memory must be finite');
+      });
+
+      it('should accept valid memory values', () => {
+        expect(() => monitor.setMaxMemory(4096)).not.toThrow();
+        expect(() => monitor.setMaxMemory(0)).not.toThrow();
+        expect(() => monitor.setMaxMemory(32768)).not.toThrow();
+      });
+    });
+
+    describe('setMaxBackgroundAgents', () => {
+      it('should reject NaN', () => {
+        expect(() => monitor.setMaxBackgroundAgents(NaN)).toThrow('Max agents must be finite');
+      });
+
+      it('should reject Infinity', () => {
+        expect(() => monitor.setMaxBackgroundAgents(Infinity)).toThrow('Max agents must be finite');
+      });
+
+      it('should reject -Infinity', () => {
+        expect(() => monitor.setMaxBackgroundAgents(-Infinity)).toThrow(
+          'Max agents must be finite'
+        );
+      });
+
+      it('should reject non-integer values', () => {
+        expect(() => monitor.setMaxBackgroundAgents(5.5)).toThrow(
+          'Max agents must be safe integer'
+        );
+      });
+
+      it('should reject unsafe integers', () => {
+        expect(() => monitor.setMaxBackgroundAgents(Number.MAX_SAFE_INTEGER + 1)).toThrow(
+          'Max agents must be safe integer'
+        );
+      });
+
+      it('should accept valid agent counts', () => {
+        expect(() => monitor.setMaxBackgroundAgents(1)).not.toThrow();
+        expect(() => monitor.setMaxBackgroundAgents(10)).not.toThrow();
+        expect(() => monitor.setMaxBackgroundAgents(100)).not.toThrow();
+      });
+    });
+  });
+
   describe('background task registration', () => {
     it('should track active background count', () => {
       expect(monitor.getActiveBackgroundCount()).toBe(0);

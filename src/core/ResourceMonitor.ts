@@ -114,10 +114,61 @@ export class ResourceMonitor {
       maxMemory?: number;
     }
   ) {
+    // ✅ Validate maxBackgroundAgents
+    if (!Number.isFinite(maxBackgroundAgents)) {
+      throw new ValidationError('Max background agents must be finite', {
+        providedValue: maxBackgroundAgents,
+      });
+    }
+
+    if (!Number.isSafeInteger(maxBackgroundAgents)) {
+      throw new ValidationError('Max background agents must be safe integer', {
+        providedValue: maxBackgroundAgents,
+        max: Number.MAX_SAFE_INTEGER,
+      });
+    }
+
+    if (maxBackgroundAgents < 1) {
+      throw new ValidationError('Max background agents must be >= 1', {
+        providedValue: maxBackgroundAgents,
+        min: 1,
+      });
+    }
+
+    // ✅ Validate maxCPU
+    const maxCPU = thresholds?.maxCPU ?? 70;
+    if (!Number.isFinite(maxCPU)) {
+      throw new ValidationError('Max CPU must be finite', {
+        providedValue: maxCPU,
+      });
+    }
+
+    if (maxCPU < 0 || maxCPU > 100) {
+      throw new ValidationError('Max CPU must be 0-100', {
+        providedValue: maxCPU,
+        range: [0, 100],
+      });
+    }
+
+    // ✅ Validate maxMemory
+    const maxMemory = thresholds?.maxMemory ?? 8192;
+    if (!Number.isFinite(maxMemory)) {
+      throw new ValidationError('Max memory must be finite', {
+        providedValue: maxMemory,
+      });
+    }
+
+    if (maxMemory < 0) {
+      throw new ValidationError('Max memory must be non-negative', {
+        providedValue: maxMemory,
+        min: 0,
+      });
+    }
+
     this.maxBackgroundAgents = maxBackgroundAgents;
     this.thresholds = {
-      maxCPU: thresholds?.maxCPU ?? 70,
-      maxMemory: thresholds?.maxMemory ?? 8192, // 8GB in MB
+      maxCPU,
+      maxMemory,
     };
   }
 
@@ -337,6 +388,13 @@ export class ResourceMonitor {
    * Set threshold for CPU usage
    */
   setMaxCPU(percentage: number): void {
+    // ✅ Add NaN/Infinity check
+    if (!Number.isFinite(percentage)) {
+      throw new ValidationError('CPU percentage must be finite', {
+        value: percentage,
+      });
+    }
+
     if (percentage < 0 || percentage > 100) {
       throw new ValidationError('CPU percentage must be between 0 and 100', {
         value: percentage,
@@ -351,6 +409,13 @@ export class ResourceMonitor {
    * Set threshold for memory usage
    */
   setMaxMemory(megabytes: number): void {
+    // ✅ Add NaN/Infinity check
+    if (!Number.isFinite(megabytes)) {
+      throw new ValidationError('Memory must be finite', {
+        value: megabytes,
+      });
+    }
+
     if (megabytes < 0) {
       throw new ValidationError('Memory must be positive', {
         value: megabytes,
@@ -364,6 +429,21 @@ export class ResourceMonitor {
    * Set maximum concurrent background agents
    */
   setMaxBackgroundAgents(count: number): void {
+    // ✅ Add NaN/Infinity check
+    if (!Number.isFinite(count)) {
+      throw new ValidationError('Max agents must be finite', {
+        value: count,
+      });
+    }
+
+    // ✅ Add integer check
+    if (!Number.isSafeInteger(count)) {
+      throw new ValidationError('Max agents must be safe integer', {
+        value: count,
+        max: Number.MAX_SAFE_INTEGER,
+      });
+    }
+
     if (count < 1) {
       throw new ValidationError('Max background agents must be at least 1', {
         value: count,

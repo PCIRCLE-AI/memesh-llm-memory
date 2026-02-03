@@ -75,8 +75,21 @@ try {
   process.exit(1);
 }
 
-// Step 4: Copy plugin.json to plugin directory
-console.log('\n4️⃣ Copying plugin.json to plugin directory...');
+// Step 4: Copy scripts directory to plugin directory
+console.log('\n4️⃣ Copying scripts directory to plugin directory...');
+const sourceScripts = join(projectRoot, 'scripts');
+const targetScripts = join(pluginDir, 'scripts');
+
+try {
+  cpSync(sourceScripts, targetScripts, { recursive: true });
+  console.log('   ✅ Copied scripts/ → .claude-plugin/memesh/scripts/');
+} catch (error) {
+  console.error('   ❌ Error copying scripts/:', error.message);
+  process.exit(1);
+}
+
+// Step 5: Copy plugin.json to plugin directory
+console.log('\n5️⃣ Copying plugin.json to plugin directory...');
 const pluginJsonCandidates = [
   join(projectRoot, 'plugin.json'),
   join(projectRoot, '.claude-plugin', 'plugin.json'),
@@ -91,14 +104,14 @@ if (!sourcePluginJson) {
 
 try {
   copyFileSync(sourcePluginJson, targetPluginJson);
-  console.log('   ✅ Copied plugin.json → .claude-plugin/claude-code-buddy/');
+  console.log('   ✅ Copied plugin.json → .claude-plugin/memesh/');
 } catch (error) {
   console.error('   ❌ Error copying plugin.json:', error.message);
   process.exit(1);
 }
 
-// Step 5: Install production dependencies
-console.log('\n5️⃣ Installing production dependencies in plugin directory...');
+// Step 6: Install production dependencies
+console.log('\n6️⃣ Installing production dependencies in plugin directory...');
 console.log('   (This may take a minute...)');
 
 try {
@@ -112,11 +125,11 @@ try {
   process.exit(1);
 }
 
-// Step 6: Verify the plugin structure
-console.log('\n6️⃣ Verifying plugin structure...');
+// Step 7: Verify the plugin structure
+console.log('\n7️⃣ Verifying plugin structure...');
 
 const requiredFiles = [
-  join(pluginDir, 'dist', 'mcp', 'server.js'),
+  join(pluginDir, 'dist', 'mcp', 'server-bootstrap.js'),
   join(pluginDir, 'package.json'),
   join(pluginDir, 'node_modules'),
   join(pluginDir, 'plugin.json')
@@ -137,10 +150,10 @@ if (!allFilesExist) {
   process.exit(1);
 }
 
-// Step 7: Auto-register MCP server for local development
-console.log('\n7️⃣ Registering MCP server in Claude Code...');
+// Step 8: Auto-register MCP server for local development
+console.log('\n8️⃣ Registering MCP server in Claude Code...');
 
-const mcpServerPath = join(pluginDir, 'dist', 'mcp', 'server.js');
+const mcpServerPath = join(pluginDir, 'dist', 'mcp', 'server-bootstrap.js');
 
 // Backward compatibility: Use existing server name or default to 'memesh'
 const legacyServerName = 'claude-code-buddy';

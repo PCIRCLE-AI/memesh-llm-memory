@@ -95,10 +95,10 @@ echo ""
 if command -v claude &> /dev/null; then
     echo ""
     echo "✅ Claude CLI detected"
-    echo "📝 Registering MCP server 'memesh-mcp'..."
+    echo "📝 Registering MCP server 'memesh'..."
 
     # Register MCP server with all required environment variables
-    if claude mcp add memesh-mcp --scope user \
+    if claude mcp add memesh --scope user \
         -e NODE_ENV=production \
         -e MEMESH_DATA_DIR=$HOME/.memesh \
         -e LOG_LEVEL=info \
@@ -112,14 +112,14 @@ if command -v claude &> /dev/null; then
 
     echo ""
     echo "   To verify, run:"
-    echo "   claude mcp list | grep memesh-mcp"
+    echo "   claude mcp list | grep memesh"
 else
     echo ""
     echo "⚠️  Claude CLI not found"
     echo "   Plugin prepared successfully but not registered"
     echo ""
     echo "   Manual registration:"
-    echo "   claude mcp add memesh-mcp --scope user \\"
+    echo "   claude mcp add memesh --scope user \\"
     echo "     -e NODE_ENV=production \\"
     echo "     -e MEMESH_DATA_DIR=\$HOME/.memesh \\"
     echo "     -e LOG_LEVEL=info \\"
@@ -134,7 +134,8 @@ echo ""
 echo "📁 Plugin structure:"
 echo "   .claude-plugin/memesh/"
 echo "   ├── .claude-plugin/"
-echo "   │   └── plugin.json"
+echo "   │   └── plugin.json        ← Plugin metadata"
+echo "   ├── .mcp.json              ← MCP server config"
 echo "   ├── dist/"
 echo "   │   └── mcp/server-bootstrap.js"
 echo "   ├── node_modules/"
@@ -142,12 +143,15 @@ echo "   └── scripts/"
 echo ""
 echo "🔄 Next steps:"
 echo "   1. Restart Claude Code (completely quit and reopen)"
-echo "   2. Check MCP server: claude mcp list | grep memesh-mcp"
-echo "   3. Start using A2A Protocol features!"
+echo "   2. Check MCP server: claude mcp list | grep memesh"
+echo ""
+echo "🧪 Test Plugin Locally:"
+echo "   claude --plugin-dir \"$PROJECT_DIR/.claude-plugin/memesh\""
 echo ""
 echo "📚 Documentation:"
 echo "   - Setup guide: docs/DEV_SETUP_GUIDE.md"
 echo "   - A2A features: docs/A2A_SETUP_GUIDE.md"
+echo "   - User guide: docs/USER_GUIDE.md"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "🎉 Happy coding with MeMesh!"

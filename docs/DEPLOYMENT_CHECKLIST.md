@@ -30,7 +30,7 @@ npm run build:plugin
 
 # ✅ 正確做法
 npm run build:plugin
-claude mcp list | grep memesh-mcp
+claude mcp list | grep memesh
 # 看到 "✓ Connected" → 才說完成
 # 看到 "✗ Failed" → 調查原因 → 修復 → 再次驗證
 ```

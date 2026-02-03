@@ -13,6 +13,7 @@
 - [ ] Documentation update
 - [ ] Test improvement
 - [ ] CI/CD changes
+- [ ] 🚨 **Installation flow change** (modifies install scripts, package config, or plugin structure)
 
 ## Component Affected
 
@@ -44,6 +45,21 @@
 - [ ] Installation test passes (`npm run test:install`)
 - [ ] No new runtime dependencies added (or justified)
 - [ ] Changes are backward compatible (or version bump planned)
+
+### 🚨 Installation Flow Changes (REQUIRED if modified: package.json, plugin.json, mcp.json, scripts/)
+- [ ] **Read** `INSTALLATION_STANDARD.md` and followed all rules
+- [ ] **Executed** `./scripts/pre-deployment-check.sh` - all checks passed
+- [ ] **Tested** all 4 installation methods:
+  - [ ] npm global install (`npm install -g @pcircle/memesh`)
+  - [ ] Quick install script (`./scripts/quick-install.sh`)
+  - [ ] Plugin directory (`claude --plugin-dir`)
+  - [ ] GitHub marketplace (if applicable)
+- [ ] **Updated** all related documentation:
+  - [ ] `INSTALLATION_STANDARD.md` (if flow changed)
+  - [ ] `PLUGIN_DEPLOYMENT_CHECKLIST.md`
+  - [ ] `README.md`
+- [ ] **Verified** backward compatibility (or marked as BREAKING CHANGE)
+- [ ] **CI/CD** checks all passed
 
 ### Documentation
 - [ ] CHANGELOG.md updated (for user-facing changes)

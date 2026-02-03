@@ -1,6 +1,7 @@
 import winston from 'winston';
 import { existsSync, mkdirSync } from 'fs';
 import path from 'path';
+import { homedir } from 'os';
 import { getTraceContext } from './tracing/index.js';
 import { looksLikeSensitive, hashValue } from '../telemetry/sanitization.js';
 export var LogLevel;
@@ -73,7 +74,8 @@ const fileFormat = winston.format.combine(winston.format.timestamp(), winston.fo
     return info;
 })(), winston.format.json());
 function buildFileTransports() {
-    const logDir = path.join(process.cwd(), 'logs');
+    const dataDir = path.join(homedir(), '.claude-code-buddy');
+    const logDir = path.join(dataDir, 'logs');
     try {
         if (!existsSync(logDir)) {
             mkdirSync(logDir, { recursive: true });

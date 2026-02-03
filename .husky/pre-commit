@@ -1,0 +1,77 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔍 Pre-commit: Validating installation files..."
+
+# Check if installation-critical files are being modified
+CRITICAL_FILES="package.json plugin.json mcp.json scripts/prepare-plugin.js scripts/quick-install.sh"
+MODIFIED_CRITICAL=false
+
+for file in $CRITICAL_FILES; do
+  if git diff --cached --name-only | grep -q "^$file$"; then
+    MODIFIED_CRITICAL=true
+    echo "⚠️  Critical file modified: $file"
+  fi
+done
+
+if [ "$MODIFIED_CRITICAL" = true ]; then
+  echo ""
+  echo "🚨 安裝關鍵檔案被修改！執行驗證..."
+  echo ""
+
+  # Validate JSON files
+  echo "1. 驗證 JSON 檔案格式..."
+
+  if [ -f package.json ]; then
+    node -e "require('./package.json')" || {
+      echo "❌ package.json 格式錯誤"
+      exit 1
+    }
+  fi
+
+  if [ -f plugin.json ]; then
+    node -e "
+    const plugin = require('./plugin.json');
+    if (plugin.mcpServers) {
+      console.error('❌ plugin.json 不應包含 mcpServers 欄位');
+      process.exit(1);
+    }
+    " || exit 1
+  fi
+
+  if [ -f mcp.json ]; then
+    node -e "
+    const mcp = require('./mcp.json');
+    if (!mcp.memesh || !mcp.memesh.command || !mcp.memesh.args) {
+      console.error('❌ mcp.json 格式不正確');
+      process.exit(1);
+    }
+    if (!mcp.memesh.args[0].includes('CLAUDE_PLUGIN_ROOT')) {
+      console.error('❌ mcp.json 必須使用 \${CLAUDE_PLUGIN_ROOT} 變數');
+      process.exit(1);
+    }
+    " || exit 1
+  fi
+
+  echo "✅ JSON 檔案格式正確"
+  echo ""
+
+  # Check if tests pass
+  echo "2. 執行測試..."
+  npm test --silent || {
+    echo "❌ 測試失敗"
+    exit 1
+  }
+  echo "✅ 測試通過"
+  echo ""
+
+  echo "✅ 所有驗證通過"
+  echo ""
+  echo "⚠️  提醒："
+  echo "   - 確保已更新 INSTALLATION_STANDARD.md（如果安裝流程有變）"
+  echo "   - 確保已更新 PLUGIN_DEPLOYMENT_CHECKLIST.md"
+  echo "   - 在 push 前執行完整的 pre-deployment-check.sh"
+  echo ""
+fi
+
+exit 0

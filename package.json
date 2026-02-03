@@ -11,6 +11,7 @@
     "dist/",
     "scripts/postinstall.js",
     "plugin.json",
+    "mcp.json",
     "README.md",
     "README.zh-TW.md",
     "LICENSE"

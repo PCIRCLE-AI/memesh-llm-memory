@@ -184,8 +184,12 @@ async function startA2AServer(): Promise<any> {
     const { A2AServer } = await import('../a2a/server/A2AServer.js');
     const crypto = await import('crypto');
 
-    // Generate agent ID from env or create unique ID
-    const agentId = process.env.A2A_AGENT_ID || `ccb-mcp-${crypto.randomBytes(4).toString('hex')}`;
+    // Generate agent ID from env or create meaningful default
+    const os = await import('os');
+    const hostname = os.hostname().split('.')[0].toLowerCase();
+    const timestamp = Date.now().toString(36);
+    const defaultId = `${hostname}-${timestamp}`;
+    const agentId = process.env.A2A_AGENT_ID || defaultId;
 
     // Create agent card
     const agentCard = {
@@ -223,14 +227,24 @@ async function startA2AServer(): Promise<any> {
     });
 
     const port = await server.start();
-    // Note: No console output in MCP stdio mode to avoid polluting the protocol channel
-    // A2A server started silently on port ${port} with agent ID ${agentId}
+
+    // Log success to file (not stdout to avoid polluting MCP protocol)
+    const { logger } = await import('../utils/logger.js');
+    logger.info('[A2A] Server started successfully', {
+      port,
+      agentId,
+      baseUrl: `http://localhost:${port}`,
+    });
 
     return server;
   } catch (error) {
-    // Note: Errors are swallowed in MCP stdio mode to avoid polluting the protocol channel
-    // A2A server failed to start but MCP continues without it
-    // Don't fail MCP startup if A2A server fails
+    // A2A server failed to start - log to file and continue MCP operation
+    const { logger } = await import('../utils/logger.js');
+    logger.error('[A2A] Failed to start A2A server', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    // MCP continues without A2A functionality
     return null;
   }
 }

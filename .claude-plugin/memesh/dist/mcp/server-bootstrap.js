@@ -102,7 +102,11 @@ ${chalk.default.bold('Documentation:')}
         try {
             const { A2AServer } = await import('../a2a/server/A2AServer.js');
             const crypto = await import('crypto');
-            const agentId = process.env.A2A_AGENT_ID || `ccb-mcp-${crypto.randomBytes(4).toString('hex')}`;
+            const os = await import('os');
+            const hostname = os.hostname().split('.')[0].toLowerCase();
+            const timestamp = Date.now().toString(36);
+            const defaultId = `${hostname}-${timestamp}`;
+            const agentId = process.env.A2A_AGENT_ID || defaultId;
             const agentCard = {
                 id: agentId,
                 name: 'MeMesh (MCP)',
@@ -135,9 +139,20 @@ ${chalk.default.bold('Documentation:')}
                 heartbeatInterval: 60000,
             });
             const port = await server.start();
+            const { logger } = await import('../utils/logger.js');
+            logger.info('[A2A] Server started successfully', {
+                port,
+                agentId,
+                baseUrl: `http://localhost:${port}`,
+            });
             return server;
         }
         catch (error) {
+            const { logger } = await import('../utils/logger.js');
+            logger.error('[A2A] Failed to start A2A server', {
+                error: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+            });
             return null;
         }
     }

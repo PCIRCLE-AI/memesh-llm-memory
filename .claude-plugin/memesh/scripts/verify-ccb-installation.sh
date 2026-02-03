@@ -28,18 +28,18 @@ fi
 # Step 2: Check if MeMesh is in MCP server list
 echo ""
 echo "Step 2: Checking MCP server registration..."
-if claude mcp list | grep -E -q "memesh-mcp|memesh|claude-code-buddy"; then
+if claude mcp list | grep -E -q "memesh|memesh|claude-code-buddy"; then
     echo -e "${GREEN}✓${NC} MeMesh is registered in MCP server list"
 else
     echo -e "${RED}✗${NC} MeMesh is not registered"
-    echo "Please run: claude mcp add memesh-mcp --scope user -e NODE_ENV=production -e MEMESH_DATA_DIR=\$HOME/.memesh -e LOG_LEVEL=info -e DISABLE_MCP_WATCHDOG=1 -- node $(pwd)/dist/mcp/server-bootstrap.js"
+    echo "Please run: claude mcp add memesh --scope user -e NODE_ENV=production -e MEMESH_DATA_DIR=\$HOME/.memesh -e LOG_LEVEL=info -e DISABLE_MCP_WATCHDOG=1 -- node $(pwd)/dist/mcp/server-bootstrap.js"
     exit 1
 fi
 
 # Step 3: Check connection status
 echo ""
 echo "Step 3: Checking MCP server connection..."
-if claude mcp list | grep -E "memesh-mcp|memesh|claude-code-buddy" | grep -q "✓ Connected"; then
+if claude mcp list | grep -E "memesh|memesh|claude-code-buddy" | grep -q "✓ Connected"; then
     echo -e "${GREEN}✓${NC} MeMesh MCP server is connected"
 else
     echo -e "${RED}✗${NC} MeMesh MCP server failed to connect"

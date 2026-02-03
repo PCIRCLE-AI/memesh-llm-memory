@@ -1,0 +1,10 @@
+{
+  "memesh": {
+    "command": "node",
+    "args": ["${CLAUDE_PLUGIN_ROOT}/dist/mcp/server-bootstrap.js"],
+    "env": {
+      "NODE_ENV": "production",
+      "DISABLE_MCP_WATCHDOG": "1"
+    }
+  }
+}

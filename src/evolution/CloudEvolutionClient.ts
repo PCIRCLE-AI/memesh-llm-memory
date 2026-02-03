@@ -5,7 +5,7 @@
  * This is a PAID feature (Pro/Team tier).
  *
  * 🔒 Actual implementation is in memesh-server (closed source)
- * This file only defines the client interface for memesh-mcp to call.
+ * This file only defines the client interface for memesh to call.
  */
 
 import type { AIMistake, AIBehaviorPattern, AIErrorType } from './types.js';

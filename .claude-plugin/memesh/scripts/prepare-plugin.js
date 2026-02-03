@@ -104,8 +104,26 @@ try {
   process.exit(1);
 }
 
-// Step 5.5: Inject A2A token from .env into plugin.json
-console.log('\n5.5️⃣ Configuring A2A token in plugin.json...');
+// Step 5.5: Copy mcp.json to plugin root directory
+console.log('\n5.5️⃣ Copying mcp.json to plugin directory...');
+const sourceMcpJson = join(projectRoot, 'mcp.json');
+const targetMcpJson = join(pluginRootDir, '.mcp.json');
+
+if (!existsSync(sourceMcpJson)) {
+  console.error('   ❌ Error: mcp.json not found. Please create it at project root.');
+  process.exit(1);
+}
+
+try {
+  copyFileSync(sourceMcpJson, targetMcpJson);
+  console.log('   ✅ Copied mcp.json → .claude-plugin/memesh/.mcp.json');
+} catch (error) {
+  console.error('   ❌ Error copying mcp.json:', error.message);
+  process.exit(1);
+}
+
+// Step 5.6: Inject A2A token from .env into .mcp.json
+console.log('\n5.6️⃣ Configuring A2A token in .mcp.json...');
 try {
   // Read .env file
   const envPath = join(projectRoot, '.env');
@@ -121,24 +139,24 @@ try {
   }
 
   if (a2aToken) {
-    // Read plugin.json
-    const pluginJsonContent = readFileSync(targetPluginJson, 'utf-8');
-    const pluginConfig = JSON.parse(pluginJsonContent);
+    // Read .mcp.json
+    const mcpJsonContent = readFileSync(targetMcpJson, 'utf-8');
+    const mcpConfig = JSON.parse(mcpJsonContent);
 
     // Inject token into env section
-    if (pluginConfig.mcpServers && pluginConfig.mcpServers.memesh) {
-      if (!pluginConfig.mcpServers.memesh.env) {
-        pluginConfig.mcpServers.memesh.env = {};
+    if (mcpConfig.memesh) {
+      if (!mcpConfig.memesh.env) {
+        mcpConfig.memesh.env = {};
       }
 
-      pluginConfig.mcpServers.memesh.env.MEMESH_A2A_TOKEN = a2aToken;
+      mcpConfig.memesh.env.MEMESH_A2A_TOKEN = a2aToken;
 
-      // Write back to plugin.json
-      writeFileSync(targetPluginJson, JSON.stringify(pluginConfig, null, 2), 'utf-8');
-      console.log('   ✅ A2A token configured in plugin.json');
+      // Write back to .mcp.json
+      writeFileSync(targetMcpJson, JSON.stringify(mcpConfig, null, 2), 'utf-8');
+      console.log('   ✅ A2A token configured in .mcp.json');
       console.log(`   🔑 Token: ${a2aToken.substring(0, 8)}...${a2aToken.substring(a2aToken.length - 8)}`);
     } else {
-      console.log('   ⚠️  Could not find mcpServers.memesh in plugin.json');
+      console.log('   ⚠️  Could not find memesh configuration in .mcp.json');
     }
   } else {
     console.log('   ⚠️  MEMESH_A2A_TOKEN not found in .env file');
@@ -146,7 +164,7 @@ try {
   }
 } catch (error) {
   console.log('   ⚠️  Could not inject A2A token:', error.message);
-  console.log('   You may need to manually add MEMESH_A2A_TOKEN to plugin.json');
+  console.log('   You may need to manually add MEMESH_A2A_TOKEN to .mcp.json');
 }
 
 // Step 6: Install production dependencies
@@ -172,6 +190,7 @@ const requiredFiles = [
   join(pluginRootDir, 'package.json'),
   join(pluginRootDir, 'node_modules'),
   join(pluginMetadataDir, 'plugin.json'),  // In .claude-plugin/ subdirectory
+  join(pluginRootDir, '.mcp.json'),         // MCP server configuration
 ];
 
 let allFilesExist = true;
@@ -193,7 +212,7 @@ if (!allFilesExist) {
 console.log('\n8️⃣ Registering MCP server in Claude Code...');
 
 const mcpServerPath = join(pluginRootDir, 'dist', 'mcp', 'server-bootstrap.js');
-const mcpServerName = 'memesh-mcp';
+const mcpServerName = 'memesh';
 
 try {
   // Check if MCP server is already registered
@@ -231,10 +250,11 @@ try {
 
 // Final success message
 console.log('\n✅ Plugin directory prepared successfully!');
-console.log('\n📦 Plugin structure (following superpowers pattern):');
+console.log('\n📦 Plugin structure:');
 console.log('   .claude-plugin/memesh/');
 console.log('   ├── .claude-plugin/');
 console.log('   │   └── plugin.json       ← Plugin metadata');
+console.log('   ├── .mcp.json             ← MCP server config');
 console.log('   ├── dist/                 ← Build output');
 console.log('   ├── node_modules/         ← Dependencies');
 console.log('   ├── package.json');
@@ -242,4 +262,8 @@ console.log('   └── scripts/');
 console.log('\n🔧 MCP Server:');
 console.log(`  - Server name: ${mcpServerName}`);
 console.log(`  - Status: Check with 'claude mcp list'`);
-console.log('\n📝 Next: Restart Claude Code to activate the plugin');
+console.log('\n🧪 Test Plugin Locally:');
+console.log('   1. Restart Claude Code completely');
+console.log(`   2. Run: claude --plugin-dir "${pluginRootDir}"`);
+console.log('   3. Or add to settings for permanent installation');
+console.log('\n📝 For Production: Push to GitHub and install via marketplace');

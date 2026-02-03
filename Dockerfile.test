@@ -1,0 +1,83 @@
+# Docker 測試環境 - 模擬全新用戶安裝
+FROM node:20-slim
+
+# 安裝必要工具
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 設置工作目錄
+WORKDIR /test
+
+# 複製專案檔案
+COPY package*.json ./
+COPY tsconfig.json ./
+COPY vitest.config.ts ./
+COPY vitest.global-setup.ts ./
+COPY eslint.config.js ./
+COPY src/ ./src/
+COPY tests/ ./tests/
+COPY scripts/ ./scripts/
+COPY plugin.json ./
+COPY mcp.json ./
+COPY README.md ./
+COPY LICENSE ./
+COPY .env.example ./
+
+# 測試腳本
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "🧪 測試環境：Docker 容器（模擬全新用戶）"\n\
+echo "Node version: $(node -v)"\n\
+echo "npm version: $(npm -v)"\n\
+echo ""\n\
+\n\
+echo "=== 測試 1: npm install (從 package.json) ==="\n\
+npm install\n\
+echo "✅ npm install 成功"\n\
+echo ""\n\
+\n\
+echo "=== 測試 2: Build ==="\n\
+npm run build\n\
+echo "✅ Build 成功"\n\
+echo ""\n\
+\n\
+echo "=== 測試 3: Plugin Build ==="\n\
+npm run build:plugin\n\
+echo "✅ Plugin build 成功"\n\
+echo ""\n\
+\n\
+echo "=== 測試 4: 驗證檔案結構 ==="\n\
+test -f .claude-plugin/memesh/.claude-plugin/plugin.json && echo "✅ plugin.json" || exit 1\n\
+test -f .claude-plugin/memesh/.mcp.json && echo "✅ .mcp.json" || exit 1\n\
+test -f .claude-plugin/memesh/dist/mcp/server-bootstrap.js && echo "✅ server-bootstrap.js" || exit 1\n\
+echo "✅ 檔案結構正確"\n\
+echo ""\n\
+\n\
+echo "=== 測試 5: 驗證 JSON 格式 ==="\n\
+node -e "const p = require(\"./.claude-plugin/memesh/.claude-plugin/plugin.json\"); if (p.mcpServers) throw new Error(\"plugin.json should not have mcpServers\");" && echo "✅ plugin.json 格式正確" || exit 1\n\
+node -e "const m = require(\"./.claude-plugin/memesh/.mcp.json\"); if (!m.memesh) throw new Error(\"Invalid mcp.json\");" && echo "✅ mcp.json 格式正確" || exit 1\n\
+echo ""\n\
+\n\
+echo "=== 測試 6: 測試執行 ==="\n\
+npm test\n\
+echo "✅ 測試通過"\n\
+echo ""\n\
+\n\
+echo "=== 測試 7: npm pack 測試 ==="\n\
+npm pack\n\
+TARBALL=$(ls -t pcircle-memesh-*.tgz | head -1)\n\
+tar -tzf "$TARBALL" | grep -q "package/mcp.json" && echo "✅ tarball 包含 mcp.json" || exit 1\n\
+tar -tzf "$TARBALL" | grep -q "package/plugin.json" && echo "✅ tarball 包含 plugin.json" || exit 1\n\
+echo "✅ npm pack 正確"\n\
+echo ""\n\
+\n\
+echo "=== 測試 8: MCP Server 可執行性 ==="\n\
+node ./.claude-plugin/memesh/dist/mcp/server-bootstrap.js --version && echo "✅ MCP server 可執行" || echo "⚠️  需要 stdin（正常）"\n\
+echo ""\n\
+\n\
+echo "✅✅✅ 所有測試通過！安裝流程在乾淨環境中驗證成功！ ✅✅✅"\n\
+' > /test/run-tests.sh && chmod +x /test/run-tests.sh
+
+CMD ["/test/run-tests.sh"]

@@ -11,6 +11,7 @@
 [![GitHub Stars](https://img.shields.io/github/stars/PCIRCLE-AI/claude-code-buddy?style=social)](https://github.com/PCIRCLE-AI/claude-code-buddy)
 [![npm version](https://img.shields.io/npm/v/@pcircle/memesh)](https://www.npmjs.com/package/@pcircle/memesh)
 [![npm publish](https://github.com/PCIRCLE-AI/claude-code-buddy/actions/workflows/publish-npm.yml/badge.svg)](https://github.com/PCIRCLE-AI/claude-code-buddy/actions/workflows/publish-npm.yml)
+[![Installation Tests](https://github.com/PCIRCLE-AI/claude-code-buddy/actions/workflows/installation-test.yml/badge.svg)](https://github.com/PCIRCLE-AI/claude-code-buddy/actions/workflows/installation-test.yml)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-1.25.3-purple.svg)](https://modelcontextprotocol.io)
 
@@ -198,7 +199,8 @@ Once approved by Anthropic, install with one command:
 git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
 cd claude-code-buddy
 ./scripts/quick-install.sh
-claude --plugin-dir /path/to/claude-code-buddy
+# Auto-configures ~/.claude/mcp_settings.json
+# Just restart Claude Code and you're done!
 ```
 
 ### 🎯 For Cursor Users
@@ -227,15 +229,13 @@ The script will:
 - ✅ Check prerequisites (Node.js 20+)
 - ✅ Install dependencies
 - ✅ Build MeMesh
-- ✅ Show you how to activate the plugin
+- ✅ **Auto-configure** `~/.claude/mcp_settings.json`
 
-**Then start Claude Code with:**
+**Then restart Claude Code completely (quit and reopen).**
 
-```bash
-claude --plugin-dir /path/to/claude-code-buddy
-```
+**Done!** MeMesh is now available and ready to use.
 
-**Done!** MeMesh is now available as a plugin.
+> **Note**: The installer automatically configures your MCP settings. No manual configuration needed!
 
 <Note>
   The `--plugin-dir` flag loads your local plugin. For team distribution, see [Plugin Marketplaces](https://code.claude.com/docs/en/plugin-marketplaces) to create a shared marketplace.

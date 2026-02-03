@@ -94,10 +94,10 @@ export class ResponseFormatter {
    */
   private detectComplexity(response: AgentResponse): 'simple' | 'medium' | 'complex' {
     // Complex if:
-    // - Has error
+    // - Has error (check status, not error object since it might be undefined)
     // - Has enhanced prompt (Prompt Enhancement Mode)
     // - Has large results (>500 chars)
-    if (response.error) {
+    if (response.status === 'error') {
       return 'complex';
     }
 
@@ -228,10 +228,12 @@ export class ResponseFormatter {
     }
 
     // Error (if failed) - CRITICAL PRIORITY
-    if (response.error && response.status === 'error') {
+    if (response.status === 'error') {
       try {
         sections.push(this.formatDivider());
-        sections.push(this.formatError(response.error));
+        // Handle undefined error gracefully
+        const errorToFormat = response.error || new Error('Unknown error occurred');
+        sections.push(this.formatError(errorToFormat));
       } catch (error) {
         sections.push(chalk.red('[Error formatting error details]'));
       }
@@ -547,6 +549,11 @@ export class ResponseFormatter {
    * Uses ErrorClassifier for intelligent error analysis and recovery guidance
    */
   private formatError(error: Error): string {
+    // Handle undefined/null errors gracefully
+    if (!error) {
+      error = new Error('Unknown error occurred');
+    }
+
     // Classify error for enhanced formatting
     const classified = this.errorClassifier.classify(error, {});
 

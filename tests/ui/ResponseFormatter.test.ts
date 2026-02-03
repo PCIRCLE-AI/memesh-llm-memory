@@ -188,7 +188,7 @@ describe('ResponseFormatter', () => {
 
         const formatted = formatter.format(response);
 
-        expect(formatted).toContain('✗'); // Error icon in header box
+        expect(formatted).toContain('❌'); // Error icon (updated in Task 9)
         expect(formatted).toContain('Root Cause:'); // ErrorClassifier output
         expect(formatted).toContain('Fix Steps:'); // ErrorClassifier output
         // Note: ErrorClassifier may categorize the error, so original message might not appear verbatim

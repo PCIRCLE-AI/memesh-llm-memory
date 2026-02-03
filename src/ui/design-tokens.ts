@@ -65,7 +65,7 @@ export const operationIcons = {
 
   // Status
   success: '✓',
-  error: '✗',
+  error: '❌',
   warning: '⚠',
   info: 'ℹ',
   pending: '○',

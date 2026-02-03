@@ -86,7 +86,7 @@ export const spacing = {
 export const icons = {
   // Status Indicators
   success: '✓',
-  error: '✗',
+  error: '❌',
   warning: '⚠',
   info: 'ℹ',
   pending: '○',
@@ -117,7 +117,7 @@ export const icons = {
   // Misc
   star: '⭐',
   check: '✓',
-  cross: '✗',
+  cross: '❌',
   bullet: '•',
   chevronRight: '›',
   chevronDown: '∨',

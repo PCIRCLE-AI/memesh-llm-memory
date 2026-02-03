@@ -19,6 +19,7 @@ export declare class SQLiteStore implements EvolutionStore {
     private statsRepository;
     private options;
     constructor(options?: SQLiteStoreOptions);
+    private validateDbPath;
     private escapeLikePattern;
     initialize(): Promise<void>;
     close(): Promise<void>;

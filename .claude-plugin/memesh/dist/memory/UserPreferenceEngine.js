@@ -103,13 +103,14 @@ export class UserPreferenceEngine {
     confidenceToImportance(confidence) {
         switch (confidence) {
             case 'low':
-                return 3;
+                return 0.3;
             case 'medium':
-                return 6;
+                return 0.6;
             case 'high':
-                return 9;
+                return 0.9;
             default:
-                return 5;
+                logger.warn(`[UserPreferenceEngine] Unrecognized confidence level: "${confidence}", defaulting to 0.5`);
+                return 0.5;
         }
     }
 }

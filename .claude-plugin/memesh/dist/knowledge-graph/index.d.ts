@@ -3,6 +3,8 @@ export declare class KnowledgeGraph {
     private db;
     private queryCache;
     private constructor();
+    private validateEntityName;
+    private validateRelationType;
     static create(dbPath?: string): Promise<KnowledgeGraph>;
     static createSync(dbPath?: string): KnowledgeGraph;
     private initialize;

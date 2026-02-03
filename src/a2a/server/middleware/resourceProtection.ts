@@ -29,6 +29,44 @@ import { logger } from '../../../utils/logger.js';
 const connections = new Map<string, { count: number; lastActivity: number }>();
 
 /**
+ * Default maximum number of unique IPs to track concurrently.
+ */
+const DEFAULT_MAX_TRACKED_IPS = 10_000;
+
+/**
+ * Maximum number of unique IPs to track concurrently.
+ * Configurable via A2A_MAX_TRACKED_IPS environment variable.
+ *
+ * Prevents the connections Map from growing unboundedly under sustained
+ * attack from many distinct source IPs, which would make the tracking
+ * overhead itself a DoS vector.
+ *
+ * When this limit is reached:
+ * - Existing tracked IPs continue to work normally
+ * - New unknown IPs receive 503 Service Unavailable
+ * - Stale entries are cleaned up aggressively to free capacity
+ */
+function getMaxTrackedIPs(): number {
+  const env = process.env.A2A_MAX_TRACKED_IPS;
+  if (!env) return DEFAULT_MAX_TRACKED_IPS;
+
+  const parsed = parseInt(env, 10);
+  if (isNaN(parsed) || parsed <= 0 || parsed > 1_000_000) {
+    logger.warn(`Invalid A2A_MAX_TRACKED_IPS: ${env}, using default ${DEFAULT_MAX_TRACKED_IPS}`);
+    return DEFAULT_MAX_TRACKED_IPS;
+  }
+
+  return parsed;
+}
+
+/**
+ * Rate-limit the "IP tracking capacity exhausted" warning log to avoid
+ * log flooding during sustained attacks.
+ */
+let lastCapacityWarningTime = 0;
+const CAPACITY_WARNING_COOLDOWN_MS = 60_000; // 1 minute
+
+/**
  * Default limits
  */
 const DEFAULT_MAX_CONNECTIONS_PER_IP = 10;
@@ -70,15 +108,26 @@ function getMaxPayloadSizeMB(): number {
 }
 
 /**
- * Clean up idle connections
+ * Clean up idle connections.
+ *
+ * When `aggressive` is true, uses a shorter timeout (30 seconds) to free
+ * capacity under pressure. This is called when the IP tracking limit is
+ * reached and we need to make room for new legitimate IPs.
+ *
+ * @param aggressive - If true, use a shorter idle timeout for emergency cleanup
+ * @returns Number of entries cleaned up
  */
-function cleanupIdleConnections(): void {
+function cleanupIdleConnections(aggressive = false): number {
   const now = Date.now();
-  const timeout = DEFAULT_CONNECTION_IDLE_TIMEOUT_MS;
+  // Under pressure, aggressively clean entries idle for >30s
+  const timeout = aggressive
+    ? 30_000
+    : DEFAULT_CONNECTION_IDLE_TIMEOUT_MS;
   let cleaned = 0;
 
   for (const [ip, data] of connections.entries()) {
-    if (now - data.lastActivity > timeout) {
+    // Only clean up entries with zero active connections, OR entries past the idle timeout
+    if (data.count === 0 || now - data.lastActivity > timeout) {
       connections.delete(ip);
       cleaned++;
     }
@@ -88,8 +137,11 @@ function cleanupIdleConnections(): void {
     logger.debug('[Resource Protection] Cleaned up idle connections', {
       count: cleaned,
       remaining: connections.size,
+      aggressive,
     });
   }
+
+  return cleaned;
 }
 
 /**
@@ -166,6 +218,7 @@ export function getConnectionStats(): {
  */
 export function connectionLimitMiddleware() {
   const maxConnections = getMaxConnectionsPerIP();
+  const maxTrackedIPs = getMaxTrackedIPs();
 
   return (req: Request, res: Response, next: NextFunction): void => {
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
@@ -175,6 +228,34 @@ export function connectionLimitMiddleware() {
     let connectionData = connections.get(ip);
 
     if (!connectionData) {
+      // Check if we have capacity to track a new IP
+      if (connections.size >= maxTrackedIPs) {
+        // Attempt aggressive cleanup to free capacity
+        const cleaned = cleanupIdleConnections(true);
+
+        if (connections.size >= maxTrackedIPs) {
+          // Still at capacity after cleanup - reject new unknown IP
+          if (now - lastCapacityWarningTime > CAPACITY_WARNING_COOLDOWN_MS) {
+            lastCapacityWarningTime = now;
+            logger.warn('[Resource Protection] IP tracking capacity exhausted', {
+              maxTrackedIPs,
+              currentTrackedIPs: connections.size,
+              cleanedInAttempt: cleaned,
+              rejectedIP: ip,
+            });
+          }
+
+          res.status(503).json({
+            success: false,
+            error: {
+              code: 'SERVICE_OVERLOADED',
+              message: 'Service temporarily overloaded, please try again later',
+            },
+          });
+          return;
+        }
+      }
+
       connectionData = { count: 0, lastActivity: now };
       connections.set(ip, connectionData);
     }
@@ -201,8 +282,15 @@ export function connectionLimitMiddleware() {
     connectionData.count++;
     connectionData.lastActivity = now;
 
-    // Decrement on response finish
-    res.on('finish', () => {
+    // Guard against double-decrement: both 'finish' and 'close' events fire
+    // for the same HTTP response. Without this flag, the connection count would
+    // be decremented twice, under-counting concurrent connections.
+    let decremented = false;
+
+    const decrementConnection = (): void => {
+      if (decremented) return;
+      decremented = true;
+
       const data = connections.get(ip);
       if (data) {
         data.count = Math.max(0, data.count - 1);
@@ -213,20 +301,11 @@ export function connectionLimitMiddleware() {
           connections.delete(ip);
         }
       }
-    });
+    };
 
-    // Decrement on connection close
-    res.on('close', () => {
-      const data = connections.get(ip);
-      if (data) {
-        data.count = Math.max(0, data.count - 1);
-        data.lastActivity = Date.now();
-
-        if (data.count === 0) {
-          connections.delete(ip);
-        }
-      }
-    });
+    // Decrement on response finish or connection close (whichever fires first)
+    res.on('finish', decrementConnection);
+    res.on('close', decrementConnection);
 
     next();
   };

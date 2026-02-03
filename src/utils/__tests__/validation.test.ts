@@ -319,8 +319,8 @@ describe('validateObjectSize', () => {
     } catch (error) {
       expect(error).toBeInstanceOf(ValidationError);
       const context = (error as ValidationError).context;
-      expect(context).toHaveProperty('providedSize', actualSize);
-      expect(context).toHaveProperty('maxSize', 5);
+      expect(context).toHaveProperty('providedChars', actualSize);
+      expect(context).toHaveProperty('maxChars', 5);
     }
   });
 

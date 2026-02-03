@@ -64,6 +64,18 @@ export interface ErrorContext {
 }
 
 /**
+ * Serialized representation of an error in a cause chain
+ */
+export interface ErrorCauseInfo {
+  /** Error message */
+  message: string;
+  /** Error type/constructor name */
+  type: string;
+  /** Sanitized stack trace (if available) */
+  stack?: string;
+}
+
+/**
  * Handled error result
  */
 export interface HandledError {
@@ -75,6 +87,8 @@ export interface HandledError {
   type: string;
   /** Context information */
   context?: ErrorContext;
+  /** Cause chain from Error.cause (ES2022+), ordered root-cause last */
+  causeChain?: ErrorCauseInfo[];
 }
 
 /**
@@ -101,21 +115,76 @@ function safeStringifyWithLimit(data: unknown, maxLength: number = 2000): string
 }
 
 /**
+ * Extract the cause chain from an Error (ES2022 Error.cause support)
+ *
+ * Walks the `cause` property recursively, collecting each cause into an array.
+ * Limits depth to prevent infinite loops from circular cause references.
+ *
+ * @param error - Error whose cause chain to extract
+ * @param maxDepth - Maximum cause chain depth (default: 10)
+ * @returns Array of cause info objects, or undefined if no cause chain exists
+ *
+ * @private
+ * @internal
+ */
+function extractCauseChain(error: unknown, maxDepth: number = 10): ErrorCauseInfo[] | undefined {
+  if (!(error instanceof Error) || !error.cause) {
+    return undefined;
+  }
+
+  const chain: ErrorCauseInfo[] = [];
+  let current: unknown = error.cause;
+  const seen = new WeakSet<object>();
+
+  while (current && chain.length < maxDepth) {
+    // Guard against circular cause references
+    if (typeof current === 'object' && current !== null) {
+      if (seen.has(current)) {
+        chain.push({ message: '[Circular cause reference]', type: 'CircularRef' });
+        break;
+      }
+      seen.add(current);
+    }
+
+    if (current instanceof Error) {
+      chain.push({
+        message: current.message,
+        type: current.constructor.name,
+        stack: current.stack ? sanitizeSensitiveData(current.stack) : undefined,
+      });
+      current = current.cause;
+    } else {
+      // Non-Error cause value (e.g., a string or plain object)
+      chain.push({
+        message: String(current),
+        type: typeof current,
+      });
+      break;
+    }
+  }
+
+  return chain.length > 0 ? chain : undefined;
+}
+
+/**
  * Log error with full stack trace and structured context
  *
  * ✅ FIX MEDIUM-2: Now uses safe stringify with size limits
+ * ✅ FIX: Now preserves and logs the Error.cause chain
  *
  * @param error - Error to log
  * @param context - Contextual information
  */
 export function logError(error: unknown, context: ErrorContext): void {
   const errorObj = error instanceof Error ? error : new Error(String(error));
+  const causeChain = extractCauseChain(errorObj);
 
   logger.error(`Error in ${context.component}.${context.method}`, {
     message: errorObj.message,
     stack: sanitizeSensitiveData(errorObj.stack || ''),
     errorType: errorObj.constructor.name,
     requestId: context.requestId, // ✅ FIX HIGH-10: Include request ID in logs
+    ...(causeChain && { causeChain }),
     context: {
       component: context.component,
       method: context.method,
@@ -138,17 +207,34 @@ export function handleError(
   context: ErrorContext,
   userMessage?: string
 ): HandledError {
-  // Log error with full context and stack trace
-  logError(error, context);
-
   const errorObj = error instanceof Error ? error : new Error(String(error));
 
-  // Return formatted error
+  // ✅ FIX: Extract cause chain once and reuse for both logging and the return object,
+  // avoiding a redundant second traversal inside logError().
+  const causeChain = extractCauseChain(errorObj);
+
+  // Log error with full context and stack trace
+  logger.error(`Error in ${context.component}.${context.method}`, {
+    message: errorObj.message,
+    stack: sanitizeSensitiveData(errorObj.stack || ''),
+    errorType: errorObj.constructor.name,
+    requestId: context.requestId,
+    ...(causeChain && { causeChain }),
+    context: {
+      component: context.component,
+      method: context.method,
+      operation: context.operation,
+      data: context.data ? sanitizeSensitiveData(safeStringifyWithLimit(context.data)) : undefined,
+    },
+  });
+
+  // Return formatted error with the same cause chain (no double extraction)
   return {
     message: userMessage || errorObj.message,
     stack: sanitizeSensitiveData(errorObj.stack || ''),
     type: errorObj.constructor.name,
     context,
+    ...(causeChain && { causeChain }),
   };
 }
 

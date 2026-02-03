@@ -5,6 +5,10 @@ import { logger } from '../utils/logger.js';
 import { QueryCache } from '../db/QueryCache.js';
 import { safeJsonParse, safeJsonStringify } from '../utils/json.js';
 import { getDataPath, getDataDirectory } from '../utils/PathResolver.js';
+import { validateNonEmptyString } from '../utils/validation.js';
+const MAX_ENTITY_NAME_LENGTH = 512;
+const VALID_RELATION_TYPE_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_-]*$/;
+const CONTROL_CHAR_PATTERN = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\x80-\x9F]/;
 export class KnowledgeGraph {
     db;
     queryCache;
@@ -15,6 +19,36 @@ export class KnowledgeGraph {
             defaultTTL: 5 * 60 * 1000,
             debug: false,
         });
+    }
+    validateEntityName(name) {
+        validateNonEmptyString(name, 'Entity name');
+        if (name.length > MAX_ENTITY_NAME_LENGTH) {
+            throw new ValidationError(`Entity name exceeds maximum length of ${MAX_ENTITY_NAME_LENGTH} characters (got ${name.length})`, {
+                component: 'KnowledgeGraph',
+                method: 'validateEntityName',
+                nameLength: name.length,
+                maxLength: MAX_ENTITY_NAME_LENGTH,
+            });
+        }
+        if (CONTROL_CHAR_PATTERN.test(name)) {
+            throw new ValidationError('Entity name must not contain control characters', {
+                component: 'KnowledgeGraph',
+                method: 'validateEntityName',
+                name: name.slice(0, 100),
+            });
+        }
+    }
+    validateRelationType(relationType) {
+        validateNonEmptyString(relationType, 'Relation type');
+        if (!VALID_RELATION_TYPE_PATTERN.test(relationType)) {
+            throw new ValidationError(`Relation type must contain only alphanumeric characters, underscores, and hyphens, ` +
+                `and must start with a letter or underscore. Got: "${relationType}"`, {
+                component: 'KnowledgeGraph',
+                method: 'validateRelationType',
+                relationType,
+                pattern: VALID_RELATION_TYPE_PATTERN.source,
+            });
+        }
     }
     static async create(dbPath) {
         const defaultPath = getDataPath('knowledge-graph.db');
@@ -144,6 +178,7 @@ export class KnowledgeGraph {
             .replace(/\]/g, '!]');
     }
     createEntity(entity) {
+        this.validateEntityName(entity.name);
         try {
             if (entity.contentHash) {
                 const existing = this.db
@@ -207,6 +242,9 @@ export class KnowledgeGraph {
         }
     }
     createRelation(relation) {
+        this.validateEntityName(relation.from);
+        this.validateEntityName(relation.to);
+        this.validateRelationType(relation.relationType);
         const getEntityId = this.db.prepare('SELECT id FROM entities WHERE name = ?');
         const fromEntity = getEntityId.get(relation.from);
         const toEntity = getEntityId.get(relation.to);
@@ -229,6 +267,10 @@ export class KnowledgeGraph {
     }
     searchEntities(query) {
         const MAX_LIMIT = 1000;
+        if (query.limit === 0) {
+            return [];
+        }
+        let effectiveLimit = query.limit;
         if (query.limit !== undefined) {
             if (query.limit < 0) {
                 throw new ValidationError('Limit must be non-negative', {
@@ -239,7 +281,7 @@ export class KnowledgeGraph {
             }
             if (query.limit > MAX_LIMIT) {
                 logger.warn(`Limit ${query.limit} exceeds maximum, capping to ${MAX_LIMIT}`);
-                query.limit = MAX_LIMIT;
+                effectiveLimit = MAX_LIMIT;
             }
         }
         if (query.offset !== undefined && query.offset < 0) {
@@ -249,7 +291,18 @@ export class KnowledgeGraph {
                 providedOffset: query.offset,
             });
         }
-        const cacheKey = `entities:${JSON.stringify(query)}`;
+        if (query.namePattern !== undefined && query.namePattern !== '') {
+            validateNonEmptyString(query.namePattern, 'Name pattern');
+            if (CONTROL_CHAR_PATTERN.test(query.namePattern)) {
+                throw new ValidationError('Name pattern must not contain control characters', {
+                    component: 'KnowledgeGraph',
+                    method: 'searchEntities',
+                    namePattern: query.namePattern.slice(0, 100),
+                });
+            }
+        }
+        const cacheKeyQuery = { ...query, limit: effectiveLimit };
+        const cacheKey = `entities:${JSON.stringify(cacheKeyQuery)}`;
         const cached = this.queryCache.get(cacheKey);
         if (cached) {
             return cached;
@@ -275,11 +328,11 @@ export class KnowledgeGraph {
             params.push(`%${this.escapeLikePattern(query.namePattern)}%`);
         }
         sql += ' ORDER BY e.created_at DESC';
-        if (query.limit) {
+        if (effectiveLimit !== undefined) {
             sql += ' LIMIT ?';
-            params.push(query.limit);
+            params.push(effectiveLimit);
         }
-        if (query.offset) {
+        if (query.offset !== undefined) {
             sql += ' OFFSET ?';
             params.push(query.offset);
         }
@@ -306,10 +359,12 @@ export class KnowledgeGraph {
         return entities;
     }
     getEntity(name) {
+        this.validateEntityName(name);
         const results = this.searchEntities({ namePattern: name, limit: 1 });
         return results.length > 0 ? results[0] : null;
     }
     traceRelations(entityName, depth = 2) {
+        this.validateEntityName(entityName);
         const cacheKey = `trace:${entityName}:${depth}`;
         const cached = this.queryCache.get(cacheKey);
         if (cached) {
@@ -338,7 +393,7 @@ export class KnowledgeGraph {
                 from: r.from_name,
                 to: r.to_name,
                 relationType: r.relation_type,
-                metadata: r.metadata ? JSON.parse(r.metadata) : {}
+                metadata: r.metadata ? safeJsonParse(r.metadata, {}) : {}
             };
         }
         const result = {
@@ -377,6 +432,7 @@ export class KnowledgeGraph {
         return result;
     }
     deleteEntity(name) {
+        this.validateEntityName(name);
         const getEntityId = this.db.prepare('SELECT id FROM entities WHERE name = ?');
         const entity = getEntityId.get(name);
         if (!entity) {

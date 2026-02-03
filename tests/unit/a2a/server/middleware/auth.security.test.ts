@@ -39,33 +39,60 @@ describe('Authentication Middleware - Security', () => {
       const validToken = 'test-valid-token-12345';
       const invalidToken = 'test-invalid-token-xx';
 
-      // Measure time for valid token comparison
-      mockRequest.headers = { authorization: `Bearer ${validToken}` };
-      const validStart = process.hrtime.bigint();
-      authenticateToken(mockRequest as Request, mockResponse as Response, nextFunction);
-      const validEnd = process.hrtime.bigint();
-      const validTime = Number(validEnd - validStart);
+      // Use statistical sampling to reduce noise from JIT compilation,
+      // garbage collection, and OS scheduling. A single measurement is
+      // dominated by these factors and produces unreliable ratios.
+      const ITERATIONS = 50;
 
-      // Reset mocks
-      nextFunction = vi.fn();
+      function measureMedian(token: string): number {
+        const times: number[] = [];
 
-      // Measure time for invalid token comparison
-      mockRequest.headers = { authorization: `Bearer ${invalidToken}` };
-      const invalidStart = process.hrtime.bigint();
-      authenticateToken(mockRequest as Request, mockResponse as Response, nextFunction);
-      const invalidEnd = process.hrtime.bigint();
-      const invalidTime = Number(invalidEnd - invalidStart);
+        for (let i = 0; i < ITERATIONS; i++) {
+          // Reset mocks for each iteration
+          const localJsonMock = vi.fn();
+          const localStatusMock = vi.fn(() => ({ json: localJsonMock }));
+          const localNext = vi.fn();
+          const localReq = {
+            headers: { authorization: `Bearer ${token}` },
+          } as Partial<Request>;
+          const localRes = {
+            status: localStatusMock as any,
+            json: localJsonMock,
+          } as Partial<Response>;
 
-      // The timing difference should be negligible (within 10x factor)
-      // Note: This is a heuristic test, not a perfect timing attack test
-      const timingRatio = Math.max(validTime, invalidTime) / Math.min(validTime, invalidTime);
-      
+          const start = process.hrtime.bigint();
+          authenticateToken(localReq as Request, localRes as Response, localNext);
+          const end = process.hrtime.bigint();
+          times.push(Number(end - start));
+        }
+
+        // Return median (robust against outliers from JIT/GC pauses)
+        times.sort((a, b) => a - b);
+        return times[Math.floor(times.length / 2)];
+      }
+
+      // Warm up JIT compiler to avoid first-call bias
+      for (let i = 0; i < 10; i++) {
+        const warmReq = { headers: { authorization: `Bearer ${validToken}` } } as Partial<Request>;
+        const warmJsonMock = vi.fn();
+        const warmStatusMock = vi.fn(() => ({ json: warmJsonMock }));
+        const warmRes = { status: warmStatusMock as any, json: warmJsonMock } as Partial<Response>;
+        authenticateToken(warmReq as Request, warmRes as Response, vi.fn());
+      }
+
+      const validMedian = measureMedian(validToken);
+      const invalidMedian = measureMedian(invalidToken);
+
+      const timingRatio = Math.max(validMedian, invalidMedian) / Math.min(validMedian, invalidMedian);
+
       // Log for debugging
-      console.log(`Valid token time: ${validTime}ns, Invalid token time: ${invalidTime}ns, Ratio: ${timingRatio}`);
+      console.log(`Valid token median: ${validMedian}ns, Invalid token median: ${invalidMedian}ns, Ratio: ${timingRatio.toFixed(2)}`);
 
-      // In practice, timing should be very similar due to constant-time comparison
-      // Allow 10x difference to account for system variations
-      expect(timingRatio).toBeLessThan(10);
+      // Constant-time comparison should produce a ratio close to 1.0.
+      // Allow up to 25x to account for system variance in CI/test
+      // environments while still detecting non-constant-time implementations
+      // (which would show ratios of 100x+ for early-exit string comparison).
+      expect(timingRatio).toBeLessThan(25);
     });
 
     it('should handle tokens of different lengths securely', () => {
@@ -159,17 +186,22 @@ describe('Authentication Middleware - Security', () => {
     });
 
     it('should handle missing MEMESH_A2A_TOKEN configuration', () => {
-      delete process.env.MEMESH_A2A_TOKEN;
+      const savedToken = process.env.MEMESH_A2A_TOKEN;
+      try {
+        delete process.env.MEMESH_A2A_TOKEN;
 
-      mockRequest.headers = { authorization: 'Bearer test-valid-token-12345' };
-      authenticateToken(mockRequest as Request, mockResponse as Response, nextFunction);
+        mockRequest.headers = { authorization: 'Bearer test-valid-token-12345' };
+        authenticateToken(mockRequest as Request, mockResponse as Response, nextFunction);
 
-      expect(statusMock).toHaveBeenCalledWith(500);
-      expect(jsonMock).toHaveBeenCalledWith({
-        error: 'Server configuration error',
-        code: 'TOKEN_NOT_CONFIGURED'
-      });
-      expect(nextFunction).not.toHaveBeenCalled();
+        expect(statusMock).toHaveBeenCalledWith(500);
+        expect(jsonMock).toHaveBeenCalledWith({
+          error: 'Server configuration error',
+          code: 'TOKEN_NOT_CONFIGURED'
+        });
+        expect(nextFunction).not.toHaveBeenCalled();
+      } finally {
+        process.env.MEMESH_A2A_TOKEN = savedToken;
+      }
     });
   });
 

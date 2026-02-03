@@ -8,6 +8,14 @@ import { getDataPath } from '../../utils/PathResolver.js';
 import { validateArraySize, validateTaskStates, validateTaskPriorities, validatePositiveInteger, validateISOTimestamp, } from './inputValidation.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+function assertPlaceholderParamMatch(query, params, context) {
+    const stripped = query.replace(/'[^']*'|"[^"]*"/g, '');
+    const placeholderCount = (stripped.match(/\?/g) || []).length;
+    if (placeholderCount !== params.length) {
+        throw new Error(`[TaskQueue] Placeholder/parameter count mismatch in ${context}: ` +
+            `query has ${placeholderCount} placeholder(s) but ${params.length} parameter(s) were provided`);
+    }
+}
 function safeJsonParse(jsonString) {
     if (!jsonString)
         return null;
@@ -25,11 +33,25 @@ function safeJsonParse(jsonString) {
 export class TaskQueue {
     db;
     preparedStatements;
+    isClosed = false;
     constructor(agentId, dbPath) {
         const path = dbPath || getDataPath(`a2a-tasks-${agentId}.db`);
         this.db = new Database(path);
         this.preparedStatements = new Map();
-        const busyTimeoutMs = parseInt(process.env.DB_BUSY_TIMEOUT_MS || '5000', 10);
+        const BUSY_TIMEOUT_BOUNDS = { min: 1000, max: 60000, default: 5000 };
+        let busyTimeoutMs = parseInt(process.env.DB_BUSY_TIMEOUT_MS || String(BUSY_TIMEOUT_BOUNDS.default), 10);
+        if (Number.isNaN(busyTimeoutMs)) {
+            logger.warn(`[TaskQueue] Invalid (NaN) DB_BUSY_TIMEOUT_MS, using default ${BUSY_TIMEOUT_BOUNDS.default}ms`);
+            busyTimeoutMs = BUSY_TIMEOUT_BOUNDS.default;
+        }
+        else if (busyTimeoutMs < BUSY_TIMEOUT_BOUNDS.min) {
+            logger.warn(`[TaskQueue] DB_BUSY_TIMEOUT_MS (${busyTimeoutMs}ms) below minimum, clamping to ${BUSY_TIMEOUT_BOUNDS.min}ms`);
+            busyTimeoutMs = BUSY_TIMEOUT_BOUNDS.min;
+        }
+        else if (busyTimeoutMs > BUSY_TIMEOUT_BOUNDS.max) {
+            logger.warn(`[TaskQueue] DB_BUSY_TIMEOUT_MS (${busyTimeoutMs}ms) exceeds maximum, clamping to ${BUSY_TIMEOUT_BOUNDS.max}ms`);
+            busyTimeoutMs = BUSY_TIMEOUT_BOUNDS.max;
+        }
         this.db.pragma(`busy_timeout = ${busyTimeoutMs}`);
         this.db.pragma('journal_mode = WAL');
         this.initializeSchema();
@@ -168,6 +190,7 @@ export class TaskQueue {
             query += ' OFFSET ?';
             params.push(filter.offset);
         }
+        assertPlaceholderParamMatch(query, params, 'listTasks');
         const stmt = this.db.prepare(query);
         const rows = stmt.all(...params);
         return rows.map((row) => ({
@@ -184,7 +207,7 @@ export class TaskQueue {
     updateTaskStatus(taskId, params) {
         const updates = [];
         const values = [];
-        if (params.state) {
+        if (params.state !== undefined) {
             updates.push('state = ?');
             values.push(params.state);
         }
@@ -196,20 +219,20 @@ export class TaskQueue {
             updates.push('description = ?');
             values.push(params.description);
         }
-        if (params.priority) {
+        if (params.priority !== undefined) {
             updates.push('priority = ?');
             values.push(params.priority);
         }
-        if (params.metadata) {
+        if (params.metadata !== undefined) {
             updates.push('metadata = ?');
-            values.push(JSON.stringify(params.metadata));
+            values.push(params.metadata ? JSON.stringify(params.metadata) : null);
         }
         updates.push('updated_at = ?');
         values.push(new Date().toISOString());
         values.push(taskId);
-        const stmt = this.db.prepare(`
-      UPDATE tasks SET ${updates.join(', ')} WHERE id = ?
-    `);
+        const updateQuery = `UPDATE tasks SET ${updates.join(', ')} WHERE id = ?`;
+        assertPlaceholderParamMatch(updateQuery, values, 'updateTaskStatus');
+        const stmt = this.db.prepare(updateQuery);
         const result = stmt.run(...values);
         return result.changes > 0;
     }
@@ -289,15 +312,10 @@ export class TaskQueue {
         });
     }
     close() {
-        for (const stmt of this.preparedStatements.values()) {
-            try {
-            }
-            catch (error) {
-                logger.error('[TaskQueue] Error finalizing statement', {
-                    error: error instanceof Error ? error.message : String(error),
-                });
-            }
+        if (this.isClosed) {
+            return;
         }
+        this.isClosed = true;
         this.preparedStatements.clear();
         this.db.close();
     }

@@ -1,5 +1,19 @@
 import { logger } from '../../../utils/logger.js';
 const connections = new Map();
+const DEFAULT_MAX_TRACKED_IPS = 10_000;
+function getMaxTrackedIPs() {
+    const env = process.env.A2A_MAX_TRACKED_IPS;
+    if (!env)
+        return DEFAULT_MAX_TRACKED_IPS;
+    const parsed = parseInt(env, 10);
+    if (isNaN(parsed) || parsed <= 0 || parsed > 1_000_000) {
+        logger.warn(`Invalid A2A_MAX_TRACKED_IPS: ${env}, using default ${DEFAULT_MAX_TRACKED_IPS}`);
+        return DEFAULT_MAX_TRACKED_IPS;
+    }
+    return parsed;
+}
+let lastCapacityWarningTime = 0;
+const CAPACITY_WARNING_COOLDOWN_MS = 60_000;
 const DEFAULT_MAX_CONNECTIONS_PER_IP = 10;
 const DEFAULT_MAX_PAYLOAD_SIZE_MB = 10;
 const DEFAULT_CONNECTION_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
@@ -26,12 +40,14 @@ function getMaxPayloadSizeMB() {
     }
     return parsed;
 }
-function cleanupIdleConnections() {
+function cleanupIdleConnections(aggressive = false) {
     const now = Date.now();
-    const timeout = DEFAULT_CONNECTION_IDLE_TIMEOUT_MS;
+    const timeout = aggressive
+        ? 30_000
+        : DEFAULT_CONNECTION_IDLE_TIMEOUT_MS;
     let cleaned = 0;
     for (const [ip, data] of connections.entries()) {
-        if (now - data.lastActivity > timeout) {
+        if (data.count === 0 || now - data.lastActivity > timeout) {
             connections.delete(ip);
             cleaned++;
         }
@@ -40,8 +56,10 @@ function cleanupIdleConnections() {
         logger.debug('[Resource Protection] Cleaned up idle connections', {
             count: cleaned,
             remaining: connections.size,
+            aggressive,
         });
     }
+    return cleaned;
 }
 export function startResourceProtectionCleanup() {
     if (cleanupTimer) {
@@ -80,11 +98,34 @@ export function getConnectionStats() {
 }
 export function connectionLimitMiddleware() {
     const maxConnections = getMaxConnectionsPerIP();
+    const maxTrackedIPs = getMaxTrackedIPs();
     return (req, res, next) => {
         const ip = req.ip || req.socket.remoteAddress || 'unknown';
         const now = Date.now();
         let connectionData = connections.get(ip);
         if (!connectionData) {
+            if (connections.size >= maxTrackedIPs) {
+                const cleaned = cleanupIdleConnections(true);
+                if (connections.size >= maxTrackedIPs) {
+                    if (now - lastCapacityWarningTime > CAPACITY_WARNING_COOLDOWN_MS) {
+                        lastCapacityWarningTime = now;
+                        logger.warn('[Resource Protection] IP tracking capacity exhausted', {
+                            maxTrackedIPs,
+                            currentTrackedIPs: connections.size,
+                            cleanedInAttempt: cleaned,
+                            rejectedIP: ip,
+                        });
+                    }
+                    res.status(503).json({
+                        success: false,
+                        error: {
+                            code: 'SERVICE_OVERLOADED',
+                            message: 'Service temporarily overloaded, please try again later',
+                        },
+                    });
+                    return;
+                }
+            }
             connectionData = { count: 0, lastActivity: now };
             connections.set(ip, connectionData);
         }
@@ -105,7 +146,11 @@ export function connectionLimitMiddleware() {
         }
         connectionData.count++;
         connectionData.lastActivity = now;
-        res.on('finish', () => {
+        let decremented = false;
+        const decrementConnection = () => {
+            if (decremented)
+                return;
+            decremented = true;
             const data = connections.get(ip);
             if (data) {
                 data.count = Math.max(0, data.count - 1);
@@ -114,17 +159,9 @@ export function connectionLimitMiddleware() {
                     connections.delete(ip);
                 }
             }
-        });
-        res.on('close', () => {
-            const data = connections.get(ip);
-            if (data) {
-                data.count = Math.max(0, data.count - 1);
-                data.lastActivity = Date.now();
-                if (data.count === 0) {
-                    connections.delete(ip);
-                }
-            }
-        });
+        };
+        res.on('finish', decrementConnection);
+        res.on('close', decrementConnection);
         next();
     };
 }

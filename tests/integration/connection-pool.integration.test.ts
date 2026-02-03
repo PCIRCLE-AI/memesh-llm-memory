@@ -395,14 +395,13 @@ describe('ConnectionPool Integration Tests', () => {
    */
   describe('Connection Health Checks', () => {
     it('should recycle idle connections after idleTimeout', async () => {
-      const shortIdleTimeout = 100; // 100ms idle timeout
-      const healthCheckInterval = 50; // Check every 50ms
+      vi.useFakeTimers();
 
       const pool = new ConnectionPool(testDbPath, {
         maxConnections: 2,
         connectionTimeout: 5000,
-        idleTimeout: shortIdleTimeout,
-        healthCheckInterval,
+        idleTimeout: 5000, // Minimum allowed idle timeout
+        healthCheckInterval: 5000, // Minimum allowed health check interval
       });
 
       // Acquire and release a connection
@@ -413,8 +412,8 @@ describe('ConnectionPool Integration Tests', () => {
       let stats = pool.getStats();
       expect(stats.totalRecycled).toBe(0);
 
-      // Wait for idle timeout + health check to trigger
-      await new Promise((resolve) => setTimeout(resolve, shortIdleTimeout + healthCheckInterval + 50));
+      // Advance past idle timeout + health check interval to trigger recycling
+      await vi.advanceTimersByTimeAsync(11000);
 
       // Acquire a connection - should be a recycled (new) one
       const db2 = await pool.acquire();
@@ -427,18 +426,22 @@ describe('ConnectionPool Integration Tests', () => {
 
       pool.release(db2);
       await pool.shutdown();
+
+      vi.useRealTimers();
     });
 
     it('should maintain pool size during health checks', async () => {
+      vi.useFakeTimers();
+
       const pool = new ConnectionPool(testDbPath, {
         maxConnections: 3,
         connectionTimeout: 5000,
-        idleTimeout: 50,
-        healthCheckInterval: 30,
+        idleTimeout: 5000, // Minimum allowed idle timeout
+        healthCheckInterval: 5000, // Minimum allowed health check interval
       });
 
-      // Wait for multiple health check cycles
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      // Advance past multiple health check cycles
+      await vi.advanceTimersByTimeAsync(16000);
 
       const stats = pool.getStats();
 
@@ -447,14 +450,18 @@ describe('ConnectionPool Integration Tests', () => {
       expect(pool.isHealthy()).toBe(true);
 
       await pool.shutdown();
+
+      vi.useRealTimers();
     });
 
     it('should verify connections are functional after recycling', async () => {
+      vi.useFakeTimers();
+
       const pool = new ConnectionPool(testDbPath, {
         maxConnections: 2,
         connectionTimeout: 5000,
-        idleTimeout: 50,
-        healthCheckInterval: 30,
+        idleTimeout: 5000, // Minimum allowed idle timeout
+        healthCheckInterval: 5000, // Minimum allowed health check interval
       });
 
       // Acquire, use, and release a connection
@@ -462,8 +469,8 @@ describe('ConnectionPool Integration Tests', () => {
       db1.prepare('SELECT * FROM users').all();
       pool.release(db1);
 
-      // Wait for recycling
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      // Advance past idle timeout + health check interval to trigger recycling
+      await vi.advanceTimersByTimeAsync(11000);
 
       // Acquire connection again - should be recycled
       const db2 = await pool.acquire();
@@ -474,6 +481,8 @@ describe('ConnectionPool Integration Tests', () => {
 
       pool.release(db2);
       await pool.shutdown();
+
+      vi.useRealTimers();
     });
   });
 
@@ -595,10 +604,10 @@ describe('ConnectionPool Integration Tests', () => {
    */
   describe('Error Handling', () => {
     it('should timeout when no connection available within timeout', async () => {
-      const shortTimeout = 100; // 100ms timeout
+      const minTimeout = 1000; // Minimum allowed connectionTimeout after clamping
       const pool = new ConnectionPool(testDbPath, {
         maxConnections: 1,
-        connectionTimeout: shortTimeout,
+        connectionTimeout: minTimeout,
         idleTimeout: 30000,
       });
 
@@ -612,9 +621,9 @@ describe('ConnectionPool Integration Tests', () => {
 
       const elapsedTime = Date.now() - startTime;
 
-      // Verify it timed out approximately at the right time (within 50ms tolerance)
-      expect(elapsedTime).toBeGreaterThanOrEqual(shortTimeout);
-      expect(elapsedTime).toBeLessThan(shortTimeout + 50);
+      // Verify it timed out approximately at the right time (within 100ms tolerance)
+      expect(elapsedTime).toBeGreaterThanOrEqual(minTimeout);
+      expect(elapsedTime).toBeLessThan(minTimeout + 100);
 
       const stats = pool.getStats();
       expect(stats.timeoutErrors).toBe(1);
@@ -656,19 +665,22 @@ describe('ConnectionPool Integration Tests', () => {
 
       const statsAfterFirstRelease = pool.getStats();
 
-      // Release again (ConnectionPool currently allows this - adds to available again)
+      // Release again - ConnectionPool detects and ignores double release,
+      // but totalReleased metric is incorrectly incremented (known limitation)
       pool.release(db);
 
       const statsAfterSecondRelease = pool.getStats();
 
-      expect(statsAfterSecondRelease.totalReleased).toBe(2);
+      // After the fix in MAJOR-4, double release no longer increments totalReleased
+      expect(statsAfterSecondRelease.totalReleased).toBe(1);
       expect(statsAfterSecondRelease.idle).toBe(statsAfterFirstRelease.idle);
 
       await pool.shutdown();
     });
 
     it('should provide clear error messages for timeout scenarios', async () => {
-      const pool = new ConnectionPool(testDbPath, { maxConnections: 1, connectionTimeout: 200, idleTimeout: 30000 });
+      // Use minimum allowed connectionTimeout (values below 1000ms are clamped to 1000ms)
+      const pool = new ConnectionPool(testDbPath, { maxConnections: 1, connectionTimeout: 1000, idleTimeout: 30000 });
 
       const db = await pool.acquire();
 
@@ -678,7 +690,7 @@ describe('ConnectionPool Integration Tests', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
         expect((error as Error).message).toMatch(/Connection acquisition timeout after \d+ms/);
-        expect((error as Error).message).toContain('200');
+        expect((error as Error).message).toContain('1000');
       }
 
       pool.release(db);

@@ -94,6 +94,40 @@ interface ArtifactRow {
 }
 
 /**
+ * Defense-in-depth: Assert that a SQL query's placeholder count matches the
+ * parameter array length before execution.
+ *
+ * This guards against bugs in dynamic query construction where the number of
+ * `?` placeholders could diverge from the actual parameters passed. While
+ * existing input validation should prevent this, an assertion here catches
+ * logic errors early and prevents silent data corruption or cryptic SQLite
+ * errors at runtime.
+ *
+ * @param query - The SQL query string containing `?` placeholders
+ * @param params - The parameter array that will be bound to the placeholders
+ * @param context - A label for the call site (used in error messages)
+ * @throws Error if placeholder count does not match param count
+ */
+function assertPlaceholderParamMatch(
+  query: string,
+  params: unknown[],
+  context: string
+): void {
+  // Count unescaped `?` placeholders. We strip string literals ('...' and "...")
+  // to avoid counting `?` that appear inside SQL string values (rare in
+  // parameterised queries, but correct to handle).
+  const stripped = query.replace(/'[^']*'|"[^"]*"/g, '');
+  const placeholderCount = (stripped.match(/\?/g) || []).length;
+
+  if (placeholderCount !== params.length) {
+    throw new Error(
+      `[TaskQueue] Placeholder/parameter count mismatch in ${context}: ` +
+      `query has ${placeholderCount} placeholder(s) but ${params.length} parameter(s) were provided`
+    );
+  }
+}
+
+/**
  * Safely parse JSON string, returning null if invalid
  */
 function safeJsonParse<T>(jsonString: string | null | undefined): T | null {
@@ -113,6 +147,8 @@ export class TaskQueue {
   private db: Database.Database;
   // PERFORMANCE OPTIMIZATION: Cache prepared statements for reuse
   private preparedStatements: Map<string, Database.Statement>;
+  /** Guard against double-close. better-sqlite3 throws TypeError on closing an already-closed db. */
+  private isClosed = false;
 
   constructor(agentId: string, dbPath?: string) {
     // Use PathResolver for automatic fallback to legacy location
@@ -123,7 +159,19 @@ export class TaskQueue {
 
     // Configure busy timeout for automatic retry on SQLITE_BUSY
     // This provides built-in resilience for concurrent access
-    const busyTimeoutMs = parseInt(process.env.DB_BUSY_TIMEOUT_MS || '5000', 10);
+    // ✅ FIX MINOR-1: Validate busyTimeoutMs with NaN check and bounds clamping
+    const BUSY_TIMEOUT_BOUNDS = { min: 1000, max: 60000, default: 5000 };
+    let busyTimeoutMs = parseInt(process.env.DB_BUSY_TIMEOUT_MS || String(BUSY_TIMEOUT_BOUNDS.default), 10);
+    if (Number.isNaN(busyTimeoutMs)) {
+      logger.warn(`[TaskQueue] Invalid (NaN) DB_BUSY_TIMEOUT_MS, using default ${BUSY_TIMEOUT_BOUNDS.default}ms`);
+      busyTimeoutMs = BUSY_TIMEOUT_BOUNDS.default;
+    } else if (busyTimeoutMs < BUSY_TIMEOUT_BOUNDS.min) {
+      logger.warn(`[TaskQueue] DB_BUSY_TIMEOUT_MS (${busyTimeoutMs}ms) below minimum, clamping to ${BUSY_TIMEOUT_BOUNDS.min}ms`);
+      busyTimeoutMs = BUSY_TIMEOUT_BOUNDS.min;
+    } else if (busyTimeoutMs > BUSY_TIMEOUT_BOUNDS.max) {
+      logger.warn(`[TaskQueue] DB_BUSY_TIMEOUT_MS (${busyTimeoutMs}ms) exceeds maximum, clamping to ${BUSY_TIMEOUT_BOUNDS.max}ms`);
+      busyTimeoutMs = BUSY_TIMEOUT_BOUNDS.max;
+    }
     this.db.pragma(`busy_timeout = ${busyTimeoutMs}`);
 
     // Enable WAL mode for better concurrency
@@ -332,6 +380,9 @@ export class TaskQueue {
       params.push(filter.offset);
     }
 
+    // Defense-in-depth: verify placeholder count matches params before execution
+    assertPlaceholderParamMatch(query, params, 'listTasks');
+
     const stmt = this.db.prepare(query);
     const rows = stmt.all(...params) as (TaskRow & { message_count: number; artifact_count: number })[];
 
@@ -349,9 +400,11 @@ export class TaskQueue {
 
   updateTaskStatus(taskId: string, params: UpdateTaskParams): boolean {
     const updates: string[] = [];
-    const values: (string | number | TaskState)[] = [];
+    const values: (string | number | TaskState | null)[] = [];
 
-    if (params.state) {
+    // ✅ FIX MAJOR-2: Use !== undefined for consistent falsy handling
+    // This allows explicitly setting values to null/empty when needed
+    if (params.state !== undefined) {
       updates.push('state = ?');
       values.push(params.state);
     }
@@ -366,14 +419,14 @@ export class TaskQueue {
       values.push(params.description);
     }
 
-    if (params.priority) {
+    if (params.priority !== undefined) {
       updates.push('priority = ?');
       values.push(params.priority);
     }
 
-    if (params.metadata) {
+    if (params.metadata !== undefined) {
       updates.push('metadata = ?');
-      values.push(JSON.stringify(params.metadata));
+      values.push(params.metadata ? JSON.stringify(params.metadata) : null);
     }
 
     updates.push('updated_at = ?');
@@ -381,10 +434,12 @@ export class TaskQueue {
 
     values.push(taskId);
 
-    const stmt = this.db.prepare(`
-      UPDATE tasks SET ${updates.join(', ')} WHERE id = ?
-    `);
+    const updateQuery = `UPDATE tasks SET ${updates.join(', ')} WHERE id = ?`;
 
+    // Defense-in-depth: verify placeholder count matches params before execution
+    assertPlaceholderParamMatch(updateQuery, values, 'updateTaskStatus');
+
+    const stmt = this.db.prepare(updateQuery);
     const result = stmt.run(...values);
     return result.changes > 0;
   }
@@ -511,17 +566,12 @@ export class TaskQueue {
   }
 
   close(): void {
-    // PERFORMANCE OPTIMIZATION: Finalize all prepared statements before closing
-    for (const stmt of this.preparedStatements.values()) {
-      try {
-        // better-sqlite3 doesn't have finalize(), statements are auto-finalized
-        // This is just for clarity and future-proofing
-      } catch (error) {
-        logger.error('[TaskQueue] Error finalizing statement', {
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
+    if (this.isClosed) {
+      return;
     }
+    this.isClosed = true;
+
+    // Clear cached prepared statements (auto-finalized by better-sqlite3 on db.close())
     this.preparedStatements.clear();
     this.db.close();
   }

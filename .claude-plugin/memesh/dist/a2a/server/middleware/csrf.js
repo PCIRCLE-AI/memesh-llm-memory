@@ -1,20 +1,34 @@
 import { randomBytes } from 'crypto';
 import { logger } from '../../../utils/logger.js';
-const tokens = new Map();
+import { LRUCache } from '../../../utils/lru-cache.js';
+const MAX_TOKENS = 10_000;
 const TOKEN_EXPIRATION_MS = 60 * 60 * 1000;
+const tokens = new LRUCache({
+    maxSize: MAX_TOKENS,
+    ttl: TOKEN_EXPIRATION_MS,
+});
+let lastEvictionWarningTime = 0;
+const EVICTION_WARNING_COOLDOWN_MS = 60_000;
 const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
 function generateToken() {
     return randomBytes(32).toString('hex');
 }
-function cleanupExpiredTokens() {
-    const now = Date.now();
-    let cleaned = 0;
-    for (const [token, expiration] of tokens.entries()) {
-        if (expiration < now) {
-            tokens.delete(token);
-            cleaned++;
+function storeToken(token, expiration) {
+    const atCapacity = tokens.size() >= MAX_TOKENS;
+    tokens.set(token, expiration);
+    if (atCapacity) {
+        const now = Date.now();
+        if (now - lastEvictionWarningTime > EVICTION_WARNING_COOLDOWN_MS) {
+            lastEvictionWarningTime = now;
+            logger.warn('[CSRF] Token cache at capacity, LRU eviction triggered', {
+                maxTokens: MAX_TOKENS,
+                currentSize: tokens.size(),
+            });
         }
     }
+}
+function cleanupExpiredTokens() {
+    const cleaned = tokens.cleanupExpired();
     if (cleaned > 0) {
         logger.debug('[CSRF] Cleaned up expired tokens', { count: cleaned });
     }
@@ -42,7 +56,7 @@ export function clearCsrfTokens() {
 export function csrfTokenMiddleware(req, res, next) {
     const token = generateToken();
     const expiration = Date.now() + TOKEN_EXPIRATION_MS;
-    tokens.set(token, expiration);
+    storeToken(token, expiration);
     res.cookie('XSRF-TOKEN', token, {
         httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
@@ -81,8 +95,8 @@ export function csrfProtection(req, res, next) {
         });
         return;
     }
-    const expiration = tokens.get(token);
-    if (!expiration) {
+    const entry = tokens.peek(token);
+    if (!entry) {
         logger.warn('[CSRF] Invalid CSRF token', {
             method: req.method,
             path: req.path,
@@ -97,7 +111,7 @@ export function csrfProtection(req, res, next) {
         });
         return;
     }
-    if (expiration < Date.now()) {
+    if (entry.value < Date.now()) {
         logger.warn('[CSRF] Expired CSRF token', {
             method: req.method,
             path: req.path,
@@ -116,7 +130,7 @@ export function csrfProtection(req, res, next) {
     tokens.delete(token);
     const newToken = generateToken();
     const newExpiration = Date.now() + TOKEN_EXPIRATION_MS;
-    tokens.set(newToken, newExpiration);
+    storeToken(newToken, newExpiration);
     res.setHeader('X-CSRF-Token', newToken);
     res.cookie('XSRF-TOKEN', newToken, {
         httpOnly: false,

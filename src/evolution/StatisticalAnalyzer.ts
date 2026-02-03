@@ -48,19 +48,29 @@ export class StatisticalAnalyzer {
   }
 
   /**
-   * Calculate standard deviation of a dataset
+   * Calculate sample standard deviation of a dataset (using Bessel's correction)
+   *
+   * Uses n-1 (sample standard deviation) instead of n (population standard deviation)
+   * to provide an unbiased estimator when working with sample data.
    *
    * @param data - Array of numbers
-   * @returns Standard deviation
+   * @returns Sample standard deviation
    */
   calculateStdDev(data: number[]): number {
     if (data.length === 0) {
       return 0;
     }
 
+    // ✅ MAJOR-5: Return 0 for single data point (cannot compute sample std dev with n-1)
+    if (data.length === 1) {
+      return 0;
+    }
+
     const mean = this.calculateMean(data);
     const squaredDiffs = data.map((val) => Math.pow(val - mean, 2));
-    const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / data.length;
+    // ✅ MAJOR-5: Use (n-1) for sample standard deviation (Bessel's correction)
+    // This provides an unbiased estimator for the population variance
+    const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / (data.length - 1);
     return Math.sqrt(variance);
   }
 
@@ -93,8 +103,14 @@ export class StatisticalAnalyzer {
     const varianceSum = variance1 + variance2;
 
     // ✅ Check for zero variance sum (both groups have no variance)
+    // This happens when all values in both groups are identical.
     if (varianceSum === 0) {
-      // Both groups have zero variance
+      logger.debug('[StatisticalAnalyzer] Zero varianceSum in welchTTest - both groups have identical values', {
+        mean1,
+        mean2,
+        n1,
+        n2,
+      });
       return {
         tStatistic: 0,
         pValue: 1.0,
@@ -103,7 +119,24 @@ export class StatisticalAnalyzer {
       };
     }
 
-    const tStatistic = (mean1 - mean2) / Math.sqrt(varianceSum);
+    const sqrtVarianceSum = Math.sqrt(varianceSum);
+
+    // Guard against Math.sqrt returning 0 for extremely small varianceSum
+    // (floating-point underflow edge case)
+    if (sqrtVarianceSum === 0 || !Number.isFinite(sqrtVarianceSum)) {
+      logger.warn('[StatisticalAnalyzer] sqrt(varianceSum) is degenerate', {
+        varianceSum,
+        sqrtVarianceSum,
+      });
+      return {
+        tStatistic: 0,
+        pValue: 1.0,
+        degreesOfFreedom: n1 + n2 - 2,
+        significant: false,
+      };
+    }
+
+    const tStatistic = (mean1 - mean2) / sqrtVarianceSum;
 
     // ✅ Check for invalid t-statistic (Infinity or NaN)
     if (!Number.isFinite(tStatistic)) {
@@ -238,6 +271,11 @@ export class StatisticalAnalyzer {
     if (x <= 0) return 0;
     if (x >= 1) return 1;
 
+    // Guard against degenerate parameters that would cause division by zero
+    if (a <= 0 || b <= 0 || !Number.isFinite(a) || !Number.isFinite(b)) {
+      return 0;
+    }
+
     // Simple approximation for beta distribution
     // Production code should use a proper statistical library
     const lnBeta =
@@ -282,6 +320,11 @@ export class StatisticalAnalyzer {
    * @returns ln(Gamma(x))
    */
   private logGamma(x: number): number {
+    // Guard against non-positive values where Gamma is undefined
+    if (x <= 0 || !Number.isFinite(x)) {
+      return 0;
+    }
+
     const cof = [
       76.18009172947146, -86.50532032941677, 24.01409824083091,
       -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5,
@@ -307,6 +350,16 @@ export class StatisticalAnalyzer {
    * @returns Cohen's d
    */
   calculateEffectSize(control: number[], treatment: number[]): number {
+    const n1 = control.length;
+    const n2 = treatment.length;
+
+    // ✅ Guard: Need at least 2 elements in each array to compute pooled variance.
+    // With (n1 + n2 - 2) in the denominator, two arrays of length 1 yield 0,
+    // causing division by zero.
+    if (n1 < 2 || n2 < 2) {
+      return 0;
+    }
+
     const mean1 = this.calculateMean(control);
     const mean2 = this.calculateMean(treatment);
 
@@ -314,9 +367,6 @@ export class StatisticalAnalyzer {
     const stdDev2 = this.calculateStdDev(treatment);
 
     // Pooled standard deviation
-    const n1 = control.length;
-    const n2 = treatment.length;
-
     const pooledVariance =
       ((n1 - 1) * Math.pow(stdDev1, 2) + (n2 - 1) * Math.pow(stdDev2, 2)) /
       (n1 + n2 - 2);
@@ -341,9 +391,18 @@ export class StatisticalAnalyzer {
     data: number[],
     confidence: number = 0.95
   ): [number, number] {
+    if (data.length === 0) {
+      return [0, 0];
+    }
+
     const mean = this.calculateMean(data);
     const stdDev = this.calculateStdDev(data);
     const n = data.length;
+
+    // Single data point: CI collapses to the value itself
+    if (n === 1) {
+      return [mean, mean];
+    }
 
     // t-critical value approximation for given confidence level
     const alpha = 1 - confidence;
@@ -353,7 +412,19 @@ export class StatisticalAnalyzer {
     // For small samples, this is a rough approximation
     const tCritical = this.getTCritical(alpha / 2, df);
 
-    const marginOfError = tCritical * (stdDev / Math.sqrt(n));
+    const sqrtN = Math.sqrt(n);
+    const marginOfError = tCritical * (stdDev / sqrtN);
+
+    // Validate the final result
+    if (!Number.isFinite(marginOfError)) {
+      logger.warn('[StatisticalAnalyzer] Non-finite marginOfError in CI calculation', {
+        tCritical,
+        stdDev,
+        sqrtN,
+        marginOfError,
+      });
+      return [mean, mean];
+    }
 
     return [mean - marginOfError, mean + marginOfError];
   }
@@ -404,6 +475,13 @@ export class StatisticalAnalyzer {
    * @returns erf^-1(x)
    */
   private erfInv(x: number): number {
+    // ✅ Guard: erfInv is only defined for -1 < x < 1.
+    // At |x| >= 1, log(1 - x*x) is -Infinity or NaN, producing garbage.
+    // Return a large finite value (the function approaches +/-Infinity at the boundary).
+    if (x <= -1) return -6; // Approximation for extreme negative
+    if (x >= 1) return 6;   // Approximation for extreme positive
+    if (x === 0) return 0;
+
     const a = 0.147;
     const b = 2 / (Math.PI * a) + Math.log(1 - x * x) / 2;
     const sqrt1 = Math.sqrt(b * b - Math.log(1 - x * x) / a);

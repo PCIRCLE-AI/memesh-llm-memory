@@ -66,6 +66,97 @@ export interface ToolRouterConfig {
 }
 
 /**
+ * ✅ FIX ISSUE-2: Tool name validation regex
+ *
+ * MCP tool names must follow a strict pattern to prevent injection attacks
+ * and ensure protocol compatibility:
+ * - Only lowercase alphanumeric characters, hyphens, and underscores
+ * - Must start and end with an alphanumeric character
+ * - Maximum length of 64 characters
+ * - Minimum length of 1 character
+ *
+ * This aligns with the MCP protocol convention where tool names like
+ * 'buddy-do', 'get-workflow-guidance', 'a2a-send-task' are used.
+ */
+const TOOL_NAME_REGEX = /^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$/;
+const TOOL_NAME_MAX_LENGTH = 64;
+
+/**
+ * ✅ FIX MINOR (Round 1): Sanitize tool name for safe embedding in error messages.
+ * Truncates to max 64 chars and escapes special characters to prevent log injection.
+ *
+ * @param toolName - Raw tool name input
+ * @returns Sanitized string safe for embedding in error messages
+ */
+function sanitizeToolNameForError(toolName: unknown): string {
+  if (typeof toolName !== 'string') {
+    return '[non-string]';
+  }
+  // Remove control characters, truncate, and escape quotes
+  const cleaned = toolName
+    .replace(/[\x00-\x1F\x7F-\x9F]/g, '') // strip control chars
+    .replace(/['"\\]/g, (ch) => `\\${ch}`)  // escape quotes and backslashes
+    .substring(0, TOOL_NAME_MAX_LENGTH);
+  return cleaned.length < toolName.length ? `${cleaned}...` : cleaned;
+}
+
+/**
+ * Validate a tool name against MCP naming conventions
+ *
+ * @param toolName - Tool name to validate
+ * @throws ValidationError if tool name is invalid
+ */
+function validateToolName(toolName: string): void {
+  if (typeof toolName !== 'string') {
+    throw new ValidationError(
+      'Tool name must be a string',
+      {
+        component: 'ToolRouter',
+        method: 'validateToolName',
+        providedType: typeof toolName,
+      }
+    );
+  }
+
+  if (toolName.length === 0) {
+    throw new ValidationError(
+      'Tool name cannot be empty',
+      {
+        component: 'ToolRouter',
+        method: 'validateToolName',
+      }
+    );
+  }
+
+  if (toolName.length > TOOL_NAME_MAX_LENGTH) {
+    throw new ValidationError(
+      `Tool name exceeds maximum length of ${TOOL_NAME_MAX_LENGTH} characters`,
+      {
+        component: 'ToolRouter',
+        method: 'validateToolName',
+        providedLength: toolName.length,
+        maxLength: TOOL_NAME_MAX_LENGTH,
+      }
+    );
+  }
+
+  if (!TOOL_NAME_REGEX.test(toolName)) {
+    // ✅ FIX MINOR (Round 1): Sanitize toolName before embedding in error message
+    const safeName = sanitizeToolNameForError(toolName);
+    throw new ValidationError(
+      `Invalid tool name: '${safeName}'. Tool names must contain only lowercase alphanumeric characters, hyphens, and underscores, and must start and end with an alphanumeric character.`,
+      {
+        component: 'ToolRouter',
+        method: 'validateToolName',
+        providedName: safeName,
+        pattern: TOOL_NAME_REGEX.source,
+        hint: 'Example valid names: buddy-do, get-workflow-guidance, a2a-send-task',
+      }
+    );
+  }
+}
+
+/**
  * Tool Router
  *
  * Central routing hub for all MCP tool calls. Validates requests, applies rate limiting,
@@ -220,6 +311,10 @@ export class ToolRouter {
         }
       );
     }
+
+    // ✅ FIX ISSUE-2: Validate tool name format at registration/call time
+    // Rejects malformed or potentially malicious tool names early
+    validateToolName(params.name);
 
     // Rate limiting check
     if (!this.rateLimiter.consume(1)) {
@@ -431,10 +526,12 @@ export class ToolRouter {
       return await a2aReportResult(validationResult.data, this.taskQueue, this.mcpTaskDelegator);
     }
 
+    // ✅ FIX MINOR (Round 1): Sanitize toolName in error message
+    const safeName = sanitizeToolNameForError(toolName);
     throw new NotFoundError(
-      `Unknown tool: ${toolName}`,
+      `Unknown tool: ${safeName}`,
       'tool',
-      toolName
+      safeName
     );
   }
 }

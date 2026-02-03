@@ -95,20 +95,35 @@ echo ""
 if command -v claude &> /dev/null; then
     echo ""
     echo "✅ Claude CLI detected"
-    echo "📝 MCP server 'memesh-dev' has been registered"
+    echo "📝 Registering MCP server 'memesh-mcp'..."
+
+    # Register MCP server with all required environment variables
+    if claude mcp add memesh-mcp --scope user \
+        -e NODE_ENV=production \
+        -e MEMESH_DATA_DIR=$HOME/.memesh \
+        -e LOG_LEVEL=info \
+        -e DISABLE_MCP_WATCHDOG=1 \
+        -- node "$PROJECT_DIR/.claude-plugin/memesh/dist/mcp/server-bootstrap.js"; then
+        echo "✅ MCP server registered successfully"
+    else
+        echo "⚠️  MCP server registration failed"
+        echo "   Try manual registration (see below)"
+    fi
+
     echo ""
     echo "   To verify, run:"
-    echo "   claude mcp list | grep memesh-dev"
+    echo "   claude mcp list | grep memesh-mcp"
 else
     echo ""
     echo "⚠️  Claude CLI not found"
     echo "   Plugin prepared successfully but not registered"
     echo ""
     echo "   Manual registration:"
-    echo "   claude mcp add memesh-dev --scope user \\"
+    echo "   claude mcp add memesh-mcp --scope user \\"
     echo "     -e NODE_ENV=production \\"
     echo "     -e MEMESH_DATA_DIR=\$HOME/.memesh \\"
     echo "     -e LOG_LEVEL=info \\"
+    echo "     -e DISABLE_MCP_WATCHDOG=1 \\"
     echo "     -- node \"$PROJECT_DIR/.claude-plugin/memesh/dist/mcp/server-bootstrap.js\""
 fi
 
@@ -127,7 +142,7 @@ echo "   └── scripts/"
 echo ""
 echo "🔄 Next steps:"
 echo "   1. Restart Claude Code (completely quit and reopen)"
-echo "   2. Check MCP server: claude mcp list | grep memesh-dev"
+echo "   2. Check MCP server: claude mcp list | grep memesh-mcp"
 echo "   3. Start using A2A Protocol features!"
 echo ""
 echo "📚 Documentation:"

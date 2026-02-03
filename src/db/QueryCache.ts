@@ -130,6 +130,15 @@ export class QueryCache<K, V> {
 
     this.cache = new Map();
 
+    if (this.debug) {
+      logger.debug('[QueryCache] Initialized', {
+        maxSize: this.maxSize,
+        defaultTTL: this.defaultTTL,
+      });
+    }
+
+    // ✅ FIX: Timer creation is the LAST step in constructor so that if any
+    // initialization above throws, no orphan interval is left running.
     // ✅ FIX BUG-4: Wrap cleanup in try-catch to prevent interval breakage
     // ✅ FIX P1-16: Track consecutive errors and escalate on persistent failures
     // Schedule periodic cleanup (every minute)
@@ -169,11 +178,10 @@ export class QueryCache<K, V> {
       }
     }, 60 * 1000);
 
-    if (this.debug) {
-      logger.debug('[QueryCache] Initialized', {
-        maxSize: this.maxSize,
-        defaultTTL: this.defaultTTL,
-      });
+    // ✅ FIX: Call unref() so this timer does not prevent Node.js from exiting
+    // when the event loop would otherwise be empty (e.g., after tests or CLI tools).
+    if (this.cleanupInterval.unref) {
+      this.cleanupInterval.unref();
     }
   }
 

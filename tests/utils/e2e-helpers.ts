@@ -289,10 +289,15 @@ export type MultiResourceTestFunction<T = void> = (resourceIds: string[]) => Pro
 export function getDynamicPort(): { portRange: { min: number; max: number } } {
   // Return a port range that will be used for dynamic allocation
   // A2AServer's findAvailablePort will scan this range
+  // Note: Uses 4300-4999 to avoid overlap with integration test port ranges:
+  // - a2a-e2e.test.ts: 3100-3199
+  // - a2a-send-task.test.ts: 3200-3299
+  // - a2a-server-security.integration.test.ts: 3700-3800
+  // - a2a-tracing.test.ts: 4100-4299
   return {
     portRange: {
-      min: 3200,
-      max: 3999
+      min: 4300,
+      max: 4999
     }
   };
 }

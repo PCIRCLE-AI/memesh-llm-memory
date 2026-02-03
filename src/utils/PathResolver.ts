@@ -22,7 +22,15 @@ import { logger } from './logger.js';
 const NEW_DIR_NAME = '.memesh';
 const LEGACY_DIR_NAME = '.claude-code-buddy';
 
-// Cache the resolved directory to avoid repeated filesystem checks
+// Cache the resolved directory to avoid repeated filesystem checks.
+//
+// Thread-safety note: getDataDirectory() is fully synchronous (uses
+// fs.existsSync, fs.mkdirSync). In Node.js's single-threaded event loop,
+// synchronous code cannot be interleaved, so concurrent callers cannot
+// observe partially-written state. The cache variables are safe without
+// additional locking for this reason. If this function ever becomes async
+// (e.g., using fs.promises), a proper initialization promise/lock must be
+// introduced to prevent duplicate directory creation.
 let cachedDataDir: string | null = null;
 let migrationWarningShown = false;
 
@@ -37,9 +45,12 @@ let migrationWarningShown = false;
  * @returns Absolute path to data directory
  */
 export function getDataDirectory(): string {
-  // Return cached value if available (performance optimization)
-  if (cachedDataDir) {
-    return cachedDataDir;
+  // Capture into a local variable to guarantee a consistent value within
+  // this function call, even if another part of the code calls _clearCache()
+  // on the module-level variable.
+  const cached = cachedDataDir;
+  if (cached) {
+    return cached;
   }
 
   const homeDir = os.homedir();

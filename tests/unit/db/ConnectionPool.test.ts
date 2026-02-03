@@ -326,11 +326,13 @@ describe('ConnectionPool', () => {
 
   describe('Health Checks and Idle Timeout', () => {
     it('should recycle idle connections', async () => {
+      vi.useFakeTimers();
+
       pool = new ConnectionPool(testDbPath, {
         maxConnections: 2,
         connectionTimeout: 5000,
-        idleTimeout: 1000, // 1 second idle timeout
-        healthCheckInterval: 500, // Check every 500ms
+        idleTimeout: 5000, // Minimum allowed idle timeout
+        healthCheckInterval: 5000, // Minimum allowed health check interval
       });
 
       // Acquire and immediately release a connection
@@ -340,21 +342,25 @@ describe('ConnectionPool', () => {
       const initialStats = pool.getStats();
       expect(initialStats.totalRecycled).toBe(0);
 
-      // Wait for idle timeout + health check
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Advance past idle timeout + health check interval to trigger recycling
+      await vi.advanceTimersByTimeAsync(11000);
 
       const afterStats = pool.getStats();
       expect(afterStats.totalRecycled).toBeGreaterThan(0);
       expect(afterStats.total).toBe(2); // Pool size maintained
       expect(pool.isHealthy()).toBe(true);
+
+      vi.useRealTimers();
     });
 
     it('should maintain pool size after recycling', async () => {
+      vi.useFakeTimers();
+
       pool = new ConnectionPool(testDbPath, {
         maxConnections: 3,
         connectionTimeout: 5000,
-        idleTimeout: 500,
-        healthCheckInterval: 300,
+        idleTimeout: 5000, // Minimum allowed idle timeout
+        healthCheckInterval: 5000, // Minimum allowed health check interval
       });
 
       // Use all connections
@@ -366,13 +372,15 @@ describe('ConnectionPool', () => {
       pool.release(conn2);
       pool.release(conn3);
 
-      // Wait for recycling
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Advance past idle timeout + health check interval to trigger recycling
+      await vi.advanceTimersByTimeAsync(11000);
 
       const stats = pool.getStats();
       expect(stats.total).toBe(3);
       expect(stats.idle).toBe(3);
       expect(pool.isHealthy()).toBe(true);
+
+      vi.useRealTimers();
     });
   });
 

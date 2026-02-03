@@ -118,13 +118,15 @@ describe('MCPTaskDelegator', () => {
     });
 
     it('should timeout tasks older than configured timeout', async () => {
-      // Set timeout to 1ms for testing
-      process.env.MEMESH_A2A_TASK_TIMEOUT = '1';
+      // Set timeout to minimum allowed value (5000ms) - values below this are clamped by getTaskTimeout()
+      process.env.MEMESH_A2A_TASK_TIMEOUT = '5000';
 
       await delegator.addTask('task-1', 'test', 'high', 'agent-1');
 
-      // Wait 10ms
-      await new Promise(resolve => setTimeout(resolve, 10));
+      // Directly manipulate createdAt to simulate a task older than the timeout
+      // This is deterministic and avoids flaky timing-dependent tests
+      const taskInfo = delegator['pendingTasks'].get('task-1')!;
+      taskInfo.createdAt = Date.now() - 6000; // 6s ago, exceeds 5s timeout
 
       await delegator.checkTimeouts();
 
@@ -153,14 +155,17 @@ describe('MCPTaskDelegator', () => {
 
     it('should handle concurrent timeout checks safely (race condition fix)', async () => {
       // This tests CRITICAL-2 fix: collect-then-process pattern
-      process.env.MEMESH_A2A_TASK_TIMEOUT = '1';
+      process.env.MEMESH_A2A_TASK_TIMEOUT = '5000';
 
       // Add multiple tasks for different agents
       await delegator.addTask('task-1', 'test 1', 'high', 'agent-1');
       await delegator.addTask('task-2', 'test 2', 'high', 'agent-2');
 
-      // Wait for timeout
-      await new Promise(resolve => setTimeout(resolve, 10));
+      // Directly manipulate createdAt to simulate tasks older than the timeout
+      const task1 = delegator['pendingTasks'].get('task-1')!;
+      const task2 = delegator['pendingTasks'].get('task-2')!;
+      task1.createdAt = Date.now() - 6000;
+      task2.createdAt = Date.now() - 6000;
 
       // Run concurrent timeout checks
       await Promise.all([
@@ -184,15 +189,16 @@ describe('MCPTaskDelegator', () => {
 
     it('should maintain transaction safety when DB update fails', async () => {
       // This tests IMPORTANT-3 fix: transaction safety
-      process.env.MEMESH_A2A_TASK_TIMEOUT = '1';
+      process.env.MEMESH_A2A_TASK_TIMEOUT = '5000';
 
       // Mock updateTaskStatus to fail
       mockQueue.updateTaskStatus = vi.fn().mockReturnValue(false);
 
       await delegator.addTask('task-1', 'test', 'high', 'agent-1');
 
-      // Wait for timeout
-      await new Promise(resolve => setTimeout(resolve, 10));
+      // Directly manipulate createdAt to simulate a task older than the timeout
+      const taskInfo = delegator['pendingTasks'].get('task-1')!;
+      taskInfo.createdAt = Date.now() - 6000;
 
       await delegator.checkTimeouts();
 
@@ -209,7 +215,7 @@ describe('MCPTaskDelegator', () => {
 
     it('should handle exceptions during timeout processing gracefully', async () => {
       // This tests IMPORTANT-3 fix: error handling
-      process.env.MEMESH_A2A_TASK_TIMEOUT = '1';
+      process.env.MEMESH_A2A_TASK_TIMEOUT = '5000';
 
       // Mock updateTaskStatus to throw exception
       mockQueue.updateTaskStatus = vi.fn().mockImplementation(() => {
@@ -218,8 +224,9 @@ describe('MCPTaskDelegator', () => {
 
       await delegator.addTask('task-1', 'test', 'high', 'agent-1');
 
-      // Wait for timeout
-      await new Promise(resolve => setTimeout(resolve, 10));
+      // Directly manipulate createdAt to simulate a task older than the timeout
+      const taskInfo = delegator['pendingTasks'].get('task-1')!;
+      taskInfo.createdAt = Date.now() - 6000;
 
       // Should not throw, should handle gracefully
       await expect(delegator.checkTimeouts()).resolves.not.toThrow();

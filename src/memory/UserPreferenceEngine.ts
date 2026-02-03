@@ -199,21 +199,33 @@ export class UserPreferenceEngine {
   }
 
   /**
-   * Convert confidence level to importance score
+   * Convert confidence level to normalized importance score
+   *
+   * Maps confidence levels to importance values in the 0-1 range
+   * as required by UnifiedMemoryStore (which validates importance is in [0, 1]).
+   *
+   * Mapping rationale:
+   * - low    -> 0.3 (still retained, above minimum threshold)
+   * - medium -> 0.6 (above midpoint, default fallback)
+   * - high   -> 0.9 (near-maximum, reserved space for future "critical" level)
+   * - unknown -> 0.5 (neutral midpoint for unrecognized confidence levels)
    *
    * @param confidence - Preference confidence level
-   * @returns Importance score (0-10)
+   * @returns Importance score normalized to [0, 1]
    */
   private confidenceToImportance(confidence: PreferenceConfidence): number {
     switch (confidence) {
       case 'low':
-        return 3;
+        return 0.3;
       case 'medium':
-        return 6;
+        return 0.6;
       case 'high':
-        return 9;
+        return 0.9;
       default:
-        return 5;
+        logger.warn(
+          `[UserPreferenceEngine] Unrecognized confidence level: "${confidence}", defaulting to 0.5`
+        );
+        return 0.5;
     }
   }
 }

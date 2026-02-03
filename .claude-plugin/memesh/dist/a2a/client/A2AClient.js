@@ -2,17 +2,41 @@ import { AgentRegistry } from '../storage/AgentRegistry.js';
 import { ErrorCodes, createError, getErrorMessage } from '../errors/index.js';
 import { retryWithBackoff } from '../../utils/retry.js';
 import { getTraceContext, injectTraceContext, } from '../../utils/tracing/index.js';
+import { logger } from '../../utils/logger.js';
+const RETRY_BOUNDS = {
+    maxRetries: { min: 0, max: 10, default: 3 },
+    baseDelay: { min: 100, max: 60_000, default: 1_000 },
+    timeout: { min: 1_000, max: 300_000, default: 30_000 },
+};
+function clampRetryValue(raw, name, bounds) {
+    if (Number.isNaN(raw)) {
+        logger.warn(`[A2AClient] Invalid (NaN) env var for ${name}, using default ${bounds.default}`);
+        return bounds.default;
+    }
+    if (raw < bounds.min) {
+        logger.warn(`[A2AClient] ${name} value ${raw} is below minimum ${bounds.min}, clamping to ${bounds.min}`);
+        return bounds.min;
+    }
+    if (raw > bounds.max) {
+        logger.warn(`[A2AClient] ${name} value ${raw} exceeds maximum ${bounds.max}, clamping to ${bounds.max}`);
+        return bounds.max;
+    }
+    return raw;
+}
 export class A2AClient {
     registry;
     retryConfig;
     constructor(retryConfig) {
         this.registry = AgentRegistry.getInstance();
+        const envMaxRetries = clampRetryValue(parseInt(process.env.A2A_RETRY_MAX_ATTEMPTS || String(RETRY_BOUNDS.maxRetries.default), 10), 'maxRetries', RETRY_BOUNDS.maxRetries);
+        const envBaseDelay = clampRetryValue(parseInt(process.env.A2A_RETRY_INITIAL_DELAY_MS || String(RETRY_BOUNDS.baseDelay.default), 10), 'baseDelay', RETRY_BOUNDS.baseDelay);
+        const envTimeout = clampRetryValue(parseInt(process.env.A2A_RETRY_TIMEOUT_MS || String(RETRY_BOUNDS.timeout.default), 10), 'timeout', RETRY_BOUNDS.timeout);
         this.retryConfig = {
-            maxRetries: parseInt(process.env.A2A_RETRY_MAX_ATTEMPTS || '3', 10),
-            baseDelay: parseInt(process.env.A2A_RETRY_INITIAL_DELAY_MS || '1000', 10),
+            maxRetries: envMaxRetries,
+            baseDelay: envBaseDelay,
             enableJitter: true,
             retryableStatusCodes: [429, 500, 502, 503, 504],
-            timeout: parseInt(process.env.A2A_RETRY_TIMEOUT_MS || '30000', 10),
+            timeout: envTimeout,
             ...retryConfig,
         };
     }
@@ -78,7 +102,7 @@ export class A2AClient {
                 if (!agent) {
                     throw createError(ErrorCodes.AGENT_NOT_FOUND, targetAgentId);
                 }
-                const url = `${agent.baseUrl}/a2a/tasks/${taskId}`;
+                const url = `${agent.baseUrl}/a2a/tasks/${encodeURIComponent(taskId)}`;
                 const response = await fetch(url, {
                     method: 'GET',
                     headers: this.getAuthHeaders(),
@@ -104,9 +128,9 @@ export class A2AClient {
                 const queryParams = new URLSearchParams();
                 if (params?.status)
                     queryParams.set('status', params.status);
-                if (params?.limit)
+                if (params?.limit !== undefined)
                     queryParams.set('limit', params.limit.toString());
-                if (params?.offset)
+                if (params?.offset !== undefined)
                     queryParams.set('offset', params.offset.toString());
                 const url = `${agent.baseUrl}/a2a/tasks?${queryParams.toString()}`;
                 const response = await fetch(url, {
@@ -154,7 +178,7 @@ export class A2AClient {
                 if (!agent) {
                     throw createError(ErrorCodes.AGENT_NOT_FOUND, targetAgentId);
                 }
-                const url = `${agent.baseUrl}/a2a/tasks/${taskId}/cancel`;
+                const url = `${agent.baseUrl}/a2a/tasks/${encodeURIComponent(taskId)}/cancel`;
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: this.getAuthHeaders(),

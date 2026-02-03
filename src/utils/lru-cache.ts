@@ -217,6 +217,51 @@ export class LRUCache<V = unknown> {
   }
 
   /**
+   * Peek at a value without triggering TTL expiration or updating access order.
+   *
+   * Unlike get(), this method:
+   * - Does NOT delete expired entries (caller can check timestamp)
+   * - Does NOT update access order or access count
+   * - Does NOT update the entry's timestamp
+   *
+   * This is useful when callers need to distinguish between "missing" and "expired"
+   * entries without the side-effect of TTL-based deletion.
+   *
+   * @param key - The cache key to peek at
+   * @returns The raw CacheEntry, or undefined if the key does not exist at all
+   *
+   * @example
+   * ```typescript
+   * const entry = cache.peek('token-abc');
+   * if (!entry) {
+   *   // Key never existed, was evicted, or was previously deleted
+   * } else if (cache.isExpired(entry)) {
+   *   // Key exists but is expired
+   * } else {
+   *   // Key exists and is valid
+   * }
+   * ```
+   */
+  peek(key: string): { value: V; timestamp: number } | undefined {
+    const entry = this.cache.get(key);
+    if (!entry) {
+      return undefined;
+    }
+    return { value: entry.value, timestamp: entry.timestamp };
+  }
+
+  /**
+   * Check whether an entry returned by peek() is expired according to this cache's TTL.
+   *
+   * @param entry - An entry object with a timestamp field (as returned by peek())
+   * @returns true if TTL is configured and the entry has exceeded it, false otherwise
+   */
+  isExpired(entry: { timestamp: number }): boolean {
+    if (!this.ttl) return false;
+    return Date.now() - entry.timestamp > this.ttl;
+  }
+
+  /**
    * Check if key exists in cache
    *
    * Unlike get(), this method does not update access order or count.
@@ -368,16 +413,23 @@ export class LRUCache<V = unknown> {
     const total = this.hits + this.misses;
     const hitRate = total > 0 ? (this.hits / total) * 100 : 0;
 
+    // Capture entry count from the iteration itself to avoid any TOCTOU
+    // discrepancy between the loop and the division (e.g., if the cache were
+    // cleared or modified by an eviction callback between the two operations).
     let totalAccessCount = 0;
+    let entryCount = 0;
     for (const entry of this.cache.values()) {
       totalAccessCount += entry.accessCount;
+      entryCount++;
     }
-    const averageAccessCount = this.cache.size > 0
-      ? totalAccessCount / this.cache.size
+    const averageAccessCount = entryCount > 0
+      ? totalAccessCount / entryCount
       : 0;
 
     return {
-      size: this.cache.size,
+      // Use entryCount (derived from the iteration above) for consistency
+      // with averageAccessCount, ensuring both reflect the same snapshot.
+      size: entryCount,
       maxSize: this.maxSize,
       hits: this.hits,
       misses: this.misses,
@@ -421,17 +473,45 @@ export class LRUCache<V = unknown> {
   cleanupExpired(): number {
     if (!this.ttl) return 0;
 
-    let cleaned = 0;
     const now = Date.now();
 
+    // ✅ MAJOR-3: Collect expired keys first, then batch delete to avoid N disk writes
+    const expiredKeys: string[] = [];
     for (const [key, entry] of this.cache.entries()) {
       if (now - entry.timestamp > this.ttl) {
-        this.delete(key);
-        cleaned++;
+        expiredKeys.push(key);
       }
     }
 
-    return cleaned;
+    if (expiredKeys.length === 0) {
+      return 0;
+    }
+
+    // Delete entries without calling this.delete() which triggers saveToDisk each time
+    for (const key of expiredKeys) {
+      const entry = this.cache.get(key);
+
+      // Call onEvict callback if configured
+      if (entry && this.onEvict) {
+        this.onEvict(key, entry.value);
+      }
+
+      // Remove from cache
+      this.cache.delete(key);
+
+      // Remove from accessOrder
+      const index = this.accessOrder.indexOf(key);
+      if (index > -1) {
+        this.accessOrder.splice(index, 1);
+      }
+    }
+
+    // Save to disk only once after all deletions
+    if (this.persistPath) {
+      this.saveToDisk();
+    }
+
+    return expiredKeys.length;
   }
 
   /**

@@ -73,6 +73,15 @@ export class A2AServer {
                 resolve(port);
             });
             this.server.on('error', (err) => {
+                try {
+                    this.taskQueue.close();
+                }
+                catch (closeErr) {
+                    logger.error('[A2A Server] Failed to close TaskQueue during startup error cleanup', {
+                        originalError: err.message,
+                        closeError: closeErr instanceof Error ? closeErr.message : String(closeErr),
+                    });
+                }
                 reject(err);
             });
         });
@@ -95,6 +104,9 @@ export class A2AServer {
                     resolve();
                 });
             });
+        }
+        else {
+            this.taskQueue.close();
         }
     }
     getPort() {

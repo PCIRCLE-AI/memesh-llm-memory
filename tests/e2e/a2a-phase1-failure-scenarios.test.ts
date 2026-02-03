@@ -151,9 +151,9 @@ describe('A2A Phase 1.0 - E2E Failure Scenarios', () => {
   it(
     'should handle task timeout detection',
     withE2EResource(async () => {
-      // Set very short timeout (1 second)
+      // Set timeout to minimum allowed value (5 seconds, enforced by MCPTaskDelegator bounds)
       const originalTimeout = process.env.MEMESH_A2A_TASK_TIMEOUT;
-      process.env.MEMESH_A2A_TASK_TIMEOUT = '1000'; // 1 second
+      process.env.MEMESH_A2A_TASK_TIMEOUT = '5000'; // 5 seconds (minimum allowed)
 
       // Create task
       const sendResponse = await fetch(`${baseUrl}/a2a/send-message`, {
@@ -180,10 +180,11 @@ describe('A2A Phase 1.0 - E2E Failure Scenarios', () => {
       const task = taskQueue.getTask(taskId);
       const taskMessage = task?.messages[0];
       const taskText = taskMessage?.parts.find(p => p.type === 'text')?.text || '';
-      await delegator.addTask(taskId, taskText, 'high', agentId);
 
-      // Wait for timeout (1.5 seconds)
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Backdate the task createdAt to simulate time passage instead of waiting
+      await delegator.addTask(taskId, taskText, 'high', agentId);
+      const pendingTask = (delegator as any).pendingTasks.get(taskId);
+      pendingTask.createdAt = Date.now() - 6000; // 6 seconds ago (exceeds 5s timeout)
 
       // Trigger timeout check
       await delegator.checkTimeouts();

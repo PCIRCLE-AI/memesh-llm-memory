@@ -2,6 +2,51 @@ import { ValidationError, NotFoundError, OperationError } from '../errors/index.
 import { handleBuddySecretStore, handleBuddySecretGet, handleBuddySecretList, handleBuddySecretDelete, } from './handlers/index.js';
 import { a2aListTasks, A2AListTasksInputSchema } from './tools/a2a-list-tasks.js';
 import { a2aReportResult, A2AReportResultInputSchema } from './tools/a2a-report-result.js';
+const TOOL_NAME_REGEX = /^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$/;
+const TOOL_NAME_MAX_LENGTH = 64;
+function sanitizeToolNameForError(toolName) {
+    if (typeof toolName !== 'string') {
+        return '[non-string]';
+    }
+    const cleaned = toolName
+        .replace(/[\x00-\x1F\x7F-\x9F]/g, '')
+        .replace(/['"\\]/g, (ch) => `\\${ch}`)
+        .substring(0, TOOL_NAME_MAX_LENGTH);
+    return cleaned.length < toolName.length ? `${cleaned}...` : cleaned;
+}
+function validateToolName(toolName) {
+    if (typeof toolName !== 'string') {
+        throw new ValidationError('Tool name must be a string', {
+            component: 'ToolRouter',
+            method: 'validateToolName',
+            providedType: typeof toolName,
+        });
+    }
+    if (toolName.length === 0) {
+        throw new ValidationError('Tool name cannot be empty', {
+            component: 'ToolRouter',
+            method: 'validateToolName',
+        });
+    }
+    if (toolName.length > TOOL_NAME_MAX_LENGTH) {
+        throw new ValidationError(`Tool name exceeds maximum length of ${TOOL_NAME_MAX_LENGTH} characters`, {
+            component: 'ToolRouter',
+            method: 'validateToolName',
+            providedLength: toolName.length,
+            maxLength: TOOL_NAME_MAX_LENGTH,
+        });
+    }
+    if (!TOOL_NAME_REGEX.test(toolName)) {
+        const safeName = sanitizeToolNameForError(toolName);
+        throw new ValidationError(`Invalid tool name: '${safeName}'. Tool names must contain only lowercase alphanumeric characters, hyphens, and underscores, and must start and end with an alphanumeric character.`, {
+            component: 'ToolRouter',
+            method: 'validateToolName',
+            providedName: safeName,
+            pattern: TOOL_NAME_REGEX.source,
+            hint: 'Example valid names: buddy-do, get-workflow-guidance, a2a-send-task',
+        });
+    }
+}
 export class ToolRouter {
     rateLimiter;
     toolHandlers;
@@ -71,6 +116,7 @@ export class ToolRouter {
                 requiredFields: ['name (string, non-empty)', 'arguments (object)'],
             });
         }
+        validateToolName(params.name);
         if (!this.rateLimiter.consume(1)) {
             const status = this.rateLimiter.getStatus();
             throw new OperationError('Rate limit exceeded. Please try again in a moment.', {
@@ -200,7 +246,8 @@ export class ToolRouter {
             }
             return await a2aReportResult(validationResult.data, this.taskQueue, this.mcpTaskDelegator);
         }
-        throw new NotFoundError(`Unknown tool: ${toolName}`, 'tool', toolName);
+        const safeName = sanitizeToolNameForError(toolName);
+        throw new NotFoundError(`Unknown tool: ${safeName}`, 'tool', safeName);
     }
 }
 //# sourceMappingURL=ToolRouter.js.map

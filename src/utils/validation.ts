@@ -85,16 +85,44 @@ export function validateNonEmptyArray<T>(
   }
 }
 
+/**
+ * Validate that an object's JSON serialization does not exceed a character limit.
+ *
+ * Note: This measures characters (string length), not bytes. For UTF-8 encoding,
+ * multi-byte characters will use more bytes than characters.
+ *
+ * @param value - The object to validate
+ * @param name - Name of the field (for error messages)
+ * @param maxChars - Maximum allowed characters in the JSON serialization
+ */
 export function validateObjectSize(
   value: object,
   name: string,
-  maxBytes: number
+  maxChars: number
 ): void {
-  const size = JSON.stringify(value).length;
-  if (size > maxBytes) {
-    throw new ValidationError(`${name} exceeds size limit`, {
-      providedSize: size,
-      maxSize: maxBytes,
+  let serialized: string;
+  try {
+    serialized = JSON.stringify(value);
+  } catch (error) {
+    // JSON.stringify throws TypeError on circular references and on BigInt values.
+    // Surface these as ValidationErrors with a helpful message so callers get a
+    // consistent error type rather than an unexpected TypeError.
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new ValidationError(
+      `${name} cannot be serialized for size validation: ${reason}`,
+      {
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+        hint: 'The object may contain circular references or non-serializable values (e.g., BigInt)',
+      }
+    );
+  }
+
+  // ✅ MINOR-1: Clarified that this measures characters, not bytes
+  const charCount = serialized.length;
+  if (charCount > maxChars) {
+    throw new ValidationError(`${name} exceeds character limit`, {
+      providedChars: charCount,
+      maxChars: maxChars,
     });
   }
 }

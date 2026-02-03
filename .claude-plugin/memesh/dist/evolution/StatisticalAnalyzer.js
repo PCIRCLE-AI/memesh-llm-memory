@@ -11,9 +11,12 @@ export class StatisticalAnalyzer {
         if (data.length === 0) {
             return 0;
         }
+        if (data.length === 1) {
+            return 0;
+        }
         const mean = this.calculateMean(data);
         const squaredDiffs = data.map((val) => Math.pow(val - mean, 2));
-        const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / data.length;
+        const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / (data.length - 1);
         return Math.sqrt(variance);
     }
     welchTTest(control, treatment) {
@@ -30,6 +33,12 @@ export class StatisticalAnalyzer {
         const variance2 = Math.pow(stdDev2, 2) / n2;
         const varianceSum = variance1 + variance2;
         if (varianceSum === 0) {
+            logger.debug('[StatisticalAnalyzer] Zero varianceSum in welchTTest - both groups have identical values', {
+                mean1,
+                mean2,
+                n1,
+                n2,
+            });
             return {
                 tStatistic: 0,
                 pValue: 1.0,
@@ -37,7 +46,20 @@ export class StatisticalAnalyzer {
                 significant: false,
             };
         }
-        const tStatistic = (mean1 - mean2) / Math.sqrt(varianceSum);
+        const sqrtVarianceSum = Math.sqrt(varianceSum);
+        if (sqrtVarianceSum === 0 || !Number.isFinite(sqrtVarianceSum)) {
+            logger.warn('[StatisticalAnalyzer] sqrt(varianceSum) is degenerate', {
+                varianceSum,
+                sqrtVarianceSum,
+            });
+            return {
+                tStatistic: 0,
+                pValue: 1.0,
+                degreesOfFreedom: n1 + n2 - 2,
+                significant: false,
+            };
+        }
+        const tStatistic = (mean1 - mean2) / sqrtVarianceSum;
         if (!Number.isFinite(tStatistic)) {
             logger.warn('[StatisticalAnalyzer] Invalid t-statistic', {
                 mean1,
@@ -121,6 +143,9 @@ export class StatisticalAnalyzer {
             return 0;
         if (x >= 1)
             return 1;
+        if (a <= 0 || b <= 0 || !Number.isFinite(a) || !Number.isFinite(b)) {
+            return 0;
+        }
         const lnBeta = this.logGamma(a) + this.logGamma(b) - this.logGamma(a + b);
         const front = Math.exp(Math.log(x) * a + Math.log(1 - x) * b - lnBeta) / a;
         let f = 1.0;
@@ -152,6 +177,9 @@ export class StatisticalAnalyzer {
         return front * f;
     }
     logGamma(x) {
+        if (x <= 0 || !Number.isFinite(x)) {
+            return 0;
+        }
         const cof = [
             76.18009172947146, -86.50532032941677, 24.01409824083091,
             -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5,
@@ -166,12 +194,15 @@ export class StatisticalAnalyzer {
         return -tmp + Math.log((2.5066282746310005 * ser) / x);
     }
     calculateEffectSize(control, treatment) {
+        const n1 = control.length;
+        const n2 = treatment.length;
+        if (n1 < 2 || n2 < 2) {
+            return 0;
+        }
         const mean1 = this.calculateMean(control);
         const mean2 = this.calculateMean(treatment);
         const stdDev1 = this.calculateStdDev(control);
         const stdDev2 = this.calculateStdDev(treatment);
-        const n1 = control.length;
-        const n2 = treatment.length;
         const pooledVariance = ((n1 - 1) * Math.pow(stdDev1, 2) + (n2 - 1) * Math.pow(stdDev2, 2)) /
             (n1 + n2 - 2);
         const pooledStdDev = Math.sqrt(pooledVariance);
@@ -181,13 +212,29 @@ export class StatisticalAnalyzer {
         return (mean1 - mean2) / pooledStdDev;
     }
     calculateConfidenceInterval(data, confidence = 0.95) {
+        if (data.length === 0) {
+            return [0, 0];
+        }
         const mean = this.calculateMean(data);
         const stdDev = this.calculateStdDev(data);
         const n = data.length;
+        if (n === 1) {
+            return [mean, mean];
+        }
         const alpha = 1 - confidence;
         const df = n - 1;
         const tCritical = this.getTCritical(alpha / 2, df);
-        const marginOfError = tCritical * (stdDev / Math.sqrt(n));
+        const sqrtN = Math.sqrt(n);
+        const marginOfError = tCritical * (stdDev / sqrtN);
+        if (!Number.isFinite(marginOfError)) {
+            logger.warn('[StatisticalAnalyzer] Non-finite marginOfError in CI calculation', {
+                tCritical,
+                stdDev,
+                sqrtN,
+                marginOfError,
+            });
+            return [mean, mean];
+        }
         return [mean - marginOfError, mean + marginOfError];
     }
     getTCritical(alpha, df) {
@@ -208,6 +255,12 @@ export class StatisticalAnalyzer {
         return Math.sqrt(2) * this.erfInv(1 - 2 * alpha);
     }
     erfInv(x) {
+        if (x <= -1)
+            return -6;
+        if (x >= 1)
+            return 6;
+        if (x === 0)
+            return 0;
         const a = 0.147;
         const b = 2 / (Math.PI * a) + Math.log(1 - x * x) / 2;
         const sqrt1 = Math.sqrt(b * b - Math.log(1 - x * x) / a);

@@ -291,3 +291,4 @@ Library/
 
 # Browser automation artifacts
 .playwright-mcp/
+.claude-plugin/memesh/.claude-plugin/plugin.json

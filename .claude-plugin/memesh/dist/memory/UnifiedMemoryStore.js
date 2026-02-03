@@ -138,9 +138,10 @@ export class UnifiedMemoryStore {
                     validTypes: Object.keys(MEMORY_TYPE_MAPPING),
                 });
             }
+            const normalizedImportance = memory.importance ?? 0.5;
             const observations = [
                 `content: ${memory.content}`,
-                `importance: ${memory.importance}`,
+                `importance: ${normalizedImportance}`,
                 `timestamp: ${timestamp.toISOString()}`,
             ];
             if (memory.context) {
@@ -178,7 +179,7 @@ export class UnifiedMemoryStore {
                 contentHash,
                 metadata: {
                     memoryType: memory.type,
-                    importance: memory.importance,
+                    importance: normalizedImportance,
                     timestamp: timestamp.toISOString(),
                     ...(memory.metadata || {}),
                 },
@@ -298,8 +299,9 @@ export class UnifiedMemoryStore {
                 limit: Math.min(finalLimit * 10, 1000),
             };
             const baseResults = await this.traditionalSearch(query, candidateOptions);
+            const deduplicatedResults = this.deduplicateResults(baseResults);
             const smartQuery = new SmartMemoryQuery();
-            const rankedResults = smartQuery.search(query, baseResults, options);
+            const rankedResults = smartQuery.search(query, deduplicatedResults, options);
             const finalResults = rankedResults.slice(0, finalLimit);
             return finalResults;
         }
@@ -387,7 +389,7 @@ export class UnifiedMemoryStore {
                 default:
                     cutoffDate = new Date(0);
             }
-            filtered = filtered.filter((m) => m.timestamp >= cutoffDate);
+            filtered = filtered.filter((m) => m.timestamp.getTime() >= cutoffDate.getTime());
         }
         if (options?.minImportance !== undefined) {
             filtered = filtered.filter((m) => m.importance >= options.minImportance);
@@ -399,6 +401,32 @@ export class UnifiedMemoryStore {
             filtered = filtered.slice(0, options.limit);
         }
         return filtered;
+    }
+    deduplicateResults(memories) {
+        if (memories.length <= 1) {
+            return memories;
+        }
+        const seen = new Map();
+        for (const memory of memories) {
+            const contentHash = memory.content === ''
+                ? `empty:${memory.id ?? uuidv4()}`
+                : createHash('sha256').update(memory.content).digest('hex');
+            const existing = seen.get(contentHash);
+            if (!existing) {
+                seen.set(contentHash, memory);
+            }
+            else {
+                const memoryImportance = Number.isFinite(memory.importance) ? memory.importance : 0;
+                const existingImportance = Number.isFinite(existing.importance) ? existing.importance : 0;
+                const shouldReplace = memoryImportance > existingImportance ||
+                    (memoryImportance === existingImportance &&
+                        memory.timestamp.getTime() > existing.timestamp.getTime());
+                if (shouldReplace) {
+                    seen.set(contentHash, memory);
+                }
+            }
+        }
+        return Array.from(seen.values());
     }
     async searchByType(type, options) {
         return this.search('', { ...options, types: [type] });
@@ -431,6 +459,10 @@ export class UnifiedMemoryStore {
                 id,
                 timestamp: existing.timestamp,
             };
+            const deleted = this.knowledgeGraph.deleteEntity(id);
+            if (!deleted) {
+                logger.warn(`[UnifiedMemoryStore] Entity ${id} was deleted during update operation, will create new entry`);
+            }
             await this.store(updatedMemory);
             logger.info(`[UnifiedMemoryStore] Updated memory: ${id}`);
             return true;
@@ -506,7 +538,14 @@ export class UnifiedMemoryStore {
                 importance = parseFloat(obs.substring('importance: '.length)) || 0.5;
             }
             else if (obs.startsWith('timestamp: ')) {
-                timestamp = new Date(obs.substring('timestamp: '.length));
+                const parsedTimestamp = new Date(obs.substring('timestamp: '.length));
+                if (!isNaN(parsedTimestamp.getTime())) {
+                    timestamp = parsedTimestamp;
+                }
+                else {
+                    timestamp = entity.createdAt || new Date();
+                    logger.warn(`[UnifiedMemoryStore] Invalid timestamp in entity ${entity.name}, using fallback: ${timestamp.toISOString()}`);
+                }
             }
             else if (obs.startsWith('metadata: ')) {
                 try {

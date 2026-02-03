@@ -14,17 +14,11 @@
  * @module a2a/server/middleware/rateLimit
  */
 
-import type { Request, Response, NextFunction } from 'express';
+import type { Response, NextFunction } from 'express';
 import { logger } from '../../../utils/logger.js';
 import { RATE_LIMITS, ENV_KEYS } from '../../constants.js';
 import type { TokenBucket, RateLimitStats } from '../../types/rateLimit.js';
-
-/**
- * Authenticated request with agentId
- */
-interface AuthenticatedRequest extends Request {
-  agentId?: string;
-}
+import type { AuthenticatedRequest } from './auth.js';
 
 /**
  * Rate limiter storage
@@ -43,11 +37,15 @@ const stats = new Map<string, RateLimitStats>();
 let cleanupTimer: NodeJS.Timeout | null = null;
 
 /**
- * Mutex for refill operations to prevent race conditions
+ * Guard flag for refill operations to prevent re-entrant refills.
  * Key: `${agentId}:${endpoint}`
- * Value: Promise that resolves when refill is complete
+ *
+ * Since Node.js is single-threaded, synchronous code cannot be interleaved.
+ * The token refill calculation is purely synchronous (timestamp math), so
+ * a simple Set-based guard is sufficient to prevent any edge-case re-entrancy
+ * if refillTokens were ever called from a nested synchronous context.
  */
-const refillMutex = new Map<string, Promise<void>>();
+const refillGuard = new Set<string>();
 
 /**
  * Get rate limit configuration from environment or defaults
@@ -136,20 +134,29 @@ function getBucket(agentId: string, endpoint: string): TokenBucket {
 }
 
 /**
- * Refill tokens based on elapsed time (with mutex protection)
- * @param key - Bucket key for lock identification
+ * Refill tokens based on elapsed time.
+ *
+ * This is a purely synchronous operation (timestamp math only).
+ * In Node.js single-threaded model, synchronous code cannot be interleaved,
+ * so no async mutex is needed. The refillGuard prevents any edge-case
+ * re-entrancy from nested synchronous calls.
+ *
+ * Previous implementation used an async mutex (Promise-based) which introduced
+ * a TOCTOU race condition: two concurrent requests could both check the mutex Map,
+ * find it empty, and both proceed to create competing refill Promises before
+ * either had a chance to set the mutex entry.
+ *
+ * @param key - Bucket key for guard identification
  * @param bucket - Token bucket to refill
  */
-async function refillTokens(key: string, bucket: TokenBucket): Promise<void> {
-  // Check if refill is already in progress
-  const existingRefill = refillMutex.get(key);
-  if (existingRefill) {
-    await existingRefill;
+function refillTokens(key: string, bucket: TokenBucket): void {
+  // Guard against re-entrant calls (defensive; should not happen in practice)
+  if (refillGuard.has(key)) {
     return;
   }
 
-  // Start refill operation
-  const refillPromise = (async () => {
+  refillGuard.add(key);
+  try {
     const now = Date.now();
     const elapsed = now - bucket.lastRefill;
     const tokensToAdd = elapsed * bucket.refillRate;
@@ -158,21 +165,23 @@ async function refillTokens(key: string, bucket: TokenBucket): Promise<void> {
       bucket.tokens = Math.min(bucket.maxTokens, bucket.tokens + tokensToAdd);
       bucket.lastRefill = now;
     }
-  })();
-
-  refillMutex.set(key, refillPromise);
-  await refillPromise;
-  refillMutex.delete(key);
+  } finally {
+    refillGuard.delete(key);
+  }
 }
 
 /**
- * Try to consume a token from the bucket
- * @param key - Bucket key for lock identification
+ * Try to consume a token from the bucket.
+ *
+ * Synchronous operation: refills tokens based on elapsed time, then
+ * attempts to consume one token. Returns immediately with the result.
+ *
+ * @param key - Bucket key for guard identification
  * @param bucket - Token bucket to consume from
  * @returns true if token was consumed, false if rate limit exceeded
  */
-async function tryConsume(key: string, bucket: TokenBucket): Promise<boolean> {
-  await refillTokens(key, bucket);
+function tryConsume(key: string, bucket: TokenBucket): boolean {
+  refillTokens(key, bucket);
 
   if (bucket.tokens >= 1) {
     bucket.tokens -= 1;
@@ -305,11 +314,11 @@ export function clearRateLimitData(): void {
  * );
  * ```
  */
-export async function rateLimitMiddleware(
+export function rateLimitMiddleware(
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
-): Promise<void> {
+): void {
   const agentId = req.agentId;
 
   if (!agentId) {
@@ -328,7 +337,7 @@ export async function rateLimitMiddleware(
   const endpoint = normalizeEndpoint(req.path);
   const key = `${agentId}:${endpoint}`;
   const bucket = getBucket(agentId, endpoint);
-  const allowed = await tryConsume(key, bucket);
+  const allowed = tryConsume(key, bucket);
 
   updateStats(agentId, endpoint, !allowed);
 

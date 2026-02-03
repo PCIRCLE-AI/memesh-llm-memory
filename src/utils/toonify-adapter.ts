@@ -59,7 +59,7 @@ export interface OptimizationStats {
 }
 
 /**
- * Singleton ToonifyAdapter for consistent optimization across claude-code-buddy
+ * Singleton ToonifyAdapter for consistent optimization across MeMesh
  */
 export class ToonifyAdapter {
   private static instance: ToonifyAdapter | null = null;

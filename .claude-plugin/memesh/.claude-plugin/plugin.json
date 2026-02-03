@@ -4,7 +4,7 @@
   "author": {
     "name": "PCIRCLE AI"
   },
-  "version": "2.6.6",
+  "version": "2.6.4",
   "homepage": "https://github.com/PCIRCLE-AI/claude-code-buddy",
   "repository": "https://github.com/PCIRCLE-AI/claude-code-buddy",
   "license": "AGPL-3.0",
@@ -12,9 +12,12 @@
     "memesh": {
       "type": "stdio",
       "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/mcp/server-bootstrap.js"],
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/dist/mcp/server-bootstrap.js"
+      ],
       "env": {
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        "MEMESH_A2A_TOKEN": "23a74a1be2320dc507dd3b2a0695d76885a8f15f8066465eeca3cf2dd10ac8a5"
       }
     }
   }

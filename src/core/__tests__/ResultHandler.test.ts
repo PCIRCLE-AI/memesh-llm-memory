@@ -233,6 +233,78 @@ describe('ResultHandler', () => {
     });
   });
 
+  describe('terminal state guards', () => {
+    it('should NOT update status when task is already completed (terminal state guard)', () => {
+      const task = createMockTask();
+      task.status = 'running';
+
+      // First complete the task
+      handler.handleCompleted(task, { success: true, data: 'original' });
+      expect(task.status).toBe('completed');
+      expect(task.result).toEqual({ success: true, data: 'original' });
+      const originalEndTime = task.endTime;
+
+      // Now try to cancel it - should NOT change status
+      handler.handleCancelled(task);
+      expect(task.status).toBe('completed'); // Status should remain 'completed'
+      expect(task.result).toEqual({ success: true, data: 'original' }); // Result preserved
+      expect(task.endTime).toBe(originalEndTime); // End time unchanged
+
+      // Also try to fail it - should NOT change status
+      handler.handleFailed(task, new Error('Should not affect'));
+      expect(task.status).toBe('completed'); // Status should still be 'completed'
+      expect(task.error).toBeUndefined(); // Error should not be set
+    });
+
+    it('should NOT update status when task is already cancelled', () => {
+      const onComplete = vi.fn();
+      const task = createMockTask({ onComplete });
+      task.status = 'running';
+
+      // First cancel the task
+      handler.handleCancelled(task);
+      expect(task.status).toBe('cancelled');
+      const originalEndTime = task.endTime;
+
+      // Now try to complete it - should NOT change status
+      handler.handleCompleted(task, { success: true });
+      expect(task.status).toBe('cancelled'); // Status should remain 'cancelled'
+      expect(task.result).toBeUndefined(); // Result should not be set
+      expect(task.endTime).toBe(originalEndTime); // End time unchanged
+      expect(onComplete).not.toHaveBeenCalled(); // Callback should not be executed
+
+      // Also try to fail it - should NOT change status
+      handler.handleFailed(task, new Error('Should not affect'));
+      expect(task.status).toBe('cancelled'); // Status should still be 'cancelled'
+      expect(task.error).toBeUndefined(); // Error should not be set
+    });
+
+    it('should NOT update status when task is already failed', () => {
+      const onComplete = vi.fn();
+      const task = createMockTask({ onComplete });
+      task.status = 'running';
+
+      // First fail the task
+      const originalError = new Error('Original failure');
+      handler.handleFailed(task, originalError);
+      expect(task.status).toBe('failed');
+      expect(task.error).toBe(originalError);
+      const originalEndTime = task.endTime;
+
+      // Now try to complete it - should NOT change status
+      handler.handleCompleted(task, { success: true });
+      expect(task.status).toBe('failed'); // Status should remain 'failed'
+      expect(task.error).toBe(originalError); // Original error preserved
+      expect(task.result).toBeUndefined(); // Result should not be set
+      expect(task.endTime).toBe(originalEndTime); // End time unchanged
+      expect(onComplete).not.toHaveBeenCalled(); // Callback should not be executed
+
+      // Also try to cancel it - should NOT change status
+      handler.handleCancelled(task);
+      expect(task.status).toBe('failed'); // Status should still be 'failed'
+    });
+  });
+
   describe('callback execution', () => {
     it('should execute callbacks with correct context', () => {
       const results: unknown[] = [];

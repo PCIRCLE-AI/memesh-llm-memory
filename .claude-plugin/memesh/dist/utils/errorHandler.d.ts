@@ -5,11 +5,17 @@ export interface ErrorContext {
     requestId?: string;
     data?: Record<string, unknown>;
 }
+export interface ErrorCauseInfo {
+    message: string;
+    type: string;
+    stack?: string;
+}
 export interface HandledError {
     message: string;
     stack?: string;
     type: string;
     context?: ErrorContext;
+    causeChain?: ErrorCauseInfo[];
 }
 export declare function logError(error: unknown, context: ErrorContext): void;
 export declare function handleError(error: unknown, context: ErrorContext, userMessage?: string): HandledError;

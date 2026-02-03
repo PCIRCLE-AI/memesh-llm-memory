@@ -32,18 +32,42 @@
 import type { Request, Response, NextFunction } from 'express';
 import { randomBytes } from 'crypto';
 import { logger } from '../../../utils/logger.js';
+import { LRUCache } from '../../../utils/lru-cache.js';
 
 /**
- * CSRF token storage (in production, use Redis or database)
- * Key: token value
- * Value: expiration timestamp
+ * Maximum number of CSRF tokens to track.
+ * Prevents unbounded memory growth under attack.
+ * When exceeded, the LRU cache automatically evicts least-recently-used tokens.
  */
-const tokens = new Map<string, number>();
+const MAX_TOKENS = 10_000;
 
 /**
  * Token expiration time (1 hour)
  */
 const TOKEN_EXPIRATION_MS = 60 * 60 * 1000;
+
+/**
+ * CSRF token storage using LRU cache with TTL.
+ *
+ * Security properties:
+ * - Hard cap at MAX_TOKENS entries prevents OOM under token flooding attacks
+ * - TTL ensures expired tokens are automatically invalidated on access
+ * - LRU eviction policy removes oldest unused tokens first when capacity is reached
+ *
+ * Key: token value
+ * Value: expiration timestamp (kept for explicit expiration checks and response messages)
+ */
+const tokens = new LRUCache<number>({
+  maxSize: MAX_TOKENS,
+  ttl: TOKEN_EXPIRATION_MS,
+});
+
+/**
+ * Track whether we have already logged an eviction warning recently
+ * to avoid log flooding during sustained attacks.
+ */
+let lastEvictionWarningTime = 0;
+const EVICTION_WARNING_COOLDOWN_MS = 60_000; // 1 minute
 
 /**
  * Safe HTTP methods that don't require CSRF protection
@@ -62,18 +86,37 @@ function generateToken(): string {
 }
 
 /**
+ * Store a CSRF token, with capacity-pressure logging.
+ *
+ * When the LRU cache is at capacity, new insertions automatically evict
+ * the least-recently-used entry. This function logs a warning (rate-limited)
+ * when the cache is full so operators are aware of potential token flooding.
+ *
+ * @param token - The CSRF token string
+ * @param expiration - Expiration timestamp (ms since epoch)
+ */
+function storeToken(token: string, expiration: number): void {
+  const atCapacity = tokens.size() >= MAX_TOKENS;
+
+  tokens.set(token, expiration);
+
+  if (atCapacity) {
+    const now = Date.now();
+    if (now - lastEvictionWarningTime > EVICTION_WARNING_COOLDOWN_MS) {
+      lastEvictionWarningTime = now;
+      logger.warn('[CSRF] Token cache at capacity, LRU eviction triggered', {
+        maxTokens: MAX_TOKENS,
+        currentSize: tokens.size(),
+      });
+    }
+  }
+}
+
+/**
  * Clean up expired tokens
  */
 function cleanupExpiredTokens(): void {
-  const now = Date.now();
-  let cleaned = 0;
-
-  for (const [token, expiration] of tokens.entries()) {
-    if (expiration < now) {
-      tokens.delete(token);
-      cleaned++;
-    }
-  }
+  const cleaned = tokens.cleanupExpired();
 
   if (cleaned > 0) {
     logger.debug('[CSRF] Cleaned up expired tokens', { count: cleaned });
@@ -136,8 +179,8 @@ export function csrfTokenMiddleware(
   const token = generateToken();
   const expiration = Date.now() + TOKEN_EXPIRATION_MS;
 
-  // Store token
-  tokens.set(token, expiration);
+  // Store token (with capacity-pressure protection)
+  storeToken(token, expiration);
 
   // Send token in cookie (httpOnly, secure, sameSite)
   res.cookie('XSRF-TOKEN', token, {
@@ -215,10 +258,16 @@ export function csrfProtection(
     return;
   }
 
-  // Validate token exists and is not expired
-  const expiration = tokens.get(token);
+  // Validate token exists and is not expired.
+  //
+  // We use peek() instead of has()+get() because both has() and get() auto-delete
+  // expired entries, making it impossible to distinguish "missing" from "expired".
+  // peek() returns the raw entry without TTL side-effects, allowing us to provide
+  // accurate error codes (CSRF_TOKEN_INVALID vs CSRF_TOKEN_EXPIRED).
+  const entry = tokens.peek(token);
 
-  if (!expiration) {
+  if (!entry) {
+    // Token not in cache at all (never issued, already consumed, or evicted)
     logger.warn('[CSRF] Invalid CSRF token', {
       method: req.method,
       path: req.path,
@@ -235,14 +284,14 @@ export function csrfProtection(
     return;
   }
 
-  if (expiration < Date.now()) {
+  // Check if the token has expired using the stored expiration timestamp
+  if (entry.value < Date.now()) {
     logger.warn('[CSRF] Expired CSRF token', {
       method: req.method,
       path: req.path,
       ip: req.ip,
     });
 
-    // Remove expired token
     tokens.delete(token);
 
     res.status(403).json({
@@ -261,7 +310,7 @@ export function csrfProtection(
   // Generate new token for next request
   const newToken = generateToken();
   const newExpiration = Date.now() + TOKEN_EXPIRATION_MS;
-  tokens.set(newToken, newExpiration);
+  storeToken(newToken, newExpiration);
 
   // Send new token in response
   res.setHeader('X-CSRF-Token', newToken);

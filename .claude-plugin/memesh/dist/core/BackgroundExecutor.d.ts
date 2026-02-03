@@ -19,9 +19,12 @@ export declare class BackgroundExecutor {
     private attributionManager?;
     private resultHandler;
     private executionMonitor;
+    private isShuttingDown;
+    private shutdownPromise;
     private readonly MAX_TASK_HISTORY;
     private readonly FORCE_CLEANUP_AGE;
     private readonly MAX_CLEANUP_CANCELS;
+    private readonly SHUTDOWN_TIMEOUT_MS;
     constructor(resourceMonitor: ResourceMonitor, eventBus?: UIEventBus);
     executeTask(task: unknown, config: ExecutionConfig): Promise<string>;
     private processQueue;
@@ -52,5 +55,8 @@ export declare class BackgroundExecutor {
     completeTask(taskId: string, result: unknown): Promise<void>;
     failTask(taskId: string, error: Error): Promise<void>;
     private estimateTimeSaved;
+    private handleBackgroundTaskError;
+    destroy(): Promise<void>;
+    private performShutdown;
 }
 //# sourceMappingURL=BackgroundExecutor.d.ts.map

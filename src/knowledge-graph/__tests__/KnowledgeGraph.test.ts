@@ -28,7 +28,7 @@ describe('KnowledgeGraph', () => {
       // Create an entity
       kg.createEntity({
         name: 'TestEntity',
-        entityType: 'test_type',
+        entityType: 'feature',
         observations: ['observation1']
       });
 
@@ -48,12 +48,12 @@ describe('KnowledgeGraph', () => {
       // Create entities
       kg.createEntity({
         name: 'Entity1',
-        entityType: 'test_type',
+        entityType: 'feature',
         observations: ['obs1']
       });
       kg.createEntity({
         name: 'Entity2',
-        entityType: 'test_type',
+        entityType: 'feature',
         observations: ['obs2']
       });
 
@@ -61,7 +61,7 @@ describe('KnowledgeGraph', () => {
       kg.createRelation({
         from: 'Entity1',
         to: 'Entity2',
-        relationType: 'related_to'
+        relationType: 'depends_on'
       });
 
       // Verify relation exists
@@ -91,7 +91,7 @@ describe('KnowledgeGraph', () => {
     it('should return observations and tags without duplication', () => {
       kg.createEntity({
         name: 'EntityWithTags',
-        entityType: 'test_type',
+        entityType: 'feature',
         observations: ['alpha', 'beta|||gamma'],
         tags: ['tag-one', 'tag-two'],
       });

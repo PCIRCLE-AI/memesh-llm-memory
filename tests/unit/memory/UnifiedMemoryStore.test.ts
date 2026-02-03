@@ -425,6 +425,128 @@ describe('UnifiedMemoryStore', () => {
       expect(updated!.content).toBe('Updated content');
     });
 
+    it('should handle update with content change (delete-then-store pattern)', async () => {
+      // This test verifies FIX MAJOR-3: Delete old entity before re-storing
+      // to avoid deduplication conflicts when content changes
+
+      // Step 1: Store original memory
+      const originalContent = 'Original content for update test';
+      const memory: UnifiedMemory = {
+        type: 'knowledge',
+        content: originalContent,
+        tags: ['test', 'update-test'],
+        importance: 0.5,
+        timestamp: new Date(),
+        context: 'Original context',
+        metadata: { version: 1 },
+      };
+
+      const id = await store.store(memory);
+      const originalMemory = await store.get(id);
+      expect(originalMemory).not.toBeNull();
+      expect(originalMemory!.content).toBe(originalContent);
+
+      // Step 2: Update with completely different content
+      const newContent = 'Completely different content after update';
+      const success = await store.update(id, {
+        content: newContent,
+        importance: 0.8,
+        context: 'Updated context',
+        metadata: { version: 2, updated: true },
+      });
+
+      expect(success).toBe(true);
+
+      // Step 3: Verify the update was applied correctly
+      const updatedMemory = await store.get(id);
+      expect(updatedMemory).not.toBeNull();
+      expect(updatedMemory!.id).toBe(id); // ID should be preserved
+      expect(updatedMemory!.content).toBe(newContent); // Content updated
+      expect(updatedMemory!.importance).toBe(0.8); // Importance updated
+      expect(updatedMemory!.context).toBe('Updated context'); // Context updated
+      expect(updatedMemory!.metadata).toEqual({ version: 2, updated: true }); // Metadata updated
+
+      // Step 4: Verify old content is not searchable (entity was deleted)
+      const searchOldContent = await store.search(originalContent);
+      const foundOld = searchOldContent.find(m => m.id === id && m.content === originalContent);
+      expect(foundOld).toBeUndefined(); // Old content should not be found
+
+      // Step 5: Verify new content IS searchable
+      const searchNewContent = await store.search(newContent);
+      const foundNew = searchNewContent.find(m => m.id === id);
+      expect(foundNew).toBeDefined();
+      expect(foundNew!.content).toBe(newContent);
+    });
+
+    it('should preserve original timestamp when updating content', async () => {
+      // The update() method should preserve the original timestamp
+      const originalTimestamp = new Date('2024-01-15T10:00:00Z');
+      const memory: UnifiedMemory = {
+        type: 'decision',
+        content: 'Original decision',
+        tags: ['timestamp-test'],
+        importance: 0.7,
+        timestamp: originalTimestamp,
+      };
+
+      const id = await store.store(memory);
+
+      // Wait a bit to ensure time difference
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Update the memory
+      const success = await store.update(id, {
+        content: 'Updated decision content',
+        importance: 0.9,
+      });
+
+      expect(success).toBe(true);
+
+      const updated = await store.get(id);
+      expect(updated).not.toBeNull();
+
+      // Timestamp should be preserved (or very close to original)
+      // Note: Due to re-store, the timestamp might be re-parsed but should match
+      expect(updated!.timestamp.toISOString()).toBe(originalTimestamp.toISOString());
+    });
+
+    it('should handle update that results in duplicate content gracefully', async () => {
+      // Store first memory
+      const content1 = 'Unique content for memory 1';
+      const memory1: UnifiedMemory = {
+        type: 'knowledge',
+        content: content1,
+        tags: ['dup-test'],
+        importance: 0.5,
+        timestamp: new Date(),
+      };
+      const id1 = await store.store(memory1);
+
+      // Store second memory with different content
+      const content2 = 'Unique content for memory 2';
+      const memory2: UnifiedMemory = {
+        type: 'knowledge',
+        content: content2,
+        tags: ['dup-test'],
+        importance: 0.6,
+        timestamp: new Date(),
+      };
+      const id2 = await store.store(memory2);
+
+      // Update memory2 to have the SAME content as memory1
+      // With delete-then-store pattern, this should work (old entity deleted first)
+      const success = await store.update(id2, { content: content1 });
+
+      // The update should succeed because we delete the old entity first
+      // The deduplication might redirect to the existing entity with same content
+      expect(success).toBe(true);
+
+      // Verify memory1 still exists and is unchanged
+      const mem1After = await store.get(id1);
+      expect(mem1After).not.toBeNull();
+      expect(mem1After!.content).toBe(content1);
+    });
+
     it('should update memory tags', async () => {
       const memory: UnifiedMemory = {
         type: 'knowledge',

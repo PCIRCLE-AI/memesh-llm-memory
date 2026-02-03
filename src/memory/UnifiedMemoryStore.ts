@@ -249,10 +249,14 @@ export class UnifiedMemoryStore {
         });
       }
 
+      // ✅ FIX MAJOR-4: Default importance to 0.5 if undefined before building observations
+      // This prevents "importance: undefined" from being stored as a string observation
+      const normalizedImportance = memory.importance ?? 0.5;
+
       // Build observations array with structured data
       const observations: string[] = [
         `content: ${memory.content}`,
-        `importance: ${memory.importance}`,
+        `importance: ${normalizedImportance}`,
         `timestamp: ${timestamp.toISOString()}`,
       ];
 
@@ -304,7 +308,7 @@ export class UnifiedMemoryStore {
         contentHash,  // CRITICAL-1: Pass content hash for atomic deduplication
         metadata: {
           memoryType: memory.type,
-          importance: memory.importance,
+          importance: normalizedImportance,  // ✅ FIX MAJOR-4: Use normalized importance
           timestamp: timestamp.toISOString(),
           ...(memory.metadata || {}),
         },
@@ -501,11 +505,18 @@ export class UnifiedMemoryStore {
       // Using soft limit to get more candidates for better ranking
       const baseResults = await this.traditionalSearch(query, candidateOptions);
 
-      // Step 2: Apply SmartMemoryQuery for context-aware ranking
-      const smartQuery = new SmartMemoryQuery();
-      const rankedResults = smartQuery.search(query, baseResults, options);
+      // Step 2: Deduplicate results before ranking
+      // Pre-migration data or concurrent storage paths may produce entries with
+      // identical content. Deduplication uses a content hash (SHA-256 prefix) to
+      // efficiently detect duplicates while preserving the highest-importance
+      // entry for each unique content.
+      const deduplicatedResults = this.deduplicateResults(baseResults);
 
-      // Step 3: Apply final limit AFTER ranking (ensures we get highest-scored results)
+      // Step 3: Apply SmartMemoryQuery for context-aware ranking
+      const smartQuery = new SmartMemoryQuery();
+      const rankedResults = smartQuery.search(query, deduplicatedResults, options);
+
+      // Step 4: Apply final limit AFTER ranking (ensures we get highest-scored results)
       const finalResults = rankedResults.slice(0, finalLimit);
 
       return finalResults;
@@ -648,7 +659,7 @@ export class UnifiedMemoryStore {
           cutoffDate = new Date(0);
       }
 
-      filtered = filtered.filter((m) => m.timestamp >= cutoffDate);
+      filtered = filtered.filter((m) => m.timestamp.getTime() >= cutoffDate.getTime());
     }
 
     // Apply importance filter
@@ -667,6 +678,61 @@ export class UnifiedMemoryStore {
     }
 
     return filtered;
+  }
+
+  /**
+   * Deduplicate memory search results by content
+   *
+   * When the same content exists under multiple entity IDs (e.g., pre-migration
+   * data without content_hash, or edge cases in concurrent storage), this method
+   * ensures only one result per unique content is returned.
+   *
+   * Strategy:
+   * - Uses a SHA-256 hash of content for efficient O(1) lookup
+   * - When duplicates are found, keeps the entry with the highest importance
+   *   (breaks ties by most recent timestamp)
+   * - Operates in O(n) time and O(n) space, suitable for search result sets
+   *
+   * @param memories - Array of memories that may contain duplicates
+   * @returns Deduplicated array preserving the best entry per unique content
+   */
+  private deduplicateResults(memories: UnifiedMemory[]): UnifiedMemory[] {
+    if (memories.length <= 1) {
+      return memories;
+    }
+
+    // Map: content hash -> best memory for that content
+    const seen = new Map<string, UnifiedMemory>();
+
+    for (const memory of memories) {
+      // If content is empty, use the memory ID as the hash key to avoid
+      // incorrectly deduplicating distinct memories that both have empty content
+      // (entityToMemory defaults content to '' when no content observation exists)
+      const contentHash = memory.content === ''
+        ? `empty:${memory.id ?? uuidv4()}`
+        : createHash('sha256').update(memory.content).digest('hex');
+      const existing = seen.get(contentHash);
+
+      if (!existing) {
+        seen.set(contentHash, memory);
+      } else {
+        // Defensive: treat NaN importance as 0 to prevent incorrect comparisons
+        const memoryImportance = Number.isFinite(memory.importance) ? memory.importance : 0;
+        const existingImportance = Number.isFinite(existing.importance) ? existing.importance : 0;
+
+        // Keep the entry with higher importance; break ties with more recent timestamp
+        const shouldReplace =
+          memoryImportance > existingImportance ||
+          (memoryImportance === existingImportance &&
+            memory.timestamp.getTime() > existing.timestamp.getTime());
+
+        if (shouldReplace) {
+          seen.set(contentHash, memory);
+        }
+      }
+    }
+
+    return Array.from(seen.values());
   }
 
   /**
@@ -780,7 +846,21 @@ export class UnifiedMemoryStore {
         timestamp: existing.timestamp, // Preserve original timestamp
       };
 
-      // Re-store with same ID (will update via UPSERT)
+      // ✅ FIX MAJOR-3: Delete the old entity before re-storing to avoid dedup conflicts
+      // The store() method has deduplication logic (based on content hash) that can
+      // conflict with update semantics. By deleting first, we ensure the re-store
+      // creates a clean entry without triggering deduplication against the old entry.
+      // This is safe because we already have the existing data merged into updatedMemory.
+      const deleted = this.knowledgeGraph.deleteEntity(id);
+      if (!deleted) {
+        // Entity was deleted between get() and delete() - race condition
+        // Log warning but continue with store() as it will create a new entry
+        logger.warn(
+          `[UnifiedMemoryStore] Entity ${id} was deleted during update operation, will create new entry`
+        );
+      }
+
+      // Re-store with same ID (now creates a new entry since old was deleted)
       await this.store(updatedMemory);
 
       logger.info(`[UnifiedMemoryStore] Updated memory: ${id}`);
@@ -904,7 +984,17 @@ export class UnifiedMemoryStore {
       } else if (obs.startsWith('importance: ')) {
         importance = parseFloat(obs.substring('importance: '.length)) || 0.5;
       } else if (obs.startsWith('timestamp: ')) {
-        timestamp = new Date(obs.substring('timestamp: '.length));
+        // ✅ FIX MINOR-4: Validate parsed Date to handle invalid timestamp strings
+        const parsedTimestamp = new Date(obs.substring('timestamp: '.length));
+        if (!isNaN(parsedTimestamp.getTime())) {
+          timestamp = parsedTimestamp;
+        } else {
+          // Invalid timestamp string - fall back to entity.createdAt or current time
+          timestamp = entity.createdAt || new Date();
+          logger.warn(
+            `[UnifiedMemoryStore] Invalid timestamp in entity ${entity.name}, using fallback: ${timestamp.toISOString()}`
+          );
+        }
       } else if (obs.startsWith('metadata: ')) {
         try {
           const metadataStr = obs.substring('metadata: '.length);

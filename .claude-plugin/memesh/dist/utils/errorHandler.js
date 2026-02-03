@@ -24,13 +24,48 @@ function safeStringifyWithLimit(data, maxLength = 2000) {
         return `[Stringify failed: ${error instanceof Error ? error.message : String(error)}]`;
     }
 }
+function extractCauseChain(error, maxDepth = 10) {
+    if (!(error instanceof Error) || !error.cause) {
+        return undefined;
+    }
+    const chain = [];
+    let current = error.cause;
+    const seen = new WeakSet();
+    while (current && chain.length < maxDepth) {
+        if (typeof current === 'object' && current !== null) {
+            if (seen.has(current)) {
+                chain.push({ message: '[Circular cause reference]', type: 'CircularRef' });
+                break;
+            }
+            seen.add(current);
+        }
+        if (current instanceof Error) {
+            chain.push({
+                message: current.message,
+                type: current.constructor.name,
+                stack: current.stack ? sanitizeSensitiveData(current.stack) : undefined,
+            });
+            current = current.cause;
+        }
+        else {
+            chain.push({
+                message: String(current),
+                type: typeof current,
+            });
+            break;
+        }
+    }
+    return chain.length > 0 ? chain : undefined;
+}
 export function logError(error, context) {
     const errorObj = error instanceof Error ? error : new Error(String(error));
+    const causeChain = extractCauseChain(errorObj);
     logger.error(`Error in ${context.component}.${context.method}`, {
         message: errorObj.message,
         stack: sanitizeSensitiveData(errorObj.stack || ''),
         errorType: errorObj.constructor.name,
         requestId: context.requestId,
+        ...(causeChain && { causeChain }),
         context: {
             component: context.component,
             method: context.method,
@@ -40,13 +75,27 @@ export function logError(error, context) {
     });
 }
 export function handleError(error, context, userMessage) {
-    logError(error, context);
     const errorObj = error instanceof Error ? error : new Error(String(error));
+    const causeChain = extractCauseChain(errorObj);
+    logger.error(`Error in ${context.component}.${context.method}`, {
+        message: errorObj.message,
+        stack: sanitizeSensitiveData(errorObj.stack || ''),
+        errorType: errorObj.constructor.name,
+        requestId: context.requestId,
+        ...(causeChain && { causeChain }),
+        context: {
+            component: context.component,
+            method: context.method,
+            operation: context.operation,
+            data: context.data ? sanitizeSensitiveData(safeStringifyWithLimit(context.data)) : undefined,
+        },
+    });
     return {
         message: userMessage || errorObj.message,
         stack: sanitizeSensitiveData(errorObj.stack || ''),
         type: errorObj.constructor.name,
         context,
+        ...(causeChain && { causeChain }),
     };
 }
 export function withErrorHandling(fn, context) {

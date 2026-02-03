@@ -17,9 +17,13 @@ describe('StatisticalAnalyzer', () => {
   });
 
   describe('calculateStdDev', () => {
-    it('should calculate standard deviation correctly', () => {
+    it('should calculate sample standard deviation correctly', () => {
+      // Using Bessel's correction (n-1) for sample standard deviation
+      // Data: [2, 4, 4, 4, 5, 5, 7, 9], mean = 5
+      // Sample variance = sum((x - mean)^2) / (n-1) = 32 / 7 ≈ 4.571
+      // Sample std dev = sqrt(4.571) ≈ 2.138
       const stdDev = analyzer.calculateStdDev([2, 4, 4, 4, 5, 5, 7, 9]);
-      expect(stdDev).toBeCloseTo(2.0, 1);
+      expect(stdDev).toBeCloseTo(2.138, 2);
     });
 
     it('should return 0 for uniform data', () => {

@@ -15,6 +15,12 @@ export class QueryCache {
         this.defaultTTL = options.defaultTTL || 5 * 60 * 1000;
         this.debug = options.debug || false;
         this.cache = new Map();
+        if (this.debug) {
+            logger.debug('[QueryCache] Initialized', {
+                maxSize: this.maxSize,
+                defaultTTL: this.defaultTTL,
+            });
+        }
         this.cleanupInterval = setInterval(() => {
             try {
                 this.cleanup();
@@ -40,11 +46,8 @@ export class QueryCache {
                 }
             }
         }, 60 * 1000);
-        if (this.debug) {
-            logger.debug('[QueryCache] Initialized', {
-                maxSize: this.maxSize,
-                defaultTTL: this.defaultTTL,
-            });
+        if (this.cleanupInterval.unref) {
+            this.cleanupInterval.unref();
         }
     }
     get(key) {

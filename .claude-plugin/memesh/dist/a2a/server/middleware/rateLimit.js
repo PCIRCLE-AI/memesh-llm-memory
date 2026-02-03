@@ -3,7 +3,7 @@ import { RATE_LIMITS, ENV_KEYS } from '../../constants.js';
 const buckets = new Map();
 const stats = new Map();
 let cleanupTimer = null;
-const refillMutex = new Map();
+const refillGuard = new Set();
 function getRateLimitConfig(endpoint) {
     const envMap = {
         '/a2a/send-message': ENV_KEYS.RATE_LIMIT_SEND_MESSAGE,
@@ -60,13 +60,12 @@ function getBucket(agentId, endpoint) {
     }
     return bucket;
 }
-async function refillTokens(key, bucket) {
-    const existingRefill = refillMutex.get(key);
-    if (existingRefill) {
-        await existingRefill;
+function refillTokens(key, bucket) {
+    if (refillGuard.has(key)) {
         return;
     }
-    const refillPromise = (async () => {
+    refillGuard.add(key);
+    try {
         const now = Date.now();
         const elapsed = now - bucket.lastRefill;
         const tokensToAdd = elapsed * bucket.refillRate;
@@ -74,13 +73,13 @@ async function refillTokens(key, bucket) {
             bucket.tokens = Math.min(bucket.maxTokens, bucket.tokens + tokensToAdd);
             bucket.lastRefill = now;
         }
-    })();
-    refillMutex.set(key, refillPromise);
-    await refillPromise;
-    refillMutex.delete(key);
+    }
+    finally {
+        refillGuard.delete(key);
+    }
 }
-async function tryConsume(key, bucket) {
-    await refillTokens(key, bucket);
+function tryConsume(key, bucket) {
+    refillTokens(key, bucket);
     if (bucket.tokens >= 1) {
         bucket.tokens -= 1;
         return true;
@@ -157,7 +156,7 @@ export function clearRateLimitData() {
     buckets.clear();
     stats.clear();
 }
-export async function rateLimitMiddleware(req, res, next) {
+export function rateLimitMiddleware(req, res, next) {
     const agentId = req.agentId;
     if (!agentId) {
         logger.error('[Rate Limit] Missing agentId in authenticated request');
@@ -173,7 +172,7 @@ export async function rateLimitMiddleware(req, res, next) {
     const endpoint = normalizeEndpoint(req.path);
     const key = `${agentId}:${endpoint}`;
     const bucket = getBucket(agentId, endpoint);
-    const allowed = await tryConsume(key, bucket);
+    const allowed = tryConsume(key, bucket);
     updateStats(agentId, endpoint, !allowed);
     if (!allowed) {
         const retryAfter = calculateRetryAfter(bucket);

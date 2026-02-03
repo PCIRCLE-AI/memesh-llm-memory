@@ -2,6 +2,7 @@ import type { Task, TaskFilter, TaskStatus, CreateTaskParams, UpdateTaskParams, 
 export declare class TaskQueue {
     private db;
     private preparedStatements;
+    private isClosed;
     constructor(agentId: string, dbPath?: string);
     private initializeSchema;
     private getStatement;

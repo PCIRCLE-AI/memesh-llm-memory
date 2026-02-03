@@ -2,6 +2,7 @@ import winston from 'winston';
 import { existsSync, mkdirSync } from 'fs';
 import path from 'path';
 import { getTraceContext } from './tracing/index.js';
+import { looksLikeSensitive, hashValue } from '../telemetry/sanitization.js';
 export var LogLevel;
 (function (LogLevel) {
     LogLevel["ERROR"] = "error";
@@ -9,6 +10,48 @@ export var LogLevel;
     LogLevel["INFO"] = "info";
     LogLevel["DEBUG"] = "debug";
 })(LogLevel || (LogLevel = {}));
+function sanitizeString(value) {
+    if (!value || value.length < 8)
+        return value;
+    if (looksLikeSensitive(value)) {
+        return `[REDACTED:${hashValue(value)}]`;
+    }
+    return value;
+}
+function sanitizeLogData(obj, visited = new WeakSet()) {
+    if (obj === null || obj === undefined)
+        return obj;
+    if (typeof obj === 'string')
+        return sanitizeString(obj);
+    if (typeof obj !== 'object')
+        return obj;
+    if (visited.has(obj))
+        return '[Circular]';
+    visited.add(obj);
+    if (Array.isArray(obj)) {
+        return obj.map(item => sanitizeLogData(item, visited));
+    }
+    const sanitized = {};
+    for (const [key, value] of Object.entries(obj)) {
+        if (key === 'level' || key === 'timestamp') {
+            sanitized[key] = value;
+            continue;
+        }
+        sanitized[key] = sanitizeLogData(value, visited);
+    }
+    return sanitized;
+}
+const sensitiveDataFilter = winston.format((info) => {
+    if (typeof info.message === 'string') {
+        info.message = sanitizeString(info.message);
+    }
+    for (const key of Object.keys(info)) {
+        if (key === 'level' || key === 'message' || key === 'timestamp')
+            continue;
+        info[key] = sanitizeLogData(info[key]);
+    }
+    return info;
+});
 const consoleFormat = winston.format.combine(winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), winston.format.colorize(), winston.format.printf(({ timestamp, level, message, ...meta }) => {
     const traceContext = getTraceContext();
     const traceInfo = traceContext
@@ -65,6 +108,7 @@ function buildTransports() {
 }
 export const logger = winston.createLogger({
     level: process.env.LOG_LEVEL || LogLevel.INFO,
+    format: sensitiveDataFilter(),
     transports: buildTransports(),
 });
 export function setLogLevel(level) {

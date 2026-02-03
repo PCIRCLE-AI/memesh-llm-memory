@@ -1,5 +1,11 @@
 import Database from 'better-sqlite3';
 import { logger } from '../utils/logger.js';
+const MAX_SAFE_CONNECTIONS = 100;
+const MAX_SAFE_TIMEOUT_MS = 10 * 60 * 1000;
+const MIN_CONNECTION_TIMEOUT_MS = 1000;
+const MIN_IDLE_TIMEOUT_MS = 5000;
+const MIN_HEALTH_CHECK_INTERVAL_MS = 5000;
+const MAX_HEALTH_CHECK_INTERVAL_MS = 10 * 60 * 1000;
 export class ConnectionPool {
     dbPath;
     options;
@@ -28,6 +34,62 @@ export class ConnectionPool {
         };
         if (this.options.maxConnections < 1) {
             throw new Error('maxConnections must be at least 1');
+        }
+        if (this.options.maxConnections > MAX_SAFE_CONNECTIONS) {
+            logger.warn(`[ConnectionPool] maxConnections (${this.options.maxConnections}) exceeds safe limit (${MAX_SAFE_CONNECTIONS}). ` +
+                `Clamping to ${MAX_SAFE_CONNECTIONS} to prevent file descriptor exhaustion.`, {
+                requested: this.options.maxConnections,
+                clamped: MAX_SAFE_CONNECTIONS,
+            });
+            this.options.maxConnections = MAX_SAFE_CONNECTIONS;
+        }
+        if (this.options.connectionTimeout < MIN_CONNECTION_TIMEOUT_MS) {
+            logger.warn(`[ConnectionPool] connectionTimeout (${this.options.connectionTimeout}ms) below safe minimum (${MIN_CONNECTION_TIMEOUT_MS}ms). ` +
+                `Clamping to ${MIN_CONNECTION_TIMEOUT_MS}ms.`, {
+                requested: this.options.connectionTimeout,
+                clamped: MIN_CONNECTION_TIMEOUT_MS,
+            });
+            this.options.connectionTimeout = MIN_CONNECTION_TIMEOUT_MS;
+        }
+        if (this.options.connectionTimeout > MAX_SAFE_TIMEOUT_MS) {
+            logger.warn(`[ConnectionPool] connectionTimeout (${this.options.connectionTimeout}ms) exceeds safe limit (${MAX_SAFE_TIMEOUT_MS}ms). ` +
+                `Clamping to ${MAX_SAFE_TIMEOUT_MS}ms.`, {
+                requested: this.options.connectionTimeout,
+                clamped: MAX_SAFE_TIMEOUT_MS,
+            });
+            this.options.connectionTimeout = MAX_SAFE_TIMEOUT_MS;
+        }
+        if (this.options.idleTimeout < MIN_IDLE_TIMEOUT_MS) {
+            logger.warn(`[ConnectionPool] idleTimeout (${this.options.idleTimeout}ms) below safe minimum (${MIN_IDLE_TIMEOUT_MS}ms). ` +
+                `Clamping to ${MIN_IDLE_TIMEOUT_MS}ms.`, {
+                requested: this.options.idleTimeout,
+                clamped: MIN_IDLE_TIMEOUT_MS,
+            });
+            this.options.idleTimeout = MIN_IDLE_TIMEOUT_MS;
+        }
+        if (this.options.idleTimeout > MAX_SAFE_TIMEOUT_MS) {
+            logger.warn(`[ConnectionPool] idleTimeout (${this.options.idleTimeout}ms) exceeds safe limit (${MAX_SAFE_TIMEOUT_MS}ms). ` +
+                `Clamping to ${MAX_SAFE_TIMEOUT_MS}ms.`, {
+                requested: this.options.idleTimeout,
+                clamped: MAX_SAFE_TIMEOUT_MS,
+            });
+            this.options.idleTimeout = MAX_SAFE_TIMEOUT_MS;
+        }
+        if (this.options.healthCheckInterval < MIN_HEALTH_CHECK_INTERVAL_MS) {
+            logger.warn(`[ConnectionPool] healthCheckInterval (${this.options.healthCheckInterval}ms) below safe minimum (${MIN_HEALTH_CHECK_INTERVAL_MS}ms). ` +
+                `Clamping to ${MIN_HEALTH_CHECK_INTERVAL_MS}ms to prevent tight polling loop.`, {
+                requested: this.options.healthCheckInterval,
+                clamped: MIN_HEALTH_CHECK_INTERVAL_MS,
+            });
+            this.options.healthCheckInterval = MIN_HEALTH_CHECK_INTERVAL_MS;
+        }
+        if (this.options.healthCheckInterval > MAX_HEALTH_CHECK_INTERVAL_MS) {
+            logger.warn(`[ConnectionPool] healthCheckInterval (${this.options.healthCheckInterval}ms) exceeds safe limit (${MAX_HEALTH_CHECK_INTERVAL_MS}ms). ` +
+                `Clamping to ${MAX_HEALTH_CHECK_INTERVAL_MS}ms to ensure stale connections are detected.`, {
+                requested: this.options.healthCheckInterval,
+                clamped: MAX_HEALTH_CHECK_INTERVAL_MS,
+            });
+            this.options.healthCheckInterval = MAX_HEALTH_CHECK_INTERVAL_MS;
         }
         logger.info('Initializing connection pool', {
             dbPath: this.dbPath,
@@ -229,13 +291,13 @@ export class ConnectionPool {
             logger.error('Attempted to release unknown connection - ignoring');
             return;
         }
-        metadata.lastReleased = Date.now();
-        this.stats.totalReleased++;
         const availableIndex = this.available.indexOf(metadata);
         if (availableIndex !== -1) {
             logger.warn('Connection already released - ignoring duplicate release');
             return;
         }
+        metadata.lastReleased = Date.now();
+        this.stats.totalReleased++;
         const waiting = this.waiting.shift();
         if (waiting) {
             clearTimeout(waiting.timeoutId);
@@ -306,48 +368,60 @@ export class ConnectionPool {
         }
         const now = Date.now();
         let recycledCount = 0;
+        const staleConnections = [];
         for (let i = this.available.length - 1; i >= 0; i--) {
             const metadata = this.available[i];
             const idleTime = now - metadata.lastReleased;
             if (idleTime > this.options.idleTimeout) {
-                logger.debug('Recycling idle connection', {
-                    idleTime,
-                    usageCount: metadata.usageCount,
-                });
-                this.available.splice(i, 1);
-                try {
-                    metadata.db.close();
+                staleConnections.push({ metadata, availableIndex: i, idleTime });
+            }
+        }
+        for (const { metadata, idleTime } of staleConnections) {
+            logger.debug('Recycling idle connection', {
+                idleTime,
+                usageCount: metadata.usageCount,
+            });
+            const currentAvailableIndex = this.available.indexOf(metadata);
+            if (currentAvailableIndex !== -1) {
+                this.available.splice(currentAvailableIndex, 1);
+            }
+            let removedFromPool = false;
+            let poolIndex = this.pool.indexOf(metadata);
+            try {
+                metadata.db.close();
+            }
+            catch (error) {
+                logger.error('Error closing stale connection:', error);
+                if (poolIndex !== -1) {
+                    this.pool.splice(poolIndex, 1);
+                    removedFromPool = true;
+                    logger.warn('[ConnectionPool] Removed zombie connection from pool', {
+                        poolSize: this.pool.length,
+                        targetSize: this.options.maxConnections,
+                    });
                 }
-                catch (error) {
-                    logger.error('Error closing stale connection:', error);
-                    const poolIndex = this.pool.indexOf(metadata);
-                    if (poolIndex !== -1) {
-                        this.pool.splice(poolIndex, 1);
-                        logger.warn('[ConnectionPool] Removed zombie connection from pool', {
-                            poolSize: this.pool.length,
-                            targetSize: this.options.maxConnections,
-                        });
-                    }
+            }
+            try {
+                const newDb = await this.createConnectionWithRetry('health check');
+                const newMetadata = {
+                    db: newDb,
+                    lastAcquired: 0,
+                    lastReleased: now,
+                    usageCount: 0,
+                };
+                poolIndex = this.pool.indexOf(metadata);
+                if (poolIndex !== -1) {
+                    this.pool[poolIndex] = newMetadata;
                 }
-                try {
-                    const newDb = await this.createConnectionWithRetry('health check');
-                    const newMetadata = {
-                        db: newDb,
-                        lastAcquired: 0,
-                        lastReleased: now,
-                        usageCount: 0,
-                    };
-                    const poolIndex = this.pool.indexOf(metadata);
-                    if (poolIndex !== -1) {
-                        this.pool[poolIndex] = newMetadata;
-                    }
-                    this.available.push(newMetadata);
-                    recycledCount++;
-                    this.stats.totalRecycled++;
+                else if (removedFromPool || this.pool.length < this.options.maxConnections) {
+                    this.pool.push(newMetadata);
                 }
-                catch (error) {
-                    logger.error('Failed to create replacement connection:', error);
-                }
+                this.available.push(newMetadata);
+                recycledCount++;
+                this.stats.totalRecycled++;
+            }
+            catch (error) {
+                logger.error('Failed to create replacement connection:', error);
             }
         }
         if (recycledCount > 0) {

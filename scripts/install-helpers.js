@@ -56,7 +56,10 @@ function addToMcpConfig(ccbPath, preferredConfigPath) {
     command: 'node',
     args: [ccbPath],
     env: {
-      NODE_ENV: 'production'
+      NODE_ENV: 'production',
+      MEMESH_DATA_DIR: path.join(os.homedir(), '.memesh'),
+      LOG_LEVEL: 'info',
+      DISABLE_MCP_WATCHDOG: '1'  // Critical: Prevents 3-second timeout on startup
     }
   };
 

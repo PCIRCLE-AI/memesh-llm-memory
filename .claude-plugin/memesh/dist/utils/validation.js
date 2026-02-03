@@ -64,12 +64,23 @@ export function validateNonEmptyArray(value, name) {
         });
     }
 }
-export function validateObjectSize(value, name, maxBytes) {
-    const size = JSON.stringify(value).length;
-    if (size > maxBytes) {
-        throw new ValidationError(`${name} exceeds size limit`, {
-            providedSize: size,
-            maxSize: maxBytes,
+export function validateObjectSize(value, name, maxChars) {
+    let serialized;
+    try {
+        serialized = JSON.stringify(value);
+    }
+    catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        throw new ValidationError(`${name} cannot be serialized for size validation: ${reason}`, {
+            errorType: error instanceof Error ? error.constructor.name : typeof error,
+            hint: 'The object may contain circular references or non-serializable values (e.g., BigInt)',
+        });
+    }
+    const charCount = serialized.length;
+    if (charCount > maxChars) {
+        throw new ValidationError(`${name} exceeds character limit`, {
+            providedChars: charCount,
+            maxChars: maxChars,
         });
     }
 }

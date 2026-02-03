@@ -75,7 +75,13 @@ export class SecretManager {
     this.dbPath = dbPath;
     this.db = db;
     this.encryptionKey = encryptionKey;
-    this.secretPatterns = [...DEFAULT_SECRET_PATTERNS];
+    // CRITICAL-1 FIX: Deep-clone each pattern's RegExp to prevent shared mutable state
+    // The global flag (/g) causes RegExp objects to maintain lastIndex state, which
+    // can be corrupted by concurrent detectSecrets() calls if patterns are shared.
+    this.secretPatterns = DEFAULT_SECRET_PATTERNS.map(p => ({
+      ...p,
+      pattern: new RegExp(p.pattern.source, p.pattern.flags),
+    }));
   }
 
   /**
@@ -274,6 +280,17 @@ export class SecretManager {
   /**
    * Get a secret by ID
    *
+   * Uses an atomic SELECT-then-conditional-DELETE approach to prevent
+   * race conditions where concurrent callers might try to delete the
+   * same expired secret simultaneously, or read a secret mid-deletion.
+   *
+   * Safety guarantees:
+   * - Expired secrets are deleted atomically (DELETE WHERE id = ? AND expires_at < ?)
+   *   so concurrent deletes are idempotent (second delete affects 0 rows)
+   * - Non-expired secrets are never impacted by the deletion path
+   * - If deletion fails unexpectedly, the error is logged but the caller
+   *   still receives null (expired secret is not returned)
+   *
    * @param id - Secret ID
    * @returns Decrypted value or null if not found/expired
    */
@@ -288,10 +305,24 @@ export class SecretManager {
 
     // Check expiration
     if (row.expires_at) {
+      const now = new Date();
       const expiresAt = new Date(row.expires_at);
-      if (expiresAt < new Date()) {
-        // Delete expired secret
-        this.db.prepare('DELETE FROM secrets WHERE id = ?').run(id);
+      if (expiresAt < now) {
+        // Atomically delete only if the secret is still expired at the exact ID.
+        // Using a conditional DELETE prevents double-deletion race conditions:
+        // if another caller already deleted this row, this statement simply
+        // affects 0 rows and returns gracefully.
+        try {
+          this.db
+            .prepare('DELETE FROM secrets WHERE id = ? AND expires_at IS NOT NULL AND expires_at < ?')
+            .run(id, now.toISOString());
+        } catch (error) {
+          // Log but do not propagate -- the secret is expired regardless
+          // of whether we successfully cleaned it up from storage.
+          logger.warn(
+            `[SecretManager] Failed to delete expired secret ${id}: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
         return null;
       }
     }
@@ -303,13 +334,17 @@ export class SecretManager {
   /**
    * Get a secret by name
    *
+   * Looks up the secret by name and delegates to get() for expiration
+   * handling. This avoids duplicating the expiration/deletion logic
+   * and ensures consistent race-condition safety.
+   *
    * @param name - Secret name
    * @returns Decrypted value or null if not found/expired
    */
   async getByName(name: string): Promise<string | null> {
     const row = this.db
-      .prepare('SELECT * FROM secrets WHERE name = ?')
-      .get(name) as any;
+      .prepare('SELECT id FROM secrets WHERE name = ?')
+      .get(name) as { id: string } | undefined;
 
     if (!row) {
       return null;
@@ -334,6 +369,19 @@ export class SecretManager {
       return null;
     }
 
+    // MINOR-1 FIX: Wrap JSON.parse in try/catch to handle corrupted metadata
+    let parsedMetadata: Record<string, unknown> | undefined;
+    if (row.metadata) {
+      try {
+        parsedMetadata = JSON.parse(row.metadata);
+      } catch (parseError) {
+        logger.warn(
+          `[SecretManager] Failed to parse metadata for secret ${id}: ${parseError instanceof Error ? parseError.message : String(parseError)}`
+        );
+        parsedMetadata = undefined;
+      }
+    }
+
     return {
       id: row.id,
       name: row.name,
@@ -344,7 +392,7 @@ export class SecretManager {
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
       expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
-      metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+      metadata: parsedMetadata,
     };
   }
 
@@ -450,8 +498,13 @@ export class SecretManager {
   /**
    * List all secrets (without values)
    *
+   * NOTE: This method returns ALL secrets including expired ones.
+   * Expired secrets are not automatically filtered out. Use `cleanupExpired()`
+   * to remove expired secrets, or check `expiresAt` on each entry to filter
+   * them client-side.
+   *
    * @param filter - Optional filter by secret type
-   * @returns Array of secret metadata (no values)
+   * @returns Array of secret metadata (no values), including expired secrets
    */
   async list(filter?: { secretType?: SecretType }): Promise<
     Array<{
@@ -476,15 +529,30 @@ export class SecretManager {
 
     const rows = this.db.prepare(sql).all(...params) as any[];
 
-    return rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      secretType: row.secret_type as SecretType,
-      createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at),
-      expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
-      metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
-    }));
+    return rows.map((row) => {
+      // MINOR-1 FIX: Wrap JSON.parse in try/catch to handle corrupted metadata
+      let parsedMetadata: Record<string, unknown> | undefined;
+      if (row.metadata) {
+        try {
+          parsedMetadata = JSON.parse(row.metadata);
+        } catch (parseError) {
+          logger.warn(
+            `[SecretManager] Failed to parse metadata for secret ${row.id}: ${parseError instanceof Error ? parseError.message : String(parseError)}`
+          );
+          parsedMetadata = undefined;
+        }
+      }
+
+      return {
+        id: row.id,
+        name: row.name,
+        secretType: row.secret_type as SecretType,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at),
+        expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
+        metadata: parsedMetadata,
+      };
+    });
   }
 
   /**

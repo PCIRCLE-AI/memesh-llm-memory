@@ -19,7 +19,10 @@ export class SecretManager {
         this.dbPath = dbPath;
         this.db = db;
         this.encryptionKey = encryptionKey;
-        this.secretPatterns = [...DEFAULT_SECRET_PATTERNS];
+        this.secretPatterns = DEFAULT_SECRET_PATTERNS.map(p => ({
+            ...p,
+            pattern: new RegExp(p.pattern.source, p.pattern.flags),
+        }));
     }
     static async create(dbPath) {
         const defaultPath = getDataPath('secrets.db');
@@ -130,9 +133,17 @@ export class SecretManager {
             return null;
         }
         if (row.expires_at) {
+            const now = new Date();
             const expiresAt = new Date(row.expires_at);
-            if (expiresAt < new Date()) {
-                this.db.prepare('DELETE FROM secrets WHERE id = ?').run(id);
+            if (expiresAt < now) {
+                try {
+                    this.db
+                        .prepare('DELETE FROM secrets WHERE id = ? AND expires_at IS NOT NULL AND expires_at < ?')
+                        .run(id, now.toISOString());
+                }
+                catch (error) {
+                    logger.warn(`[SecretManager] Failed to delete expired secret ${id}: ${error instanceof Error ? error.message : String(error)}`);
+                }
                 return null;
             }
         }
@@ -140,7 +151,7 @@ export class SecretManager {
     }
     async getByName(name) {
         const row = this.db
-            .prepare('SELECT * FROM secrets WHERE name = ?')
+            .prepare('SELECT id FROM secrets WHERE name = ?')
             .get(name);
         if (!row) {
             return null;
@@ -154,6 +165,16 @@ export class SecretManager {
         if (!row) {
             return null;
         }
+        let parsedMetadata;
+        if (row.metadata) {
+            try {
+                parsedMetadata = JSON.parse(row.metadata);
+            }
+            catch (parseError) {
+                logger.warn(`[SecretManager] Failed to parse metadata for secret ${id}: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+                parsedMetadata = undefined;
+            }
+        }
         return {
             id: row.id,
             name: row.name,
@@ -164,7 +185,7 @@ export class SecretManager {
             createdAt: new Date(row.created_at),
             updatedAt: new Date(row.updated_at),
             expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
-            metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+            metadata: parsedMetadata,
         };
     }
     async update(id, newValue) {
@@ -226,15 +247,27 @@ export class SecretManager {
         }
         sql += ' ORDER BY created_at DESC';
         const rows = this.db.prepare(sql).all(...params);
-        return rows.map((row) => ({
-            id: row.id,
-            name: row.name,
-            secretType: row.secret_type,
-            createdAt: new Date(row.created_at),
-            updatedAt: new Date(row.updated_at),
-            expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
-            metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
-        }));
+        return rows.map((row) => {
+            let parsedMetadata;
+            if (row.metadata) {
+                try {
+                    parsedMetadata = JSON.parse(row.metadata);
+                }
+                catch (parseError) {
+                    logger.warn(`[SecretManager] Failed to parse metadata for secret ${row.id}: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+                    parsedMetadata = undefined;
+                }
+            }
+            return {
+                id: row.id,
+                name: row.name,
+                secretType: row.secret_type,
+                createdAt: new Date(row.created_at),
+                updatedAt: new Date(row.updated_at),
+                expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
+                metadata: parsedMetadata,
+            };
+        });
     }
     requestConfirmation(secretName, value, expiresInSeconds) {
         const expSeconds = expiresInSeconds ?? DEFAULT_EXPIRATION_SECONDS;

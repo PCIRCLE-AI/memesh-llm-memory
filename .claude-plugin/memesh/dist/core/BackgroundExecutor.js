@@ -27,9 +27,12 @@ export class BackgroundExecutor {
     attributionManager;
     resultHandler;
     executionMonitor;
+    isShuttingDown = false;
+    shutdownPromise = null;
     MAX_TASK_HISTORY = 1000;
     FORCE_CLEANUP_AGE = 3600000;
     MAX_CLEANUP_CANCELS = 10;
+    SHUTDOWN_TIMEOUT_MS = 10000;
     constructor(resourceMonitor, eventBus) {
         this.scheduler = new TaskScheduler(resourceMonitor);
         this.activeWorkers = new Map();
@@ -43,6 +46,12 @@ export class BackgroundExecutor {
         }
     }
     async executeTask(task, config) {
+        if (this.isShuttingDown) {
+            throw new StateError('Executor is shutting down, cannot accept new tasks', {
+                operation: 'executeTask',
+                isShuttingDown: true,
+            });
+        }
         if (config.resourceLimits?.maxDuration !== undefined) {
             const duration = config.resourceLimits.maxDuration;
             const MAX_ALLOWED_DURATION = 3600000;
@@ -171,34 +180,46 @@ export class BackgroundExecutor {
         });
         promise
             .then(result => {
-            if (timeoutId && !timeoutFired) {
-                this.clearTaskTimeout(timeoutId);
+            try {
+                if (timeoutId && !timeoutFired) {
+                    this.clearTaskTimeout(timeoutId);
+                }
+                if (cancelled && !timeoutFired) {
+                    this.handleTaskCancelled(taskId);
+                }
+                else {
+                    this.handleTaskCompleted(taskId, result);
+                }
             }
-            if (cancelled) {
-                this.handleTaskCancelled(taskId);
-            }
-            else {
-                this.handleTaskCompleted(taskId, result);
+            catch (handlerError) {
+                this.handleBackgroundTaskError(taskId, handlerError, 'completion handler');
             }
         })
             .catch(error => {
-            if (timeoutId && !timeoutFired) {
-                this.clearTaskTimeout(timeoutId);
+            try {
+                if (timeoutId && !timeoutFired) {
+                    this.clearTaskTimeout(timeoutId);
+                }
+                if (error instanceof TimeoutError) {
+                    this.handleTaskFailed(taskId, error);
+                }
+                else if (cancelled) {
+                    this.handleTaskCancelled(taskId);
+                }
+                else {
+                    this.handleTaskFailed(taskId, error);
+                }
             }
-            if (error instanceof TimeoutError) {
-                this.handleTaskFailed(taskId, error);
-            }
-            else if (cancelled) {
-                this.handleTaskCancelled(taskId);
-            }
-            else {
-                this.handleTaskFailed(taskId, error);
+            catch (handlerError) {
+                this.handleBackgroundTaskError(taskId, handlerError, 'failure handler');
             }
         })
             .finally(() => {
             this.activeWorkers.delete(taskId);
             this.resourceMonitor.unregisterBackgroundTask();
-            this.processQueue();
+            if (!this.isShuttingDown) {
+                this.processQueue();
+            }
         });
     }
     async executeTaskInternal(task, _config, updateProgress, isCancelled) {
@@ -467,6 +488,113 @@ export class BackgroundExecutor {
             ? task.endTime.getTime() - task.startTime.getTime()
             : 0;
         return Math.floor((duration * 2) / 60000);
+    }
+    handleBackgroundTaskError(taskId, error, phase) {
+        try {
+            logger.error(`[BackgroundExecutor] CRITICAL: Unhandled error in ${phase} for task ${taskId}`, {
+                taskId,
+                phase,
+                message: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+                activeTasks: this.activeWorkers.size,
+                queueSize: this.scheduler.size(),
+            });
+            const task = this.tasks.get(taskId);
+            if (task && task.status !== 'completed' && task.status !== 'failed' && task.status !== 'cancelled') {
+                task.status = 'failed';
+                task.endTime = new Date();
+                task.error = error instanceof Error ? error : new Error(String(error));
+                this.tasks.set(taskId, task);
+            }
+        }
+        catch (loggingError) {
+            console.error(`[BackgroundExecutor] FATAL: Error handler failed for task ${taskId}:`, loggingError, 'Original error:', error);
+        }
+    }
+    async destroy() {
+        if (this.shutdownPromise) {
+            return this.shutdownPromise;
+        }
+        this.isShuttingDown = true;
+        this.shutdownPromise = this.performShutdown();
+        return this.shutdownPromise;
+    }
+    async performShutdown() {
+        logger.info('[BackgroundExecutor] Shutdown initiated', {
+            runningTasks: this.activeWorkers.size,
+            queuedTasks: this.scheduler.size(),
+        });
+        let queuedCancelled = 0;
+        while (!this.scheduler.isEmpty()) {
+            const task = this.scheduler.getNextTask();
+            if (task) {
+                task.status = 'cancelled';
+                task.endTime = new Date();
+                this.tasks.set(task.taskId, task);
+                queuedCancelled++;
+            }
+        }
+        if (queuedCancelled > 0) {
+            logger.info(`[BackgroundExecutor] Cancelled ${queuedCancelled} queued tasks`);
+        }
+        const runningTaskIds = Array.from(this.activeWorkers.keys());
+        for (const taskId of runningTaskIds) {
+            const worker = this.activeWorkers.get(taskId);
+            if (worker) {
+                worker.cancel();
+            }
+        }
+        if (runningTaskIds.length > 0) {
+            logger.info(`[BackgroundExecutor] Waiting for ${runningTaskIds.length} running tasks to complete (timeout: ${this.SHUTDOWN_TIMEOUT_MS}ms)`);
+            const runningPromises = runningTaskIds
+                .map(taskId => this.activeWorkers.get(taskId)?.promise)
+                .filter((p) => p !== undefined)
+                .map(p => p.catch(() => { }));
+            let shutdownTimeoutId;
+            const timeoutPromise = new Promise(resolve => {
+                shutdownTimeoutId = setTimeout(() => resolve('timeout'), this.SHUTDOWN_TIMEOUT_MS);
+                this.activeTimeouts.add(shutdownTimeoutId);
+            });
+            const result = await Promise.race([
+                Promise.allSettled(runningPromises).then(() => 'completed'),
+                timeoutPromise,
+            ]);
+            if (result === 'timeout') {
+                const remainingTasks = Array.from(this.activeWorkers.keys());
+                if (remainingTasks.length > 0) {
+                    logger.warn(`[BackgroundExecutor] Shutdown timeout: force-cancelling ${remainingTasks.length} tasks`, { forceCancelledTaskIds: remainingTasks });
+                    for (const taskId of remainingTasks) {
+                        const task = this.tasks.get(taskId);
+                        if (task) {
+                            task.status = 'cancelled';
+                            task.endTime = new Date();
+                            task.error = new Error('Force-cancelled during shutdown');
+                            this.tasks.set(taskId, task);
+                        }
+                        this.activeWorkers.delete(taskId);
+                        this.resourceMonitor.unregisterBackgroundTask();
+                    }
+                }
+            }
+            else {
+                if (shutdownTimeoutId) {
+                    clearTimeout(shutdownTimeoutId);
+                    this.activeTimeouts.delete(shutdownTimeoutId);
+                }
+                logger.info('[BackgroundExecutor] All running tasks completed before shutdown timeout');
+            }
+        }
+        for (const timeoutId of this.activeTimeouts) {
+            clearTimeout(timeoutId);
+        }
+        this.activeTimeouts.clear();
+        for (const [taskId, timerId] of this.cleanupTimers) {
+            clearTimeout(timerId);
+        }
+        this.cleanupTimers.clear();
+        this.cleanupScheduled.clear();
+        this.cleanupCancelCounts.clear();
+        logger.info('[BackgroundExecutor] Shutdown complete');
     }
 }
 //# sourceMappingURL=BackgroundExecutor.js.map

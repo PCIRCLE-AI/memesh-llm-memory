@@ -1,4 +1,7 @@
 import { v4 as uuid } from 'uuid';
+import path from 'path';
+import fs from 'fs';
+import os from 'os';
 import { logger } from '../../utils/logger.js';
 import { SimpleDatabaseFactory } from '../../config/simple-config.js';
 import { MigrationManager } from './migrations/MigrationManager';
@@ -24,10 +27,7 @@ export class SQLiteStore {
     options;
     constructor(options = {}) {
         const rawDbPath = options.dbPath || ':memory:';
-        const isTestEnv = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
-        const validatedDbPath = (isTestEnv || rawDbPath === ':memory:')
-            ? rawDbPath
-            : validateDatabasePath(rawDbPath, 'data/evolution');
+        const validatedDbPath = this.validateDbPath(rawDbPath);
         this.options = {
             dbPath: validatedDbPath,
             verbose: options.verbose || false,
@@ -44,6 +44,39 @@ export class SQLiteStore {
         this.adaptationRepository = new AdaptationRepository(this.db);
         this.rewardRepository = new RewardRepository(this.db);
         this.statsRepository = new StatsRepository(this.db);
+    }
+    validateDbPath(rawDbPath) {
+        if (rawDbPath === ':memory:') {
+            return rawDbPath;
+        }
+        if (rawDbPath.includes('\0')) {
+            throw new Error('Database path contains null bytes');
+        }
+        const normalizedPath = path.resolve(path.normalize(rawDbPath));
+        let realPath;
+        try {
+            realPath = fs.realpathSync(normalizedPath);
+        }
+        catch {
+            const parentDir = path.dirname(normalizedPath);
+            try {
+                realPath = path.join(fs.realpathSync(parentDir), path.basename(normalizedPath));
+            }
+            catch {
+                return validateDatabasePath(rawDbPath, 'data/evolution');
+            }
+        }
+        let resolvedTmpDir;
+        try {
+            resolvedTmpDir = fs.realpathSync(os.tmpdir());
+        }
+        catch {
+            resolvedTmpDir = path.resolve(path.normalize(os.tmpdir()));
+        }
+        if (realPath.startsWith(resolvedTmpDir + '/') || realPath === resolvedTmpDir) {
+            return rawDbPath;
+        }
+        return validateDatabasePath(rawDbPath, 'data/evolution');
     }
     escapeLikePattern(pattern) {
         return pattern

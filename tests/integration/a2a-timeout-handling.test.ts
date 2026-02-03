@@ -23,8 +23,8 @@ describe('A2A Timeout Handling Integration', () => {
 
     delegator = new MCPTaskDelegator(taskQueue, logger);
 
-    // Set very short timeout for testing
-    process.env.MEMESH_A2A_TASK_TIMEOUT = '100'; // 100ms
+    // Set timeout to minimum allowed value (5 seconds, enforced by MCPTaskDelegator bounds)
+    process.env.MEMESH_A2A_TASK_TIMEOUT = '5000'; // 5 seconds (minimum allowed)
   });
 
   afterEach(async () => {
@@ -49,8 +49,10 @@ describe('A2A Timeout Handling Integration', () => {
     // Add to delegator
     await delegator.addTask(task.id, 'test task', 'high', agentId);
 
-    // Wait for timeout (200ms > 100ms timeout)
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Backdate the task createdAt to simulate time passage instead of real waiting
+    // This avoids flaky tests and works with the minimum 5s timeout bound
+    const pendingTask = (delegator as any).pendingTasks.get(task.id);
+    pendingTask.createdAt = Date.now() - 6000; // 6 seconds ago (exceeds 5s timeout)
 
     // Run timeout check
     await delegator.checkTimeouts();

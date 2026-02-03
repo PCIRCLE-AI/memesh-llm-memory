@@ -69,6 +69,18 @@ export class LRUCache {
             this.saveToDisk();
         }
     }
+    peek(key) {
+        const entry = this.cache.get(key);
+        if (!entry) {
+            return undefined;
+        }
+        return { value: entry.value, timestamp: entry.timestamp };
+    }
+    isExpired(entry) {
+        if (!this.ttl)
+            return false;
+        return Date.now() - entry.timestamp > this.ttl;
+    }
     has(key) {
         const entry = this.cache.get(key);
         if (!entry) {
@@ -112,14 +124,16 @@ export class LRUCache {
         const total = this.hits + this.misses;
         const hitRate = total > 0 ? (this.hits / total) * 100 : 0;
         let totalAccessCount = 0;
+        let entryCount = 0;
         for (const entry of this.cache.values()) {
             totalAccessCount += entry.accessCount;
+            entryCount++;
         }
-        const averageAccessCount = this.cache.size > 0
-            ? totalAccessCount / this.cache.size
+        const averageAccessCount = entryCount > 0
+            ? totalAccessCount / entryCount
             : 0;
         return {
-            size: this.cache.size,
+            size: entryCount,
             maxSize: this.maxSize,
             hits: this.hits,
             misses: this.misses,
@@ -136,15 +150,31 @@ export class LRUCache {
     cleanupExpired() {
         if (!this.ttl)
             return 0;
-        let cleaned = 0;
         const now = Date.now();
+        const expiredKeys = [];
         for (const [key, entry] of this.cache.entries()) {
             if (now - entry.timestamp > this.ttl) {
-                this.delete(key);
-                cleaned++;
+                expiredKeys.push(key);
             }
         }
-        return cleaned;
+        if (expiredKeys.length === 0) {
+            return 0;
+        }
+        for (const key of expiredKeys) {
+            const entry = this.cache.get(key);
+            if (entry && this.onEvict) {
+                this.onEvict(key, entry.value);
+            }
+            this.cache.delete(key);
+            const index = this.accessOrder.indexOf(key);
+            if (index > -1) {
+                this.accessOrder.splice(index, 1);
+            }
+        }
+        if (this.persistPath) {
+            this.saveToDisk();
+        }
+        return expiredKeys.length;
     }
     evictLRU() {
         if (this.accessOrder.length === 0)

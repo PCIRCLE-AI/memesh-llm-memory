@@ -15,6 +15,7 @@ export declare class UnifiedMemoryStore {
     }): Promise<UnifiedMemory[]>;
     private traditionalSearch;
     private applySearchFilters;
+    private deduplicateResults;
     searchByType(type: MemoryType, options?: SearchOptions): Promise<UnifiedMemory[]>;
     searchByTags(tags: string[], options?: SearchOptions): Promise<UnifiedMemory[]>;
     update(id: string, updates: Partial<UnifiedMemory>): Promise<boolean>;

@@ -98,7 +98,7 @@ bash scripts/quick-install.sh
 # 驗證結果
 ls -la .claude-plugin/memesh/.claude-plugin/plugin.json
 ls -la .claude-plugin/memesh/dist/mcp/server-bootstrap.js
-claude mcp list | grep memesh-dev
+claude mcp list | grep memesh-mcp
 ```
 
 **檢查項目**：
@@ -137,7 +137,7 @@ claude mcp list | grep memesh-dev
 
 ### 4.1 MCP Server Registration
 - [ ] `npm run build:plugin` 自動註冊 MCP server
-- [ ] MCP server 名稱正確（`memesh-dev` for dev, `memesh` for production）
+- [ ] MCP server 名稱正確（`memesh-mcp` for dev, `memesh` for production）
 - [ ] 環境變數正確設置
   ```bash
   grep -A10 "memesh" ~/.claude.json
@@ -291,7 +291,7 @@ ls -la .claude-plugin/memesh/.claude-plugin/plugin.json
 ls -la .claude-plugin/memesh/dist/mcp/server-bootstrap.js
 
 # 3. Verify MCP
-claude mcp list | grep memesh-dev
+claude mcp list | grep memesh-mcp
 
 # 4. Verify connection
 # 預期：✓ Connected
@@ -309,7 +309,7 @@ claude mcp list | grep memesh-dev
 ### 10.3 Rollback Plan
 - [ ] 知道如何 rollback（如出問題）
   ```bash
-  claude mcp remove memesh-dev
+  claude mcp remove memesh-mcp
   rm -rf .claude-plugin/memesh
   git checkout <previous-tag>
   ```

@@ -278,7 +278,17 @@ export class ABTestManager {
       return trafficSplit.length - 1;
     }
 
-    // Use modulo to normalize to 0-1 range (avoiding division by zero)
+    // Normalize hash to a 0-1 range via modulo.
+    //
+    // NOTE ON MODULO VALUE (100000 vs power-of-2):
+    // A power-of-2 modulus (e.g. 0x100000 = 1048576) would provide slightly
+    // better bit distribution because modulo by a power of 2 preserves the
+    // low bits of the hash without introducing modular bias. However, changing
+    // the modulus would alter existing variant assignments for all users in
+    // running experiments, which is unacceptable for A/B test integrity.
+    //
+    // If this system is ever reset (no active experiments), consider migrating
+    // to: (hashInt % 0x100000) / 0x100000
     const normalizedHash = (hashInt % 100000) / 100000; // 0 to 1
 
     // Find variant based on cumulative traffic split

@@ -7,8 +7,9 @@ const LEGACY_DIR_NAME = '.claude-code-buddy';
 let cachedDataDir = null;
 let migrationWarningShown = false;
 export function getDataDirectory() {
-    if (cachedDataDir) {
-        return cachedDataDir;
+    const cached = cachedDataDir;
+    if (cached) {
+        return cached;
     }
     const homeDir = os.homedir();
     const newDir = path.join(homeDir, NEW_DIR_NAME);

@@ -13,7 +13,7 @@
  * └── scripts/
  */
 
-import { copyFileSync, cpSync, existsSync, mkdirSync } from 'fs';
+import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { execSync } from 'child_process';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -104,6 +104,51 @@ try {
   process.exit(1);
 }
 
+// Step 5.5: Inject A2A token from .env into plugin.json
+console.log('\n5.5️⃣ Configuring A2A token in plugin.json...');
+try {
+  // Read .env file
+  const envPath = join(projectRoot, '.env');
+  let a2aToken = null;
+
+  if (existsSync(envPath)) {
+    const envContent = readFileSync(envPath, 'utf-8');
+    const tokenMatch = envContent.match(/^MEMESH_A2A_TOKEN=(.+)$/m);
+
+    if (tokenMatch && tokenMatch[1]) {
+      a2aToken = tokenMatch[1].trim();
+    }
+  }
+
+  if (a2aToken) {
+    // Read plugin.json
+    const pluginJsonContent = readFileSync(targetPluginJson, 'utf-8');
+    const pluginConfig = JSON.parse(pluginJsonContent);
+
+    // Inject token into env section
+    if (pluginConfig.mcpServers && pluginConfig.mcpServers.memesh) {
+      if (!pluginConfig.mcpServers.memesh.env) {
+        pluginConfig.mcpServers.memesh.env = {};
+      }
+
+      pluginConfig.mcpServers.memesh.env.MEMESH_A2A_TOKEN = a2aToken;
+
+      // Write back to plugin.json
+      writeFileSync(targetPluginJson, JSON.stringify(pluginConfig, null, 2), 'utf-8');
+      console.log('   ✅ A2A token configured in plugin.json');
+      console.log(`   🔑 Token: ${a2aToken.substring(0, 8)}...${a2aToken.substring(a2aToken.length - 8)}`);
+    } else {
+      console.log('   ⚠️  Could not find mcpServers.memesh in plugin.json');
+    }
+  } else {
+    console.log('   ⚠️  MEMESH_A2A_TOKEN not found in .env file');
+    console.log('   💡 Run: bash scripts/generate-a2a-token.sh');
+  }
+} catch (error) {
+  console.log('   ⚠️  Could not inject A2A token:', error.message);
+  console.log('   You may need to manually add MEMESH_A2A_TOKEN to plugin.json');
+}
+
 // Step 6: Install production dependencies
 console.log('\n6️⃣ Installing production dependencies in plugin directory...');
 console.log('   (This may take a minute...)');
@@ -148,7 +193,7 @@ if (!allFilesExist) {
 console.log('\n8️⃣ Registering MCP server in Claude Code...');
 
 const mcpServerPath = join(pluginRootDir, 'dist', 'mcp', 'server-bootstrap.js');
-const mcpServerName = 'memesh-dev';
+const mcpServerName = 'memesh-mcp';
 
 try {
   // Check if MCP server is already registered

@@ -23,14 +23,47 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+import type { CallToolRequestParams } from '@modelcontextprotocol/sdk/types.js';
 import { ServerInitializer, ServerComponents } from './ServerInitializer.js';
 import { ToolRouter } from './ToolRouter.js';
 import { getAllToolDefinitions } from './ToolDefinitions.js';
 import { setupResourceHandlers } from './handlers/index.js';
 import { SessionBootstrapper } from './SessionBootstrapper.js';
 import { logger } from '../utils/logger.js';
-import { logError } from '../utils/errorHandler.js';
+import { logError, formatMCPError } from '../utils/errorHandler.js';
 import { generateRequestId } from '../utils/requestId.js'; // ✅ FIX HIGH-10: Request ID generation
+
+/**
+ * ✅ FIX ISSUE-3: Default timeout for tool call execution (60 seconds)
+ * Prevents a hanging tool from blocking the entire MCP server indefinitely.
+ * Configurable via MEMESH_TOOL_TIMEOUT_MS environment variable.
+ */
+const DEFAULT_TOOL_TIMEOUT_MS = 60000;
+const MIN_TOOL_TIMEOUT_MS = 1000;
+// ✅ FIX MINOR (Round 1): Validate MEMESH_TOOL_TIMEOUT_MS is positive with minimum bound
+const parsedToolTimeoutMs = parseInt(process.env.MEMESH_TOOL_TIMEOUT_MS || '', 10);
+const toolTimeoutMs = Number.isFinite(parsedToolTimeoutMs) && parsedToolTimeoutMs > 0
+  ? Math.max(MIN_TOOL_TIMEOUT_MS, parsedToolTimeoutMs)
+  : DEFAULT_TOOL_TIMEOUT_MS;
+
+/**
+ * ✅ FIX ISSUE-3: Tool call timeout error
+ * Thrown when a tool call exceeds the configured timeout.
+ * ✅ FIX MINOR (Round 1): Exported for testability
+ */
+export class ToolCallTimeoutError extends Error {
+  public readonly toolName: string;
+  public readonly timeoutMs: number;
+  public readonly elapsedMs: number;
+
+  constructor(toolName: string, timeoutMs: number, elapsedMs: number) {
+    super(`Tool '${toolName}' timed out after ${elapsedMs}ms (limit: ${timeoutMs}ms)`);
+    this.name = 'ToolCallTimeoutError';
+    this.toolName = toolName;
+    this.timeoutMs = timeoutMs;
+    this.elapsedMs = elapsedMs;
+  }
+}
 
 /**
  * MeMesh MCP Server
@@ -67,6 +100,8 @@ class ClaudeCodeBuddyMCPServer {
   private toolRouter: ToolRouter;
   private sessionBootstrapper: SessionBootstrapper;
   private isShuttingDown = false;
+  // ✅ FIX MINOR-2: Store shutdown promise for re-entry handling
+  private shutdownPromise: Promise<void> | null = null;
 
   /**
    * Get Tool handler module (exposed for testing)
@@ -186,27 +221,78 @@ class ClaudeCodeBuddyMCPServer {
     this.server.setRequestHandler(CallToolRequestSchema, async request => {
       // ✅ FIX HIGH-10: Generate request ID for tracing
       const requestId = generateRequestId();
+      // ✅ FIX MINOR (Round 1): Proper type narrowing instead of `as any`
+      const params = request.params as CallToolRequestParams;
+      const toolName = params.name || 'unknown';
+      const startTime = Date.now();
 
       logger.debug('[MCP] Incoming tool call request', {
         requestId,
-        toolName: (request.params as any)?.name,
+        toolName,
         component: 'ClaudeCodeBuddyMCPServer',
       });
 
       try {
-        const result = await this.toolRouter.routeToolCall(request.params, undefined, requestId);
+        // ✅ FIX ISSUE-3: Execute tool call with configurable timeout
+        // Uses Promise.race with AbortController pattern for cancellable timeout
+        const toolPromise = this.toolRouter.routeToolCall(request.params, undefined, requestId);
+
+        let timeoutId: NodeJS.Timeout | undefined;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            const elapsed = Date.now() - startTime;
+            reject(new ToolCallTimeoutError(toolName, toolTimeoutMs, elapsed));
+          }, toolTimeoutMs);
+        });
+
+        let result;
+        try {
+          result = await Promise.race([toolPromise, timeoutPromise]);
+        } finally {
+          // Always clear timeout to prevent timer leak, whether tool succeeded or failed
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+        }
+
         return await this.sessionBootstrapper.maybePrepend(result);
       } catch (error) {
+        const elapsed = Date.now() - startTime;
+
+        // ✅ FIX ISSUE-3: Log timeout events with tool name and elapsed time
+        if (error instanceof ToolCallTimeoutError) {
+          logger.error('[MCP] Tool call timed out', {
+            requestId,
+            toolName,
+            timeoutMs: toolTimeoutMs,
+            elapsedMs: elapsed,
+            component: 'ClaudeCodeBuddyMCPServer',
+          });
+        }
+
         // ✅ FIX HIGH-10: Include request ID in error logs
         logError(error, {
           component: 'ClaudeCodeBuddyMCPServer',
           method: 'CallToolRequestHandler',
           requestId,
           data: {
-            toolName: (request.params as any)?.name,
+            toolName,
+            elapsedMs: elapsed,
           },
         });
-        throw error;
+
+        // ✅ FIX ISSUE-4: Return proper MCP-formatted error response instead of throwing
+        // This ensures the MCP client always gets a structured response, not a raw exception.
+        // Throwing raw errors can cause MCP protocol violations and client disconnects.
+        return formatMCPError(error, {
+          component: 'ClaudeCodeBuddyMCPServer',
+          method: 'CallToolRequestHandler',
+          requestId,
+          data: {
+            toolName,
+            elapsedMs: elapsed,
+          },
+        });
       }
     });
   }
@@ -245,9 +331,11 @@ class ClaudeCodeBuddyMCPServer {
       logger.error('MCP server error:', error);
     };
 
+    // ✅ FIX MINOR-3: Use process.once() instead of process.on() to prevent
+    // handlers from being registered for repeated signals
     const signals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM'];
     for (const signal of signals) {
-      process.on(signal, () => {
+      process.once(signal, () => {
         void this.shutdown(signal);
       });
     }
@@ -258,10 +346,27 @@ class ClaudeCodeBuddyMCPServer {
    *
    * ✅ FIX HIGH-7: Proper resource cleanup to prevent data corruption
    * Closes all resources in correct order: databases first, then network, then internal state
+   * ✅ FIX MINOR-2: Store and return shutdown promise for re-entry handling
    */
   private async shutdown(reason: string): Promise<void> {
+    // ✅ FIX MINOR-2: If already shutting down, return the existing promise
+    // This ensures subsequent calls wait for the first shutdown to complete
+    if (this.shutdownPromise) {
+      return this.shutdownPromise;
+    }
+
     if (this.isShuttingDown) return;
     this.isShuttingDown = true;
+
+    // Store the shutdown promise for re-entry
+    this.shutdownPromise = this.performShutdown(reason);
+    return this.shutdownPromise;
+  }
+
+  /**
+   * Internal shutdown implementation
+   */
+  private async performShutdown(reason: string): Promise<void> {
 
     logger.warn(`Shutting down MCP server (${reason})...`);
 

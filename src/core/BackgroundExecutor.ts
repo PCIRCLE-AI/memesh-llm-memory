@@ -242,11 +242,14 @@ export class BackgroundExecutor {
   private attributionManager?: AttributionManager;
   private resultHandler: ResultHandler;
   private executionMonitor: ExecutionMonitor;
+  private isShuttingDown: boolean = false;
+  private shutdownPromise: Promise<void> | null = null;
 
   // Security: Resource exhaustion protection
   private readonly MAX_TASK_HISTORY = 1000;
   private readonly FORCE_CLEANUP_AGE = 3600000; // 1 hour in milliseconds
   private readonly MAX_CLEANUP_CANCELS = 10;
+  private readonly SHUTDOWN_TIMEOUT_MS = 10000; // 10 seconds graceful shutdown
 
   /**
    * Create a new BackgroundExecutor
@@ -347,6 +350,17 @@ export class BackgroundExecutor {
    * ```
    */
   async executeTask(task: unknown, config: ExecutionConfig): Promise<string> {
+    // ✅ FIX MAJOR-1 (Round 1): Reject new tasks during shutdown to prevent resource leaks
+    if (this.isShuttingDown) {
+      throw new StateError(
+        'Executor is shutting down, cannot accept new tasks',
+        {
+          operation: 'executeTask',
+          isShuttingDown: true,
+        }
+      );
+    }
+
     // ✅ CODE QUALITY FIX (MAJOR-1): Use validation utilities for consistency
     // ✅ SECURITY FIX (CRITICAL-2): Comprehensive maxDuration validation to prevent DoS and integer overflow
     if (config.resourceLimits?.maxDuration !== undefined) {
@@ -566,30 +580,52 @@ export class BackgroundExecutor {
     });
 
     // Handle completion/failure
+    // ✅ FIX ISSUE-1: Wrap all handlers in try-catch to prevent unhandled promise rejections.
+    // If handleTaskCompleted/handleTaskFailed/handleTaskCancelled throw, the error would
+    // propagate as an unhandled rejection since we're inside a .then()/.catch() chain.
+    // ✅ FIX MAJOR-1: Handle race condition where timeout fires after task completes
+    // The .then() path means the task completed successfully. Even if timeoutFired is true
+    // (timeout fired in the microtask gap), prioritize the successful result since the
+    // task actually completed before the timeout handler could reject.
     promise
       .then(result => {
-        // Security: Only clear if timeout hasn't already fired
-        if (timeoutId && !timeoutFired) {
-          this.clearTaskTimeout(timeoutId);
-        }
-        if (cancelled) {
-          this.handleTaskCancelled(taskId);
-        } else {
-          this.handleTaskCompleted(taskId, result);
+        try {
+          // Security: Only clear if timeout hasn't already fired
+          if (timeoutId && !timeoutFired) {
+            this.clearTaskTimeout(timeoutId);
+          }
+          // ✅ FIX MAJOR-1: If we're in .then(), the task completed successfully.
+          // Even if timeoutFired is true, the result was obtained, so report completion.
+          // The cancelled flag should only apply if the user explicitly cancelled.
+          // Note: timeoutFired sets cancelled=true to stop cooperative tasks, but
+          // if we're here, the task finished successfully before checking isCancelled().
+          if (cancelled && !timeoutFired) {
+            // User-initiated cancellation (not timeout)
+            this.handleTaskCancelled(taskId);
+          } else {
+            // Task completed successfully (even if timeout fired afterward)
+            this.handleTaskCompleted(taskId, result);
+          }
+        } catch (handlerError) {
+          this.handleBackgroundTaskError(taskId, handlerError, 'completion handler');
         }
       })
       .catch(error => {
-        // Security: Only clear if timeout hasn't already fired
-        if (timeoutId && !timeoutFired) {
-          this.clearTaskTimeout(timeoutId);
-        }
-        // TimeoutError is always treated as failure, not cancellation
-        if (error instanceof TimeoutError) {
-          this.handleTaskFailed(taskId, error);
-        } else if (cancelled) {
-          this.handleTaskCancelled(taskId);
-        } else {
-          this.handleTaskFailed(taskId, error);
+        try {
+          // Security: Only clear if timeout hasn't already fired
+          if (timeoutId && !timeoutFired) {
+            this.clearTaskTimeout(timeoutId);
+          }
+          // TimeoutError is always treated as failure, not cancellation
+          if (error instanceof TimeoutError) {
+            this.handleTaskFailed(taskId, error);
+          } else if (cancelled) {
+            this.handleTaskCancelled(taskId);
+          } else {
+            this.handleTaskFailed(taskId, error);
+          }
+        } catch (handlerError) {
+          this.handleBackgroundTaskError(taskId, handlerError, 'failure handler');
         }
       })
       .finally(() => {
@@ -597,8 +633,10 @@ export class BackgroundExecutor {
         this.activeWorkers.delete(taskId);
         this.resourceMonitor.unregisterBackgroundTask();
 
-        // Process next task in queue
-        this.processQueue();
+        // Process next task in queue (skip if shutting down)
+        if (!this.isShuttingDown) {
+          this.processQueue();
+        }
       });
   }
 
@@ -1431,5 +1469,187 @@ export class BackgroundExecutor {
       ? task.endTime.getTime() - task.startTime.getTime()
       : 0;
     return Math.floor((duration * 2) / 60000); // Convert to minutes and multiply by 2
+  }
+
+  /**
+   * Global error handler for background task lifecycle errors
+   *
+   * ✅ FIX ISSUE-1: Catches errors thrown by task completion/failure handlers
+   * that would otherwise become unhandled promise rejections and crash the process.
+   * Logs full context without swallowing the error silently. Also updates the task
+   * status to 'failed' so callers can detect the problem.
+   *
+   * @param taskId - Task that triggered the error
+   * @param error - The error thrown by the handler
+   * @param phase - Which handler phase threw (for diagnostics)
+   */
+  private handleBackgroundTaskError(taskId: string, error: unknown, phase: string): void {
+    // Use a try-catch here so that even if logging itself fails, we don't crash
+    try {
+      logger.error(
+        `[BackgroundExecutor] CRITICAL: Unhandled error in ${phase} for task ${taskId}`,
+        {
+          taskId,
+          phase,
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          activeTasks: this.activeWorkers.size,
+          queueSize: this.scheduler.size(),
+        }
+      );
+
+      // Best-effort: mark the task as failed so callers can detect
+      const task = this.tasks.get(taskId);
+      if (task && task.status !== 'completed' && task.status !== 'failed' && task.status !== 'cancelled') {
+        task.status = 'failed';
+        task.endTime = new Date();
+        task.error = error instanceof Error ? error : new Error(String(error));
+        this.tasks.set(taskId, task);
+      }
+    } catch (loggingError) {
+      // Last resort: if even logging fails, write to stderr directly to avoid silent swallowing
+      // This is intentionally console.error since the logger itself has failed
+      // eslint-disable-next-line no-console
+      console.error(
+        `[BackgroundExecutor] FATAL: Error handler failed for task ${taskId}:`,
+        loggingError,
+        'Original error:',
+        error
+      );
+    }
+  }
+
+  /**
+   * Gracefully shutdown the executor
+   *
+   * ✅ FIX ISSUE-5: Properly cancels or awaits all running tasks on shutdown.
+   * Uses a two-phase approach:
+   * 1. Cancel all queued tasks immediately
+   * 2. Wait for running tasks to complete within SHUTDOWN_TIMEOUT_MS
+   * 3. Force-cancel remaining tasks after timeout
+   *
+   * Safe to call multiple times - subsequent calls return the same promise.
+   *
+   * @returns Promise that resolves when shutdown is complete
+   */
+  async destroy(): Promise<void> {
+    // Idempotent: if already shutting down, return existing promise
+    if (this.shutdownPromise) {
+      return this.shutdownPromise;
+    }
+
+    this.isShuttingDown = true;
+    this.shutdownPromise = this.performShutdown();
+    return this.shutdownPromise;
+  }
+
+  /**
+   * Internal shutdown implementation
+   *
+   * ✅ FIX ISSUE-5: Two-phase shutdown with timeout.
+   */
+  private async performShutdown(): Promise<void> {
+    logger.info('[BackgroundExecutor] Shutdown initiated', {
+      runningTasks: this.activeWorkers.size,
+      queuedTasks: this.scheduler.size(),
+    });
+
+    // Phase 1: Clear all queued tasks immediately (they haven't started)
+    let queuedCancelled = 0;
+    while (!this.scheduler.isEmpty()) {
+      const task = this.scheduler.getNextTask();
+      if (task) {
+        task.status = 'cancelled';
+        task.endTime = new Date();
+        this.tasks.set(task.taskId, task);
+        queuedCancelled++;
+      }
+    }
+    if (queuedCancelled > 0) {
+      logger.info(`[BackgroundExecutor] Cancelled ${queuedCancelled} queued tasks`);
+    }
+
+    // Phase 2: Cancel all running tasks (set their cancellation flags)
+    const runningTaskIds = Array.from(this.activeWorkers.keys());
+    for (const taskId of runningTaskIds) {
+      const worker = this.activeWorkers.get(taskId);
+      if (worker) {
+        worker.cancel();
+      }
+    }
+
+    // Phase 3: Wait for running tasks with timeout
+    if (runningTaskIds.length > 0) {
+      logger.info(
+        `[BackgroundExecutor] Waiting for ${runningTaskIds.length} running tasks to complete (timeout: ${this.SHUTDOWN_TIMEOUT_MS}ms)`
+      );
+
+      const runningPromises = runningTaskIds
+        .map(taskId => this.activeWorkers.get(taskId)?.promise)
+        .filter((p): p is Promise<unknown> => p !== undefined)
+        // Each promise should already have .catch() in startTaskExecution,
+        // but add safety catch to prevent shutdown from hanging on rejection
+        .map(p => p.catch(() => { /* already handled in startTaskExecution */ }));
+
+      // ✅ FIX MAJOR-2 (Round 1): Capture timeoutId in outer scope so it can be
+      // explicitly cleared on the "completed" path, preventing timer leaks.
+      let shutdownTimeoutId: NodeJS.Timeout | undefined;
+      const timeoutPromise = new Promise<'timeout'>(resolve => {
+        shutdownTimeoutId = setTimeout(() => resolve('timeout'), this.SHUTDOWN_TIMEOUT_MS);
+        this.activeTimeouts.add(shutdownTimeoutId);
+      });
+
+      const result = await Promise.race([
+        Promise.allSettled(runningPromises).then(() => 'completed' as const),
+        timeoutPromise,
+      ]);
+
+      if (result === 'timeout') {
+        // Force-cancel remaining tasks
+        const remainingTasks = Array.from(this.activeWorkers.keys());
+        if (remainingTasks.length > 0) {
+          logger.warn(
+            `[BackgroundExecutor] Shutdown timeout: force-cancelling ${remainingTasks.length} tasks`,
+            { forceCancelledTaskIds: remainingTasks }
+          );
+
+          for (const taskId of remainingTasks) {
+            const task = this.tasks.get(taskId);
+            if (task) {
+              task.status = 'cancelled';
+              task.endTime = new Date();
+              task.error = new Error('Force-cancelled during shutdown');
+              this.tasks.set(taskId, task);
+            }
+            this.activeWorkers.delete(taskId);
+            this.resourceMonitor.unregisterBackgroundTask();
+          }
+        }
+      } else {
+        // ✅ FIX MAJOR-2 (Round 1): Explicitly clear shutdown timeout timer on "completed" path
+        // Without this, the timer would linger until Phase 4 bulk cleanup, which is fragile.
+        if (shutdownTimeoutId) {
+          clearTimeout(shutdownTimeoutId);
+          this.activeTimeouts.delete(shutdownTimeoutId);
+        }
+        logger.info('[BackgroundExecutor] All running tasks completed before shutdown timeout');
+      }
+    }
+
+    // Phase 4: Clear all active timeouts to prevent timer leaks
+    for (const timeoutId of this.activeTimeouts) {
+      clearTimeout(timeoutId);
+    }
+    this.activeTimeouts.clear();
+
+    // Phase 5: Clear all cleanup timers
+    for (const [taskId, timerId] of this.cleanupTimers) {
+      clearTimeout(timerId);
+    }
+    this.cleanupTimers.clear();
+    this.cleanupScheduled.clear();
+    this.cleanupCancelCounts.clear();
+
+    logger.info('[BackgroundExecutor] Shutdown complete');
   }
 }

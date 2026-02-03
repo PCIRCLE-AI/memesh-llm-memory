@@ -12,6 +12,8 @@ export declare class MCPTaskDelegator {
     getPendingTasks(agentId: string): Promise<TaskInfo[]>;
     markTaskInProgress(taskId: string): Promise<void>;
     removeTask(taskId: string): Promise<void>;
+    private static readonly TIMEOUT_BOUNDS;
+    private getTaskTimeout;
     checkTimeouts(): Promise<void>;
 }
 //# sourceMappingURL=MCPTaskDelegator.d.ts.map

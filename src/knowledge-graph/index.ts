@@ -17,6 +17,27 @@ import { logger } from '../utils/logger.js';
 import { QueryCache } from '../db/QueryCache.js';
 import { safeJsonParse, safeJsonStringify } from '../utils/json.js';
 import { getDataPath, getDataDirectory } from '../utils/PathResolver.js';
+import { validateNonEmptyString } from '../utils/validation.js';
+
+/**
+ * Maximum allowed length for entity names.
+ * Prevents excessively long names that could degrade search/index performance.
+ */
+const MAX_ENTITY_NAME_LENGTH = 512;
+
+/**
+ * Regex pattern for valid relation types.
+ * Allows alphanumeric characters, underscores, and hyphens.
+ * Must start with a letter or underscore (no leading hyphens or numbers).
+ */
+const VALID_RELATION_TYPE_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_-]*$/;
+
+/**
+ * Regex to detect control characters (C0 and C1 control codes, excluding
+ * common whitespace like \t, \n, \r which may appear in legitimate content).
+ * Matches: U+0000-U+0008, U+000B, U+000C, U+000E-U+001F, U+007F, U+0080-U+009F
+ */
+const CONTROL_CHAR_PATTERN = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\x80-\x9F]/;
 
 export class KnowledgeGraph {
   private db: Database.Database;
@@ -34,6 +55,72 @@ export class KnowledgeGraph {
       defaultTTL: 5 * 60 * 1000,
       debug: false,
     });
+  }
+
+  /**
+   * Validate an entity name for safe storage and search.
+   *
+   * Checks:
+   * 1. Non-empty (uses existing validateNonEmptyString utility)
+   * 2. Reasonable length (max MAX_ENTITY_NAME_LENGTH characters)
+   * 3. No control characters that could cause display/search issues
+   *
+   * @param name - Entity name to validate
+   * @throws {ValidationError} If the name is invalid
+   */
+  private validateEntityName(name: string): void {
+    validateNonEmptyString(name, 'Entity name');
+
+    if (name.length > MAX_ENTITY_NAME_LENGTH) {
+      throw new ValidationError(
+        `Entity name exceeds maximum length of ${MAX_ENTITY_NAME_LENGTH} characters (got ${name.length})`,
+        {
+          component: 'KnowledgeGraph',
+          method: 'validateEntityName',
+          nameLength: name.length,
+          maxLength: MAX_ENTITY_NAME_LENGTH,
+        }
+      );
+    }
+
+    if (CONTROL_CHAR_PATTERN.test(name)) {
+      throw new ValidationError(
+        'Entity name must not contain control characters',
+        {
+          component: 'KnowledgeGraph',
+          method: 'validateEntityName',
+          // Truncate name to 100 chars to prevent log injection from overly long input
+          name: name.slice(0, 100),
+        }
+      );
+    }
+  }
+
+  /**
+   * Validate a relation type for safe storage and search.
+   *
+   * Relation types must be alphanumeric with underscores and hyphens,
+   * starting with a letter or underscore. This prevents issues with
+   * special characters in search queries and ensures consistent naming.
+   *
+   * @param relationType - Relation type string to validate
+   * @throws {ValidationError} If the relation type is invalid
+   */
+  private validateRelationType(relationType: string): void {
+    validateNonEmptyString(relationType, 'Relation type');
+
+    if (!VALID_RELATION_TYPE_PATTERN.test(relationType)) {
+      throw new ValidationError(
+        `Relation type must contain only alphanumeric characters, underscores, and hyphens, ` +
+        `and must start with a letter or underscore. Got: "${relationType}"`,
+        {
+          component: 'KnowledgeGraph',
+          method: 'validateRelationType',
+          relationType,
+          pattern: VALID_RELATION_TYPE_PATTERN.source,
+        }
+      );
+    }
   }
 
   /**
@@ -267,6 +354,9 @@ export class KnowledgeGraph {
    * @returns Actual entity name (same as input if new, existing name if deduplicated)
    */
   createEntity(entity: Entity): string {
+    // Validate entity name before any database operations
+    this.validateEntityName(entity.name);
+
     try {
       // CRITICAL-1: Check content_hash first for deduplication
       // This prevents most duplicate cases before attempting INSERT
@@ -377,6 +467,11 @@ export class KnowledgeGraph {
    * Create a relation between two entities
    */
   createRelation(relation: Relation): void {
+    // Validate entity names and relation type before database operations
+    this.validateEntityName(relation.from);
+    this.validateEntityName(relation.to);
+    this.validateRelationType(relation.relationType);
+
     const getEntityId = this.db.prepare('SELECT id FROM entities WHERE name = ?');
 
     const fromEntity = getEntityId.get(relation.from) as { id: number } | undefined;
@@ -437,6 +532,14 @@ export class KnowledgeGraph {
     // ✅ FIX LOW-2: Validate limit and offset parameters
     const MAX_LIMIT = 1000;
 
+    // ✅ MAJOR-1: Early return for limit === 0 (caller explicitly wants no results)
+    if (query.limit === 0) {
+      return [];
+    }
+
+    // ✅ MAJOR-2: Use local variable to avoid mutating caller's query object
+    let effectiveLimit: number | undefined = query.limit;
+
     if (query.limit !== undefined) {
       if (query.limit < 0) {
         throw new ValidationError('Limit must be non-negative', {
@@ -447,7 +550,7 @@ export class KnowledgeGraph {
       }
       if (query.limit > MAX_LIMIT) {
         logger.warn(`Limit ${query.limit} exceeds maximum, capping to ${MAX_LIMIT}`);
-        query.limit = MAX_LIMIT;
+        effectiveLimit = MAX_LIMIT;
       }
     }
 
@@ -459,8 +562,26 @@ export class KnowledgeGraph {
       });
     }
 
+    // Validate namePattern: reject control characters but allow wildcards and longer patterns
+    // Empty string is treated as "match all" (LIKE '%<empty>%' matches everything)
+    if (query.namePattern !== undefined && query.namePattern !== '') {
+      validateNonEmptyString(query.namePattern, 'Name pattern');
+      if (CONTROL_CHAR_PATTERN.test(query.namePattern)) {
+        throw new ValidationError(
+          'Name pattern must not contain control characters',
+          {
+            component: 'KnowledgeGraph',
+            method: 'searchEntities',
+            namePattern: query.namePattern.slice(0, 100),
+          }
+        );
+      }
+    }
+
     // Generate cache key from query parameters
-    const cacheKey = `entities:${JSON.stringify(query)}`;
+    // ✅ MAJOR-2: Use effectiveLimit in cache key to ensure correct cache behavior
+    const cacheKeyQuery = { ...query, limit: effectiveLimit };
+    const cacheKey = `entities:${JSON.stringify(cacheKeyQuery)}`;
 
     // Check cache first
     const cached = this.queryCache.get(cacheKey);
@@ -496,12 +617,14 @@ export class KnowledgeGraph {
 
     sql += ' ORDER BY e.created_at DESC';
 
-    if (query.limit) {
+    // ✅ MAJOR-1 & MAJOR-2: Use effectiveLimit and check !== undefined (not falsy)
+    // to correctly handle limit=0 (already returned early) and avoid mutation
+    if (effectiveLimit !== undefined) {
       sql += ' LIMIT ?';
-      params.push(query.limit);
+      params.push(effectiveLimit);
     }
 
-    if (query.offset) {
+    if (query.offset !== undefined) {
       sql += ' OFFSET ?';
       params.push(query.offset);
     }
@@ -546,16 +669,24 @@ export class KnowledgeGraph {
 
   /**
    * Get a specific entity by name
+   * @throws {ValidationError} If the name is invalid
    */
   getEntity(name: string): Entity | null {
+    // Validate entity name before any database operations
+    this.validateEntityName(name);
+
     const results = this.searchEntities({ namePattern: name, limit: 1 });
     return results.length > 0 ? results[0] : null;
   }
 
   /**
    * Trace relations from an entity
+   * @throws {ValidationError} If the entity name is invalid
    */
   traceRelations(entityName: string, depth: number = 2): RelationTrace | null {
+    // Validate entity name before any database operations
+    this.validateEntityName(entityName);
+
     // Generate cache key
     const cacheKey = `trace:${entityName}:${depth}`;
 
@@ -598,7 +729,8 @@ export class KnowledgeGraph {
         from: r.from_name,
         to: r.to_name,
         relationType: r.relation_type as RelationType,
-        metadata: r.metadata ? JSON.parse(r.metadata) : {}
+        // ✅ MAJOR-4: Use safeJsonParse instead of raw JSON.parse to prevent crash on malformed data
+        metadata: r.metadata ? safeJsonParse<Record<string, unknown>>(r.metadata, {}) : {}
       };
     }
 
@@ -665,8 +797,12 @@ export class KnowledgeGraph {
    * Delete an entity and all its relations (cascade delete)
    * @param name - Entity name to delete
    * @returns true if entity was deleted, false if not found
+   * @throws {ValidationError} If the name is invalid
    */
   deleteEntity(name: string): boolean {
+    // Validate entity name before any database operations
+    this.validateEntityName(name);
+
     const getEntityId = this.db.prepare('SELECT id FROM entities WHERE name = ?');
     const entity = getEntityId.get(name) as { id: number } | undefined;
 

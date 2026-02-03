@@ -2,6 +2,10 @@ import { logger } from '../utils/logger.js';
 import { looksLikeSensitive, hashValue } from '../telemetry/sanitization.js';
 export class ResultHandler {
     handleCompleted(task, result) {
+        if (task.status === 'completed' || task.status === 'failed' || task.status === 'cancelled') {
+            logger.debug(`BackgroundExecutor: Task ${task.taskId} already in terminal state '${task.status}', skipping completion update`);
+            return;
+        }
         task.status = 'completed';
         task.endTime = new Date();
         task.result = result;
@@ -15,6 +19,10 @@ export class ResultHandler {
         }, task.taskId, 'onComplete');
     }
     handleFailed(task, error) {
+        if (task.status === 'completed' || task.status === 'failed' || task.status === 'cancelled') {
+            logger.debug(`BackgroundExecutor: Task ${task.taskId} already in terminal state '${task.status}', skipping failure update`);
+            return;
+        }
         task.status = 'failed';
         task.endTime = new Date();
         task.error = error;
@@ -24,6 +32,10 @@ export class ResultHandler {
         }, task.taskId, 'onError');
     }
     handleCancelled(task) {
+        if (task.status === 'completed' || task.status === 'failed' || task.status === 'cancelled') {
+            logger.debug(`BackgroundExecutor: Task ${task.taskId} already in terminal state '${task.status}', skipping cancellation update`);
+            return;
+        }
         task.status = 'cancelled';
         task.endTime = new Date();
         logger.info(`BackgroundExecutor: Task ${task.taskId} cancelled`);

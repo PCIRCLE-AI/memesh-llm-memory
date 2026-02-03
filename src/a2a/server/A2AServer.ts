@@ -247,6 +247,15 @@ export class A2AServer {
       });
 
       this.server.on('error', (err) => {
+        // Close TaskQueue DB to prevent connection leak on startup failure
+        try {
+          this.taskQueue.close();
+        } catch (closeErr) {
+          logger.error('[A2A Server] Failed to close TaskQueue during startup error cleanup', {
+            originalError: err.message,
+            closeError: closeErr instanceof Error ? closeErr.message : String(closeErr),
+          });
+        }
         reject(err);
       });
     });
@@ -298,6 +307,9 @@ export class A2AServer {
           resolve();
         });
       });
+    } else {
+      // Server was never started, but still need to close the TaskQueue
+      this.taskQueue.close();
     }
   }
 

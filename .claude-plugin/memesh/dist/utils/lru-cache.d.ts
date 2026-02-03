@@ -17,6 +17,13 @@ export declare class LRUCache<V = unknown> {
     constructor(options: LRUCacheOptions<V>);
     get(key: string): V | undefined;
     set(key: string, value: V): void;
+    peek(key: string): {
+        value: V;
+        timestamp: number;
+    } | undefined;
+    isExpired(entry: {
+        timestamp: number;
+    }): boolean;
     has(key: string): boolean;
     delete(key: string): boolean;
     clear(): void;

@@ -8,5 +8,5 @@ export declare function validateNormalized(value: number, name: string): void;
 export declare function validateNonEmptyString(value: string, name: string): void;
 export declare function validateEnum<T extends string>(value: string, name: string, allowedValues: readonly T[]): asserts value is T;
 export declare function validateNonEmptyArray<T>(value: unknown, name: string): asserts value is T[];
-export declare function validateObjectSize(value: object, name: string, maxBytes: number): void;
+export declare function validateObjectSize(value: object, name: string, maxChars: number): void;
 //# sourceMappingURL=validation.d.ts.map

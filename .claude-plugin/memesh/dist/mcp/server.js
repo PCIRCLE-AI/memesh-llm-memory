@@ -8,14 +8,33 @@ import { getAllToolDefinitions } from './ToolDefinitions.js';
 import { setupResourceHandlers } from './handlers/index.js';
 import { SessionBootstrapper } from './SessionBootstrapper.js';
 import { logger } from '../utils/logger.js';
-import { logError } from '../utils/errorHandler.js';
+import { logError, formatMCPError } from '../utils/errorHandler.js';
 import { generateRequestId } from '../utils/requestId.js';
+const DEFAULT_TOOL_TIMEOUT_MS = 60000;
+const MIN_TOOL_TIMEOUT_MS = 1000;
+const parsedToolTimeoutMs = parseInt(process.env.MEMESH_TOOL_TIMEOUT_MS || '', 10);
+const toolTimeoutMs = Number.isFinite(parsedToolTimeoutMs) && parsedToolTimeoutMs > 0
+    ? Math.max(MIN_TOOL_TIMEOUT_MS, parsedToolTimeoutMs)
+    : DEFAULT_TOOL_TIMEOUT_MS;
+export class ToolCallTimeoutError extends Error {
+    toolName;
+    timeoutMs;
+    elapsedMs;
+    constructor(toolName, timeoutMs, elapsedMs) {
+        super(`Tool '${toolName}' timed out after ${elapsedMs}ms (limit: ${timeoutMs}ms)`);
+        this.name = 'ToolCallTimeoutError';
+        this.toolName = toolName;
+        this.timeoutMs = timeoutMs;
+        this.elapsedMs = elapsedMs;
+    }
+}
 class ClaudeCodeBuddyMCPServer {
     server;
     components;
     toolRouter;
     sessionBootstrapper;
     isShuttingDown = false;
+    shutdownPromise = null;
     get toolHandlers() {
         return this.components.toolHandlers;
     }
@@ -65,25 +84,63 @@ class ClaudeCodeBuddyMCPServer {
         });
         this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
             const requestId = generateRequestId();
+            const params = request.params;
+            const toolName = params.name || 'unknown';
+            const startTime = Date.now();
             logger.debug('[MCP] Incoming tool call request', {
                 requestId,
-                toolName: request.params?.name,
+                toolName,
                 component: 'ClaudeCodeBuddyMCPServer',
             });
             try {
-                const result = await this.toolRouter.routeToolCall(request.params, undefined, requestId);
+                const toolPromise = this.toolRouter.routeToolCall(request.params, undefined, requestId);
+                let timeoutId;
+                const timeoutPromise = new Promise((_, reject) => {
+                    timeoutId = setTimeout(() => {
+                        const elapsed = Date.now() - startTime;
+                        reject(new ToolCallTimeoutError(toolName, toolTimeoutMs, elapsed));
+                    }, toolTimeoutMs);
+                });
+                let result;
+                try {
+                    result = await Promise.race([toolPromise, timeoutPromise]);
+                }
+                finally {
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                    }
+                }
                 return await this.sessionBootstrapper.maybePrepend(result);
             }
             catch (error) {
+                const elapsed = Date.now() - startTime;
+                if (error instanceof ToolCallTimeoutError) {
+                    logger.error('[MCP] Tool call timed out', {
+                        requestId,
+                        toolName,
+                        timeoutMs: toolTimeoutMs,
+                        elapsedMs: elapsed,
+                        component: 'ClaudeCodeBuddyMCPServer',
+                    });
+                }
                 logError(error, {
                     component: 'ClaudeCodeBuddyMCPServer',
                     method: 'CallToolRequestHandler',
                     requestId,
                     data: {
-                        toolName: request.params?.name,
+                        toolName,
+                        elapsedMs: elapsed,
                     },
                 });
-                throw error;
+                return formatMCPError(error, {
+                    component: 'ClaudeCodeBuddyMCPServer',
+                    method: 'CallToolRequestHandler',
+                    requestId,
+                    data: {
+                        toolName,
+                        elapsedMs: elapsed,
+                    },
+                });
             }
         });
     }
@@ -100,15 +157,22 @@ class ClaudeCodeBuddyMCPServer {
         };
         const signals = ['SIGINT', 'SIGTERM'];
         for (const signal of signals) {
-            process.on(signal, () => {
+            process.once(signal, () => {
                 void this.shutdown(signal);
             });
         }
     }
     async shutdown(reason) {
+        if (this.shutdownPromise) {
+            return this.shutdownPromise;
+        }
         if (this.isShuttingDown)
             return;
         this.isShuttingDown = true;
+        this.shutdownPromise = this.performShutdown(reason);
+        return this.shutdownPromise;
+    }
+    async performShutdown(reason) {
         logger.warn(`Shutting down MCP server (${reason})...`);
         try {
             logger.info('Closing knowledge graph database...');

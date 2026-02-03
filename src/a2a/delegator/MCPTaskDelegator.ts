@@ -225,6 +225,58 @@ export class MCPTaskDelegator {
   }
 
   /**
+   * Bounds for task timeout configuration.
+   * min: 5 seconds (anything shorter is unreasonable for task execution)
+   * max: 1 hour (anything longer likely indicates a misconfiguration)
+   */
+  private static readonly TIMEOUT_BOUNDS = {
+    min: 5_000,
+    max: 3_600_000,
+    default: TIME.TASK_TIMEOUT_MS,
+  } as const;
+
+  /**
+   * Parse and validate the task timeout from environment variable.
+   *
+   * Handles NaN (from non-numeric env var) by falling back to the default.
+   * Handles out-of-bounds values by clamping and logging a warning.
+   *
+   * @returns A valid timeout value in milliseconds within bounds
+   */
+  private getTaskTimeout(): number {
+    const envValue = process.env[ENV_KEYS.TASK_TIMEOUT];
+    if (!envValue) {
+      return MCPTaskDelegator.TIMEOUT_BOUNDS.default;
+    }
+
+    const raw = parseInt(envValue, 10);
+    const bounds = MCPTaskDelegator.TIMEOUT_BOUNDS;
+
+    if (Number.isNaN(raw)) {
+      this.logger.warn(
+        `[MCPTaskDelegator] Invalid (NaN) ${ENV_KEYS.TASK_TIMEOUT} env var: "${envValue}", using default ${bounds.default}ms`
+      );
+      return bounds.default;
+    }
+
+    if (raw < bounds.min) {
+      this.logger.warn(
+        `[MCPTaskDelegator] ${ENV_KEYS.TASK_TIMEOUT} value ${raw}ms is below minimum ${bounds.min}ms, clamping to ${bounds.min}ms`
+      );
+      return bounds.min;
+    }
+
+    if (raw > bounds.max) {
+      this.logger.warn(
+        `[MCPTaskDelegator] ${ENV_KEYS.TASK_TIMEOUT} value ${raw}ms exceeds maximum ${bounds.max}ms, clamping to ${bounds.max}ms`
+      );
+      return bounds.max;
+    }
+
+    return raw;
+  }
+
+  /**
    * Check for timed-out tasks and mark them as TIMEOUT
    *
    * Called periodically by TimeoutChecker to detect tasks that have exceeded
@@ -247,84 +299,98 @@ export class MCPTaskDelegator {
    * ```
    */
   async checkTimeouts(): Promise<void> {
-    const now = Date.now();
-    const timeout = parseInt(
-      process.env[ENV_KEYS.TASK_TIMEOUT] || String(TIME.TASK_TIMEOUT_MS)
-    );
-    const timeoutSeconds = timeout / 1000;
+    let tasksChecked = 0;
 
-    // CRITICAL FIX: Collect timed-out tasks first to avoid modifying Map during iteration
-    const timedOutTasks: Array<{ taskId: string; taskInfo: TaskInfo }> = [];
+    try {
+      const now = Date.now();
+      const timeout = this.getTaskTimeout();
+      const timeoutSeconds = timeout / 1000;
 
-    for (const [taskId, taskInfo] of this.pendingTasks) {
-      if (now - taskInfo.createdAt > timeout) {
-        timedOutTasks.push({ taskId, taskInfo });
-      }
-    }
+      // CRITICAL FIX: Collect timed-out tasks first to avoid modifying Map during iteration
+      const timedOutTasks: Array<{ taskId: string; taskInfo: TaskInfo }> = [];
 
-    // Process timed-out tasks sequentially with transaction safety
-    for (const { taskId, taskInfo } of timedOutTasks) {
-      try {
-        const timeoutMessage = formatErrorMessage(ErrorCodes.TASK_TIMEOUT, taskId, timeoutSeconds);
-
-        this.logger.warn('[MCPTaskDelegator] Task timeout detected', {
-          taskId,
-          agentId: taskInfo.agentId,
-          timeoutSeconds,
-          taskAge: Math.floor((now - taskInfo.createdAt) / 1000),
-        });
-
-        // Update TaskQueue status with transaction safety
-        const updated = this.taskQueue.updateTaskStatus(taskId, {
-          state: 'TIMEOUT',
-          metadata: { error: timeoutMessage }
-        });
-
-        if (!updated) {
-          this.logger.error('[MCPTaskDelegator] Failed to update timeout status for task', { taskId });
-          // Do not remove from pending queue if DB update failed
-          continue;
+      for (const [taskId, taskInfo] of this.pendingTasks) {
+        tasksChecked++;
+        if (now - taskInfo.createdAt > timeout) {
+          timedOutTasks.push({ taskId, taskInfo });
         }
+      }
 
-        // Only remove from pending queue after successful DB update
-        this.pendingTasks.delete(taskId);
+      // Process timed-out tasks sequentially with transaction safety
+      for (const { taskId, taskInfo } of timedOutTasks) {
+        try {
+          const timeoutMessage = formatErrorMessage(ErrorCodes.TASK_TIMEOUT, taskId, timeoutSeconds);
 
-        // Update agent index
-        const agentTaskSet = this.pendingTasksByAgent.get(taskInfo.agentId);
-        if (agentTaskSet) {
-          agentTaskSet.delete(taskId);
-          if (agentTaskSet.size === 0) {
-            this.pendingTasksByAgent.delete(taskInfo.agentId);
+          this.logger.warn('[MCPTaskDelegator] Task timeout detected', {
+            taskId,
+            agentId: taskInfo.agentId,
+            timeoutSeconds,
+            taskAge: Math.floor((now - taskInfo.createdAt) / 1000),
+          });
+
+          // Update TaskQueue status with transaction safety
+          const updated = this.taskQueue.updateTaskStatus(taskId, {
+            state: 'TIMEOUT',
+            metadata: { error: timeoutMessage }
+          });
+
+          if (!updated) {
+            this.logger.error('[MCPTaskDelegator] Failed to update timeout status for task', { taskId });
+            // Do not remove from pending queue if DB update failed
+            continue;
           }
+
+          // Only remove from pending queue after successful DB update
+          this.pendingTasks.delete(taskId);
+
+          // Update agent index
+          const agentTaskSet = this.pendingTasksByAgent.get(taskInfo.agentId);
+          if (agentTaskSet) {
+            agentTaskSet.delete(taskId);
+            if (agentTaskSet.size === 0) {
+              this.pendingTasksByAgent.delete(taskInfo.agentId);
+            }
+          }
+
+          this.logger.info('[MCPTaskDelegator] Task removed from pending queue after timeout', { taskId });
+
+          // Metrics: track timeout and update queue size
+          this.metrics.incrementCounter(METRIC_NAMES.TASKS_TIMEOUT, {
+            agentId: taskInfo.agentId,
+            priority: taskInfo.priority
+          });
+          this.metrics.setGauge(METRIC_NAMES.QUEUE_SIZE, this.pendingTasks.size, {
+            agentId: taskInfo.agentId
+          });
+
+        } catch (error) {
+          // Transaction safety: rollback by keeping task in pending queue
+          this.logger.error('[MCPTaskDelegator] Error processing timeout', {
+            taskId,
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+          });
+          // Task remains in pending queue for retry on next checkTimeouts call
         }
-
-        this.logger.info('[MCPTaskDelegator] Task removed from pending queue after timeout', { taskId });
-
-        // Metrics: track timeout and update queue size
-        this.metrics.incrementCounter(METRIC_NAMES.TASKS_TIMEOUT, {
-          agentId: taskInfo.agentId,
-          priority: taskInfo.priority
-        });
-        this.metrics.setGauge(METRIC_NAMES.QUEUE_SIZE, this.pendingTasks.size, {
-          agentId: taskInfo.agentId
-        });
-
-      } catch (error) {
-        // Transaction safety: rollback by keeping task in pending queue
-        this.logger.error('[MCPTaskDelegator] Error processing timeout', {
-          taskId,
-          error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-        });
-        // Task remains in pending queue for retry on next checkTimeouts call
       }
-    }
 
-    if (timedOutTasks.length > 0) {
-      this.logger.info('[MCPTaskDelegator] Timeout check completed', {
-        timeoutCount: timedOutTasks.length,
-        remainingTasks: this.pendingTasks.size,
+      if (timedOutTasks.length > 0) {
+        this.logger.info('[MCPTaskDelegator] Timeout check completed', {
+          timeoutCount: timedOutTasks.length,
+          remainingTasks: this.pendingTasks.size,
+        });
+      }
+    } catch (error) {
+      // Top-level catch: prevents unhandled rejections from crashing the process
+      // when checkTimeouts() is invoked by setInterval via TimeoutChecker.
+      this.logger.error('[MCPTaskDelegator] Unhandled error in checkTimeouts', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        tasksChecked,
+        pendingTaskCount: this.pendingTasks.size,
       });
+      // Do NOT re-throw: this method is called by setInterval.
+      // An unhandled rejection here would crash the entire Node.js process.
     }
   }
 }

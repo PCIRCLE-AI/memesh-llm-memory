@@ -82,6 +82,18 @@ export class ResultHandler {
    * ```
    */
   handleCompleted(task: BackgroundTask, result: unknown): void {
+    // ✅ FIX MAJOR-2: Guard against status overwrite race condition
+    // If task.status is already a terminal state (completed/failed/cancelled),
+    // skip the update. This makes the first status transition authoritative.
+    // This can happen when cancelTask() sets status='cancelled' but the running
+    // task's promise chain tries to set it to 'completed' afterward.
+    if (task.status === 'completed' || task.status === 'failed' || task.status === 'cancelled') {
+      logger.debug(
+        `BackgroundExecutor: Task ${task.taskId} already in terminal state '${task.status}', skipping completion update`
+      );
+      return;
+    }
+
     task.status = 'completed';
     task.endTime = new Date();
     task.result = result;
@@ -129,6 +141,15 @@ export class ResultHandler {
    * ```
    */
   handleFailed(task: BackgroundTask, error: Error): void {
+    // ✅ FIX MAJOR-2: Guard against status overwrite race condition
+    // If task.status is already a terminal state, skip the update.
+    if (task.status === 'completed' || task.status === 'failed' || task.status === 'cancelled') {
+      logger.debug(
+        `BackgroundExecutor: Task ${task.taskId} already in terminal state '${task.status}', skipping failure update`
+      );
+      return;
+    }
+
     task.status = 'failed';
     task.endTime = new Date();
     task.error = error;
@@ -165,6 +186,15 @@ export class ResultHandler {
    * ```
    */
   handleCancelled(task: BackgroundTask): void {
+    // ✅ FIX MAJOR-2: Guard against status overwrite race condition
+    // If task.status is already a terminal state, skip the update.
+    if (task.status === 'completed' || task.status === 'failed' || task.status === 'cancelled') {
+      logger.debug(
+        `BackgroundExecutor: Task ${task.taskId} already in terminal state '${task.status}', skipping cancellation update`
+      );
+      return;
+    }
+
     task.status = 'cancelled';
     task.endTime = new Date();
 

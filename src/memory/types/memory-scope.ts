@@ -44,7 +44,7 @@ export interface MemoryScopeMetadata {
 
   /**
    * Project name - used in PROJECT and SESSION scopes
-   * Examples: 'claude-code-buddy', 'my-ecommerce-app'
+   * Examples: 'memesh', 'my-ecommerce-app'
    */
   projectName?: string;
 

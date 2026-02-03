@@ -29,6 +29,57 @@ import {
   injectTraceContext,
   createTraceContext,
 } from '../../utils/tracing/index.js';
+import { logger } from '../../utils/logger.js';
+
+/**
+ * Retry configuration bounds
+ *
+ * Defense-in-depth: Ensures env var parsing produces sane values.
+ * Out-of-bounds values are clamped and a warning is logged.
+ */
+const RETRY_BOUNDS = {
+  maxRetries: { min: 0, max: 10, default: 3 },
+  baseDelay: { min: 100, max: 60_000, default: 1_000 },
+  timeout: { min: 1_000, max: 300_000, default: 30_000 },
+} as const;
+
+/**
+ * Validate and clamp a retry config value to safe bounds.
+ *
+ * Handles NaN (from failed parseInt) by falling back to the default.
+ * Handles out-of-bounds values by clamping and logging a warning.
+ *
+ * @param raw - Raw parsed value (may be NaN)
+ * @param name - Parameter name for logging
+ * @param bounds - Min, max, and default for this parameter
+ * @returns A valid number within bounds
+ */
+function clampRetryValue(
+  raw: number,
+  name: string,
+  bounds: { min: number; max: number; default: number }
+): number {
+  if (Number.isNaN(raw)) {
+    logger.warn(`[A2AClient] Invalid (NaN) env var for ${name}, using default ${bounds.default}`);
+    return bounds.default;
+  }
+
+  if (raw < bounds.min) {
+    logger.warn(
+      `[A2AClient] ${name} value ${raw} is below minimum ${bounds.min}, clamping to ${bounds.min}`
+    );
+    return bounds.min;
+  }
+
+  if (raw > bounds.max) {
+    logger.warn(
+      `[A2AClient] ${name} value ${raw} exceeds maximum ${bounds.max}, clamping to ${bounds.max}`
+    );
+    return bounds.max;
+  }
+
+  return raw;
+}
 
 /**
  * A2AClient class
@@ -70,13 +121,32 @@ export class A2AClient {
   constructor(retryConfig?: Partial<RetryOptions>) {
     this.registry = AgentRegistry.getInstance();
 
-    // Configure retry settings from environment with sensible defaults
+    // Parse env vars and validate/clamp to safe bounds
+    const envMaxRetries = clampRetryValue(
+      parseInt(process.env.A2A_RETRY_MAX_ATTEMPTS || String(RETRY_BOUNDS.maxRetries.default), 10),
+      'maxRetries',
+      RETRY_BOUNDS.maxRetries
+    );
+    const envBaseDelay = clampRetryValue(
+      parseInt(process.env.A2A_RETRY_INITIAL_DELAY_MS || String(RETRY_BOUNDS.baseDelay.default), 10),
+      'baseDelay',
+      RETRY_BOUNDS.baseDelay
+    );
+    const envTimeout = clampRetryValue(
+      parseInt(process.env.A2A_RETRY_TIMEOUT_MS || String(RETRY_BOUNDS.timeout.default), 10),
+      'timeout',
+      RETRY_BOUNDS.timeout
+    );
+
+    // Build config from validated env defaults, then let explicit config override.
+    // Explicit retryConfig values are NOT re-validated because the caller is trusted
+    // programmatic code (not untrusted external input).
     this.retryConfig = {
-      maxRetries: parseInt(process.env.A2A_RETRY_MAX_ATTEMPTS || '3', 10),
-      baseDelay: parseInt(process.env.A2A_RETRY_INITIAL_DELAY_MS || '1000', 10),
+      maxRetries: envMaxRetries,
+      baseDelay: envBaseDelay,
       enableJitter: true,
       retryableStatusCodes: [429, 500, 502, 503, 504],
-      timeout: parseInt(process.env.A2A_RETRY_TIMEOUT_MS || '30000', 10),
+      timeout: envTimeout,
       ...retryConfig,
     };
   }
@@ -197,7 +267,8 @@ export class A2AClient {
             throw createError(ErrorCodes.AGENT_NOT_FOUND, targetAgentId);
           }
 
-          const url = `${agent.baseUrl}/a2a/tasks/${taskId}`;
+          // ✅ FIX MINOR-2: URI-encode taskId to handle special characters
+          const url = `${agent.baseUrl}/a2a/tasks/${encodeURIComponent(taskId)}`;
 
           const response = await fetch(url, {
             method: 'GET',
@@ -236,8 +307,9 @@ export class A2AClient {
 
           const queryParams = new URLSearchParams();
           if (params?.status) queryParams.set('status', params.status);
-          if (params?.limit) queryParams.set('limit', params.limit.toString());
-          if (params?.offset) queryParams.set('offset', params.offset.toString());
+          // ✅ FIX MAJOR-1: Use !== undefined to allow limit=0 and offset=0
+          if (params?.limit !== undefined) queryParams.set('limit', params.limit.toString());
+          if (params?.offset !== undefined) queryParams.set('offset', params.offset.toString());
 
           const url = `${agent.baseUrl}/a2a/tasks?${queryParams.toString()}`;
 
@@ -297,7 +369,8 @@ export class A2AClient {
             throw createError(ErrorCodes.AGENT_NOT_FOUND, targetAgentId);
           }
 
-          const url = `${agent.baseUrl}/a2a/tasks/${taskId}/cancel`;
+          // ✅ FIX MINOR-2: URI-encode taskId to handle special characters
+          const url = `${agent.baseUrl}/a2a/tasks/${encodeURIComponent(taskId)}/cancel`;
 
           const response = await fetch(url, {
             method: 'POST',

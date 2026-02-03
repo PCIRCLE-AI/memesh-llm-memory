@@ -19,7 +19,7 @@
 ### 3. Claude Code MCP 配置
 ```bash
 ✅ Config 位置: ~/Library/Application Support/Claude/claude_desktop_config.json
-✅ MCP Server: memesh-dev (開發版本)
+✅ MCP Server: memesh-mcp (開發版本)
 ✅ 指向: /Users/ktseng/Developer/Projects/claude-code-buddy/dist/mcp/server-bootstrap.js
 ```
 
@@ -37,7 +37,7 @@
 
 2. **驗證 MCP 連接**
    - 打開 Claude Code
-   - 檢查是否顯示 "memesh-dev" MCP server 連接成功
+   - 檢查是否顯示 "memesh-mcp" MCP server 連接成功
    - 可以使用 MCP 工具（例如 `buddy-help`）
 
 ### 方法 2：手動啟動（用於測試）
@@ -230,7 +230,7 @@ npm run build
 npm run mcp
 
 # 4. 檢查錯誤日誌
-cat ~/Library/Logs/Claude/mcp-memesh-dev*.log
+cat ~/Library/Logs/Claude/mcp-memesh-mcp*.log
 ```
 
 ### 問題 2：A2A 工具不可用
@@ -280,7 +280,7 @@ bash scripts/generate-a2a-token.sh
 現在您已經完成了所有設置，可以：
 
 1. **重啟 Claude Code**
-2. **檢查 memesh-dev MCP server 連接狀態**
+2. **檢查 memesh-mcp MCP server 連接狀態**
 3. **試用新的 a2a-* 工具**
 4. **體驗 Agent-to-Agent 協作功能**
 

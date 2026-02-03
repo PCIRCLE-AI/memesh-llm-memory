@@ -125,6 +125,57 @@ describe('SecretManager', () => {
       expect(secrets[0].startIndex).toBeGreaterThanOrEqual(0);
       expect(secrets[0].endIndex).toBeGreaterThan(secrets[0].startIndex);
     });
+
+    it('should handle concurrent detectSecrets calls without regex corruption', async () => {
+      // This test verifies the CRITICAL-1 fix: deep-cloned RegExp patterns
+      // When RegExp with /g flag is shared, lastIndex state can be corrupted
+      // by concurrent calls, causing missed matches or infinite loops
+      const content = 'sk-abc123def456ghi789jkl012mno345pqr678';
+
+      // Run multiple concurrent calls to detectSecrets
+      const results = await Promise.all([
+        Promise.resolve(secretManager.detectSecrets(content)),
+        Promise.resolve(secretManager.detectSecrets(content)),
+        Promise.resolve(secretManager.detectSecrets(content)),
+        Promise.resolve(secretManager.detectSecrets(content)),
+        Promise.resolve(secretManager.detectSecrets(content)),
+      ]);
+
+      // All calls should detect exactly 1 secret (the OpenAI API key)
+      // Without the fix, some calls might miss the secret due to corrupted lastIndex
+      for (let i = 0; i < results.length; i++) {
+        expect(results[i].length).toBe(1);
+        expect(results[i][0].type).toBe('api_key');
+        expect(results[i][0].value).toContain('sk-');
+      }
+    });
+
+    it('should handle rapid sequential detectSecrets calls correctly', () => {
+      // Additional test: rapid sequential calls should also work correctly
+      const content1 = 'sk-abc123def456ghi789jkl012mno345pqr678';
+      const content2 = 'ghp_abcdefghijklmnopqrstuvwxyz1234567890';
+      const content3 = 'AKIAIOSFODNN7EXAMPLE';
+
+      // Rapid sequential calls with different content
+      const result1 = secretManager.detectSecrets(content1);
+      const result2 = secretManager.detectSecrets(content2);
+      const result3 = secretManager.detectSecrets(content3);
+      const result1Again = secretManager.detectSecrets(content1);
+
+      // Each call should correctly detect its secrets
+      expect(result1.length).toBe(1);
+      expect(result1[0].value).toContain('sk-');
+
+      expect(result2.length).toBe(1);
+      expect(result2[0].value).toContain('ghp_');
+
+      expect(result3.length).toBe(1);
+      expect(result3[0].value).toContain('AKIA');
+
+      // Calling again with content1 should still work
+      expect(result1Again.length).toBe(1);
+      expect(result1Again[0].value).toContain('sk-');
+    });
   });
 
   describe('maskValue()', () => {

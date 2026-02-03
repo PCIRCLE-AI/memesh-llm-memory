@@ -83,62 +83,100 @@ export class MCPTaskDelegator {
             this.logger.warn('[MCPTaskDelegator] Task not found for removal', { taskId });
         }
     }
+    static TIMEOUT_BOUNDS = {
+        min: 5_000,
+        max: 3_600_000,
+        default: TIME.TASK_TIMEOUT_MS,
+    };
+    getTaskTimeout() {
+        const envValue = process.env[ENV_KEYS.TASK_TIMEOUT];
+        if (!envValue) {
+            return MCPTaskDelegator.TIMEOUT_BOUNDS.default;
+        }
+        const raw = parseInt(envValue, 10);
+        const bounds = MCPTaskDelegator.TIMEOUT_BOUNDS;
+        if (Number.isNaN(raw)) {
+            this.logger.warn(`[MCPTaskDelegator] Invalid (NaN) ${ENV_KEYS.TASK_TIMEOUT} env var: "${envValue}", using default ${bounds.default}ms`);
+            return bounds.default;
+        }
+        if (raw < bounds.min) {
+            this.logger.warn(`[MCPTaskDelegator] ${ENV_KEYS.TASK_TIMEOUT} value ${raw}ms is below minimum ${bounds.min}ms, clamping to ${bounds.min}ms`);
+            return bounds.min;
+        }
+        if (raw > bounds.max) {
+            this.logger.warn(`[MCPTaskDelegator] ${ENV_KEYS.TASK_TIMEOUT} value ${raw}ms exceeds maximum ${bounds.max}ms, clamping to ${bounds.max}ms`);
+            return bounds.max;
+        }
+        return raw;
+    }
     async checkTimeouts() {
-        const now = Date.now();
-        const timeout = parseInt(process.env[ENV_KEYS.TASK_TIMEOUT] || String(TIME.TASK_TIMEOUT_MS));
-        const timeoutSeconds = timeout / 1000;
-        const timedOutTasks = [];
-        for (const [taskId, taskInfo] of this.pendingTasks) {
-            if (now - taskInfo.createdAt > timeout) {
-                timedOutTasks.push({ taskId, taskInfo });
-            }
-        }
-        for (const { taskId, taskInfo } of timedOutTasks) {
-            try {
-                const timeoutMessage = formatErrorMessage(ErrorCodes.TASK_TIMEOUT, taskId, timeoutSeconds);
-                this.logger.warn('[MCPTaskDelegator] Task timeout detected', {
-                    taskId,
-                    agentId: taskInfo.agentId,
-                    timeoutSeconds,
-                    taskAge: Math.floor((now - taskInfo.createdAt) / 1000),
-                });
-                const updated = this.taskQueue.updateTaskStatus(taskId, {
-                    state: 'TIMEOUT',
-                    metadata: { error: timeoutMessage }
-                });
-                if (!updated) {
-                    this.logger.error('[MCPTaskDelegator] Failed to update timeout status for task', { taskId });
-                    continue;
+        let tasksChecked = 0;
+        try {
+            const now = Date.now();
+            const timeout = this.getTaskTimeout();
+            const timeoutSeconds = timeout / 1000;
+            const timedOutTasks = [];
+            for (const [taskId, taskInfo] of this.pendingTasks) {
+                tasksChecked++;
+                if (now - taskInfo.createdAt > timeout) {
+                    timedOutTasks.push({ taskId, taskInfo });
                 }
-                this.pendingTasks.delete(taskId);
-                const agentTaskSet = this.pendingTasksByAgent.get(taskInfo.agentId);
-                if (agentTaskSet) {
-                    agentTaskSet.delete(taskId);
-                    if (agentTaskSet.size === 0) {
-                        this.pendingTasksByAgent.delete(taskInfo.agentId);
+            }
+            for (const { taskId, taskInfo } of timedOutTasks) {
+                try {
+                    const timeoutMessage = formatErrorMessage(ErrorCodes.TASK_TIMEOUT, taskId, timeoutSeconds);
+                    this.logger.warn('[MCPTaskDelegator] Task timeout detected', {
+                        taskId,
+                        agentId: taskInfo.agentId,
+                        timeoutSeconds,
+                        taskAge: Math.floor((now - taskInfo.createdAt) / 1000),
+                    });
+                    const updated = this.taskQueue.updateTaskStatus(taskId, {
+                        state: 'TIMEOUT',
+                        metadata: { error: timeoutMessage }
+                    });
+                    if (!updated) {
+                        this.logger.error('[MCPTaskDelegator] Failed to update timeout status for task', { taskId });
+                        continue;
                     }
+                    this.pendingTasks.delete(taskId);
+                    const agentTaskSet = this.pendingTasksByAgent.get(taskInfo.agentId);
+                    if (agentTaskSet) {
+                        agentTaskSet.delete(taskId);
+                        if (agentTaskSet.size === 0) {
+                            this.pendingTasksByAgent.delete(taskInfo.agentId);
+                        }
+                    }
+                    this.logger.info('[MCPTaskDelegator] Task removed from pending queue after timeout', { taskId });
+                    this.metrics.incrementCounter(METRIC_NAMES.TASKS_TIMEOUT, {
+                        agentId: taskInfo.agentId,
+                        priority: taskInfo.priority
+                    });
+                    this.metrics.setGauge(METRIC_NAMES.QUEUE_SIZE, this.pendingTasks.size, {
+                        agentId: taskInfo.agentId
+                    });
                 }
-                this.logger.info('[MCPTaskDelegator] Task removed from pending queue after timeout', { taskId });
-                this.metrics.incrementCounter(METRIC_NAMES.TASKS_TIMEOUT, {
-                    agentId: taskInfo.agentId,
-                    priority: taskInfo.priority
-                });
-                this.metrics.setGauge(METRIC_NAMES.QUEUE_SIZE, this.pendingTasks.size, {
-                    agentId: taskInfo.agentId
-                });
+                catch (error) {
+                    this.logger.error('[MCPTaskDelegator] Error processing timeout', {
+                        taskId,
+                        error: error instanceof Error ? error.message : String(error),
+                        stack: error instanceof Error ? error.stack : undefined,
+                    });
+                }
             }
-            catch (error) {
-                this.logger.error('[MCPTaskDelegator] Error processing timeout', {
-                    taskId,
-                    error: error instanceof Error ? error.message : String(error),
-                    stack: error instanceof Error ? error.stack : undefined,
+            if (timedOutTasks.length > 0) {
+                this.logger.info('[MCPTaskDelegator] Timeout check completed', {
+                    timeoutCount: timedOutTasks.length,
+                    remainingTasks: this.pendingTasks.size,
                 });
             }
         }
-        if (timedOutTasks.length > 0) {
-            this.logger.info('[MCPTaskDelegator] Timeout check completed', {
-                timeoutCount: timedOutTasks.length,
-                remainingTasks: this.pendingTasks.size,
+        catch (error) {
+            this.logger.error('[MCPTaskDelegator] Unhandled error in checkTimeouts', {
+                error: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+                tasksChecked,
+                pendingTaskCount: this.pendingTasks.size,
             });
         }
     }

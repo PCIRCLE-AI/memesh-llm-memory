@@ -39,6 +39,7 @@ import winston from 'winston';
 import { existsSync, mkdirSync } from 'fs';
 import path from 'path';
 import { getTraceContext } from './tracing/index.js';
+import { looksLikeSensitive, hashValue } from '../telemetry/sanitization.js';
 
 /**
  * Log severity levels
@@ -55,6 +56,92 @@ export enum LogLevel {
   INFO = 'info',
   DEBUG = 'debug',
 }
+
+/**
+ * Sanitize a single string value, redacting sensitive patterns.
+ *
+ * Uses the same detection logic as the telemetry sanitization module
+ * (Bearer tokens, API keys, JWTs, connection strings, PII, etc.)
+ * to prevent accidental leakage of secrets into log output.
+ *
+ * @param value - String to sanitize
+ * @returns Sanitized string with sensitive data replaced by [REDACTED:hash]
+ *
+ * @private
+ * @internal
+ */
+function sanitizeString(value: string): string {
+  if (!value || value.length < 8) return value; // Short strings cannot match sensitive patterns
+  if (looksLikeSensitive(value)) {
+    return `[REDACTED:${hashValue(value)}]`;
+  }
+  return value;
+}
+
+/**
+ * Recursively sanitize all string values in a log info object.
+ *
+ * Handles nested objects and arrays. Uses a visited set to prevent
+ * infinite loops on circular references. Skips well-known Winston
+ * metadata fields (level, timestamp) to avoid interfering with formatting.
+ *
+ * @param obj - Object to sanitize
+ * @param visited - Set of already-visited objects (circular reference guard)
+ * @returns New object with sensitive string values redacted
+ *
+ * @private
+ * @internal
+ */
+function sanitizeLogData(obj: unknown, visited = new WeakSet<object>()): unknown {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === 'string') return sanitizeString(obj);
+  if (typeof obj !== 'object') return obj;
+
+  if (visited.has(obj as object)) return '[Circular]';
+  visited.add(obj as object);
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizeLogData(item, visited));
+  }
+
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+    // Skip Winston internal metadata fields to avoid breaking formatting
+    if (key === 'level' || key === 'timestamp') {
+      sanitized[key] = value;
+      continue;
+    }
+    sanitized[key] = sanitizeLogData(value, visited);
+  }
+  return sanitized;
+}
+
+/**
+ * Winston format that redacts sensitive data from all log entries.
+ *
+ * Applied at the logger level so it protects all transports (console, files).
+ * Reuses the pattern detection from src/telemetry/sanitization.ts which covers:
+ * - Bearer tokens, API keys (sk-*, ghp_*, AKIA*, AIza*, etc.)
+ * - JWT tokens
+ * - Database connection strings
+ * - PII (emails, SSN, credit card numbers, phone numbers)
+ * - Private keys and certificates
+ * - File paths containing usernames
+ */
+const sensitiveDataFilter = winston.format((info) => {
+  // Sanitize the message field
+  if (typeof info.message === 'string') {
+    info.message = sanitizeString(info.message);
+  }
+
+  // Sanitize all other metadata fields
+  for (const key of Object.keys(info)) {
+    if (key === 'level' || key === 'message' || key === 'timestamp') continue;
+    info[key] = sanitizeLogData(info[key]);
+  }
+
+  return info;
+});
 
 // Custom format for console output with trace context
 const consoleFormat = winston.format.combine(
@@ -173,6 +260,9 @@ function buildTransports(): winston.transport[] {
 
 export const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || LogLevel.INFO,
+  // Apply sensitive data sanitization before any transport receives the log entry.
+  // This ensures secrets are redacted in both console and file output.
+  format: sensitiveDataFilter(),
   transports: buildTransports(),
 });
 

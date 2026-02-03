@@ -286,5 +286,8 @@ assets/
 *.html
 !docs/**/*.html
 
+# System config backups
+Library/
+
 # Browser automation artifacts
 .playwright-mcp/

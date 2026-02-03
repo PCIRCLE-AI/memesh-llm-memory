@@ -595,4 +595,82 @@ describe('UnifiedMemoryStore', () => {
       expect(trace!.relations.length).toBeGreaterThan(0);
     });
   });
+
+  describe('Memory ID Security Validation', () => {
+    it('should auto-generate ID when not provided', async () => {
+      const memory: UnifiedMemory = {
+        type: 'knowledge',
+        content: 'Test memory without ID',
+        tags: ['test'],
+        importance: 0.5,
+        timestamp: new Date(),
+      };
+
+      const id = await store.store(memory);
+
+      // ID should be auto-generated with format: unified-memory-<uuid>
+      expect(id).toBeDefined();
+      expect(id).toMatch(/^unified-memory-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    });
+
+    it('should accept valid external ID with correct prefix', async () => {
+      const validId = 'unified-memory-12345678-1234-1234-1234-123456789abc';
+      const memory: UnifiedMemory = {
+        id: validId,
+        type: 'knowledge',
+        content: 'Test memory with valid external ID',
+        tags: ['test'],
+        importance: 0.5,
+        timestamp: new Date(),
+      };
+
+      const id = await store.store(memory);
+
+      // Should accept the provided ID
+      expect(id).toBe(validId);
+    });
+
+    it('should reject ID without correct prefix', async () => {
+      const invalidId = 'invalid_id_12345';
+      const memory: UnifiedMemory = {
+        id: invalidId,
+        type: 'knowledge',
+        content: 'Test memory with invalid prefix',
+        tags: ['test'],
+        importance: 0.5,
+        timestamp: new Date(),
+      };
+
+      // Should throw validation error
+      await expect(store.store(memory)).rejects.toThrow('Memory ID must start with prefix: unified-memory-');
+    });
+
+    it('should reject empty ID', async () => {
+      const memory: UnifiedMemory = {
+        id: '',
+        type: 'knowledge',
+        content: 'Test memory with empty ID',
+        tags: ['test'],
+        importance: 0.5,
+        timestamp: new Date(),
+      };
+
+      // Should throw validation error
+      await expect(store.store(memory)).rejects.toThrow('Memory ID cannot be empty');
+    });
+
+    it('should reject whitespace-only ID', async () => {
+      const memory: UnifiedMemory = {
+        id: '   ',
+        type: 'knowledge',
+        content: 'Test memory with whitespace ID',
+        tags: ['test'],
+        importance: 0.5,
+        timestamp: new Date(),
+      };
+
+      // Should throw validation error
+      await expect(store.store(memory)).rejects.toThrow('Memory ID cannot be empty');
+    });
+  });
 });

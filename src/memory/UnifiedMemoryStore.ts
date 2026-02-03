@@ -138,8 +138,32 @@ export class UnifiedMemoryStore {
         });
       }
 
-      // Generate unique ID if not provided
-      const id = memory.id || `${MEMORY_ID_PREFIX}${uuidv4()}`;
+      // Validate and generate memory ID
+      let id: string;
+      if (memory.id !== undefined) {
+        // External ID provided - validate (including empty string check)
+        if (memory.id.trim() === '') {
+          throw new ValidationError('Memory ID cannot be empty', {
+            component: 'UnifiedMemoryStore',
+            method: 'store',
+            data: { providedId: memory.id },
+          });
+        }
+        if (!memory.id.startsWith(MEMORY_ID_PREFIX)) {
+          throw new ValidationError(`Memory ID must start with prefix: ${MEMORY_ID_PREFIX}`, {
+            component: 'UnifiedMemoryStore',
+            method: 'store',
+            data: {
+              providedId: memory.id,
+              requiredPrefix: MEMORY_ID_PREFIX,
+            },
+          });
+        }
+        id = memory.id;
+      } else {
+        // Auto-generate ID
+        id = `${MEMORY_ID_PREFIX}${uuidv4()}`;
+      }
 
       // Ensure timestamp is provided (default to now if missing)
       const timestamp = memory.timestamp || new Date();

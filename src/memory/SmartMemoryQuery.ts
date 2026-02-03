@@ -125,7 +125,9 @@ export class SmartMemoryQuery {
         tag.toLowerCase().includes(queryLower) ||
         queryLower.includes(tag.toLowerCase())
     );
-    score += matchingTags.length * 50;
+    // Cap tag score at 200 points (max 4 tags) to prevent score overflow
+    const tagScore = Math.min(matchingTags.length * 50, 200);
+    score += tagScore;
 
     // If no content or tag match, return 0 (no relevance)
     if (score === 0) {

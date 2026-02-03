@@ -252,6 +252,25 @@ export class AutoMemoryRecorder {
     files: string[];
     linesChanged: number;
   }): number {
+    // Validate inputs to prevent integer overflow and invalid data
+    if (!Array.isArray(data.files)) {
+      throw new Error('Invalid files array: must be an array');
+    }
+
+    if (data.files.length < 0) {
+      throw new Error('Invalid files array: length cannot be negative');
+    }
+
+    if (!Number.isFinite(data.linesChanged)) {
+      throw new Error(
+        `Invalid linesChanged: must be a finite number, got ${data.linesChanged}`
+      );
+    }
+
+    if (data.linesChanged < 0) {
+      throw new Error(`Invalid linesChanged: cannot be negative (${data.linesChanged})`);
+    }
+
     // Base importance
     let importance = 0.3;
 

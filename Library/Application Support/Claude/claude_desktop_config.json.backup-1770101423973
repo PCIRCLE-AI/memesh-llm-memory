@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "memesh": {
+      "command": "node",
+      "args": [
+        "/usr/local/lib/node_modules/@pcircle/memesh/dist/mcp/server-bootstrap.js"
+      ],
+      "env": {}
+    }
+  }
+}

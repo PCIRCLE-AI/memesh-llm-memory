@@ -22,6 +22,7 @@ import type {
   ENTITY_TYPE_TO_MEMORY_TYPE,
 } from './types/unified-memory.js';
 import { v4 as uuidv4 } from 'uuid';
+import { createHash } from 'crypto';
 import { logger } from '../utils/logger.js';
 import { ValidationError, OperationError, NotFoundError } from '../errors/index.js';
 import { SmartMemoryQuery } from './SmartMemoryQuery.js';
@@ -57,6 +58,11 @@ const ENTITY_TYPE_MAPPING: Record<string, MemoryType> = {
  * Prefix for unified memory entities to avoid collisions
  */
 const MEMORY_ID_PREFIX = 'unified-memory-';
+
+/**
+ * Maximum metadata size in bytes (1MB)
+ */
+const MAX_METADATA_SIZE = 1024 * 1024;
 
 /**
  * UnifiedMemoryStore - Single storage layer for all memory types
@@ -165,6 +171,29 @@ export class UnifiedMemoryStore {
       } else {
         // Auto-generate ID
         id = `${MEMORY_ID_PREFIX}${uuidv4()}`;
+
+        // Deduplication check: prevent creating duplicate memories with same content
+        // This prevents race conditions where concurrent store() calls create duplicates
+        const contentHash = createHash('sha256').update(memory.content).digest('hex');
+
+        // Search for existing memory with same content hash
+        const existingMemories = await this.search(memory.content, {
+          limit: 10,
+          offset: 0,
+        });
+
+        // Check if any existing memory has identical content
+        const duplicate = existingMemories.find(
+          existing => existing.content === memory.content
+        );
+
+        if (duplicate && duplicate.id) {
+          // Found duplicate - return existing ID instead of creating new memory
+          logger.info(
+            `[UnifiedMemoryStore] Duplicate content detected, using existing memory: ${duplicate.id}`
+          );
+          return duplicate.id;
+        }
       }
 
       // Ensure timestamp is provided (default to now if missing)
@@ -208,7 +237,6 @@ export class UnifiedMemoryStore {
           // Validate metadata size (1MB limit)
           // Use Buffer for accurate byte size (Node.js compatible, works in all versions)
           const sizeInBytes = Buffer.byteLength(metadataJson, 'utf8');
-          const MAX_METADATA_SIZE = 1024 * 1024; // 1MB in bytes
 
           if (sizeInBytes >= MAX_METADATA_SIZE) {
             throw new ValidationError(
@@ -773,7 +801,19 @@ export class UnifiedMemoryStore {
         timestamp = new Date(obs.substring('timestamp: '.length));
       } else if (obs.startsWith('metadata: ')) {
         try {
-          metadata = JSON.parse(obs.substring('metadata: '.length));
+          const metadataStr = obs.substring('metadata: '.length);
+
+          // Validate size before parsing to prevent DoS attacks (max 1MB)
+          const sizeInBytes = Buffer.byteLength(metadataStr, 'utf8');
+          if (sizeInBytes > MAX_METADATA_SIZE) {
+            console.warn(
+              `Metadata too large on retrieval: ${sizeInBytes} bytes (max: ${MAX_METADATA_SIZE})`
+            );
+            // Skip parsing oversized metadata
+            continue;
+          }
+
+          metadata = JSON.parse(metadataStr);
         } catch {
           // Ignore parse errors
         }

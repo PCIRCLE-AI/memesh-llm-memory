@@ -44,25 +44,63 @@ npm install
 echo "🔨 Building MeMesh..."
 npm run build
 
-# Check if build was successful
-if [ ! -f "$PROJECT_DIR/dist/mcp/server-bootstrap.js" ]; then
-    echo "❌ Build failed. Please check the error messages above."
+# Prepare plugin directory structure
+echo "📦 Preparing plugin directory..."
+npm run build:plugin
+
+# Check if plugin was successfully prepared
+if [ ! -f "$PROJECT_DIR/.claude-plugin/memesh/.claude-plugin/plugin.json" ]; then
+    echo "❌ Plugin preparation failed. Please check the error messages above."
     exit 1
 fi
 
-echo ""
-echo "✅ Installation complete!"
+if [ ! -f "$PROJECT_DIR/.claude-plugin/memesh/dist/mcp/server-bootstrap.js" ]; then
+    echo "❌ MCP server build failed. Please check the error messages above."
+    exit 1
+fi
+
+# Check if claude CLI is available
+if command -v claude &> /dev/null; then
+    echo ""
+    echo "✅ Claude CLI detected"
+    echo "📝 MCP server 'memesh-dev' has been registered"
+    echo ""
+    echo "   To verify, run:"
+    echo "   claude mcp list | grep memesh-dev"
+else
+    echo ""
+    echo "⚠️  Claude CLI not found"
+    echo "   Plugin prepared successfully but not registered"
+    echo ""
+    echo "   Manual registration:"
+    echo "   claude mcp add memesh-dev --scope user \\"
+    echo "     -e NODE_ENV=production \\"
+    echo "     -e MEMESH_DATA_DIR=\$HOME/.memesh \\"
+    echo "     -e LOG_LEVEL=info \\"
+    echo "     -- node \"$PROJECT_DIR/.claude-plugin/memesh/dist/mcp/server-bootstrap.js\""
+fi
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "📝 To use MeMesh, run:"
+echo "✅ Installation complete!"
 echo ""
-echo "   claude --plugin-dir $PROJECT_DIR"
+echo "📁 Plugin structure:"
+echo "   .claude-plugin/memesh/"
+echo "   ├── .claude-plugin/"
+echo "   │   └── plugin.json"
+echo "   ├── dist/"
+echo "   │   └── mcp/server-bootstrap.js"
+echo "   ├── node_modules/"
+echo "   └── scripts/"
 echo ""
-echo "💡 Tip: Add this to your shell alias for easier access:"
-echo "   alias claude-ccb='claude --plugin-dir $PROJECT_DIR'"
+echo "🔄 Next steps:"
+echo "   1. Restart Claude Code (completely quit and reopen)"
+echo "   2. Check MCP server: claude mcp list | grep memesh-dev"
+echo "   3. Start using A2A Protocol features!"
 echo ""
-echo "📚 For team distribution, see:"
-echo "   https://code.claude.com/docs/en/plugin-marketplaces"
+echo "📚 Documentation:"
+echo "   - Setup guide: docs/DEV_SETUP_GUIDE.md"
+echo "   - A2A features: docs/A2A_SETUP_GUIDE.md"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "🎉 Happy coding with MeMesh!"

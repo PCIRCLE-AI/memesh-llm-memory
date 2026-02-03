@@ -673,4 +673,96 @@ describe('UnifiedMemoryStore', () => {
       await expect(store.store(memory)).rejects.toThrow('Memory ID cannot be empty');
     });
   });
+
+  describe('Metadata Size Limit Validation', () => {
+    it('should accept small metadata (< 1MB)', async () => {
+      // Create ~500KB of metadata (well under the limit)
+      const largeString = 'x'.repeat(500 * 1024);
+      const memory: UnifiedMemory = {
+        type: 'knowledge',
+        content: 'Test memory with small metadata',
+        tags: ['test'],
+        importance: 0.5,
+        timestamp: new Date(),
+        metadata: {
+          data: largeString,
+          description: 'This is valid metadata under 1MB',
+        },
+      };
+
+      const id = await store.store(memory);
+
+      // Should successfully store
+      expect(id).toBeDefined();
+      expect(typeof id).toBe('string');
+      expect(id.length).toBeGreaterThan(0);
+
+      // Verify retrieval
+      const retrieved = await store.get(id);
+      expect(retrieved).not.toBeNull();
+      expect(retrieved!.metadata).toBeDefined();
+      expect(retrieved!.metadata!.data).toBe(largeString);
+    });
+
+    it('should reject oversized metadata (> 1MB)', async () => {
+      // Create ~2MB of metadata (exceeds the limit)
+      const largeString = 'x'.repeat(2 * 1024 * 1024);
+      const memory: UnifiedMemory = {
+        type: 'knowledge',
+        content: 'Test memory with oversized metadata',
+        tags: ['test'],
+        importance: 0.5,
+        timestamp: new Date(),
+        metadata: {
+          data: largeString,
+        },
+      };
+
+      // Should throw validation error
+      await expect(store.store(memory)).rejects.toThrow(/Metadata size exceeds limit/);
+      await expect(store.store(memory)).rejects.toThrow(/KB/); // Error should show KB
+    });
+
+    it('should handle edge case (exactly 1MB)', async () => {
+      // Create exactly 1MB of metadata (should be rejected as >= limit)
+      // Account for JSON overhead: {"data":"..."} adds ~11 bytes
+      const exactSize = 1024 * 1024 - 11;
+      const largeString = 'x'.repeat(exactSize);
+      const memory: UnifiedMemory = {
+        type: 'knowledge',
+        content: 'Test memory with exactly 1MB metadata',
+        tags: ['test'],
+        importance: 0.5,
+        timestamp: new Date(),
+        metadata: {
+          data: largeString,
+        },
+      };
+
+      // Should throw validation error (>= 1MB is rejected)
+      await expect(store.store(memory)).rejects.toThrow(/Metadata size exceeds limit/);
+    });
+
+    it('should handle undefined metadata', async () => {
+      // Memory without metadata should work normally
+      const memory: UnifiedMemory = {
+        type: 'knowledge',
+        content: 'Test memory without metadata',
+        tags: ['test'],
+        importance: 0.5,
+        timestamp: new Date(),
+      };
+
+      const id = await store.store(memory);
+
+      // Should successfully store
+      expect(id).toBeDefined();
+      expect(typeof id).toBe('string');
+
+      // Verify retrieval
+      const retrieved = await store.get(id);
+      expect(retrieved).not.toBeNull();
+      expect(retrieved!.metadata).toBeUndefined();
+    });
+  });
 });

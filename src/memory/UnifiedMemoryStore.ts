@@ -205,11 +205,36 @@ export class UnifiedMemoryStore {
         observations.push(`context: ${memory.context}`);
       }
 
-      // Store metadata as observation
+      // Store metadata as observation with size validation
       if (memory.metadata) {
         try {
-          observations.push(`metadata: ${JSON.stringify(memory.metadata)}`);
+          const metadataJson = JSON.stringify(memory.metadata);
+
+          // Validate metadata size (1MB limit)
+          const sizeInBytes = new Blob([metadataJson]).size;
+          const MAX_METADATA_SIZE = 1024 * 1024; // 1MB in bytes
+
+          if (sizeInBytes >= MAX_METADATA_SIZE) {
+            throw new ValidationError(
+              `Metadata size exceeds limit: ${(sizeInBytes / 1024).toFixed(2)}KB / ${(MAX_METADATA_SIZE / 1024).toFixed(2)}KB`,
+              {
+                component: 'UnifiedMemoryStore',
+                method: 'store',
+                data: {
+                  metadataSize: sizeInBytes,
+                  limit: MAX_METADATA_SIZE,
+                  sizeMB: (sizeInBytes / (1024 * 1024)).toFixed(2),
+                },
+              }
+            );
+          }
+
+          observations.push(`metadata: ${metadataJson}`);
         } catch (error) {
+          // Re-throw ValidationError
+          if (error instanceof ValidationError) {
+            throw error;
+          }
           logger.warn(`[UnifiedMemoryStore] Failed to serialize metadata: ${error}`);
         }
       }

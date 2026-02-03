@@ -112,6 +112,7 @@ docs/refactoring/**
 docs/architecture/**
 docs/diagrams/**
 docs/internal/**
+docs/internal-archive/**
 docs/design/**
 docs/marketing/**
 docs/implementation/**
@@ -294,4 +295,32 @@ Library/
 .claude-plugin/memesh/.claude-plugin/plugin.json
 
 # Temporary session scripts
+start-session-*.sh
+
+# === Additional Internal Docs Patterns (Added $(date +%Y-%m-%d)) ===
+
+# Root-level internal documentation (UPPERCASE variants)
+*FIX*.md
+*IMPLEMENTATION*.md
+*MIGRATION*.md
+*SECURITY_FIXES*.md
+*TEST_COVERAGE*.md
+*VALIDATION*.md
+*AUDIT*.md
+*COMPREHENSIVE*.md
+*INSTALLATION_PROTECTION*.md
+*RETRY*.md
+*DASHBOARD*.md
+*PRIORITY*.md
+*RELEASE_NOTES*.md
+
+# Backup files
+*.backup
+*.bak
+
+# Test result files
+test-results.json
+test-*.json
+
+# Session management scripts
 start-session-*.sh

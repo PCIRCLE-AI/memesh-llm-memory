@@ -21,7 +21,7 @@ describe('MCP SDK 1.25.3 - URI Templates & Dynamic Resources', () => {
   let server: ClaudeCodeBuddyMCPServer;
 
   beforeAll(async () => {
-    server = new ClaudeCodeBuddyMCPServer();
+    server = await ClaudeCodeBuddyMCPServer.create();
   });
 
   afterAll(async () => {
@@ -512,7 +512,7 @@ export function multiply(a: number, b: number): number {
 
   describe('generate-tests MCP Tool', () => {
     it('should be available in MCP server tool list', async () => {
-      const server = new ClaudeCodeBuddyMCPServer();
+      const server = await ClaudeCodeBuddyMCPServer.create();
       const handler = (server as any).server._requestHandlers.get('tools/list');
       const result = await handler({ method: 'tools/list', params: {} });
 
@@ -527,7 +527,7 @@ export function multiply(a: number, b: number): number {
 
 describe('MCP SDK 1.25.3 - End-to-End Workflows', () => {
   it('should complete full workflow: resource discovery -> read -> content generation', async () => {
-    const server = new ClaudeCodeBuddyMCPServer();
+    const server = await ClaudeCodeBuddyMCPServer.create();
 
     // Step 1: List available resources
     const listHandler = (server as any).server._requestHandlers.get('resources/list');
@@ -550,7 +550,7 @@ describe('MCP SDK 1.25.3 - End-to-End Workflows', () => {
   });
 
   it('should handle error scenarios gracefully', async () => {
-    const server = new ClaudeCodeBuddyMCPServer();
+    const server = await ClaudeCodeBuddyMCPServer.create();
     const readHandler = (server as any).server._requestHandlers.get('resources/read');
 
     // Invalid URI should throw

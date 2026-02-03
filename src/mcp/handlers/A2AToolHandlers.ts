@@ -86,8 +86,14 @@ export class A2AToolHandlers {
         ],
       };
     } catch (error) {
+      // ✅ FIX MINOR-21: Improve error messages with actionable hints
+      const errorMsg = error instanceof Error ? error.message : String(error);
       throw new Error(
-        `Failed to send task to agent ${input.targetAgentId}: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to send task to agent ${input.targetAgentId}: ${errorMsg}\n\n` +
+        `💡 Troubleshooting tips:\n` +
+        `  - Verify the agent ID is correct using 'a2a-list-agents' tool\n` +
+        `  - Check if the target agent is running and accessible\n` +
+        `  - Ensure MEMESH_A2A_TOKEN is configured in .env file`
       );
     }
   }
@@ -122,8 +128,14 @@ export class A2AToolHandlers {
         ],
       };
     } catch (error) {
+      // ✅ FIX MINOR-21: Improve error messages with actionable hints
+      const errorMsg = error instanceof Error ? error.message : String(error);
       throw new Error(
-        `Failed to get task ${input.taskId} from agent ${input.targetAgentId}: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to get task ${input.taskId} from agent ${input.targetAgentId}: ${errorMsg}\n\n` +
+        `💡 Troubleshooting tips:\n` +
+        `  - Verify the task ID exists using 'a2a-list-tasks' tool\n` +
+        `  - Check if the target agent is running and responding\n` +
+        `  - Confirm you have permission to access this task`
       );
     }
   }
@@ -162,8 +174,14 @@ export class A2AToolHandlers {
         ],
       };
     } catch (error) {
+      // ✅ FIX MINOR-21: Improve error messages with actionable hints
+      const errorMsg = error instanceof Error ? error.message : String(error);
       throw new Error(
-        `Failed to list tasks: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to list tasks: ${errorMsg}\n\n` +
+        `💡 Troubleshooting tips:\n` +
+        `  - Verify A2A server is running\n` +
+        `  - Check MEMESH_A2A_TOKEN configuration in .env\n` +
+        `  - Ensure network connectivity to A2A server`
       );
     }
   }
@@ -204,8 +222,14 @@ export class A2AToolHandlers {
         ],
       };
     } catch (error) {
+      // ✅ FIX MINOR-21: Improve error messages with actionable hints
+      const errorMsg = error instanceof Error ? error.message : String(error);
       throw new Error(
-        `Failed to list agents: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to list agents: ${errorMsg}\n\n` +
+        `💡 Troubleshooting tips:\n` +
+        `  - Check if agent registry is initialized\n` +
+        `  - Verify A2A protocol is enabled\n` +
+        `  - Try restarting the MCP server`
       );
     }
   }

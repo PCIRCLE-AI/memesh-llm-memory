@@ -6,8 +6,8 @@ describe('MCP Dynamic Resources Integration', () => {
   let server: ClaudeCodeBuddyMCPServer;
 
   beforeAll(async () => {
-    server = new ClaudeCodeBuddyMCPServer();
-    // Server auto-initializes in constructor
+    server = await ClaudeCodeBuddyMCPServer.create();
+    // Server auto-initializes via factory method
   });
 
   afterAll(async () => {

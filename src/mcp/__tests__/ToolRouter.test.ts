@@ -14,6 +14,7 @@ import { ToolRouter, type ToolRouterConfig } from '../ToolRouter.js';
 import type { RateLimiter } from '../../utils/RateLimiter.js';
 import type { ToolHandlers } from '../handlers/ToolHandlers.js';
 import type { BuddyHandlers } from '../handlers/BuddyHandlers.js';
+import type { A2AToolHandlers } from '../handlers/A2AToolHandlers.js';
 import { ValidationError, NotFoundError, OperationError } from '../../errors/index.js';
 
 describe('ToolRouter', () => {
@@ -67,10 +68,27 @@ describe('ToolRouter', () => {
       }),
     } as unknown as BuddyHandlers;
 
+    // ✅ FIX MAJOR-17: Add A2A handlers to test config
+    const mockA2AHandlers = {
+      handleA2ASendTask: vi.fn().mockResolvedValue({
+        content: [{ type: 'text', text: 'Task sent successfully' }],
+      }),
+      handleA2AGetTask: vi.fn().mockResolvedValue({
+        content: [{ type: 'text', text: 'Task details' }],
+      }),
+      handleA2AListTasks: vi.fn().mockResolvedValue({
+        content: [{ type: 'text', text: 'Tasks list' }],
+      }),
+      handleA2AListAgents: vi.fn().mockResolvedValue({
+        content: [{ type: 'text', text: 'Agents list' }],
+      }),
+    } as unknown as A2AToolHandlers;
+
     const config: ToolRouterConfig = {
       rateLimiter: mockRateLimiter,
       toolHandlers: mockToolHandlers,
       buddyHandlers: mockBuddyHandlers,
+      a2aHandlers: mockA2AHandlers,
     };
 
     toolRouter = new ToolRouter(config);

@@ -1,0 +1,1 @@
+{"version":3,"file":"types.d.ts","sourceRoot":"","sources":["../../../src/a2a/delegator/types.ts"],"names":[],"mappings":"AAAA,MAAM,WAAW,QAAQ;IACvB,MAAM,EAAE,MAAM,CAAC;IACf,IAAI,EAAE,MAAM,CAAC;IACb,QAAQ,EAAE,MAAM,GAAG,QAAQ,GAAG,KAAK,CAAC;IACpC,OAAO,EAAE,MAAM,CAAC;IAChB,SAAS,EAAE,MAAM,CAAC;IAClB,MAAM,EAAE,SAAS,GAAG,aAAa,CAAC;CACnC"}

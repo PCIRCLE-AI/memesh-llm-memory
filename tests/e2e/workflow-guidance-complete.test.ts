@@ -18,8 +18,8 @@ import { resolveUserPath } from '../../src/utils/paths.js';
 describe('Workflow Guidance System - Complete E2E', () => {
   let server: ClaudeCodeBuddyMCPServer;
 
-  beforeAll(() => {
-    server = new ClaudeCodeBuddyMCPServer();
+  beforeAll(async () => {
+    server = await ClaudeCodeBuddyMCPServer.create();
   });
 
   // Reset token tracker before each test to avoid accumulation
@@ -195,7 +195,7 @@ describe('Workflow Guidance System - Complete E2E', () => {
 
     // Create a fresh butler instance for this test to avoid cooldown conflicts
     const { ClaudeCodeBuddyMCPServer } = await import('../../src/mcp/server.js');
-    const testServer = new ClaudeCodeBuddyMCPServer();
+    const testServer = await ClaudeCodeBuddyMCPServer.create();
     const butler = (testServer as any).developmentButler;
 
     try {

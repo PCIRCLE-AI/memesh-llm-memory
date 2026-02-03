@@ -94,8 +94,8 @@ describe('MCP Server - Workflow Guidance Tools', () => {
     expect(stats.interactionCount).toBe(1);
   });
 
-  it('should have DevelopmentButler initialized in MCP server', () => {
-    const server = new ClaudeCodeBuddyMCPServer();
+  it('should have DevelopmentButler initialized in MCP server', async () => {
+    const server = await ClaudeCodeBuddyMCPServer.create();
     expect(server).toBeDefined();
     // Server should have DevelopmentButler instance
     expect(server['developmentButler']).toBeDefined();

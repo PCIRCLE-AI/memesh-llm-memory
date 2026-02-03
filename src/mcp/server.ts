@@ -56,8 +56,8 @@ import { generateRequestId } from '../utils/requestId.js'; // ✅ FIX HIGH-10: R
  * // Server is typically started via CLI:
  * // npx claude-code-buddy
  *
- * // Or programmatically:
- * const server = new ClaudeCodeBuddyMCPServer();
+ * // Or programmatically (using async factory pattern):
+ * const server = await ClaudeCodeBuddyMCPServer.create();
  * await server.start();
  * ```
  */
@@ -102,17 +102,20 @@ class ClaudeCodeBuddyMCPServer {
    * - Core routing and orchestration
    * - Evolution monitoring system
    * - Knowledge graph and memory management
+   * - Security and task management
    * - Handler modules for tools and buddy commands
    *
    * The constructor follows a strict initialization order managed by ServerInitializer
    * to ensure all dependencies are properly set up.
+   *
+   * Note: This is a static factory method pattern. Use ClaudeCodeBuddyMCPServer.create() instead.
    */
-  constructor() {
+  private constructor(components: ServerComponents) {
     // Initialize MCP server
     this.server = new Server(
       {
         name: 'memesh',
-        version: '2.6.4',
+        version: '2.6.6',
       },
       {
         capabilities: {
@@ -125,15 +128,18 @@ class ClaudeCodeBuddyMCPServer {
       }
     );
 
-    // Initialize all components using ServerInitializer
-    this.components = ServerInitializer.initialize();
+    // Store initialized components
+    this.components = components;
 
-    // Create ToolRouter
+    // Create ToolRouter with all required components
     this.toolRouter = new ToolRouter({
       rateLimiter: this.components.rateLimiter,
       toolHandlers: this.components.toolHandlers,
       buddyHandlers: this.components.buddyHandlers,
       a2aHandlers: this.components.a2aHandlers,
+      secretManager: this.components.secretManager,
+      taskQueue: this.components.taskQueue,
+      mcpTaskDelegator: this.components.mcpTaskDelegator,
     });
     this.components.toolInterface.attachToolDispatcher(this.toolRouter);
     this.sessionBootstrapper = new SessionBootstrapper(
@@ -144,6 +150,19 @@ class ClaudeCodeBuddyMCPServer {
     this.setupHandlers();
     setupResourceHandlers(this.server);
     this.setupSignalHandlers();
+  }
+
+  /**
+   * Create a new MCP server instance (async factory method)
+   *
+   * @returns Promise<ClaudeCodeBuddyMCPServer> Fully initialized server instance
+   */
+  static async create(): Promise<ClaudeCodeBuddyMCPServer> {
+    // Initialize all components (async)
+    const components = await ServerInitializer.initialize();
+
+    // Create server instance
+    return new ClaudeCodeBuddyMCPServer(components);
   }
 
   /**
@@ -204,7 +223,7 @@ class ClaudeCodeBuddyMCPServer {
    *
    * @example
    * ```typescript
-   * const server = new ClaudeCodeBuddyMCPServer();
+   * const server = await ClaudeCodeBuddyMCPServer.create();
    * await server.start(); // Runs until terminated
    * ```
    */
@@ -272,6 +291,36 @@ class ClaudeCodeBuddyMCPServer {
         operation: 'closing evolution monitor',
       });
       logger.error('Failed to close evolution monitor cleanly:', error);
+    }
+
+    // 2.5. Close SecretManager database (Phase 0.7.0)
+    try {
+      logger.info('Closing secret manager database...');
+      if (this.components.secretManager) {
+        this.components.secretManager.close();
+      }
+    } catch (error) {
+      logError(error, {
+        component: 'ClaudeCodeBuddyMCPServer',
+        method: 'shutdown',
+        operation: 'closing secret manager',
+      });
+      logger.error('Failed to close secret manager cleanly:', error);
+    }
+
+    // 2.6. Close TaskQueue database (A2A Protocol Phase 1.0)
+    try {
+      logger.info('Closing task queue database...');
+      if (this.components.taskQueue) {
+        this.components.taskQueue.close();
+      }
+    } catch (error) {
+      logError(error, {
+        component: 'ClaudeCodeBuddyMCPServer',
+        method: 'shutdown',
+        operation: 'closing task queue',
+      });
+      logger.error('Failed to close task queue cleanly:', error);
     }
 
     // 3. Stop rate limiter (cleanup intervals)

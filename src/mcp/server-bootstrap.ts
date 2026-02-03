@@ -61,8 +61,8 @@ function startMCPServer() {
     // Dynamic import ensures environment variable is set BEFORE module loading
     const { ClaudeCodeBuddyMCPServer } = await import('./server.js');
 
-    // Start MCP server
-    const mcpServer = new ClaudeCodeBuddyMCPServer();
+    // Start MCP server (using async factory method)
+    const mcpServer = await ClaudeCodeBuddyMCPServer.create();
     await mcpServer.start();
 
     // Start A2A server

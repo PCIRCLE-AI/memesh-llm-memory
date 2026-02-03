@@ -1,0 +1,24 @@
+export declare const ErrorCodes: {
+    readonly AUTH_TOKEN_NOT_CONFIGURED: "AUTH_TOKEN_NOT_CONFIGURED";
+    readonly AUTH_FAILED: "AUTH_FAILED";
+    readonly AUTH_TOKEN_MISSING: "AUTH_TOKEN_MISSING";
+    readonly AGENT_NOT_FOUND: "AGENT_NOT_FOUND";
+    readonly AGENT_ALREADY_PROCESSING: "AGENT_ALREADY_PROCESSING";
+    readonly AGENT_REGISTRY_ERROR: "AGENT_REGISTRY_ERROR";
+    readonly TASK_NOT_FOUND: "TASK_NOT_FOUND";
+    readonly TASK_TIMEOUT: "TASK_TIMEOUT";
+    readonly TASK_SEND_FAILED: "TASK_SEND_FAILED";
+    readonly TASK_GET_FAILED: "TASK_GET_FAILED";
+    readonly TASK_LIST_FAILED: "TASK_LIST_FAILED";
+    readonly TASK_CANCEL_FAILED: "TASK_CANCEL_FAILED";
+    readonly PORT_NOT_AVAILABLE: "PORT_NOT_AVAILABLE";
+    readonly SERVER_ERROR: "SERVER_ERROR";
+    readonly INVALID_JSON: "INVALID_JSON";
+    readonly DATABASE_ERROR: "DATABASE_ERROR";
+    readonly TIMEOUT_CHECKER_ERROR: "TIMEOUT_CHECKER_ERROR";
+    readonly TIMEOUT_CHECKER_CIRCUIT_OPEN: "TIMEOUT_CHECKER_CIRCUIT_OPEN";
+    readonly HTTP_ERROR: "HTTP_ERROR";
+    readonly UNKNOWN_ERROR: "UNKNOWN_ERROR";
+};
+export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
+//# sourceMappingURL=ErrorCodes.d.ts.map

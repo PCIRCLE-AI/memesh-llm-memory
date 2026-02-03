@@ -329,19 +329,17 @@ describe('Agent Activation Validation', () => {
   });
 
   describe('ServerInitializer Validation', () => {
-    it('should initialize all components without errors', () => {
+    it('should initialize all components without errors', async () => {
       // This test ensures ServerInitializer can create all components
-      expect(() => {
-        const components = ServerInitializer.initialize();
-        expect(components.router, 'Router should be initialized').toBeDefined();
-        expect(components.agentRegistry, 'AgentRegistry should be initialized').toBeDefined();
-        expect(components.toolHandlers, 'ToolHandlers should be initialized').toBeDefined();
-        expect(components.buddyHandlers, 'BuddyHandlers should be initialized').toBeDefined();
-      }).not.toThrow();
+      const components = await ServerInitializer.initialize();
+      expect(components.router, 'Router should be initialized').toBeDefined();
+      expect(components.agentRegistry, 'AgentRegistry should be initialized').toBeDefined();
+      expect(components.toolHandlers, 'ToolHandlers should be initialized').toBeDefined();
+      expect(components.buddyHandlers, 'BuddyHandlers should be initialized').toBeDefined();
     });
 
-    it('should pass all required dependencies to ToolHandlers', () => {
-      const components = ServerInitializer.initialize();
+    it('should pass all required dependencies to ToolHandlers', async () => {
+      const components = await ServerInitializer.initialize();
 
       expect(components.toolHandlers, 'ToolHandlers should be defined').toBeDefined();
       expect(

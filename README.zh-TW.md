@@ -292,11 +292,11 @@ buddy-remember "auth"  # 回傳 project-B 的 auth 決策
 </details>
 
 <details>
-<summary><strong>17 個 MCP 標準工具</strong></summary>
+<summary><strong>18 個 MCP 標準工具</strong></summary>
 
-完整整合 Model Context Protocol。
+完整整合 Model Context Protocol，提供無縫的 Claude Code 體驗。
 
-查看完整列表：[ToolDefinitions.ts](src/mcp/ToolDefinitions.ts)
+使用 `buddy-help` 查看所有可用指令。
 
 </details>
 
@@ -386,9 +386,9 @@ buddy-remember "auth"  # 回傳 project-B 的 auth 決策
 <details>
 <summary><strong>Q：可以客製化嗎？</strong></summary>
 
-**A：** 當然。提示詞模板在 `src/core/PromptEnhancer.ts`。
+**A：** 當然！MeMesh 外掛程式完全開源。
 
-想更深度客製化？Fork 它、改它、變成你的。這就是開源精神。
+想更深度客製化？查看我們的[貢獻指南](docs/CONTRIBUTING.md)或 fork 此專案。
 
 </details>
 

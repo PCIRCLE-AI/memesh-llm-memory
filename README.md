@@ -383,11 +383,11 @@ buddy-remember "auth"  # Returns project-B's auth decisions
 </details>
 
 <details>
-<summary><strong>17 MCP Standard Tools</strong></summary>
+<summary><strong>18 MCP Standard Tools</strong></summary>
 
-Full integration with Model Context Protocol.
+Full integration with Model Context Protocol for seamless Claude Code experience.
 
-See complete list: [ToolDefinitions.ts](src/mcp/ToolDefinitions.ts)
+Use `buddy-help` to see all available commands.
 
 </details>
 
@@ -477,9 +477,9 @@ Think of it as Claude Code + a really good memory + autopilot mode.
 <details>
 <summary><strong>Q: Can I customize it?</strong></summary>
 
-**A:** Absolutely. Prompt templates in `src/core/PromptEnhancer.ts`.
+**A:** Absolutely! MeMesh plugin is fully open source.
 
-Want deeper customization? Fork it, hack it, make it yours. That's the open source way.
+Want deeper customization? Check our [Contributing Guide](docs/CONTRIBUTING.md) or fork the repo and make it yours.
 
 </details>
 

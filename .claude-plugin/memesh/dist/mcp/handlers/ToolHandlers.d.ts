@@ -1,0 +1,57 @@
+import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { Router } from '../../orchestrator/router.js';
+import { AgentRegistry } from '../../core/AgentRegistry.js';
+import { FeedbackCollector } from '../../evolution/FeedbackCollector.js';
+import { PerformanceTracker } from '../../evolution/PerformanceTracker.js';
+import { LearningManager } from '../../evolution/LearningManager.js';
+import { EvolutionMonitor } from '../../evolution/EvolutionMonitor.js';
+import { SkillManager } from '../../skills/index.js';
+import { UninstallManager } from '../../management/index.js';
+import { DevelopmentButler } from '../../agents/DevelopmentButler.js';
+import { CheckpointDetector } from '../../core/CheckpointDetector.js';
+import { HookIntegration } from '../../core/HookIntegration.js';
+import { ProjectMemoryManager } from '../../memory/ProjectMemoryManager.js';
+import { UnifiedMemoryStore } from '../../memory/UnifiedMemoryStore.js';
+import { KnowledgeGraph } from '../../knowledge-graph/index.js';
+import { HumanInLoopUI } from '../HumanInLoopUI.js';
+import { SamplingClient } from '../SamplingClient.js';
+export declare class ToolHandlers {
+    private router;
+    private agentRegistry;
+    private feedbackCollector;
+    private performanceTracker;
+    private learningManager;
+    private evolutionMonitor;
+    private skillManager;
+    private uninstallManager;
+    private developmentButler;
+    private checkpointDetector;
+    private hookIntegration;
+    private projectMemoryManager;
+    private knowledgeGraph;
+    private ui;
+    private samplingClient;
+    private memoryRateLimiter;
+    private unifiedMemoryStore;
+    private mistakePatternEngine;
+    private userPreferenceEngine;
+    constructor(router: Router, agentRegistry: AgentRegistry, feedbackCollector: FeedbackCollector, performanceTracker: PerformanceTracker, learningManager: LearningManager, evolutionMonitor: EvolutionMonitor, skillManager: SkillManager, uninstallManager: UninstallManager, developmentButler: DevelopmentButler, checkpointDetector: CheckpointDetector, hookIntegration: HookIntegration, projectMemoryManager: ProjectMemoryManager, knowledgeGraph: KnowledgeGraph, ui: HumanInLoopUI, samplingClient: SamplingClient, unifiedMemoryStore: UnifiedMemoryStore);
+    handleListSkills(args: unknown): Promise<CallToolResult>;
+    handleUninstall(args: unknown): Promise<CallToolResult>;
+    handleGetWorkflowGuidance(args: unknown): Promise<CallToolResult>;
+    handleGetSessionHealth(): Promise<CallToolResult>;
+    handleReloadContext(input: {
+        reason: string;
+    }): Promise<CallToolResult>;
+    handleRecordTokenUsage(args: unknown): Promise<CallToolResult>;
+    handleHookToolUse(args: unknown): Promise<CallToolResult>;
+    handleRecallMemory(args: unknown): Promise<CallToolResult>;
+    private describeCapabilities;
+    handleCreateEntities(args: unknown): Promise<CallToolResult>;
+    handleBuddyRecordMistake(args: unknown): Promise<CallToolResult>;
+    handleAddObservations(args: unknown): Promise<CallToolResult>;
+    handleCreateRelations(args: unknown): Promise<CallToolResult>;
+    handleGenerateTests(args: unknown): Promise<CallToolResult>;
+    private normalizeWorkflowPhase;
+}
+//# sourceMappingURL=ToolHandlers.d.ts.map

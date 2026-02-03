@@ -46,6 +46,45 @@ export class PerformanceTracker {
     maxTotalMetrics?: number;
     repository?: PerformanceMetricsRepository;
   }) {
+    // Validate config parameters
+    if (config?.maxMetricsPerAgent !== undefined) {
+      if (!Number.isFinite(config.maxMetricsPerAgent)) {
+        throw new ValidationError('maxMetricsPerAgent must be finite', {
+          component: 'PerformanceTracker',
+          method: 'constructor',
+          providedValue: config.maxMetricsPerAgent,
+          constraint: 'Number.isFinite(maxMetricsPerAgent)',
+        });
+      }
+      if (!Number.isSafeInteger(config.maxMetricsPerAgent) || config.maxMetricsPerAgent <= 0) {
+        throw new ValidationError('maxMetricsPerAgent must be a positive integer', {
+          component: 'PerformanceTracker',
+          method: 'constructor',
+          providedValue: config.maxMetricsPerAgent,
+          constraint: 'maxMetricsPerAgent > 0 and integer',
+        });
+      }
+    }
+
+    if (config?.maxTotalMetrics !== undefined) {
+      if (!Number.isFinite(config.maxTotalMetrics)) {
+        throw new ValidationError('maxTotalMetrics must be finite', {
+          component: 'PerformanceTracker',
+          method: 'constructor',
+          providedValue: config.maxTotalMetrics,
+          constraint: 'Number.isFinite(maxTotalMetrics)',
+        });
+      }
+      if (!Number.isSafeInteger(config.maxTotalMetrics) || config.maxTotalMetrics <= 0) {
+        throw new ValidationError('maxTotalMetrics must be a positive integer', {
+          component: 'PerformanceTracker',
+          method: 'constructor',
+          providedValue: config.maxTotalMetrics,
+          constraint: 'maxTotalMetrics > 0 and integer',
+        });
+      }
+    }
+
     this.maxMetricsPerAgent = config?.maxMetricsPerAgent || 1000;
     this.maxTotalMetrics = config?.maxTotalMetrics || 10000;
     this.repository = config?.repository;
@@ -136,24 +175,48 @@ export class PerformanceTracker {
         constraint: 'non-empty string',
       });
     }
-    if (typeof metrics.durationMs !== 'number' || metrics.durationMs < 0) {
-      throw new ValidationError('durationMs must be a non-negative number', {
+    if (typeof metrics.durationMs !== 'number' || !Number.isFinite(metrics.durationMs)) {
+      throw new ValidationError('durationMs must be a finite number', {
+        component: 'PerformanceTracker',
+        method: 'recordMetric',
+        providedValue: metrics.durationMs,
+        constraint: 'Number.isFinite(durationMs)',
+      });
+    }
+    if (metrics.durationMs < 0) {
+      throw new ValidationError('durationMs must be non-negative', {
         component: 'PerformanceTracker',
         method: 'recordMetric',
         providedValue: metrics.durationMs,
         constraint: 'durationMs >= 0',
       });
     }
-    if (typeof metrics.cost !== 'number' || metrics.cost < 0) {
-      throw new ValidationError('cost must be a non-negative number', {
+    if (typeof metrics.cost !== 'number' || !Number.isFinite(metrics.cost)) {
+      throw new ValidationError('cost must be a finite number', {
+        component: 'PerformanceTracker',
+        method: 'recordMetric',
+        providedValue: metrics.cost,
+        constraint: 'Number.isFinite(cost)',
+      });
+    }
+    if (metrics.cost < 0) {
+      throw new ValidationError('cost must be non-negative', {
         component: 'PerformanceTracker',
         method: 'recordMetric',
         providedValue: metrics.cost,
         constraint: 'cost >= 0',
       });
     }
-    if (typeof metrics.qualityScore !== 'number' || metrics.qualityScore < 0 || metrics.qualityScore > 1) {
-      throw new ValidationError('qualityScore must be a number between 0 and 1', {
+    if (typeof metrics.qualityScore !== 'number' || !Number.isFinite(metrics.qualityScore)) {
+      throw new ValidationError('qualityScore must be a finite number', {
+        component: 'PerformanceTracker',
+        method: 'recordMetric',
+        providedValue: metrics.qualityScore,
+        constraint: 'Number.isFinite(qualityScore)',
+      });
+    }
+    if (metrics.qualityScore < 0 || metrics.qualityScore > 1) {
+      throw new ValidationError('qualityScore must be between 0 and 1', {
         component: 'PerformanceTracker',
         method: 'recordMetric',
         providedValue: metrics.qualityScore,
@@ -366,13 +429,23 @@ export class PerformanceTracker {
         constraint: 'non-empty string',
       });
     }
-    if (filter?.limit !== undefined && (typeof filter.limit !== 'number' || filter.limit <= 0)) {
-      throw new ValidationError('filter.limit must be a positive number', {
-        component: 'PerformanceTracker',
-        method: 'getMetrics',
-        providedValue: filter.limit,
-        constraint: 'limit > 0',
-      });
+    if (filter?.limit !== undefined) {
+      if (typeof filter.limit !== 'number' || !Number.isFinite(filter.limit)) {
+        throw new ValidationError('filter.limit must be a finite number', {
+          component: 'PerformanceTracker',
+          method: 'getMetrics',
+          providedValue: filter.limit,
+          constraint: 'Number.isFinite(limit)',
+        });
+      }
+      if (!Number.isSafeInteger(filter.limit) || filter.limit <= 0) {
+        throw new ValidationError('filter.limit must be a positive integer', {
+          component: 'PerformanceTracker',
+          method: 'getMetrics',
+          providedValue: filter.limit,
+          constraint: 'limit > 0 and integer',
+        });
+      }
     }
 
     let metrics = this.metrics.get(agentId) || [];

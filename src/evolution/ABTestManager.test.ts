@@ -64,6 +64,200 @@ describe('ABTestManager', () => {
         );
       }).toThrow('Variants and traffic split must have same length');
     });
+
+    it('should reject NaN in traffic split', () => {
+      const variants: ABTestVariant[] = [
+        { name: 'control', config: {} },
+        { name: 'treatment', config: {} },
+      ];
+
+      expect(() => {
+        manager.createExperiment(
+          'test',
+          'Test',
+          variants,
+          [NaN, 0.5],
+          'quality_score'
+        );
+      }).toThrow('Traffic split values must be finite numbers');
+    });
+
+    it('should reject Infinity in traffic split', () => {
+      const variants: ABTestVariant[] = [
+        { name: 'control', config: {} },
+        { name: 'treatment', config: {} },
+      ];
+
+      expect(() => {
+        manager.createExperiment(
+          'test',
+          'Test',
+          variants,
+          [Infinity, 0],
+          'quality_score'
+        );
+      }).toThrow('Traffic split values must be finite numbers');
+    });
+
+    it('should reject negative traffic split values', () => {
+      const variants: ABTestVariant[] = [
+        { name: 'control', config: {} },
+        { name: 'treatment', config: {} },
+      ];
+
+      expect(() => {
+        manager.createExperiment(
+          'test',
+          'Test',
+          variants,
+          [-0.5, 1.5],
+          'quality_score'
+        );
+      }).toThrow('Traffic split values must be between 0 and 1');
+    });
+
+    it('should reject traffic split values > 1', () => {
+      const variants: ABTestVariant[] = [
+        { name: 'control', config: {} },
+        { name: 'treatment', config: {} },
+      ];
+
+      expect(() => {
+        manager.createExperiment(
+          'test',
+          'Test',
+          variants,
+          [0.5, 1.5],
+          'quality_score'
+        );
+      }).toThrow('Traffic split values must be between 0 and 1');
+    });
+
+    it('should reject NaN durationDays', () => {
+      const variants: ABTestVariant[] = [
+        { name: 'control', config: {} },
+        { name: 'treatment', config: {} },
+      ];
+
+      expect(() => {
+        manager.createExperiment(
+          'test',
+          'Test',
+          variants,
+          [0.5, 0.5],
+          'quality_score',
+          { durationDays: NaN }
+        );
+      }).toThrow('durationDays must be finite');
+    });
+
+    it('should reject negative durationDays', () => {
+      const variants: ABTestVariant[] = [
+        { name: 'control', config: {} },
+        { name: 'treatment', config: {} },
+      ];
+
+      expect(() => {
+        manager.createExperiment(
+          'test',
+          'Test',
+          variants,
+          [0.5, 0.5],
+          'quality_score',
+          { durationDays: -5 }
+        );
+      }).toThrow('durationDays must be positive');
+    });
+
+    it('should reject NaN minSampleSize', () => {
+      const variants: ABTestVariant[] = [
+        { name: 'control', config: {} },
+        { name: 'treatment', config: {} },
+      ];
+
+      expect(() => {
+        manager.createExperiment(
+          'test',
+          'Test',
+          variants,
+          [0.5, 0.5],
+          'quality_score',
+          { minSampleSize: NaN }
+        );
+      }).toThrow('minSampleSize must be finite');
+    });
+
+    it('should reject non-integer minSampleSize', () => {
+      const variants: ABTestVariant[] = [
+        { name: 'control', config: {} },
+        { name: 'treatment', config: {} },
+      ];
+
+      expect(() => {
+        manager.createExperiment(
+          'test',
+          'Test',
+          variants,
+          [0.5, 0.5],
+          'quality_score',
+          { minSampleSize: 30.5 }
+        );
+      }).toThrow('minSampleSize must be a positive integer');
+    });
+
+    it('should reject NaN significanceLevel', () => {
+      const variants: ABTestVariant[] = [
+        { name: 'control', config: {} },
+        { name: 'treatment', config: {} },
+      ];
+
+      expect(() => {
+        manager.createExperiment(
+          'test',
+          'Test',
+          variants,
+          [0.5, 0.5],
+          'quality_score',
+          { significanceLevel: NaN }
+        );
+      }).toThrow('significanceLevel must be finite');
+    });
+
+    it('should reject significanceLevel >= 1', () => {
+      const variants: ABTestVariant[] = [
+        { name: 'control', config: {} },
+        { name: 'treatment', config: {} },
+      ];
+
+      expect(() => {
+        manager.createExperiment(
+          'test',
+          'Test',
+          variants,
+          [0.5, 0.5],
+          'quality_score',
+          { significanceLevel: 1.0 }
+        );
+      }).toThrow('significanceLevel must be between 0 and 1');
+    });
+
+    it('should reject significanceLevel <= 0', () => {
+      const variants: ABTestVariant[] = [
+        { name: 'control', config: {} },
+        { name: 'treatment', config: {} },
+      ];
+
+      expect(() => {
+        manager.createExperiment(
+          'test',
+          'Test',
+          variants,
+          [0.5, 0.5],
+          'quality_score',
+          { significanceLevel: 0 }
+        );
+      }).toThrow('significanceLevel must be between 0 and 1');
+    });
   });
 
   describe('assignVariant', () => {

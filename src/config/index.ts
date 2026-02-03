@@ -8,6 +8,7 @@
 
 import { z } from 'zod';
 import { ConfigurationError } from '../errors/index.js';
+import { safeParseInt, safeParseFloat } from '../utils/index.js';
 
 /**
  * Environment Variable Schema Validation
@@ -110,6 +111,7 @@ if (!env.MCP_SERVER_MODE) {
 
 /**
  * Application Configuration
+ * ✅ CODE QUALITY FIX (MAJOR-6): Use safe parsing with NaN checks
  */
 export const appConfig = {
   // Claude (primary provider)
@@ -124,34 +126,34 @@ export const appConfig = {
   // Quota Limits
   quotaLimits: {
     claude: {
-      daily: parseInt(env.CLAUDE_DAILY_LIMIT),
-      monthly: parseInt(env.CLAUDE_MONTHLY_LIMIT),
+      daily: safeParseInt(env.CLAUDE_DAILY_LIMIT, 150, 1, 10000),
+      monthly: safeParseInt(env.CLAUDE_MONTHLY_LIMIT, 4500, 1, 100000),
     },
   },
 
   // Cost Control
   costs: {
-    monthlyBudget: parseFloat(env.MONTHLY_BUDGET_USD),
-    alertThreshold: parseFloat(env.COST_ALERT_THRESHOLD),
+    monthlyBudget: safeParseFloat(env.MONTHLY_BUDGET_USD, 50, 0, 10000),
+    alertThreshold: safeParseFloat(env.COST_ALERT_THRESHOLD, 0.8, 0, 1),
   },
 
   // Logging
   logging: {
     level: env.LOG_LEVEL,
     enableMetrics: env.ENABLE_METRICS === 'true',
-    metricsPort: parseInt(env.METRICS_PORT),
+    metricsPort: safeParseInt(env.METRICS_PORT, 9090, 1024, 65535),
   },
 
   // Server
   server: {
     env: env.NODE_ENV,
-    port: parseInt(env.PORT),
+    port: safeParseInt(env.PORT, 3000, 1024, 65535),
   },
 
   // Orchestrator
   orchestrator: {
     mode: env.ORCHESTRATOR_MODE,
-    maxMemoryMB: parseInt(env.ORCHESTRATOR_MAX_MEMORY_MB),
+    maxMemoryMB: safeParseInt(env.ORCHESTRATOR_MAX_MEMORY_MB, 6144, 512, 32768),
   },
 } as const;
 

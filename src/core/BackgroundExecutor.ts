@@ -80,6 +80,8 @@ import { AttributionManager } from '../ui/AttributionManager.js';
 import { ValidationError, NotFoundError, StateError } from '../errors/index.js';
 // ✅ SECURITY FIX (HIGH-2): Import comprehensive sanitization utilities
 import { looksLikeSensitive, hashValue } from '../telemetry/sanitization.js';
+// ✅ CODE QUALITY FIX (MAJOR-1): Import validation utilities for consistency
+import { validateFiniteNumber, validateSafeInteger } from '../utils/validation.js';
 
 /**
  * Timeout Error - Task exceeded maximum duration
@@ -345,6 +347,7 @@ export class BackgroundExecutor {
    * ```
    */
   async executeTask(task: unknown, config: ExecutionConfig): Promise<string> {
+    // ✅ CODE QUALITY FIX (MAJOR-1): Use validation utilities for consistency
     // ✅ SECURITY FIX (CRITICAL-2): Comprehensive maxDuration validation to prevent DoS and integer overflow
     if (config.resourceLimits?.maxDuration !== undefined) {
       const duration = config.resourceLimits.maxDuration;
@@ -358,43 +361,19 @@ export class BackgroundExecutor {
         });
       }
 
-      // ✅ SECURITY: Validate it's finite (blocks NaN, Infinity, -Infinity to prevent DoS)
-      if (!Number.isFinite(duration)) {
-        throw new ValidationError('maxDuration must be a finite number', {
-          provided: duration,
-          isNaN: Number.isNaN(duration),
-          isFinite: Number.isFinite(duration),
-          reason: Number.isNaN(duration)
-            ? 'NaN causes immediate timeout (DoS attack vector)'
-            : 'Infinity causes task to never timeout (resource leak)',
-        });
-      }
+      // ✅ Use validation utilities for consistent validation
+      // This validates: finite, min > 0, max <= MAX_ALLOWED_DURATION
+      validateFiniteNumber(duration, 'maxDuration', { min: 1, max: MAX_ALLOWED_DURATION });
 
       // ✅ SECURITY: Validate it's a safe integer (prevents overflow attacks)
-      if (!Number.isSafeInteger(duration)) {
-        throw new ValidationError('maxDuration must be a safe integer', {
-          provided: duration,
-          isSafeInteger: Number.isSafeInteger(duration),
-          maxSafeInteger: Number.MAX_SAFE_INTEGER,
-        });
-      }
+      validateSafeInteger(duration, 'maxDuration');
 
-      // ✅ SECURITY: Validate range (including -0 to prevent edge cases)
-      if (duration <= 0) {  // Changed < to <= to catch -0
-        throw new ValidationError('maxDuration must be greater than 0', {
+      // ✅ SECURITY: Catch -0 edge case (validation utilities don't handle this)
+      if (Object.is(duration, -0)) {
+        throw new ValidationError('maxDuration must be positive (> 0)', {
           provided: duration,
-          isNegativeZero: Object.is(duration, -0),
+          isNegativeZero: true,
         });
-      }
-
-      if (duration > MAX_ALLOWED_DURATION) {
-        throw new ValidationError(
-          `maxDuration cannot exceed ${MAX_ALLOWED_DURATION}ms (1 hour)`,
-          {
-            provided: duration,
-            max: MAX_ALLOWED_DURATION,
-          }
-        );
       }
     }
 

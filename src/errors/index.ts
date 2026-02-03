@@ -104,6 +104,14 @@ export class ValidationError extends BaseError {
   constructor(message: string, context?: Record<string, unknown>) {
     super(message, ErrorCode.VALIDATION_FAILED, context);
   }
+
+  /**
+   * Alias for context to maintain backward compatibility with A2A module
+   * A2A code expects `error.details` instead of `error.context`
+   */
+  get details(): Record<string, unknown> | undefined {
+    return this.context;
+  }
 }
 
 /**

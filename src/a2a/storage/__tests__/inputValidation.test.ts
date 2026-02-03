@@ -14,7 +14,7 @@ import {
   validateTaskPriorities,
   validatePositiveInteger,
 } from '../inputValidation.js';
-import { ValidationError } from '../ValidationError.js';
+import { ValidationError } from '../../../errors/index.js';
 
 describe('Input Validation (HIGH-3)', () => {
   describe('validateArraySize', () => {
@@ -203,7 +203,7 @@ describe('Input Validation (HIGH-3)', () => {
 
       expect(error.message).toBe('Test error');
       expect(error.name).toBe('ValidationError');
-      expect(error.code).toBe('VALIDATION_ERROR');
+      expect(error.code).toBe('VALIDATION_FAILED'); // Central ValidationError uses VALIDATION_FAILED
       expect(error.details).toEqual({ field: 'test', value: 123 });
     });
 
@@ -211,12 +211,13 @@ describe('Input Validation (HIGH-3)', () => {
       const error = new ValidationError('Test error', { field: 'test' });
       const json = error.toJSON();
 
-      expect(json).toEqual({
-        name: 'ValidationError',
-        code: 'VALIDATION_ERROR',
-        message: 'Test error',
-        details: { field: 'test' },
-      });
+      // Central ValidationError serializes context, not details, and includes timestamp + stack
+      expect(json.name).toBe('ValidationError');
+      expect(json.code).toBe('VALIDATION_FAILED');
+      expect(json.message).toBe('Test error');
+      expect(json.context).toEqual({ field: 'test' });
+      expect(json.timestamp).toBeDefined();
+      expect(json.stack).toBeDefined();
     });
 
     it('should be instanceof Error', () => {

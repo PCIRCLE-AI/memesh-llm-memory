@@ -79,6 +79,29 @@ export class ABTestManager {
       });
     }
 
+    // Validate trafficSplit array values - must be finite, non-negative, and sum to 1.0
+    for (let i = 0; i < trafficSplit.length; i++) {
+      const value = trafficSplit[i];
+      if (!Number.isFinite(value)) {
+        throw new ValidationError('Traffic split values must be finite numbers', {
+          component: 'ABTestManager',
+          method: 'createExperiment',
+          index: i,
+          value,
+          constraint: 'Number.isFinite(value)',
+        });
+      }
+      if (value < 0 || value > 1) {
+        throw new ValidationError('Traffic split values must be between 0 and 1', {
+          component: 'ABTestManager',
+          method: 'createExperiment',
+          index: i,
+          value,
+          constraint: '0 <= value <= 1',
+        });
+      }
+    }
+
     const sum = trafficSplit.reduce((acc, val) => acc + val, 0);
     if (Math.abs(sum - 1.0) > 0.001) {
       throw new ValidationError('Traffic split must sum to 1.0', {
@@ -87,6 +110,64 @@ export class ABTestManager {
         actualSum: sum,
         constraint: 'sum(trafficSplit) === 1.0',
       });
+    }
+
+    // Validate options
+    if (options.durationDays !== undefined) {
+      if (!Number.isFinite(options.durationDays)) {
+        throw new ValidationError('durationDays must be finite', {
+          component: 'ABTestManager',
+          method: 'createExperiment',
+          value: options.durationDays,
+          constraint: 'Number.isFinite(durationDays)',
+        });
+      }
+      if (options.durationDays <= 0) {
+        throw new ValidationError('durationDays must be positive', {
+          component: 'ABTestManager',
+          method: 'createExperiment',
+          value: options.durationDays,
+          constraint: 'durationDays > 0',
+        });
+      }
+    }
+
+    if (options.minSampleSize !== undefined) {
+      if (!Number.isFinite(options.minSampleSize)) {
+        throw new ValidationError('minSampleSize must be finite', {
+          component: 'ABTestManager',
+          method: 'createExperiment',
+          value: options.minSampleSize,
+          constraint: 'Number.isFinite(minSampleSize)',
+        });
+      }
+      if (!Number.isSafeInteger(options.minSampleSize) || options.minSampleSize <= 0) {
+        throw new ValidationError('minSampleSize must be a positive integer', {
+          component: 'ABTestManager',
+          method: 'createExperiment',
+          value: options.minSampleSize,
+          constraint: 'minSampleSize > 0 and integer',
+        });
+      }
+    }
+
+    if (options.significanceLevel !== undefined) {
+      if (!Number.isFinite(options.significanceLevel)) {
+        throw new ValidationError('significanceLevel must be finite', {
+          component: 'ABTestManager',
+          method: 'createExperiment',
+          value: options.significanceLevel,
+          constraint: 'Number.isFinite(significanceLevel)',
+        });
+      }
+      if (options.significanceLevel <= 0 || options.significanceLevel >= 1) {
+        throw new ValidationError('significanceLevel must be between 0 and 1', {
+          component: 'ABTestManager',
+          method: 'createExperiment',
+          value: options.significanceLevel,
+          constraint: '0 < significanceLevel < 1',
+        });
+      }
     }
 
     const experiment: ABTestExperiment = {
@@ -177,6 +258,8 @@ export class ABTestManager {
   /**
    * Hash agent ID to variant index using traffic split
    *
+   * ✅ CODE QUALITY FIX (MAJOR-3): Safe hash parsing with overflow check
+   *
    * @param key - Key to hash
    * @param trafficSplit - Traffic distribution
    * @returns Variant index
@@ -184,7 +267,18 @@ export class ABTestManager {
   private hashToVariant(key: string, trafficSplit: number[]): number {
     // Use SHA-256 hash to get deterministic assignment
     const hash = crypto.createHash('sha256').update(key).digest('hex');
-    const hashInt = parseInt(hash.substring(0, 8), 16);
+
+    // ✅ FIX: Safe hex parsing with bounds check
+    const hashHex = hash.substring(0, 8);
+    const hashInt = parseInt(hashHex, 16);
+
+    // Validate parsed value
+    if (isNaN(hashInt) || !isFinite(hashInt)) {
+      // Fallback: use last variant if parsing fails
+      return trafficSplit.length - 1;
+    }
+
+    // Use modulo to normalize to 0-1 range (avoiding division by zero)
     const normalizedHash = (hashInt % 100000) / 100000; // 0 to 1
 
     // Find variant based on cumulative traffic split

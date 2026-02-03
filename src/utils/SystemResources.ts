@@ -12,6 +12,7 @@ import os from 'os';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { logger } from './logger.js';
+import { safeDivide, bytesToMB } from './index.js';
 
 const execAsync = promisify(exec);
 
@@ -108,13 +109,14 @@ export class SystemResourceManager {
 
   /**
    * Get current system resource status
+   * ✅ CODE QUALITY FIX (MAJOR-4): Use safe division to prevent NaN/division-by-zero
    */
   async getResources(): Promise<SystemResources> {
     const cpuCores = os.cpus().length;
-    const totalMemoryMB = os.totalmem() / (1024 * 1024);
-    const freeMemoryMB = os.freemem() / (1024 * 1024);
+    const totalMemoryMB = bytesToMB(os.totalmem());
+    const freeMemoryMB = bytesToMB(os.freemem());
     const usedMemoryMB = totalMemoryMB - freeMemoryMB;
-    const memoryUsage = (usedMemoryMB / totalMemoryMB) * 100;
+    const memoryUsage = safeDivide(usedMemoryMB, totalMemoryMB, 0) * 100;
 
     // Get CPU usage
     const cpuUsage = await this.getCPUUsage();
@@ -228,6 +230,8 @@ export class SystemResourceManager {
   /**
    * Calculate recommended E2E concurrency
    *
+   * ✅ CODE QUALITY FIX (MAJOR-4): Use safe division to prevent NaN
+   *
    * E2E test special considerations:
    * - Each test starts multiple services (Express, database, WebSocket, etc.)
    * - Assume each E2E test needs 2GB memory + 2 CPU cores
@@ -247,14 +251,14 @@ export class SystemResourceManager {
     const availableMemoryPercent = 100 - memoryUsage;
 
     // E2E test assumption: each test consumes 25% CPU + 25% Memory
-    const cpuBasedE2E = Math.floor(availableCPU / 25);
-    const memoryBasedE2E = Math.floor(availableMemoryPercent / 25);
+    const cpuBasedE2E = Math.floor(safeDivide(availableCPU, 25, 0));
+    const memoryBasedE2E = Math.floor(safeDivide(availableMemoryPercent, 25, 0));
 
     // Take smaller value (bottleneck)
     let e2e = Math.min(cpuBasedE2E, memoryBasedE2E);
 
     // Conservatively, E2E tests use at most half of CPU cores
-    e2e = Math.min(e2e, Math.floor(cpuCores / 2));
+    e2e = Math.min(e2e, Math.floor(safeDivide(cpuCores, 2, 1)));
 
     // At least 1, at most 4 (even if hardware is strong enough)
     e2e = Math.max(1, Math.min(4, e2e));
@@ -288,19 +292,16 @@ export class SystemResourceManager {
       const totalDiff = endUsage.total - startUsage.total;
       const idleDiff = endUsage.idle - startUsage.idle;
 
-      if (totalDiff === 0) {
-        return 0;
-      }
-
-      const usagePercent = ((totalDiff - idleDiff) / totalDiff) * 100;
+      // ✅ FIX: Safe division with zero check
+      const usagePercent = safeDivide(totalDiff - idleDiff, totalDiff, 0) * 100;
       return Math.max(0, Math.min(100, usagePercent));
 
     } catch (error) {
       logger.warn('Failed to get CPU usage, using fallback:', error);
-      // Fallback: use load average
+      // Fallback: use load average with safe division
       const loadavg = os.loadavg()[0];  // 1 minute average
       const cpuCores = os.cpus().length;
-      return Math.min(100, (loadavg / cpuCores) * 100);
+      return Math.min(100, safeDivide(loadavg, cpuCores, 0.5) * 100);
     }
   }
 

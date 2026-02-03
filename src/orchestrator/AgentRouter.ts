@@ -19,6 +19,7 @@ import { TaskAnalysis, RoutingDecision, AgentType, SystemResources, TaskCapabili
 import { PromptEnhancer } from '../core/PromptEnhancer.js';
 import { toDollars, type MicroDollars } from '../utils/money.js';
 import { logger } from '../utils/logger.js';
+import { safeDivide, bytesToMB } from '../utils/index.js';
 
 export class AgentRouter {
   private promptEnhancer: PromptEnhancer;
@@ -78,6 +79,7 @@ export class AgentRouter {
 
   /**
    * Get system resource status
+   * ✅ CODE QUALITY FIX (MAJOR-5): Use safe division to prevent NaN
    */
   async getSystemResources(): Promise<SystemResources> {
     const totalMemory = os.totalmem();
@@ -85,9 +87,9 @@ export class AgentRouter {
     const usedMemory = totalMemory - freeMemory;
 
     return {
-      totalMemoryMB: Math.floor(totalMemory / 1024 / 1024),
-      availableMemoryMB: Math.floor(freeMemory / 1024 / 1024),
-      memoryUsagePercent: Math.floor((usedMemory / totalMemory) * 100),
+      totalMemoryMB: Math.floor(bytesToMB(totalMemory)),
+      availableMemoryMB: Math.floor(bytesToMB(freeMemory)),
+      memoryUsagePercent: Math.floor(safeDivide(usedMemory, totalMemory, 0) * 100),
       cpuUsagePercent: this.getCPUUsage(),
     };
   }
@@ -396,7 +398,8 @@ export class AgentRouter {
     }
 
     // CPU usage = 100 - (idle percentage)
-    const idlePercentage = (100 * totalIdle) / totalTick;
+    // ✅ FIX: Safe division with zero check
+    const idlePercentage = safeDivide(100 * totalIdle, totalTick, 50);
     const usage = Math.round(100 - idlePercentage);
 
     // Update cache

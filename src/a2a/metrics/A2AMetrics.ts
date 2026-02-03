@@ -106,6 +106,25 @@ export class A2AMetrics {
   ): void {
     if (!this.enabled) return;
 
+    // Validate value - must be finite and non-negative
+    if (!Number.isFinite(value)) {
+      logger.error('[A2A Metrics] Counter increment value must be finite', {
+        name,
+        value,
+        labels
+      });
+      return;
+    }
+
+    if (value < 0) {
+      logger.error('[A2A Metrics] Counter increment value must be non-negative', {
+        name,
+        value,
+        labels
+      });
+      return;
+    }
+
     const key = this.getKey(name, labels);
     const existing = this.metrics.get(key);
 
@@ -140,6 +159,16 @@ export class A2AMetrics {
   setGauge(name: string, value: number, labels: Record<string, string> = {}): void {
     if (!this.enabled) return;
 
+    // Validate value - must be finite
+    if (!Number.isFinite(value)) {
+      logger.error('[A2A Metrics] Gauge value must be finite', {
+        name,
+        value,
+        labels
+      });
+      return;
+    }
+
     const key = this.getKey(name, labels);
     this.metrics.set(key, {
       type: 'gauge',
@@ -172,6 +201,25 @@ export class A2AMetrics {
     labels: Record<string, string> = {}
   ): void {
     if (!this.enabled) return;
+
+    // Validate value - must be finite and non-negative
+    if (!Number.isFinite(value)) {
+      logger.error('[A2A Metrics] Histogram value must be finite', {
+        name,
+        value,
+        labels
+      });
+      return;
+    }
+
+    if (value < 0) {
+      logger.error('[A2A Metrics] Histogram value must be non-negative', {
+        name,
+        value,
+        labels
+      });
+      return;
+    }
 
     // Phase 1.0: Simple histogram = store last value
     // Future: Track min/max/avg/percentiles

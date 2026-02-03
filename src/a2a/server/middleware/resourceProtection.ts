@@ -1,0 +1,353 @@
+/**
+ * Resource Exhaustion Protection Middleware
+ *
+ * ✅ SECURITY FIX (MEDIUM-2): Protects against resource exhaustion attacks
+ *
+ * Implements multiple protection layers:
+ * - Connection limits per IP
+ * - Request payload size limits
+ * - Request rate limiting
+ * - Memory usage monitoring
+ *
+ * Features:
+ * - Per-IP connection tracking
+ * - Automatic connection cleanup
+ * - Configurable limits via environment variables
+ * - Memory pressure detection
+ *
+ * @module a2a/server/middleware/resourceProtection
+ */
+
+import type { Request, Response, NextFunction } from 'express';
+import { logger } from '../../../utils/logger.js';
+
+/**
+ * Connection tracking per IP
+ * Key: IP address
+ * Value: {count, lastActivity}
+ */
+const connections = new Map<string, { count: number; lastActivity: number }>();
+
+/**
+ * Default limits
+ */
+const DEFAULT_MAX_CONNECTIONS_PER_IP = 10;
+const DEFAULT_MAX_PAYLOAD_SIZE_MB = 10;
+const DEFAULT_CONNECTION_IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Cleanup timer
+ */
+let cleanupTimer: NodeJS.Timeout | null = null;
+
+/**
+ * Get configuration from environment
+ */
+function getMaxConnectionsPerIP(): number {
+  const env = process.env.A2A_MAX_CONNECTIONS_PER_IP;
+  if (!env) return DEFAULT_MAX_CONNECTIONS_PER_IP;
+
+  const parsed = parseInt(env, 10);
+  if (isNaN(parsed) || parsed <= 0) {
+    logger.warn(`Invalid A2A_MAX_CONNECTIONS_PER_IP: ${env}, using default ${DEFAULT_MAX_CONNECTIONS_PER_IP}`);
+    return DEFAULT_MAX_CONNECTIONS_PER_IP;
+  }
+
+  return parsed;
+}
+
+function getMaxPayloadSizeMB(): number {
+  const env = process.env.A2A_MAX_PAYLOAD_SIZE_MB;
+  if (!env) return DEFAULT_MAX_PAYLOAD_SIZE_MB;
+
+  const parsed = parseInt(env, 10);
+  if (isNaN(parsed) || parsed <= 0 || parsed > 100) {
+    logger.warn(`Invalid A2A_MAX_PAYLOAD_SIZE_MB: ${env}, using default ${DEFAULT_MAX_PAYLOAD_SIZE_MB}`);
+    return DEFAULT_MAX_PAYLOAD_SIZE_MB;
+  }
+
+  return parsed;
+}
+
+/**
+ * Clean up idle connections
+ */
+function cleanupIdleConnections(): void {
+  const now = Date.now();
+  const timeout = DEFAULT_CONNECTION_IDLE_TIMEOUT_MS;
+  let cleaned = 0;
+
+  for (const [ip, data] of connections.entries()) {
+    if (now - data.lastActivity > timeout) {
+      connections.delete(ip);
+      cleaned++;
+    }
+  }
+
+  if (cleaned > 0) {
+    logger.debug('[Resource Protection] Cleaned up idle connections', {
+      count: cleaned,
+      remaining: connections.size,
+    });
+  }
+}
+
+/**
+ * Start periodic connection cleanup
+ */
+export function startResourceProtectionCleanup(): void {
+  if (cleanupTimer) {
+    return;
+  }
+
+  // Clean up every minute
+  cleanupTimer = setInterval(() => {
+    cleanupIdleConnections();
+  }, 60 * 1000);
+
+  logger.info('[Resource Protection] Cleanup started');
+}
+
+/**
+ * Stop periodic connection cleanup
+ */
+export function stopResourceProtectionCleanup(): void {
+  if (cleanupTimer) {
+    clearInterval(cleanupTimer);
+    cleanupTimer = null;
+    logger.info('[Resource Protection] Cleanup stopped');
+  }
+}
+
+/**
+ * Clear all connection tracking (for testing)
+ */
+export function clearConnectionTracking(): void {
+  connections.clear();
+}
+
+/**
+ * Get connection statistics
+ */
+export function getConnectionStats(): {
+  totalIPs: number;
+  totalConnections: number;
+  topIPs: Array<{ ip: string; connections: number }>;
+} {
+  const totalIPs = connections.size;
+  let totalConnections = 0;
+
+  for (const data of connections.values()) {
+    totalConnections += data.count;
+  }
+
+  const topIPs = Array.from(connections.entries())
+    .map(([ip, data]) => ({ ip, connections: data.count }))
+    .sort((a, b) => b.connections - a.connections)
+    .slice(0, 10);
+
+  return {
+    totalIPs,
+    totalConnections,
+    topIPs,
+  };
+}
+
+/**
+ * Connection limiting middleware
+ *
+ * Tracks concurrent connections per IP and rejects requests
+ * when limit is exceeded.
+ *
+ * @example
+ * ```typescript
+ * app.use(connectionLimitMiddleware());
+ * ```
+ */
+export function connectionLimitMiddleware() {
+  const maxConnections = getMaxConnectionsPerIP();
+
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const now = Date.now();
+
+    // Get or create connection tracking
+    let connectionData = connections.get(ip);
+
+    if (!connectionData) {
+      connectionData = { count: 0, lastActivity: now };
+      connections.set(ip, connectionData);
+    }
+
+    // Check connection limit
+    if (connectionData.count >= maxConnections) {
+      logger.warn('[Resource Protection] Connection limit exceeded', {
+        ip,
+        currentConnections: connectionData.count,
+        maxConnections,
+      });
+
+      res.status(503).json({
+        success: false,
+        error: {
+          code: 'CONNECTION_LIMIT_EXCEEDED',
+          message: `Too many concurrent connections from your IP. Maximum: ${maxConnections}`,
+        },
+      });
+      return;
+    }
+
+    // Increment connection count
+    connectionData.count++;
+    connectionData.lastActivity = now;
+
+    // Decrement on response finish
+    res.on('finish', () => {
+      const data = connections.get(ip);
+      if (data) {
+        data.count = Math.max(0, data.count - 1);
+        data.lastActivity = Date.now();
+
+        // Remove if no connections
+        if (data.count === 0) {
+          connections.delete(ip);
+        }
+      }
+    });
+
+    // Decrement on connection close
+    res.on('close', () => {
+      const data = connections.get(ip);
+      if (data) {
+        data.count = Math.max(0, data.count - 1);
+        data.lastActivity = Date.now();
+
+        if (data.count === 0) {
+          connections.delete(ip);
+        }
+      }
+    });
+
+    next();
+  };
+}
+
+/**
+ * Payload size limiting middleware
+ *
+ * Rejects requests with payloads exceeding the configured limit.
+ * Works in conjunction with express.json({ limit }) but provides
+ * better error messages.
+ *
+ * @example
+ * ```typescript
+ * app.use(express.json({ limit: '10mb' }));
+ * app.use(payloadSizeLimitMiddleware());
+ * ```
+ */
+export function payloadSizeLimitMiddleware() {
+  const maxSizeMB = getMaxPayloadSizeMB();
+  const maxSizeBytes = maxSizeMB * 1024 * 1024;
+
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const contentLength = req.get('content-length');
+
+    if (contentLength) {
+      const size = parseInt(contentLength, 10);
+
+      if (isNaN(size)) {
+        logger.warn('[Resource Protection] Invalid Content-Length header', {
+          contentLength,
+          ip: req.ip,
+        });
+
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_CONTENT_LENGTH',
+            message: 'Invalid Content-Length header',
+          },
+        });
+        return;
+      }
+
+      if (size > maxSizeBytes) {
+        logger.warn('[Resource Protection] Payload size exceeded', {
+          size,
+          maxSize: maxSizeBytes,
+          ip: req.ip,
+        });
+
+        res.status(413).json({
+          success: false,
+          error: {
+            code: 'PAYLOAD_TOO_LARGE',
+            message: `Request payload too large. Maximum: ${maxSizeMB}MB`,
+            maxSizeMB,
+          },
+        });
+        return;
+      }
+    }
+
+    next();
+  };
+}
+
+/**
+ * Memory pressure detection middleware
+ *
+ * Checks system memory usage and rejects requests when
+ * memory pressure is high to prevent OOM.
+ *
+ * @example
+ * ```typescript
+ * app.use(memoryPressureMiddleware());
+ * ```
+ */
+export function memoryPressureMiddleware() {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const memUsage = process.memoryUsage();
+    const heapUsedMB = memUsage.heapUsed / 1024 / 1024;
+    const heapTotalMB = memUsage.heapTotal / 1024 / 1024;
+    const heapUsagePercent = (heapUsedMB / heapTotalMB) * 100;
+
+    // Reject requests if heap usage > 90%
+    if (heapUsagePercent > 90) {
+      logger.warn('[Resource Protection] High memory pressure', {
+        heapUsedMB: heapUsedMB.toFixed(2),
+        heapTotalMB: heapTotalMB.toFixed(2),
+        heapUsagePercent: heapUsagePercent.toFixed(2),
+      });
+
+      res.status(503).json({
+        success: false,
+        error: {
+          code: 'SERVICE_OVERLOADED',
+          message: 'Service temporarily overloaded, please try again later',
+        },
+      });
+      return;
+    }
+
+    next();
+  };
+}
+
+/**
+ * Combined resource protection middleware
+ *
+ * Applies all resource protection layers in correct order.
+ *
+ * @example
+ * ```typescript
+ * app.use(resourceProtectionMiddleware());
+ * ```
+ */
+export function resourceProtectionMiddleware() {
+  return [
+    memoryPressureMiddleware(),
+    connectionLimitMiddleware(),
+    payloadSizeLimitMiddleware(),
+  ];
+}

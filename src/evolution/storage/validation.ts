@@ -3,13 +3,10 @@
  */
 
 import type { Span, Pattern, Adaptation, Reward } from './types';
+import { ValidationError } from '../../errors/index.js';
 
-export class ValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ValidationError';
-  }
-}
+// Re-export ValidationError from central location
+export { ValidationError };
 
 export class NotFoundError extends Error {
   constructor(resource: string, id: string) {

@@ -43,6 +43,16 @@ export class LearningManager {
   private config: LearningConfig;
 
   constructor(config?: Partial<LearningConfig>) {
+    // Validate config
+    if (config?.maxPatternsPerAgent !== undefined) {
+      if (!Number.isFinite(config.maxPatternsPerAgent)) {
+        throw new Error('maxPatternsPerAgent must be finite');
+      }
+      if (!Number.isSafeInteger(config.maxPatternsPerAgent) || config.maxPatternsPerAgent <= 0) {
+        throw new Error('maxPatternsPerAgent must be a positive integer');
+      }
+    }
+
     this.config = {
       maxPatternsPerAgent: config?.maxPatternsPerAgent || 100,
     };
@@ -122,6 +132,16 @@ export class LearningManager {
       minConfidence?: number;
     }
   ): LearnedPattern[] {
+    // Validate filter.minConfidence
+    if (filter?.minConfidence !== undefined) {
+      if (!Number.isFinite(filter.minConfidence)) {
+        throw new Error('minConfidence must be finite');
+      }
+      if (filter.minConfidence < 0 || filter.minConfidence > 1) {
+        throw new Error('minConfidence must be between 0 and 1');
+      }
+    }
+
     let patterns = this.patterns.get(agentId) || [];
 
     if (filter) {

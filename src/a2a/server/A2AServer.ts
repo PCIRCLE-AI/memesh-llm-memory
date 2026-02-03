@@ -39,6 +39,17 @@ import {
   stopCleanup,
 } from './middleware/rateLimit.js';
 import { requestTimeoutMiddleware } from './middleware/timeout.js';
+import {
+  resourceProtectionMiddleware,
+  startResourceProtectionCleanup,
+  stopResourceProtectionCleanup,
+} from './middleware/resourceProtection.js';
+import {
+  csrfTokenMiddleware,
+  csrfProtection,
+  startCsrfCleanup,
+  stopCsrfCleanup,
+} from './middleware/csrf.js';
 import { MCPTaskDelegator } from '../delegator/MCPTaskDelegator.js';
 import { TimeoutChecker } from '../jobs/TimeoutChecker.js';
 import { TIME, NETWORK } from '../constants.js';
@@ -120,6 +131,10 @@ export class A2AServer {
   private createApp(): Express {
     const app = express();
 
+    // 🔒 SECURITY LAYER 1: Resource protection (DoS prevention) - MUST BE FIRST
+    // Prevents: connection flooding, large payloads, memory exhaustion
+    app.use(resourceProtectionMiddleware());
+
     app.use(express.json({ limit: '10mb' }));
     app.use(corsMiddleware);
 
@@ -131,10 +146,16 @@ export class A2AServer {
 
     app.use(requestLogger);
 
+    // 🔒 SECURITY LAYER 2: CSRF token generation (all requests)
+    // Generates CSRF token in cookie/header for client to use in state-changing requests
+    app.use(csrfTokenMiddleware);
+
     // Protected routes - require authentication and rate limiting
+    // POST routes also require CSRF protection (state-changing operations)
     app.post(
       '/a2a/send-message',
       authenticateToken,
+      csrfProtection, // 🔒 CSRF protection for POST
       rateLimitMiddleware,
       spanMiddleware('a2a.send-message'),
       this.routes.sendMessage
@@ -156,6 +177,7 @@ export class A2AServer {
     app.post(
       '/a2a/tasks/:taskId/cancel',
       authenticateToken,
+      csrfProtection, // 🔒 CSRF protection for POST
       rateLimitMiddleware,
       spanMiddleware('a2a.cancel-task'),
       this.routes.cancelTask
@@ -213,6 +235,12 @@ export class A2AServer {
         // Start rate limit cleanup (every 5 minutes)
         startCleanup();
 
+        // 🔒 Start resource protection cleanup (every 1 minute)
+        startResourceProtectionCleanup();
+
+        // 🔒 Start CSRF token cleanup (every 10 minutes)
+        startCsrfCleanup();
+
         resolve(port);
       });
 
@@ -246,6 +274,12 @@ export class A2AServer {
 
     // Stop rate limit cleanup
     stopCleanup();
+
+    // 🔒 Stop resource protection cleanup
+    stopResourceProtectionCleanup();
+
+    // 🔒 Stop CSRF token cleanup
+    stopCsrfCleanup();
 
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);

@@ -16,4 +16,6 @@ export declare class AgentRegistry {
     close(): void;
     private rowToEntry;
 }
+export declare function startAgentRegistryCleanup(): void;
+export declare function stopAgentRegistryCleanup(): void;
 //# sourceMappingURL=AgentRegistry.d.ts.map

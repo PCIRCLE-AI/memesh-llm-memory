@@ -129,8 +129,29 @@ export class TimeoutChecker {
     this.interval = intervalMs;
     this.resetStatistics();
 
-    this.intervalId = setInterval(async () => {
-      await this.checkWithCircuitBreaker();
+    this.intervalId = setInterval(() => {
+      this.checkWithCircuitBreaker().catch((err: unknown) => {
+        // Handle any unhandled rejections that escape the internal try-catch
+        // This preserves circuit breaker state and ensures errors are logged
+        this.totalErrors++;
+        this.consecutiveErrors++;
+        this.lastErrorTime = Date.now();
+
+        logger.error('[TimeoutChecker] Unhandled error in interval check', {
+          error: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : undefined,
+          consecutiveErrors: this.consecutiveErrors,
+          circuitState: this.circuitState,
+        });
+
+        // Check if circuit should open due to accumulated errors
+        if (
+          this.consecutiveErrors >= this.maxConsecutiveErrors &&
+          this.circuitState !== CircuitState.OPEN
+        ) {
+          this.openCircuit();
+        }
+      });
     }, intervalMs);
 
     logger.info('[TimeoutChecker] Started', {

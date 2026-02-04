@@ -27,7 +27,6 @@ import { retryWithBackoff, type RetryOptions } from '../../utils/retry.js';
 import {
   getTraceContext,
   injectTraceContext,
-  createTraceContext,
 } from '../../utils/tracing/index.js';
 import { logger } from '../../utils/logger.js';
 
@@ -176,17 +175,50 @@ export class A2AClient {
   }
 
   /**
+   * Fetch with AbortController timeout
+   *
+   * Wraps fetch with an AbortController that aborts after the configured timeout.
+   * This prevents individual fetch calls from hanging indefinitely if the server
+   * never responds, even when retryWithBackoff has its own timeout logic.
+   *
+   * @param url - The URL to fetch
+   * @param options - Standard fetch RequestInit options
+   * @returns The fetch Response
+   * @throws Error with REQUEST_TIMEOUT code if the request times out
+   */
+  private async fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.retryConfig.timeout);
+
+    try {
+      return await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+    } catch (error) {
+      // Handle AbortError specifically and convert to REQUEST_TIMEOUT
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw createError(ErrorCodes.REQUEST_TIMEOUT, url, this.retryConfig.timeout);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  /**
    * Determine if an HTTP error is retryable
    *
    * **Retry Strategy**:
-   * - ✅ Retry on: 5xx server errors, 429 rate limit, network errors (ETIMEDOUT, ECONNREFUSED)
+   * - ✅ Retry on: 5xx server errors, 429 rate limit, network errors (ETIMEDOUT, ECONNREFUSED),
+   *      REQUEST_TIMEOUT (AbortController timeout)
    * - ❌ Don't retry on: 4xx client errors, local validation errors (no status code)
    *
    * **Security Considerations**:
    * - Local validation errors (schema validation, missing agent) are NOT retried
    *   to prevent wasting resources on invalid requests
    * - Authentication errors (401, 403) are NOT retried to prevent brute force attempts
-   * - Only transient errors (5xx, 429, network) are retried with exponential backoff
+   * - Only transient errors (5xx, 429, network, timeout) are retried with exponential backoff
    *
    * **Performance**:
    * - Not retrying validation errors saves 7-10s per invalid request
@@ -198,6 +230,9 @@ export class A2AClient {
    * - Zod validation errors (no HTTP status) - invalid request schema, retry won't fix
    * - createError() without status (no HTTP status) - local logic error
    *
+   * **Retryable timeout errors**:
+   * - REQUEST_TIMEOUT (code check) - server didn't respond in time, worth retrying
+   *
    * This prevents wasting 7-10s on errors that will never succeed on retry.
    *
    * @private
@@ -205,9 +240,15 @@ export class A2AClient {
   private isRetryableHttpError(error: unknown): boolean {
     // Check if it's an HTTP error with status code
     if (error && typeof error === 'object') {
-      const httpError = error as { status?: number };
-      if (httpError.status !== undefined) {
-        const status = httpError.status;
+      const errorObj = error as { status?: number; code?: string };
+
+      // ✅ REQUEST_TIMEOUT is retryable (transient network issue)
+      if (errorObj.code === ErrorCodes.REQUEST_TIMEOUT) {
+        return true;
+      }
+
+      if (errorObj.status !== undefined) {
+        const status = errorObj.status;
         // Don't retry authentication errors (401, 403)
         if (status === 401 || status === 403) {
           return false;
@@ -239,7 +280,7 @@ export class A2AClient {
 
           const url = `${agent.baseUrl}/a2a/send-message`;
 
-          const response = await fetch(url, {
+          const response = await this.fetchWithTimeout(url, {
             method: 'POST',
             headers: this.getAuthHeaders(),
             body: JSON.stringify(request),
@@ -270,7 +311,7 @@ export class A2AClient {
           // ✅ FIX MINOR-2: URI-encode taskId to handle special characters
           const url = `${agent.baseUrl}/a2a/tasks/${encodeURIComponent(taskId)}`;
 
-          const response = await fetch(url, {
+          const response = await this.fetchWithTimeout(url, {
             method: 'GET',
             headers: this.getAuthHeaders(),
           });
@@ -313,7 +354,7 @@ export class A2AClient {
 
           const url = `${agent.baseUrl}/a2a/tasks?${queryParams.toString()}`;
 
-          const response = await fetch(url, {
+          const response = await this.fetchWithTimeout(url, {
             method: 'GET',
             headers: this.getAuthHeaders(),
           });
@@ -342,7 +383,7 @@ export class A2AClient {
 
           const url = `${agent.baseUrl}/a2a/agent-card`;
 
-          const response = await fetch(url, {
+          const response = await this.fetchWithTimeout(url, {
             method: 'GET',
             headers: this.getAuthHeaders(),
           });
@@ -372,7 +413,7 @@ export class A2AClient {
           // ✅ FIX MINOR-2: URI-encode taskId to handle special characters
           const url = `${agent.baseUrl}/a2a/tasks/${encodeURIComponent(taskId)}/cancel`;
 
-          const response = await fetch(url, {
+          const response = await this.fetchWithTimeout(url, {
             method: 'POST',
             headers: this.getAuthHeaders(),
           });
@@ -395,7 +436,36 @@ export class A2AClient {
     }
   }
 
+  /**
+   * Validate Content-Type header before parsing JSON
+   *
+   * Accepts 'application/json' and 'application/json; charset=utf-8'.
+   * - Missing header: warn but allow (backwards compatibility)
+   * - Wrong Content-Type: throw error with clear message
+   *
+   * @param response - The HTTP response to validate
+   * @throws Error if Content-Type is present but not application/json
+   */
+  private validateContentType(response: Response): void {
+    const contentType = response.headers.get('content-type');
+
+    if (!contentType) {
+      logger.warn('[A2AClient] Response missing Content-Type header', {
+        status: response.status,
+        url: response.url,
+      });
+      return; // Allow missing header for backwards compatibility
+    }
+
+    if (!contentType.includes('application/json')) {
+      throw createError(ErrorCodes.INVALID_CONTENT_TYPE, contentType, response.status);
+    }
+  }
+
   private async handleResponse<T>(response: Response): Promise<T> {
+    // Validate Content-Type before attempting to parse JSON
+    this.validateContentType(response);
+
     if (!response.ok) {
       // Handle 401 Unauthorized specifically
       if (response.status === 401) {

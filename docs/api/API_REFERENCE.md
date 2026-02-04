@@ -1,7 +1,7 @@
 # MeMesh MCP Server - API Reference
 
-**Version**: 2.6.6
-**Last Updated**: 2026-02-03
+**Version**: 2.7.0
+**Last Updated**: 2026-02-04
 **Protocol**: Model Context Protocol (MCP)
 
 ---

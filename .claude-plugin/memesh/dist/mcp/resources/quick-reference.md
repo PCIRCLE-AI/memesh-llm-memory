@@ -1,6 +1,6 @@
 # MeMesh Quick Reference
 
-**Version: 2.6.0
+**Version: 2.7.0
 
 ## 🚀 Quick Commands
 

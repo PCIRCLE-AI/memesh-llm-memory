@@ -16,6 +16,10 @@ import { A2AToolHandlers } from '../../../../src/mcp/handlers/A2AToolHandlers.js
 import { ValidationError } from '../../../../src/errors/index.js';
 import type { A2AClient } from '../../../../src/a2a/client/A2AClient.js';
 import type { AgentRegistry } from '../../../../src/core/AgentRegistry.js';
+import {
+  createMockA2AClient,
+  createMockAgentRegistry,
+} from '../../../utils/mock-factories.js';
 
 describe('A2AToolHandlers', () => {
   let handlers: A2AToolHandlers;
@@ -23,8 +27,8 @@ describe('A2AToolHandlers', () => {
   let mockRegistry: AgentRegistry;
 
   beforeEach(() => {
-    // Mock A2AClient
-    mockClient = {
+    // Create complete A2AClient mock with overrides for methods used in tests
+    mockClient = createMockA2AClient({
       sendMessage: vi.fn().mockResolvedValue({
         taskId: 'task-123',
         state: 'SUBMITTED',
@@ -66,10 +70,12 @@ describe('A2AToolHandlers', () => {
           createdAt: new Date().toISOString(),
         },
       ]),
-    } as unknown as A2AClient;
+      // Other methods (getAgentCard, cancelTask, listAvailableAgents) are stubbed
+      // by createMockA2AClient but not used in these tests
+    });
 
-    // Mock AgentRegistry
-    mockRegistry = {
+    // Create complete AgentRegistry mock with overrides for methods used in tests
+    mockRegistry = createMockAgentRegistry({
       listActive: vi.fn().mockReturnValue([
         {
           agentId: 'agent-1',
@@ -86,7 +92,9 @@ describe('A2AToolHandlers', () => {
           lastHeartbeat: new Date().toISOString(),
         },
       ]),
-    } as unknown as AgentRegistry;
+      // Other methods (getAgent, hasAgent, etc.) are stubbed
+      // by createMockAgentRegistry but not used in these tests
+    });
 
     handlers = new A2AToolHandlers(mockClient, mockRegistry);
   });

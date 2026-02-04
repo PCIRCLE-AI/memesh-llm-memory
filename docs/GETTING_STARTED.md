@@ -126,7 +126,11 @@ Available Commands:
   get-workflow-guidance - Get recommendations for current phase
   generate-tests <file> - Auto-generate comprehensive tests
 
-Status: ✅ Connected (7 tools available)
+  buddy-secret-store    - Store credentials securely
+  buddy-secret-get      - Retrieve stored secrets
+  ... (18 tools total)
+
+Status: ✅ Connected (18 tools available)
 ```
 
 ### 2. Test Memory Storage
@@ -408,6 +412,6 @@ Install MeMesh, run `buddy-help`, and never explain your architecture twice agai
 
 ---
 
-**Version**: 2.6.6
-**Last Updated**: 2026-02-03
+**Version**: 2.7.0
+**Last Updated**: 2026-02-04
 **Not affiliated with Anthropic PBC** • Independent open-source project

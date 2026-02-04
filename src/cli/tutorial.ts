@@ -8,7 +8,6 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 import boxen from 'boxen';
-import { ProgressIndicator } from '../ui/ProgressIndicator.js';
 import { logger } from '../utils/logger.js';
 
 export interface TutorialProgress {

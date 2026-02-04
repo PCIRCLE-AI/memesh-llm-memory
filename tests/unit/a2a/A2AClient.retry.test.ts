@@ -11,6 +11,33 @@ import { A2AClient } from '../../../src/a2a/client/A2AClient.js';
 const mockFetch = vi.fn();
 global.fetch = mockFetch as any;
 
+/**
+ * Helper to create a mock Response with proper headers for validateContentType
+ * @param options - Response options
+ * @returns Mock Response object
+ */
+function createMockResponse(options: {
+  ok: boolean;
+  status: number;
+  data?: unknown;
+  contentType?: string;
+}) {
+  return {
+    ok: options.ok,
+    status: options.status,
+    url: 'http://localhost:3000/test',
+    headers: {
+      get: (name: string) => {
+        if (name.toLowerCase() === 'content-type') {
+          return options.contentType ?? 'application/json';
+        }
+        return null;
+      },
+    },
+    json: async () => options.data,
+  };
+}
+
 describe('A2AClient - Retry Mechanism', () => {
   let client: A2AClient;
   const mockRegistry = {
@@ -45,30 +72,30 @@ describe('A2AClient - Retry Mechanism', () => {
     it('should retry on 500 Internal Server Error', async () => {
       // First 2 attempts fail with 500, 3rd succeeds
       mockFetch
-        .mockResolvedValueOnce({
+        .mockResolvedValueOnce(createMockResponse({
           ok: false,
           status: 500,
-          json: async () => ({
+          data: {
             success: false,
             error: { code: 'INTERNAL_ERROR', message: 'Server error' },
-          }),
-        })
-        .mockResolvedValueOnce({
+          },
+        }))
+        .mockResolvedValueOnce(createMockResponse({
           ok: false,
           status: 500,
-          json: async () => ({
+          data: {
             success: false,
             error: { code: 'INTERNAL_ERROR', message: 'Server error' },
-          }),
-        })
-        .mockResolvedValueOnce({
+          },
+        }))
+        .mockResolvedValueOnce(createMockResponse({
           ok: true,
           status: 200,
-          json: async () => ({
+          data: {
             success: true,
             data: { taskId: 'task-123', status: 'PENDING' },
-          }),
-        });
+          },
+        }));
 
       const result = await client.sendMessage('agent-b', {
         sourceAgentId: 'agent-a',
@@ -82,22 +109,22 @@ describe('A2AClient - Retry Mechanism', () => {
 
     it('should retry on 503 Service Unavailable', async () => {
       mockFetch
-        .mockResolvedValueOnce({
+        .mockResolvedValueOnce(createMockResponse({
           ok: false,
           status: 503,
-          json: async () => ({
+          data: {
             success: false,
             error: { code: 'SERVICE_UNAVAILABLE', message: 'Service down' },
-          }),
-        })
-        .mockResolvedValueOnce({
+          },
+        }))
+        .mockResolvedValueOnce(createMockResponse({
           ok: true,
           status: 200,
-          json: async () => ({
+          data: {
             success: true,
             data: { taskId: 'task-456', status: 'PENDING' },
-          }),
-        });
+          },
+        }));
 
       const result = await client.sendMessage('agent-b', {
         sourceAgentId: 'agent-a',
@@ -111,22 +138,22 @@ describe('A2AClient - Retry Mechanism', () => {
 
     it('should retry on 502 Bad Gateway', async () => {
       mockFetch
-        .mockResolvedValueOnce({
+        .mockResolvedValueOnce(createMockResponse({
           ok: false,
           status: 502,
-          json: async () => ({
+          data: {
             success: false,
             error: { code: 'BAD_GATEWAY', message: 'Gateway error' },
-          }),
-        })
-        .mockResolvedValueOnce({
+          },
+        }))
+        .mockResolvedValueOnce(createMockResponse({
           ok: true,
           status: 200,
-          json: async () => ({
+          data: {
             success: true,
             data: { taskId: 'task-789', status: 'PENDING' },
-          }),
-        });
+          },
+        }));
 
       const result = await client.sendMessage('agent-b', {
         sourceAgentId: 'agent-a',
@@ -142,22 +169,22 @@ describe('A2AClient - Retry Mechanism', () => {
   describe('Retry on 429 Rate Limit', () => {
     it('should retry on 429 Too Many Requests', async () => {
       mockFetch
-        .mockResolvedValueOnce({
+        .mockResolvedValueOnce(createMockResponse({
           ok: false,
           status: 429,
-          json: async () => ({
+          data: {
             success: false,
             error: { code: 'RATE_LIMIT', message: 'Too many requests' },
-          }),
-        })
-        .mockResolvedValueOnce({
+          },
+        }))
+        .mockResolvedValueOnce(createMockResponse({
           ok: true,
           status: 200,
-          json: async () => ({
+          data: {
             success: true,
             data: { taskId: 'task-rate-limit', status: 'PENDING' },
-          }),
-        });
+          },
+        }));
 
       const result = await client.sendMessage('agent-b', {
         sourceAgentId: 'agent-a',
@@ -172,14 +199,14 @@ describe('A2AClient - Retry Mechanism', () => {
 
   describe('Do NOT retry on 4xx client errors', () => {
     it('should NOT retry on 401 Unauthorized', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce(createMockResponse({
         ok: false,
         status: 401,
-        json: async () => ({
+        data: {
           success: false,
           error: { code: 'UNAUTHORIZED', message: 'Invalid token' },
-        }),
-      });
+        },
+      }));
 
       await expect(
         client.sendMessage('agent-b', {
@@ -194,14 +221,14 @@ describe('A2AClient - Retry Mechanism', () => {
     });
 
     it('should NOT retry on 403 Forbidden', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce(createMockResponse({
         ok: false,
         status: 403,
-        json: async () => ({
+        data: {
           success: false,
           error: { code: 'FORBIDDEN', message: 'Access denied' },
-        }),
-      });
+        },
+      }));
 
       await expect(
         client.sendMessage('agent-b', {
@@ -215,14 +242,14 @@ describe('A2AClient - Retry Mechanism', () => {
     });
 
     it('should NOT retry on 404 Not Found', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce(createMockResponse({
         ok: false,
         status: 404,
-        json: async () => ({
+        data: {
           success: false,
           error: { code: 'NOT_FOUND', message: 'Resource not found' },
-        }),
-      });
+        },
+      }));
 
       await expect(
         client.sendMessage('agent-b', {
@@ -236,14 +263,14 @@ describe('A2AClient - Retry Mechanism', () => {
     });
 
     it('should NOT retry on 400 Bad Request', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce(createMockResponse({
         ok: false,
         status: 400,
-        json: async () => ({
+        data: {
           success: false,
           error: { code: 'BAD_REQUEST', message: 'Invalid request' },
-        }),
-      });
+        },
+      }));
 
       await expect(
         client.sendMessage('agent-b', {
@@ -260,14 +287,14 @@ describe('A2AClient - Retry Mechanism', () => {
   describe('Retry exhaustion', () => {
     it('should throw error after max retries exhausted', async () => {
       // All attempts fail
-      mockFetch.mockResolvedValue({
+      mockFetch.mockResolvedValue(createMockResponse({
         ok: false,
         status: 503,
-        json: async () => ({
+        data: {
           success: false,
           error: { code: 'SERVICE_UNAVAILABLE', message: 'Service down' },
-        }),
-      });
+        },
+      }));
 
       await expect(
         client.sendMessage('agent-b', {
@@ -286,14 +313,14 @@ describe('A2AClient - Retry Mechanism', () => {
     it('should retry on network timeout', async () => {
       mockFetch
         .mockRejectedValueOnce(new Error('ETIMEDOUT'))
-        .mockResolvedValueOnce({
+        .mockResolvedValueOnce(createMockResponse({
           ok: true,
           status: 200,
-          json: async () => ({
+          data: {
             success: true,
             data: { taskId: 'task-network', status: 'PENDING' },
-          }),
-        });
+          },
+        }));
 
       const result = await client.sendMessage('agent-b', {
         sourceAgentId: 'agent-a',
@@ -308,14 +335,14 @@ describe('A2AClient - Retry Mechanism', () => {
     it('should retry on connection refused', async () => {
       mockFetch
         .mockRejectedValueOnce(new Error('ECONNREFUSED'))
-        .mockResolvedValueOnce({
+        .mockResolvedValueOnce(createMockResponse({
           ok: true,
           status: 200,
-          json: async () => ({
+          data: {
             success: true,
             data: { taskId: 'task-conn', status: 'PENDING' },
-          }),
-        });
+          },
+        }));
 
       const result = await client.sendMessage('agent-b', {
         sourceAgentId: 'agent-a',
@@ -331,18 +358,18 @@ describe('A2AClient - Retry Mechanism', () => {
   describe('getTask retry behavior', () => {
     it('should retry getTask on 500 error', async () => {
       mockFetch
-        .mockResolvedValueOnce({
+        .mockResolvedValueOnce(createMockResponse({
           ok: false,
           status: 500,
-          json: async () => ({
+          data: {
             success: false,
             error: { code: 'INTERNAL_ERROR', message: 'Server error' },
-          }),
-        })
-        .mockResolvedValueOnce({
+          },
+        }))
+        .mockResolvedValueOnce(createMockResponse({
           ok: true,
           status: 200,
-          json: async () => ({
+          data: {
             success: true,
             data: {
               id: 'task-123',
@@ -352,8 +379,8 @@ describe('A2AClient - Retry Mechanism', () => {
               messages: [],
               artifacts: [],
             },
-          }),
-        });
+          },
+        }));
 
       const task = await client.getTask('agent-b', 'task-123');
 
@@ -363,14 +390,14 @@ describe('A2AClient - Retry Mechanism', () => {
     });
 
     it('should NOT retry getTask on 404', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce(createMockResponse({
         ok: false,
         status: 404,
-        json: async () => ({
+        data: {
           success: false,
           error: { code: 'NOT_FOUND', message: 'Task not found' },
-        }),
-      });
+        },
+      }));
 
       await expect(client.getTask('agent-b', 'task-404')).rejects.toThrow();
 
@@ -383,14 +410,14 @@ describe('A2AClient - Retry Mechanism', () => {
       const customClient = new A2AClient({ maxRetries: 1 });
       (customClient as any).registry = mockRegistry;
 
-      mockFetch.mockResolvedValue({
+      mockFetch.mockResolvedValue(createMockResponse({
         ok: false,
         status: 503,
-        json: async () => ({
+        data: {
           success: false,
           error: { code: 'SERVICE_UNAVAILABLE', message: 'Down' },
-        }),
-      });
+        },
+      }));
 
       await expect(
         customClient.sendMessage('agent-b', {
@@ -463,14 +490,14 @@ describe('A2AClient - Retry Mechanism', () => {
       // These are real network issues, not local validation errors
       mockFetch
         .mockRejectedValueOnce(new Error('ETIMEDOUT'))
-        .mockResolvedValueOnce({
+        .mockResolvedValueOnce(createMockResponse({
           ok: true,
           status: 200,
-          json: async () => ({
+          data: {
             success: true,
             data: { taskId: 'task-network-retry', status: 'PENDING' },
-          }),
-        });
+          },
+        }));
 
       const result = await client.sendMessage('agent-b', {
         sourceAgentId: 'agent-a',

@@ -1,6 +1,6 @@
 {
   "name": "@pcircle/memesh",
-  "version": "2.6.7",
+  "version": "2.7.0",
   "description": "MeMesh - Your AI memory mesh for Claude Code. Smart routing, persistent memory, and intelligent task management.",
   "main": "dist/index.js",
   "type": "module",

@@ -23,7 +23,6 @@ import type { UninstallManager } from '../../../management/index.js';
 import type { DevelopmentButler } from '../../../agents/DevelopmentButler.js';
 import type { CheckpointDetector } from '../../../core/CheckpointDetector.js';
 import type { HookIntegration } from '../../../core/HookIntegration.js';
-import type { PlanningEngine } from '../../../planning/PlanningEngine.js';
 import type { ProjectMemoryManager } from '../../../memory/ProjectMemoryManager.js';
 import type { HumanInLoopUI } from '../../HumanInLoopUI.js';
 import type { KnowledgeGraph } from '../../../knowledge-graph/index.js';
@@ -41,7 +40,6 @@ describe('ToolHandlers', () => {
   let mockDevelopmentButler: DevelopmentButler;
   let mockCheckpointDetector: CheckpointDetector;
   let mockHookIntegration: HookIntegration;
-  let mockPlanningEngine: PlanningEngine;
   let mockProjectMemoryManager: ProjectMemoryManager;
   let mockKnowledgeGraph: KnowledgeGraph;
   let mockUI: HumanInLoopUI;
@@ -115,32 +113,6 @@ describe('ToolHandlers', () => {
       processToolUse: vi.fn().mockResolvedValue(undefined),
     } as unknown as HookIntegration;
 
-    mockPlanningEngine = {
-      generatePlan: vi.fn().mockResolvedValue({
-        title: 'Test Feature Plan',
-        goal: 'Implement test feature',
-        architecture: 'Layered architecture',
-        techStack: ['TypeScript', 'React'],
-        totalEstimatedTime: '4 hours',
-        tasks: [
-          {
-            id: 'task-1',
-            description: 'Setup project structure',
-            priority: 'high',
-            estimatedDuration: '1 hour',
-            suggestedAgent: 'backend-developer',
-            dependencies: [],
-            steps: ['Create folders', 'Initialize configs'],
-            files: {
-              create: ['src/index.ts'],
-              modify: [],
-              test: [],
-            },
-          },
-        ],
-      }),
-    } as unknown as PlanningEngine;
-
     mockProjectMemoryManager = {
       recallRecentWork: vi.fn().mockResolvedValue([
         {
@@ -180,7 +152,6 @@ describe('ToolHandlers', () => {
       mockDevelopmentButler,
       mockCheckpointDetector,
       mockHookIntegration,
-      mockPlanningEngine,
       mockProjectMemoryManager,
       mockKnowledgeGraph,
       mockUI,

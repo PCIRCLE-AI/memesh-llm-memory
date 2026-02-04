@@ -560,30 +560,33 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
     };
     const buddySecretStoreTool = {
         name: 'buddy-secret-store',
-        description: '🔐 MeMesh: Store a secret (API key, token, password) securely with AES-256-GCM encryption. Never transmitted over network.',
+        description: '🔐 Securely store API keys, tokens, or passwords. USE THIS when user shares sensitive credentials. ' +
+            'Encrypted with AES-256-GCM, stored locally only (never transmitted). ' +
+            'Example: User says "save my OpenAI key sk-xxx" → call with name="openai_api_key", value="sk-xxx", type="api_key". ' +
+            'After storing, use buddy-secret-get to retrieve when needed for API calls.',
         inputSchema: {
             type: 'object',
             properties: {
                 name: {
                     type: 'string',
-                    description: 'Name/identifier for the secret (e.g., "openai-api-key")',
+                    description: 'Unique identifier for retrieval. Use snake_case, be descriptive. Examples: "openai_api_key", "github_token", "db_password"',
                 },
                 value: {
                     type: 'string',
-                    description: 'The secret value to store',
+                    description: 'The actual secret value (API key, token, password). Will be encrypted before storage.',
                 },
                 type: {
                     type: 'string',
                     enum: ['api_key', 'token', 'password', 'other'],
-                    description: 'Type of secret for categorization',
+                    description: 'Category: api_key (OpenAI/Stripe/etc), token (OAuth/JWT), password (DB/service), other',
                 },
                 description: {
                     type: 'string',
-                    description: 'Optional description of what this secret is for',
+                    description: 'What this secret is for. Helps identify purpose later. Example: "Production OpenAI API key for GPT-4"',
                 },
                 expiresIn: {
                     type: 'string',
-                    description: 'Optional expiry duration (e.g., "30d", "24h", "60m"). Default: 30 days',
+                    description: 'Auto-delete after duration. Format: "30d" (days), "24h" (hours), "60m" (minutes). Default: 30d',
                 },
             },
             required: ['name', 'value', 'type'],
@@ -598,13 +601,16 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
     };
     const buddySecretGetTool = {
         name: 'buddy-secret-get',
-        description: '🔓 MeMesh: Retrieve a stored secret by name from MeMesh secure storage.',
+        description: '🔓 Retrieve a stored secret to use in API calls or configurations. USE THIS when you need a credential for an operation. ' +
+            'Returns the decrypted value directly. Example workflow: User asks "call OpenAI API" → ' +
+            'buddy-secret-get name="openai_api_key" → use returned value in API request header. ' +
+            'If unsure what secrets exist, call buddy-secret-list first.',
         inputSchema: {
             type: 'object',
             properties: {
                 name: {
                     type: 'string',
-                    description: 'Name of the secret to retrieve',
+                    description: 'Exact name used when storing. Run buddy-secret-list if you don\'t know available names.',
                 },
             },
             required: ['name'],
@@ -619,7 +625,9 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
     };
     const buddySecretListTool = {
         name: 'buddy-secret-list',
-        description: '📋 MeMesh: List all secrets stored in MeMesh (names and metadata only, NOT values).',
+        description: '📋 List all stored secrets (names, types, expiry dates - NOT the actual values). USE THIS to discover what credentials are available ' +
+            'before calling buddy-secret-get. Shows: name, type (api_key/token/password), creation date, expiry. ' +
+            'Example: User asks "do I have an API key stored?" → call this to check. No parameters needed.',
         inputSchema: {
             type: 'object',
             properties: {},
@@ -634,13 +642,16 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
     };
     const buddySecretDeleteTool = {
         name: 'buddy-secret-delete',
-        description: '🗑️ MeMesh: Delete a stored secret from MeMesh secure storage.',
+        description: '🗑️ Permanently delete a stored secret. USE THIS for: (1) Key rotation - delete old key after storing new one, ' +
+            '(2) Cleanup - remove unused credentials, (3) Security - remove compromised keys immediately. ' +
+            'CAUTION: Irreversible. Verify the name with buddy-secret-list first if unsure. ' +
+            'Example: User says "remove my old API key" → buddy-secret-delete name="old_api_key".',
         inputSchema: {
             type: 'object',
             properties: {
                 name: {
                     type: 'string',
-                    description: 'Name of the secret to delete',
+                    description: 'Exact name of secret to delete. Use buddy-secret-list to confirm name before deleting.',
                 },
             },
             required: ['name'],

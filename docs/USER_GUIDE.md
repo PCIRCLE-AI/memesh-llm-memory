@@ -1513,6 +1513,7 @@ Check logs:
 
 ### Version History
 
+- **v2.7.0**: Daemon socket cleanup fix, Memory retention periods updated (30/90 days), Auto-memory hooks improvements, Documentation updates
 - **v2.6.6**: ErrorClassifier integration, Enhanced error handling
 - **v2.6.5**: Interactive tutorial, Improved QUICK_START
 - **v2.6.4**: Response formatting improvements, Visual hierarchy

@@ -107,23 +107,106 @@ export interface TaskCompletionReport {
 // ============================================
 
 /**
+ * SQLite query result with status information
+ */
+interface SqliteQueryResult {
+  /** Query output as string */
+  output: string;
+  /** Whether the query executed successfully */
+  success: boolean;
+  /** Number of rows changed (for INSERT/UPDATE/DELETE) */
+  changes?: number;
+  /** Error message if failed */
+  error?: string;
+}
+
+/**
  * Execute SQLite query safely with parameterized values
  *
  * @param dbPath - Path to SQLite database
  * @param query - SQL query (use ? for parameters)
- * @param params - Optional parameter values to bind
+ * @param params - Optional parameter values to bind (any type supported)
  * @returns Query result as string, empty string on error
  */
-function sqliteQuery(dbPath: string, query: string, params?: string[]): string {
+function sqliteQuery(dbPath: string, query: string, params?: unknown[]): string {
+  const result = sqliteQueryWithStatus(dbPath, query, params);
+  return result.output;
+}
+
+/**
+ * Safely escape a value for SQLite query interpolation
+ *
+ * Handles different data types appropriately:
+ * - null/undefined → NULL (unquoted SQL keyword)
+ * - numbers → numeric literal (unquoted)
+ * - booleans → 1 or 0 (SQLite convention)
+ * - strings → single-quoted with escaped quotes and null byte rejection
+ *
+ * Security: Rejects strings containing null bytes (\x00) which could be
+ * used for SQL injection attacks by terminating strings early.
+ *
+ * @param value - Value to escape (any type)
+ * @returns SQL-safe string representation
+ * @throws Error if string contains null bytes
+ */
+function escapeSqlValue(value: unknown): string {
+  // Handle null/undefined as SQL NULL
+  if (value === null || value === undefined) {
+    return 'NULL';
+  }
+
+  // Handle numbers directly (no quotes needed)
+  if (typeof value === 'number') {
+    // Guard against NaN and Infinity which are not valid SQL
+    if (!Number.isFinite(value)) {
+      return 'NULL';
+    }
+    return String(value);
+  }
+
+  // Handle booleans as SQLite integers (1/0)
+  if (typeof value === 'boolean') {
+    return value ? '1' : '0';
+  }
+
+  // Convert to string for all other types
+  const strValue = String(value);
+
+  // Security: Reject null bytes which could truncate strings
+  // This prevents a class of SQL injection attacks
+  if (strValue.includes('\x00')) {
+    throw new Error('SQL parameter contains null byte - potential injection attack');
+  }
+
+  // Escape single quotes by doubling them (SQL standard)
+  const escaped = strValue.replace(/'/g, "''");
+
+  return `'${escaped}'`;
+}
+
+/**
+ * Execute SQLite query with detailed status information
+ *
+ * Returns success/failure status and number of rows changed,
+ * enabling atomic operations that need to verify actual changes.
+ *
+ * @param dbPath - Path to SQLite database
+ * @param query - SQL query (use ? for parameters)
+ * @param params - Optional parameter values to bind
+ * @returns Query result with status information
+ */
+function sqliteQueryWithStatus(
+  dbPath: string,
+  query: string,
+  params?: unknown[]
+): SqliteQueryResult {
   try {
     const args = ['-separator', '|', dbPath];
 
     let finalQuery = query;
     if (params && params.length > 0) {
-      // Properly escape parameters: escape single quotes and wrap in quotes
-      const escapedParams = params.map((p) =>
-        p === null || p === undefined ? 'NULL' : `'${String(p).replace(/'/g, "''")}'`
-      );
+      // Escape each parameter using comprehensive type-aware escaping
+      const escapedParams = params.map(escapeSqlValue);
 
       // Replace ? placeholders with escaped values
       let paramIndex = 0;
@@ -139,9 +222,17 @@ function sqliteQuery(dbPath: string, query: string, params?: string[]): string {
       encoding: 'utf-8',
       timeout: 5000,
     });
-    return result.trim();
-  } catch {
-    return '';
+    return {
+      output: result.trim(),
+      success: true,
+    };
+  } catch (e) {
+    const error = e instanceof Error ? e.message : String(e);
+    return {
+      output: '',
+      success: false,
+      error,
+    };
   }
 }
 
@@ -212,42 +303,113 @@ function getOnlineAgents(): string[] {
 }
 
 /**
- * Pick an available name from the pool using atomic reservation
+ * Generate a unique fallback name when all pool names are taken
  *
- * Uses INSERT OR IGNORE to atomically claim a name, preventing race conditions
- * where two agents starting simultaneously could get the same name.
+ * Uses timestamp + random suffix to ensure uniqueness across concurrent agents.
  */
-function pickAvailableName(): string {
-  const usedNames = getUsedNames();
-  const now = new Date().toISOString();
+function generateUniqueFallbackName(): string {
+  const timestamp = Date.now().toString(36);
+  const random = Math.random().toString(36).substring(2, 6);
+  return `Agent-${timestamp}-${random}`;
+}
 
-  for (const name of NAME_POOL) {
-    if (!usedNames.includes(name)) {
-      if (fs.existsSync(KG_DB_PATH)) {
-        const entityName = `Online Agent: ${name}`;
-        // INSERT OR IGNORE is atomic
-        sqliteQuery(
-          KG_DB_PATH,
-          'INSERT OR IGNORE INTO entities (name, type, created_at) VALUES (?, ?, ?)',
-          [entityName, 'session_identity', now]
-        );
+/**
+ * Attempt to atomically claim a name in the database
+ *
+ * Uses a single atomic INSERT that will fail if the name already exists.
+ * This prevents TOCTOU race conditions where two agents could claim the same name.
+ *
+ * The key insight is that INSERT OR IGNORE doesn't tell us if a row was actually
+ * inserted (it silently succeeds even when ignoring). Instead, we use:
+ * INSERT ... SELECT ... WHERE NOT EXISTS + changes()
+ *
+ * This ensures:
+ * 1. The check and insert happen atomically within SQLite
+ * 2. changes() tells us if WE inserted the row (1) or if it already existed (0)
+ *
+ * @param entityName - The full entity name to claim (e.g., "Online Agent: Alpha")
+ * @param now - ISO timestamp for creation
+ * @returns true if name was successfully claimed, false if already taken
+ */
+function tryClaimName(entityName: string, now: string): boolean {
+  // Use INSERT ... SELECT ... WHERE NOT EXISTS for atomic check-and-insert
+  // This pattern ensures that:
+  // 1. If name doesn't exist: INSERT succeeds, changes() returns 1
+  // 2. If name exists: INSERT is skipped, changes() returns 0
+  //
+  // Unlike INSERT OR IGNORE, this approach lets us distinguish between
+  // "we claimed it" and "someone else had it"
+  const atomicInsertQuery = `
+    INSERT INTO entities (name, type, created_at)
+    SELECT ?, 'session_identity', ?
+    WHERE NOT EXISTS (SELECT 1 FROM entities WHERE name = ?);
+    SELECT changes();
+  `;
 
-        const verifyResult = sqliteQuery(
-          KG_DB_PATH,
-          'SELECT id FROM entities WHERE name = ?',
-          [entityName]
-        );
+  const result = sqliteQueryWithStatus(KG_DB_PATH, atomicInsertQuery, [entityName, now, entityName]);
 
-        if (verifyResult) {
-          return name;
-        }
-        continue;
-      }
-      return name;
-    }
+  if (!result.success) {
+    return false;
   }
 
-  return `Agent-${Date.now().toString(36)}`;
+  // changes() returns "1" if a row was inserted, "0" if not
+  const changesCount = parseInt(result.output, 10);
+  return changesCount === 1;
+}
+
+/**
+ * Pick an available name from the pool using atomic reservation
+ *
+ * Uses atomic INSERT with WHERE NOT EXISTS to prevent TOCTOU race conditions.
+ * Two agents starting simultaneously will each get a different name because:
+ * 1. Each INSERT is atomic at the database level
+ * 2. Only one INSERT will succeed for a given name
+ * 3. The loser's changes() returns 0, prompting them to try the next name
+ *
+ * This replaces the previous vulnerable implementation that had:
+ * - Check: getUsedNames() query
+ * - Time gap (race window)
+ * - Use: INSERT OR IGNORE
+ * - Verify: SELECT (but couldn't distinguish "I inserted" from "someone else did")
+ *
+ * @returns The claimed agent name (from pool or generated fallback)
+ */
+function pickAvailableName(): string {
+  if (!fs.existsSync(KG_DB_PATH)) {
+    // No database - just return first available from pool
+    // (no persistence means no race condition risk)
+    return NAME_POOL[0];
+  }
+
+  const now = new Date().toISOString();
+
+  // Try each name in the pool with atomic claim
+  for (const name of NAME_POOL) {
+    const entityName = `Online Agent: ${name}`;
+
+    if (tryClaimName(entityName, now)) {
+      return name;
+    }
+    // Name already taken (by another agent), try next one
+  }
+
+  // All pool names taken - generate unique fallback
+  // Use a loop with atomic claims for fallback names too (handles unlikely collisions)
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const fallbackName = generateUniqueFallbackName();
+    const entityName = `Online Agent: ${fallbackName}`;
+
+    if (tryClaimName(entityName, now)) {
+      return fallbackName;
+    }
+    // Extremely unlikely collision - try again with new timestamp/random
+  }
+
+  // Last resort: include process ID for guaranteed uniqueness
+  const ultimateFallback = `Agent-${Date.now().toString(36)}-${process.pid}`;
+  const entityName = `Online Agent: ${ultimateFallback}`;
+  tryClaimName(entityName, now); // Best effort, return name regardless
+  return ultimateFallback;
 }
 
 /**
@@ -346,19 +508,27 @@ export function agentCheckIn(): AgentIdentity {
 
 /**
  * Check for pending tasks - uses JSON output for robust parsing
+ *
+ * @param agentId - Agent ID to filter tasks by (currently returns all SUBMITTED tasks,
+ *                  agentId reserved for future per-agent task assignment feature)
  */
-export function checkPendingTasks(_agentId: string): A2ATask[] {
+export function checkPendingTasks(agentId?: string): A2ATask[] {
   const taskDbPath = path.join(CCB_DATA_DIR, 'a2a-tasks.db');
   if (!fs.existsSync(taskDbPath)) return [];
+
+  // Build query - agentId filter is optional for future per-agent task routing
+  const baseQuery =
+    'SELECT id, description, state, created_at as createdAt, sender_id as senderId FROM tasks WHERE state=\'SUBMITTED\'';
+
+  // Use escapeSqlValue for safe parameter handling (prevents SQL injection)
+  const query = agentId
+    ? `${baseQuery} AND assigned_agent_id=${escapeSqlValue(agentId)} ORDER BY created_at DESC LIMIT 10`
+    : `${baseQuery} ORDER BY created_at DESC LIMIT 10`;
 
   try {
     const result = execFileSync(
       'sqlite3',
-      [
-        '-json',
-        taskDbPath,
-        "SELECT id, description, state, created_at as createdAt, sender_id as senderId FROM tasks WHERE state='SUBMITTED' ORDER BY created_at DESC LIMIT 10",
-      ],
+      ['-json', taskDbPath, query],
       { encoding: 'utf-8', timeout: 5000 }
     );
 
@@ -380,10 +550,10 @@ export function checkPendingTasks(_agentId: string): A2ATask[] {
       senderId: row.senderId || '',
     }));
   } catch {
-    // Fallback for older SQLite
-    const query =
+    // Fallback for older SQLite (does not support agentId filtering in legacy mode)
+    const fallbackQuery =
       "SELECT id, description, state, created_at, sender_id FROM tasks WHERE state='SUBMITTED' ORDER BY created_at DESC LIMIT 10";
-    const result = sqliteQuery(taskDbPath, query);
+    const result = sqliteQuery(taskDbPath, fallbackQuery);
 
     if (!result) return [];
 

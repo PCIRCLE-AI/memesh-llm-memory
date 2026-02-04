@@ -51,6 +51,10 @@ export const ErrorMessages = {
   // HTTP Errors
   [ErrorCodes.HTTP_ERROR]: (status: number, message?: string) =>
     `HTTP error ${status}${message ? `: ${message}` : ''}`,
+  [ErrorCodes.REQUEST_TIMEOUT]: (url: string, timeoutMs: number) =>
+    `Request to ${url} aborted due to timeout (${timeoutMs}ms)`,
+  [ErrorCodes.INVALID_CONTENT_TYPE]: (contentType: string, status: number) =>
+    `Unexpected Content-Type: ${contentType}, expected application/json (status: ${status})`,
 
   // Generic
   [ErrorCodes.UNKNOWN_ERROR]: 'An unknown error occurred',

@@ -18,7 +18,6 @@ import { EventEmitter } from 'events';
 import { IpcTransport } from './IpcTransport.js';
 import {
   MessageType,
-  PROTOCOL_VERSION,
   parseMessage,
   serializeMessage,
   createHandshakeAck,

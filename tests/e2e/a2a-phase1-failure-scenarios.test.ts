@@ -124,7 +124,8 @@ describe('A2A Phase 1.0 - E2E Failure Scenarios', () => {
       expect(response.status).toBe(400);
       const error = await response.json();
       expect(error.success).toBe(false);
-      expect(error.error.code).toBe('INVALID_REQUEST');
+      // VALIDATION_ERROR is returned by the new Zod schema validation (MAJOR-1 fix)
+      expect(error.error.code).toBe('VALIDATION_ERROR');
       expect(error.error.message).toContain('message.parts');
     })
   );

@@ -7,7 +7,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ResponseFormatter } from '../../src/ui/ResponseFormatter.js';
-import type { AgentResponse } from '../../src/types/agent-types.js';
+import type { AgentResponse } from '../../src/ui/ResponseFormatter.js';
 
 describe('Error Messages - User-First', () => {
   let formatter: ResponseFormatter;

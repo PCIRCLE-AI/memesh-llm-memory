@@ -15,77 +15,93 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { A2AToolHandlers } from '../../../../src/mcp/handlers/A2AToolHandlers.js';
 import { ValidationError } from '../../../../src/errors/index.js';
 import type { A2AClient } from '../../../../src/a2a/client/A2AClient.js';
-import type { AgentRegistry } from '../../../../src/core/AgentRegistry.js';
+import type { AgentRegistry } from '../../../../src/a2a/storage/AgentRegistry.js';
+import type { MockedFunction } from '../../../utils/vitest-mock-types.js';
 
 describe('A2AToolHandlers', () => {
   let handlers: A2AToolHandlers;
   let mockClient: A2AClient;
   let mockRegistry: AgentRegistry;
 
+  // Properly typed mock functions
+  let mockSendMessage: MockedFunction<A2AClient['sendMessage']>;
+  let mockGetTask: MockedFunction<A2AClient['getTask']>;
+  let mockListTasks: MockedFunction<A2AClient['listTasks']>;
+  let mockListActive: MockedFunction<AgentRegistry['listActive']>;
+
   beforeEach(() => {
-    // Mock A2AClient
-    mockClient = {
-      sendMessage: vi.fn().mockResolvedValue({
-        taskId: 'task-123',
+    // Create properly typed mock functions
+    mockSendMessage = vi.fn().mockResolvedValue({
+      taskId: 'task-123',
+      state: 'SUBMITTED',
+    }) as MockedFunction<A2AClient['sendMessage']>;
+
+    mockGetTask = vi.fn().mockResolvedValue({
+      id: 'task-123',
+      state: 'WORKING',
+      name: 'Test Task',
+      description: 'Test task description',
+      priority: 'high',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      messages: [
+        {
+          role: 'user',
+          parts: [
+            {
+              type: 'text',
+              text: 'Test message',
+            },
+          ],
+        },
+      ],
+      artifacts: [],
+    }) as MockedFunction<A2AClient['getTask']>;
+
+    mockListTasks = vi.fn().mockResolvedValue([
+      {
+        id: 'task-1',
         state: 'SUBMITTED',
-      }),
-      getTask: vi.fn().mockResolvedValue({
-        id: 'task-123',
-        state: 'WORKING',
-        name: 'Test Task',
-        description: 'Test task description',
+        name: 'Task 1',
         priority: 'high',
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        messages: [
-          {
-            role: 'user',
-            parts: [
-              {
-                type: 'text',
-                text: 'Test message',
-              },
-            ],
-          },
-        ],
-        artifacts: [],
-      }),
-      listTasks: vi.fn().mockResolvedValue([
-        {
-          id: 'task-1',
-          state: 'SUBMITTED',
-          name: 'Task 1',
-          priority: 'high',
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: 'task-2',
-          state: 'WORKING',
-          name: 'Task 2',
-          priority: 'medium',
-          createdAt: new Date().toISOString(),
-        },
-      ]),
+      },
+      {
+        id: 'task-2',
+        state: 'WORKING',
+        name: 'Task 2',
+        priority: 'medium',
+        createdAt: new Date().toISOString(),
+      },
+    ]) as MockedFunction<A2AClient['listTasks']>;
+
+    mockListActive = vi.fn().mockReturnValue([
+      {
+        agentId: 'agent-1',
+        baseUrl: 'http://localhost:3000',
+        port: 3000,
+        status: 'active',
+        lastHeartbeat: new Date().toISOString(),
+      },
+      {
+        agentId: 'agent-2',
+        baseUrl: 'http://localhost:3001',
+        port: 3001,
+        status: 'inactive',
+        lastHeartbeat: new Date().toISOString(),
+      },
+    ]) as MockedFunction<AgentRegistry['listActive']>;
+
+    // Mock A2AClient using typed mock functions
+    mockClient = {
+      sendMessage: mockSendMessage,
+      getTask: mockGetTask,
+      listTasks: mockListTasks,
     } as unknown as A2AClient;
 
-    // Mock AgentRegistry
+    // Mock AgentRegistry using typed mock functions
     mockRegistry = {
-      listActive: vi.fn().mockReturnValue([
-        {
-          agentId: 'agent-1',
-          baseUrl: 'http://localhost:3000',
-          port: 3000,
-          status: 'active',
-          lastHeartbeat: new Date().toISOString(),
-        },
-        {
-          agentId: 'agent-2',
-          baseUrl: 'http://localhost:3001',
-          port: 3001,
-          status: 'inactive',
-          lastHeartbeat: new Date().toISOString(),
-        },
-      ]),
+      listActive: mockListActive,
     } as unknown as AgentRegistry;
 
     handlers = new A2AToolHandlers(mockClient, mockRegistry);
@@ -101,7 +117,7 @@ describe('A2AToolHandlers', () => {
 
       const result = await handlers.handleA2ASendTask(args);
 
-      expect(mockClient.sendMessage).toHaveBeenCalledWith('agent-test', {
+      expect(mockSendMessage).toHaveBeenCalledWith('agent-test', {
         message: {
           role: 'user',
           parts: [
@@ -113,7 +129,7 @@ describe('A2AToolHandlers', () => {
         },
       });
 
-      expect(mockClient.getTask).toHaveBeenCalledWith('agent-test', 'task-123');
+      expect(mockGetTask).toHaveBeenCalledWith('agent-test', 'task-123');
       expect(result.content).toBeDefined();
       expect(result.content[0].type).toBe('text');
       expect(result.content[0].text).toContain('Task sent to agent: agent-test');
@@ -132,9 +148,7 @@ describe('A2AToolHandlers', () => {
     });
 
     it('should handle client errors gracefully', async () => {
-      mockClient.sendMessage = vi
-        .fn()
-        .mockRejectedValue(new Error('Network error'));
+      mockSendMessage.mockRejectedValue(new Error('Network error'));
 
       const args = {
         targetAgentId: 'agent-test',
@@ -156,7 +170,7 @@ describe('A2AToolHandlers', () => {
 
       const result = await handlers.handleA2AGetTask(args);
 
-      expect(mockClient.getTask).toHaveBeenCalledWith('agent-test', 'task-123');
+      expect(mockGetTask).toHaveBeenCalledWith('agent-test', 'task-123');
       expect(result.content).toBeDefined();
       expect(result.content[0].type).toBe('text');
       expect(result.content[0].text).toContain('task-123');
@@ -175,9 +189,7 @@ describe('A2AToolHandlers', () => {
     });
 
     it('should handle not found errors', async () => {
-      mockClient.getTask = vi
-        .fn()
-        .mockRejectedValue(new Error('Task not found'));
+      mockGetTask.mockRejectedValue(new Error('Task not found'));
 
       const args = {
         targetAgentId: 'agent-test',
@@ -198,7 +210,7 @@ describe('A2AToolHandlers', () => {
 
       const result = await handlers.handleA2AListAgents(args);
 
-      expect(mockRegistry.listActive).toHaveBeenCalled();
+      expect(mockListActive).toHaveBeenCalled();
       expect(result.content).toBeDefined();
       expect(result.content[0].type).toBe('text');
       expect(result.content[0].text).toContain('agent-1');
@@ -212,7 +224,7 @@ describe('A2AToolHandlers', () => {
 
       const result = await handlers.handleA2AListAgents(args);
 
-      expect(mockRegistry.listActive).toHaveBeenCalled();
+      expect(mockListActive).toHaveBeenCalled();
       expect(result.content[0].text).toContain('agent-1');
       expect(result.content[0].text).not.toContain('agent-2'); // inactive agent filtered out
     });
@@ -222,17 +234,15 @@ describe('A2AToolHandlers', () => {
 
       const result = await handlers.handleA2AListAgents(args);
 
-      expect(mockRegistry.listActive).toHaveBeenCalled();
+      expect(mockListActive).toHaveBeenCalled();
       expect(result.content[0].text).toContain('agent-1');
       expect(result.content[0].text).toContain('agent-2');
     });
 
     it('should handle registry errors gracefully', async () => {
-      mockRegistry.listActive = vi
-        .fn()
-        .mockImplementation(() => {
-          throw new Error('Registry unavailable');
-        });
+      mockListActive.mockImplementation(() => {
+        throw new Error('Registry unavailable');
+      });
 
       const args = {};
 

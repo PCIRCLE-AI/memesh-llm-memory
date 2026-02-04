@@ -23,34 +23,40 @@ interface BenchmarkResult {
 const results: BenchmarkResult[] = [];
 
 async function benchmark(name: string, dataSize: number, fn: () => Promise<void>, ops: number = 1): Promise<number> {
-  // Warmup
-  await fn();
-
-  // Actual measurement (run 5 times, take median)
-  const times: number[] = [];
-  for (let i = 0; i < 5; i++) {
-    const start = performance.now();
+  try {
+    // Warmup
     await fn();
-    times.push(performance.now() - start);
+
+    // Actual measurement (run 5 times, take median)
+    const times: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      const start = performance.now();
+      await fn();
+      times.push(performance.now() - start);
+    }
+
+    times.sort((a, b) => a - b);
+    const median = times[Math.floor(times.length / 2)];
+
+    results.push({
+      test: name,
+      dataSize,
+      duration: median,
+      operations: ops,
+      opsPerSecond: (ops / median) * 1000,
+    });
+
+    return median;
+  } catch (error) {
+    console.error(`Benchmark ${name} failed:`, error);
+    throw error;
   }
-
-  times.sort((a, b) => a - b);
-  const median = times[Math.floor(times.length / 2)];
-
-  results.push({
-    test: name,
-    dataSize,
-    duration: median,
-    operations: ops,
-    opsPerSecond: (ops / median) * 1000,
-  });
-
-  return median;
 }
 
 async function testKnowledgeGraphStats() {
-  console.log('\n📊 Testing KnowledgeGraph.getStats() Performance');
-  console.log('━'.repeat(80));
+  try {
+    console.log('\n📊 Testing KnowledgeGraph.getStats() Performance');
+    console.log('━'.repeat(80));
 
   // We can't actually test without importing (build errors), but we can show what SHOULD be tested
   console.log('⚠️  Cannot run actual test due to build errors');
@@ -76,12 +82,17 @@ async function testKnowledgeGraphStats() {
     console.log(`     Expected speedup: ${tc.claimedSpeedup}`);
   }
 
-  console.log('\n❌ Result: CANNOT VERIFY - Build errors prevent testing');
+    console.log('\n❌ Result: CANNOT VERIFY - Build errors prevent testing');
+  } catch (error) {
+    console.error('Error in testKnowledgeGraphStats:', error);
+    throw error;
+  }
 }
 
 async function testBatchQueries() {
-  console.log('\n📊 Testing Batch Query Performance (getConnectedEntities)');
-  console.log('━'.repeat(80));
+  try {
+    console.log('\n📊 Testing Batch Query Performance (getConnectedEntities)');
+    console.log('━'.repeat(80));
 
   console.log('⚠️  Cannot run actual test due to build errors');
   console.log('📝 What should be tested:');
@@ -105,12 +116,17 @@ async function testBatchQueries() {
     console.log(`     Expected speedup: ${tc.claimedSpeedup}`);
   }
 
-  console.log('\n❌ Result: CANNOT VERIFY - Build errors prevent testing');
+    console.log('\n❌ Result: CANNOT VERIFY - Build errors prevent testing');
+  } catch (error) {
+    console.error('Error in testBatchQueries:', error);
+    throw error;
+  }
 }
 
 async function testParallelPatternExtraction() {
-  console.log('\n📊 Testing "Parallel" Pattern Extraction');
-  console.log('━'.repeat(80));
+  try {
+    console.log('\n📊 Testing "Parallel" Pattern Extraction');
+    console.log('━'.repeat(80));
 
   console.log('⚠️  Code claims parallelization but implementation is sequential!');
   console.log('📝 Code review findings:');
@@ -131,12 +147,17 @@ async function testParallelPatternExtraction() {
   console.log('   - All methods are synchronous (no Promise.all)');
   console.log('   - No Worker threads, no concurrency');
 
-  console.log('\n🔴 Result: FALSE CLAIM - Not actually parallel');
+    console.log('\n🔴 Result: FALSE CLAIM - Not actually parallel');
+  } catch (error) {
+    console.error('Error in testParallelPatternExtraction:', error);
+    throw error;
+  }
 }
 
 async function testStatsCaching() {
-  console.log('\n📊 Testing Statistics Caching');
-  console.log('━'.repeat(80));
+  try {
+    console.log('\n📊 Testing Statistics Caching');
+    console.log('━'.repeat(80));
 
   console.log('✅ Implementation exists in LearningManager');
   console.log('📝 How it works:');
@@ -155,12 +176,17 @@ async function testStatsCaching() {
   console.log('   3. Invalidation: New metrics added should invalidate cache');
   console.log('   4. Memory: Cache should not grow unbounded');
 
-  console.log('\n⚠️  Result: IMPLEMENTATION CORRECT but INVALIDATION ISSUES');
+    console.log('\n⚠️  Result: IMPLEMENTATION CORRECT but INVALIDATION ISSUES');
+  } catch (error) {
+    console.error('Error in testStatsCaching:', error);
+    throw error;
+  }
 }
 
 async function testQueryCache() {
-  console.log('\n📊 Testing Query Cache Implementation');
-  console.log('━'.repeat(80));
+  try {
+    console.log('\n📊 Testing Query Cache Implementation');
+    console.log('━'.repeat(80));
 
   console.log('✅ Excellent implementation in src/db/QueryCache.ts');
   console.log('📝 Features:');
@@ -176,15 +202,20 @@ async function testQueryCache() {
   console.log('   - invalidate(): O(N) clears all entries');
   console.log('   - Memory: Bounded by maxSize');
 
-  console.log('\n✅ Result: IMPLEMENTATION EXCELLENT, but no actual benchmarks run');
+    console.log('\n✅ Result: IMPLEMENTATION EXCELLENT, but no actual benchmarks run');
+  } catch (error) {
+    console.error('Error in testQueryCache:', error);
+    throw error;
+  }
 }
 
 async function runPerformanceAudit() {
-  console.log('\n');
-  console.log('╔════════════════════════════════════════════════════════════════════╗');
-  console.log('║          PERFORMANCE CLAIMS VERIFICATION - ACTUAL MEASUREMENTS     ║');
-  console.log('╚════════════════════════════════════════════════════════════════════╝');
-  console.log('\n');
+  try {
+    console.log('\n');
+    console.log('╔════════════════════════════════════════════════════════════════════╗');
+    console.log('║          PERFORMANCE CLAIMS VERIFICATION - ACTUAL MEASUREMENTS     ║');
+    console.log('╚════════════════════════════════════════════════════════════════════╝');
+    console.log('\n');
 
   await testKnowledgeGraphStats();
   await testBatchQueries();
@@ -238,9 +269,13 @@ async function runPerformanceAudit() {
   console.log('   4. Fix false claim about parallelization');
   console.log('   5. Add regression tests to CI');
   console.log('\n');
-  console.log('Trust Level: LOW (3/10)');
-  console.log('Reason: No measurements provided, one false claim found');
-  console.log('\n');
+    console.log('Trust Level: LOW (3/10)');
+    console.log('Reason: No measurements provided, one false claim found');
+    console.log('\n');
+  } catch (error) {
+    console.error('Performance audit failed:', error);
+    throw error;
+  }
 }
 
 // Run the audit

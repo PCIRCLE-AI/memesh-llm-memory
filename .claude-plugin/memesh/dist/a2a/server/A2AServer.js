@@ -2,7 +2,7 @@ import express from 'express';
 import { createServer } from 'net';
 import { logger } from '../../utils/logger.js';
 import { TaskQueue } from '../storage/TaskQueue.js';
-import { AgentRegistry } from '../storage/AgentRegistry.js';
+import { AgentRegistry, startAgentRegistryCleanup, stopAgentRegistryCleanup, } from '../storage/AgentRegistry.js';
 import { A2ARoutes } from './routes.js';
 import { errorHandler, requestLogger, corsMiddleware, jsonErrorHandler, } from './middleware.js';
 import { authenticateToken } from './middleware/auth.js';
@@ -70,6 +70,7 @@ export class A2AServer {
                 startCleanup();
                 startResourceProtectionCleanup();
                 startCsrfCleanup();
+                startAgentRegistryCleanup();
                 resolve(port);
             });
             this.server.on('error', (err) => {
@@ -91,6 +92,7 @@ export class A2AServer {
         stopCleanup();
         stopResourceProtectionCleanup();
         stopCsrfCleanup();
+        stopAgentRegistryCleanup();
         if (this.heartbeatTimer) {
             clearInterval(this.heartbeatTimer);
             this.heartbeatTimer = null;

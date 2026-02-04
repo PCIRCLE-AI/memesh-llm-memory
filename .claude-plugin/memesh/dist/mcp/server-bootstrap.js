@@ -142,6 +142,7 @@ async function startA2AServer() {
     }
 }
 async function bootstrapWithDaemon() {
+    process.env.MCP_SERVER_MODE = 'true';
     try {
         const { DaemonBootstrap, isDaemonDisabled } = await import('./daemon/DaemonBootstrap.js');
         const { logger } = await import('../utils/logger.js');
@@ -184,6 +185,7 @@ function setupSignalHandlers(shutdownFn) {
     process.once('SIGINT', () => shutdownFn('SIGINT'));
 }
 async function startAsDaemon(bootstrapper, version) {
+    process.env.MCP_SERVER_MODE = 'true';
     const { logger } = await import('../utils/logger.js');
     const { DaemonSocketServer } = await import('./daemon/DaemonSocketServer.js');
     const { DaemonLockManager } = await import('./daemon/DaemonLockManager.js');
@@ -225,6 +227,7 @@ async function startAsDaemon(bootstrapper, version) {
     startMCPClientWatchdog();
 }
 async function startAsProxy(bootstrapper) {
+    process.env.MCP_SERVER_MODE = 'true';
     const { logger } = await import('../utils/logger.js');
     const { StdioProxyClient } = await import('./daemon/StdioProxyClient.js');
     const version = bootstrapper.getVersion();

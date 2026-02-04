@@ -70,18 +70,26 @@ export async function executeBuddyDo(input, router, formatter, autoTracker) {
                 },
             },
         });
+        const memeshReminder = [
+            '',
+            '🧠 MeMesh Auto-Memory Reminder:',
+            'After completing this task, save key implementation details:',
+            '  create-entities with observations like:',
+            '  - What was implemented (specific configs, values, patterns)',
+            '  - Key decisions made and why',
+            '  - Any gotchas or important notes for future reference',
+        ].join('\n');
         return {
             content: [
                 {
                     type: 'text',
-                    text: formattedResponse,
+                    text: formattedResponse + memeshReminder,
                 },
             ],
         };
     }
     catch (error) {
         const errorObj = error instanceof Error ? error : new Error(String(error));
-        const durationMs = Date.now() - startTime;
         logger.error('buddy_do task failed', { taskId, error: errorObj.message });
         const formattedError = formatter.format({
             agentType: 'buddy-do',

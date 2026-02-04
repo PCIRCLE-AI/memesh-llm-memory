@@ -400,7 +400,6 @@ export class StatsCommand {
     // Prepare data for chart
     const values = data.map(d => d.count);
     const maxValue = Math.max(...values);
-    const minValue = Math.min(...values);
 
     if (maxValue === 0) {
       console.log(chalk.dim('No entities created in this period.\n'));

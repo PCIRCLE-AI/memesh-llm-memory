@@ -16,24 +16,29 @@ import path from 'path';
 import os from 'os';
 import { DaemonLockManager, type LockInfo } from '../DaemonLockManager.js';
 
-// Test in a temporary directory
-const TEST_DIR = path.join(os.tmpdir(), 'memesh-daemon-test-' + process.pid);
-const TEST_LOCK_PATH = path.join(TEST_DIR, 'daemon.lock');
+// Test in a secure temporary directory created per test run
+// Use mkdtemp for secure, unpredictable temp directory creation
+let TEST_DIR: string;
+let TEST_LOCK_PATH: string;
 
-// Mock the PathResolver to use test directory
+// Mock the PathResolver to use test directory (dynamic)
 vi.mock('../../../utils/PathResolver.js', () => ({
   getDataDirectory: () => TEST_DIR,
 }));
 
 describe('DaemonLockManager', () => {
   beforeEach(async () => {
-    // Create test directory
-    await fsp.mkdir(TEST_DIR, { recursive: true }).catch(() => {});
+    // Create secure unique test directory using mkdtemp
+    // This prevents insecure temporary file vulnerability (predictable paths)
+    TEST_DIR = await fsp.mkdtemp(path.join(os.tmpdir(), 'memesh-daemon-test-'));
+    TEST_LOCK_PATH = path.join(TEST_DIR, 'daemon.lock');
   });
 
   afterEach(async () => {
     // Clean up test directory
-    await fsp.rm(TEST_DIR, { recursive: true, force: true }).catch(() => {});
+    if (TEST_DIR) {
+      await fsp.rm(TEST_DIR, { recursive: true, force: true }).catch(() => {});
+    }
   });
 
   describe('getLockPath', () => {

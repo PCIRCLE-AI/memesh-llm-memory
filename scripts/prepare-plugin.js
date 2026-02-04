@@ -30,14 +30,11 @@ const pluginMetadataDir = join(pluginRootDir, '.claude-plugin');
 console.log('🔧 Preparing plugin directory for Claude Code installation...\n');
 
 // Step 1: Create plugin directory structure
+// Use recursive mkdir which handles existing directories safely (avoids TOCTOU race condition)
 console.log('1️⃣ Creating plugin directory structure...');
-if (!existsSync(pluginMetadataDir)) {
-  mkdirSync(pluginMetadataDir, { recursive: true });
-  console.log(`   ✅ Created: ${pluginRootDir.replace(projectRoot, '.')}`);
-  console.log(`   ✅ Created: ${pluginMetadataDir.replace(projectRoot, '.')}`);
-} else {
-  console.log(`   ✅ Directory exists: ${pluginRootDir.replace(projectRoot, '.')}`);
-}
+mkdirSync(pluginMetadataDir, { recursive: true });
+console.log(`   ✅ Ensured: ${pluginRootDir.replace(projectRoot, '.')}`);
+console.log(`   ✅ Ensured: ${pluginMetadataDir.replace(projectRoot, '.')}`)
 
 // Step 2: Copy compiled dist/ to plugin directory
 console.log('\n2️⃣ Copying compiled dist/ to plugin directory...');
@@ -229,12 +226,10 @@ if (existsSync(envPath)) {
 }
 
 try {
-  // Ensure ~/.claude directory exists
+  // Ensure ~/.claude directory exists (recursive: true handles existing directory safely, avoids TOCTOU race condition)
   const claudeDir = join(homedir(), '.claude');
-  if (!existsSync(claudeDir)) {
-    mkdirSync(claudeDir, { recursive: true });
-    console.log(`   ✅ Created: ${claudeDir}`);
-  }
+  mkdirSync(claudeDir, { recursive: true });
+  console.log(`   ✅ Ensured: ${claudeDir}`);
 
   // Read existing config or create new one
   let mcpConfig = { mcpServers: {} };
@@ -275,7 +270,7 @@ try {
     console.log('   ✅ Removed legacy "claude-code-buddy" entry');
   }
 
-  // Write config
+  // Write config (directory already ensured above with mkdirSync recursive)
   writeFileSync(mcpSettingsPath, JSON.stringify(mcpConfig, null, 2) + '\n', 'utf-8');
   mcpSettingsConfigured = true;
   console.log(`   ✅ MCP settings configured at: ${mcpSettingsPath}`);

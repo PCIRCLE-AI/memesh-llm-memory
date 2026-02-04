@@ -135,9 +135,6 @@ export class Dashboard {
    * Update dashboard (called periodically)
    */
   private updateDashboard(): void {
-    // Update resource stats
-    const resources = this.resourceMonitor.getCurrentResources();
-
     // Emit metrics update event
     this.uiEventBus.emitMetricsUpdate({
       sessionStart: this.sessionMetrics.startedAt,

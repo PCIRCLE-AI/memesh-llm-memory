@@ -19,20 +19,21 @@ import path from 'path';
 // Primary MCP settings file - this is what Claude Code checks
 const MCP_SETTINGS_PATH = path.join(os.homedir(), '.claude', 'mcp_settings.json');
 
-// Legacy paths for backward compatibility checking
-const LEGACY_CONFIG_PATHS = [
-  path.join(os.homedir(), '.claude', 'config.json'),
-  path.join(os.homedir(), '.claude.json'),
-  path.join(os.homedir(), '.config', 'claude', 'claude_desktop_config.json'),
-];
+// Legacy paths for backward compatibility checking (reserved for future migration utilities)
+// const _LEGACY_CONFIG_PATHS = [
+//   path.join(os.homedir(), '.claude', 'config.json'),
+//   path.join(os.homedir(), '.claude.json'),
+//   path.join(os.homedir(), '.config', 'claude', 'claude_desktop_config.json'),
+// ];
 
 /**
- * Resolve the config path to use
+ * Resolve the config path to use (reserved for future use)
  * Priority: env var > preferred path > MCP_SETTINGS_PATH
+ * @param {string} [_preferredPath] - Preferred path (unused, reserved for future use)
  */
-function resolveConfigPath(preferredPath) {
-  if (preferredPath) {
-    return preferredPath;
+function _resolveConfigPath(_preferredPath) {
+  if (_preferredPath) {
+    return _preferredPath;
   }
 
   // Check for environment variable (with backward compatibility)
@@ -47,20 +48,22 @@ function resolveConfigPath(preferredPath) {
 }
 
 /**
- * Create MCP server configuration object
+ * Create MCP server configuration object (reserved for future use)
+ * @param {string} _serverPath - Path to server bootstrap file (unused)
+ * @param {string} [_a2aToken] - A2A token (unused)
  */
-function createServerConfig(serverPath, a2aToken = null) {
+function _createServerConfig(_serverPath, _a2aToken = null) {
   const config = {
     command: 'node',
-    args: [serverPath],
+    args: [_serverPath],
     env: {
       NODE_ENV: 'production'
     }
   };
 
   // Add A2A token if provided
-  if (a2aToken) {
-    config.env.MEMESH_A2A_TOKEN = a2aToken;
+  if (_a2aToken) {
+    config.env.MEMESH_A2A_TOKEN = _a2aToken;
   }
 
   return config;
@@ -141,10 +144,9 @@ export function configureMcpSettings(options = {}) {
 
   // Write config
   try {
+    // Use recursive mkdir which handles existing directories safely (avoids TOCTOU race condition)
     const configDir = path.dirname(configPath);
-    if (!fs.existsSync(configDir)) {
-      fs.mkdirSync(configDir, { recursive: true });
-    }
+    fs.mkdirSync(configDir, { recursive: true });
 
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', 'utf8');
 
@@ -189,8 +191,8 @@ export function checkMcpConfiguration() {
     }
 
     return { configured: false };
-  } catch (e) {
-    return { configured: false, error: e.message };
+  } catch (_err) {
+    return { configured: false, error: _err.message };
   }
 }
 
@@ -231,7 +233,7 @@ export function readA2AToken(envPath) {
     const content = fs.readFileSync(envPath, 'utf8');
     const match = content.match(/^MEMESH_A2A_TOKEN=(.+)$/m);
     return match ? match[1].trim() : null;
-  } catch (e) {
+  } catch (_err) {
     return null;
   }
 }

@@ -92,7 +92,6 @@ export function withEvolutionTracking<T extends (...args: unknown[]) => Promise<
     try {
       // Execute function
       const result = await fn(...args);
-      const duration = Date.now() - startTime;
 
       // Extract output attributes
       let outputAttributes: SpanAttributes = {};
@@ -123,8 +122,6 @@ export function withEvolutionTracking<T extends (...args: unknown[]) => Promise<
 
       return result;
     } catch (error: unknown) {
-      const duration = Date.now() - startTime;
-
       // Extract error details with type safety
       const errorDetails = getErrorDetails(error);
 

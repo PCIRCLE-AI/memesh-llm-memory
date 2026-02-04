@@ -1642,7 +1642,7 @@ export class BackgroundExecutor {
     this.activeTimeouts.clear();
 
     // Phase 5: Clear all cleanup timers
-    for (const [taskId, timerId] of this.cleanupTimers) {
+    for (const [_taskId, timerId] of this.cleanupTimers) {
       clearTimeout(timerId);
     }
     this.cleanupTimers.clear();

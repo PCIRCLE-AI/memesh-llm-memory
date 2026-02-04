@@ -13,8 +13,8 @@ import type { Span } from '../types.js';
 
 describe('SQLiteStore - SQL Injection Prevention (HIGH-2)', () => {
   let store: SQLiteStore;
-  let testTaskId: string;
-  let testExecutionId: string;
+  let _testTaskId: string;
+  let _testExecutionId: string;
 
   beforeEach(async () => {
     store = new SQLiteStore({ dbPath: ':memory:' });
@@ -22,10 +22,10 @@ describe('SQLiteStore - SQL Injection Prevention (HIGH-2)', () => {
 
     // ✅ Create required task and execution (Foreign Key constraints)
     const task = await store.createTask({ input: {} });
-    testTaskId = task.id;
+    _testTaskId = task.id;
 
-    const execution = await store.createExecution(testTaskId);
-    testExecutionId = execution.id;
+    const execution = await store.createExecution(_testTaskId);
+    _testExecutionId = execution.id;
   });
 
   afterEach(async () => {
@@ -39,16 +39,16 @@ describe('SQLiteStore - SQL Injection Prevention (HIGH-2)', () => {
     const span: Span = {
       trace_id: 'trace-test',
       span_id: `span-${Date.now()}-${Math.random()}`,
-      task_id: testTaskId, // ✅ Use actual task ID
-      execution_id: testExecutionId, // ✅ Use actual execution ID
+      task_id: _testTaskId, // ✅ Use actual task ID
+      execution_id: _testExecutionId, // ✅ Use actual execution ID
       name: 'test-span',
       kind: 'internal', // ✅ Use lowercase 'internal' (valid enum value)
       start_time: Date.now(),
       status: { code: 'OK' },
       attributes: {},
       resource: {
-        'task.id': testTaskId,
-        'execution.id': testExecutionId,
+        'task.id': _testTaskId,
+        'execution.id': _testExecutionId,
         'execution.attempt': 1,
       },
       tags,
@@ -77,7 +77,7 @@ describe('SQLiteStore - SQL Injection Prevention (HIGH-2)', () => {
     });
 
     it('should prevent SQL injection via UNION attack', async () => {
-      const span = await createSpanWithTags(['test']);
+      await createSpanWithTags(['test']);
 
       // Attempt UNION-based SQL injection
       const maliciousTag = "test' UNION SELECT * FROM spans --";
@@ -89,7 +89,7 @@ describe('SQLiteStore - SQL Injection Prevention (HIGH-2)', () => {
     });
 
     it('should prevent SQL injection via comment injection', async () => {
-      const span = await createSpanWithTags(['test']);
+      await createSpanWithTags(['test']);
 
       // Attempt comment injection: test' --
       const maliciousTag = "test' --";
@@ -101,7 +101,7 @@ describe('SQLiteStore - SQL Injection Prevention (HIGH-2)', () => {
     });
 
     it('should prevent SQL injection via double quote', async () => {
-      const span = await createSpanWithTags(['test']);
+      await createSpanWithTags(['test']);
 
       // Attempt injection with double quote
       const maliciousTag = 'test" OR "1"="1';
@@ -137,8 +137,8 @@ describe('SQLiteStore - SQL Injection Prevention (HIGH-2)', () => {
     it('should handle tags with percent signs (LIKE wildcard)', async () => {
       const tag = 'test%tag';
       const span1 = await createSpanWithTags([tag]);
-      const span2 = await createSpanWithTags(['test-tag']);
-      const span3 = await createSpanWithTags(['testabc-tag']);
+      await createSpanWithTags(['test-tag']);
+      await createSpanWithTags(['testabc-tag']);
 
       // Old LIKE approach would match span2 and span3
       // New JSON_EACH should only match exact tag
@@ -151,8 +151,8 @@ describe('SQLiteStore - SQL Injection Prevention (HIGH-2)', () => {
     it('should handle tags with underscores (LIKE wildcard)', async () => {
       const tag = 'test_tag';
       const span1 = await createSpanWithTags([tag]);
-      const span2 = await createSpanWithTags(['test-tag']);
-      const span3 = await createSpanWithTags(['testXtag']);
+      await createSpanWithTags(['test-tag']);
+      await createSpanWithTags(['testXtag']);
 
       // Old LIKE approach would match span2 and span3
       // New JSON_EACH should only match exact tag
@@ -177,7 +177,7 @@ describe('SQLiteStore - SQL Injection Prevention (HIGH-2)', () => {
     it('should find spans with any of the specified tags', async () => {
       const span1 = await createSpanWithTags(['tag-a', 'tag-b']);
       const span2 = await createSpanWithTags(['tag-b', 'tag-c']);
-      const span3 = await createSpanWithTags(['tag-d']);
+      await createSpanWithTags(['tag-d']);
 
       const results = await store.queryByTags(['tag-a', 'tag-c'], 'any');
 
@@ -200,7 +200,7 @@ describe('SQLiteStore - SQL Injection Prevention (HIGH-2)', () => {
     it('should find spans with all specified tags', async () => {
       const span1 = await createSpanWithTags(['tag-a', 'tag-b', 'tag-c']);
       const span2 = await createSpanWithTags(['tag-a', 'tag-b']);
-      const span3 = await createSpanWithTags(['tag-a']);
+      await createSpanWithTags(['tag-a']);
 
       const results = await store.queryByTags(['tag-a', 'tag-b'], 'all');
 

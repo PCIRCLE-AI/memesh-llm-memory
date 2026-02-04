@@ -13,6 +13,8 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
+// Database type is used for type assertions in tests
+
 describe('ConnectionPool', () => {
   let testDbPath: string;
   let pool: ConnectionPool;
@@ -408,10 +410,10 @@ describe('ConnectionPool', () => {
     });
 
     it('should reject queued requests on shutdown', async () => {
-      // Acquire all connections
-      const conn1 = await pool.acquire();
-      const conn2 = await pool.acquire();
-      const conn3 = await pool.acquire();
+      // Acquire all connections to exhaust pool
+      await pool.acquire();
+      await pool.acquire();
+      await pool.acquire();
 
       // Queue requests
       const pending1 = pool.acquire();
@@ -476,9 +478,11 @@ describe('ConnectionPool', () => {
 
     it('should track waiting requests', async () => {
       // Acquire all
-      const conn1 = await pool.acquire();
-      const conn2 = await pool.acquire();
-      const conn3 = await pool.acquire();
+      const [conn1, conn2] = await Promise.all([
+        pool.acquire(),
+        pool.acquire(),
+        pool.acquire(),
+      ]);
 
       // Queue requests
       const pending1 = pool.acquire();

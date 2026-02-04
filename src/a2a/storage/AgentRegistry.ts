@@ -195,6 +195,87 @@ export class AgentRegistry {
     this.db.close();
     AgentRegistry.instance = null;
   }
+}
+
+/**
+ * Periodic cleanup timer for stale agents
+ */
+let cleanupTimer: NodeJS.Timeout | null = null;
+
+/**
+ * Default cleanup interval: 5 minutes
+ */
+const DEFAULT_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+
+/**
+ * Start periodic cleanup of stale agents.
+ * Runs every 5 minutes by default, configurable via AGENT_REGISTRY_CLEANUP_INTERVAL_MS.
+ *
+ * @example
+ * ```typescript
+ * // Start cleanup when server starts
+ * startAgentRegistryCleanup();
+ * ```
+ */
+export function startAgentRegistryCleanup(): void {
+  if (cleanupTimer) {
+    return; // Already running
+  }
+
+  const intervalMs =
+    parseInt(process.env.AGENT_REGISTRY_CLEANUP_INTERVAL_MS || '', 10) ||
+    DEFAULT_CLEANUP_INTERVAL_MS;
+
+  const registry = AgentRegistry.getInstance();
+
+  const cleanup = (): void => {
+    try {
+      // Mark agents as stale if heartbeat is older than 5 minutes
+      const markedStale = registry.cleanupStale(5 * 60 * 1000);
+
+      // Delete stale agents from registry
+      const deleted = registry.deleteStale();
+
+      if (markedStale > 0 || deleted > 0) {
+        logger.info('[Agent Registry] Cleanup completed', {
+          markedStale,
+          deleted,
+        });
+      }
+    } catch (error) {
+      logger.error('[Agent Registry] Cleanup failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
+
+  // Run cleanup immediately on start
+  cleanup();
+
+  // Then run periodically
+  cleanupTimer = setInterval(cleanup, intervalMs);
+
+  logger.info('[Agent Registry] Periodic cleanup started', {
+    intervalMs,
+  });
+}
+
+/**
+ * Stop periodic cleanup of stale agents.
+ *
+ * @example
+ * ```typescript
+ * // Stop cleanup when server stops
+ * stopAgentRegistryCleanup();
+ * ```
+ */
+export function stopAgentRegistryCleanup(): void {
+  if (cleanupTimer) {
+    clearInterval(cleanupTimer);
+    cleanupTimer = null;
+    logger.info('[Agent Registry] Periodic cleanup stopped');
+  }
+}
 
   private rowToEntry(row: AgentRow): AgentRegistryEntry {
     const capabilities = safeJsonParse<AgentCapabilities>(row.capabilities);

@@ -368,11 +368,11 @@ function sessionStart() {
   // Display quota info (guard against division by zero)
   const quotaLimit = sessionContext.tokenQuota?.limit || 1;
   const quotaUsed = sessionContext.tokenQuota?.used || 0;
-  const quotaPercentage = (quotaUsed / quotaLimit * 100).toFixed(1);
-  if (quotaPercentage > 80) {
-    console.log(`🔴 Quota usage: ${quotaPercentage}% (please monitor usage)\n`);
-  } else if (quotaPercentage > 50) {
-    console.log(`🟡 Quota usage: ${quotaPercentage}%\n`);
+  const quotaPercentNum = (quotaUsed / quotaLimit) * 100;
+  if (quotaPercentNum > 80) {
+    console.log(`🔴 Quota usage: ${quotaPercentNum.toFixed(1)}% (please monitor usage)\n`);
+  } else if (quotaPercentNum > 50) {
+    console.log(`🟡 Quota usage: ${quotaPercentNum.toFixed(1)}%\n`);
   }
 
   // Initialize current session

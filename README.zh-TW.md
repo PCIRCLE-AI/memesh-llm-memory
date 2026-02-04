@@ -105,6 +105,17 @@ buddy-help                       # 需要幫助時
 
 **三個命令。無限可能。**
 
+### 4. 🔐 **安全憑證儲存**
+
+```bash
+buddy-secret-store "openai_key" "sk-..." api_key  # 加密儲存
+buddy-secret-get "openai_key"                      # 取得憑證
+buddy-secret-list                                  # 查看已儲存
+buddy-secret-delete "old_key"                      # 清理舊金鑰
+```
+
+**AES-256-GCM 加密。僅存本地。永不傳輸。**
+
 ---
 
 ## 🚀 安裝選項

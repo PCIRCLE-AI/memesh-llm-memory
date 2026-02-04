@@ -173,6 +173,17 @@ buddy-help                          # When stuck
 
 **Three commands. Infinite possibilities.**
 
+### 4. 🔐 **Secure Credential Storage**
+
+```bash
+buddy-secret-store "openai_key" "sk-..." api_key  # Store encrypted
+buddy-secret-get "openai_key"                      # Retrieve for API calls
+buddy-secret-list                                  # See what's stored
+buddy-secret-delete "old_key"                      # Cleanup
+```
+
+**AES-256-GCM encryption. Local only. Never transmitted.**
+
 ---
 
 ## 🚀 Installation Options

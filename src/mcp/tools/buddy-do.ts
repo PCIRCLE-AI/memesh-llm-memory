@@ -143,7 +143,6 @@ export async function executeBuddyDo(
     };
   } catch (error) {
     const errorObj = error instanceof Error ? error : new Error(String(error));
-    const durationMs = Date.now() - startTime;
 
     logger.error('buddy_do task failed', { taskId, error: errorObj.message });
 

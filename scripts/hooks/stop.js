@@ -5,22 +5,32 @@
  *
  * Triggered when a Claude Code session ends (normal or forced termination).
  *
- * Functionality:
+ * Features:
  * - Analyzes current session's tool patterns and workflows
  * - Generates recommendations for next session
  * - Updates session context (quota, learned patterns)
+ * - Saves session key points to MeMesh
+ * - Cleans up old key points (>7 days retention)
  * - Displays session summary with patterns and suggestions
- * - Saves state for next session's SessionStart hook
- * - Backs up current session data
+ * - Archives current session data
  */
 
+import {
+  STATE_DIR,
+  MEMESH_DB_PATH,
+  THRESHOLDS,
+  readJSONFile,
+  writeJSONFile,
+  sqliteQuery,
+  calculateDuration,
+  getDateString,
+} from './hook-utils.js';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { execFileSync } from 'child_process';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const STATE_DIR = path.join(process.env.HOME, '.claude', 'state');
+// ============================================================================
+// File Paths
+// ============================================================================
 
 const CURRENT_SESSION_FILE = path.join(STATE_DIR, 'current-session.json');
 const RECOMMENDATIONS_FILE = path.join(STATE_DIR, 'recommendations.json');
@@ -32,52 +42,14 @@ if (!fs.existsSync(SESSIONS_ARCHIVE_DIR)) {
   fs.mkdirSync(SESSIONS_ARCHIVE_DIR, { recursive: true });
 }
 
-// MeMesh Knowledge Graph path
-const MEMESH_DB_PATH = path.join(process.env.HOME, '.claude-code-buddy', 'knowledge-graph.db');
-const RETENTION_DAYS = 7; // Keep key points for 7 days
-
-/**
- * Read JSON file with error handling
- */
-function readJSONFile(filePath, defaultValue = {}) {
-  try {
-    if (fs.existsSync(filePath)) {
-      const content = fs.readFileSync(filePath, 'utf-8');
-      return JSON.parse(content);
-    }
-  } catch (error) {
-    console.error(`⚠️ Error reading ${path.basename(filePath)}: ${error.message}`);
-  }
-  return defaultValue;
-}
-
-/**
- * Write JSON file with error handling
- */
-function writeJSONFile(filePath, data) {
-  try {
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
-    return true;
-  } catch (error) {
-    console.error(`⚠️ Error writing ${path.basename(filePath)}: ${error.message}`);
-    return false;
-  }
-}
-
-/**
- * Calculate session duration
- */
-function calculateDuration(startTime) {
-  const start = new Date(startTime);
-  const end = new Date();
-  const durationMs = end - start;
-  const minutes = Math.floor(durationMs / 60000);
-  const seconds = Math.floor((durationMs % 60000) / 1000);
-  return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
-}
+// ============================================================================
+// Pattern Analysis
+// ============================================================================
 
 /**
  * Analyze tool patterns from session state
+ * @param {Object} sessionState - Current session state
+ * @returns {Array} Detected patterns
  */
 function analyzeToolPatterns(sessionState) {
   const patterns = [];
@@ -100,8 +72,8 @@ function analyzeToolPatterns(sessionState) {
   if (mostUsedTools.length > 0) {
     patterns.push({
       type: 'MOST_USED_TOOLS',
-      description: mostUsedTools.map(([tool, count]) => `${tool} (${count}次)`).join(', '),
-      severity: 'info'
+      description: mostUsedTools.map(([tool, count]) => `${tool} (${count}x)`).join(', '),
+      severity: 'info',
     });
   }
 
@@ -112,7 +84,6 @@ function analyzeToolPatterns(sessionState) {
   for (let i = 0; i < sessionState.toolCalls.length; i++) {
     const tool = sessionState.toolCalls[i];
     if (tool.toolName === 'Edit') {
-      // Check if there's a Read in last 5 tools
       const recentReads = sessionState.toolCalls
         .slice(Math.max(0, i - 5), i)
         .filter(t => t.toolName === 'Read');
@@ -129,9 +100,9 @@ function analyzeToolPatterns(sessionState) {
     const compliance = (editWithRead / (editWithRead + editWithoutRead) * 100).toFixed(0);
     patterns.push({
       type: 'READ_BEFORE_EDIT_COMPLIANCE',
-      description: `READ_BEFORE_EDIT 遵循率: ${compliance}%`,
+      description: `READ_BEFORE_EDIT compliance: ${compliance}%`,
       severity: compliance >= 80 ? 'info' : 'warning',
-      suggestion: compliance < 80 ? '建議先 Read 檔案再 Edit，避免錯誤' : '良好的最佳實踐！'
+      suggestion: compliance < 80 ? 'Read files before editing to avoid errors' : 'Good practice!',
     });
   }
 
@@ -145,9 +116,9 @@ function analyzeToolPatterns(sessionState) {
   if (gitOps.length >= 3) {
     patterns.push({
       type: 'GIT_WORKFLOW',
-      description: `執行了 ${gitOps.length} 次 Git 操作`,
+      description: `Executed ${gitOps.length} Git operations`,
       severity: 'info',
-      suggestion: '下次建議載入 devops-git-workflows skill'
+      suggestion: 'Consider loading devops-git-workflows skill next time',
     });
   }
 
@@ -160,20 +131,20 @@ function analyzeToolPatterns(sessionState) {
   if (frontendOps.length >= 5) {
     patterns.push({
       type: 'FRONTEND_WORK',
-      description: `修改了 ${frontendOps.length} 個前端檔案`,
+      description: `Modified ${frontendOps.length} frontend files`,
       severity: 'info',
-      suggestion: '下次建議載入 frontend-design skill'
+      suggestion: 'Consider loading frontend-design skill next time',
     });
   }
 
   // Detect slow operations
-  const slowOps = sessionState.toolCalls.filter(tc => tc.duration && tc.duration > 5000);
+  const slowOps = sessionState.toolCalls.filter(tc => tc.duration && tc.duration > THRESHOLDS.SLOW_EXECUTION);
   if (slowOps.length > 0) {
     patterns.push({
       type: 'SLOW_OPERATIONS',
-      description: `${slowOps.length} 個工具執行時間超過 5 秒`,
+      description: `${slowOps.length} tools took >5 seconds`,
       severity: 'warning',
-      suggestion: '考慮優化這些操作或使用更快的替代方案'
+      suggestion: 'Consider optimizing these operations or using faster alternatives',
     });
   }
 
@@ -182,30 +153,36 @@ function analyzeToolPatterns(sessionState) {
   if (failures.length > 0) {
     patterns.push({
       type: 'EXECUTION_FAILURES',
-      description: `${failures.length} 個工具執行失敗`,
+      description: `${failures.length} tool executions failed`,
       severity: 'error',
-      suggestion: '檢查失敗原因並修正'
+      suggestion: 'Review and fix failure causes',
     });
   }
 
   return patterns;
 }
 
+// ============================================================================
+// Recommendations
+// ============================================================================
+
 /**
  * Save recommendations for next session
+ * @param {Array} patterns - Detected patterns
+ * @param {Object} sessionState - Current session state
  */
 function saveRecommendations(patterns, sessionState) {
   const recommendations = readJSONFile(RECOMMENDATIONS_FILE, {
     recommendedSkills: [],
     detectedPatterns: [],
     warnings: [],
-    lastUpdated: null
+    lastUpdated: null,
   });
 
   // Add skill recommendations based on patterns
   patterns.forEach(pattern => {
     if (pattern.suggestion && pattern.suggestion.includes('skill')) {
-      const skillMatch = pattern.suggestion.match(/載入\s+(.+?)\s+skill/);
+      const skillMatch = pattern.suggestion.match(/loading\s+(.+?)\s+skill/);
       if (skillMatch) {
         const skillName = skillMatch[1];
         const existing = recommendations.recommendedSkills.find(s => s.name === skillName);
@@ -214,7 +191,7 @@ function saveRecommendations(patterns, sessionState) {
           recommendations.recommendedSkills.push({
             name: skillName,
             reason: pattern.description,
-            priority: pattern.type.includes('GIT') || pattern.type.includes('FRONTEND') ? 'high' : 'medium'
+            priority: pattern.type.includes('GIT') || pattern.type.includes('FRONTEND') ? 'high' : 'medium',
           });
         }
       }
@@ -229,7 +206,7 @@ function saveRecommendations(patterns, sessionState) {
     recommendations.detectedPatterns.unshift({
       description: pattern.description,
       suggestion: pattern.suggestion || '',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   });
   recommendations.detectedPatterns = recommendations.detectedPatterns.slice(0, 10);
@@ -249,17 +226,20 @@ function saveRecommendations(patterns, sessionState) {
   writeJSONFile(RECOMMENDATIONS_FILE, recommendations);
 }
 
+// ============================================================================
+// Session Context Update
+// ============================================================================
+
 /**
  * Update session context (quota, patterns)
+ * @param {Object} sessionState - Current session state
+ * @returns {Object} Updated session context
  */
 function updateSessionContext(sessionState) {
   const sessionContext = readJSONFile(SESSION_CONTEXT_FILE, {
-    tokenQuota: {
-      used: 0,
-      limit: 200000
-    },
+    tokenQuota: { used: 0, limit: 200000 },
     learnedPatterns: [],
-    lastSessionDate: null
+    lastSessionDate: null,
   });
 
   // Calculate total token usage from session
@@ -286,7 +266,7 @@ function updateSessionContext(sessionState) {
         sessionContext.learnedPatterns.push({
           type: pattern.type,
           count: pattern.count,
-          lastSeen: new Date().toISOString()
+          lastSeen: new Date().toISOString(),
         });
       } else {
         existing.count += pattern.count;
@@ -302,108 +282,15 @@ function updateSessionContext(sessionState) {
   return sessionContext;
 }
 
-/**
- * Execute SQLite query with parameterized values (SQL injection safe)
- */
-function sqliteQuery(dbPath, query, params = []) {
-  try {
-    let finalQuery = query;
-
-    // Replace ? placeholders with escaped values
-    if (params.length > 0) {
-      let paramIndex = 0;
-      finalQuery = query.replace(/\?/g, () => {
-        if (paramIndex < params.length) {
-          const val = params[paramIndex++];
-          if (val === null || val === undefined) return 'NULL';
-          return `'${String(val).replace(/'/g, "''")}'`;
-        }
-        return '?';
-      });
-    }
-
-    const result = execFileSync('sqlite3', [dbPath, finalQuery], {
-      encoding: 'utf-8',
-      timeout: 5000,
-    });
-    return result.trim();
-  } catch {
-    return '';
-  }
-}
-
-/**
- * Save session key points to MeMesh on session end
- */
-function saveSessionKeyPointsOnEnd(sessionState, patterns) {
-  try {
-    // Check if MeMesh DB exists
-    if (!fs.existsSync(MEMESH_DB_PATH)) {
-      console.log('🧠 MeMesh: Database not found, skipping memory save');
-      return false;
-    }
-
-    // Extract comprehensive key points
-    const keyPoints = extractSessionKeyPoints(sessionState, patterns);
-    if (keyPoints.length === 0) {
-      return false;
-    }
-
-    const now = new Date().toISOString();
-    const entityName = `session_end_${Date.now()}`;
-
-    // Calculate session duration
-    const startTime = new Date(sessionState.startTime);
-    const duration = Math.round((Date.now() - startTime.getTime()) / 1000 / 60); // minutes
-
-    // Create entity for session summary
-    const insertEntity = `INSERT INTO entities (name, type, created_at, metadata)
-      VALUES (?, 'session_keypoint', ?, ?)`;
-
-    const metadata = JSON.stringify({
-      duration: `${duration}m`,
-      toolCount: sessionState.toolCalls?.length || 0,
-      saveReason: 'session_end',
-      patternCount: patterns.length
-    });
-
-    sqliteQuery(MEMESH_DB_PATH, insertEntity, [entityName, now, metadata]);
-
-    // Get the entity ID
-    const entityIdResult = execFileSync('sqlite3', [
-      MEMESH_DB_PATH,
-      `SELECT id FROM entities WHERE name = '${entityName.replace(/'/g, "''")}'`
-    ], { encoding: 'utf-8', timeout: 5000 }).trim();
-
-    const entityId = parseInt(entityIdResult, 10);
-    if (isNaN(entityId)) {
-      return false;
-    }
-
-    // Add observations for each key point
-    for (const point of keyPoints) {
-      const insertObs = 'INSERT INTO observations (entity_id, content, created_at) VALUES (?, ?, ?)';
-      sqliteQuery(MEMESH_DB_PATH, insertObs, [entityId, point, now]);
-    }
-
-    // Add tags for easier retrieval
-    const today = now.split('T')[0];
-    const tags = ['session_end', 'auto_saved', today];
-    for (const tag of tags) {
-      const insertTag = 'INSERT INTO tags (entity_id, tag) VALUES (?, ?)';
-      sqliteQuery(MEMESH_DB_PATH, insertTag, [entityId, tag]);
-    }
-
-    console.log(`🧠 MeMesh: Saved ${keyPoints.length} key points to memory`);
-    return true;
-  } catch (error) {
-    console.error(`⚠️  Failed to save session key points: ${error.message}`);
-    return false;
-  }
-}
+// ============================================================================
+// MeMesh Memory Save
+// ============================================================================
 
 /**
  * Extract comprehensive key points from session for end summary
+ * @param {Object} sessionState - Current session state
+ * @param {Array} patterns - Analyzed patterns
+ * @returns {Array<string>} Key points
  */
 function extractSessionKeyPoints(sessionState, patterns) {
   const keyPoints = [];
@@ -476,7 +363,7 @@ function extractSessionKeyPoints(sessionState, patterns) {
 
     significantPatterns.forEach(p => {
       if (p.suggestion) {
-        keyPoints.push(`[LEARN] ${p.description} → ${p.suggestion}`);
+        keyPoints.push(`[LEARN] ${p.description} -> ${p.suggestion}`);
       } else {
         keyPoints.push(`[NOTE] ${p.description}`);
       }
@@ -503,7 +390,77 @@ function extractSessionKeyPoints(sessionState, patterns) {
 }
 
 /**
- * Clean up old key points (older than RETENTION_DAYS)
+ * Save session key points to MeMesh on session end
+ * @param {Object} sessionState - Current session state
+ * @param {Array} patterns - Analyzed patterns
+ * @returns {boolean} True if saved successfully
+ */
+function saveSessionKeyPointsOnEnd(sessionState, patterns) {
+  try {
+    if (!fs.existsSync(MEMESH_DB_PATH)) {
+      console.log('🧠 MeMesh: Database not found, skipping memory save');
+      return false;
+    }
+
+    const keyPoints = extractSessionKeyPoints(sessionState, patterns);
+    if (keyPoints.length === 0) {
+      return false;
+    }
+
+    const now = new Date().toISOString();
+    const entityName = `session_end_${Date.now()}`;
+
+    // Calculate session duration
+    const startTime = new Date(sessionState.startTime);
+    const duration = Math.round((Date.now() - startTime.getTime()) / 1000 / 60);
+
+    const metadata = JSON.stringify({
+      duration: `${duration}m`,
+      toolCount: sessionState.toolCalls?.length || 0,
+      saveReason: 'session_end',
+      patternCount: patterns.length,
+    });
+
+    // Create entity using parameterized query
+    const insertEntity = 'INSERT INTO entities (name, type, created_at, metadata) VALUES (?, ?, ?, ?)';
+    sqliteQuery(MEMESH_DB_PATH, insertEntity, [entityName, 'session_keypoint', now, metadata]);
+
+    // Get the entity ID using parameterized query
+    const entityIdResult = sqliteQuery(
+      MEMESH_DB_PATH,
+      'SELECT id FROM entities WHERE name = ?',
+      [entityName]
+    );
+
+    const entityId = parseInt(entityIdResult, 10);
+    if (isNaN(entityId)) {
+      return false;
+    }
+
+    // Add observations for each key point
+    for (const point of keyPoints) {
+      const insertObs = 'INSERT INTO observations (entity_id, content, created_at) VALUES (?, ?, ?)';
+      sqliteQuery(MEMESH_DB_PATH, insertObs, [entityId, point, now]);
+    }
+
+    // Add tags for easier retrieval
+    const today = getDateString();
+    const tags = ['session_end', 'auto_saved', today];
+    for (const tag of tags) {
+      const insertTag = 'INSERT INTO tags (entity_id, tag) VALUES (?, ?)';
+      sqliteQuery(MEMESH_DB_PATH, insertTag, [entityId, tag]);
+    }
+
+    console.log(`🧠 MeMesh: Saved ${keyPoints.length} key points to memory`);
+    return true;
+  } catch (error) {
+    console.error(`🧠 MeMesh: Failed to save session key points: ${error.message}`);
+    return false;
+  }
+}
+
+/**
+ * Clean up old key points (older than retention period)
  */
 function cleanupOldKeyPoints() {
   try {
@@ -512,40 +469,54 @@ function cleanupOldKeyPoints() {
     }
 
     const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - RETENTION_DAYS);
+    cutoffDate.setDate(cutoffDate.getDate() - THRESHOLDS.RETENTION_DAYS);
     const cutoffISO = cutoffDate.toISOString();
 
-    // Delete old session_keypoint entities (cascades to observations and doesn't affect tags due to FK)
-    // First, get count of old entries
-    const countResult = execFileSync('sqlite3', [
+    // Count old entries using parameterized query
+    const countResult = sqliteQuery(
       MEMESH_DB_PATH,
-      `SELECT COUNT(*) FROM entities WHERE type = 'session_keypoint' AND created_at < '${cutoffISO}'`
-    ], { encoding: 'utf-8', timeout: 5000 }).trim();
+      'SELECT COUNT(*) FROM entities WHERE type = ? AND created_at < ?',
+      ['session_keypoint', cutoffISO]
+    );
 
     const oldCount = parseInt(countResult, 10) || 0;
 
     if (oldCount > 0) {
-      // Delete old tags first (no FK cascade from tags)
-      execFileSync('sqlite3', [
+      // Get IDs of old entities
+      const oldIdsResult = sqliteQuery(
         MEMESH_DB_PATH,
-        `DELETE FROM tags WHERE entity_id IN (SELECT id FROM entities WHERE type = 'session_keypoint' AND created_at < '${cutoffISO}')`
-      ], { encoding: 'utf-8', timeout: 5000 });
+        'SELECT id FROM entities WHERE type = ? AND created_at < ?',
+        ['session_keypoint', cutoffISO]
+      );
 
-      // Delete old entities (observations cascade automatically)
-      execFileSync('sqlite3', [
+      const oldIds = oldIdsResult.split('\n').filter(Boolean);
+
+      // Delete tags for old entities
+      for (const id of oldIds) {
+        sqliteQuery(MEMESH_DB_PATH, 'DELETE FROM tags WHERE entity_id = ?', [id]);
+      }
+
+      // Delete old entities (observations cascade automatically due to FK)
+      sqliteQuery(
         MEMESH_DB_PATH,
-        `DELETE FROM entities WHERE type = 'session_keypoint' AND created_at < '${cutoffISO}'`
-      ], { encoding: 'utf-8', timeout: 5000 });
+        'DELETE FROM entities WHERE type = ? AND created_at < ?',
+        ['session_keypoint', cutoffISO]
+      );
 
-      console.log(`🧠 MeMesh: Cleaned up ${oldCount} expired memories (>${RETENTION_DAYS} days)`);
+      console.log(`🧠 MeMesh: Cleaned up ${oldCount} expired memories (>${THRESHOLDS.RETENTION_DAYS} days)`);
     }
   } catch (error) {
-    console.error(`⚠️  Cleanup failed: ${error.message}`);
+    console.error(`🧠 MeMesh: Cleanup failed: ${error.message}`);
   }
 }
 
+// ============================================================================
+// Session Archive
+// ============================================================================
+
 /**
  * Archive current session
+ * @param {Object} sessionState - Current session state
  */
 function archiveSession(sessionState) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -563,15 +534,22 @@ function archiveSession(sessionState) {
     sessions.slice(30).forEach(f => {
       try {
         fs.unlinkSync(path.join(SESSIONS_ARCHIVE_DIR, f));
-      } catch (err) {
+      } catch {
         // Ignore errors
       }
     });
   }
 }
 
+// ============================================================================
+// Display Summary
+// ============================================================================
+
 /**
  * Display session summary
+ * @param {Object} sessionState - Current session state
+ * @param {Array} patterns - Detected patterns
+ * @param {Object} sessionContext - Session context
  */
 function displaySessionSummary(sessionState, patterns, sessionContext) {
   console.log('\n📊 Session Summary\n');
@@ -589,7 +567,7 @@ function displaySessionSummary(sessionState, patterns, sessionContext) {
 
   // Detected patterns
   if (patterns.length > 0) {
-    console.log(`\n✨ 檢測到的模式：`);
+    console.log('\n✨ Detected patterns:');
     patterns.slice(0, 5).forEach(pattern => {
       const emoji = pattern.severity === 'error' ? '❌' : pattern.severity === 'warning' ? '⚠️' : '✅';
       console.log(`  ${emoji} ${pattern.description}`);
@@ -601,8 +579,8 @@ function displaySessionSummary(sessionState, patterns, sessionContext) {
 
   // Recommendations for next session
   const recommendations = readJSONFile(RECOMMENDATIONS_FILE, { recommendedSkills: [] });
-  if (recommendations.recommendedSkills && recommendations.recommendedSkills.length > 0) {
-    console.log(`\n💡 建議下次 session 載入：`);
+  if (recommendations.recommendedSkills?.length > 0) {
+    console.log('\n💡 Recommended for next session:');
     recommendations.recommendedSkills.slice(0, 3).forEach(skill => {
       console.log(`  • ${skill.name} (${skill.reason})`);
     });
@@ -611,14 +589,15 @@ function displaySessionSummary(sessionState, patterns, sessionContext) {
   // Quota status
   const quotaPercentage = (sessionContext.tokenQuota.used / sessionContext.tokenQuota.limit * 100).toFixed(1);
   const quotaEmoji = quotaPercentage > 80 ? '🔴' : quotaPercentage > 50 ? '🟡' : '🟢';
-  console.log(`\n${quotaEmoji} Token 配額使用: ${quotaPercentage}% (${sessionContext.tokenQuota.used.toLocaleString()} / ${sessionContext.tokenQuota.limit.toLocaleString()})`);
+  console.log(`\n${quotaEmoji} Token quota: ${quotaPercentage}% (${sessionContext.tokenQuota.used.toLocaleString()} / ${sessionContext.tokenQuota.limit.toLocaleString()})`);
 
-  console.log('\n✅ Session 狀態已保存\n');
+  console.log('\n✅ Session state saved\n');
 }
 
-/**
- * Main Stop hook logic
- */
+// ============================================================================
+// Main Stop Hook Logic
+// ============================================================================
+
 function stopHook() {
   console.log('\n🛑 Smart-Agents Session Ending...\n');
 
@@ -626,7 +605,7 @@ function stopHook() {
   const sessionState = readJSONFile(CURRENT_SESSION_FILE, {
     startTime: new Date().toISOString(),
     toolCalls: [],
-    patterns: []
+    patterns: [],
   });
 
   // Analyze patterns
@@ -653,12 +632,15 @@ function stopHook() {
   // Clean up current session file
   try {
     fs.unlinkSync(CURRENT_SESSION_FILE);
-  } catch (err) {
+  } catch {
     // Ignore if file doesn't exist
   }
 }
 
+// ============================================================================
 // Execute
+// ============================================================================
+
 try {
   stopHook();
 } catch (error) {

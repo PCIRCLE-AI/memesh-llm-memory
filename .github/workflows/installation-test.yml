@@ -161,8 +161,13 @@ jobs:
 
       - name: Check for secrets
         run: |
-          if git ls-files | xargs grep -l "MEMESH_A2A_TOKEN=" | grep -v ".env.example"; then
-            echo "❌ Found secrets in repository"
+          # Check for actual token VALUES (64-char hex strings), not variable NAMES
+          # Pattern: MEMESH_A2A_TOKEN= followed by 64 hex characters
+          # Exclude: .env.example, documentation, and script comments
+          LEAKED_FILES=$(git ls-files | xargs grep -lE "MEMESH_A2A_TOKEN=[a-f0-9]{64}" 2>/dev/null | grep -v ".env.example" || true)
+          if [ -n "$LEAKED_FILES" ]; then
+            echo "❌ Found actual token values in repository:"
+            echo "$LEAKED_FILES"
             exit 1
           fi
-          echo "✅ No secrets found"
+          echo "✅ No leaked secrets found"

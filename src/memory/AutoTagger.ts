@@ -142,6 +142,7 @@ export class AutoTagger {
         // to ensure they're not part of a larger word
         // Note: # is not a special regex character, but we keep consistent escaping
         const escapedTech = tech
+          .replace(/\\/g, '\\\\') // Escape backslash first!
           .replace(/\+/g, '\\+')
           .replace(/#/g, '\\#')
           .replace(/\./g, '\\.');

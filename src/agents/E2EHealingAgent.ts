@@ -126,7 +126,7 @@ export class E2EHealingAgent {
       throw new Error('Invalid test path: cannot start with "-"');
     }
 
-    const safePathPattern = /^[a-zA-Z0-9_.\\/\\-]+$/;
+    const safePathPattern = /^[a-zA-Z0-9_.\/\-]+$/;
     if (!safePathPattern.test(normalizedTestPath)) {
       throw new Error('Invalid test path: contains unsupported characters');
     }

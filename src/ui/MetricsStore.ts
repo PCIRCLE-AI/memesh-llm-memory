@@ -51,8 +51,10 @@ export class MetricsStore {
    */
   public async persist(): Promise<void> {
     const data = JSON.stringify(this.currentSession, null, 2);
-    await fs.mkdir(path.dirname(this.storePath), { recursive: true });
-    await fs.writeFile(this.storePath, data, 'utf-8');
+    // Create directory with secure permissions (owner only)
+    await fs.mkdir(path.dirname(this.storePath), { recursive: true, mode: 0o700 });
+    // Write file with secure permissions (owner read/write only)
+    await fs.writeFile(this.storePath, data, { encoding: 'utf-8', mode: 0o600 });
   }
 
   /**

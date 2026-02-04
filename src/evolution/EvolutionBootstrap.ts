@@ -138,17 +138,18 @@ export class EvolutionBootstrap {
 
       logger.info(`Loading bootstrap patterns from: ${bootstrapPath}`);
 
-      // Check file size first (prevent loading huge files into memory)
-      const stats = await fs.stat(bootstrapPath);
-      if (stats.size > this.MAX_BOOTSTRAP_FILE_SIZE) {
+      // Read file first, then check size to avoid TOCTOU race condition
+      // (file could be modified between stat and read operations)
+      const fileContent = await fs.readFile(bootstrapPath, 'utf-8');
+
+      // Check size after reading to prevent processing huge files
+      const fileSize = Buffer.byteLength(fileContent, 'utf-8');
+      if (fileSize > this.MAX_BOOTSTRAP_FILE_SIZE) {
         logger.error(
-          `Bootstrap file too large: ${stats.size} bytes (max: ${this.MAX_BOOTSTRAP_FILE_SIZE})`
+          `Bootstrap file too large: ${fileSize} bytes (max: ${this.MAX_BOOTSTRAP_FILE_SIZE})`
         );
         return [];
       }
-
-      // Read bootstrap file
-      const fileContent = await fs.readFile(bootstrapPath, 'utf-8');
 
       // Parse with error handling
       const bootstrapData = this.safeJsonParse(fileContent);

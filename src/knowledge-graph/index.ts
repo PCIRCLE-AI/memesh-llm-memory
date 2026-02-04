@@ -328,6 +328,7 @@ export class KnowledgeGraph {
     }
 
     // Migration 2: Populate FTS5 index from existing entities
+    // ✅ CRITICAL-3 FIX: Use chunked migration to handle large datasets
     try {
       // Check if FTS5 table is empty but entities exist
       const ftsCount = (this.db.prepare('SELECT COUNT(*) as count FROM entities_fts').get() as { count: number }).count;
@@ -336,20 +337,42 @@ export class KnowledgeGraph {
       if (ftsCount === 0 && entityCount > 0) {
         logger.info('[KG] Running migration: Populating FTS5 index from existing entities');
 
-        // Populate FTS5 from existing data
-        this.db.exec(`
+        // CRITICAL-3 FIX: Process in chunks to avoid memory issues with large datasets
+        // Also limit observations per entity to prevent GROUP_CONCAT overflow
+        const CHUNK_SIZE = 500;
+        const MAX_OBSERVATIONS_PER_ENTITY = 500;
+
+        const insertStmt = this.db.prepare(`
           INSERT INTO entities_fts(rowid, name, observations)
           SELECT
             e.id,
             e.name,
             COALESCE(
-              (SELECT GROUP_CONCAT(content, ' ') FROM observations o WHERE o.entity_id = e.id),
+              (SELECT GROUP_CONCAT(content, ' ') FROM (
+                SELECT content FROM observations o
+                WHERE o.entity_id = e.id
+                ORDER BY o.created_at DESC
+                LIMIT ?
+              )),
               ''
             )
           FROM entities e
+          WHERE e.id > ? AND e.id <= ?
         `);
 
-        logger.info(`[KG] Migration complete: Populated FTS5 index with ${entityCount} entities`);
+        // Get min/max IDs for chunking
+        const idRange = this.db.prepare(
+          'SELECT MIN(id) as minId, MAX(id) as maxId FROM entities'
+        ).get() as { minId: number; maxId: number };
+
+        let processedCount = 0;
+        for (let startId = idRange.minId - 1; startId < idRange.maxId; startId += CHUNK_SIZE) {
+          const endId = startId + CHUNK_SIZE;
+          const result = insertStmt.run(MAX_OBSERVATIONS_PER_ENTITY, startId, endId);
+          processedCount += result.changes;
+        }
+
+        logger.info(`[KG] Migration complete: Populated FTS5 index with ${processedCount} entities`);
       }
     } catch (error) {
       logger.error('[KG] FTS5 population migration failed:', {
@@ -425,6 +448,8 @@ export class KnowledgeGraph {
   /**
    * Prepare query string for FTS5 MATCH
    * Converts user query to FTS5 query syntax
+   *
+   * ✅ CRITICAL-2 FIX: Escapes FTS5 operators to prevent query injection
    */
   private prepareFTS5Query(query: string): string {
     const normalized = query.trim().replace(/\s+/g, ' ');
@@ -438,15 +463,31 @@ export class KnowledgeGraph {
     }
 
     // Build FTS5 query with prefix matching
-    const ftsTokens = tokens.map(token => {
-      const escaped = token
-        .replace(/"/g, '""')
-        .replace(/\*/g, '')
-        .replace(/\^/g, '')
-        .replace(/:/g, '')
-        .replace(/[(){}[\]]/g, '');
-      return `"${escaped}"*`;
-    });
+    // CRITICAL-2 FIX: Filter out FTS5 operators to prevent query injection
+    const ftsTokens = tokens
+      .filter(token => {
+        // Remove FTS5 operators (case-insensitive check)
+        const upper = token.toUpperCase();
+        return upper !== 'AND' && upper !== 'OR' && upper !== 'NOT' && upper !== 'NEAR';
+      })
+      .map(token => {
+        const escaped = token
+          .replace(/"/g, '""')
+          .replace(/\*/g, '')
+          .replace(/\^/g, '')
+          .replace(/:/g, '')
+          .replace(/[(){}[\]]/g, '');
+        // Skip empty tokens after escaping
+        if (!escaped) {
+          return null;
+        }
+        return `"${escaped}"*`;
+      })
+      .filter((t): t is string => t !== null);
+
+    if (ftsTokens.length === 0) {
+      return '';
+    }
 
     return ftsTokens.join(' OR ');
   }
@@ -541,25 +582,39 @@ export class KnowledgeGraph {
 
       // Sync to FTS5 index
       // For contentless FTS5 tables, we need to handle updates specially
-      // Query existing FTS entry to get old content for proper deletion
-      const existingFtsContent = this.db
-        .prepare('SELECT name, observations FROM entities_fts WHERE rowid = ?')
-        .get(actualId) as { name: string; observations: string } | undefined;
-
-      if (existingFtsContent) {
-        // For contentless FTS5, delete requires exact original content
-        this.db.prepare(`
-          INSERT INTO entities_fts(entities_fts, rowid, name, observations)
-          VALUES('delete', ?, ?, ?)
-        `).run(actualId, existingFtsContent.name, existingFtsContent.observations);
-      }
-
-      // Insert into FTS5 with concatenated observations
+      // ✅ CRITICAL-1 FIX: Wrap FTS5 sync in transaction to prevent race condition
+      // ✅ MAJOR-1 FIX: Add error handling for FTS5 sync
       const observationsText = entity.observations ? entity.observations.join(' ') : '';
-      this.db.prepare(`
-        INSERT INTO entities_fts(rowid, name, observations)
-        VALUES (?, ?, ?)
-      `).run(actualId, entity.name, observationsText);
+      try {
+        this.db.transaction(() => {
+          // Query existing FTS entry to get old content for proper deletion
+          const existingFtsContent = this.db
+            .prepare('SELECT name, observations FROM entities_fts WHERE rowid = ?')
+            .get(actualId) as { name: string; observations: string } | undefined;
+
+          if (existingFtsContent) {
+            // For contentless FTS5, delete requires exact original content
+            this.db.prepare(`
+              INSERT INTO entities_fts(entities_fts, rowid, name, observations)
+              VALUES('delete', ?, ?, ?)
+            `).run(actualId, existingFtsContent.name, existingFtsContent.observations);
+          }
+
+          // Insert into FTS5 with concatenated observations
+          this.db.prepare(`
+            INSERT INTO entities_fts(rowid, name, observations)
+            VALUES (?, ?, ?)
+          `).run(actualId, entity.name, observationsText);
+        })();
+      } catch (ftsError) {
+        // Log FTS5 sync failure but don't fail the entity creation
+        // Search will fall back to LIKE for this entity
+        logger.error('[KG] FTS5 sync failed for entity creation:', {
+          entityName: entity.name,
+          entityId: actualId,
+          error: ftsError instanceof Error ? ftsError.message : String(ftsError),
+        });
+      }
 
       // Invalidate cache for entity queries
       this.queryCache.invalidatePattern(/^entities:/);
@@ -951,22 +1006,26 @@ export class KnowledgeGraph {
       return false;
     }
 
-    // Delete from FTS5 index first (contentless table requires special syntax)
-    // Must be done before entity deletion since we need the entity data
-    const existingFts = this.db.prepare(
-      'SELECT name, observations FROM entities_fts WHERE rowid = ?'
-    ).get(entity.id) as { name: string; observations: string } | undefined;
+    // ✅ CRITICAL-1 FIX: Wrap FTS5 delete + entity delete in transaction
+    // Prevents race condition where FTS5 content changes between SELECT and DELETE
+    const result = this.db.transaction(() => {
+      // Delete from FTS5 index first (contentless table requires special syntax)
+      // Must be done before entity deletion since we need the entity data
+      const existingFts = this.db.prepare(
+        'SELECT name, observations FROM entities_fts WHERE rowid = ?'
+      ).get(entity.id) as { name: string; observations: string } | undefined;
 
-    if (existingFts) {
-      this.db.prepare(`
-        INSERT INTO entities_fts(entities_fts, rowid, name, observations)
-        VALUES('delete', ?, ?, ?)
-      `).run(entity.id, existingFts.name, existingFts.observations);
-    }
+      if (existingFts) {
+        this.db.prepare(`
+          INSERT INTO entities_fts(entities_fts, rowid, name, observations)
+          VALUES('delete', ?, ?, ?)
+        `).run(entity.id, existingFts.name, existingFts.observations);
+      }
 
-    // Delete the entity (cascade will handle observations, tags, and relations)
-    const stmt = this.db.prepare('DELETE FROM entities WHERE name = ?');
-    const result = stmt.run(name);
+      // Delete the entity (cascade will handle observations, tags, and relations)
+      const stmt = this.db.prepare('DELETE FROM entities WHERE name = ?');
+      return stmt.run(name);
+    })();
 
     // Invalidate all caches since entity deletion affects multiple queries
     this.queryCache.invalidatePattern(/^entities:/);

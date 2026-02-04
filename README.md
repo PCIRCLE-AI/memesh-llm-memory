@@ -413,7 +413,37 @@ buddy-remember "auth"  # Returns project-B's auth decisions
 </details>
 
 <details>
-<summary><strong>18 MCP Standard Tools</strong></summary>
+<summary><strong>Smart Memory Query</strong></summary>
+
+Context-aware memory retrieval with intelligent ranking:
+- 🎯 Semantic search across your knowledge base
+- 🏷️ Auto-tagging for better organization
+- 📊 Relevance scoring based on context
+
+</details>
+
+<details>
+<summary><strong>Multi-Session Support (Daemon Mode)</strong></summary>
+
+Run multiple Claude Code sessions sharing the same memory:
+- 🔄 First instance becomes the daemon
+- 🔗 Subsequent instances connect as proxies
+- 📡 Shared knowledge graph across all sessions
+
+</details>
+
+<details>
+<summary><strong>SecretManager</strong></summary>
+
+Securely store API keys and credentials:
+- 🔐 AES-256-GCM encryption
+- 💾 Local SQLite storage (never transmitted)
+- 🔑 Use `buddy-secret-store` and `buddy-secret-get`
+
+</details>
+
+<details>
+<summary><strong>18+ MCP Standard Tools</strong></summary>
 
 Full integration with Model Context Protocol for seamless Claude Code experience.
 

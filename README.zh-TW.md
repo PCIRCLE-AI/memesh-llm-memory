@@ -323,7 +323,37 @@ buddy-remember "auth"  # 回傳 project-B 的 auth 決策
 </details>
 
 <details>
-<summary><strong>18 個 MCP 標準工具</strong></summary>
+<summary><strong>智能記憶查詢</strong></summary>
+
+具備上下文感知的智能記憶檢索：
+- 🎯 知識庫語意搜尋
+- 🏷️ 自動標籤分類
+- 📊 基於上下文的相關性排序
+
+</details>
+
+<details>
+<summary><strong>多 Session 支援（Daemon 模式）</strong></summary>
+
+多個 Claude Code session 共享同一記憶：
+- 🔄 第一個實例成為 daemon
+- 🔗 後續實例作為 proxy 連接
+- 📡 所有 session 共享知識圖譜
+
+</details>
+
+<details>
+<summary><strong>SecretManager 密鑰管理</strong></summary>
+
+安全存儲 API 金鑰和憑證：
+- 🔐 AES-256-GCM 加密
+- 💾 本地 SQLite 存儲（永不傳輸）
+- 🔑 使用 `buddy-secret-store` 和 `buddy-secret-get`
+
+</details>
+
+<details>
+<summary><strong>18+ 個 MCP 標準工具</strong></summary>
 
 完整整合 Model Context Protocol，提供無縫的 Claude Code 體驗。
 

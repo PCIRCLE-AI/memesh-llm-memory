@@ -72,10 +72,6 @@ MeMesh: 🧠 "I see you have JWT. Let's
 
 ---
 
-### 📹 **Video Demo** (38 seconds)
-
-Watch MeMesh's core features in action:
-
 <div align="center">
 
 <video src="https://github.com/PCIRCLE-AI/claude-code-buddy/raw/develop/media/demo-video/out/memesh-demo.mp4" controls width="800">
@@ -83,15 +79,6 @@ Watch MeMesh's core features in action:
 </video>
 
 </div>
-
-**Features showcased:**
-- 🤝 **A2A Collaboration** - Multi-agent coordination
-- 🧠 **Memory Management** - Knowledge graph storage
-- 🔐 **Secrets Management** - Secure credential storage
-- ❤️ **Health Monitoring** - Real-time system status
-- ⚡ **Smart Workflows** - Automated task execution
-
-> Built with [Remotion](https://remotion.dev) • Source: `media/demo-video/`
 
 ---
 

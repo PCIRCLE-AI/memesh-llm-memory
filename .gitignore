@@ -327,3 +327,10 @@ start-session-*.sh
 
 # Marketplace submission (internal strategy)
 MARKETPLACE_SUBMISSION.md
+
+# Internal development documents (code quality, checklists, improvements)
+*-code-quality-*.md
+*-checklist.md
+*-improvements.md
+DEPLOYMENT_CHECKLIST.md
+PRE_RELEASE_CHECKLIST.md

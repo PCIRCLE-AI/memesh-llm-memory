@@ -5,7 +5,6 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import type {
-  SendMessageRequest,
   SendMessageResponse,
   ServiceResponse,
   ServiceError,
@@ -16,13 +15,27 @@ import type {
   AgentCard,
 } from '../types/index.js';
 import { TaskQueue } from '../storage/TaskQueue.js';
+import { validateSendMessageRequest } from './validation/index.js';
+import { logger } from '../../utils/logger.js';
+import { TaskStateConstants } from '../storage/inputValidation.js';
+import type { MCPTaskDelegator } from '../delegator/MCPTaskDelegator.js';
 
 export class A2ARoutes {
+  private delegator: MCPTaskDelegator | null = null;
+
   constructor(
     private _agentId: string,
     private taskQueue: TaskQueue,
     private agentCard: AgentCard
   ) {}
+
+  /**
+   * Set the task delegator for cancel task coordination.
+   * Must be called after construction since delegator may be created after routes.
+   */
+  setDelegator(delegator: MCPTaskDelegator): void {
+    this.delegator = delegator;
+  }
 
   sendMessage = async (
     req: Request,
@@ -30,17 +43,26 @@ export class A2ARoutes {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const request = req.body as SendMessageRequest;
+      // Validate request body with comprehensive schema validation
+      const validationResult = validateSendMessageRequest(req.body);
 
-      if (!request.message || !request.message.parts) {
+      if (!validationResult.success) {
+        logger.warn('SendMessage validation failed', {
+          errorCode: validationResult.error?.code,
+          detailsCount: validationResult.error?.details?.length,
+        });
+
         const error: ServiceError = {
-          code: 'INVALID_REQUEST',
-          message: 'Missing required field: message.parts',
+          code: validationResult.error?.code || 'VALIDATION_ERROR',
+          message: validationResult.error?.message || 'Request validation failed',
+          details: validationResult.error?.details as Record<string, unknown> | undefined,
         };
         res.status(400).json({ success: false, error });
         return;
       }
 
+      // At this point, validation passed so data is guaranteed to exist
+      const request = validationResult.data!;
       let taskId = request.taskId;
 
       if (!taskId) {
@@ -63,7 +85,7 @@ export class A2ARoutes {
 
       const response: SendMessageResponse = {
         taskId,
-        status: 'SUBMITTED',
+        status: TaskStateConstants.SUBMITTED,
       };
 
       const result: ServiceResponse<SendMessageResponse> = {
@@ -192,7 +214,7 @@ export class A2ARoutes {
       }
 
       const updated = this.taskQueue.updateTaskStatus(taskId, {
-        state: 'CANCELED',
+        state: TaskStateConstants.CANCELED,
       });
 
       if (!updated) {
@@ -204,9 +226,15 @@ export class A2ARoutes {
         return;
       }
 
-      const result: ServiceResponse<{ taskId: string; status: string }> = {
+      // Also remove from delegator pending queue to prevent execution
+      if (this.delegator) {
+        await this.delegator.removeTask(taskId);
+        logger.info('[A2ARoutes] Task removed from delegator queue on cancel', { taskId });
+      }
+
+      const result: ServiceResponse<{ taskId: string; status: TaskState }> = {
         success: true,
-        data: { taskId, status: 'CANCELED' },
+        data: { taskId, status: TaskStateConstants.CANCELED },
       };
 
       res.status(200).json(result);

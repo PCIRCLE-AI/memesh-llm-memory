@@ -130,6 +130,9 @@ export class A2AServer {
     this.app = this.createApp();
     this.delegator = new MCPTaskDelegator(this.taskQueue, logger);
     this.timeoutChecker = new TimeoutChecker(this.delegator);
+
+    // Connect routes to delegator for cancel task coordination
+    this.routes.setDelegator(this.delegator);
   }
 
   private createApp(): Express {

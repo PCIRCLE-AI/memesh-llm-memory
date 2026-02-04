@@ -22,6 +22,11 @@
  * - Safe method exemption (GET, HEAD, OPTIONS)
  * - Bearer token exemption (not vulnerable to CSRF)
  *
+ * Configuration (Environment Variables):
+ * - CSRF_MAX_TOKENS: Maximum tokens to track (default: 10000, min: 100, max: 1000000)
+ * - CSRF_TOKEN_EXPIRATION_MS: Token TTL in ms (default: 3600000, min: 60000, max: 86400000)
+ * - CSRF_EVICTION_WARNING_COOLDOWN_MS: Warning cooldown in ms (default: 60000, min: 1000, max: 3600000)
+ *
  * References:
  * - CSRF Attacks: https://owasp.org/www-community/attacks/csrf
  * - OAuth 2.0 Bearer Tokens: https://datatracker.ietf.org/doc/html/rfc6750
@@ -35,16 +40,78 @@ import { logger } from '../../../utils/logger.js';
 import { LRUCache } from '../../../utils/lru-cache.js';
 
 /**
+ * Configuration bounds for CSRF settings.
+ * These prevent misconfiguration that could cause security or performance issues.
+ */
+const CONFIG_BOUNDS = {
+  maxTokens: { min: 100, max: 1_000_000, default: 10_000 },
+  tokenExpirationMs: { min: 60_000, max: 86_400_000, default: 3_600_000 }, // 1 min to 24 hours
+  evictionWarningCooldownMs: { min: 1_000, max: 3_600_000, default: 60_000 }, // 1 sec to 1 hour
+} as const;
+
+/**
+ * Parse and validate a configuration value from environment variable.
+ *
+ * @param envVar - Environment variable name
+ * @param defaultValue - Default value if env var not set or invalid
+ * @param min - Minimum allowed value
+ * @param max - Maximum allowed value
+ * @returns Validated configuration value
+ */
+function getConfigValue(
+  envVar: string,
+  defaultValue: number,
+  min: number,
+  max: number
+): number {
+  const envValue = process.env[envVar];
+  if (!envValue) {
+    return defaultValue;
+  }
+
+  const parsed = parseInt(envValue, 10);
+  if (isNaN(parsed)) {
+    logger.warn(`[CSRF] Invalid ${envVar}="${envValue}" (not a number), using default ${defaultValue}`);
+    return defaultValue;
+  }
+
+  if (parsed < min || parsed > max) {
+    logger.warn(
+      `[CSRF] Invalid ${envVar}=${parsed} (out of bounds [${min}, ${max}]), using default ${defaultValue}`
+    );
+    return defaultValue;
+  }
+
+  return parsed;
+}
+
+/**
  * Maximum number of CSRF tokens to track.
  * Prevents unbounded memory growth under attack.
  * When exceeded, the LRU cache automatically evicts least-recently-used tokens.
+ *
+ * Configurable via CSRF_MAX_TOKENS environment variable.
+ * Default: 10000, Min: 100, Max: 1000000
  */
-const MAX_TOKENS = 10_000;
+const MAX_TOKENS = getConfigValue(
+  'CSRF_MAX_TOKENS',
+  CONFIG_BOUNDS.maxTokens.default,
+  CONFIG_BOUNDS.maxTokens.min,
+  CONFIG_BOUNDS.maxTokens.max
+);
 
 /**
- * Token expiration time (1 hour)
+ * Token expiration time in milliseconds.
+ *
+ * Configurable via CSRF_TOKEN_EXPIRATION_MS environment variable.
+ * Default: 3600000 (1 hour), Min: 60000 (1 min), Max: 86400000 (24 hours)
  */
-const TOKEN_EXPIRATION_MS = 60 * 60 * 1000;
+const TOKEN_EXPIRATION_MS = getConfigValue(
+  'CSRF_TOKEN_EXPIRATION_MS',
+  CONFIG_BOUNDS.tokenExpirationMs.default,
+  CONFIG_BOUNDS.tokenExpirationMs.min,
+  CONFIG_BOUNDS.tokenExpirationMs.max
+);
 
 /**
  * CSRF token storage using LRU cache with TTL.
@@ -67,7 +134,29 @@ const tokens = new LRUCache<number>({
  * to avoid log flooding during sustained attacks.
  */
 let lastEvictionWarningTime = 0;
-const EVICTION_WARNING_COOLDOWN_MS = 60_000; // 1 minute
+
+/**
+ * Cooldown period for eviction warnings to prevent log flooding.
+ *
+ * Configurable via CSRF_EVICTION_WARNING_COOLDOWN_MS environment variable.
+ * Default: 60000 (1 minute), Min: 1000 (1 sec), Max: 3600000 (1 hour)
+ */
+const EVICTION_WARNING_COOLDOWN_MS = getConfigValue(
+  'CSRF_EVICTION_WARNING_COOLDOWN_MS',
+  CONFIG_BOUNDS.evictionWarningCooldownMs.default,
+  CONFIG_BOUNDS.evictionWarningCooldownMs.min,
+  CONFIG_BOUNDS.evictionWarningCooldownMs.max
+);
+
+/**
+ * Log CSRF configuration on module load.
+ * Helps operators verify and debug configuration.
+ */
+logger.info('[CSRF] Configuration loaded', {
+  maxTokens: MAX_TOKENS,
+  tokenExpirationMs: TOKEN_EXPIRATION_MS,
+  evictionWarningCooldownMs: EVICTION_WARNING_COOLDOWN_MS,
+});
 
 /**
  * Safe HTTP methods that don't require CSRF protection

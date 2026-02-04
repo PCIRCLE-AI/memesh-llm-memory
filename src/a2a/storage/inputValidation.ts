@@ -15,8 +15,9 @@ const MAX_FILTER_ARRAY_SIZE = 100;
 
 /**
  * Valid task states as defined by A2A protocol
+ * Exported for use as constants throughout the codebase to avoid hardcoded strings
  */
-const VALID_TASK_STATES: readonly TaskState[] = [
+export const VALID_TASK_STATES: readonly TaskState[] = [
   'SUBMITTED',
   'WORKING',
   'INPUT_REQUIRED',
@@ -26,6 +27,21 @@ const VALID_TASK_STATES: readonly TaskState[] = [
   'REJECTED',
   'TIMEOUT',
 ] as const;
+
+/**
+ * Task state constants for use throughout the codebase
+ * Prevents hardcoded string literals and ensures type safety
+ */
+export const TaskStateConstants = {
+  SUBMITTED: 'SUBMITTED' as const,
+  WORKING: 'WORKING' as const,
+  INPUT_REQUIRED: 'INPUT_REQUIRED' as const,
+  COMPLETED: 'COMPLETED' as const,
+  FAILED: 'FAILED' as const,
+  CANCELED: 'CANCELED' as const,
+  REJECTED: 'REJECTED' as const,
+  TIMEOUT: 'TIMEOUT' as const,
+} satisfies Record<string, TaskState>;
 
 /**
  * Valid task priorities

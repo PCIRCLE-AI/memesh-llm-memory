@@ -88,9 +88,9 @@ MeMesh: 🧠 "I see you have JWT. Let's
 
 ```bash
 # In Claude Code
-buddy-help                          # See all commands
-buddy-do "explain how MeMesh works"    # Watch it intelligently respond
-buddy-remember "project decisions"  # Query your project memory
+buddy-help                           # See all commands
+buddy-do "explain how MeMesh works"  # Watch it intelligently respond
+buddy-remember "project decisions"   # Query your project memory
 ```
 
 **📖 [Read User Guide](docs/USER_GUIDE.md)** • **🔧 [API Reference](docs/api/API_REFERENCE.md)**

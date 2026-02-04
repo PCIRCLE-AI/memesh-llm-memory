@@ -65,6 +65,8 @@ export const THRESHOLDS = {
   HEARTBEAT_VALIDITY: 5 * 60 * 1000,
   /** A2A session timeout (ms) */
   A2A_SESSION_TIMEOUT: 60 * 60 * 1000,
+  /** Maximum number of archived sessions to keep */
+  MAX_ARCHIVED_SESSIONS: 30,
 };
 
 // ============================================================================

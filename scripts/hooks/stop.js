@@ -526,7 +526,7 @@ function archiveSession(sessionState) {
 
   writeJSONFile(archiveFile, sessionState);
 
-  // Keep only last 30 sessions
+  // Keep only last N sessions (configurable via THRESHOLDS)
   try {
     // Ensure directory exists before reading
     ensureDir(SESSIONS_ARCHIVE_DIR);
@@ -536,8 +536,9 @@ function archiveSession(sessionState) {
       .sort()
       .reverse();
 
-    if (sessions.length > 30) {
-      sessions.slice(30).forEach(f => {
+    const maxSessions = THRESHOLDS.MAX_ARCHIVED_SESSIONS;
+    if (sessions.length > maxSessions) {
+      sessions.slice(maxSessions).forEach(f => {
         try {
           fs.unlinkSync(path.join(SESSIONS_ARCHIVE_DIR, f));
         } catch (error) {
@@ -598,9 +599,9 @@ function displaySessionSummary(sessionState, patterns, sessionContext) {
   // Quota status (guard against division by zero)
   const quotaLimit = sessionContext.tokenQuota?.limit || 1;
   const quotaUsed = sessionContext.tokenQuota?.used || 0;
-  const quotaPercentage = (quotaUsed / quotaLimit * 100).toFixed(1);
-  const quotaEmoji = quotaPercentage > 80 ? '🔴' : quotaPercentage > 50 ? '🟡' : '🟢';
-  console.log(`\n${quotaEmoji} Token quota: ${quotaPercentage}% (${quotaUsed.toLocaleString()} / ${quotaLimit.toLocaleString()})`);
+  const quotaPercentNum = (quotaUsed / quotaLimit) * 100;
+  const quotaEmoji = quotaPercentNum > 80 ? '🔴' : quotaPercentNum > 50 ? '🟡' : '🟢';
+  console.log(`\n${quotaEmoji} Token quota: ${quotaPercentNum.toFixed(1)}% (${quotaUsed.toLocaleString()} / ${quotaLimit.toLocaleString()})`);
 
   console.log('\n✅ Session state saved\n');
 }

@@ -244,10 +244,12 @@ export function agentCheckIn() {
  * JSON output mode avoids issues with pipe characters in task descriptions
  * that would corrupt the standard pipe-delimited output format.
  *
- * @param {string} agentId - Agent ID to check tasks for (currently unused, checks all)
+ * Note: Currently fetches all SUBMITTED tasks. Agent-specific filtering
+ * can be added when task assignment schema includes assignee_id field.
+ *
  * @returns {Array<{id: string, description: string, state: string, createdAt: string, senderId: string}>}
  */
-export function checkPendingTasks(agentId) {
+export function checkPendingTasks() {
   if (!fs.existsSync(TASK_DB_PATH)) return [];
 
   try {
@@ -427,7 +429,7 @@ export function initA2ACollaboration() {
   // New check-in
   const identity = agentCheckIn();
   const onlineAgents = getOnlineAgents();
-  const pendingTasks = checkPendingTasks(identity.agentId);
+  const pendingTasks = checkPendingTasks();
 
   displayCheckInBroadcast(identity, onlineAgents, pendingTasks);
 
@@ -471,9 +473,13 @@ export function getCurrentIdentity() {
 // Standalone Execution
 // ============================================================================
 
-const isMainModule = process.argv[1] &&
-  (process.argv[1].endsWith('a2a-collaboration-hook.js') ||
-   process.argv[1].endsWith('a2a-collaboration-hook'));
+// Check if this file is being run directly (not imported)
+const isMainModule = (() => {
+  if (!process.argv[1]) return false;
+  const scriptPath = path.resolve(process.argv[1]);
+  const thisFile = path.resolve(new URL(import.meta.url).pathname);
+  return scriptPath === thisFile;
+})();
 
 if (isMainModule) {
   initA2ACollaboration();

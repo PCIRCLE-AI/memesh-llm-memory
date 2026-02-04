@@ -19,6 +19,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
+import v8 from 'v8';
 import { logger } from '../../../utils/logger.js';
 
 /**
@@ -72,6 +73,11 @@ const CAPACITY_WARNING_COOLDOWN_MS = 60_000; // 1 minute
 const DEFAULT_MAX_CONNECTIONS_PER_IP = 10;
 const DEFAULT_MAX_PAYLOAD_SIZE_MB = 10;
 const DEFAULT_CONNECTION_IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+/**
+ * Default memory pressure threshold as percentage of V8 heap size limit.
+ * This uses heap_size_limit (the actual maximum) not heapTotal (current allocation).
+ */
+const DEFAULT_MEMORY_PRESSURE_THRESHOLD = 85; // Percentage of heap_size_limit
 
 /**
  * Cleanup timer
@@ -376,8 +382,16 @@ export function payloadSizeLimitMiddleware() {
 /**
  * Memory pressure detection middleware
  *
- * Checks system memory usage and rejects requests when
- * memory pressure is high to prevent OOM.
+ * Checks V8 heap usage against the actual heap size limit to detect
+ * genuine memory pressure. Uses heap_size_limit (the real maximum)
+ * instead of heapTotal (current allocation) to avoid false positives.
+ *
+ * V8's heapTotal is dynamically adjusted and typically stays small,
+ * leading to high usage percentages (e.g., 27MB/29MB = 93%) even when
+ * plenty of memory is available (heap_size_limit can be 4GB+).
+ *
+ * Configurable via A2A_MEMORY_PRESSURE_THRESHOLD environment variable.
+ * Default threshold is 85% of heap_size_limit.
  *
  * @example
  * ```typescript
@@ -385,18 +399,27 @@ export function payloadSizeLimitMiddleware() {
  * ```
  */
 export function memoryPressureMiddleware() {
-  return (req: Request, res: Response, next: NextFunction): void => {
-    const memUsage = process.memoryUsage();
-    const heapUsedMB = memUsage.heapUsed / 1024 / 1024;
-    const heapTotalMB = memUsage.heapTotal / 1024 / 1024;
-    const heapUsagePercent = (heapUsedMB / heapTotalMB) * 100;
+  const threshold = getMemoryPressureThreshold();
 
-    // Reject requests if heap usage > 90%
-    if (heapUsagePercent > 90) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    // Get V8 heap statistics for accurate memory pressure detection
+    const heapStats = v8.getHeapStatistics();
+    const heapUsedMB = heapStats.used_heap_size / 1024 / 1024;
+    const heapLimitMB = heapStats.heap_size_limit / 1024 / 1024;
+    const heapUsagePercent = (heapUsedMB / heapLimitMB) * 100;
+
+    // Also get process memory for logging context
+    const memUsage = process.memoryUsage();
+    const heapTotalMB = memUsage.heapTotal / 1024 / 1024;
+
+    // Reject requests if heap usage exceeds threshold of the actual limit
+    if (heapUsagePercent > threshold) {
       logger.warn('[Resource Protection] High memory pressure', {
         heapUsedMB: heapUsedMB.toFixed(2),
+        heapLimitMB: heapLimitMB.toFixed(2),
         heapTotalMB: heapTotalMB.toFixed(2),
         heapUsagePercent: heapUsagePercent.toFixed(2),
+        threshold,
       });
 
       res.status(503).json({
@@ -411,6 +434,22 @@ export function memoryPressureMiddleware() {
 
     next();
   };
+}
+
+/**
+ * Get memory pressure threshold from environment
+ */
+function getMemoryPressureThreshold(): number {
+  const env = process.env.A2A_MEMORY_PRESSURE_THRESHOLD;
+  if (!env) return DEFAULT_MEMORY_PRESSURE_THRESHOLD;
+
+  const parsed = parseInt(env, 10);
+  if (isNaN(parsed) || parsed <= 0 || parsed > 100) {
+    logger.warn(`Invalid A2A_MEMORY_PRESSURE_THRESHOLD: ${env}, using default ${DEFAULT_MEMORY_PRESSURE_THRESHOLD}`);
+    return DEFAULT_MEMORY_PRESSURE_THRESHOLD;
+  }
+
+  return parsed;
 }
 
 /**

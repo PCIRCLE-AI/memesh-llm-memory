@@ -21,6 +21,14 @@
 
 ---
 
+<div align="center">
+
+https://github.com/user-attachments/assets/a389bcd2-1563-4d91-b363-44cdba5f4e44
+
+</div>
+
+---
+
 ## 🤔 問題所在
 
 你一定經歷過這種痛苦：

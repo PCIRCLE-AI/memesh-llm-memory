@@ -232,6 +232,10 @@ async function startA2AServer(): Promise<any> {
  * 3. Otherwise → become the daemon
  */
 async function bootstrapWithDaemon() {
+  // CRITICAL: Set MCP_SERVER_MODE BEFORE importing logger to disable console output
+  // This prevents stdout pollution that breaks JSON-RPC communication
+  process.env.MCP_SERVER_MODE = 'true';
+
   try {
     const { DaemonBootstrap, isDaemonDisabled } = await import('./daemon/DaemonBootstrap.js');
     const { logger } = await import('../utils/logger.js');
@@ -298,6 +302,10 @@ function setupSignalHandlers(shutdownFn: (signal: string) => Promise<void>): voi
  * Start as the daemon (first instance)
  */
 async function startAsDaemon(bootstrapper: DaemonBootstrap, version: string) {
+  // CRITICAL: Set MCP_SERVER_MODE BEFORE importing logger to disable console output
+  // This prevents stdout pollution that breaks JSON-RPC communication
+  process.env.MCP_SERVER_MODE = 'true';
+
   const { logger } = await import('../utils/logger.js');
   const { DaemonSocketServer } = await import('./daemon/DaemonSocketServer.js');
   const { DaemonLockManager } = await import('./daemon/DaemonLockManager.js');
@@ -377,6 +385,9 @@ async function startAsDaemon(bootstrapper: DaemonBootstrap, version: string) {
  * Start as proxy client (subsequent instances)
  */
 async function startAsProxy(bootstrapper: DaemonBootstrap) {
+  // CRITICAL: Set MCP_SERVER_MODE BEFORE importing logger to disable console output
+  process.env.MCP_SERVER_MODE = 'true';
+
   const { logger } = await import('../utils/logger.js');
   const { StdioProxyClient } = await import('./daemon/StdioProxyClient.js');
 

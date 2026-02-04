@@ -138,10 +138,10 @@ function extractCauseChain(error: unknown, maxDepth: number = 10): ErrorCauseInf
 
   while (current && chain.length < maxDepth) {
     // Guard against circular cause references
-    // Note: Check for null first, then check typeof to ensure proper type narrowing
-    // This avoids the "comparison between inconvertible types" issue where
-    // typeof x === 'object' includes null (since typeof null === 'object')
-    if (current !== null && typeof current === 'object') {
+    // Note: Use truthiness check instead of explicit null comparison to avoid
+    // "comparison between inconvertible types" when comparing unknown with null.
+    // `current &&` already excludes null (falsy), then typeof narrows to object.
+    if (current && typeof current === 'object') {
       if (seen.has(current)) {
         chain.push({ message: '[Circular cause reference]', type: 'CircularRef' });
         break;

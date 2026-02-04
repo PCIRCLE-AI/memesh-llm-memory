@@ -20,7 +20,6 @@ import {
   STATE_DIR,
   MEMESH_DB_PATH,
   THRESHOLDS,
-  TIME,
   readJSONFile,
   writeJSONFile,
   sqliteQuery,
@@ -366,8 +365,10 @@ function sessionStart() {
     console.log('');
   }
 
-  // Display quota info
-  const quotaPercentage = (sessionContext.tokenQuota.used / sessionContext.tokenQuota.limit * 100).toFixed(1);
+  // Display quota info (guard against division by zero)
+  const quotaLimit = sessionContext.tokenQuota?.limit || 1;
+  const quotaUsed = sessionContext.tokenQuota?.used || 0;
+  const quotaPercentage = (quotaUsed / quotaLimit * 100).toFixed(1);
   if (quotaPercentage > 80) {
     console.log(`🔴 Quota usage: ${quotaPercentage}% (please monitor usage)\n`);
   } else if (quotaPercentage > 50) {

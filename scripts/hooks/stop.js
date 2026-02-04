@@ -24,6 +24,8 @@ import {
   sqliteQuery,
   calculateDuration,
   getDateString,
+  ensureDir,
+  logError,
 } from './hook-utils.js';
 import fs from 'fs';
 import path from 'path';
@@ -525,19 +527,26 @@ function archiveSession(sessionState) {
   writeJSONFile(archiveFile, sessionState);
 
   // Keep only last 30 sessions
-  const sessions = fs.readdirSync(SESSIONS_ARCHIVE_DIR)
-    .filter(f => f.startsWith('session-'))
-    .sort()
-    .reverse();
+  try {
+    // Ensure directory exists before reading
+    ensureDir(SESSIONS_ARCHIVE_DIR);
 
-  if (sessions.length > 30) {
-    sessions.slice(30).forEach(f => {
-      try {
-        fs.unlinkSync(path.join(SESSIONS_ARCHIVE_DIR, f));
-      } catch {
-        // Ignore errors
-      }
-    });
+    const sessions = fs.readdirSync(SESSIONS_ARCHIVE_DIR)
+      .filter(f => f.startsWith('session-'))
+      .sort()
+      .reverse();
+
+    if (sessions.length > 30) {
+      sessions.slice(30).forEach(f => {
+        try {
+          fs.unlinkSync(path.join(SESSIONS_ARCHIVE_DIR, f));
+        } catch (error) {
+          logError('archiveSession.unlink', error);
+        }
+      });
+    }
+  } catch (error) {
+    logError('archiveSession.readdir', error);
   }
 }
 
@@ -586,10 +595,12 @@ function displaySessionSummary(sessionState, patterns, sessionContext) {
     });
   }
 
-  // Quota status
-  const quotaPercentage = (sessionContext.tokenQuota.used / sessionContext.tokenQuota.limit * 100).toFixed(1);
+  // Quota status (guard against division by zero)
+  const quotaLimit = sessionContext.tokenQuota?.limit || 1;
+  const quotaUsed = sessionContext.tokenQuota?.used || 0;
+  const quotaPercentage = (quotaUsed / quotaLimit * 100).toFixed(1);
   const quotaEmoji = quotaPercentage > 80 ? '🔴' : quotaPercentage > 50 ? '🟡' : '🟢';
-  console.log(`\n${quotaEmoji} Token quota: ${quotaPercentage}% (${sessionContext.tokenQuota.used.toLocaleString()} / ${sessionContext.tokenQuota.limit.toLocaleString()})`);
+  console.log(`\n${quotaEmoji} Token quota: ${quotaPercentage}% (${quotaUsed.toLocaleString()} / ${quotaLimit.toLocaleString()})`);
 
   console.log('\n✅ Session state saved\n');
 }

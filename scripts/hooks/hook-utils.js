@@ -298,29 +298,44 @@ export function getDateString(date = new Date()) {
 
 /**
  * Read stdin with timeout protection
+ * Properly removes event listeners to prevent memory leaks
  * @param {number} timeout - Timeout in milliseconds
  * @returns {Promise<string>} Stdin content
  */
 export function readStdin(timeout = 3000) {
   return new Promise((resolve, reject) => {
     let data = '';
+
+    const cleanup = () => {
+      process.stdin.removeListener('data', onData);
+      process.stdin.removeListener('end', onEnd);
+      process.stdin.removeListener('error', onError);
+    };
+
     const timer = setTimeout(() => {
+      cleanup();
       reject(new Error('Stdin read timeout'));
     }, timeout);
 
-    process.stdin.on('data', chunk => {
+    const onData = (chunk) => {
       data += chunk;
-    });
+    };
 
-    process.stdin.on('end', () => {
+    const onEnd = () => {
       clearTimeout(timer);
+      cleanup();
       resolve(data);
-    });
+    };
 
-    process.stdin.on('error', err => {
+    const onError = (err) => {
       clearTimeout(timer);
+      cleanup();
       reject(err);
-    });
+    };
+
+    process.stdin.on('data', onData);
+    process.stdin.on('end', onEnd);
+    process.stdin.on('error', onError);
   });
 }
 

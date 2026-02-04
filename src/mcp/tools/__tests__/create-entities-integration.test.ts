@@ -6,23 +6,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createEntitiesTool } from '../create-entities';
 import type { KnowledgeGraph } from '../../../knowledge-graph/index.js';
-import type { MockedFunction } from '../../../../tests/utils/vitest-mock-types.js';
 
 describe('create-entities Integration Tests', () => {
   let mockKnowledgeGraph: KnowledgeGraph;
-  let mockCreateEntity: MockedFunction<KnowledgeGraph['createEntity']>;
 
   beforeEach(() => {
-    // Create properly typed mock function
-    mockCreateEntity = vi
-      .fn()
-      .mockResolvedValue(undefined) as MockedFunction<
-      KnowledgeGraph['createEntity']
-    >;
-
     // Mock the KnowledgeGraph
     mockKnowledgeGraph = {
-      createEntity: mockCreateEntity,
+      createEntity: vi.fn().mockResolvedValue(undefined),
     } as any;
   });
 
@@ -40,7 +31,7 @@ describe('create-entities Integration Tests', () => {
       mockKnowledgeGraph
     );
 
-    const callArgs = mockCreateEntity.mock.calls[0][0];
+    const callArgs = mockKnowledgeGraph.createEntity.mock.calls[0][0];
     const tags = callArgs.tags;
 
     // Should contain scope tag with project name (exact string format)
@@ -64,7 +55,7 @@ describe('create-entities Integration Tests', () => {
       mockKnowledgeGraph
     );
 
-    const callArgs = mockCreateEntity.mock.calls[0][0];
+    const callArgs = mockKnowledgeGraph.createEntity.mock.calls[0][0];
     const tags = callArgs.tags;
 
     // User tags should be preserved
@@ -91,7 +82,7 @@ describe('create-entities Integration Tests', () => {
       mockKnowledgeGraph
     );
 
-    const callArgs = mockCreateEntity.mock.calls[0][0];
+    const callArgs = mockKnowledgeGraph.createEntity.mock.calls[0][0];
     const tags = callArgs.tags;
 
     // Should still have auto-generated tags
@@ -122,7 +113,7 @@ describe('create-entities Integration Tests', () => {
       mockKnowledgeGraph
     );
 
-    const callArgs = mockCreateEntity.mock.calls[0][0];
+    const callArgs = mockKnowledgeGraph.createEntity.mock.calls[0][0];
 
     // Verify all fields are passed correctly
     expect(callArgs.name).toBe('Structured Entity');

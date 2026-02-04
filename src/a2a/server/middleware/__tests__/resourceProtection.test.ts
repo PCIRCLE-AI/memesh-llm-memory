@@ -6,7 +6,6 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
-import v8 from 'v8';
 import {
   connectionLimitMiddleware,
   payloadSizeLimitMiddleware,
@@ -262,70 +261,28 @@ describe('Resource Protection Middleware', () => {
   });
 
   describe('memoryPressureMiddleware', () => {
-    afterEach(() => {
-      vi.restoreAllMocks();
-    });
-
     it('should allow requests under normal memory pressure', () => {
       const middleware = memoryPressureMiddleware();
       const req = mockRequest();
       const res = mockResponse();
       const next = vi.fn();
 
-      // Mock normal memory usage using v8.getHeapStatistics
-      // The new logic checks used_heap_size / heap_size_limit (50% < 85% threshold = OK)
-      vi.spyOn(v8, 'getHeapStatistics').mockReturnValue({
-        total_heap_size: 100 * 1024 * 1024,
-        total_heap_size_executable: 0,
-        total_physical_size: 0,
-        total_available_size: 0,
-        used_heap_size: 50 * 1024 * 1024, // 50MB used
-        heap_size_limit: 100 * 1024 * 1024, // 100MB limit (50% usage < 85% threshold)
-        malloced_memory: 0,
-        peak_malloced_memory: 0,
-        does_zap_garbage: 0,
-        number_of_native_contexts: 0,
-        number_of_detached_contexts: 0,
-        total_global_handles_size: 0,
-        used_global_handles_size: 0,
-        external_memory: 0,
+      // Mock normal memory usage
+      const originalMemoryUsage = process.memoryUsage;
+      process.memoryUsage = vi.fn().mockReturnValue({
+        heapUsed: 50 * 1024 * 1024, // 50MB
+        heapTotal: 100 * 1024 * 1024, // 100MB (50% usage)
+        external: 0,
+        rss: 0,
+        arrayBuffers: 0,
       });
 
       middleware(req, res, next);
 
       expect(next).toHaveBeenCalled();
       expect(res.status).not.toHaveBeenCalled();
-    });
 
-    it('should allow requests at exactly threshold boundary (85%)', () => {
-      const middleware = memoryPressureMiddleware();
-      const req = mockRequest();
-      const res = mockResponse();
-      const next = vi.fn();
-
-      // Mock memory usage at exactly 85% - should pass because threshold is > not >=
-      vi.spyOn(v8, 'getHeapStatistics').mockReturnValue({
-        total_heap_size: 100 * 1024 * 1024,
-        total_heap_size_executable: 0,
-        total_physical_size: 0,
-        total_available_size: 0,
-        used_heap_size: 85 * 1024 * 1024, // 85MB used
-        heap_size_limit: 100 * 1024 * 1024, // 100MB limit (exactly 85% = threshold)
-        malloced_memory: 0,
-        peak_malloced_memory: 0,
-        does_zap_garbage: 0,
-        number_of_native_contexts: 0,
-        number_of_detached_contexts: 0,
-        total_global_handles_size: 0,
-        used_global_handles_size: 0,
-        external_memory: 0,
-      });
-
-      middleware(req, res, next);
-
-      // At exactly 85%, should pass (threshold uses > not >=)
-      expect(next).toHaveBeenCalled();
-      expect(res.status).not.toHaveBeenCalled();
+      process.memoryUsage = originalMemoryUsage;
     });
 
     it('should reject requests under high memory pressure', () => {
@@ -334,23 +291,14 @@ describe('Resource Protection Middleware', () => {
       const res = mockResponse();
       const next = vi.fn();
 
-      // Mock high memory usage using v8.getHeapStatistics
-      // The new logic checks used_heap_size / heap_size_limit > threshold (85%)
-      vi.spyOn(v8, 'getHeapStatistics').mockReturnValue({
-        total_heap_size: 100 * 1024 * 1024,
-        total_heap_size_executable: 0,
-        total_physical_size: 0,
-        total_available_size: 0,
-        used_heap_size: 90 * 1024 * 1024, // 90MB used
-        heap_size_limit: 100 * 1024 * 1024, // 100MB limit (90% usage > 85% threshold)
-        malloced_memory: 0,
-        peak_malloced_memory: 0,
-        does_zap_garbage: 0,
-        number_of_native_contexts: 0,
-        number_of_detached_contexts: 0,
-        total_global_handles_size: 0,
-        used_global_handles_size: 0,
-        external_memory: 0,
+      // Mock high memory usage
+      const originalMemoryUsage = process.memoryUsage;
+      process.memoryUsage = vi.fn().mockReturnValue({
+        heapUsed: 95 * 1024 * 1024, // 95MB
+        heapTotal: 100 * 1024 * 1024, // 100MB (95% usage)
+        external: 0,
+        rss: 0,
+        arrayBuffers: 0,
       });
 
       middleware(req, res, next);
@@ -363,6 +311,8 @@ describe('Resource Protection Middleware', () => {
         }),
       });
       expect(next).not.toHaveBeenCalled();
+
+      process.memoryUsage = originalMemoryUsage;
     });
   });
 

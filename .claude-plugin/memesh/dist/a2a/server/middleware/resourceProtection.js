@@ -1,4 +1,3 @@
-import v8 from 'v8';
 import { logger } from '../../../utils/logger.js';
 const connections = new Map();
 const DEFAULT_MAX_TRACKED_IPS = 10_000;
@@ -18,7 +17,6 @@ const CAPACITY_WARNING_COOLDOWN_MS = 60_000;
 const DEFAULT_MAX_CONNECTIONS_PER_IP = 10;
 const DEFAULT_MAX_PAYLOAD_SIZE_MB = 10;
 const DEFAULT_CONNECTION_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
-const DEFAULT_MEMORY_PRESSURE_THRESHOLD = 85;
 let cleanupTimer = null;
 function getMaxConnectionsPerIP() {
     const env = process.env.A2A_MAX_CONNECTIONS_PER_IP;
@@ -209,21 +207,16 @@ export function payloadSizeLimitMiddleware() {
     };
 }
 export function memoryPressureMiddleware() {
-    const threshold = getMemoryPressureThreshold();
     return (req, res, next) => {
-        const heapStats = v8.getHeapStatistics();
-        const heapUsedMB = heapStats.used_heap_size / 1024 / 1024;
-        const heapLimitMB = heapStats.heap_size_limit / 1024 / 1024;
-        const heapUsagePercent = (heapUsedMB / heapLimitMB) * 100;
         const memUsage = process.memoryUsage();
+        const heapUsedMB = memUsage.heapUsed / 1024 / 1024;
         const heapTotalMB = memUsage.heapTotal / 1024 / 1024;
-        if (heapUsagePercent > threshold) {
+        const heapUsagePercent = (heapUsedMB / heapTotalMB) * 100;
+        if (heapUsagePercent > 90) {
             logger.warn('[Resource Protection] High memory pressure', {
                 heapUsedMB: heapUsedMB.toFixed(2),
-                heapLimitMB: heapLimitMB.toFixed(2),
                 heapTotalMB: heapTotalMB.toFixed(2),
                 heapUsagePercent: heapUsagePercent.toFixed(2),
-                threshold,
             });
             res.status(503).json({
                 success: false,
@@ -236,17 +229,6 @@ export function memoryPressureMiddleware() {
         }
         next();
     };
-}
-function getMemoryPressureThreshold() {
-    const env = process.env.A2A_MEMORY_PRESSURE_THRESHOLD;
-    if (!env)
-        return DEFAULT_MEMORY_PRESSURE_THRESHOLD;
-    const parsed = parseInt(env, 10);
-    if (isNaN(parsed) || parsed <= 0 || parsed > 100) {
-        logger.warn(`Invalid A2A_MEMORY_PRESSURE_THRESHOLD: ${env}, using default ${DEFAULT_MEMORY_PRESSURE_THRESHOLD}`);
-        return DEFAULT_MEMORY_PRESSURE_THRESHOLD;
-    }
-    return parsed;
 }
 export function resourceProtectionMiddleware() {
     return [

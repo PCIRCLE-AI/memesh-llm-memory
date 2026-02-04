@@ -137,43 +137,4 @@ export class AgentRegistry {
         };
     }
 }
-let cleanupTimer = null;
-const DEFAULT_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
-export function startAgentRegistryCleanup() {
-    if (cleanupTimer) {
-        return;
-    }
-    const intervalMs = parseInt(process.env.AGENT_REGISTRY_CLEANUP_INTERVAL_MS || '', 10) ||
-        DEFAULT_CLEANUP_INTERVAL_MS;
-    const registry = AgentRegistry.getInstance();
-    const cleanup = () => {
-        try {
-            const markedStale = registry.cleanupStale(5 * 60 * 1000);
-            const deleted = registry.deleteStale();
-            if (markedStale > 0 || deleted > 0) {
-                logger.info('[Agent Registry] Cleanup completed', {
-                    markedStale,
-                    deleted,
-                });
-            }
-        }
-        catch (error) {
-            logger.error('[Agent Registry] Cleanup failed', {
-                error: error instanceof Error ? error.message : String(error),
-            });
-        }
-    };
-    cleanup();
-    cleanupTimer = setInterval(cleanup, intervalMs);
-    logger.info('[Agent Registry] Periodic cleanup started', {
-        intervalMs,
-    });
-}
-export function stopAgentRegistryCleanup() {
-    if (cleanupTimer) {
-        clearInterval(cleanupTimer);
-        cleanupTimer = null;
-        logger.info('[Agent Registry] Periodic cleanup stopped');
-    }
-}
 //# sourceMappingURL=AgentRegistry.js.map

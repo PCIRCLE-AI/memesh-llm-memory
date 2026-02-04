@@ -23,11 +23,7 @@ import type { Server } from 'http';
 import { createServer } from 'net';
 import { logger } from '../../utils/logger.js';
 import { TaskQueue } from '../storage/TaskQueue.js';
-import {
-  AgentRegistry,
-  startAgentRegistryCleanup,
-  stopAgentRegistryCleanup,
-} from '../storage/AgentRegistry.js';
+import { AgentRegistry } from '../storage/AgentRegistry.js';
 import type { AgentCard } from '../types/index.js';
 import { A2ARoutes } from './routes.js';
 import {
@@ -247,10 +243,6 @@ export class A2AServer {
         // 🔒 Start CSRF token cleanup (every 10 minutes)
         startCsrfCleanup();
 
-        // 🔒 Start agent registry cleanup (every 5 minutes)
-        // Removes stale agents to prevent memory leaks
-        startAgentRegistryCleanup();
-
         resolve(port);
       });
 
@@ -299,9 +291,6 @@ export class A2AServer {
 
     // 🔒 Stop CSRF token cleanup
     stopCsrfCleanup();
-
-    // 🔒 Stop agent registry cleanup
-    stopAgentRegistryCleanup();
 
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);

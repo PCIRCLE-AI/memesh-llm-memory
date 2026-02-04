@@ -103,74 +103,57 @@ export class HealthChecker {
    */
   async checkAll(options: HealthCheckOptions = {}): Promise<SystemHealth> {
     const startTime = Date.now();
+    const timeout = options.timeout || this.timeout;
+    const skip = new Set(options.skip || []);
 
-    try {
-      const timeout = options.timeout || this.timeout;
-      const skip = new Set(options.skip || []);
+    const checks: Array<() => Promise<ComponentHealth>> = [];
 
-      const checks: Array<() => Promise<ComponentHealth>> = [];
+    // Core components (always checked)
+    if (!skip.has('database')) checks.push(() => this.checkDatabase(timeout));
+    if (!skip.has('filesystem')) checks.push(() => this.checkFilesystem(timeout));
+    if (!skip.has('memory')) checks.push(() => this.checkMemory(timeout));
 
-      // Core components (always checked)
-      if (!skip.has('database')) checks.push(() => this.checkDatabase(timeout));
-      if (!skip.has('filesystem')) checks.push(() => this.checkFilesystem(timeout));
-      if (!skip.has('memory')) checks.push(() => this.checkMemory(timeout));
+    // Run all checks in parallel
+    const components = await Promise.all(checks.map(check => check()));
 
-      // Run all checks in parallel
-      const components = await Promise.all(checks.map(check => check()));
+    // Calculate overall status
+    const unhealthyCount = components.filter(c => c.status === 'unhealthy').length;
+    const degradedCount = components.filter(c => c.status === 'degraded').length;
 
-      // Calculate overall status
-      const unhealthyCount = components.filter(c => c.status === 'unhealthy').length;
-      const degradedCount = components.filter(c => c.status === 'degraded').length;
+    let status: HealthStatus;
+    let isHealthy: boolean;
 
-      let status: HealthStatus;
-      let isHealthy: boolean;
-
-      if (unhealthyCount > 0) {
-        status = 'unhealthy';
-        isHealthy = false;
-      } else if (degradedCount > 0) {
-        status = 'degraded';
-        isHealthy = true; // Degraded is still operational
-      } else {
-        status = 'healthy';
-        isHealthy = true;
-      }
-
-      const summary = this.generateSummary(components);
-      const totalDurationMs = Date.now() - startTime;
-
-      const result: SystemHealth = {
-        status,
-        isHealthy,
-        components,
-        summary,
-        totalDurationMs,
-        timestamp: new Date(),
-      };
-
-      logger.debug('Health check completed', {
-        status,
-        isHealthy,
-        totalDurationMs,
-        componentCount: components.length,
-      });
-
-      return result;
-    } catch (error) {
-      logger.error('Health check failed', {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-
-      return {
-        status: 'unhealthy',
-        isHealthy: false,
-        components: [],
-        summary: 'Health check failed with error',
-        totalDurationMs: Date.now() - startTime,
-        timestamp: new Date(),
-      };
+    if (unhealthyCount > 0) {
+      status = 'unhealthy';
+      isHealthy = false;
+    } else if (degradedCount > 0) {
+      status = 'degraded';
+      isHealthy = true; // Degraded is still operational
+    } else {
+      status = 'healthy';
+      isHealthy = true;
     }
+
+    const summary = this.generateSummary(components);
+    const totalDurationMs = Date.now() - startTime;
+
+    const result: SystemHealth = {
+      status,
+      isHealthy,
+      components,
+      summary,
+      totalDurationMs,
+      timestamp: new Date(),
+    };
+
+    logger.debug('Health check completed', {
+      status,
+      isHealthy,
+      totalDurationMs,
+      componentCount: components.length,
+    });
+
+    return result;
   }
 
   /**
@@ -323,17 +306,9 @@ export class HealthChecker {
  * Quick health check - returns true if system is operational
  */
 export async function isSystemHealthy(options?: HealthCheckOptions): Promise<boolean> {
-  try {
-    const checker = new HealthChecker();
-    const health = await checker.checkAll(options);
-    return health.isHealthy;
-  } catch (error) {
-    logger.error('System health check failed', {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-    return false;
-  }
+  const checker = new HealthChecker();
+  const health = await checker.checkAll(options);
+  return health.isHealthy;
 }
 
 /**
@@ -381,17 +356,9 @@ export function formatHealthStatus(health: SystemHealth): string {
  * Get formatted health status for display (convenience function)
  */
 export async function getHealthStatus(options?: HealthCheckOptions): Promise<string> {
-  try {
-    const checker = new HealthChecker();
-    const health = await checker.checkAll(options);
-    return formatHealthStatus(health);
-  } catch (error) {
-    logger.error('Failed to get health status', {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-    return 'Error: Unable to retrieve health status';
-  }
+  const checker = new HealthChecker();
+  const health = await checker.checkAll(options);
+  return formatHealthStatus(health);
 }
 
 // ============================================================================

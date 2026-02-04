@@ -320,6 +320,121 @@ class ClaudeCodeBuddyMCPServer {
   }
 
   /**
+   * Handle a raw MCP JSON-RPC request directly (for daemon proxy mode).
+   *
+   * This method allows the daemon to process MCP requests from proxy clients
+   * without going through the stdio transport. It parses the JSON-RPC request
+   * and routes it to the appropriate handler.
+   *
+   * @param request - Raw MCP JSON-RPC request object
+   * @returns JSON-RPC response object
+   */
+  async handleRequest(request: unknown): Promise<unknown> {
+    const requestId = generateRequestId();
+
+    // Validate request structure
+    if (!request || typeof request !== 'object') {
+      return {
+        jsonrpc: '2.0',
+        id: null,
+        error: { code: -32600, message: 'Invalid Request' },
+      };
+    }
+
+    const req = request as { method?: string; params?: unknown; id?: unknown };
+    const method = req.method;
+    const params = req.params;
+    const id = req.id;
+
+    try {
+      // Route based on method
+      if (method === 'tools/list') {
+        const tools = getAllToolDefinitions();
+        return {
+          jsonrpc: '2.0',
+          id,
+          result: { tools },
+        };
+      }
+
+      if (method === 'tools/call') {
+        const startTime = Date.now();
+        const callParams = params as CallToolRequestParams | undefined;
+        const toolName = callParams?.name || 'unknown';
+
+        logger.debug('[MCP] Daemon handling tool call request', {
+          requestId,
+          toolName,
+          component: 'ClaudeCodeBuddyMCPServer',
+        });
+
+        // Execute with timeout (same logic as setupHandlers)
+        const toolPromise = this.toolRouter.routeToolCall(callParams, undefined, requestId);
+
+        let timeoutId: NodeJS.Timeout | undefined;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            const elapsed = Date.now() - startTime;
+            reject(new ToolCallTimeoutError(toolName, toolTimeoutMs, elapsed));
+          }, toolTimeoutMs);
+        });
+
+        let result;
+        try {
+          result = await Promise.race([toolPromise, timeoutPromise]);
+        } finally {
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+        }
+
+        const finalResult = await this.sessionBootstrapper.maybePrepend(result);
+        return {
+          jsonrpc: '2.0',
+          id,
+          result: finalResult,
+        };
+      }
+
+      // Unknown method
+      return {
+        jsonrpc: '2.0',
+        id,
+        error: { code: -32601, message: `Method not found: ${method}` },
+      };
+    } catch (error) {
+      const elapsed = Date.now();
+
+      if (error instanceof ToolCallTimeoutError) {
+        logger.error('[MCP] Daemon tool call timed out', {
+          requestId,
+          toolName: error.toolName,
+          timeoutMs: toolTimeoutMs,
+          component: 'ClaudeCodeBuddyMCPServer',
+        });
+      }
+
+      logError(error, {
+        component: 'ClaudeCodeBuddyMCPServer',
+        method: 'handleRequest',
+        requestId,
+      });
+
+      const errorResult = formatMCPError(error, {
+        component: 'ClaudeCodeBuddyMCPServer',
+        method: 'handleRequest',
+        requestId,
+      });
+
+      return {
+        jsonrpc: '2.0',
+        id,
+        result: errorResult,
+      };
+    }
+  }
+
+  /**
    * Setup process signal handlers for graceful shutdown
    */
   private setupSignalHandlers(): void {

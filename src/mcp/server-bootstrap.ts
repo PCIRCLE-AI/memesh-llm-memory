@@ -343,10 +343,11 @@ async function startAsDaemon(bootstrapper: DaemonBootstrap, version: string) {
     logger.info('[Daemon] Client disconnected', { clientId });
   });
 
-  // NOTE: MCP request handling is managed via event delegation through DaemonSocketServer.
-  // The socket server forwards requests to the MCP server via the established stdio transport.
-  // This architecture avoids exposing handleRequest directly and maintains protocol encapsulation.
-  // See DaemonSocketServer for the event-based message forwarding implementation.
+  // Register MCP handler to route proxy client requests to the MCP server
+  // This enables the daemon to process MCP requests from proxy clients
+  socketServer.setMcpHandler(async (request: unknown) => {
+    return mcpServer.handleRequest(request);
+  });
 
   // Start socket server
   await socketServer.start();

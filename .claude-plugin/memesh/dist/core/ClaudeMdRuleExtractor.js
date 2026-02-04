@@ -50,7 +50,7 @@ export class ClaudeMdRuleExtractor {
     getRulePatterns() {
         return [
             {
-                keywords: ['test-driven development', 'tdd', '先寫測試', 'write tests first'],
+                keywords: ['test-driven development', 'tdd', 'write tests first'],
                 phase: 'code-written',
                 ruleTemplate: {
                     name: 'Test-Driven Development',
@@ -58,7 +58,7 @@ export class ClaudeMdRuleExtractor {
                     severity: 'critical',
                 },
                 conditionGenerator: (content) => {
-                    if (content.includes('先寫測試') || content.includes('test-driven development')) {
+                    if (content.includes('write tests first') || content.includes('test-driven development')) {
                         return [
                             {
                                 description: 'Tests must exist before writing code (TDD)',
@@ -77,10 +77,8 @@ export class ClaudeMdRuleExtractor {
                 keywords: [
                     'code review',
                     'code-review',
-                    '代碼審查',
                     'review code',
                     'must review',
-                    '必須 review',
                 ],
                 phase: 'test-complete',
                 ruleTemplate: {
@@ -89,7 +87,7 @@ export class ClaudeMdRuleExtractor {
                     severity: 'medium',
                 },
                 conditionGenerator: (content) => {
-                    if (content.includes('code review') || content.includes('代碼審查')) {
+                    if (content.includes('code review')) {
                         return [
                             {
                                 description: 'Code review is mandatory before commit',
@@ -108,10 +106,8 @@ export class ClaudeMdRuleExtractor {
                 keywords: [
                     'fix all issues',
                     'fix all',
-                    '修復所有',
                     'no workarounds',
                     'no ignored issues',
-                    '不忽略問題',
                 ],
                 phase: 'test-complete',
                 ruleTemplate: {
@@ -121,7 +117,6 @@ export class ClaudeMdRuleExtractor {
                 },
                 conditionGenerator: (content) => {
                     if (content.includes('fix all issues') ||
-                        content.includes('修復所有') ||
                         content.includes('Fix All Issues')) {
                         return [
                             {
@@ -138,7 +133,7 @@ export class ClaudeMdRuleExtractor {
                 },
             },
             {
-                keywords: ['no workarounds', 'no temporary', '禁止 workaround', 'no hack'],
+                keywords: ['no workarounds', 'no temporary', 'no hack'],
                 phase: 'commit-ready',
                 ruleTemplate: {
                     name: 'No Workarounds',
@@ -146,7 +141,7 @@ export class ClaudeMdRuleExtractor {
                     severity: 'critical',
                 },
                 conditionGenerator: (content) => {
-                    if (content.includes('no workarounds') || content.includes('禁止')) {
+                    if (content.includes('no workarounds')) {
                         return [
                             {
                                 description: 'No temporary workarounds or hacks allowed',
@@ -194,7 +189,7 @@ export class ClaudeMdRuleExtractor {
                 },
             },
             {
-                keywords: ['多次 code review', 'multiple review', '反覆 review'],
+                keywords: ['multiple review', 'iterative review'],
                 phase: 'test-complete',
                 ruleTemplate: {
                     name: 'Multiple Code Reviews',
@@ -202,7 +197,7 @@ export class ClaudeMdRuleExtractor {
                     severity: 'high',
                 },
                 conditionGenerator: (content) => {
-                    if (content.includes('多次') || content.includes('multiple')) {
+                    if (content.includes('multiple') || content.includes('iterative')) {
                         return [
                             {
                                 description: 'Code should be reviewed multiple times until clean',

@@ -4,13 +4,15 @@
  *
  * 1. Generates A2A token automatically
  * 2. Creates .env file with token
- * 3. Displays installation guide with token
+ * 3. Configures ~/.claude/mcp_settings.json (auto-registers MCP server)
+ * 4. Displays installation guide
  */
 
 import { randomBytes } from 'crypto';
-import { existsSync, readFileSync, writeFileSync, appendFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, appendFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { homedir } from 'os';
 import chalk from 'chalk';
 import boxen from 'boxen';
 
@@ -55,13 +57,142 @@ if (!a2aToken) {
 }
 
 // ============================================================================
-// Step 2: Display Installation Message
+// Step 2: Configure ~/.claude/mcp_settings.json
+// ============================================================================
+let mcpConfigured = false;
+let mcpConfigPath = '';
+
+try {
+  const claudeDir = join(homedir(), '.claude');
+  mcpConfigPath = join(claudeDir, 'mcp_settings.json');
+
+  // Determine the server path based on installation context
+  // For npm global install, use npx; for local dev, use absolute path
+  const isGlobalInstall = projectRoot.includes('node_modules');
+  let serverPath;
+
+  if (isGlobalInstall) {
+    // For global npm install, we'll configure to use npx
+    serverPath = null; // Will use npx in config
+  } else {
+    // For local development, use absolute path to server
+    serverPath = join(projectRoot, 'dist', 'mcp', 'server-bootstrap.js');
+  }
+
+  // Create ~/.claude directory if it doesn't exist
+  if (!existsSync(claudeDir)) {
+    mkdirSync(claudeDir, { recursive: true });
+  }
+
+  // Read existing config or create new one
+  let mcpConfig = { mcpServers: {} };
+  if (existsSync(mcpConfigPath)) {
+    try {
+      const existingContent = readFileSync(mcpConfigPath, 'utf-8').trim();
+      if (existingContent) {
+        mcpConfig = JSON.parse(existingContent);
+        if (!mcpConfig.mcpServers) {
+          mcpConfig.mcpServers = {};
+        }
+      }
+    } catch (e) {
+      // If parsing fails, start fresh but don't overwrite completely
+      mcpConfig = { mcpServers: {} };
+    }
+  }
+
+  // Configure memesh entry
+  if (isGlobalInstall) {
+    // For npm global install, use npx to run the package
+    mcpConfig.mcpServers.memesh = {
+      command: 'npx',
+      args: ['-y', '@pcircle/memesh'],
+      env: {
+        NODE_ENV: 'production',
+        MEMESH_A2A_TOKEN: a2aToken
+      }
+    };
+  } else {
+    // For local development, use node with absolute path
+    mcpConfig.mcpServers.memesh = {
+      command: 'node',
+      args: [serverPath],
+      env: {
+        NODE_ENV: 'production',
+        MEMESH_A2A_TOKEN: a2aToken
+      }
+    };
+  }
+
+  // Remove legacy entry if exists
+  if (mcpConfig.mcpServers['claude-code-buddy']) {
+    delete mcpConfig.mcpServers['claude-code-buddy'];
+  }
+
+  // Write config
+  writeFileSync(mcpConfigPath, JSON.stringify(mcpConfig, null, 2) + '\n', 'utf-8');
+  mcpConfigured = true;
+} catch (error) {
+  // Non-fatal: user can configure manually
+  console.warn(chalk.yellow(`⚠️  Could not auto-configure MCP settings: ${error.message}`));
+  console.warn(chalk.yellow('   You can configure manually (see instructions below)'));
+}
+
+// ============================================================================
+// Step 3: Display Installation Message
 // ============================================================================
 const tokenDisplay = `${a2aToken.substring(0, 8)}...${a2aToken.substring(a2aToken.length - 8)}`;
 const tokenStatusIcon = tokenSource === 'generated' ? '🔑' : '✓';
 const tokenStatusText = tokenSource === 'generated'
   ? chalk.green('Generated new A2A token')
   : chalk.cyan('Using existing A2A token');
+const mcpStatusIcon = mcpConfigured ? '✅' : '⚠️';
+const mcpStatusText = mcpConfigured
+  ? chalk.green(`Auto-configured at ${mcpConfigPath}`)
+  : chalk.yellow('Manual configuration required (see below)');
+
+// Build the message based on configuration status
+const configSection = mcpConfigured
+  ? `${chalk.bold('MCP Configuration:')}
+  ${mcpStatusIcon} ${mcpStatusText}
+  ${chalk.dim('MeMesh is ready to use! Just restart Claude Code.')}
+
+${chalk.bold('Quick Start (2 Steps):')}
+
+  ${chalk.yellow('1.')} ${chalk.bold('Restart Claude Code')}
+     Completely quit and reopen to load the MCP server
+
+  ${chalk.yellow('2.')} ${chalk.bold('Test Connection')}
+     Ask: ${chalk.italic('"List available MeMesh tools"')}`
+  : `${chalk.bold('MCP Configuration:')}
+  ${mcpStatusIcon} ${mcpStatusText}
+
+${chalk.bold('Quick Start (3 Steps):')}
+
+  ${chalk.yellow('1.')} ${chalk.bold('Configure MCP Client')}
+     Add to ~/.claude/mcp_settings.json (see below)
+
+  ${chalk.yellow('2.')} ${chalk.bold('Restart Claude Code')}
+     Completely quit and reopen to load the MCP server
+
+  ${chalk.yellow('3.')} ${chalk.bold('Test Connection')}
+     Ask: ${chalk.italic('"List available MeMesh tools"')}
+
+${chalk.bold('Manual Configuration:')}
+
+${chalk.dim('Add to ~/.claude/mcp_settings.json:')}
+
+  {
+    ${chalk.cyan('"mcpServers"')}: {
+      ${chalk.cyan('"memesh"')}: {
+        ${chalk.cyan('"command"')}: ${chalk.green('"npx"')},
+        ${chalk.cyan('"args"')}: [${chalk.green('"-y"')}, ${chalk.green('"@pcircle/memesh"')}],
+        ${chalk.cyan('"env"')}: {
+          ${chalk.cyan('"MEMESH_A2A_TOKEN"')}: ${chalk.green(`"${a2aToken}"`)}
+        }
+      }
+    }
+  }`;
 
 const message = `
 ${chalk.bold.green('✅ MeMesh Installed Successfully!')}
@@ -77,31 +208,7 @@ ${chalk.bold('A2A Token:')}
   ${chalk.dim('Token:')} ${chalk.yellow(tokenDisplay)}
   ${chalk.dim('Full token saved to:')} ${chalk.cyan('.env')}
 
-${chalk.bold('Quick Start (3 Steps):')}
-
-  ${chalk.yellow('1.')} ${chalk.bold('Configure MCP Client')}
-     Add to your Claude Code or Cursor settings
-
-  ${chalk.yellow('2.')} ${chalk.bold('Restart IDE')}
-     Reload window to enable MCP integration
-
-  ${chalk.yellow('3.')} ${chalk.bold('Test Connection')}
-     Ask: ${chalk.italic('"List available CCB tools"')}
-
-${chalk.bold('Configuration Example:')}
-
-${chalk.dim('Add to your MCP settings.json:')}
-
-  ${chalk.cyan('"mcpServers"')}: {
-    ${chalk.cyan('"memesh"')}: {
-      ${chalk.cyan('"command"')}: ${chalk.green('"npx"')},
-      ${chalk.cyan('"args"')}: [${chalk.green('"-y"')}, ${chalk.green('"@pcircle/memesh"')}],
-      ${chalk.cyan('"env"')}: {
-        ${chalk.cyan('"MEMESH_A2A_TOKEN"')}: ${chalk.green(`"${a2aToken}"`)},
-        ${chalk.cyan('"DISABLE_MCP_WATCHDOG"')}: ${chalk.green('"1"')}
-      }
-    }
-  }
+${configSection}
 
 ${chalk.bold('Documentation:')}
   ${chalk.cyan('•')} Setup Guide: ${chalk.underline('https://github.com/PCIRCLE-AI/claude-code-buddy#installation')}

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+let mcpClientConnected = false;
 const args = process.argv.slice(2);
 const hasCliArgs = args.length > 0;
 if (hasCliArgs) {
@@ -11,43 +12,28 @@ if (hasCliArgs) {
     });
 }
 else {
-    startMCPServer();
+    bootstrapWithDaemon();
 }
-function startMCPServer() {
-    process.env.MCP_SERVER_MODE = 'true';
-    let a2aServer = null;
-    let mcpClientConnected = false;
-    async function bootstrap() {
-        try {
-            startMCPClientWatchdog();
-            const { ClaudeCodeBuddyMCPServer } = await import('./server.js');
-            const mcpServer = await ClaudeCodeBuddyMCPServer.create();
-            await mcpServer.start();
-            a2aServer = await startA2AServer();
-        }
-        catch (error) {
-            console.error('Fatal error in MCP server bootstrap:', error);
-            process.exit(1);
-        }
+function startMCPClientWatchdog() {
+    if (process.env.DISABLE_MCP_WATCHDOG === '1') {
+        return;
     }
-    function startMCPClientWatchdog() {
-        if (process.env.DISABLE_MCP_WATCHDOG === '1') {
-            return;
-        }
-        const stdinHandler = () => {
-            mcpClientConnected = true;
-        };
-        process.stdin.once('data', stdinHandler);
-        setTimeout(async () => {
-            if (!mcpClientConnected) {
-                const chalk = await import('chalk');
-                const { default: boxen } = await import('boxen');
-                const { fileURLToPath } = await import('url');
-                const { dirname, join } = await import('path');
-                const __filename = fileURLToPath(import.meta.url);
-                const __dirname = dirname(__filename);
-                const packageRoot = join(__dirname, '../..');
-                const message = `
+    const DEFAULT_WATCHDOG_TIMEOUT_MS = 15000;
+    const watchdogTimeoutMs = parseInt(process.env.MCP_WATCHDOG_TIMEOUT_MS || '', 10) || DEFAULT_WATCHDOG_TIMEOUT_MS;
+    const stdinHandler = () => {
+        mcpClientConnected = true;
+    };
+    process.stdin.once('data', stdinHandler);
+    setTimeout(async () => {
+        if (!mcpClientConnected) {
+            const chalk = await import('chalk');
+            const { default: boxen } = await import('boxen');
+            const { fileURLToPath } = await import('url');
+            const { dirname, join } = await import('path');
+            const __filename = fileURLToPath(import.meta.url);
+            const __dirname = dirname(__filename);
+            const packageRoot = join(__dirname, '../..');
+            const message = `
 ${chalk.default.bold.yellow('⚠️  Manual Startup Detected')}
 
 ${chalk.default.bold('Why am I seeing this?')}
@@ -88,72 +74,203 @@ ${chalk.default.bold('For Developers:')}
 ${chalk.default.bold('Documentation:')}
   ${chalk.default.underline('https://github.com/PCIRCLE-AI/claude-code-buddy#installation')}
 `;
-                console.log(boxen(message, {
-                    padding: 1,
-                    margin: 1,
-                    borderStyle: 'round',
-                    borderColor: 'yellow',
-                }));
-                process.exit(0);
-            }
-        }, 3000);
+            console.log(boxen(message, {
+                padding: 1,
+                margin: 1,
+                borderStyle: 'round',
+                borderColor: 'yellow',
+            }));
+            process.exit(0);
+        }
+    }, watchdogTimeoutMs);
+}
+async function startA2AServer() {
+    try {
+        const { A2AServer } = await import('../a2a/server/A2AServer.js');
+        const os = await import('os');
+        const hostname = os.hostname().split('.')[0].toLowerCase();
+        const timestamp = Date.now().toString(36);
+        const defaultId = `${hostname}-${timestamp}`;
+        const agentId = process.env.A2A_AGENT_ID || defaultId;
+        const agentCard = {
+            id: agentId,
+            name: 'MeMesh (MCP)',
+            description: 'AI development assistant via MCP protocol',
+            version: '2.5.3',
+            capabilities: {
+                skills: [
+                    {
+                        name: 'buddy-do',
+                        description: 'Execute tasks with MeMesh',
+                    },
+                    {
+                        name: 'buddy-remember',
+                        description: 'Store and retrieve knowledge',
+                    },
+                ],
+                supportedFormats: ['text/plain', 'application/json'],
+                maxMessageSize: 10 * 1024 * 1024,
+                streaming: false,
+                pushNotifications: false,
+            },
+            endpoints: {
+                baseUrl: 'http://localhost:3000',
+            },
+        };
+        const server = new A2AServer({
+            agentId,
+            agentCard,
+            portRange: { min: 3000, max: 3999 },
+            heartbeatInterval: 60000,
+        });
+        const port = await server.start();
+        const { logger } = await import('../utils/logger.js');
+        logger.info('[A2A] Server started successfully', {
+            port,
+            agentId,
+            baseUrl: `http://localhost:${port}`,
+        });
+        return server;
     }
-    async function startA2AServer() {
+    catch (error) {
+        const { logger } = await import('../utils/logger.js');
+        logger.error('[A2A] Failed to start A2A server', {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+        });
+        return null;
+    }
+}
+async function bootstrapWithDaemon() {
+    try {
+        const { DaemonBootstrap, isDaemonDisabled } = await import('./daemon/DaemonBootstrap.js');
+        const { logger } = await import('../utils/logger.js');
+        const { createRequire } = await import('module');
+        const require = createRequire(import.meta.url);
+        const packageJson = require('../../package.json');
+        const version = packageJson.version;
+        if (isDaemonDisabled()) {
+            logger.info('[Bootstrap] Daemon mode disabled, running standalone');
+            startMCPServer();
+            return;
+        }
+        const bootstrapper = new DaemonBootstrap({ version });
+        const result = await bootstrapper.determineMode();
+        logger.info('[Bootstrap] Mode determined', {
+            mode: result.mode,
+            reason: result.reason,
+            existingDaemon: result.existingDaemon,
+        });
+        switch (result.mode) {
+            case 'daemon':
+                await startAsDaemon(bootstrapper, version);
+                break;
+            case 'proxy':
+                await startAsProxy(bootstrapper);
+                break;
+            case 'standalone':
+            default:
+                startMCPServer();
+                break;
+        }
+    }
+    catch (error) {
+        console.error('[Bootstrap] Daemon bootstrap failed, falling back to standalone:', error);
+        startMCPServer();
+    }
+}
+function setupSignalHandlers(shutdownFn) {
+    process.once('SIGTERM', () => shutdownFn('SIGTERM'));
+    process.once('SIGINT', () => shutdownFn('SIGINT'));
+}
+async function startAsDaemon(bootstrapper, version) {
+    const { logger } = await import('../utils/logger.js');
+    const { DaemonSocketServer } = await import('./daemon/DaemonSocketServer.js');
+    const { DaemonLockManager } = await import('./daemon/DaemonLockManager.js');
+    const lockAcquired = await bootstrapper.acquireDaemonLock();
+    if (!lockAcquired) {
+        logger.warn('[Bootstrap] Failed to acquire daemon lock, falling back to standalone');
+        startMCPServer();
+        return;
+    }
+    logger.info('[Bootstrap] Starting as daemon', { version, pid: process.pid });
+    process.env.MCP_SERVER_MODE = 'true';
+    const { ClaudeCodeBuddyMCPServer } = await import('./server.js');
+    const mcpServer = await ClaudeCodeBuddyMCPServer.create();
+    const transport = bootstrapper.getTransport();
+    const socketServer = new DaemonSocketServer({
+        transport,
+        version,
+    });
+    socketServer.on('client_connect', (client) => {
+        logger.info('[Daemon] Client connected', { clientId: client.clientId, version: client.version });
+    });
+    socketServer.on('client_disconnect', (clientId) => {
+        logger.info('[Daemon] Client disconnected', { clientId });
+    });
+    await socketServer.start();
+    logger.info('[Daemon] Socket server started', { path: transport.getPath() });
+    await mcpServer.start();
+    const a2aServer = await startA2AServer();
+    setupSignalHandlers(async (signal) => {
+        logger.info('[Daemon] Shutdown requested', { signal });
+        await socketServer.stop();
+        if (a2aServer) {
+            await a2aServer.stop();
+        }
+        await DaemonLockManager.releaseLock();
+        logger.info('[Daemon] Shutdown complete');
+        process.exit(0);
+    });
+    startMCPClientWatchdog();
+}
+async function startAsProxy(bootstrapper) {
+    const { logger } = await import('../utils/logger.js');
+    const { StdioProxyClient } = await import('./daemon/StdioProxyClient.js');
+    const version = bootstrapper.getVersion();
+    logger.info('[Bootstrap] Starting as proxy client', { version });
+    const transport = bootstrapper.getTransport();
+    const proxyClient = new StdioProxyClient({
+        transport,
+        clientVersion: version,
+        maxReconnectAttempts: 5,
+        reconnectDelay: 1000,
+    });
+    proxyClient.on('connected', () => {
+        logger.info('[Proxy] Connected to daemon');
+    });
+    proxyClient.on('disconnected', (reason) => {
+        logger.warn('[Proxy] Disconnected from daemon', { reason });
+    });
+    proxyClient.on('error', (error) => {
+        logger.error('[Proxy] Error', { error: error.message });
+    });
+    proxyClient.on('shutdown', (reason) => {
+        logger.info('[Proxy] Daemon requested shutdown', { reason });
+        process.exit(0);
+    });
+    await proxyClient.start();
+    logger.info('[Proxy] Proxy started, forwarding stdio to daemon');
+    setupSignalHandlers(async (signal) => {
+        logger.info('[Proxy] Shutdown requested', { signal });
+        await proxyClient.stop();
+        process.exit(0);
+    });
+}
+function startMCPServer() {
+    process.env.MCP_SERVER_MODE = 'true';
+    let a2aServerRef = null;
+    async function bootstrap() {
         try {
-            const { A2AServer } = await import('../a2a/server/A2AServer.js');
-            const crypto = await import('crypto');
-            const os = await import('os');
-            const hostname = os.hostname().split('.')[0].toLowerCase();
-            const timestamp = Date.now().toString(36);
-            const defaultId = `${hostname}-${timestamp}`;
-            const agentId = process.env.A2A_AGENT_ID || defaultId;
-            const agentCard = {
-                id: agentId,
-                name: 'MeMesh (MCP)',
-                description: 'AI development assistant via MCP protocol',
-                version: '2.5.3',
-                capabilities: {
-                    skills: [
-                        {
-                            name: 'buddy-do',
-                            description: 'Execute tasks with MeMesh',
-                        },
-                        {
-                            name: 'buddy-remember',
-                            description: 'Store and retrieve knowledge',
-                        },
-                    ],
-                    supportedFormats: ['text/plain', 'application/json'],
-                    maxMessageSize: 10 * 1024 * 1024,
-                    streaming: false,
-                    pushNotifications: false,
-                },
-                endpoints: {
-                    baseUrl: 'http://localhost:3000',
-                },
-            };
-            const server = new A2AServer({
-                agentId,
-                agentCard,
-                portRange: { min: 3000, max: 3999 },
-                heartbeatInterval: 60000,
-            });
-            const port = await server.start();
-            const { logger } = await import('../utils/logger.js');
-            logger.info('[A2A] Server started successfully', {
-                port,
-                agentId,
-                baseUrl: `http://localhost:${port}`,
-            });
-            return server;
+            startMCPClientWatchdog();
+            const { ClaudeCodeBuddyMCPServer } = await import('./server.js');
+            const mcpServer = await ClaudeCodeBuddyMCPServer.create();
+            await mcpServer.start();
+            a2aServerRef = await startA2AServer();
         }
         catch (error) {
-            const { logger } = await import('../utils/logger.js');
-            logger.error('[A2A] Failed to start A2A server', {
-                error: error instanceof Error ? error.message : String(error),
-                stack: error instanceof Error ? error.stack : undefined,
-            });
-            return null;
+            console.error('Fatal error in MCP server bootstrap:', error);
+            process.exit(1);
         }
     }
     async function shutdown(signal) {
@@ -161,13 +278,13 @@ ${chalk.default.bold('Documentation:')}
             process.exit(1);
         }, 5000);
         try {
-            if (a2aServer) {
-                await a2aServer.stop();
+            if (a2aServerRef) {
+                await a2aServerRef.stop();
             }
             clearTimeout(shutdownTimeout);
             process.exit(0);
         }
-        catch (error) {
+        catch {
             clearTimeout(shutdownTimeout);
             process.exit(1);
         }

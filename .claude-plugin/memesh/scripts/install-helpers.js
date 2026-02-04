@@ -1,17 +1,35 @@
 #!/usr/bin/env node
 
+/**
+ * MeMesh Installation Helpers
+ *
+ * Provides utility functions for:
+ * - Creating/updating ~/.claude/mcp_settings.json
+ * - Managing MCP server configuration
+ * - Verifying installation
+ *
+ * IMPORTANT: The primary config file is ~/.claude/mcp_settings.json
+ * This is what Claude Code's session-start hook checks for.
+ */
+
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
-const DEFAULT_CONFIG_PATH = path.join(os.homedir(), '.claude', 'config.json');
-const FALLBACK_CONFIG_PATHS = [
-  DEFAULT_CONFIG_PATH,
+// Primary MCP settings file - this is what Claude Code checks
+const MCP_SETTINGS_PATH = path.join(os.homedir(), '.claude', 'mcp_settings.json');
+
+// Legacy paths for backward compatibility checking
+const LEGACY_CONFIG_PATHS = [
+  path.join(os.homedir(), '.claude', 'config.json'),
   path.join(os.homedir(), '.claude.json'),
   path.join(os.homedir(), '.config', 'claude', 'claude_desktop_config.json'),
-  path.join(os.homedir(), '.claude', 'mcp_settings.json'),
 ];
 
+/**
+ * Resolve the config path to use
+ * Priority: env var > preferred path > MCP_SETTINGS_PATH
+ */
 function resolveConfigPath(preferredPath) {
   if (preferredPath) {
     return preferredPath;
@@ -23,114 +41,350 @@ function resolveConfigPath(preferredPath) {
     return envPath;
   }
 
-  // Always use DEFAULT_CONFIG_PATH (~/.claude/config.json) for Claude Code CLI
-  // Don't fallback to other files like ~/.claude.json (which is the main CLI config, not MCP config)
-  return DEFAULT_CONFIG_PATH;
+  // Always use MCP_SETTINGS_PATH (~/.claude/mcp_settings.json) for Claude Code
+  // This is what the session-start hook checks for
+  return MCP_SETTINGS_PATH;
 }
 
 /**
- * Add MeMesh to MCP config (defaults to ~/.claude.json).
+ * Create MCP server configuration object
  */
-function addToMcpConfig(ccbPath, preferredConfigPath) {
+function createServerConfig(serverPath, a2aToken = null) {
+  const config = {
+    command: 'node',
+    args: [serverPath],
+    env: {
+      NODE_ENV: 'production'
+    }
+  };
+
+  // Add A2A token if provided
+  if (a2aToken) {
+    config.env.MEMESH_A2A_TOKEN = a2aToken;
+  }
+
+  return config;
+}
+
+/**
+ * Add MeMesh to MCP settings file (~/.claude/mcp_settings.json)
+ *
+ * @param {string} serverPath - Path to server-bootstrap.js
+ * @param {string} preferredConfigPath - Optional custom config path
+ * @param {string} a2aToken - Optional A2A token
+ * @returns {boolean} - Success status
+ */
+function addToMcpConfig(serverPath, preferredConfigPath, a2aToken = null) {
   const configPath = resolveConfigPath(preferredConfigPath);
 
-  let config = {};
+  let config = { mcpServers: {} };
+
+  // Read existing config if it exists
   if (fs.existsSync(configPath)) {
     try {
-      config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      const existingContent = fs.readFileSync(configPath, 'utf8').trim();
+      if (existingContent) {
+        config = JSON.parse(existingContent);
+      }
     } catch (e) {
-      console.error(`Error: Could not parse MCP config at ${configPath}.`);
-      console.error('Please fix the JSON file and re-run the installer.');
-      process.exit(1);
+      console.error(`⚠️  Could not parse existing config at ${configPath}: ${e.message}`);
+      console.error('   Creating fresh configuration...');
+      config = { mcpServers: {} };
     }
   }
 
+  // Ensure mcpServers exists
   if (!config.mcpServers) {
     config.mcpServers = {};
   }
 
-  // Backward compatibility: Support both 'memesh' and legacy 'claude-code-buddy'
-  // Prefer 'memesh' for new installations, but keep existing 'claude-code-buddy' if present
-  const serverConfig = {
-    type: 'stdio',  // Required field for Claude Code MCP servers
-    command: 'node',
-    args: [ccbPath],
-    env: {
-      NODE_ENV: 'production',
-      MEMESH_DATA_DIR: path.join(os.homedir(), '.memesh'),
-      LOG_LEVEL: 'info',
-      DISABLE_MCP_WATCHDOG: '1'  // Critical: Prevents 3-second timeout on startup
-    }
-  };
+  // Create server configuration
+  const serverConfig = createServerConfig(serverPath, a2aToken);
 
-  // Use existing server name or default to 'memesh' for new installations
-  const existingLegacyServer = config.mcpServers['claude-code-buddy'];
-  const existingNewServer = config.mcpServers['memesh'];
+  // Handle legacy server names
+  const hasLegacyEntry = config.mcpServers['claude-code-buddy'];
+  const hasMemeshEntry = config.mcpServers['memesh'];
 
-  if (existingLegacyServer) {
-    // User has legacy name, keep it for backward compatibility
-    config.mcpServers['claude-code-buddy'] = serverConfig;
-    console.log('✓ Updated existing MCP server: claude-code-buddy (legacy name maintained)');
-  } else {
-    // New installation or user upgrading, use new name
+  if (hasLegacyEntry && !hasMemeshEntry) {
+    // Migrate from legacy name to new name
+    delete config.mcpServers['claude-code-buddy'];
     config.mcpServers['memesh'] = serverConfig;
-    console.log('✓ Configured MCP server: memesh');
-
-    // Clean up legacy entry if upgrading
-    if (existingNewServer) {
-      delete config.mcpServers['claude-code-buddy'];
+    console.log('   ✅ Migrated MCP server: claude-code-buddy → memesh');
+  } else {
+    // New installation or update existing memesh entry
+    config.mcpServers['memesh'] = serverConfig;
+    if (hasMemeshEntry) {
+      console.log('   ✅ Updated existing MCP server: memesh');
+    } else {
+      console.log('   ✅ Configured MCP server: memesh');
     }
   }
-  };
 
+  // Ensure directory exists
   try {
-    fs.mkdirSync(path.dirname(configPath), { recursive: true });
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-  } catch (error) {
-    console.error(`Error: Could not write MCP config at ${configPath}.`);
-    console.error('Check file permissions and try again.');
-    process.exit(1);
-  }
+    const configDir = path.dirname(configPath);
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true });
+      console.log(`   ✅ Created directory: ${configDir}`);
+    }
 
-  console.log(`✓ Added MeMesh to MCP configuration at ${configPath}`);
+    // Write config file
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', 'utf8');
+    console.log(`   ✅ MCP settings saved to: ${configPath}`);
+
+    return true;
+  } catch (error) {
+    console.error(`   ❌ Could not write MCP config: ${error.message}`);
+    console.error('      Check file permissions and try again.');
+    return false;
+  }
 }
 
 /**
- * Verify installation
+ * Configure MeMesh in ~/.claude/mcp_settings.json
+ * This is the main function to be called from other scripts
+ *
+ * @param {Object} options
+ * @param {string} options.serverPath - Path to server-bootstrap.js
+ * @param {string} options.a2aToken - A2A authentication token
+ * @param {boolean} options.silent - Suppress console output
+ * @returns {Object} - { success: boolean, configPath: string, error?: string }
  */
-function verifyInstallation() {
+export function configureMcpSettings(options = {}) {
+  const {
+    serverPath,
+    a2aToken = null,
+    silent = false
+  } = options;
+
+  const configPath = MCP_SETTINGS_PATH;
+
+  if (!silent) {
+    console.log('\n📝 Configuring MCP settings...');
+  }
+
+  // Validate server path
+  if (!serverPath) {
+    const error = 'Server path is required';
+    if (!silent) console.error(`   ❌ ${error}`);
+    return { success: false, configPath, error };
+  }
+
+  // Create config
+  let config = { mcpServers: {} };
+
+  // Read existing config
+  if (fs.existsSync(configPath)) {
+    try {
+      const content = fs.readFileSync(configPath, 'utf8').trim();
+      if (content) {
+        config = JSON.parse(content);
+        if (!config.mcpServers) config.mcpServers = {};
+      }
+    } catch (e) {
+      if (!silent) {
+        console.warn(`   ⚠️  Could not parse existing config, creating new one`);
+      }
+      config = { mcpServers: {} };
+    }
+  }
+
+  // Build server configuration
+  const serverConfig = {
+    command: 'node',
+    args: [serverPath],
+    env: {
+      NODE_ENV: 'production'
+    }
+  };
+
+  if (a2aToken) {
+    serverConfig.env.MEMESH_A2A_TOKEN = a2aToken;
+  }
+
+  // Update or add memesh entry
+  config.mcpServers.memesh = serverConfig;
+
+  // Remove legacy entry if exists
+  if (config.mcpServers['claude-code-buddy']) {
+    delete config.mcpServers['claude-code-buddy'];
+    if (!silent) console.log('   ✅ Removed legacy "claude-code-buddy" entry');
+  }
+
+  // Write config
+  try {
+    const configDir = path.dirname(configPath);
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true });
+    }
+
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', 'utf8');
+
+    if (!silent) {
+      console.log(`   ✅ MCP settings configured at: ${configPath}`);
+      console.log(`   ✅ Server path: ${serverPath}`);
+      if (a2aToken) {
+        const tokenPreview = `${a2aToken.substring(0, 8)}...${a2aToken.substring(a2aToken.length - 8)}`;
+        console.log(`   🔑 A2A token: ${tokenPreview}`);
+      }
+    }
+
+    return { success: true, configPath };
+  } catch (error) {
+    const errorMsg = `Failed to write config: ${error.message}`;
+    if (!silent) console.error(`   ❌ ${errorMsg}`);
+    return { success: false, configPath, error: errorMsg };
+  }
+}
+
+/**
+ * Check if MeMesh is configured in mcp_settings.json
+ * @returns {Object} - { configured: boolean, serverPath?: string }
+ */
+export function checkMcpConfiguration() {
+  const configPath = MCP_SETTINGS_PATH;
+
+  if (!fs.existsSync(configPath)) {
+    return { configured: false };
+  }
+
+  try {
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    const memeshConfig = config.mcpServers?.memesh || config.mcpServers?.['claude-code-buddy'];
+
+    if (memeshConfig) {
+      return {
+        configured: true,
+        serverPath: memeshConfig.args?.[0],
+        hasToken: !!memeshConfig.env?.MEMESH_A2A_TOKEN
+      };
+    }
+
+    return { configured: false };
+  } catch (e) {
+    return { configured: false, error: e.message };
+  }
+}
+
+/**
+ * Verify installation files exist
+ * @param {string} basePath - Base path to check from
+ * @returns {Object} - { valid: boolean, missing: string[] }
+ */
+export function verifyInstallation(basePath = process.cwd()) {
   const requiredFiles = [
     'dist/mcp/server-bootstrap.js',
     'dist/index.js',
-    'package.json',
-    '.env'
+    'package.json'
   ];
 
-  const missing = requiredFiles.filter(file => !fs.existsSync(file));
+  const missing = requiredFiles.filter(file =>
+    !fs.existsSync(path.join(basePath, file))
+  );
 
   if (missing.length > 0) {
-    console.error('✗ Missing required files:', missing.join(', '));
-    process.exit(1);
+    return { valid: false, missing };
   }
 
-  console.log('✓ All required files present');
+  return { valid: true, missing: [] };
 }
 
-// Command line interface
+/**
+ * Read A2A token from .env file
+ * @param {string} envPath - Path to .env file
+ * @returns {string|null} - Token or null if not found
+ */
+export function readA2AToken(envPath) {
+  if (!fs.existsSync(envPath)) {
+    return null;
+  }
+
+  try {
+    const content = fs.readFileSync(envPath, 'utf8');
+    const match = content.match(/^MEMESH_A2A_TOKEN=(.+)$/m);
+    return match ? match[1].trim() : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Get the MCP settings file path
+ * @returns {string}
+ */
+export function getMcpSettingsPath() {
+  return MCP_SETTINGS_PATH;
+}
+
+// ============================================================================
+// Command Line Interface
+// ============================================================================
 const command = process.argv[2];
 const arg = process.argv[3];
-const configArg = process.argv[4];
+const arg2 = process.argv[4];
 
 switch (command) {
   case 'add-to-mcp':
-    addToMcpConfig(arg, configArg);
+  case 'configure': {
+    // Usage: node install-helpers.js configure <server-path> [a2a-token]
+    if (!arg) {
+      console.error('❌ Server path required');
+      console.error('Usage: node install-helpers.js configure <server-path> [a2a-token]');
+      process.exit(1);
+    }
+    const result = configureMcpSettings({
+      serverPath: arg,
+      a2aToken: arg2 || null
+    });
+    process.exit(result.success ? 0 : 1);
     break;
-  case 'verify':
-    verifyInstallation();
+  }
+
+  case 'verify': {
+    // Usage: node install-helpers.js verify [base-path]
+    const basePath = arg || process.cwd();
+    const result = verifyInstallation(basePath);
+    if (result.valid) {
+      console.log('✅ All required files present');
+      process.exit(0);
+    } else {
+      console.error('❌ Missing required files:', result.missing.join(', '));
+      process.exit(1);
+    }
     break;
+  }
+
+  case 'check': {
+    // Usage: node install-helpers.js check
+    const status = checkMcpConfiguration();
+    if (status.configured) {
+      console.log('✅ MeMesh is configured in MCP settings');
+      console.log(`   Server path: ${status.serverPath || 'unknown'}`);
+      console.log(`   Has A2A token: ${status.hasToken ? 'yes' : 'no'}`);
+      process.exit(0);
+    } else {
+      console.log('❌ MeMesh is NOT configured in MCP settings');
+      console.log(`   Expected config: ${MCP_SETTINGS_PATH}`);
+      process.exit(1);
+    }
+    break;
+  }
+
+  case 'help':
   default:
+    console.log('MeMesh Installation Helpers');
+    console.log('');
     console.log('Usage: node install-helpers.js <command> [args]');
+    console.log('');
     console.log('Commands:');
-    console.log('  add-to-mcp <path> [config]  - Add MeMesh to MCP config');
-    console.log('  verify             - Verify installation');
+    console.log('  configure <path> [token]  - Configure MeMesh in ~/.claude/mcp_settings.json');
+    console.log('  verify [base-path]        - Verify installation files exist');
+    console.log('  check                     - Check if MeMesh is configured');
+    console.log('  help                      - Show this help');
+    console.log('');
+    console.log('Examples:');
+    console.log('  node install-helpers.js configure /path/to/server-bootstrap.js');
+    console.log('  node install-helpers.js configure /path/to/server.js "my-a2a-token"');
+    console.log('  node install-helpers.js check');
+    break;
 }

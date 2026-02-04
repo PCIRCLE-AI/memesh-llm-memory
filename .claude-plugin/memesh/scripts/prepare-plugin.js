@@ -17,6 +17,7 @@ import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, writeFileSyn
 import { execSync } from 'child_process';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { homedir } from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -208,48 +209,90 @@ if (!allFilesExist) {
   process.exit(1);
 }
 
-// Step 8: Auto-register MCP server for local development
-console.log('\n8️⃣ Registering MCP server in Claude Code...');
+// Step 8: Configure ~/.claude/mcp_settings.json
+console.log('\n8️⃣ Configuring ~/.claude/mcp_settings.json...');
 
 const mcpServerPath = join(pluginRootDir, 'dist', 'mcp', 'server-bootstrap.js');
 const mcpServerName = 'memesh';
+const mcpSettingsPath = join(homedir(), '.claude', 'mcp_settings.json');
+let mcpSettingsConfigured = false;
+
+// Read A2A token
+let a2aToken = null;
+const envPath = join(projectRoot, '.env');
+if (existsSync(envPath)) {
+  const envContent = readFileSync(envPath, 'utf-8');
+  const tokenMatch = envContent.match(/^MEMESH_A2A_TOKEN=(.+)$/m);
+  if (tokenMatch && tokenMatch[1]) {
+    a2aToken = tokenMatch[1].trim();
+  }
+}
 
 try {
-  // Check if MCP server is already registered
-  let mcpList;
-  try {
-    mcpList = execSync('claude mcp list', { encoding: 'utf-8' });
-  } catch (error) {
-    console.log('   ⚠️  Could not check existing MCP servers');
-    mcpList = '';
+  // Ensure ~/.claude directory exists
+  const claudeDir = join(homedir(), '.claude');
+  if (!existsSync(claudeDir)) {
+    mkdirSync(claudeDir, { recursive: true });
+    console.log(`   ✅ Created: ${claudeDir}`);
   }
 
-  if (mcpList.includes(mcpServerName)) {
-    console.log(`   ⚠️  MCP server '${mcpServerName}' already registered, removing...`);
+  // Read existing config or create new one
+  let mcpConfig = { mcpServers: {} };
+  if (existsSync(mcpSettingsPath)) {
     try {
-      execSync(`claude mcp remove ${mcpServerName}`, { stdio: 'ignore' });
-      console.log(`   ✅ Removed existing MCP server`);
-    } catch (error) {
-      console.log('   ⚠️  Could not remove existing server, continuing...');
+      const existingContent = readFileSync(mcpSettingsPath, 'utf-8').trim();
+      if (existingContent) {
+        mcpConfig = JSON.parse(existingContent);
+        if (!mcpConfig.mcpServers) {
+          mcpConfig.mcpServers = {};
+        }
+      }
+    } catch (e) {
+      console.log('   ⚠️  Could not parse existing config, creating new one');
+      mcpConfig = { mcpServers: {} };
     }
   }
 
-  // Register the MCP server with environment variables
-  console.log(`   📝 Registering MCP server: ${mcpServerName}`);
-  execSync(
-    `claude mcp add ${mcpServerName} --scope user -e NODE_ENV=production -e MEMESH_DATA_DIR=/Users/ktseng/.memesh -e LOG_LEVEL=info -- node "${mcpServerPath}"`,
-    { stdio: 'inherit' }
-  );
-  console.log(`   ✅ MCP server registered successfully`);
+  // Configure memesh entry with absolute path (for local dev)
+  const serverConfig = {
+    command: 'node',
+    args: [mcpServerPath],
+    env: {
+      NODE_ENV: 'production'
+    }
+  };
+
+  // Add A2A token if available
+  if (a2aToken) {
+    serverConfig.env.MEMESH_A2A_TOKEN = a2aToken;
+  }
+
+  mcpConfig.mcpServers.memesh = serverConfig;
+
+  // Remove legacy entry if exists
+  if (mcpConfig.mcpServers['claude-code-buddy']) {
+    delete mcpConfig.mcpServers['claude-code-buddy'];
+    console.log('   ✅ Removed legacy "claude-code-buddy" entry');
+  }
+
+  // Write config
+  writeFileSync(mcpSettingsPath, JSON.stringify(mcpConfig, null, 2) + '\n', 'utf-8');
+  mcpSettingsConfigured = true;
+  console.log(`   ✅ MCP settings configured at: ${mcpSettingsPath}`);
+  console.log(`   ✅ Server path: ${mcpServerPath}`);
+  if (a2aToken) {
+    console.log(`   🔑 A2A token: ${a2aToken.substring(0, 8)}...${a2aToken.substring(a2aToken.length - 8)}`);
+  }
 } catch (error) {
-  console.log('\n⚠️  MCP server registration failed:');
-  console.log('   This might be expected if claude CLI is not available.');
-  console.log('   You can manually register the MCP server later with:');
-  console.log(`   claude mcp add ${mcpServerName} --scope user -e NODE_ENV=production -e MEMESH_DATA_DIR=/Users/ktseng/.memesh -e LOG_LEVEL=info -- node "${mcpServerPath}"`);
+  console.log(`   ⚠️  Could not configure MCP settings: ${error.message}`);
+  console.log('   You may need to manually configure ~/.claude/mcp_settings.json');
 }
 
 // Final success message
-console.log('\n✅ Plugin directory prepared successfully!');
+console.log('\n' + '═'.repeat(60));
+console.log('✅ Plugin directory prepared successfully!');
+console.log('═'.repeat(60));
+
 console.log('\n📦 Plugin structure:');
 console.log('   .claude-plugin/memesh/');
 console.log('   ├── .claude-plugin/');
@@ -259,11 +302,22 @@ console.log('   ├── dist/                 ← Build output');
 console.log('   ├── node_modules/         ← Dependencies');
 console.log('   ├── package.json');
 console.log('   └── scripts/');
-console.log('\n🔧 MCP Server:');
-console.log(`  - Server name: ${mcpServerName}`);
-console.log(`  - Status: Check with 'claude mcp list'`);
-console.log('\n🧪 Test Plugin Locally:');
-console.log('   1. Restart Claude Code completely');
-console.log(`   2. Run: claude --plugin-dir "${pluginRootDir}"`);
-console.log('   3. Or add to settings for permanent installation');
+
+console.log('\n🔧 MCP Configuration:');
+if (mcpSettingsConfigured) {
+  console.log(`   ✅ Auto-configured at: ${mcpSettingsPath}`);
+  console.log('   ✅ MeMesh is ready to use!');
+} else {
+  console.log('   ⚠️  Manual configuration required');
+  console.log(`   Add memesh entry to: ${mcpSettingsPath}`);
+}
+
+console.log('\n🚀 Next Steps:');
+console.log('   1. Restart Claude Code completely (quit and reopen)');
+console.log('   2. Test: Ask "List available MeMesh tools"');
+
+console.log('\n🧪 Alternative: Test Plugin Locally:');
+console.log(`   claude --plugin-dir "${pluginRootDir}"`);
+
 console.log('\n📝 For Production: Push to GitHub and install via marketplace');
+console.log('');

@@ -91,40 +91,42 @@ fi
 
 echo ""
 
-# Check if claude CLI is available
-if command -v claude &> /dev/null; then
-    echo ""
-    echo "✅ Claude CLI detected"
-    echo "📝 Registering MCP server 'memesh'..."
+# Note: prepare-plugin.js (called via npm run build:plugin) already configures
+# ~/.claude/mcp_settings.json automatically. The following is just for verification.
 
-    # Register MCP server with all required environment variables
-    if claude mcp add memesh --scope user \
-        -e NODE_ENV=production \
-        -e MEMESH_DATA_DIR=$HOME/.memesh \
-        -e LOG_LEVEL=info \
-        -e DISABLE_MCP_WATCHDOG=1 \
-        -- node "$PROJECT_DIR/.claude-plugin/memesh/dist/mcp/server-bootstrap.js"; then
-        echo "✅ MCP server registered successfully"
+MCP_SETTINGS="$HOME/.claude/mcp_settings.json"
+
+if [ -f "$MCP_SETTINGS" ]; then
+    if grep -q '"memesh"' "$MCP_SETTINGS" 2>/dev/null; then
+        echo ""
+        echo "✅ MCP settings configured at: $MCP_SETTINGS"
+        echo "   MeMesh is ready to use!"
     else
-        echo "⚠️  MCP server registration failed"
-        echo "   Try manual registration (see below)"
+        echo ""
+        echo "⚠️  MCP settings file exists but memesh not configured"
+        echo "   This is unexpected - please check $MCP_SETTINGS"
     fi
-
-    echo ""
-    echo "   To verify, run:"
-    echo "   claude mcp list | grep memesh"
 else
     echo ""
-    echo "⚠️  Claude CLI not found"
-    echo "   Plugin prepared successfully but not registered"
+    echo "⚠️  MCP settings file not found"
+    echo "   Expected at: $MCP_SETTINGS"
     echo ""
-    echo "   Manual registration:"
-    echo "   claude mcp add memesh --scope user \\"
-    echo "     -e NODE_ENV=production \\"
-    echo "     -e MEMESH_DATA_DIR=\$HOME/.memesh \\"
-    echo "     -e LOG_LEVEL=info \\"
-    echo "     -e DISABLE_MCP_WATCHDOG=1 \\"
-    echo "     -- node \"$PROJECT_DIR/.claude-plugin/memesh/dist/mcp/server-bootstrap.js\""
+    echo "   This may happen if prepare-plugin.js couldn't write the file."
+    echo "   You can manually create it with:"
+    echo ""
+    echo '   cat > ~/.claude/mcp_settings.json << EOF'
+    echo '   {'
+    echo '     "mcpServers": {'
+    echo '       "memesh": {'
+    echo '         "command": "node",'
+    echo "         \"args\": [\"$PROJECT_DIR/.claude-plugin/memesh/dist/mcp/server-bootstrap.js\"],"
+    echo '         "env": {'
+    echo '           "NODE_ENV": "production"'
+    echo '         }'
+    echo '       }'
+    echo '     }'
+    echo '   }'
+    echo '   EOF'
 fi
 
 echo ""
@@ -141,11 +143,14 @@ echo "   │   └── mcp/server-bootstrap.js"
 echo "   ├── node_modules/"
 echo "   └── scripts/"
 echo ""
-echo "🔄 Next steps:"
-echo "   1. Restart Claude Code (completely quit and reopen)"
-echo "   2. Check MCP server: claude mcp list | grep memesh"
+echo "🔧 MCP Configuration:"
+echo "   Auto-configured at: ~/.claude/mcp_settings.json"
 echo ""
-echo "🧪 Test Plugin Locally:"
+echo "🚀 Next steps:"
+echo "   1. Restart Claude Code (completely quit and reopen)"
+echo "   2. Test: Ask \"List available MeMesh tools\""
+echo ""
+echo "🧪 Alternative: Test Plugin Locally:"
 echo "   claude --plugin-dir \"$PROJECT_DIR/.claude-plugin/memesh\""
 echo ""
 echo "📚 Documentation:"

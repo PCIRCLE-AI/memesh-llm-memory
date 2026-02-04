@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { PatternContext, ContextualPattern } from './types.js';
 import { SQLiteStore } from './storage/SQLiteStore.js';
-import { LearningManager } from './LearningManager.js';
-import { PerformanceTracker } from './PerformanceTracker.js';
 
 describe('Contextual Patterns', () => {
   describe('PatternContext type definition', () => {

@@ -15,7 +15,6 @@ import net from 'net';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { EventEmitter } from 'events';
 import { DaemonSocketServer, type DaemonSocketServerConfig, type ClientInfo } from '../DaemonSocketServer.js';
 import { IpcTransport } from '../IpcTransport.js';
 import {

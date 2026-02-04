@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { BackgroundExecutor } from '../BackgroundExecutor.js';
 import { ResourceMonitor } from '../ResourceMonitor.js';
 import { DEFAULT_EXECUTION_CONFIG } from '../types.js';
-import { StateError, NotFoundError } from '../../errors/index.js';
+import { StateError } from '../../errors/index.js';
 
 describe('BackgroundExecutor - BUG-2: Cleanup Race Condition Tests', () => {
   let executor: BackgroundExecutor;

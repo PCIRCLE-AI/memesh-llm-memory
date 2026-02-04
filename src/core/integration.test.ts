@@ -4,9 +4,8 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestResourceMonitor } from '../../tests/helpers/TestResourceMonitor.js';
-import { ExecutionQueue } from './ExecutionQueue.js';
 import { BackgroundExecutor } from './BackgroundExecutor.js';
-import { ExecutionConfig, BackgroundTask } from './types.js';
+import { ExecutionConfig } from './types.js';
 
 describe('Background Execution System Integration', () => {
   let monitor: TestResourceMonitor;

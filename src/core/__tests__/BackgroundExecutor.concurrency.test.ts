@@ -56,7 +56,7 @@ describe('P1-9: Race Condition in processQueue()', () => {
       };
 
       // Submit multiple tasks rapidly (triggers multiple processQueue calls)
-      const tasks = await Promise.all([
+      await Promise.all([
         executor.executeTask(async () => 'task1', config),
         executor.executeTask(async () => 'task2', config),
         executor.executeTask(async () => 'task3', config),
@@ -241,7 +241,7 @@ describe('P1-9: Race Condition in processQueue()', () => {
       }
 
       // Wait for all submissions
-      const taskIds = await Promise.all(tasks);
+      await Promise.all(tasks);
 
       // Wait for execution
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -310,7 +310,7 @@ describe('P1-9: Race Condition in processQueue()', () => {
       };
 
       // Submit task that will trigger error
-      const taskId1 = await executor.executeTask(
+      await executor.executeTask(
         async () => 'task1',
         config
       );

@@ -156,7 +156,6 @@ describe('MCPTaskDelegator Performance Optimizations', () => {
     it('should scale to 1000 tasks without performance degradation', async () => {
       // Add 1000 tasks across 10 agents
       const numAgents = 10;
-      const tasksPerAgent = 1;
 
       for (let i = 0; i < numAgents; i++) {
         await delegator.addTask(

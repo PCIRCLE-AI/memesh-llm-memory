@@ -13,7 +13,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { A2AClient } from '../A2AClient.js';
 import { AgentRegistry } from '../../storage/AgentRegistry.js';
-import { ErrorCodes } from '../../errors/index.js';
 
 // Mock the modules
 vi.mock('../../storage/AgentRegistry.js', () => ({

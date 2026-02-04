@@ -333,15 +333,6 @@ describe('ToolHandlers', () => {
 
   describe('handleRecallMemory', () => {
     it('should recall and format memories', async () => {
-      // Mock recallMemoryTool behavior
-      const mockMemories = [
-        {
-          type: 'decision',
-          timestamp: '2025-01-01T00:00:00Z',
-          observations: ['Decision to use TypeScript', 'Type safety is priority'],
-        },
-      ];
-
       // We'll need to mock the recallMemoryTool import
       // For now, test the error path
       const result = await toolHandlers.handleRecallMemory({

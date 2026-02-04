@@ -312,7 +312,7 @@ describe('Integration Tests - Evolution System Phase 1', () => {
   describe('Performance and Scalability', () => {
     it('should handle multiple concurrent tasks', async () => {
       // Create multiple tasks in parallel
-      const tasks = await Promise.all([
+      await Promise.all([
         (async () => {
           const t1 = await tracker.startTask({ task: 'task1' });
           await tracker.startExecution();

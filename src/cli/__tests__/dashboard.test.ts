@@ -4,7 +4,7 @@
  * Tests for the CLI dashboard functionality
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { HealthChecker } from '../../core/HealthCheck.js';
 import { UnifiedMemoryStore } from '../../memory/UnifiedMemoryStore.js';
 

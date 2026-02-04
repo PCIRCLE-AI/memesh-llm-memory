@@ -7,7 +7,7 @@ import { StatsCommand } from '../stats.js';
 import { KnowledgeGraph } from '../../knowledge-graph/index.js';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { mkdirSync, rmSync } from 'fs';
+import { mkdirSync } from 'fs';
 
 describe('StatsCommand', () => {
   let testDir: string;

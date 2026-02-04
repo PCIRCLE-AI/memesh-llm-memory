@@ -24,8 +24,8 @@ describe('SpanTracker - Memory Leak Prevention', () => {
 
     // Create some spans
     const span1 = tracker.startSpan({ name: 'span1' });
-    const span2 = tracker.startSpan({ name: 'span2' });
-    const span3 = tracker.startSpan({ name: 'span3' });
+    tracker.startSpan({ name: 'span2' });
+    tracker.startSpan({ name: 'span3' });
 
     // Verify spans are tracked
     expect(tracker.getActiveSpans().length).toBe(3);
@@ -104,8 +104,8 @@ describe('SpanTracker - Memory Leak Prevention', () => {
     await tracker.startTask({ task: 'test' });
     await tracker.startExecution();
 
-    const span1 = tracker.startSpan({ name: 'span1' });
-    const span2 = tracker.startSpan({ name: 'span2' });
+    tracker.startSpan({ name: 'span1' });
+    tracker.startSpan({ name: 'span2' });
     // Intentionally NOT ending these spans (simulating error scenario)
 
     expect(tracker.getActiveSpans().length).toBe(2);

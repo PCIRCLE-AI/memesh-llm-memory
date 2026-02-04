@@ -119,7 +119,7 @@ describe('ProjectMemoryManager', () => {
     it('should use default limit if not specified', async () => {
       (mockKG.searchEntities as any).mockReturnValue([]);
 
-      await manager.recallRecentWork();
+      const _recent = await manager.recallRecentWork();
 
       expect(mockKG.searchEntities).toHaveBeenCalled();
     });

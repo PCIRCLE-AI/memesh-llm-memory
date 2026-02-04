@@ -28,8 +28,8 @@ describe('LinkManager', () => {
 
   it('should link reward to operation span', async () => {
     // Create operation span
-    const task = await tracker.startTask({ test: 'task' });
-    const execution = await tracker.startExecution();
+    const _task = await tracker.startTask({ test: 'task' });
+    const _execution = await tracker.startExecution();
     const span = tracker.startSpan({ name: 'code_review' });
     const spanId = span.spanId;
     await span.end();
@@ -49,8 +49,8 @@ describe('LinkManager', () => {
   });
 
   it('should query linked spans', async () => {
-    const task = await tracker.startTask({ test: 'task' });
-    const execution = await tracker.startExecution();
+    const _task = await tracker.startTask({ test: 'task' });
+    const _execution = await tracker.startExecution();
     const span = tracker.startSpan({ name: 'code_review' });
     const spanId = span.spanId;
     await span.end();

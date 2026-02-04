@@ -23,7 +23,7 @@ describe('SQLiteStore - SQL Injection Protection', () => {
     it('should allow whitelisted sort columns', async () => {
       // Create a span first
       const task = await store.createTask({ test: 'task' });
-      const execution = await store.createExecution(task.id);
+      const _execution = await store.createExecution(task.id);
 
       // Valid sort columns should work
       const validColumns = ['start_time', 'duration_ms', 'status_code', 'name', 'kind'];
@@ -89,7 +89,7 @@ describe('SQLiteStore - SQL Injection Protection', () => {
     it('should safely escape special characters in span_id', async () => {
       // Create test data
       const task = await store.createTask({ test: 'task' });
-      const execution = await store.createExecution(task.id);
+      const _execution = await store.createExecution(task.id);
 
       // Span IDs with special SQL characters
       const specialSpanIds = [
@@ -110,7 +110,7 @@ describe('SQLiteStore - SQL Injection Protection', () => {
 
     it('should not allow LIKE injection to bypass query', async () => {
       const task = await store.createTask({ test: 'task' });
-      const execution = await store.createExecution(task.id);
+      const _execution = await store.createExecution(task.id);
 
       // LIKE injection attempts
       const injections = [
@@ -147,7 +147,7 @@ describe('SQLiteStore - SQL Injection Protection', () => {
     it('should prevent LIKE wildcard injection', async () => {
       // Create test spans with specific tags
       const task = await store.createTask({ test: 'task' });
-      const execution = await store.createExecution(task.id);
+      const _execution = await store.createExecution(task.id);
 
       // Attacker tries to use wildcards to match all tags
       const injectionTags = ['%', '_', '%%'];

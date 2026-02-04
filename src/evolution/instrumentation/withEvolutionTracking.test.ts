@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { withEvolutionTracking } from './withEvolutionTracking';
 import { SpanTracker } from './SpanTracker';
 import { SQLiteStore } from '../storage/SQLiteStore';

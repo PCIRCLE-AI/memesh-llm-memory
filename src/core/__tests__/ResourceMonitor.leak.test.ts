@@ -48,11 +48,9 @@ describe('ResourceMonitor - BUG-3: Interval Leak Tests', () => {
   });
 
   it('BUG-3: should not accumulate abandoned intervals when cleanup not called', () => {
-    const callbacks: Array<() => void> = [];
-
     // Create multiple listeners WITHOUT storing cleanup function
     for (let i = 0; i < 10; i++) {
-      monitor.onThresholdExceeded('cpu', (resources) => {
+      monitor.onThresholdExceeded('cpu', (_resources) => {
         // This cleanup function is intentionally abandoned
       });
     }

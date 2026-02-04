@@ -265,6 +265,21 @@ export class KnowledgeGraph {
 
     this.db.exec(schema);
 
+    // Add FTS5 virtual table for full-text search
+    // Uses unicode61 tokenizer for proper Unicode handling
+    // remove_diacritics=1 for accent-insensitive search
+    const fts5Schema = `
+      -- FTS5 virtual table for entities full-text search
+      CREATE VIRTUAL TABLE IF NOT EXISTS entities_fts USING fts5(
+        name,
+        observations,
+        content='',
+        tokenize='unicode61 remove_diacritics 1'
+      );
+    `;
+
+    this.db.exec(fts5Schema);
+
     // Run schema migrations
     this.runMigrations();
   }
@@ -311,6 +326,37 @@ export class KnowledgeGraph {
       });
       throw error;
     }
+
+    // Migration 2: Populate FTS5 index from existing entities
+    try {
+      // Check if FTS5 table is empty but entities exist
+      const ftsCount = (this.db.prepare('SELECT COUNT(*) as count FROM entities_fts').get() as { count: number }).count;
+      const entityCount = (this.db.prepare('SELECT COUNT(*) as count FROM entities').get() as { count: number }).count;
+
+      if (ftsCount === 0 && entityCount > 0) {
+        logger.info('[KG] Running migration: Populating FTS5 index from existing entities');
+
+        // Populate FTS5 from existing data
+        this.db.exec(`
+          INSERT INTO entities_fts(rowid, name, observations)
+          SELECT
+            e.id,
+            e.name,
+            COALESCE(
+              (SELECT GROUP_CONCAT(content, ' ') FROM observations o WHERE o.entity_id = e.id),
+              ''
+            )
+          FROM entities e
+        `);
+
+        logger.info(`[KG] Migration complete: Populated FTS5 index with ${entityCount} entities`);
+      }
+    } catch (error) {
+      logger.error('[KG] FTS5 population migration failed:', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      // Non-fatal: search will fall back to LIKE
+    }
   }
 
   /**
@@ -340,6 +386,69 @@ export class KnowledgeGraph {
       .replace(/_/g, '!_')     // Underscore (matches single character)
       .replace(/\[/g, '![')    // Left bracket (character class start)
       .replace(/\]/g, '!]');   // Right bracket (character class end)
+  }
+
+  /**
+   * Search using FTS5 full-text search
+   * Returns entity IDs matching the query, ranked by BM25
+   */
+  private searchFTS5(query: string, limit: number): number[] {
+    if (!query || query.trim() === '') {
+      return [];
+    }
+
+    const ftsQuery = this.prepareFTS5Query(query);
+    if (!ftsQuery) {
+      return [];
+    }
+
+    try {
+      const results = this.db.prepare(`
+        SELECT rowid, bm25(entities_fts) as rank
+        FROM entities_fts
+        WHERE entities_fts MATCH ?
+        ORDER BY rank
+        LIMIT ?
+      `).all(ftsQuery, limit) as Array<{ rowid: number; rank: number }>;
+
+      return results.map(r => r.rowid);
+    } catch (error) {
+      logger.warn('[KG] FTS5 search failed, will use LIKE fallback:', {
+        query,
+        ftsQuery,
+        error: error instanceof Error ? error.message : String(error)
+      });
+      return [];
+    }
+  }
+
+  /**
+   * Prepare query string for FTS5 MATCH
+   * Converts user query to FTS5 query syntax
+   */
+  private prepareFTS5Query(query: string): string {
+    const normalized = query.trim().replace(/\s+/g, ' ');
+    if (!normalized) {
+      return '';
+    }
+
+    const tokens = normalized.split(' ').filter(t => t.length > 0);
+    if (tokens.length === 0) {
+      return '';
+    }
+
+    // Build FTS5 query with prefix matching
+    const ftsTokens = tokens.map(token => {
+      const escaped = token
+        .replace(/"/g, '""')
+        .replace(/\*/g, '')
+        .replace(/\^/g, '')
+        .replace(/:/g, '')
+        .replace(/[(){}[\]]/g, '');
+      return `"${escaped}"*`;
+    });
+
+    return ftsTokens.join(' OR ');
   }
 
   /**
@@ -429,6 +538,28 @@ export class KnowledgeGraph {
           tagStmt.run(actualId, tag);
         }
       }
+
+      // Sync to FTS5 index
+      // For contentless FTS5 tables, we need to handle updates specially
+      // Query existing FTS entry to get old content for proper deletion
+      const existingFtsContent = this.db
+        .prepare('SELECT name, observations FROM entities_fts WHERE rowid = ?')
+        .get(actualId) as { name: string; observations: string } | undefined;
+
+      if (existingFtsContent) {
+        // For contentless FTS5, delete requires exact original content
+        this.db.prepare(`
+          INSERT INTO entities_fts(entities_fts, rowid, name, observations)
+          VALUES('delete', ?, ?, ?)
+        `).run(actualId, existingFtsContent.name, existingFtsContent.observations);
+      }
+
+      // Insert into FTS5 with concatenated observations
+      const observationsText = entity.observations ? entity.observations.join(' ') : '';
+      this.db.prepare(`
+        INSERT INTO entities_fts(rowid, name, observations)
+        VALUES (?, ?, ?)
+      `).run(actualId, entity.name, observationsText);
 
       // Invalidate cache for entity queries
       this.queryCache.invalidatePattern(/^entities:/);
@@ -609,11 +740,20 @@ export class KnowledgeGraph {
     }
 
     if (query.namePattern) {
-      // ✅ FIX: Search both entity name AND observations content for better recall
-      sql += " AND (e.name LIKE ? ESCAPE '!' OR e.id IN (SELECT entity_id FROM observations WHERE content LIKE ? ESCAPE '!'))";
-      const escapedPattern = `%${this.escapeLikePattern(query.namePattern)}%`;
-      params.push(escapedPattern);
-      params.push(escapedPattern);
+      // Try FTS5 search first for better tokenized matching
+      const ftsResults = this.searchFTS5(query.namePattern, effectiveLimit || 100);
+
+      if (ftsResults.length > 0) {
+        // Use FTS5 results - filter by IDs
+        sql += ' AND e.id IN (' + ftsResults.map(() => '?').join(',') + ')';
+        params.push(...ftsResults);
+      } else {
+        // Fallback to LIKE for edge cases
+        sql += " AND (e.name LIKE ? ESCAPE '!' OR e.id IN (SELECT entity_id FROM observations WHERE content LIKE ? ESCAPE '!'))";
+        const escapedPattern = `%${this.escapeLikePattern(query.namePattern)}%`;
+        params.push(escapedPattern);
+        params.push(escapedPattern);
+      }
     }
 
     sql += ' ORDER BY e.created_at DESC';
@@ -809,6 +949,19 @@ export class KnowledgeGraph {
 
     if (!entity) {
       return false;
+    }
+
+    // Delete from FTS5 index first (contentless table requires special syntax)
+    // Must be done before entity deletion since we need the entity data
+    const existingFts = this.db.prepare(
+      'SELECT name, observations FROM entities_fts WHERE rowid = ?'
+    ).get(entity.id) as { name: string; observations: string } | undefined;
+
+    if (existingFts) {
+      this.db.prepare(`
+        INSERT INTO entities_fts(entities_fts, rowid, name, observations)
+        VALUES('delete', ?, ?, ?)
+      `).run(entity.id, existingFts.name, existingFts.observations);
     }
 
     // Delete the entity (cascade will handle observations, tags, and relations)

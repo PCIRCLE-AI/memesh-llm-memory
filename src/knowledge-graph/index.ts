@@ -6,9 +6,7 @@
  */
 
 import Database from 'better-sqlite3';
-import { join } from 'path';
 import { promises as fsPromises, existsSync, mkdirSync } from 'fs';
-import { homedir } from 'os';
 import { NotFoundError, ValidationError } from '../errors/index.js';
 import { SimpleDatabaseFactory } from '../config/simple-config.js';
 import type { Entity, Relation, SearchQuery, RelationTrace, EntityType, RelationType } from './types.js';

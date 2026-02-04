@@ -65,7 +65,6 @@ import {
   type ValidatedCreateEntitiesInput,
   type ValidatedAddObservationsInput,
   type ValidatedCreateRelationsInput,
-  type ValidatedGenerateTestsInput,
 } from '../validation.js';
 
 /**

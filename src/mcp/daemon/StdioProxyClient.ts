@@ -28,7 +28,6 @@ import {
   DaemonMessage,
   HandshakeAckMessage,
   McpResponseMessage,
-  HeartbeatAckMessage,
   ErrorMessage,
   ShutdownMessage,
   createHandshake,
@@ -36,7 +35,6 @@ import {
   parseMessage,
   serializeMessage,
   MESSAGE_DELIMITER,
-  PROTOCOL_VERSION,
 } from './DaemonProtocol.js';
 import { logger } from '../../utils/logger.js';
 

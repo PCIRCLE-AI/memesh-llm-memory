@@ -19,7 +19,6 @@ import type { LanguageProfile } from '../types/toonify.js';
 import { LRUCache } from './lru-cache.js';
 import { logger } from './logger.js';
 import { join } from 'path';
-import { getHomeDir } from './paths.js';
 import { getDataPath } from './PathResolver.js';
 
 export interface ToonifyConfig {

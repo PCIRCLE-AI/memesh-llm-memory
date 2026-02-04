@@ -17,7 +17,6 @@ import { appConfig } from '../config/index.js';
 import {
   type MicroDollars,
   toMicroDollars,
-  toDollars,
   formatMoney,
   calculateTokenCost,
   addCosts,

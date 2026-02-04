@@ -27,7 +27,6 @@ import { retryWithBackoff, type RetryOptions } from '../../utils/retry.js';
 import {
   getTraceContext,
   injectTraceContext,
-  createTraceContext,
 } from '../../utils/tracing/index.js';
 import { logger } from '../../utils/logger.js';
 

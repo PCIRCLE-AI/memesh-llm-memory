@@ -20,9 +20,7 @@ import { UnifiedMemoryStore } from './UnifiedMemoryStore.js';
 import type { UnifiedMemory } from './types/unified-memory.js';
 import type {
   PreventionRule,
-  MistakeInput,
 } from './types/pattern-types.js';
-import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger.js';
 
 /**

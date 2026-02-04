@@ -7,7 +7,6 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import * as os from 'os';
 import { SkillManager } from '../skills/SkillManager.js';
 import { logger } from '../utils/logger.js';
 import { getDataDirectory } from '../utils/PathResolver.js';

@@ -16,7 +16,6 @@
  * - Preference consolidation
  */
 
-import { v4 as uuidv4 } from 'uuid';
 import { UnifiedMemoryStore } from './UnifiedMemoryStore.js';
 import type { UnifiedMemory } from './types/unified-memory.js';
 import type {

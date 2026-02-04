@@ -12,11 +12,10 @@
  */
 
 import chalk from 'chalk';
-import boxen from 'boxen';
 import Table from 'cli-table3';
 import { theme, icons } from './theme.js';
 import { ErrorClassifier } from '../errors/ErrorClassifier.js';
-import { getOperationDisplayName, getOperationIcon } from './design-tokens.js';
+import { getOperationDisplayName } from './design-tokens.js';
 
 /**
  * Agent Response Interface

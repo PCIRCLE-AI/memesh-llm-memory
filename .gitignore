@@ -334,3 +334,11 @@ MARKETPLACE_SUBMISSION.md
 *-improvements.md
 DEPLOYMENT_CHECKLIST.md
 PRE_RELEASE_CHECKLIST.md
+
+# Internal development standards and checklists
+PLUGIN_DEPLOYMENT_CHECKLIST.md
+INSTALLATION_STANDARD.md
+DEV_SETUP_GUIDE.md
+mcp-compliance.md
+*-compliance.md
+ERROR_HANDLING_CHECKLIST.md

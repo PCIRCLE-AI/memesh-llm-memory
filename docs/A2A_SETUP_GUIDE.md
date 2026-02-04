@@ -161,7 +161,7 @@ Create or edit `.env` in your project root:
 
 ```bash
 # A2A Protocol Phase 1.0 Configuration
-MEMESH_A2A_TOKEN=a7f3b2c1d4e5f6789abc012def345678901234567890abcdef1234567890abcd
+MEMESH_A2A_TOKEN=<your-64-char-hex-token-here>
 ```
 
 ### Step 2: Configure Timeout (Optional)
@@ -187,7 +187,7 @@ MEMESH_A2A_POLL_INTERVAL=5000
 MEMESH_DATA_DIR=~/.memesh
 
 # A2A Protocol Phase 1.0
-MEMESH_A2A_TOKEN=a7f3b2c1d4e5f6789abc012def345678901234567890abcdef1234567890abcd
+MEMESH_A2A_TOKEN=<your-64-char-hex-token-here>
 MEMESH_A2A_TASK_TIMEOUT=30000
 MEMESH_A2A_POLL_INTERVAL=5000
 

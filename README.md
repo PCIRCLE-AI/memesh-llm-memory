@@ -76,9 +76,15 @@ MeMesh: 🧠 "I see you have JWT. Let's
 
 Watch MeMesh's core features in action:
 
-**[▶️ Watch Demo Video](./media/demo-video/out/memesh-demo.mp4)**
+<div align="center">
 
-Showcasing:
+<video src="https://github.com/PCIRCLE-AI/claude-code-buddy/raw/develop/media/demo-video/out/memesh-demo.mp4" controls width="800">
+  Your browser does not support the video tag.
+</video>
+
+</div>
+
+**Features showcased:**
 - 🤝 **A2A Collaboration** - Multi-agent coordination
 - 🧠 **Memory Management** - Knowledge graph storage
 - 🔐 **Secrets Management** - Secure credential storage

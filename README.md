@@ -74,9 +74,7 @@ MeMesh: 🧠 "I see you have JWT. Let's
 
 <div align="center">
 
-<video src="https://github.com/PCIRCLE-AI/claude-code-buddy/raw/develop/media/demo-video/out/memesh-demo.mp4" controls width="800">
-  Your browser does not support the video tag.
-</video>
+https://github.com/user-attachments/assets/a389bcd2-1563-4d91-b363-44cdba5f4e44
 
 </div>
 

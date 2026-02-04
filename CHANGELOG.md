@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-02-04
+
+### Added
+- Daemon socket cleanup on exit/crash - prevents stale socket issues in new sessions
+- Exception handlers (uncaughtException, unhandledRejection) for graceful daemon shutdown
+
+### Changed
+- **Memory retention periods updated**:
+  - Session memories: 7 days → **30 days**
+  - Project memories: 30 days → **90 days**
+- Auto-memory hooks improvements with updated documentation
+
+### Fixed
+- Stale daemon socket causing MCP connection failures in new sessions
+- Documentation accuracy - updated all outdated retention period references
+
+### Documentation
+- Updated README.md with correct memory retention information
+- Updated USER_GUIDE.md version history
+- Updated hooks README.md with correct retention periods
+- Updated TROUBLESHOOTING.md
+
 ## [2.6.6] - 2026-02-03
 
 ### Fixed

@@ -422,7 +422,8 @@ When you start a new session, you'll see something like:
 ### Good to Know
 
 - Saves automatically every 250K tokens (about 1-2 hours of work)
-- Keeps memories for 7 days, then cleans up old ones
+- Session memories kept for **30 days**, then auto-cleaned
+- Project memories (code changes, test results) kept for **90 days**
 - Only works in Claude Code (not Cursor yet)
 
 </details>

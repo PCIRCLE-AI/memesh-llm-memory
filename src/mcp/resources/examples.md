@@ -1,6 +1,6 @@
 # MeMesh Examples
 
-**Version: 2.6.0
+**Version: 2.7.0
 
 ## Example 1: Code Review
 

@@ -40,7 +40,7 @@ PID: 12345
 Uptime: 2h 15m
 Clients: 3
 Socket: /Users/user/.memesh/daemon.sock
-Version: 2.6.6
+Version: 2.7.0
 ```
 
 ---

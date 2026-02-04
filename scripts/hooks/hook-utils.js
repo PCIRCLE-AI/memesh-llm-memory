@@ -52,9 +52,9 @@ export const THRESHOLDS = {
   /** Token threshold for auto-saving key points */
   TOKEN_SAVE: 250_000,
   /** Days to retain session key points */
-  RETENTION_DAYS: 7,
+  RETENTION_DAYS: 30,
   /** Days to recall key points on session start */
-  RECALL_DAYS: 7,
+  RECALL_DAYS: 30,
   /** Slow execution threshold (ms) */
   SLOW_EXECUTION: 5000,
   /** High token usage threshold */

@@ -166,7 +166,7 @@ async function startA2AServer(): Promise<any> {
       id: agentId,
       name: 'MeMesh (MCP)',
       description: 'AI development assistant via MCP protocol',
-      version: '2.5.3',
+      version: '2.7.0',
       capabilities: {
         skills: [
           {
@@ -358,23 +358,78 @@ async function startAsDaemon(bootstrapper: DaemonBootstrap, version: string) {
   // Start A2A server
   const a2aServer = await startA2AServer();
 
-  // Setup graceful shutdown
-  setupSignalHandlers(async (signal: string) => {
-    logger.info('[Daemon] Shutdown requested', { signal });
+  // Cleanup function for socket and lock
+  const cleanupDaemon = async (reason: string): Promise<void> => {
+    logger.info('[Daemon] Cleanup started', { reason });
 
-    // Stop accepting new connections
-    await socketServer.stop();
+    try {
+      // Stop accepting new connections
+      await socketServer.stop();
+    } catch (error) {
+      logger.warn('[Daemon] Error stopping socket server', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
 
     // Stop A2A server
     if (a2aServer) {
-      await a2aServer.stop();
+      try {
+        await a2aServer.stop();
+      } catch (error) {
+        logger.warn('[Daemon] Error stopping A2A server', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
 
     // Release lock
-    await DaemonLockManager.releaseLock();
+    try {
+      await DaemonLockManager.releaseLock();
+    } catch (error) {
+      logger.warn('[Daemon] Error releasing lock', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
 
-    logger.info('[Daemon] Shutdown complete');
+    // CRITICAL: Clean up socket file to prevent stale socket issues
+    // This must happen AFTER socketServer.stop() closes all connections
+    try {
+      transport.cleanup();
+      logger.info('[Daemon] Socket file cleaned up');
+    } catch (error) {
+      logger.warn('[Daemon] Error cleaning up socket file', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    logger.info('[Daemon] Cleanup complete');
+  };
+
+  // Setup graceful shutdown for signals
+  setupSignalHandlers(async (signal: string) => {
+    logger.info('[Daemon] Shutdown requested', { signal });
+    await cleanupDaemon(`signal:${signal}`);
     process.exit(0);
+  });
+
+  // Handle uncaught exceptions - cleanup socket before crashing
+  process.once('uncaughtException', async (error: Error) => {
+    logger.error('[Daemon] Uncaught exception', {
+      error: error.message,
+      stack: error.stack,
+    });
+    await cleanupDaemon('uncaughtException');
+    process.exit(1);
+  });
+
+  // Handle unhandled promise rejections - cleanup socket before crashing
+  process.once('unhandledRejection', async (reason: unknown) => {
+    logger.error('[Daemon] Unhandled rejection', {
+      reason: reason instanceof Error ? reason.message : String(reason),
+      stack: reason instanceof Error ? reason.stack : undefined,
+    });
+    await cleanupDaemon('unhandledRejection');
+    process.exit(1);
   });
 
   // Start watchdog for manual startup detection

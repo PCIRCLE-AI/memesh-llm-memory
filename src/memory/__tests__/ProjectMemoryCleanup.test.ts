@@ -15,9 +15,9 @@ describe('ProjectMemoryCleanup', () => {
     cleanup = new ProjectMemoryCleanup(mockKG);
   });
 
-  it('should delete entities older than 30 days', async () => {
+  it('should delete entities older than 90 days', async () => {
     const oldDate = new Date();
-    oldDate.setDate(oldDate.getDate() - 31); // 31 days ago
+    oldDate.setDate(oldDate.getDate() - 91); // 91 days ago
 
     // Mock should return entity only for code_change type
     (mockKG.searchEntities as any).mockImplementation((query: any) => {
@@ -42,9 +42,9 @@ describe('ProjectMemoryCleanup', () => {
     expect(mockKG.deleteEntity).toHaveBeenCalledWith('CodeChange-old');
   });
 
-  it('should NOT delete entities within 30 days', async () => {
+  it('should NOT delete entities within 90 days', async () => {
     const recentDate = new Date();
-    recentDate.setDate(recentDate.getDate() - 10); // 10 days ago
+    recentDate.setDate(recentDate.getDate() - 30); // 30 days ago (within 90 day retention)
 
     (mockKG.searchEntities as any).mockReturnValue([
       {
@@ -80,7 +80,7 @@ describe('ProjectMemoryCleanup', () => {
 
   it('should process all memory types (code_change, test_result, session_snapshot)', async () => {
     const oldDate = new Date();
-    oldDate.setDate(oldDate.getDate() - 31);
+    oldDate.setDate(oldDate.getDate() - 91); // 91 days ago
 
     // Mock will be called 3 times (once per type)
     let callCount = 0;
@@ -128,10 +128,10 @@ describe('ProjectMemoryCleanup', () => {
 
   it('should handle mixed old and recent entities', async () => {
     const oldDate = new Date();
-    oldDate.setDate(oldDate.getDate() - 35); // 35 days ago
+    oldDate.setDate(oldDate.getDate() - 95); // 95 days ago
 
     const recentDate = new Date();
-    recentDate.setDate(recentDate.getDate() - 10); // 10 days ago
+    recentDate.setDate(recentDate.getDate() - 30); // 30 days ago (within 90 day retention)
 
     // Mock should return both entities only for code_change type
     (mockKG.searchEntities as any).mockImplementation((query: any) => {

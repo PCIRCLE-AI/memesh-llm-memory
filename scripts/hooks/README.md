@@ -118,7 +118,7 @@ rm ~/.claude/state/agent-identity.json
 | What | Details |
 |------|---------|
 | **Claude Code only** | Doesn't work in Cursor |
-| **7-day memory** | Old memories auto-deleted |
+| **30-day memory** | Old session memories auto-deleted |
 | **Local only** | No sync between computers |
 
 ---
@@ -151,7 +151,7 @@ Edit `hook-utils.js`:
 ```javascript
 THRESHOLDS = {
   TOKEN_SAVE: 250_000,      // When to auto-save (tokens)
-  RETENTION_DAYS: 7,        // How long to keep memories
+  RETENTION_DAYS: 30,       // How long to keep session memories
   MAX_ARCHIVED_SESSIONS: 30 // How many old sessions to keep
 }
 ```

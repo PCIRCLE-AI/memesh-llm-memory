@@ -10,7 +10,7 @@
  * - Generates recommendations for next session
  * - Updates session context (quota, learned patterns)
  * - Saves session key points to MeMesh
- * - Cleans up old key points (>7 days retention)
+ * - Cleans up old key points (>30 days retention)
  * - Displays session summary with patterns and suggestions
  * - Archives current session data
  */
@@ -635,7 +635,7 @@ function stopHook() {
   // Save session key points to MeMesh
   saveSessionKeyPointsOnEnd(sessionState, patterns);
 
-  // Clean up old key points (>7 days)
+  // Clean up old key points (>30 days)
   cleanupOldKeyPoints();
 
   // Display summary

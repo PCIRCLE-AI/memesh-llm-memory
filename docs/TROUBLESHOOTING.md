@@ -163,5 +163,5 @@ pkill -f "memesh.*daemon"
 
 ---
 
-**Version**: 2.6.6
+**Version**: 2.7.0
 **Last Updated**: 2026-02-04

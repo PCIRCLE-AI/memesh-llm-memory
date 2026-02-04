@@ -920,6 +920,6 @@ By contributing, you agree that your contributions will be licensed under the AG
 
 ---
 
-**Version**: 2.6.6
+**Version**: 2.7.0
 **Last Updated**: 2026-02-04
 **Maintainer**: MeMesh Team

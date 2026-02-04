@@ -408,6 +408,6 @@ Install MeMesh, run `buddy-help`, and never explain your architecture twice agai
 
 ---
 
-**Version**: 2.6.6
-**Last Updated**: 2026-02-03
+**Version**: 2.7.0
+**Last Updated**: 2026-02-04
 **Not affiliated with Anthropic PBC** • Independent open-source project

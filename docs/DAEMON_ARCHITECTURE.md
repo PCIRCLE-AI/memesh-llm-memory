@@ -184,7 +184,7 @@ export MEMESH_DISABLE_DAEMON=1
   "instanceId": "550e8400-e29b-41d4-a716-446655440000",
   "socketPath": "/Users/user/.memesh/daemon.sock",
   "startTime": 1706000000000,
-  "version": "2.6.6",
+  "version": "2.7.0",
   "clientCount": 2,
   "protocolVersion": 1,
   "minClientVersion": "2.6.0"

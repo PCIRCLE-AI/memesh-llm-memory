@@ -32,9 +32,9 @@ describe('ProjectMemoryCleanup Integration', () => {
   });
 
   it('should cleanup old memories with real KnowledgeGraph', async () => {
-    // Create old entity (31 days ago)
+    // Create old entity (91 days ago - beyond 90 day retention)
     const oldDate = new Date();
-    oldDate.setDate(oldDate.getDate() - 31);
+    oldDate.setDate(oldDate.getDate() - 91);
 
     kg.createEntity({
       name: 'OldCodeChange',
@@ -46,9 +46,9 @@ describe('ProjectMemoryCleanup Integration', () => {
       ]
     });
 
-    // Create recent entity (10 days ago)
+    // Create recent entity (30 days ago - within 90 day retention)
     const recentDate = new Date();
-    recentDate.setDate(recentDate.getDate() - 10);
+    recentDate.setDate(recentDate.getDate() - 30);
 
     kg.createEntity({
       name: 'RecentCodeChange',
@@ -79,7 +79,7 @@ describe('ProjectMemoryCleanup Integration', () => {
 
   it('should handle multiple entity types', async () => {
     const oldDate = new Date();
-    oldDate.setDate(oldDate.getDate() - 35);
+    oldDate.setDate(oldDate.getDate() - 95); // 95 days ago - beyond 90 day retention
 
     // Create old entities of different types
     kg.createEntity({

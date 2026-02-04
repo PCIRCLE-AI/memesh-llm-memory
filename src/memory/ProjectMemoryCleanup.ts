@@ -1,7 +1,7 @@
 /**
  * ProjectMemoryCleanup - Automatic cleanup of old memories
  *
- * Deletes memories older than 30 days to prevent unbounded growth
+ * Deletes memories older than 90 days to prevent unbounded growth
  * of the Knowledge Graph database.
  */
 
@@ -19,14 +19,14 @@ export interface CleanupResult {
 
 export class ProjectMemoryCleanup {
   private knowledgeGraph: KnowledgeGraph;
-  private readonly RETENTION_DAYS = 30;
+  private readonly RETENTION_DAYS = 90;
 
   constructor(knowledgeGraph: KnowledgeGraph) {
     this.knowledgeGraph = knowledgeGraph;
   }
 
   /**
-   * Delete memories older than retention period (30 days)
+   * Delete memories older than retention period (90 days)
    *
    * ✅ FIX MEDIUM-3: Now returns detailed results including failures
    * Failed deletions are tracked and reported for debugging.

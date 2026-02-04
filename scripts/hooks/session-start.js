@@ -240,7 +240,7 @@ function displayRecalledMemory(recalledData) {
 
   if (!recalledData || !recalledData.keyPoints || recalledData.keyPoints.length === 0) {
     console.log('');
-    console.log('  ℹ️  No recent memories found (last 7 days)');
+    console.log('  ℹ️  No recent memories found (last 30 days)');
     console.log('  💡 Memories will be auto-saved when this session ends');
     console.log('');
     console.log('═'.repeat(60));

@@ -36,9 +36,6 @@ class FailingDelegator extends MCPTaskDelegator {
     return this.callCount;
   }
 
-  reset(): void {
-    this.callCount = 0;
-  }
 }
 
 async function runDemo() {

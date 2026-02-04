@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+- **Major documentation update**: Corrected all outdated installation guides
+  - Fixed QUICK_INSTALL.md: Completely rewritten with correct installation priority (npm global install first)
+  - Fixed tool count: 7 tools → **18 tools** (accurate count with complete list)
+  - Removed misleading Plugin Installation instructions (--plugin-dir flag)
+  - Removed Cursor and VS Code installation instructions (not officially supported)
+  - Updated README.md, GETTING_STARTED.md, and guides/QUICK_START.md for consistency
+  - Corrected installation method: MCP Server mode (auto-configures mcp_settings.json), not Plugin mode
+
 ## [2.7.0] - 2026-02-04
 
 ### Added

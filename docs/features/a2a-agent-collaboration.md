@@ -982,7 +982,7 @@ A: Yes! The system supports unlimited agents (limited by available ports 3000-39
 **Q: Do agents need to be the same version?**
 A: In Phase 0.5, yes. Protocol compatibility across versions will be added in Phase 2.
 
-**Q: Can I use A2A with Claude Desktop and Cursor simultaneously?**
+**Q: Can I use A2A with multiple Claude Code instances simultaneously?**
 A: Yes! Each client can connect to a different agent.
 
 **Q: Where are task artifacts stored?**

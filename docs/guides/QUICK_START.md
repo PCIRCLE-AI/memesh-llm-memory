@@ -129,10 +129,12 @@ claude mcp list
 **Expected output:**
 ```
 Connected MCP Servers:
-✅ claude-code-buddy (7 tools available)
-   - buddy-do, buddy-help, buddy-remember
-   - get-session-health, get-workflow-guidance
-   - generate-tests, hook-tool-use
+✅ memesh (18 tools available)
+   Core: buddy-do, buddy-remember, buddy-help
+   Workflow: get-session-health, get-workflow-guidance
+   Secrets: buddy-secret-store, buddy-secret-get, buddy-secret-list, buddy-secret-delete
+   A2A: a2a-send-task, a2a-get-task, a2a-list-tasks, a2a-list-agents, a2a-report-result
+   Other: create-entities, buddy-record-mistake, generate-tests, hook-tool-use
 ```
 
 ---
@@ -148,15 +150,35 @@ Verify MeMesh is working by checking available capabilities:
 
 **Expected response:**
 ```
-MeMesh provides 7 tools:
+MeMesh provides 18 tools:
 
-1. buddy-do - Route any task to the right capability
-2. buddy-help - Command reference and examples
-3. buddy-remember - Recall project memory
-4. get-session-health - Session health snapshot
-5. get-workflow-guidance - Next-step suggestions
-6. generate-tests - Implementation planning
-7. hook-tool-use - Internal hook ingestion (automatic)
+Core Commands (3):
+  1. buddy-do - Smart task routing and execution
+  2. buddy-remember - Project memory recall
+  3. buddy-help - Command documentation
+
+Workflow Tools (2):
+  4. get-session-health - Session health monitoring
+  5. get-workflow-guidance - Next-step recommendations
+
+Secret Management (4):
+  6. buddy-secret-store - Store credentials securely
+  7. buddy-secret-get - Retrieve stored secrets
+  8. buddy-secret-list - List all secrets
+  9. buddy-secret-delete - Delete secrets
+
+A2A Protocol (5):
+  10. a2a-send-task - Send tasks to agents
+  11. a2a-get-task - Get task status
+  12. a2a-list-tasks - List own tasks
+  13. a2a-list-agents - List available agents
+  14. a2a-report-result - Report results
+
+Other Tools (4):
+  15. create-entities - Create knowledge entities
+  16. buddy-record-mistake - Error recording
+  17. generate-tests - Test generation
+  18. hook-tool-use - Hook processing (auto)
 ```
 
 ---

@@ -126,7 +126,11 @@ Available Commands:
   get-workflow-guidance - Get recommendations for current phase
   generate-tests <file> - Auto-generate comprehensive tests
 
-Status: ✅ Connected (7 tools available)
+  buddy-secret-store    - Store credentials securely
+  buddy-secret-get      - Retrieve stored secrets
+  ... (18 tools total)
+
+Status: ✅ Connected (18 tools available)
 ```
 
 ### 2. Test Memory Storage

@@ -75,7 +75,7 @@ MeMesh: 🧠 "I see you have JWT. Let's
 **💡 Try it yourself:**
 
 ```bash
-# In Claude Code/Cursor
+# In Claude Code
 buddy-help                          # See all commands
 buddy-do "explain how MeMesh works"    # Watch it intelligently respond
 buddy-remember "project decisions"  # Query your project memory
@@ -203,15 +203,6 @@ cd claude-code-buddy
 ./scripts/quick-install.sh
 ```
 
-### 🎯 For Cursor Users
-
-**Quick Start** (basic features):
-```
-cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/memesh&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL21lbWVzaCJdfQ==
-```
-
-**Full Setup** (with A2A support): See [Cursor Setup Guide](#cursor-full-setup) below.
-
 ### 🏆 Claude Code Marketplace (Coming Soon)
 ```bash
 /plugin install memesh@claude-plugins-official
@@ -252,43 +243,10 @@ The script will:
 
 </details>
 
-<details>
-<summary><strong>🎯 Cursor Users</strong> (Click to expand)</summary>
-
-<h4 id="cursor-full-setup">Cursor Full Setup (with A2A Support)</h4>
-
-The deep link provides basic features. For **full A2A (Agent-to-Agent) support**, manually configure:
-
-1. **Generate a token**:
-   ```bash
-   openssl rand -hex 32
-   ```
-
-2. **Edit Cursor MCP settings** (`~/.cursor/mcp.json` or via Cursor settings):
-   ```json
-   {
-     "mcpServers": {
-       "memesh": {
-         "command": "npx",
-         "args": ["-y", "@pcircle/memesh"],
-         "env": {
-           "MEMESH_A2A_TOKEN": "<your-64-char-hex-token>"
-         }
-       }
-     }
-   }
-   ```
-
-3. **Restart Cursor** and you're set.
-
-> **Note**: Use the same token across all sessions for A2A to work.
-
-</details>
-
 ### Step 2: Test It
 
 ```bash
-# In Claude Code/Cursor, type:
+# In Claude Code, type:
 buddy-help
 
 # You should see MeMesh's command list
@@ -424,7 +382,7 @@ When you start a new session, you'll see something like:
 - Saves automatically every 250K tokens (about 1-2 hours of work)
 - Session memories kept for **30 days**, then auto-cleaned
 - Project memories (code changes, test results) kept for **90 days**
-- Only works in Claude Code (not Cursor yet)
+- Currently available in Claude Code only
 
 </details>
 
@@ -494,7 +452,7 @@ Use `buddy-help` to see all available commands.
 
 ### Requirements
 - Node.js 20+
-- Claude Code or Cursor IDE
+- Claude Code
 - 5 minutes of your time
 
 </td>

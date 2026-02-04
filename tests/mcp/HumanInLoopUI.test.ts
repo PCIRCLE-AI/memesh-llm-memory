@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { HumanInLoopUI, ConfirmationRequest, ConfirmationResponse } from '../../src/mcp/HumanInLoopUI.js';
+import { HumanInLoopUI, type ConfirmationRequest, type ConfirmationResponse } from '../../src/mcp/HumanInLoopUI.js';
 
 describe('HumanInLoopUI', () => {
   describe('formatConfirmationRequest', () => {
@@ -125,6 +125,18 @@ describe('HumanInLoopUI', () => {
 
       expect(response.accepted).toBe(false);
       expect(response.selectedAgent).toBeUndefined();
+    });
+
+    it('should return properly typed ConfirmationResponse', () => {
+      const ui = new HumanInLoopUI();
+
+      const response: ConfirmationResponse = ui.parseUserResponse('y', request);
+
+      // Verify the response conforms to ConfirmationResponse type
+      expect(typeof response.accepted).toBe('boolean');
+      expect('wasOverridden' in response).toBe(true);
+      // selectedAgent is optional, so just verify the property exists or is undefined
+      expect(response.selectedAgent === undefined || typeof response.selectedAgent === 'string').toBe(true);
     });
   });
 });

@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { TaskDecomposer, DecomposedTask, DecompositionRequest } from '../../src/planning/TaskDecomposer';
+import { TaskDecomposer, DecompositionRequest } from '../../src/planning/TaskDecomposer';
+
+// Note: DecomposedTask type is used implicitly through TaskDecomposer.decompose() return type
 
 describe('TaskDecomposer', () => {
   const decomposer = new TaskDecomposer();

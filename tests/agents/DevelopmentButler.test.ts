@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { DevelopmentButler } from '../../src/agents/DevelopmentButler.js';
 import { CheckpointDetector } from '../../src/core/CheckpointDetector.js';
 import { MCPToolInterface } from '../../src/core/MCPToolInterface.js';

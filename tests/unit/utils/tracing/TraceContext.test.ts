@@ -4,7 +4,7 @@
  * Tests for distributed tracing context management and propagation.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   generateTraceId,
   generateSpanId,

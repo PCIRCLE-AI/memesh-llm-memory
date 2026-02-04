@@ -5,7 +5,7 @@
  * Verifies that actual retry attempts are tracked correctly
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { retryWithBackoffDetailed } from '../retry.js';
 
 describe('Retry - BUG-8: Attempt Count Tests', () => {

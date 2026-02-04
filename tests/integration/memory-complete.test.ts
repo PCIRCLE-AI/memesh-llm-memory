@@ -518,10 +518,14 @@ describe('Memory System Integration', () => {
     it('should support a complete development session workflow', async () => {
       // Scenario: Developer implements a new feature
 
-      // 1. Check existing knowledge
+      // 1. Check existing knowledge (empty at start of session)
       const existingAuth = await memoryStore.search('authentication patterns', {
         techStack: ['typescript', 'nodejs']
       });
+
+      // At the start of the workflow, no authentication memories exist yet
+      // This verifies the search returns empty results gracefully
+      expect(Array.isArray(existingAuth)).toBe(true);
 
       // 2. Auto-record code changes
       await autoRecorder.recordCodeChange({

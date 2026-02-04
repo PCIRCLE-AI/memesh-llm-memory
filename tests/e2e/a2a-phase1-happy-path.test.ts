@@ -126,7 +126,11 @@ describe('A2A Phase 1.0 - E2E Happy Path', () => {
 
       // Step 7: MCP Client reports result via a2a-report-result
       // (Simulating MCP tool call - would happen via MCP protocol)
-      const reportSuccess = await delegator.removeTask(taskId);
+      await delegator.removeTask(taskId);
+      // Verify task was removed from delegator by checking pending tasks
+      const pendingAfterRemove = await delegator.getPendingTasks(agentId);
+      expect(pendingAfterRemove.some(t => t.taskId === taskId)).toBe(false);
+
       const updateSuccess = taskQueue.updateTaskStatus(taskId, {
         state: 'COMPLETED',
         metadata: { result: executionResult }

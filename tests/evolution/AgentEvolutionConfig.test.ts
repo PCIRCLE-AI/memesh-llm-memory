@@ -9,7 +9,7 @@ import {
   getAgentEvolutionConfig,
   getAllAgentConfigs,
   getAgentsByCategory,
-  AgentEvolutionConfig,
+  type AgentEvolutionConfig,
 } from '../../src/evolution/AgentEvolutionConfig.js';
 import type { AgentType } from '../../src/orchestrator/types.js';
 
@@ -50,7 +50,7 @@ describe('AgentEvolutionConfig', () => {
 
   describe('getAgentEvolutionConfig', () => {
     it('should return config for specific agent', () => {
-      const config = getAgentEvolutionConfig('code-reviewer');
+      const config: AgentEvolutionConfig = getAgentEvolutionConfig('code-reviewer');
 
       expect(config.agentId).toBe('code-reviewer');
       expect(config.category).toBe('development');

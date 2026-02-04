@@ -6,12 +6,10 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  ListResourcesRequestSchema,
-  ReadResourceRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
 import { setupResourceHandlers } from '../../src/mcp/handlers/ResourceHandlers.js';
+
+// Note: StdioServerTransport, ListResourcesRequestSchema, and ReadResourceRequestSchema
+// are not used in this test file as we directly access internal handlers via (server as any)._requestHandlers
 
 describe('MCP Resources', () => {
   let server: Server;

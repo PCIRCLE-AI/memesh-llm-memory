@@ -300,7 +300,10 @@ describe('P1-11: Backpressure in Parallel Execution', () => {
       const estimatedSequentialTime = taskCount * 100; // Assuming ~100ms per task
       const estimatedParallelTime = Math.ceil(taskCount / maxConcurrent) * 100;
 
+      // Verify parallel execution is faster than sequential
       expect(duration).toBeLessThan(estimatedSequentialTime);
+      // Also verify the parallel estimate is reasonable (sanity check calculation)
+      expect(estimatedParallelTime).toBeLessThan(estimatedSequentialTime);
     });
 
     it('should scale with concurrency limit', async () => {

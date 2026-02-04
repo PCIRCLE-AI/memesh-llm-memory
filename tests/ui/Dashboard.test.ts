@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Dashboard } from '../../src/ui/Dashboard.js';
 import { TestResourceMonitor } from '../helpers/TestResourceMonitor.js';
 import type { UIConfig } from '../../src/ui/types.js';
@@ -49,6 +49,11 @@ describe('Dashboard', () => {
 
     const initialState = dashboard.getState();
     const initialCPU = initialState.resources.cpu.usage;
+
+    // Verify initial CPU is a valid number
+    expect(typeof initialCPU).toBe('number');
+    expect(initialCPU).toBeGreaterThanOrEqual(0);
+    expect(initialCPU).toBeLessThanOrEqual(100);
 
     // Wait for at least one update cycle
     await new Promise((resolve) => setTimeout(resolve, 300));

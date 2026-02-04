@@ -33,6 +33,17 @@ A2A_HOOK_SOURCE="$HOOKS_SOURCE_DIR/a2a-collaboration-hook.js"
 A2A_HOOK_TARGET="$CLAUDE_HOOKS_DIR/a2a-collaboration-hook.js"
 SESSION_START="$CLAUDE_HOOKS_DIR/session-start.js"
 
+# Temp file tracking for cleanup
+TEMP_FILES=()
+
+# Cleanup function for temp files
+cleanup() {
+    for f in "${TEMP_FILES[@]:-}"; do
+        [[ -f "$f" ]] && rm -f "$f"
+    done
+}
+trap cleanup EXIT
+
 # ============================================
 # Utility Functions
 # ============================================
@@ -148,7 +159,9 @@ EOFJS
     print_info "Backed up session-start.js"
 
     # Create temporary file for modification
+    # Create temporary file (tracked for cleanup via EXIT trap)
     TEMP_FILE=$(mktemp)
+    TEMP_FILES+=("$TEMP_FILE")
 
     # Add import at the top (after shebang and before other imports)
     awk '

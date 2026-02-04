@@ -102,32 +102,40 @@ export interface TaskCompletionReport {
   completedAt: string;
 }
 
-/**
- * Display options for check-in broadcast
- */
-export interface DisplayOptions {
-  /** Show other online agents */
-  showOnlineAgents?: boolean;
-  /** Show pending tasks */
-  showPendingTasks?: boolean;
-  /** Show available actions */
-  showActions?: boolean;
-}
-
 // ============================================
 // Utility Functions
 // ============================================
 
 /**
- * Execute SQLite query safely
+ * Execute SQLite query safely with parameterized values
  *
  * @param dbPath - Path to SQLite database
- * @param query - SQL query to execute
+ * @param query - SQL query (use ? for parameters)
+ * @param params - Optional parameter values to bind
  * @returns Query result as string, empty string on error
  */
-function sqliteQuery(dbPath: string, query: string): string {
+function sqliteQuery(dbPath: string, query: string, params?: string[]): string {
   try {
-    const result = execFileSync('sqlite3', [dbPath, query], {
+    const args = ['-separator', '|', dbPath];
+
+    let finalQuery = query;
+    if (params && params.length > 0) {
+      // Properly escape parameters: escape single quotes and wrap in quotes
+      const escapedParams = params.map((p) =>
+        p === null || p === undefined ? 'NULL' : `'${String(p).replace(/'/g, "''")}'`
+      );
+
+      // Replace ? placeholders with escaped values
+      let paramIndex = 0;
+      finalQuery = query.replace(/\?/g, () => {
+        if (paramIndex < escapedParams.length) {
+          return escapedParams[paramIndex++];
+        }
+        return '?';
+      });
+    }
+
+    const result = execFileSync('sqlite3', [...args, finalQuery], {
       encoding: 'utf-8',
       timeout: 5000,
     });
@@ -139,10 +147,6 @@ function sqliteQuery(dbPath: string, query: string): string {
 
 /**
  * Read JSON file safely
- *
- * @param filePath - Path to JSON file
- * @param defaultValue - Default value if file doesn't exist or is invalid
- * @returns Parsed JSON object or default value
  */
 function readJSON<T>(filePath: string, defaultValue: T | null = null): T | null {
   try {
@@ -158,10 +162,6 @@ function readJSON<T>(filePath: string, defaultValue: T | null = null): T | null 
 
 /**
  * Write JSON file safely
- *
- * @param filePath - Path to JSON file
- * @param data - Data to write
- * @returns true on success, false on error
  */
 function writeJSON(filePath: string, data: unknown): boolean {
   try {
@@ -182,13 +182,12 @@ function writeJSON(filePath: string, data: unknown): boolean {
 
 /**
  * Get names currently in use from knowledge graph
- *
- * @returns Array of agent names currently online
  */
 function getUsedNames(): string[] {
   if (!fs.existsSync(KG_DB_PATH)) return [];
 
-  const query = "SELECT name FROM entities WHERE type='session_identity' AND name LIKE 'Online Agent:%'";
+  const query =
+    "SELECT name FROM entities WHERE type='session_identity' AND name LIKE 'Online Agent:%'";
   const result = sqliteQuery(KG_DB_PATH, query);
 
   if (!result) return [];
@@ -201,40 +200,58 @@ function getUsedNames(): string[] {
 
 /**
  * Get online agents from registry
- *
- * @returns Array of online agent IDs
  */
 function getOnlineAgents(): string[] {
   if (!fs.existsSync(AGENT_REGISTRY_PATH)) return [];
 
-  const query = "SELECT agent_id FROM agents WHERE status='active' ORDER BY last_heartbeat DESC LIMIT 10";
+  const query =
+    "SELECT agent_id FROM agents WHERE status='active' ORDER BY last_heartbeat DESC LIMIT 10";
   const result = sqliteQuery(AGENT_REGISTRY_PATH, query);
 
   return result ? result.split('\n').filter(Boolean) : [];
 }
 
 /**
- * Pick an available name from the pool
+ * Pick an available name from the pool using atomic reservation
  *
- * @returns Available Greek letter name or generated fallback
+ * Uses INSERT OR IGNORE to atomically claim a name, preventing race conditions
+ * where two agents starting simultaneously could get the same name.
  */
 function pickAvailableName(): string {
   const usedNames = getUsedNames();
+  const now = new Date().toISOString();
 
   for (const name of NAME_POOL) {
     if (!usedNames.includes(name)) {
+      if (fs.existsSync(KG_DB_PATH)) {
+        const entityName = `Online Agent: ${name}`;
+        // INSERT OR IGNORE is atomic
+        sqliteQuery(
+          KG_DB_PATH,
+          'INSERT OR IGNORE INTO entities (name, type, created_at) VALUES (?, ?, ?)',
+          [entityName, 'session_identity', now]
+        );
+
+        const verifyResult = sqliteQuery(
+          KG_DB_PATH,
+          'SELECT id FROM entities WHERE name = ?',
+          [entityName]
+        );
+
+        if (verifyResult) {
+          return name;
+        }
+        continue;
+      }
       return name;
     }
   }
 
-  // Fallback if all names are taken
-  return `Agent-${Date.now().toString().slice(-5)}`;
+  return `Agent-${Date.now().toString(36)}`;
 }
 
 /**
  * Generate unique agent ID based on hostname and timestamp
- *
- * @returns Unique agent identifier
  */
 function generateAgentId(): string {
   const hostname = os.hostname().toLowerCase().replace(/[^a-z0-9]/g, '-');
@@ -243,45 +260,40 @@ function generateAgentId(): string {
 }
 
 /**
- * Register agent to Knowledge Graph
- *
- * @param identity - Agent identity to register
- * @returns true on success, false on error
+ * Register agent to Knowledge Graph using atomic operations
  */
 function registerToKnowledgeGraph(identity: AgentIdentity): boolean {
   if (!fs.existsSync(KG_DB_PATH)) return false;
 
   const entityName = `Online Agent: ${identity.name}`;
-  const safeEntityName = entityName.replace(/'/g, "''");
   const now = new Date().toISOString();
 
   try {
-    const existingQuery = `SELECT id FROM entities WHERE name='${safeEntityName}'`;
-    const existing = sqliteQuery(KG_DB_PATH, existingQuery);
+    sqliteQuery(
+      KG_DB_PATH,
+      'INSERT OR IGNORE INTO entities (name, type, created_at) VALUES (?, ?, ?)',
+      [entityName, 'session_identity', now]
+    );
 
-    if (!existing) {
-      const insertQuery = `INSERT INTO entities (name, type, created_at) VALUES ('${safeEntityName}', 'session_identity', '${now}')`;
-      sqliteQuery(KG_DB_PATH, insertQuery);
+    const entityId = sqliteQuery(KG_DB_PATH, 'SELECT id FROM entities WHERE name = ?', [
+      entityName,
+    ]);
 
-      const newIdQuery = `SELECT id FROM entities WHERE name='${safeEntityName}'`;
-      const entityId = sqliteQuery(KG_DB_PATH, newIdQuery);
+    if (entityId && /^\d+$/.test(entityId)) {
+      const observations = [
+        `Agent ID: ${identity.agentId}`,
+        `Name: ${identity.name}`,
+        `Status: ONLINE`,
+        `Specialization: ${identity.specialization}`,
+        `Checked in: ${now}`,
+      ];
 
-      if (entityId) {
-        const observations = [
-          `Agent ID: ${identity.agentId}`,
-          `Name: ${identity.name}`,
-          `Status: ONLINE`,
-          `Specialization: ${identity.specialization}`,
-          `Checked in: ${now}`,
-        ];
-
-        for (const obs of observations) {
-          const safeObs = obs.replace(/'/g, "''");
-          sqliteQuery(
-            KG_DB_PATH,
-            `INSERT INTO observations (entity_id, content, created_at) VALUES (${entityId}, '${safeObs}', '${now}')`
-          );
-        }
+      for (const obs of observations) {
+        sqliteQuery(
+          KG_DB_PATH,
+          'INSERT INTO observations (entity_id, content, created_at) VALUES (?, ?, ?)',
+          [entityId, obs, now]
+        );
       }
     }
 
@@ -291,40 +303,22 @@ function registerToKnowledgeGraph(identity: AgentIdentity): boolean {
   }
 }
 
-/**
- * Load existing identity from state file
- *
- * @returns Agent identity or null if not found
- */
 function loadIdentity(): AgentIdentity | null {
   return readJSON<AgentIdentity>(AGENT_IDENTITY_FILE);
 }
 
-/**
- * Save identity to state file
- *
- * @param identity - Agent identity to save
- * @returns true on success, false on error
- */
 function saveIdentity(identity: AgentIdentity): boolean {
   return writeJSON(AGENT_IDENTITY_FILE, identity);
 }
 
 /**
  * Check-in and get/create agent identity
- *
- * Reuses existing identity if session is less than 1 hour old,
- * otherwise creates a new identity with a unique Greek letter name.
- *
- * @returns Agent identity
  */
 export function agentCheckIn(): AgentIdentity {
-  // Check if already checked in
   const existingIdentity = loadIdentity();
   if (existingIdentity?.sessionStart) {
     const sessionAge = Date.now() - new Date(existingIdentity.sessionStart).getTime();
     if (sessionAge < 60 * 60 * 1000) {
-      // Session less than 1 hour old
       return existingIdentity;
     }
   }
@@ -351,49 +345,74 @@ export function agentCheckIn(): AgentIdentity {
 // ============================================
 
 /**
- * Check for pending tasks assigned to this agent
- *
- * Queries the A2A task queue for tasks in SUBMITTED state.
- *
- * @param agentId - Current agent ID (not currently used for filtering)
- * @returns Array of pending tasks
+ * Check for pending tasks - uses JSON output for robust parsing
  */
-export function checkPendingTasks(agentId: string): A2ATask[] {
-  if (!fs.existsSync(AGENT_REGISTRY_PATH)) return [];
-
-  // Query tasks from A2A task queue
+export function checkPendingTasks(_agentId: string): A2ATask[] {
   const taskDbPath = path.join(CCB_DATA_DIR, 'a2a-tasks.db');
   if (!fs.existsSync(taskDbPath)) return [];
 
-  const query = `SELECT id, description, state, created_at, sender_id FROM tasks WHERE state='SUBMITTED' ORDER BY created_at DESC LIMIT 10`;
-  const result = sqliteQuery(taskDbPath, query);
+  try {
+    const result = execFileSync(
+      'sqlite3',
+      [
+        '-json',
+        taskDbPath,
+        "SELECT id, description, state, created_at as createdAt, sender_id as senderId FROM tasks WHERE state='SUBMITTED' ORDER BY created_at DESC LIMIT 10",
+      ],
+      { encoding: 'utf-8', timeout: 5000 }
+    );
 
-  if (!result) return [];
+    if (!result.trim()) return [];
 
-  return result
-    .split('\n')
-    .filter(Boolean)
-    .map((line) => {
-      const [id, description, state, createdAt, senderId] = line.split('|');
-      return {
-        id,
-        description,
-        state: state as A2ATask['state'],
-        createdAt,
-        senderId,
-      };
-    });
+    const parsed = JSON.parse(result) as Array<{
+      id: string;
+      description: string;
+      state: string;
+      createdAt: string;
+      senderId: string;
+    }>;
+
+    return parsed.map((row) => ({
+      id: String(row.id),
+      description: row.description || '',
+      state: row.state as A2ATask['state'],
+      createdAt: row.createdAt || '',
+      senderId: row.senderId || '',
+    }));
+  } catch {
+    // Fallback for older SQLite
+    const query =
+      "SELECT id, description, state, created_at, sender_id FROM tasks WHERE state='SUBMITTED' ORDER BY created_at DESC LIMIT 10";
+    const result = sqliteQuery(taskDbPath, query);
+
+    if (!result) return [];
+
+    return result
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const parts = line.split('|');
+        const id = parts[0] || '';
+        const senderId = parts[parts.length - 1] || '';
+        const createdAt = parts[parts.length - 2] || '';
+        const state = parts[parts.length - 3] || '';
+        const description = parts.slice(1, -3).join('|');
+
+        return {
+          id,
+          description,
+          state: state as A2ATask['state'],
+          createdAt,
+          senderId,
+        };
+      });
+  }
 }
 
 // ============================================
 // 3. Result Reporting System
 // ============================================
 
-/**
- * Get latest git commit hash
- *
- * @returns Short commit hash or null on error
- */
 export function getLatestCommitHash(): string | null {
   try {
     const result = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
@@ -406,11 +425,6 @@ export function getLatestCommitHash(): string | null {
   }
 }
 
-/**
- * Get latest git commit message
- *
- * @returns Commit message or null on error
- */
 export function getLatestCommitMessage(): string | null {
   try {
     const result = execFileSync('git', ['log', '-1', '--pretty=%s'], {
@@ -423,14 +437,6 @@ export function getLatestCommitMessage(): string | null {
   }
 }
 
-/**
- * Format task completion report
- *
- * @param taskId - Task ID being completed
- * @param commitHash - Git commit hash
- * @param commitMessage - Git commit message
- * @returns Formatted completion report
- */
 export function formatTaskCompletionReport(
   taskId: string,
   commitHash: string,
@@ -439,7 +445,7 @@ export function formatTaskCompletionReport(
   return {
     taskId,
     status: 'COMPLETED',
-    result: `✅ Task completed!\nCommit: ${commitHash}\nMessage: ${commitMessage}`,
+    result: `Task completed!\nCommit: ${commitHash}\nMessage: ${commitMessage}`,
     completedAt: new Date().toISOString(),
   };
 }
@@ -448,81 +454,70 @@ export function formatTaskCompletionReport(
 // 4. Display Functions
 // ============================================
 
-/**
- * Display check-in broadcast to console
- *
- * @param identity - Agent identity
- * @param onlineAgents - List of online agent IDs
- * @param pendingTasks - List of pending tasks
- */
 function displayCheckInBroadcast(
   identity: AgentIdentity,
   onlineAgents: string[],
   pendingTasks: A2ATask[]
 ): void {
   console.log('');
-  console.log('═'.repeat(60));
-  console.log('  👋 A2A Collaboration System');
-  console.log('═'.repeat(60));
+  console.log('='.repeat(60));
+  console.log('  A2A Collaboration System');
+  console.log('='.repeat(60));
   console.log('');
-  console.log(`  📢 BROADCAST: ${identity.name} is now online!`);
+  console.log(`  BROADCAST: ${identity.name} is now online!`);
   console.log('');
-  console.log(`     🆔 Name: ${identity.name}`);
-  console.log(`     🔖 Agent ID: ${identity.agentId}`);
-  console.log(`     🎯 Specialization: ${identity.specialization}`);
-  console.log(`     ⏰ Checked in: ${new Date().toLocaleString()}`);
+  console.log(`     Name: ${identity.name}`);
+  console.log(`     Agent ID: ${identity.agentId}`);
+  console.log(`     Specialization: ${identity.specialization}`);
+  console.log(`     Checked in: ${new Date().toLocaleString()}`);
   console.log('');
 
-  // Show other online agents
   const otherAgents = onlineAgents.filter((a) => a !== identity.agentId);
   if (otherAgents.length > 0) {
-    console.log('  📋 Other online agents:');
+    console.log('  Other online agents:');
     otherAgents.slice(0, 5).forEach((agent) => {
-      console.log(`     • ${agent}`);
+      console.log(`     - ${agent}`);
     });
     console.log('');
   }
 
-  // Show pending tasks
   if (pendingTasks.length > 0) {
-    console.log('  📬 Pending tasks for you:');
+    console.log('  Pending tasks for you:');
     pendingTasks.slice(0, 3).forEach((task, i) => {
       console.log(`     ${i + 1}. [${task.state}] ${task.description?.slice(0, 50)}...`);
       console.log(`        From: ${task.senderId} | ID: ${task.id}`);
     });
     console.log('');
-    console.log('  💡 Use a2a-list-tasks to see all tasks');
+    console.log('  Use a2a-list-tasks to see all tasks');
     console.log('');
   }
 
-  // Show available actions
-  console.log('  🛠️  Available A2A Actions:');
+  console.log('  Available A2A Actions:');
   console.log('');
-  console.log('     📝 Assign specialization:');
-  console.log(`        "${identity.name}，你負責前端" or "${identity.name}，你負責後端 API"`);
+  console.log('     Assign specialization:');
+  console.log(
+    `        "${identity.name}, you handle frontend" or "${identity.name}, you handle backend API"`
+  );
   console.log('');
-  console.log('     📤 Send task to another agent:');
+  console.log('     Send task to another agent:');
   console.log('        a2a-send-task targetAgentId="<agent>" taskDescription="..."');
   console.log('');
-  console.log('     📥 Check your tasks:');
+  console.log('     Check your tasks:');
   console.log('        a2a-list-tasks');
   console.log('');
-  console.log('     ✅ Report task completion:');
-  console.log('        a2a-report-result taskId="<id>" result="Done! Commit: xxx" success=true');
+  console.log('     Report task completion:');
+  console.log(
+    '        a2a-report-result taskId="<id>" result="Done! Commit: xxx" success=true'
+  );
   console.log('');
-  console.log('═'.repeat(60));
+  console.log('='.repeat(60));
   console.log('');
 }
 
-/**
- * Display already checked in message
- *
- * @param identity - Current agent identity
- */
 function displayAlreadyCheckedIn(identity: AgentIdentity): void {
   console.log('');
-  console.log(`  ℹ️  Already checked in as ${identity.name}`);
-  console.log(`     🎯 Specialization: ${identity.specialization}`);
+  console.log(`  Already checked in as ${identity.name}`);
+  console.log(`     Specialization: ${identity.specialization}`);
   console.log('');
 }
 
@@ -530,28 +525,17 @@ function displayAlreadyCheckedIn(identity: AgentIdentity): void {
 // Main Entry Point
 // ============================================
 
-/**
- * Main A2A collaboration initialization
- *
- * Checks if already checked in (within 1 hour), otherwise performs
- * new check-in and displays broadcast with online agents and pending tasks.
- *
- * @returns Agent identity
- */
 export function initA2ACollaboration(): AgentIdentity {
-  // Check if already checked in
   const existingIdentity = loadIdentity();
 
   if (existingIdentity?.sessionStart) {
     const sessionAge = Date.now() - new Date(existingIdentity.sessionStart).getTime();
     if (sessionAge < 60 * 60 * 1000) {
-      // Session less than 1 hour old
       displayAlreadyCheckedIn(existingIdentity);
       return existingIdentity;
     }
   }
 
-  // New check-in
   const identity = agentCheckIn();
   const onlineAgents = getOnlineAgents();
   const pendingTasks = checkPendingTasks(identity.agentId);
@@ -561,18 +545,10 @@ export function initA2ACollaboration(): AgentIdentity {
   return identity;
 }
 
-/**
- * Update agent specialization
- *
- * Updates the current agent's specialization and saves to state.
- *
- * @param newSpecialization - New specialization description
- * @returns Updated agent identity or null if no identity exists
- */
 export function updateSpecialization(newSpecialization: string): AgentIdentity | null {
   const identity = loadIdentity();
   if (!identity) {
-    console.log('  ❌ No identity found. Please check in first.');
+    console.log('  No identity found. Please check in first.');
     return null;
   }
 
@@ -581,19 +557,14 @@ export function updateSpecialization(newSpecialization: string): AgentIdentity |
   saveIdentity(identity);
 
   console.log('');
-  console.log(`  ✅ Specialization updated!`);
-  console.log(`     🆔 Name: ${identity.name}`);
-  console.log(`     🎯 New Specialization: ${newSpecialization}`);
+  console.log(`  Specialization updated!`);
+  console.log(`     Name: ${identity.name}`);
+  console.log(`     New Specialization: ${newSpecialization}`);
   console.log('');
 
   return identity;
 }
 
-/**
- * Get current agent identity
- *
- * @returns Current agent identity or null if not checked in
- */
 export function getCurrentIdentity(): AgentIdentity | null {
   return loadIdentity();
 }

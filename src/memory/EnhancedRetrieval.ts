@@ -6,7 +6,7 @@
  * MCP tool descriptions.
  *
  * Features:
- * - Exact match: Direct string matching via SQLite FTS5
+ * - Exact match: Direct string matching (FTS5 in KnowledgeGraph, LIKE fallback)
  * - Tag match: Search by memory tags
  * - Type filtering: Filter results by memory type
  *
@@ -14,7 +14,7 @@
  * - Semantic similarity calculation
  * - Cross-language matching
  * - Relevance ranking
- * - Fuzzy matching beyond SQLite FTS5
+ * - Advanced fuzzy matching (delegated to Claude)
  */
 
 import type { UnifiedMemory, MemoryType } from './types/unified-memory.js';

@@ -96,7 +96,7 @@ const MAX_METADATA_SIZE = 1024 * 1024;
  */
 export class UnifiedMemoryStore {
   constructor(private knowledgeGraph: KnowledgeGraph) {
-    // No auto-tagger or query engine - intelligence delegated to Claude via MCP tool descriptions
+    // AutoTagger generates tags, SmartMemoryQuery provides ranking - Claude handles semantic understanding via MCP tool descriptions
   }
 
   /**
@@ -499,7 +499,7 @@ export class UnifiedMemoryStore {
         limit: Math.min(finalLimit * 10, 1000),
       };
 
-      // Step 1: Use traditional search (SQLite FTS5 + tag matching) to get base results
+      // Step 1: Use KnowledgeGraph search (FTS5 full-text + LIKE fallback) to get base results
       // Using soft limit to get more candidates for better ranking
       const baseResults = await this.traditionalSearch(query, candidateOptions);
 

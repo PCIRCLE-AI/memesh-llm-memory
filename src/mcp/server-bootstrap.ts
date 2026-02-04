@@ -343,10 +343,11 @@ async function startAsDaemon(bootstrapper: DaemonBootstrap, version: string) {
     logger.info('[Daemon] Client disconnected', { clientId });
   });
 
-  // NOTE: MCP request handling is managed via event delegation through DaemonSocketServer.
-  // The socket server forwards requests to the MCP server via the established stdio transport.
-  // This architecture avoids exposing handleRequest directly and maintains protocol encapsulation.
-  // See DaemonSocketServer for the event-based message forwarding implementation.
+  // Register MCP handler to route proxy client requests to the MCP server
+  // This enables the daemon to process MCP requests from proxy clients
+  socketServer.setMcpHandler(async (request: unknown) => {
+    return mcpServer.handleRequest(request);
+  });
 
   // Start socket server
   await socketServer.start();
@@ -480,9 +481,26 @@ async function startAsProxy(bootstrapper: DaemonBootstrap) {
 
   logger.info('[Proxy] Proxy started, forwarding stdio to daemon');
 
-  // Graceful shutdown
+  // Start A2A server for this proxy session (multi-agent collaboration)
+  // Each Claude Code session needs its own A2A identity per Google A2A best practices
+  const a2aServer = await startA2AServer();
+
+  // Graceful shutdown - must also stop A2A server
   setupSignalHandlers(async (signal: string) => {
     logger.info('[Proxy] Shutdown requested', { signal });
+
+    // Stop A2A server first
+    if (a2aServer) {
+      try {
+        await a2aServer.stop();
+        logger.info('[Proxy] A2A server stopped');
+      } catch (error) {
+        logger.warn('[Proxy] Error stopping A2A server', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
     await proxyClient.stop();
     process.exit(0);
   });

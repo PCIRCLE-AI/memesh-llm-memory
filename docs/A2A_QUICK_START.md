@@ -1,76 +1,76 @@
-# A2A 通訊快速啟動卡片 🚀
+# A2A Communication Quick Start Card 🚀
 
-## ✅ 當前狀態
+## ✅ Current Status
 
 ```
 ✓ A2A Token: Configured (173 chars)
-✓ Task Timeout: 30,000ms (30 秒)
-✓ Poll Interval: 5,000ms (5 秒)
-✓ Running Sessions: 3 個 Claude Code instances
+✓ Task Timeout: 30,000ms (30 seconds)
+✓ Poll Interval: 5,000ms (5 seconds)
+✓ Running Sessions: 3 Claude Code instances
 ✓ A2A Tools: Compiled and ready
 ```
 
 ---
 
-## 🎯 5 分鐘快速測試
+## 🎯 5-Minute Quick Test
 
-### Session 1 (發送端)
+### Session 1 (Sender)
 
 ```typescript
-// Step 1: 列出可用 agents
+// Step 1: List available agents
 mcp__memesh__a2a-list-agents({ status: "active" })
-// 記下你想發送任務的 target agent ID
+// Note down the target agent ID you want to send a task to
 
-// Step 2: 發送任務
+// Step 2: Send task
 mcp__memesh__a2a-send-task({
-  targetAgentId: "ccb-mcp-xxxxx",  // 從 Step 1 獲取
-  taskDescription: "Hello from Session 1! 請回覆收到",
+  targetAgentId: "ccb-mcp-xxxxx",  // From Step 1
+  taskDescription: "Hello from Session 1! Please reply received",
   priority: "normal"
 })
-// 記下返回的 taskId
+// Note down the returned taskId
 ```
 
-### Session 2 (接收端)
+### Session 2 (Receiver)
 
 ```typescript
-// Step 3: 列出待處理任務
+// Step 3: List pending tasks
 mcp__memesh__a2a-list-tasks({ state: "SUBMITTED" })
-// 應該看到 Session 1 發來的任務
+// Should see the task from Session 1
 
-// Step 4: 報告完成（執行完任務後）
+// Step 4: Report completion (after executing task)
 mcp__memesh__a2a-report-result({
-  taskId: "task-abc123",  // 從 Step 3 獲取
+  taskId: "task-abc123",  // From Step 3
   result: "Message received! 👋",
   success: true
 })
 ```
 
-### Session 1 (驗證)
+### Session 1 (Verification)
 
 ```typescript
-// Step 5: 查詢任務狀態
+// Step 5: Query task status
 mcp__memesh__a2a-get-task({
   targetAgentId: "ccb-mcp-xxxxx",
   taskId: "task-abc123"
 })
-// 應該看到 status: "COMPLETED" 和 Session 2 的回覆
+// Should see status: "COMPLETED" and Session 2's reply
 ```
 
 ---
 
-## 🔧 可用的 MCP 工具
+## 🔧 Available MCP Tools
 
-| 工具名稱 | 用途 | 使用位置 |
+| Tool Name | Purpose | Usage Location |
 |---------|------|---------|
-| `a2a-list-agents` | 列出所有可用的 agents | 任何 session |
-| `a2a-send-task` | 發送任務給其他 agent | 發送端 |
-| `a2a-list-tasks` | 列出分配給我的任務 | 接收端 |
-| `a2a-report-result` | 報告任務執行結果 | 接收端 |
-| `a2a-get-task` | 查詢任務狀態 | 任何 session |
+| `a2a-list-agents` | List all available agents | Any session |
+| `a2a-send-task` | Send task to another agent | Sender |
+| `a2a-list-tasks` | List tasks assigned to me | Receiver |
+| `a2a-report-result` | Report task execution result | Receiver |
+| `a2a-get-task` | Query task status | Any session |
 
 ---
 
-## 📊 任務狀態流程
+## 📊 Task State Flow
 
 ```
 SUBMITTED → WORKING → COMPLETED
@@ -80,73 +80,73 @@ SUBMITTED → WORKING → COMPLETED
 
 ---
 
-## 🚨 快速問題排除
+## 🚨 Quick Troubleshooting
 
-### 找不到 agents？
+### Can't Find Agents?
 ```bash
-# 確認 MeMesh servers 運行中
+# Confirm MeMesh servers are running
 ps aux | grep server-bootstrap.js | grep -v grep
 
-# 應該看到至少 2 個進程
-# 如果沒有，重啟 Claude Code
+# Should see at least 2 processes
+# If not, restart Claude Code
 ```
 
-### Token 認證失敗？
+### Token Authentication Failed?
 ```bash
-# 確認 token 已設置
+# Confirm token is set
 cat .env | grep MEMESH_A2A_TOKEN
 
-# 重啟 Claude Code 載入環境變數
+# Restart Claude Code to load environment variables
 ```
 
-### 任務超時？
+### Task Timeout?
 ```bash
-# 增加 timeout（編輯 .env）
-MEMESH_A2A_TASK_TIMEOUT=60000  # 60 秒
+# Increase timeout (edit .env)
+MEMESH_A2A_TASK_TIMEOUT=60000  # 60 seconds
 
-# 重啟 Claude Code
+# Restart Claude Code
 ```
 
 ---
 
-## 📖 完整文檔
+## 📖 Complete Documentation
 
-- **詳細測試指南**: `docs/A2A_TESTING_GUIDE.md`
-- **架構文檔**: `docs/features/a2a-agent-collaboration.md`
-- **Setup 指南**: `docs/A2A_SETUP_GUIDE.md`
-- **驗證腳本**: `bash scripts/test-a2a-setup.sh`
+- **Detailed Testing Guide**: `docs/A2A_TESTING_GUIDE.md`
+- **Architecture Documentation**: `docs/features/a2a-agent-collaboration.md`
+- **Setup Guide**: `docs/A2A_SETUP_GUIDE.md`
+- **Verification Script**: `bash scripts/test-a2a-setup.sh`
 
 ---
 
-## 💡 實用技巧
+## 💡 Practical Tips
 
-### Tip 1: 識別 Agent IDs
+### Tip 1: Identifying Agent IDs
 ```typescript
-// Agent IDs 格式：ccb-mcp-{random}
-// 例：ccb-mcp-a1b2c3d4
-// 使用 a2a-list-agents 獲取準確 ID
+// Agent ID format: ccb-mcp-{random}
+// Example: ccb-mcp-a1b2c3d4
+// Use a2a-list-agents to get accurate ID
 ```
 
-### Tip 2: 任務優先級
+### Tip 2: Task Priority
 ```typescript
-priority: "low"     // 低優先級
-priority: "normal"  // 一般（默認）
-priority: "high"    // 高優先級
-priority: "urgent"  // 緊急
+priority: "low"     // Low priority
+priority: "normal"  // Normal (default)
+priority: "high"    // High priority
+priority: "urgent"  // Urgent
 ```
 
-### Tip 3: 任務狀態篩選
+### Tip 3: Task State Filtering
 ```typescript
-// 只列出特定狀態的任務
-a2a-list-tasks({ state: "SUBMITTED" })   // 新任務
-a2a-list-tasks({ state: "WORKING" })     // 進行中
-a2a-list-tasks({ state: "COMPLETED" })   // 已完成
-a2a-list-tasks({ state: "FAILED" })      // 失敗
+// List only tasks with specific state
+a2a-list-tasks({ state: "SUBMITTED" })   // New tasks
+a2a-list-tasks({ state: "WORKING" })     // In progress
+a2a-list-tasks({ state: "COMPLETED" })   // Completed
+a2a-list-tasks({ state: "FAILED" })      // Failed
 ```
 
-### Tip 4: 批量處理
+### Tip 4: Batch Processing
 ```typescript
-// 使用 limit 和 offset 分頁處理大量任務
+// Use limit and offset for paginated processing of large task volumes
 a2a-list-tasks({
   state: "SUBMITTED",
   limit: 10,
@@ -156,7 +156,7 @@ a2a-list-tasks({
 
 ---
 
-## 🎓 進階場景
+## 🎓 Advanced Scenarios
 
 ### Multi-Agent Workflow
 ```
@@ -169,7 +169,7 @@ Session 1 → Session 2 (Frontend task)
 
 ### Error Handling
 ```typescript
-// 報告任務失敗
+// Report task failure
 a2a-report-result({
   taskId: "task-xyz",
   result: "",
@@ -180,14 +180,14 @@ a2a-report-result({
 
 ---
 
-**準備好了嗎？** 開始測試吧！🎉
+**Ready?** Let's start testing! 🎉
 
 ```bash
-# 1. 確認環境
+# 1. Verify environment
 bash scripts/test-a2a-setup.sh
 
-# 2. 閱讀完整指南
+# 2. Read complete guide
 cat docs/A2A_TESTING_GUIDE.md
 
-# 3. 開始測試！
+# 3. Start testing!
 ```

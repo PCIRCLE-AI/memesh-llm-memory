@@ -109,8 +109,7 @@ try {
       args: ['-y', '@pcircle/memesh'],
       env: {
         NODE_ENV: 'production',
-        MEMESH_A2A_TOKEN: a2aToken,
-        DISABLE_MCP_WATCHDOG: '1'
+        MEMESH_A2A_TOKEN: a2aToken
       }
     };
   } else {
@@ -120,8 +119,7 @@ try {
       args: [serverPath],
       env: {
         NODE_ENV: 'production',
-        MEMESH_A2A_TOKEN: a2aToken,
-        DISABLE_MCP_WATCHDOG: '1'
+        MEMESH_A2A_TOKEN: a2aToken
       }
     };
   }
@@ -190,8 +188,7 @@ ${chalk.dim('Add to ~/.claude/mcp_settings.json:')}
         ${chalk.cyan('"command"')}: ${chalk.green('"npx"')},
         ${chalk.cyan('"args"')}: [${chalk.green('"-y"')}, ${chalk.green('"@pcircle/memesh"')}],
         ${chalk.cyan('"env"')}: {
-          ${chalk.cyan('"MEMESH_A2A_TOKEN"')}: ${chalk.green(`"${a2aToken}"`)},
-          ${chalk.cyan('"DISABLE_MCP_WATCHDOG"')}: ${chalk.green('"1"')}
+          ${chalk.cyan('"MEMESH_A2A_TOKEN"')}: ${chalk.green(`"${a2aToken}"`)}
         }
       }
     }

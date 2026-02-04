@@ -56,7 +56,7 @@ const CORRECTION_PATTERNS = {
       /別這樣/,
       /你搞錯/,
       /你理解錯/,
-      /你又/,  // "你又犯錯了"
+      /你又/,  // "you did it again"
     ],
     directive: [
       /應該是/,

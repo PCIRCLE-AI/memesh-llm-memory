@@ -15,7 +15,7 @@ import {
 
 describe('MemoryScope', () => {
   describe('MemoryScope enum', () => {
-    it('應該包含所有必要的 scope 層級', () => {
+    it('should contain all necessary scope levels', () => {
       expect(MemoryScope.GLOBAL).toBe('global');
       expect(MemoryScope.PROJECT).toBe('project');
       expect(MemoryScope.TECH_STACK).toBe('tech');
@@ -23,9 +23,9 @@ describe('MemoryScope', () => {
       expect(MemoryScope.SESSION).toBe('session');
     });
 
-    it('應該正確定義 scope 的優先級順序（從高到低）', () => {
-      // 根據設計，優先級由高到低應為：SESSION > DOMAIN > PROJECT > TECH_STACK > GLOBAL
-      // 這個測試驗證 enum 值的存在性
+    it('should correctly define scope priority order (from high to low)', () => {
+      // By design, priority from high to low should be: SESSION > DOMAIN > PROJECT > TECH_STACK > GLOBAL
+      // This test verifies the existence of enum values
       const scopes = [
         MemoryScope.SESSION,
         MemoryScope.DOMAIN,
@@ -40,7 +40,7 @@ describe('MemoryScope', () => {
   });
 
   describe('MemoryScopeMetadata - GLOBAL scope', () => {
-    it('應該允許創建 GLOBAL scope metadata', () => {
+    it('should allow creating GLOBAL scope metadata', () => {
       const metadata: MemoryScopeMetadata = {
         scope: MemoryScope.GLOBAL,
         category: ['security', 'privacy'],
@@ -54,7 +54,7 @@ describe('MemoryScope', () => {
       expect(metadata.domain).toBeUndefined();
     });
 
-    it('GLOBAL scope 不應該需要 projectName', () => {
+    it('GLOBAL scope should not require projectName', () => {
       const metadata: MemoryScopeMetadata = {
         scope: MemoryScope.GLOBAL,
       };
@@ -62,7 +62,7 @@ describe('MemoryScope', () => {
       expect(metadata.projectName).toBeUndefined();
     });
 
-    it('應該允許 GLOBAL scope 有多個 category', () => {
+    it('should allow GLOBAL scope to have multiple categories', () => {
       const metadata: MemoryScopeMetadata = {
         scope: MemoryScope.GLOBAL,
         category: ['best-practice', 'anti-pattern', 'coding-standard'],
@@ -73,7 +73,7 @@ describe('MemoryScope', () => {
   });
 
   describe('MemoryScopeMetadata - PROJECT scope', () => {
-    it('應該允許創建 PROJECT scope metadata', () => {
+    it('should allow creating PROJECT scope metadata', () => {
       const metadata: MemoryScopeMetadata = {
         scope: MemoryScope.PROJECT,
         projectName: 'claude-code-buddy',
@@ -88,7 +88,7 @@ describe('MemoryScope', () => {
       expect(metadata.category).toContain('architecture');
     });
 
-    it('PROJECT scope 應該支援 techStack 陣列', () => {
+    it('PROJECT scope should support techStack array', () => {
       const metadata: MemoryScopeMetadata = {
         scope: MemoryScope.PROJECT,
         projectName: 'my-project',
@@ -99,7 +99,7 @@ describe('MemoryScope', () => {
       expect(metadata.techStack).toContain('react');
     });
 
-    it('PROJECT scope 可以包含 domain 資訊', () => {
+    it('PROJECT scope can include domain information', () => {
       const metadata: MemoryScopeMetadata = {
         scope: MemoryScope.PROJECT,
         projectName: 'e-commerce-platform',
@@ -112,7 +112,7 @@ describe('MemoryScope', () => {
   });
 
   describe('MemoryScopeMetadata - TECH_STACK scope', () => {
-    it('應該允許創建 TECH_STACK scope metadata', () => {
+    it('should allow creating TECH_STACK scope metadata', () => {
       const metadata: MemoryScopeMetadata = {
         scope: MemoryScope.TECH_STACK,
         techStack: ['react', 'typescript'],
@@ -124,7 +124,7 @@ describe('MemoryScope', () => {
       expect(metadata.category).toContain('best-practice');
     });
 
-    it('TECH_STACK scope 應該可以針對單一技術', () => {
+    it('TECH_STACK scope should support targeting a single technology', () => {
       const metadata: MemoryScopeMetadata = {
         scope: MemoryScope.TECH_STACK,
         techStack: ['typescript'],
@@ -135,7 +135,7 @@ describe('MemoryScope', () => {
       expect(metadata.category).toHaveLength(2);
     });
 
-    it('TECH_STACK scope 應該可以組合多個相關技術', () => {
+    it('TECH_STACK scope should support combining multiple related technologies', () => {
       const metadata: MemoryScopeMetadata = {
         scope: MemoryScope.TECH_STACK,
         techStack: ['react', 'react-router', 'react-query'],
@@ -148,7 +148,7 @@ describe('MemoryScope', () => {
   });
 
   describe('MemoryScopeMetadata - DOMAIN scope', () => {
-    it('應該允許創建 DOMAIN scope metadata', () => {
+    it('should allow creating DOMAIN scope metadata', () => {
       const metadata: MemoryScopeMetadata = {
         scope: MemoryScope.DOMAIN,
         domain: 'ai-automation',
@@ -160,7 +160,7 @@ describe('MemoryScope', () => {
       expect(metadata.category).toContain('workflow');
     });
 
-    it('DOMAIN scope 可以包含相關的 techStack', () => {
+    it('DOMAIN scope can include related techStack', () => {
       const metadata: MemoryScopeMetadata = {
         scope: MemoryScope.DOMAIN,
         domain: 'machine-learning',
@@ -174,7 +174,7 @@ describe('MemoryScope', () => {
   });
 
   describe('MemoryScopeMetadata - SESSION scope', () => {
-    it('應該允許創建 SESSION scope metadata', () => {
+    it('should allow creating SESSION scope metadata', () => {
       const metadata: MemoryScopeMetadata = {
         scope: MemoryScope.SESSION,
         sessionId: 'session-2026-02-01-001',
@@ -186,7 +186,7 @@ describe('MemoryScope', () => {
       expect(metadata.projectName).toBe('claude-code-buddy');
     });
 
-    it('SESSION scope 應該可以包含臨時的決策和上下文', () => {
+    it('SESSION scope should support temporary decisions and context', () => {
       const metadata: MemoryScopeMetadata = {
         scope: MemoryScope.SESSION,
         sessionId: 'temp-session-123',
@@ -199,7 +199,7 @@ describe('MemoryScope', () => {
   });
 
   describe('UnifiedMemory with scopeMetadata', () => {
-    it('應該允許在 UnifiedMemory 中加入 scopeMetadata', () => {
+    it('should allow adding scopeMetadata to UnifiedMemory', () => {
       const memory: UnifiedMemory = {
         type: 'knowledge',
         content: 'TypeScript best practices',
@@ -216,7 +216,7 @@ describe('MemoryScope', () => {
       expect(memory.scopeMetadata?.techStack).toContain('typescript');
     });
 
-    it('應該允許 GLOBAL scope memory 不含 project 資訊', () => {
+    it('should allow GLOBAL scope memory without project information', () => {
       const memory: UnifiedMemory = {
         type: 'knowledge',
         content: 'Never log sensitive information',
@@ -233,7 +233,7 @@ describe('MemoryScope', () => {
       expect(memory.scopeMetadata?.projectName).toBeUndefined();
     });
 
-    it('應該允許 PROJECT scope memory 包含完整的專案上下文', () => {
+    it('should allow PROJECT scope memory to include complete project context', () => {
       const memory: UnifiedMemory = {
         type: 'decision',
         content: 'Decided to use vitest for testing due to better performance',
@@ -253,7 +253,7 @@ describe('MemoryScope', () => {
       expect(memory.scopeMetadata?.techStack).toContain('vitest');
     });
 
-    it('應該允許 SESSION scope memory 包含臨時上下文', () => {
+    it('should allow SESSION scope memory to include temporary context', () => {
       const memory: UnifiedMemory = {
         type: 'conversation',
         content: 'User wants to implement MemoryScope system',
@@ -271,7 +271,7 @@ describe('MemoryScope', () => {
       expect(memory.scopeMetadata?.sessionId).toBeDefined();
     });
 
-    it('UnifiedMemory 應該可以不包含 scopeMetadata（向後兼容）', () => {
+    it('UnifiedMemory should support no scopeMetadata (backward compatible)', () => {
       const memory: UnifiedMemory = {
         type: 'knowledge',
         content: 'Legacy memory without scope',
@@ -284,9 +284,9 @@ describe('MemoryScope', () => {
     });
   });
 
-  describe('Scope Metadata 組合測試', () => {
-    it('應該支援多層級的 scope metadata 組合', () => {
-      // 測試一個記憶可以同時有多個層級的資訊
+  describe('Scope Metadata Combination Tests', () => {
+    it('should support multi-level scope metadata combinations', () => {
+      // Test that a memory can have information across multiple levels
       const memory: UnifiedMemory = {
         type: 'knowledge',
         content: 'React performance optimization in e-commerce checkout',
@@ -309,20 +309,20 @@ describe('MemoryScope', () => {
     });
   });
 
-  describe('Type Safety 測試', () => {
-    it('應該在編譯時檢查 scope 與必需欄位的一致性', () => {
-      // 這個測試主要是確保 TypeScript 型別系統正確
-      // 如果型別定義錯誤，這些程式碼將無法編譯
+  describe('Type Safety Tests', () => {
+    it('should verify scope and required fields consistency at compile time', () => {
+      // This test mainly ensures TypeScript type system is correct
+      // If type definitions are wrong, this code will not compile
 
       const globalScope: MemoryScopeMetadata = {
         scope: MemoryScope.GLOBAL,
-        // projectName 應該是 optional
+        // projectName should be optional
       };
 
       const projectScope: MemoryScopeMetadata = {
         scope: MemoryScope.PROJECT,
         projectName: 'test-project',
-        // projectName 雖然建議提供，但根據目前設計應該是 optional
+        // projectName is recommended but should be optional according to current design
       };
 
       const techScope: MemoryScopeMetadata = {
@@ -336,94 +336,94 @@ describe('MemoryScope', () => {
     });
   });
 
-  describe('工具函數 - requiresProjectName', () => {
-    it('PROJECT scope 應該需要 projectName', () => {
+  describe('Utility Function - requiresProjectName', () => {
+    it('PROJECT scope should require projectName', () => {
       expect(requiresProjectName(MemoryScope.PROJECT)).toBe(true);
     });
 
-    it('SESSION scope 應該需要 projectName', () => {
+    it('SESSION scope should require projectName', () => {
       expect(requiresProjectName(MemoryScope.SESSION)).toBe(true);
     });
 
-    it('GLOBAL scope 不應該需要 projectName', () => {
+    it('GLOBAL scope should not require projectName', () => {
       expect(requiresProjectName(MemoryScope.GLOBAL)).toBe(false);
     });
 
-    it('TECH_STACK scope 不應該需要 projectName', () => {
+    it('TECH_STACK scope should not require projectName', () => {
       expect(requiresProjectName(MemoryScope.TECH_STACK)).toBe(false);
     });
 
-    it('DOMAIN scope 不應該需要 projectName', () => {
+    it('DOMAIN scope should not require projectName', () => {
       expect(requiresProjectName(MemoryScope.DOMAIN)).toBe(false);
     });
   });
 
-  describe('工具函數 - canHaveTechStack', () => {
-    it('TECH_STACK scope 應該可以有 techStack', () => {
+  describe('Utility Function - canHaveTechStack', () => {
+    it('TECH_STACK scope should support techStack', () => {
       expect(canHaveTechStack(MemoryScope.TECH_STACK)).toBe(true);
     });
 
-    it('PROJECT scope 應該可以有 techStack', () => {
+    it('PROJECT scope should support techStack', () => {
       expect(canHaveTechStack(MemoryScope.PROJECT)).toBe(true);
     });
 
-    it('DOMAIN scope 應該可以有 techStack', () => {
+    it('DOMAIN scope should support techStack', () => {
       expect(canHaveTechStack(MemoryScope.DOMAIN)).toBe(true);
     });
 
-    it('GLOBAL scope 不應該有 techStack', () => {
+    it('GLOBAL scope should not support techStack', () => {
       expect(canHaveTechStack(MemoryScope.GLOBAL)).toBe(false);
     });
 
-    it('SESSION scope 不應該有 techStack', () => {
+    it('SESSION scope should not support techStack', () => {
       expect(canHaveTechStack(MemoryScope.SESSION)).toBe(false);
     });
   });
 
-  describe('工具函數 - canHaveDomain', () => {
-    it('DOMAIN scope 應該可以有 domain', () => {
+  describe('Utility Function - canHaveDomain', () => {
+    it('DOMAIN scope should support domain', () => {
       expect(canHaveDomain(MemoryScope.DOMAIN)).toBe(true);
     });
 
-    it('PROJECT scope 應該可以有 domain', () => {
+    it('PROJECT scope should support domain', () => {
       expect(canHaveDomain(MemoryScope.PROJECT)).toBe(true);
     });
 
-    it('GLOBAL scope 不應該有 domain', () => {
+    it('GLOBAL scope should not support domain', () => {
       expect(canHaveDomain(MemoryScope.GLOBAL)).toBe(false);
     });
 
-    it('TECH_STACK scope 不應該有 domain', () => {
+    it('TECH_STACK scope should not support domain', () => {
       expect(canHaveDomain(MemoryScope.TECH_STACK)).toBe(false);
     });
 
-    it('SESSION scope 不應該有 domain', () => {
+    it('SESSION scope should not support domain', () => {
       expect(canHaveDomain(MemoryScope.SESSION)).toBe(false);
     });
   });
 
-  describe('工具函數 - getScopePriority', () => {
-    it('SESSION scope 應該有最高優先級', () => {
+  describe('Utility Function - getScopePriority', () => {
+    it('SESSION scope should have highest priority', () => {
       expect(getScopePriority(MemoryScope.SESSION)).toBe(5);
     });
 
-    it('DOMAIN scope 應該有第二優先級', () => {
+    it('DOMAIN scope should have second highest priority', () => {
       expect(getScopePriority(MemoryScope.DOMAIN)).toBe(4);
     });
 
-    it('PROJECT scope 應該有中等優先級', () => {
+    it('PROJECT scope should have medium priority', () => {
       expect(getScopePriority(MemoryScope.PROJECT)).toBe(3);
     });
 
-    it('TECH_STACK scope 應該有低優先級', () => {
+    it('TECH_STACK scope should have low priority', () => {
       expect(getScopePriority(MemoryScope.TECH_STACK)).toBe(2);
     });
 
-    it('GLOBAL scope 應該有最低優先級', () => {
+    it('GLOBAL scope should have lowest priority', () => {
       expect(getScopePriority(MemoryScope.GLOBAL)).toBe(1);
     });
 
-    it('應該能正確比較優先級順序', () => {
+    it('should correctly compare priority order', () => {
       const priorities = [
         getScopePriority(MemoryScope.GLOBAL),
         getScopePriority(MemoryScope.TECH_STACK),
@@ -432,27 +432,27 @@ describe('MemoryScope', () => {
         getScopePriority(MemoryScope.SESSION),
       ];
 
-      // 應該是遞增的
+      // Should be in ascending order
       expect(priorities).toEqual([1, 2, 3, 4, 5]);
     });
   });
 
-  describe('工具函數 - compareScopePriority', () => {
-    it('SESSION 應該有比 GLOBAL 更高的優先級（用於 sort 時應返回負數）', () => {
-      // 在 sort 中，返回負數表示第一個參數應排在前面
+  describe('Utility Function - compareScopePriority', () => {
+    it('SESSION should have higher priority than GLOBAL (should return negative for sort)', () => {
+      // In sort, negative number means first parameter should come first
       expect(compareScopePriority(MemoryScope.SESSION, MemoryScope.GLOBAL)).toBeLessThan(0);
     });
 
-    it('GLOBAL 應該有比 SESSION 更低的優先級（用於 sort 時應返回正數）', () => {
-      // 在 sort 中，返回正數表示第二個參數應排在前面
+    it('GLOBAL should have lower priority than SESSION (should return positive for sort)', () => {
+      // In sort, positive number means second parameter should come first
       expect(compareScopePriority(MemoryScope.GLOBAL, MemoryScope.SESSION)).toBeGreaterThan(0);
     });
 
-    it('相同的 scope 應該返回 0', () => {
+    it('same scope should return 0', () => {
       expect(compareScopePriority(MemoryScope.PROJECT, MemoryScope.PROJECT)).toBe(0);
     });
 
-    it('應該能排序 scopes（從高優先級到低優先級）', () => {
+    it('should sort scopes (from high to low priority)', () => {
       const scopes = [
         MemoryScope.GLOBAL,
         MemoryScope.SESSION,
@@ -472,28 +472,28 @@ describe('MemoryScope', () => {
     });
   });
 
-  describe('工具函數 - getScopeDescription', () => {
-    it('應該為 GLOBAL scope 返回描述', () => {
+  describe('Utility Function - getScopeDescription', () => {
+    it('should return description for GLOBAL scope', () => {
       expect(getScopeDescription(MemoryScope.GLOBAL)).toContain('Universal');
     });
 
-    it('應該為 TECH_STACK scope 返回描述', () => {
+    it('should return description for TECH_STACK scope', () => {
       expect(getScopeDescription(MemoryScope.TECH_STACK)).toContain('technology');
     });
 
-    it('應該為 PROJECT scope 返回描述', () => {
+    it('should return description for PROJECT scope', () => {
       expect(getScopeDescription(MemoryScope.PROJECT)).toContain('project');
     });
 
-    it('應該為 DOMAIN scope 返回描述', () => {
+    it('should return description for DOMAIN scope', () => {
       expect(getScopeDescription(MemoryScope.DOMAIN)).toContain('domain');
     });
 
-    it('應該為 SESSION scope 返回描述', () => {
+    it('should return description for SESSION scope', () => {
       expect(getScopeDescription(MemoryScope.SESSION)).toContain('session');
     });
 
-    it('所有 scope 都應該有描述', () => {
+    it('all scopes should have descriptions', () => {
       const scopes = [
         MemoryScope.GLOBAL,
         MemoryScope.TECH_STACK,
@@ -511,8 +511,8 @@ describe('MemoryScope', () => {
     });
   });
 
-  describe('工具函數 - validateScopeMetadata', () => {
-    it('應該驗證有效的 GLOBAL scope metadata', () => {
+  describe('Utility Function - validateScopeMetadata', () => {
+    it('should validate valid GLOBAL scope metadata', () => {
       const metadata: MemoryScopeMetadata = {
         scope: MemoryScope.GLOBAL,
         category: ['security'],
@@ -523,7 +523,7 @@ describe('MemoryScope', () => {
       expect(result.errors).toHaveLength(0);
     });
 
-    it('應該驗證有效的 TECH_STACK scope metadata', () => {
+    it('should validate valid TECH_STACK scope metadata', () => {
       const metadata: MemoryScopeMetadata = {
         scope: MemoryScope.TECH_STACK,
         techStack: ['typescript'],
@@ -533,7 +533,7 @@ describe('MemoryScope', () => {
       expect(result.valid).toBe(true);
     });
 
-    it('應該驗證有效的 DOMAIN scope metadata', () => {
+    it('should validate valid DOMAIN scope metadata', () => {
       const metadata: MemoryScopeMetadata = {
         scope: MemoryScope.DOMAIN,
         domain: 'e-commerce',
@@ -543,7 +543,7 @@ describe('MemoryScope', () => {
       expect(result.valid).toBe(true);
     });
 
-    it('應該檢測 TECH_STACK scope 沒有 techStack', () => {
+    it('should detect TECH_STACK scope without techStack', () => {
       const metadata: MemoryScopeMetadata = {
         scope: MemoryScope.TECH_STACK,
       };
@@ -553,7 +553,7 @@ describe('MemoryScope', () => {
       expect(result.errors[0]).toContain('techStack');
     });
 
-    it('應該檢測 DOMAIN scope 沒有 domain', () => {
+    it('should detect DOMAIN scope without domain', () => {
       const metadata: MemoryScopeMetadata = {
         scope: MemoryScope.DOMAIN,
       };
@@ -563,7 +563,7 @@ describe('MemoryScope', () => {
       expect(result.errors[0]).toContain('domain');
     });
 
-    it('應該檢測 GLOBAL scope 不應該有 techStack', () => {
+    it('should detect GLOBAL scope should not have techStack', () => {
       const metadata: MemoryScopeMetadata = {
         scope: MemoryScope.GLOBAL,
         techStack: ['typescript'],
@@ -574,15 +574,15 @@ describe('MemoryScope', () => {
     });
   });
 
-  describe('工具函數 - createScopeFilter', () => {
-    it('應該創建簡單的 scope filter', () => {
+  describe('Utility Function - createScopeFilter', () => {
+    it('should create simple scope filter', () => {
       const filter = createScopeFilter(MemoryScope.GLOBAL);
 
       expect(filter.scope).toBe(MemoryScope.GLOBAL);
       expect(filter.projectName).toBeUndefined();
     });
 
-    it('應該創建帶有 options 的 scope filter', () => {
+    it('should create scope filter with options', () => {
       const filter = createScopeFilter(MemoryScope.PROJECT, {
         projectName: 'my-project',
         techStack: ['typescript'],
@@ -593,7 +593,7 @@ describe('MemoryScope', () => {
       expect(filter.techStack).toContain('typescript');
     });
 
-    it('應該支援 DOMAIN scope filter', () => {
+    it('should support DOMAIN scope filter', () => {
       const filter = createScopeFilter(MemoryScope.DOMAIN, {
         domain: 'e-commerce',
         techStack: ['react'],

@@ -1,16 +1,16 @@
-# A2A 通訊測試指南（實戰版）
+# A2A Communication Testing Guide (Practical Version)
 
-## 📋 前置條件確認
+## 📋 Prerequisites Checklist
 
-✅ **已完成的配置**：
+✅ **Completed Configuration**:
 - MeMesh A2A Token: `23a74a1be2320dc507dd3b2a0695d76885a8f15f8066465eeca3cf2dd10ac8a5`
-- Task Timeout: 30 秒
-- Poll Interval: 5 秒
-- MCP Server Mode: 啟用
+- Task Timeout: 30 seconds
+- Poll Interval: 5 seconds
+- MCP Server Mode: Enabled
 
-## 🎯 測試場景：Session 1 委派任務給 Session 2
+## 🎯 Test Scenario: Session 1 Delegates Task to Session 2
 
-### 架構說明
+### Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -20,7 +20,7 @@
 │                                                           │
 │  ┌────────────────────┐                                 │
 │  │  Session 1 (Alice) │                                 │
-│  │  • 使用 a2a-send-task                               │
+│  │  • Uses a2a-send-task                               │
 │  └────────┬───────────┘                                 │
 │           │ MCP Tool Call                                │
 │           ▼                                              │
@@ -39,51 +39,51 @@
 └─────────────────────────────────────────────────────────┘
 ```
 
-## 🧪 測試步驟
+## 🧪 Testing Steps
 
-### Phase 1: 環境準備
+### Phase 1: Environment Preparation
 
-#### 1.1 終止所有現有 Claude Code sessions
+#### 1.1 Terminate All Existing Claude Code Sessions
 
 ```bash
-# 找出所有 MeMesh server 進程
+# Find all MeMesh server processes
 ps aux | grep server-bootstrap.js | grep -v grep
 
-# 終止所有 MeMesh instances
+# Terminate all MeMesh instances
 pkill -f "server-bootstrap.js"
 
-# 確認清理完成
-ps aux | grep server-bootstrap.js | grep -v grep  # 應該沒有輸出
+# Verify cleanup is complete
+ps aux | grep server-bootstrap.js | grep -v grep  # Should have no output
 ```
 
-#### 1.2 啟動兩個新的 Claude Code sessions
+#### 1.2 Start Two New Claude Code Sessions
 
-**重要提示**：必須重啟 Claude Code 才能載入最新的環境變數配置！
+**Important Note**: You must restart Claude Code to load the latest environment variable configuration!
 
 **Terminal 1 - Session Alice**:
 ```bash
-# 啟動 Claude Code（這會自動啟動 MeMesh MCP server）
+# Start Claude Code (this will automatically start the MeMesh MCP server)
 claude-code
 ```
 
 **Terminal 2 - Session Bob**:
 ```bash
-# 啟動另一個 Claude Code session
+# Start another Claude Code session
 claude-code
 ```
 
 ---
 
-### Phase 2: 在 Session 1 (Alice) 測試發送任務
+### Phase 2: Testing Task Sending in Session 1 (Alice)
 
-#### 2.1 確認當前 agent ID
+#### 2.1 Confirm Current Agent ID
 
-在 Session 1 執行：
+Execute in Session 1:
 ```
-請使用 mcp__memesh__a2a-list-agents 工具列出所有可用的 agents
+Please use the mcp__memesh__a2a-list-agents tool to list all available agents
 ```
 
-**預期輸出**（假設兩個 sessions 都已啟動）：
+**Expected Output** (assuming both sessions are started):
 ```json
 {
   "agents": [
@@ -101,24 +101,24 @@ claude-code
 }
 ```
 
-**📌 記錄 Agent IDs**：
+**📌 Record Agent IDs**:
 - Session 1 (Alice): `ccb-mcp-xxxxx`
 - Session 2 (Bob): `ccb-mcp-yyyyy`
 
-#### 2.2 從 Session 1 發送任務給 Session 2
+#### 2.2 Send Task from Session 1 to Session 2
 
-在 Session 1 執行：
+Execute in Session 1:
 ```
-請使用 mcp__memesh__a2a-send-task 工具發送以下任務：
+Please use the mcp__memesh__a2a-send-task tool to send the following task:
 
 {
-  "targetAgentId": "ccb-mcp-yyyyy",  // Session 2 的 agent ID
-  "taskDescription": "請計算 123 + 456 並回報結果",
+  "targetAgentId": "ccb-mcp-yyyyy",  // Session 2's agent ID
+  "taskDescription": "Please calculate 123 + 456 and report the result",
   "priority": "normal"
 }
 ```
 
-**預期輸出**：
+**Expected Output**:
 ```json
 {
   "taskId": "task-abc123def456",
@@ -127,30 +127,30 @@ claude-code
 }
 ```
 
-**📌 記錄 Task ID**: `task-abc123def456`
+**📌 Record Task ID**: `task-abc123def456`
 
 ---
 
-### Phase 3: 在 Session 2 (Bob) 接收並執行任務
+### Phase 3: Receiving and Executing Task in Session 2 (Bob)
 
-#### 3.1 列出待處理任務
+#### 3.1 List Pending Tasks
 
-在 Session 2 執行：
+Execute in Session 2:
 ```
-請使用 mcp__memesh__a2a-list-tasks 工具列出我的待處理任務：
+Please use the mcp__memesh__a2a-list-tasks tool to list my pending tasks:
 
 {
   "state": "SUBMITTED"
 }
 ```
 
-**預期輸出**：
+**Expected Output**:
 ```json
 {
   "tasks": [
     {
       "taskId": "task-abc123def456",
-      "taskDescription": "請計算 123 + 456 並回報結果",
+      "taskDescription": "Please calculate 123 + 456 and report the result",
       "priority": "normal",
       "status": "SUBMITTED",
       "createdAt": "2026-02-04T01:35:00Z",
@@ -160,29 +160,29 @@ claude-code
 }
 ```
 
-#### 3.2 執行任務（手動模擬）
+#### 3.2 Execute Task (Manual Simulation)
 
-在 Session 2 中：
+In Session 2:
 ```
-我收到任務："請計算 123 + 456 並回報結果"
+I received the task: "Please calculate 123 + 456 and report the result"
 
-計算結果：123 + 456 = 579
+Calculation result: 123 + 456 = 579
 ```
 
-#### 3.3 報告任務結果
+#### 3.3 Report Task Result
 
-在 Session 2 執行：
+Execute in Session 2:
 ```
-請使用 mcp__memesh__a2a-report-result 工具報告任務完成：
+Please use the mcp__memesh__a2a-report-result tool to report task completion:
 
 {
   "taskId": "task-abc123def456",
-  "result": "計算完成：123 + 456 = 579",
+  "result": "Calculation completed: 123 + 456 = 579",
   "success": true
 }
 ```
 
-**預期輸出**：
+**Expected Output**:
 ```json
 {
   "success": true,
@@ -194,13 +194,13 @@ claude-code
 
 ---
 
-### Phase 4: 在 Session 1 驗證任務完成
+### Phase 4: Verifying Task Completion in Session 1
 
-#### 4.1 查詢任務狀態
+#### 4.1 Query Task Status
 
-在 Session 1 執行：
+Execute in Session 1:
 ```
-請使用 mcp__memesh__a2a-get-task 工具查詢任務狀態：
+Please use the mcp__memesh__a2a-get-task tool to query task status:
 
 {
   "targetAgentId": "ccb-mcp-yyyyy",
@@ -208,12 +208,12 @@ claude-code
 }
 ```
 
-**預期輸出**：
+**Expected Output**:
 ```json
 {
   "taskId": "task-abc123def456",
   "status": "COMPLETED",
-  "result": "計算完成：123 + 456 = 579",
+  "result": "Calculation completed: 123 + 456 = 579",
   "success": true,
   "completedAt": "2026-02-04T01:36:00Z"
 }
@@ -221,78 +221,78 @@ claude-code
 
 ---
 
-## 🚨 常見問題排除
+## 🚨 Common Troubleshooting
 
-### Issue 1: "Unauthorized" 錯誤
+### Issue 1: "Unauthorized" Error
 
-**症狀**：
+**Symptoms**:
 ```
 Error: Unauthorized - Invalid or missing authentication token
 ```
 
-**解決方案**：
-1. 確認 `.env` 文件中有 `MEMESH_A2A_TOKEN`
-2. 重啟 Claude Code 以載入環境變數
-3. 檢查兩個 sessions 使用的是同一個 token
+**Solutions**:
+1. Confirm that `.env` file contains `MEMESH_A2A_TOKEN`
+2. Restart Claude Code to load environment variables
+3. Check that both sessions are using the same token
 
-### Issue 2: 找不到目標 agent
+### Issue 2: Target Agent Not Found
 
-**症狀**：
+**Symptoms**:
 ```
 Error: Target agent 'ccb-mcp-yyyyy' not found in registry
 ```
 
-**解決方案**：
-1. 使用 `a2a-list-agents` 確認 agent 存在
-2. 確認使用正確的 agent ID（注意區分大小寫）
-3. 確認目標 session 的 MeMesh server 正在運行
+**Solutions**:
+1. Use `a2a-list-agents` to confirm agent exists
+2. Confirm you're using the correct agent ID (case-sensitive)
+3. Confirm the target session's MeMesh server is running
 
-### Issue 3: 任務超時
+### Issue 3: Task Timeout
 
-**症狀**：
+**Symptoms**:
 ```
 Error: Task execution timeout (exceeded 30000ms)
 ```
 
-**解決方案**：
-1. 增加 `.env` 中的 `MEMESH_A2A_TASK_TIMEOUT`
-2. 確認 Session 2 正在輪詢任務（使用 `a2a-list-tasks`）
-3. 檢查 Session 2 是否正常運行
+**Solutions**:
+1. Increase `MEMESH_A2A_TASK_TIMEOUT` in `.env`
+2. Confirm Session 2 is polling tasks (use `a2a-list-tasks`)
+3. Check if Session 2 is running normally
 
-### Issue 4: 任務列表為空
+### Issue 4: Task List is Empty
 
-**症狀**：
+**Symptoms**:
 ```json
 {
   "tasks": []
 }
 ```
 
-**解決方案**：
-1. 確認任務已成功發送（檢查 `a2a-send-task` 的回應）
-2. 確認使用正確的 agent ID
-3. 檢查任務狀態篩選器（可能任務已經是 COMPLETED 狀態）
+**Solutions**:
+1. Confirm task was successfully sent (check `a2a-send-task` response)
+2. Confirm you're using the correct agent ID
+3. Check task state filter (task might already be in COMPLETED state)
 
 ---
 
-## 📊 測試驗證清單
+## 📊 Test Verification Checklist
 
-測試完成後，確認以下項目都成功：
+After testing is complete, confirm all the following items are successful:
 
-- [ ] Session 1 能列出可用的 agents
-- [ ] Session 1 成功發送任務，收到 `taskId`
-- [ ] Session 2 能列出待處理任務
-- [ ] Session 2 成功報告任務結果
-- [ ] Session 1 能查詢到任務完成狀態和結果
-- [ ] 任務狀態正確變化：SUBMITTED → WORKING → COMPLETED
+- [ ] Session 1 can list available agents
+- [ ] Session 1 successfully sends task and receives `taskId`
+- [ ] Session 2 can list pending tasks
+- [ ] Session 2 successfully reports task result
+- [ ] Session 1 can query task completion status and result
+- [ ] Task status transitions correctly: SUBMITTED → WORKING → COMPLETED
 
 ---
 
-## 🎯 進階測試場景
+## 🎯 Advanced Test Scenarios
 
-### 場景 1: 任務失敗處理
+### Scenario 1: Task Failure Handling
 
-在 Session 2 報告失敗：
+Report failure in Session 2:
 ```json
 {
   "taskId": "task-xyz789",
@@ -302,24 +302,24 @@ Error: Task execution timeout (exceeded 30000ms)
 }
 ```
 
-### 場景 2: 優先級任務
+### Scenario 2: Priority Tasks
 
-發送高優先級任務：
+Send high-priority task:
 ```json
 {
   "targetAgentId": "ccb-mcp-yyyyy",
-  "taskDescription": "緊急：修復登入 bug",
+  "taskDescription": "Urgent: Fix login bug",
   "priority": "urgent"
 }
 ```
 
-### 場景 3: 多任務並發
+### Scenario 3: Multiple Concurrent Tasks
 
-從 Session 1 發送多個任務給不同的 agents，測試並發處理能力。
+Send multiple tasks from Session 1 to different agents to test concurrent processing capabilities.
 
 ---
 
-## 📖 參考文檔
+## 📖 Reference Documentation
 
 - **A2A Setup Guide**: `docs/A2A_SETUP_GUIDE.md`
 - **A2A Architecture**: `docs/features/a2a-agent-collaboration.md`
@@ -327,24 +327,24 @@ Error: Task execution timeout (exceeded 30000ms)
 
 ---
 
-## 🔄 清理與重置
+## 🔄 Cleanup and Reset
 
-測試完成後清理：
+Cleanup after testing:
 
 ```bash
-# 1. 終止所有 Claude Code sessions
+# 1. Terminate all Claude Code sessions
 pkill -f "server-bootstrap.js"
 
-# 2. 清理任務隊列（如需要）
-# 目前 Phase 1.0 使用 in-memory queue，重啟即清空
+# 2. Clear task queue (if needed)
+# Currently Phase 1.0 uses in-memory queue, restart to clear
 
-# 3. 檢查確認
-ps aux | grep server-bootstrap.js | grep -v grep  # 應該無輸出
+# 3. Verification check
+ps aux | grep server-bootstrap.js | grep -v grep  # Should have no output
 ```
 
 ---
 
-**測試時間**：約 15-20 分鐘（包含環境準備）
-**成功標準**：完整執行 Phase 2-4，所有步驟輸出符合預期
+**Testing Time**: Approximately 15-20 minutes (including environment preparation)
+**Success Criteria**: Complete execution of Phases 2-4, all step outputs match expectations
 
 Good luck! 🚀

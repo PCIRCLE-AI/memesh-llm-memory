@@ -1,74 +1,74 @@
-# 🧪 安裝測試文檔
+# 🧪 Installation Testing Documentation
 
-> **狀態**: [![Installation Testing](https://github.com/PCIRCLE-AI/claude-code-buddy/actions/workflows/installation-test.yml/badge.svg)](https://github.com/PCIRCLE-AI/claude-code-buddy/actions/workflows/installation-test.yml)
+> **Status**: [![Installation Testing](https://github.com/PCIRCLE-AI/claude-code-buddy/actions/workflows/installation-test.yml/badge.svg)](https://github.com/PCIRCLE-AI/claude-code-buddy/actions/workflows/installation-test.yml)
 
-## 📋 測試覆蓋範圍
+## 📋 Test Coverage
 
-MeMesh 的安裝流程經過以下完整測試：
+MeMesh installation process is thoroughly tested with the following:
 
-### ✅ 測試的安裝方式
+### ✅ Tested Installation Methods
 
-1. **npm 全域安裝**
-   - 測試環境：Ubuntu, Node 20/22
-   - 測試內容：`npm install -g @pcircle/memesh`
-   - 驗證：tarball 內容、可執行性
+1. **npm Global Install**
+   - Test Environment: Ubuntu, Node 20/22
+   - Test Content: `npm install -g @pcircle/memesh`
+   - Verification: Tarball contents, executability
 
 2. **Plugin Build**
-   - 測試環境：Ubuntu
-   - 測試內容：`npm run build:plugin`
-   - 驗證：檔案結構、JSON 格式、MCP server
+   - Test Environment: Ubuntu
+   - Test Content: `npm run build:plugin`
+   - Verification: File structure, JSON format, MCP server
 
-3. **MCP Server Standalone**（新增）
-   - 測試環境：本地/CI
-   - 測試內容：獨立測試 MCP server 功能
-   - 驗證：
-     - MCP server 檔案存在
-     - 版本命令可執行
-     - MCP 協議基本回應
-     - 環境變數處理
-     - 依賴完整性
-   - 限制：無法測試完整 MCP 握手和 Claude Code 整合
+3. **MCP Server Standalone** (New)
+   - Test Environment: Local/CI
+   - Test Content: Standalone MCP server functionality testing
+   - Verification:
+     - MCP server files exist
+     - Version command executable
+     - MCP protocol basic response
+     - Environment variable handling
+     - Dependency integrity
+   - Limitations: Cannot test full MCP handshake and Claude Code integration
 
 4. **Docker Clean Install**
-   - 測試環境：Docker（完全乾淨環境）
-   - 測試內容：從零開始安裝
-   - 驗證：完整安裝流程
+   - Test Environment: Docker (completely clean environment)
+   - Test Content: Installation from scratch
+   - Verification: Complete installation process
 
-5. **安全性檢查**
+5. **Security Checks**
    - npm audit
-   - 敏感資訊掃描
-   - .env 檔案檢查
+   - Sensitive information scanning
+   - .env file checking
 
 ---
 
-## 🔧 本地測試方式
+## 🔧 Local Testing Methods
 
-### 方式 1: 執行完整檢查腳本
+### Method 1: Run Complete Check Script
 
 ```bash
 ./scripts/pre-deployment-check.sh
 ```
 
-### 方式 2: MCP Server 獨立測試（快速）
+### Method 2: MCP Server Standalone Test (Quick)
 
 ```bash
 ./scripts/test-mcp-server-standalone.sh
 ```
 
-獨立測試 MCP server 功能，不需要 Docker 或完整 Claude Code 環境。
+Tests MCP server functionality independently, without requiring Docker or full Claude Code environment.
 
-### 方式 3: Docker 測試（推薦）
+### Method 3: Docker Test (Recommended)
 
 ```bash
 ./scripts/test-installation-docker.sh
 ```
 
-這會在完全乾淨的 Docker 容器中測試安裝流程，模擬真實用戶環境。
+This tests the installation process in a completely clean Docker container, simulating a real user environment.
 
-### 方式 4: 手動測試
+### Method 4: Manual Test
 
 ```bash
-# 1. 安裝依賴
+# 1. Install dependencies
 npm ci
 
 # 2. Build
@@ -77,209 +77,209 @@ npm run build
 # 3. Plugin build
 npm run build:plugin
 
-# 4. 驗證檔案結構
+# 4. Verify file structure
 test -f .claude-plugin/memesh/.mcp.json && echo "✅ .mcp.json exists"
 test -f .claude-plugin/memesh/.claude-plugin/plugin.json && echo "✅ plugin.json exists"
 
-# 5. 測試 MCP Server
+# 5. Test MCP Server
 ./scripts/test-mcp-server-standalone.sh
 ```
 
 ---
 
-## 🤖 CI/CD 自動化測試
+## 🤖 CI/CD Automated Testing
 
-### 觸發條件
+### Trigger Conditions
 
-**自動觸發**：
+**Automatic Triggers**:
 - Push to `main` or `develop` branch
 - Pull Request to `main` or `develop`
-- 修改以下檔案時：
+- When modifying the following files:
   - `package.json`
   - `plugin.json`
   - `mcp.json`
   - `scripts/**`
   - `src/**`
 
-**手動觸發**：
+**Manual Trigger**:
 - GitHub Actions → "Installation Testing" → "Run workflow"
 
-### 測試階段
+### Test Stages
 
 ```
 Stage 1: Basic Checks
-  ├─ JSON 格式驗證
-  ├─ 檔案結構檢查
-  └─ 基本語法檢查
+  ├─ JSON format validation
+  ├─ File structure checking
+  └─ Basic syntax checking
 
 Stage 2: npm Install Test
-  ├─ Node 20 測試
-  ├─ Node 22 測試
-  ├─ npm pack 驗證
-  └─ Tarball 內容檢查
+  ├─ Node 20 test
+  ├─ Node 22 test
+  ├─ npm pack verification
+  └─ Tarball content checking
 
 Stage 3: Plugin Build Test
-  ├─ Build 成功
-  ├─ Plugin 結構驗證
-  ├─ JSON 格式驗證
-  ├─ MCP server 可執行性
-  └─ MCP Server 獨立功能測試
+  ├─ Build success
+  ├─ Plugin structure verification
+  ├─ JSON format validation
+  ├─ MCP server executability
+  └─ MCP Server standalone functionality test
 
 Stage 4: Docker Clean Install
-  └─ 完全乾淨環境測試
+  └─ Completely clean environment test
 
 Stage 5: Security Checks
   ├─ npm audit
-  ├─ 敏感資訊掃描
-  └─ .env 檢查
+  ├─ Sensitive information scanning
+  └─ .env checking
 ```
 
 ---
 
-## 📊 測試報告
+## 📊 Test Reports
 
-### 如何查看測試結果
+### How to View Test Results
 
-1. **GitHub Actions 頁面**
+1. **GitHub Actions Page**
    - https://github.com/PCIRCLE-AI/claude-code-buddy/actions
-   - 選擇 "Installation Testing" workflow
-   - 查看最新的執行結果
+   - Select "Installation Testing" workflow
+   - View latest execution results
 
-2. **PR 中的狀態檢查**
-   - 每個 PR 都會自動執行測試
-   - 在 PR 頁面底部查看測試狀態
-   - 必須所有測試通過才能合併
+2. **Status Checks in PRs**
+   - Tests run automatically for each PR
+   - View test status at the bottom of PR page
+   - All tests must pass before merging
 
 3. **README Badge**
-   - README.md 頂部的 badge 顯示當前測試狀態
-   - 綠色 = 通過，紅色 = 失敗
+   - Badge at top of README.md shows current test status
+   - Green = passing, Red = failing
 
 ---
 
-## 🛡️ 保障程度（誠實評估）
+## 🛡️ Coverage Level (Honest Assessment)
 
-### ✅ 我們能保證的（~70-80%）
+### ✅ What We Can Guarantee (~70-80%)
 
-**Build & Package 層級**：
-- ✅ JSON 格式正確（package.json, plugin.json, mcp.json）
-- ✅ 檔案結構符合 Claude Code 標準
-- ✅ TypeScript 編譯成功
-- ✅ npm package 可以正常打包
-- ✅ 依賴完整性（npm audit 通過）
-- ✅ MCP server 檔案可執行
-- ✅ MCP server 能回應基本協議請求
-- ✅ 多 Node 版本兼容（20, 22）
-- ✅ 乾淨環境安裝（Docker）
-- ✅ 安全性掃描（secrets, vulnerabilities）
+**Build & Package Level**:
+- ✅ JSON format correct (package.json, plugin.json, mcp.json)
+- ✅ File structure meets Claude Code standards
+- ✅ TypeScript compiles successfully
+- ✅ npm package can be packaged normally
+- ✅ Dependency integrity (npm audit passes)
+- ✅ MCP server file is executable
+- ✅ MCP server responds to basic protocol requests
+- ✅ Multiple Node version compatibility (20, 22)
+- ✅ Clean environment installation (Docker)
+- ✅ Security scanning (secrets, vulnerabilities)
 
-### ⚠️ 我們「無法」在 CI/CD 中測試的（~20-30%）
+### ⚠️ What We CANNOT Test in CI/CD (~20-30%)
 
-**實際整合層級**（需要真實 Claude Code 環境）：
-- ❌ Claude Code 能否實際載入 plugin
-- ❌ MCP server 在 Claude Code 中能否成功連線
-- ❌ Plugin 功能在 Claude Code 中是否正常運作
-- ❌ 用戶實際使用體驗
+**Actual Integration Level** (Requires real Claude Code environment):
+- ❌ Whether Claude Code can actually load the plugin
+- ❌ Whether MCP server can successfully connect in Claude Code
+- ❌ Whether plugin functions work normally in Claude Code
+- ❌ Actual user experience
 
-**平台覆蓋**（需要不同 OS runners）：
-- ⚠️ Windows 環境實測
-- ⚠️ macOS 環境實測（目前在 macOS 開發，有部分保障）
+**Platform Coverage** (Requires different OS runners):
+- ⚠️ Windows environment actual testing
+- ⚠️ macOS environment actual testing (currently developed on macOS, partial coverage)
 
-### 📊 為什麼無法達到 100%？
+### 📊 Why Can't We Reach 100%?
 
-**技術限制**：
-1. **Claude Code 需要登入**：無法在 CI/CD 中自動登入測試
-2. **沒有 headless 模式**：Claude Code 不支援無介面自動化測試
-3. **MCP 協議複雜性**：完整的 MCP 握手需要實際的 Claude Code 環境
-4. **平台依賴**：GitHub Actions 提供的 runner 有限
+**Technical Limitations**:
+1. **Claude Code requires login**: Cannot auto-login in CI/CD for testing
+2. **No headless mode**: Claude Code doesn't support headless automation testing
+3. **MCP protocol complexity**: Full MCP handshake requires actual Claude Code environment
+4. **Platform dependencies**: Limited runners available on GitHub Actions
 
-**現實評估**：
-- 我們的測試能確保「build 不會壞」
-- 我們的測試能確保「結構正確」
-- 我們的測試能確保「MCP server 基本可運行」
-- **但無法確保「在用戶的 Claude Code 中一定能成功」**
+**Realistic Assessment**:
+- Our tests ensure "build won't break"
+- Our tests ensure "structure is correct"
+- Our tests ensure "MCP server can basically run"
+- **But cannot ensure "will definitely succeed in user's Claude Code"**
 
-### 💡 補償措施
+### 💡 Compensating Measures
 
-為了彌補這 20-30% 的測試缺口：
+To address this 20-30% testing gap:
 
-1. **本地手動測試**：開發者在本機 Claude Code 驗證
-2. **Pre-deployment checklist**：部署前人工檢查清單
-3. **快速回滾機制**：npm 版本管理，發現問題立即回滾
-4. **用戶回報機制**：GitHub Issues 追蹤實際問題
-5. **文檔完整性**：詳細的安裝指南和故障排除文檔
+1. **Local manual testing**: Developers verify in local Claude Code
+2. **Pre-deployment checklist**: Manual checklist before deployment
+3. **Quick rollback mechanism**: npm version management, immediate rollback if issues found
+4. **User reporting mechanism**: GitHub Issues to track actual problems
+5. **Documentation completeness**: Detailed installation guides and troubleshooting docs
 
-### ✅ 結論
+### ✅ Conclusion
 
-**我們提供的是「高度可信但非 100% 保證」的安裝流程**：
-- Build 和 package 層級：~95% 保障
-- 實際 Claude Code 整合：需要人工驗證
-- 總體評估：~70-80% 自動化保障
+**We provide "highly reliable but not 100% guaranteed" installation process**:
+- Build and package level: ~95% coverage
+- Actual Claude Code integration: Requires manual verification
+- Overall assessment: ~70-80% automated coverage
 
 ---
 
-## 🚨 測試失敗處理
+## 🚨 Test Failure Handling
 
-### 如果 CI 測試失敗
+### If CI Tests Fail
 
-1. **查看錯誤訊息**
-   - 點擊失敗的 job
-   - 展開失敗的 step
-   - 查看詳細錯誤訊息
+1. **View Error Message**
+   - Click on failed job
+   - Expand failed step
+   - View detailed error message
 
-2. **本地重現**
+2. **Reproduce Locally**
    ```bash
-   # 使用 Docker 測試重現問題
+   # Use Docker test to reproduce issue
    ./scripts/test-installation-docker.sh
    ```
 
-3. **修正問題**
-   - 根據錯誤訊息修正代碼
-   - 本地測試通過後再 push
+3. **Fix Issue**
+   - Fix code based on error message
+   - Test locally before pushing
 
-4. **重新執行 CI**
-   - Push 修正後的代碼
-   - CI 會自動重新執行
+4. **Re-run CI**
+   - Push fixed code
+   - CI will automatically re-run
 
-### 如果本地測試失敗
+### If Local Tests Fail
 
-1. **檢查檔案結構**
+1. **Check File Structure**
    ```bash
    ls -la .claude-plugin/memesh/
    ```
 
-2. **檢查 JSON 格式**
+2. **Check JSON Format**
    ```bash
    node -e "require('./plugin.json')"
    node -e "require('./mcp.json')"
    ```
 
-3. **重新 build**
+3. **Rebuild**
    ```bash
    npm run build
    npm run build:plugin
    ```
 
-4. **執行完整檢查**
+4. **Run Full Check**
    ```bash
    ./scripts/pre-deployment-check.sh
    ```
 
 ---
 
-## 📝 添加新的測試
+## 📝 Adding New Tests
 
-如果需要添加新的安裝方式測試：
+If you need to add new installation method tests:
 
-1. 更新 `Dockerfile.test`（如果需要 Docker 測試）
-2. 更新 `.github/workflows/installation-test.yml`
-3. 更新 `scripts/pre-deployment-check.sh`
-4. 更新此文檔
+1. Update `Dockerfile.test` (if Docker test needed)
+2. Update `.github/workflows/installation-test.yml`
+3. Update `scripts/pre-deployment-check.sh`
+4. Update this documentation
 
 ---
 
-## ✅ 成功標準
+## ✅ Success Criteria
 
-測試全部通過的標準：
+Standards for all tests passing:
 
 ```bash
 ✅ All JSON files are valid
@@ -291,9 +291,9 @@ Stage 5: Security Checks
 ✅ No security vulnerabilities (high/critical)
 ```
 
-**只有當所有檢查都通過，才能認為安裝流程是可靠的。**
+**Only when all checks pass can the installation process be considered reliable.**
 
 ---
 
-**最後更新**: 2026-02-04
-**維護者**: PCIRCLE AI Team
+**Last Updated**: 2026-02-04
+**Maintainer**: PCIRCLE AI Team

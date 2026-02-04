@@ -70,15 +70,25 @@ MeMesh: 🧠 "I see you have JWT. Let's
 </tr>
 </table>
 
+---
+
+<div align="center">
+
+https://github.com/user-attachments/assets/a389bcd2-1563-4d91-b363-44cdba5f4e44
+
+</div>
+
+---
+
 <div align="center">
 
 **💡 Try it yourself:**
 
 ```bash
 # In Claude Code
-buddy-help                          # See all commands
-buddy-do "explain how MeMesh works"    # Watch it intelligently respond
-buddy-remember "project decisions"  # Query your project memory
+buddy-help                            # See all commands
+buddy-do "explain how MeMesh works"   # Watch it intelligently respond
+buddy-remember "project decisions"    # Query your project memory
 ```
 
 **📖 [Read User Guide](docs/USER_GUIDE.md)** • **🔧 [API Reference](docs/api/API_REFERENCE.md)**

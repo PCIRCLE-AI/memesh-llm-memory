@@ -450,17 +450,34 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
 
   const a2aSendTaskTool: MCPToolDefinition = {
     name: 'a2a-send-task',
-    description: '🤝 MeMesh A2A: Send a task to another A2A agent for execution.',
+    description: `🤝 MeMesh A2A: Send a task to another A2A agent for execution.
+
+**Workflow:**
+1. List agents with a2a-list-agents to get targetAgentId
+2. Send task with clear, specific description
+3. Track with returned taskId via a2a-get-task
+4. Receive result when complete
+
+**Example:**
+targetAgentId: "kts-macbook-xyz789"
+taskDescription: "Analyze error logs from last 24h and summarize top 3 issues"
+priority: "high"
+
+**Priority Levels:**
+• low: Background tasks
+• normal: Default priority
+• high: Important, time-sensitive
+• urgent: Critical, immediate attention`,
     inputSchema: {
       type: 'object' as const,
       properties: {
         targetAgentId: {
           type: 'string',
-          description: 'ID of the target agent to send the task to',
+          description: 'ID of the target agent (format: ${hostname}-${timestamp}). Get from a2a-list-agents',
         },
         taskDescription: {
           type: 'string',
-          description: 'Description of the task to execute',
+          description: 'Clear, specific task description. Be detailed about expected output and constraints.',
         },
         priority: {
           type: 'string',
@@ -517,10 +534,26 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
 
   const a2aListTasksTool: MCPToolDefinition = {
     name: 'a2a-list-tasks',
-    description: '📋 MeMesh A2A: List own tasks (tasks assigned to this agent).',
+    description: `📋 MeMesh A2A: List tasks assigned to you or another agent.
+
+**Task States:**
+• SUBMITTED: Received, not started
+• WORKING: Currently being processed
+• INPUT_REQUIRED: Waiting for additional input
+• COMPLETED: Successfully finished
+• FAILED: Execution failed
+• CANCELED: Canceled by sender
+• REJECTED: Rejected by agent
+
+**Default:** Lists YOUR tasks (agentId: "self")
+**Custom:** Specify agentId to list another agent's tasks`,
     inputSchema: {
       type: 'object' as const,
       properties: {
+        agentId: {
+          type: 'string',
+          description: 'Agent ID to list tasks for. Use "self" for your tasks (default: "self")',
+        },
         state: {
           type: 'string',
           enum: ['SUBMITTED', 'WORKING', 'INPUT_REQUIRED', 'COMPLETED', 'FAILED', 'CANCELED', 'REJECTED'],
@@ -528,13 +561,13 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
         },
         limit: {
           type: 'number',
-          description: 'Maximum number of tasks to return (1-100, optional)',
+          description: 'Maximum number of tasks to return (1-100, default: 10)',
           minimum: 1,
           maximum: 100,
         },
         offset: {
           type: 'number',
-          description: 'Number of tasks to skip (optional)',
+          description: 'Number of tasks to skip for pagination (optional, default: 0)',
           minimum: 0,
         },
       },
@@ -545,13 +578,25 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
       readOnlyHint: true,       // Read-only operation
       destructiveHint: false,
       idempotentHint: true,     // Same query returns same result
-      openWorldHint: false,     // Limited to own tasks
+      openWorldHint: false,     // Limited to tasks
     },
   };
 
   const a2aListAgentsTool: MCPToolDefinition = {
     name: 'a2a-list-agents',
-    description: '🤖 MeMesh A2A: List available A2A agents in the registry.',
+    description: `🤖 MeMesh A2A: List available A2A agents in the registry.
+
+Returns agents with format: {agentId, url, port, status, lastHeartbeat}
+
+**Agent ID Format:** \${hostname}-\${timestamp} (e.g., "kts-macbook-ml8cy34o")
+**Note:** Check-in name (e.g., "Lambda") ≠ Agent ID
+
+**Find Your Agent ID:** curl -s http://localhost:3000/a2a/agent-card | grep id
+
+**Status Types:**
+• active: Currently running (heartbeat < 5min ago)
+• inactive: Not running (no recent heartbeat)
+• stale: No heartbeat for 5+ minutes`,
     inputSchema: {
       type: 'object' as const,
       properties: {

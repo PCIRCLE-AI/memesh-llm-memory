@@ -19,7 +19,7 @@ import { logger } from '../utils/logger.js';
 import { getDataPath } from '../utils/PathResolver.js';
 import path from 'path';
 import { existsSync, mkdirSync } from 'fs';
-import { expandHome, getHomeDir, resolveUserPath } from '../utils/paths.js';
+import { expandHome, resolveUserPath } from '../utils/paths.js';
 
 /**
  * Simplified Configuration Class - All configuration read from environment variables

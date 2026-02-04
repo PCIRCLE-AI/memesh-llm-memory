@@ -18,13 +18,11 @@ import type {
   UnifiedMemory,
   MemoryType,
   SearchOptions,
-  MEMORY_TYPE_TO_ENTITY_TYPE,
-  ENTITY_TYPE_TO_MEMORY_TYPE,
 } from './types/unified-memory.js';
 import { v4 as uuidv4 } from 'uuid';
 import { createHash } from 'crypto';
 import { logger } from '../utils/logger.js';
-import { ValidationError, OperationError, NotFoundError } from '../errors/index.js';
+import { ValidationError, OperationError } from '../errors/index.js';
 import { SmartMemoryQuery } from './SmartMemoryQuery.js';
 import { AutoTagger } from './AutoTagger.js';
 

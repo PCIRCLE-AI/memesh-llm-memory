@@ -21,7 +21,6 @@ import {
   ProgressIndicator,
   AttributionMessage,
   SessionMetrics,
-  AttributionEntry,
 } from './types.js';
 
 /**

@@ -13,11 +13,6 @@
  * - Metrics for monitoring
  */
 
-import {
-  MessageType,
-  type ShutdownMessage,
-  type UpgradePendingMessage,
-} from './DaemonProtocol.js';
 import { logger } from '../../utils/logger.js';
 
 // ═══════════════════════════════════════════════════════════════════════════

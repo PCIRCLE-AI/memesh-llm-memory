@@ -20,13 +20,14 @@ import {
   parseExpiry,
 } from '../../../src/mcp/handlers/SecretHandlers.js';
 import type { SecretManager } from '../../../src/memory/SecretManager.js';
+import { createMockSecretManager } from '../../utils/mock-factories.js';
 
 describe('SecretHandlers', () => {
   let mockSecretManager: SecretManager;
 
   beforeEach(() => {
-    // Create mock SecretManager
-    mockSecretManager = {
+    // Create complete SecretManager mock with overrides for methods used in tests
+    mockSecretManager = createMockSecretManager({
       store: vi.fn().mockResolvedValue('secret-uuid-123'),
       getByName: vi.fn().mockResolvedValue('my-secret-value'),
       list: vi.fn().mockResolvedValue([
@@ -57,7 +58,9 @@ describe('SecretHandlers', () => {
         privacyNoticeKey: 'ccb.secret.privacyNotice',
       }),
       maskValue: vi.fn().mockReturnValue('sk-a****1234'),
-    } as unknown as SecretManager;
+      // Other methods (get, delete, update, updateMetadata, detectSecrets, etc.)
+      // are stubbed by createMockSecretManager but not used in these tests
+    });
   });
 
   afterEach(() => {

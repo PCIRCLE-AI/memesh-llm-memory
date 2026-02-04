@@ -8,13 +8,16 @@ import { createEntitiesTool } from '../create-entities';
 import type { KnowledgeGraph } from '../../../knowledge-graph/index.js';
 
 describe('create-entities Integration Tests', () => {
-  let mockKnowledgeGraph: KnowledgeGraph;
+  let mockKnowledgeGraph: Partial<KnowledgeGraph>;
 
   beforeEach(() => {
-    // Mock the KnowledgeGraph
+    // Create partial KnowledgeGraph mock
+    // Only mocking createEntity method which is used by the tool
     mockKnowledgeGraph = {
-      createEntity: vi.fn().mockResolvedValue(undefined),
-    } as any;
+      createEntity: vi.fn().mockReturnValue('entity-name'),
+      // Other methods (getEntity, searchEntities, createRelation, etc.) are not used
+      // in these integration tests and are intentionally not mocked
+    };
   });
 
   it('should create entity with auto-generated scope tag', async () => {
@@ -28,10 +31,10 @@ describe('create-entities Integration Tests', () => {
           },
         ],
       },
-      mockKnowledgeGraph
+      mockKnowledgeGraph as KnowledgeGraph // Safe: only uses createEntity
     );
 
-    const callArgs = mockKnowledgeGraph.createEntity.mock.calls[0][0];
+    const callArgs = (mockKnowledgeGraph.createEntity as any).mock.calls[0][0];
     const tags = callArgs.tags;
 
     // Should contain scope tag with project name (exact string format)
@@ -52,10 +55,10 @@ describe('create-entities Integration Tests', () => {
           },
         ],
       },
-      mockKnowledgeGraph
+      mockKnowledgeGraph as KnowledgeGraph // Safe: only uses createEntity
     );
 
-    const callArgs = mockKnowledgeGraph.createEntity.mock.calls[0][0];
+    const callArgs = (mockKnowledgeGraph.createEntity as any).mock.calls[0][0];
     const tags = callArgs.tags;
 
     // User tags should be preserved
@@ -79,10 +82,10 @@ describe('create-entities Integration Tests', () => {
           },
         ],
       },
-      mockKnowledgeGraph
+      mockKnowledgeGraph as KnowledgeGraph // Safe: only uses createEntity
     );
 
-    const callArgs = mockKnowledgeGraph.createEntity.mock.calls[0][0];
+    const callArgs = (mockKnowledgeGraph.createEntity as any).mock.calls[0][0];
     const tags = callArgs.tags;
 
     // Should still have auto-generated tags
@@ -110,10 +113,10 @@ describe('create-entities Integration Tests', () => {
           },
         ],
       },
-      mockKnowledgeGraph
+      mockKnowledgeGraph as KnowledgeGraph // Safe: only uses createEntity
     );
 
-    const callArgs = mockKnowledgeGraph.createEntity.mock.calls[0][0];
+    const callArgs = (mockKnowledgeGraph.createEntity as any).mock.calls[0][0];
 
     // Verify all fields are passed correctly
     expect(callArgs.name).toBe('Structured Entity');

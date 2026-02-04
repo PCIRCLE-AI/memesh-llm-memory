@@ -17,13 +17,81 @@
 
 ---
 
-</div>
+### 🎥 **實際效果展示**（互動示範）
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+#### 🔴 **沒有 MeMesh**
+
+```bash
+# Session 1（週一）
+你: "我們用 JWT 做身份驗證，因為..."
+Claude: "了解！✅"
+
+# Session 2（週二）
+你: "還記得我們的身份驗證方式嗎？"
+Claude: "抱歉，我沒有這個 context..."
+你: *再解釋一次所有東西* 😤
+
+# Session 3（週三）
+你: "我們的 JWT 實作..."
+Claude: "什麼 JWT 實作？"
+你: *暴怒離開* 💢
+```
+
+</td>
+<td width="50%" valign="top">
+
+#### ✅ **有 MeMesh**
+
+```bash
+# Session 1（週一）
+你: buddy-do "設定 JWT 身份驗證"
+MeMesh: ✅ 已實作 + 儲存到記憶
+
+# Session 2（週二）
+你: buddy-remember "auth"
+MeMesh: 📚 "JWT 身份驗證實作於 2024-01-15
+     ↳ Access tokens: 15 分鐘
+     ↳ Refresh tokens: 7 天
+     ↳ 金鑰輪替: 每月"
+
+# Session 3（任何時候，永遠）
+你: buddy-do "新增 OAuth"
+MeMesh: 🧠 "我看到你有 JWT。讓我們
+     把 OAuth 整合進去..."
+```
+
+</td>
+</tr>
+</table>
 
 ---
 
 <div align="center">
 
 https://github.com/user-attachments/assets/a389bcd2-1563-4d91-b363-44cdba5f4e44
+
+</div>
+
+---
+
+<div align="center">
+
+**💡 自己試試看：**
+
+```bash
+# 在 Claude Code 中
+buddy-help                           # 查看所有指令
+buddy-do "解釋 MeMesh 如何運作"      # 看它智能回應
+buddy-remember "專案決策"            # 查詢專案記憶
+```
+
+**📖 [閱讀使用指南](docs/USER_GUIDE.md)** • **🔧 [API 參考](docs/api/API_REFERENCE.md)**
+
+</div>
 
 </div>
 
@@ -403,13 +471,41 @@ buddy-remember "auth"  # 回傳 project-B 的 auth 決策
 
 ---
 
+## 🐛 回報問題 & 獲取協助
+
+遇到問題了嗎？我們來幫忙！
+
+### 📝 如何回報 Bug
+
+1. **檢查現有 Issues**：先看看是否有人已經回報
+   - [搜尋現有 Issues](https://github.com/PCIRCLE-AI/claude-code-buddy/issues)
+
+2. **建立新 Issue**：
+   - [開啟新 Issue](https://github.com/PCIRCLE-AI/claude-code-buddy/issues/new)
+   - 請包含：
+     - ✅ MeMesh 版本（執行 `npm list @pcircle/memesh` 查看）
+     - ✅ Node.js 版本（執行 `node --version`）
+     - ✅ 作業系統（Windows/macOS/Linux）
+     - ✅ 錯誤訊息（完整的錯誤 log）
+     - ✅ 重現步驟
+
+3. **緊急問題**：如果是安全相關問題，請私下回報至：security@pcircle.ai
+
+### 💬 社群支援
+
+- **一般問題**：[GitHub Discussions](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
+- **功能建議**：[Feature Requests](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions/categories/ideas)
+- **疑難排解**：[閱讀疑難排解指南](docs/TROUBLESHOOTING.md)
+
+---
+
 ## 🤝 貢獻
 
 我們很樂意你的幫助讓 MeMesh 變得更好！
 
-- 🐛 **發現 bug？**[開啟 issue](https://github.com/PCIRCLE-AI/memesh/issues/new)
-- 💡 **有想法？**[開始討論](https://github.com/PCIRCLE-AI/memesh/discussions)
-- 🛠️ **想寫程式？**查看 [Good First Issues](https://github.com/PCIRCLE-AI/memesh/labels/good%20first%20issue)
+- 🐛 **發現 bug？**[開啟 issue](https://github.com/PCIRCLE-AI/claude-code-buddy/issues/new)
+- 💡 **有想法？**[開始討論](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
+- 🛠️ **想寫程式？**查看 [Good First Issues](https://github.com/PCIRCLE-AI/claude-code-buddy/labels/good%20first%20issue)
 
 **貢獻指南**：[CONTRIBUTING.md](docs/CONTRIBUTING.md)
 
@@ -476,7 +572,7 @@ buddy-remember "auth"  # 回傳 project-B 的 auth 決策
 
 - [Model Context Protocol (MCP)](https://github.com/anthropics/mcp) - 基礎
 - [Claude Code](https://claude.com/claude-code) - 平台
-- 所有我們出色的[貢獻者](https://github.com/PCIRCLE-AI/memesh/graphs/contributors)和早期測試者
+- 所有我們出色的[貢獻者](https://github.com/PCIRCLE-AI/claude-code-buddy/graphs/contributors)和早期測試者
 
 ---
 
@@ -500,7 +596,7 @@ buddy-remember "auth"  # 回傳 project-B 的 auth 決策
 
 **別再重複自己。開始 vibe 吧。**
 
-[🚀 開始使用](#-2-分鐘快速開始) • [📖 閱讀文檔](docs/) • [💬 加入討論](https://github.com/PCIRCLE-AI/memesh/discussions)
+[🚀 開始使用](#-2-分鐘快速開始) • [📖 閱讀文檔](docs/) • [💬 加入討論](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
 
 ---
 

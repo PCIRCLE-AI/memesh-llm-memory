@@ -122,11 +122,22 @@ export async function executeBuddyDo(
       },
     });
 
+    // MeMesh memory reminder - prompts AI to save implementation details after completion
+    const memeshReminder = [
+      '',
+      '🧠 MeMesh Auto-Memory Reminder:',
+      'After completing this task, save key implementation details:',
+      '  create-entities with observations like:',
+      '  - What was implemented (specific configs, values, patterns)',
+      '  - Key decisions made and why',
+      '  - Any gotchas or important notes for future reference',
+    ].join('\n');
+
     return {
       content: [
         {
           type: 'text' as const,
-          text: formattedResponse,
+          text: formattedResponse + memeshReminder,
         },
       ],
     };

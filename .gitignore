@@ -271,6 +271,7 @@ test-*.ts
 test-*.js
 test-*.sh
 !scripts/test-installation.sh
+!scripts/test-mcp-server-standalone.sh
 debug-*.ts
 debug-*.js
 temp-*.ts

@@ -140,9 +140,10 @@ export class AutoTagger {
       if (tech.includes('+') || tech.includes('#') || tech.includes('.')) {
         // For special characters, escape them and use lookahead/lookbehind
         // to ensure they're not part of a larger word
+        // Note: # is not a special regex character, but we keep consistent escaping
         const escapedTech = tech
           .replace(/\+/g, '\\+')
-          .replace(/#/g, '#')
+          .replace(/#/g, '\\#')
           .replace(/\./g, '\\.');
         pattern = `(?<!\\w)${escapedTech}(?!\\w)`;
       } else {

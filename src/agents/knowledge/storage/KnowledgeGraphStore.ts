@@ -230,15 +230,22 @@ export class KnowledgeGraphStore {
 
   /**
    * ✅ FIX MAJOR-1: Sanitize search query to prevent LIKE wildcard issues
+   *
+   * Escapes LIKE special characters using backslash as escape character.
+   * The SQL query must use ESCAPE '\\' clause for this to work correctly.
    */
   private sanitizeSearchQuery(query: string): string {
-    // Escape LIKE special characters (% and _)
-    // Remove potentially problematic characters
+    // Define escape character (must match ESCAPE clause in SQL query)
+    const ESCAPE_CHAR = '\\';
+
+    // Escape LIKE special characters (%, _, and the escape char itself)
+    // Order matters: escape the escape character first to avoid double-escaping
     return query
-      .replace(/%/g, '\\%')  // Escape % wildcard
-      .replace(/_/g, '\\_')  // Escape _ wildcard
+      .replace(/\\/g, ESCAPE_CHAR + ESCAPE_CHAR)  // Escape backslash first
+      .replace(/%/g, ESCAPE_CHAR + '%')           // Escape % wildcard
+      .replace(/_/g, ESCAPE_CHAR + '_')           // Escape _ wildcard
       .replace(/\[/g, '')    // Remove [
-      .replace(/\]/g, '')    // Remove ]
+      .replace(/]/g, '')     // Remove ]
       .replace(/</g, '')     // Remove <
       .replace(/>/g, '')     // Remove >
       .replace(/{/g, '')     // Remove {

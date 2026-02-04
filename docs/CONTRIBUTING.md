@@ -776,10 +776,10 @@ git push origin feature/my-awesome-feature
 <!-- What actually happens -->
 
 ## Environment
-- MeMesh Version: 2.2.0
-- Node.js Version: 20.0.0
-- OS: macOS 13.0
-- Claude Code Version: 1.5.0
+- MeMesh Version: [your version]
+- Node.js Version: [your version]
+- OS: [your OS]
+- Claude Code Version: [your version]
 
 ## Error Logs
 ```
@@ -920,6 +920,6 @@ By contributing, you agree that your contributions will be licensed under the AG
 
 ---
 
-**Version**: 2.2.0
-**Last Updated**: 2026-01-20
+**Version**: 2.6.6
+**Last Updated**: 2026-02-04
 **Maintainer**: MeMesh Team

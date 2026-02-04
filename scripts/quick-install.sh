@@ -121,8 +121,7 @@ else
     echo '         "command": "node",'
     echo "         \"args\": [\"$PROJECT_DIR/.claude-plugin/memesh/dist/mcp/server-bootstrap.js\"],"
     echo '         "env": {'
-    echo '           "NODE_ENV": "production",'
-    echo '           "DISABLE_MCP_WATCHDOG": "1"'
+    echo '           "NODE_ENV": "production"'
     echo '         }'
     echo '       }'
     echo '     }'

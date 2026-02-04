@@ -54,8 +54,7 @@ function createServerConfig(serverPath, a2aToken = null) {
     command: 'node',
     args: [serverPath],
     env: {
-      NODE_ENV: 'production',
-      DISABLE_MCP_WATCHDOG: '1'  // Critical: Prevents 3-second timeout on startup
+      NODE_ENV: 'production'
     }
   };
 
@@ -195,8 +194,7 @@ export function configureMcpSettings(options = {}) {
     command: 'node',
     args: [serverPath],
     env: {
-      NODE_ENV: 'production',
-      DISABLE_MCP_WATCHDOG: '1'
+      NODE_ENV: 'production'
     }
   };
 

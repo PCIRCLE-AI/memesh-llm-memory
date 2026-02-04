@@ -32,7 +32,7 @@ if claude mcp list | grep -E -q "memesh|memesh|claude-code-buddy"; then
     echo -e "${GREEN}✓${NC} MeMesh is registered in MCP server list"
 else
     echo -e "${RED}✗${NC} MeMesh is not registered"
-    echo "Please run: claude mcp add memesh --scope user -e NODE_ENV=production -e MEMESH_DATA_DIR=\$HOME/.memesh -e LOG_LEVEL=info -e DISABLE_MCP_WATCHDOG=1 -- node $(pwd)/dist/mcp/server-bootstrap.js"
+    echo "Please run: claude mcp add memesh --scope user -e NODE_ENV=production -e MEMESH_DATA_DIR=\$HOME/.memesh -e LOG_LEVEL=info -- node $(pwd)/dist/mcp/server-bootstrap.js"
     exit 1
 fi
 
@@ -44,7 +44,7 @@ if claude mcp list | grep -E "memesh|memesh|claude-code-buddy" | grep -q "✓ Co
 else
     echo -e "${RED}✗${NC} MeMesh MCP server failed to connect"
     echo "Please check logs and verify the build is up to date"
-    echo "Make sure DISABLE_MCP_WATCHDOG=1 is set in the MCP server environment"
+    echo "The watchdog timeout is 15 seconds by default (configurable via MCP_WATCHDOG_TIMEOUT_MS)"
     exit 1
 fi
 

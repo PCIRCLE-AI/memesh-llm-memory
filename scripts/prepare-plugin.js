@@ -258,8 +258,7 @@ try {
     command: 'node',
     args: [mcpServerPath],
     env: {
-      NODE_ENV: 'production',
-      DISABLE_MCP_WATCHDOG: '1'
+      NODE_ENV: 'production'
     }
   };
 

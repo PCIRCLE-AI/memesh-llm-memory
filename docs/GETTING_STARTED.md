@@ -14,6 +14,7 @@ Every project you work on, every decision you make, every bug you fix—Claude r
 
 ✅ **Remembers Everything**: Architecture decisions, design patterns, bugs fixed, conventions used
 ✅ **Smart Task Routing**: Automatically detects what kind of work you need and applies the right expertise
+✅ **Multi-Session Support**: Share memory across multiple Claude Code windows via singleton daemon
 ✅ **Zero Configuration**: Works out of the box with sensible defaults
 ✅ **100% Local**: Your code and decisions never leave your machine
 
@@ -407,6 +408,6 @@ Install MeMesh, run `buddy-help`, and never explain your architecture twice agai
 
 ---
 
-**Version**: 2.6.3
+**Version**: 2.6.6
 **Last Updated**: 2026-02-03
 **Not affiliated with Anthropic PBC** • Independent open-source project

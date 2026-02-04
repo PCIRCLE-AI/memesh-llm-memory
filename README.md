@@ -70,6 +70,25 @@ MeMesh: 🧠 "I see you have JWT. Let's
 </tr>
 </table>
 
+---
+
+### 📹 **Video Demo** (38 seconds)
+
+Watch MeMesh's core features in action:
+
+**[▶️ Watch Demo Video](./media/demo-video/out/memesh-demo.mp4)**
+
+Showcasing:
+- 🤝 **A2A Collaboration** - Multi-agent coordination
+- 🧠 **Memory Management** - Knowledge graph storage
+- 🔐 **Secrets Management** - Secure credential storage
+- ❤️ **Health Monitoring** - Real-time system status
+- ⚡ **Smart Workflows** - Automated task execution
+
+> Built with [Remotion](https://remotion.dev) • Source: `media/demo-video/`
+
+---
+
 <div align="center">
 
 **💡 Try it yourself:**

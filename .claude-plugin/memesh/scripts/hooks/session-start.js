@@ -34,7 +34,7 @@ import path from 'path';
 // ============================================================================
 
 const CCB_HEARTBEAT_FILE = path.join(STATE_DIR, 'ccb-heartbeat.json');
-const CLAUDE_CODE_CONFIG_FILE = path.join(HOME_DIR, '.claude.json');
+const MCP_SETTINGS_FILE = path.join(HOME_DIR, '.claude', 'mcp_settings.json');
 const RECOMMENDATIONS_FILE = path.join(STATE_DIR, 'recommendations.json');
 const SESSION_CONTEXT_FILE = path.join(STATE_DIR, 'session-context.json');
 const CURRENT_SESSION_FILE = path.join(STATE_DIR, 'current-session.json');
@@ -55,10 +55,10 @@ function checkCCBAvailability() {
     serverPath: null,
   };
 
-  // Check if MeMesh is configured in Claude Code's global config
+  // Check if MeMesh is configured in MCP settings
   try {
-    if (fs.existsSync(CLAUDE_CODE_CONFIG_FILE)) {
-      const claudeConfig = JSON.parse(fs.readFileSync(CLAUDE_CODE_CONFIG_FILE, 'utf-8'));
+    if (fs.existsSync(MCP_SETTINGS_FILE)) {
+      const mcpSettings = JSON.parse(fs.readFileSync(MCP_SETTINGS_FILE, 'utf-8'));
 
       // Check for MeMesh and legacy names (backward compatibility)
       const ccbNames = [
@@ -70,9 +70,9 @@ function checkCCBAvailability() {
       ];
 
       for (const name of ccbNames) {
-        if (claudeConfig.mcpServers && claudeConfig.mcpServers[name]) {
+        if (mcpSettings.mcpServers && mcpSettings.mcpServers[name]) {
           result.configured = true;
-          result.serverPath = claudeConfig.mcpServers[name].args?.[0] || 'configured';
+          result.serverPath = mcpSettings.mcpServers[name].args?.[0] || 'configured';
           break;
         }
       }
@@ -114,7 +114,7 @@ function displayCCBStatus(ccbStatus) {
     console.log('  ⚠️  MeMesh MCP Server is NOT configured!');
     console.log('');
     console.log('  MeMesh provides memory management and knowledge graph tools.');
-    console.log('  To configure MeMesh, add it to ~/.claude.json under "mcpServers"');
+    console.log('  To configure MeMesh, add it to ~/.claude/mcp_settings.json');
     console.log('');
     console.log('  Available MeMesh tools when connected:');
     console.log('    • buddy-remember: Query past knowledge');

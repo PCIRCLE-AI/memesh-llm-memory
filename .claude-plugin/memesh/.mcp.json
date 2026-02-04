@@ -6,7 +6,7 @@
     ],
     "env": {
       "NODE_ENV": "production",
-      "MEMESH_A2A_TOKEN": "efdd6ab34a7e858dbfb5ff9a207f07c0f203259ccba9eba34caf96fcb10eb17a"
+      "MEMESH_A2A_TOKEN": "23a74a1be2320dc507dd3b2a0695d76885a8f15f8066465eeca3cf2dd10ac8a5"
     }
   }
 }

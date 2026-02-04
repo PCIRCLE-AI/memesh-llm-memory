@@ -4,7 +4,7 @@
  *
  * 1. Generates A2A token automatically
  * 2. Creates .env file with token
- * 3. Configures ~/.claude.json (Claude Code's global config, auto-registers MCP server)
+ * 3. Configures ~/.claude/mcp_settings.json (auto-registers MCP server)
  * 4. Displays installation guide
  */
 
@@ -57,13 +57,14 @@ if (!a2aToken) {
 }
 
 // ============================================================================
-// Step 2: Configure ~/.claude.json (Claude Code's global config)
+// Step 2: Configure ~/.claude/mcp_settings.json
 // ============================================================================
 let mcpConfigured = false;
 let mcpConfigPath = '';
 
 try {
-  mcpConfigPath = join(homedir(), '.claude.json');
+  const claudeDir = join(homedir(), '.claude');
+  mcpConfigPath = join(claudeDir, 'mcp_settings.json');
 
   // Determine the server path based on installation context
   // For npm global install, use npx; for local dev, use absolute path
@@ -78,9 +79,12 @@ try {
     serverPath = join(projectRoot, 'dist', 'mcp', 'server-bootstrap.js');
   }
 
+  // Create ~/.claude directory if it doesn't exist
+  if (!existsSync(claudeDir)) {
+    mkdirSync(claudeDir, { recursive: true });
+  }
+
   // Read existing config or create new one
-  // IMPORTANT: ~/.claude.json contains many other Claude Code settings,
-  // so we must preserve the entire file and only update mcpServers
   let mcpConfig = { mcpServers: {} };
   if (existsSync(mcpConfigPath)) {
     try {
@@ -98,28 +102,23 @@ try {
   }
 
   // Configure memesh entry
-  const dataDir = join(homedir(), '.memesh');
   if (isGlobalInstall) {
     // For npm global install, use npx to run the package
     mcpConfig.mcpServers.memesh = {
-      type: 'stdio',
       command: 'npx',
       args: ['-y', '@pcircle/memesh'],
       env: {
         NODE_ENV: 'production',
-        MEMESH_DATA_DIR: dataDir,
         MEMESH_A2A_TOKEN: a2aToken
       }
     };
   } else {
     // For local development, use node with absolute path
     mcpConfig.mcpServers.memesh = {
-      type: 'stdio',
       command: 'node',
       args: [serverPath],
       env: {
         NODE_ENV: 'production',
-        MEMESH_DATA_DIR: dataDir,
         MEMESH_A2A_TOKEN: a2aToken
       }
     };
@@ -171,7 +170,7 @@ ${chalk.bold('Quick Start (2 Steps):')}
 ${chalk.bold('Quick Start (3 Steps):')}
 
   ${chalk.yellow('1.')} ${chalk.bold('Configure MCP Client')}
-     Add to ~/.claude.json under "mcpServers" key (see below)
+     Add to ~/.claude/mcp_settings.json (see below)
 
   ${chalk.yellow('2.')} ${chalk.bold('Restart Claude Code')}
      Completely quit and reopen to load the MCP server
@@ -181,16 +180,17 @@ ${chalk.bold('Quick Start (3 Steps):')}
 
 ${chalk.bold('Manual Configuration:')}
 
-${chalk.dim('Add to ~/.claude.json under "mcpServers":')}
+${chalk.dim('Add to ~/.claude/mcp_settings.json:')}
 
-  ${chalk.cyan('"memesh"')}: {
-    ${chalk.cyan('"type"')}: ${chalk.green('"stdio"')},
-    ${chalk.cyan('"command"')}: ${chalk.green('"npx"')},
-    ${chalk.cyan('"args"')}: [${chalk.green('"-y"')}, ${chalk.green('"@pcircle/memesh"')}],
-    ${chalk.cyan('"env"')}: {
-      ${chalk.cyan('"NODE_ENV"')}: ${chalk.green('"production"')},
-      ${chalk.cyan('"MEMESH_DATA_DIR"')}: ${chalk.green('"~/.memesh"')},
-      ${chalk.cyan('"MEMESH_A2A_TOKEN"')}: ${chalk.green(`"${a2aToken}"`)}
+  {
+    ${chalk.cyan('"mcpServers"')}: {
+      ${chalk.cyan('"memesh"')}: {
+        ${chalk.cyan('"command"')}: ${chalk.green('"npx"')},
+        ${chalk.cyan('"args"')}: [${chalk.green('"-y"')}, ${chalk.green('"@pcircle/memesh"')}],
+        ${chalk.cyan('"env"')}: {
+          ${chalk.cyan('"MEMESH_A2A_TOKEN"')}: ${chalk.green(`"${a2aToken}"`)}
+        }
+      }
     }
   }`;
 

@@ -4,32 +4,31 @@
  * MeMesh Installation Helpers
  *
  * Provides utility functions for:
- * - Creating/updating ~/.claude.json (Claude Code's global config)
+ * - Creating/updating ~/.claude/mcp_settings.json
  * - Managing MCP server configuration
  * - Verifying installation
  *
- * IMPORTANT: Claude Code stores global MCP servers in ~/.claude.json
- * under the "mcpServers" key. This file also contains other Claude Code
- * settings, so we must preserve existing content when updating.
+ * IMPORTANT: The primary config file is ~/.claude/mcp_settings.json
+ * This is what Claude Code's session-start hook checks for.
  */
 
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
-// Claude Code's global config file - MCP servers are stored under "mcpServers" key
-const CLAUDE_CODE_CONFIG_PATH = path.join(os.homedir(), '.claude.json');
+// Primary MCP settings file - this is what Claude Code checks
+const MCP_SETTINGS_PATH = path.join(os.homedir(), '.claude', 'mcp_settings.json');
 
 // Legacy paths for backward compatibility checking
 const LEGACY_CONFIG_PATHS = [
-  path.join(os.homedir(), '.claude', 'mcp_settings.json'),
   path.join(os.homedir(), '.claude', 'config.json'),
+  path.join(os.homedir(), '.claude.json'),
   path.join(os.homedir(), '.config', 'claude', 'claude_desktop_config.json'),
 ];
 
 /**
  * Resolve the config path to use
- * Priority: env var > preferred path > CLAUDE_CODE_CONFIG_PATH
+ * Priority: env var > preferred path > MCP_SETTINGS_PATH
  */
 function resolveConfigPath(preferredPath) {
   if (preferredPath) {
@@ -42,8 +41,9 @@ function resolveConfigPath(preferredPath) {
     return envPath;
   }
 
-  // Use ~/.claude.json - Claude Code's global config file
-  return CLAUDE_CODE_CONFIG_PATH;
+  // Always use MCP_SETTINGS_PATH (~/.claude/mcp_settings.json) for Claude Code
+  // This is what the session-start hook checks for
+  return MCP_SETTINGS_PATH;
 }
 
 /**
@@ -67,7 +67,7 @@ function createServerConfig(serverPath, a2aToken = null) {
 }
 
 /**
- * Add MeMesh to Claude Code's global config (~/.claude.json)
+ * Add MeMesh to MCP settings file (~/.claude/mcp_settings.json)
  *
  * @param {string} serverPath - Path to server-bootstrap.js
  * @param {string} preferredConfigPath - Optional custom config path
@@ -141,7 +141,7 @@ function addToMcpConfig(serverPath, preferredConfigPath, a2aToken = null) {
 }
 
 /**
- * Configure MeMesh in ~/.claude.json
+ * Configure MeMesh in ~/.claude/mcp_settings.json
  * This is the main function to be called from other scripts
  *
  * @param {Object} options
@@ -157,7 +157,7 @@ export function configureMcpSettings(options = {}) {
     silent = false
   } = options;
 
-  const configPath = CLAUDE_CODE_CONFIG_PATH;
+  const configPath = MCP_SETTINGS_PATH;
 
   if (!silent) {
     console.log('\n📝 Configuring MCP settings...');
@@ -238,11 +238,11 @@ export function configureMcpSettings(options = {}) {
 }
 
 /**
- * Check if MeMesh is configured in ~/.claude.json
+ * Check if MeMesh is configured in mcp_settings.json
  * @returns {Object} - { configured: boolean, serverPath?: string }
  */
 export function checkMcpConfiguration() {
-  const configPath = CLAUDE_CODE_CONFIG_PATH;
+  const configPath = MCP_SETTINGS_PATH;
 
   if (!fs.existsSync(configPath)) {
     return { configured: false };
@@ -313,7 +313,7 @@ export function readA2AToken(envPath) {
  * @returns {string}
  */
 export function getMcpSettingsPath() {
-  return CLAUDE_CODE_CONFIG_PATH;
+  return MCP_SETTINGS_PATH;
 }
 
 // ============================================================================
@@ -364,7 +364,7 @@ switch (command) {
       process.exit(0);
     } else {
       console.log('❌ MeMesh is NOT configured in MCP settings');
-      console.log(`   Expected config: ${CLAUDE_CODE_CONFIG_PATH}`);
+      console.log(`   Expected config: ${MCP_SETTINGS_PATH}`);
       process.exit(1);
     }
     break;
@@ -377,7 +377,7 @@ switch (command) {
     console.log('Usage: node install-helpers.js <command> [args]');
     console.log('');
     console.log('Commands:');
-    console.log('  configure <path> [token]  - Configure MeMesh in ~/.claude.json');
+    console.log('  configure <path> [token]  - Configure MeMesh in ~/.claude/mcp_settings.json');
     console.log('  verify [base-path]        - Verify installation files exist');
     console.log('  check                     - Check if MeMesh is configured');
     console.log('  help                      - Show this help');

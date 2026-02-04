@@ -209,71 +209,56 @@ if (!allFilesExist) {
   process.exit(1);
 }
 
-// Step 8: Configure ~/.claude.json (Claude Code's global config)
-console.log('\n8️⃣ Configuring ~/.claude.json...');
+// Step 8: Configure ~/.claude/mcp_settings.json
+console.log('\n8️⃣ Configuring ~/.claude/mcp_settings.json...');
 
 const mcpServerPath = join(pluginRootDir, 'dist', 'mcp', 'server-bootstrap.js');
 const mcpServerName = 'memesh';
-const claudeConfigPath = join(homedir(), '.claude.json');
+const mcpSettingsPath = join(homedir(), '.claude', 'mcp_settings.json');
 let mcpSettingsConfigured = false;
 
-// Read plugin's .mcp.json as the source of truth for MCP server config
-const pluginMcpJsonPath = join(pluginRootDir, '.mcp.json');
-let pluginMcpConfig = null;
-if (existsSync(pluginMcpJsonPath)) {
-  try {
-    pluginMcpConfig = JSON.parse(readFileSync(pluginMcpJsonPath, 'utf-8'));
-    console.log(`   ✅ Read plugin config from: ${pluginMcpJsonPath}`);
-  } catch (e) {
-    console.log(`   ⚠️  Could not parse plugin .mcp.json: ${e.message}`);
-  }
-}
-
-// Extract A2A token from plugin's .mcp.json (source of truth)
-let a2aToken = pluginMcpConfig?.memesh?.env?.MEMESH_A2A_TOKEN || null;
-
-// Fallback: check .env file if not in plugin config
-if (!a2aToken) {
-  const envPath = join(projectRoot, '.env');
-  if (existsSync(envPath)) {
-    const envContent = readFileSync(envPath, 'utf-8');
-    const tokenMatch = envContent.match(/^MEMESH_A2A_TOKEN=(.+)$/m);
-    if (tokenMatch && tokenMatch[1]) {
-      a2aToken = tokenMatch[1].trim();
-    }
+// Read A2A token
+let a2aToken = null;
+const envPath = join(projectRoot, '.env');
+if (existsSync(envPath)) {
+  const envContent = readFileSync(envPath, 'utf-8');
+  const tokenMatch = envContent.match(/^MEMESH_A2A_TOKEN=(.+)$/m);
+  if (tokenMatch && tokenMatch[1]) {
+    a2aToken = tokenMatch[1].trim();
   }
 }
 
 try {
+  // Ensure ~/.claude directory exists
+  const claudeDir = join(homedir(), '.claude');
+  if (!existsSync(claudeDir)) {
+    mkdirSync(claudeDir, { recursive: true });
+    console.log(`   ✅ Created: ${claudeDir}`);
+  }
+
   // Read existing config or create new one
-  // IMPORTANT: ~/.claude.json contains many other Claude Code settings,
-  // so we must preserve the entire file and only update mcpServers
-  let claudeConfig = { mcpServers: {} };
-  if (existsSync(claudeConfigPath)) {
+  let mcpConfig = { mcpServers: {} };
+  if (existsSync(mcpSettingsPath)) {
     try {
-      const existingContent = readFileSync(claudeConfigPath, 'utf-8').trim();
+      const existingContent = readFileSync(mcpSettingsPath, 'utf-8').trim();
       if (existingContent) {
-        claudeConfig = JSON.parse(existingContent);
-        if (!claudeConfig.mcpServers) {
-          claudeConfig.mcpServers = {};
+        mcpConfig = JSON.parse(existingContent);
+        if (!mcpConfig.mcpServers) {
+          mcpConfig.mcpServers = {};
         }
       }
     } catch (e) {
-      console.log('   ⚠️  Could not parse existing config, will add mcpServers key');
-      // Don't overwrite entire file, just ensure mcpServers exists
-      claudeConfig = { mcpServers: {} };
+      console.log('   ⚠️  Could not parse existing config, creating new one');
+      mcpConfig = { mcpServers: {} };
     }
   }
 
   // Configure memesh entry with absolute path (for local dev)
-  const dataDir = join(homedir(), '.memesh');
   const serverConfig = {
-    type: 'stdio',
     command: 'node',
     args: [mcpServerPath],
     env: {
-      NODE_ENV: 'production',
-      MEMESH_DATA_DIR: dataDir
+      NODE_ENV: 'production'
     }
   };
 
@@ -282,25 +267,25 @@ try {
     serverConfig.env.MEMESH_A2A_TOKEN = a2aToken;
   }
 
-  claudeConfig.mcpServers.memesh = serverConfig;
+  mcpConfig.mcpServers.memesh = serverConfig;
 
   // Remove legacy entry if exists
-  if (claudeConfig.mcpServers['claude-code-buddy']) {
-    delete claudeConfig.mcpServers['claude-code-buddy'];
+  if (mcpConfig.mcpServers['claude-code-buddy']) {
+    delete mcpConfig.mcpServers['claude-code-buddy'];
     console.log('   ✅ Removed legacy "claude-code-buddy" entry');
   }
 
   // Write config
-  writeFileSync(claudeConfigPath, JSON.stringify(claudeConfig, null, 2) + '\n', 'utf-8');
+  writeFileSync(mcpSettingsPath, JSON.stringify(mcpConfig, null, 2) + '\n', 'utf-8');
   mcpSettingsConfigured = true;
-  console.log(`   ✅ MCP settings configured at: ${claudeConfigPath}`);
+  console.log(`   ✅ MCP settings configured at: ${mcpSettingsPath}`);
   console.log(`   ✅ Server path: ${mcpServerPath}`);
   if (a2aToken) {
     console.log(`   🔑 A2A token: ${a2aToken.substring(0, 8)}...${a2aToken.substring(a2aToken.length - 8)}`);
   }
 } catch (error) {
   console.log(`   ⚠️  Could not configure MCP settings: ${error.message}`);
-  console.log('   You may need to manually configure ~/.claude.json');
+  console.log('   You may need to manually configure ~/.claude/mcp_settings.json');
 }
 
 // Final success message

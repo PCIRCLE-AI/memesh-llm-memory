@@ -383,15 +383,47 @@ Week 8│  You: "Why did we choose JWT again?"
 ## 🛠️ Advanced Features
 
 <details>
-<summary><strong>Auto-Memory System</strong></summary>
+<summary><strong>Auto-Memory Hooks</strong></summary>
 
-When you use `buddy-do`, MeMesh automatically records:
-- ✅ Task goals and outcomes
-- ✅ Technical decisions and reasoning
-- ✅ Errors encountered and solutions
-- ✅ Development milestones
+**What is it?** MeMesh remembers what you did in your last coding session and shows you a summary when you start a new one.
 
-**You don't think about memory. MeMesh does.**
+### How It Works (Simple Version)
+
+1. **When you open Claude Code** → MeMesh shows what you did last time
+2. **While you work** → MeMesh quietly tracks your progress
+3. **When you close Claude Code** → MeMesh saves a summary for next time
+
+### What You'll See
+
+When you start a new session, you'll see something like:
+
+```
+🧠 MeMesh Memory Recall
+
+  🕐 Last session: 2 hours ago (45 minutes)
+
+  📋 What you did:
+    📁 Changed 5 files in src/auth/
+    ✅ Made 3 git commits
+    💡 Implemented JWT refresh tokens
+```
+
+**That's it!** No setup needed. MeMesh handles everything automatically.
+
+### What Gets Saved
+
+| Icon | What | Example |
+|------|------|---------|
+| 📁 | Files you changed | `src/auth/login.ts` |
+| ✅ | Commits you made | `feat: add login` |
+| 💡 | Things you learned | `Use async/await here` |
+| ⚠️ | Problems you hit | `API timeout issue` |
+
+### Good to Know
+
+- Saves automatically every 250K tokens (about 1-2 hours of work)
+- Keeps memories for 7 days, then cleans up old ones
+- Only works in Claude Code (not Cursor yet)
 
 </details>
 

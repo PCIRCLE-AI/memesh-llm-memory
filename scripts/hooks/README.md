@@ -1,247 +1,161 @@
-# A2A Collaboration Hook
+# MeMesh Hooks for Claude Code
 
-This directory contains the Agent-to-Agent (A2A) collaboration hook for Claude Code sessions.
+**What are these?** Small scripts that run automatically when you use Claude Code. They help MeMesh remember what you did.
 
-## Overview
+## What They Do
 
-The A2A collaboration hook enables multiple Claude Code agents to work together by:
-- Auto-assigning unique agent names (Alpha, Beta, Gamma, etc.)
-- Broadcasting agent status when sessions start
-- Checking for pending tasks assigned to this agent
-- Reporting task completion with commit hashes
+| When | What Happens |
+|------|--------------|
+| **You open Claude Code** | Shows what you did in your last session |
+| **You use tools** | Quietly tracks your work |
+| **You close Claude Code** | Saves a summary for next time |
 
 ## Installation
 
-### Quick Install
-
 ```bash
-cd /Users/ktseng/Developer/Projects/claude-code-buddy
-./scripts/install-a2a-hook.sh
+# Copy hooks to Claude Code
+cp scripts/hooks/*.js ~/.claude/hooks/
+chmod +x ~/.claude/hooks/*.js
 ```
 
-The installation script will:
-1. Copy `a2a-collaboration-hook.js` to `~/.claude/hooks/`
-2. Update or create `~/.claude/hooks/session-start.js` to integrate the hook
-3. Make all hooks executable
-4. Verify the installation
+**Done!** Restart Claude Code to activate.
 
-### Manual Installation
+---
 
-If you prefer to install manually:
+## Auto-Memory (The Main Feature)
 
-```bash
-# 1. Copy the hook
-cp scripts/hooks/a2a-collaboration-hook.js ~/.claude/hooks/
-
-# 2. Make it executable
-chmod +x ~/.claude/hooks/a2a-collaboration-hook.js
-
-# 3. Update session-start.js
-# Add this import at the top:
-import { initA2ACollaboration } from './a2a-collaboration-hook.js';
-
-# Add this call in your sessionStart() function:
-const agentIdentity = initA2ACollaboration();
-```
-
-## Features
-
-### 1. Agent Check-in System
-
-When a Claude Code session starts, the hook automatically:
-- Picks an available agent name from the Greek alphabet pool
-- Generates a unique agent ID
-- Registers to the knowledge graph
-- Broadcasts online status
-
-Example output:
-```
-═══════════════════════════════════════════════════════
-  👋 A2A Collaboration System
-═══════════════════════════════════════════════════════
-
-  📢 BROADCAST: Alpha is now online!
-
-     🆔 Name: Alpha
-     🔖 Agent ID: macbook-pro-lmn8x9
-     🎯 Specialization: General (awaiting assignment)
-     ⏰ Checked in: 2026-02-04 12:00:00
-```
-
-### 2. Task Reception
-
-Automatically checks for pending tasks assigned to this agent and displays them on session start.
-
-### 3. Specialization Assignment
-
-Assign a specialization to your agent:
+### How It Works
 
 ```
-"Alpha，你負責前端開發"
-"Beta，你負責後端 API"
+Open Claude Code     →     Work normally     →     Close Claude Code
+      ↓                         ↓                        ↓
+See last session         MeMesh watches           Saves summary
+   summary               (you won't notice)        for next time
 ```
 
-### 4. Available A2A Actions
-
-#### Send Task to Another Agent
-```bash
-a2a-send-task targetAgentId="beta-xyz" taskDescription="Implement user login API"
-```
-
-#### List Your Tasks
-```bash
-a2a-list-tasks
-```
-
-#### Report Task Completion
-```bash
-a2a-report-result taskId="task-123" result="Done! Commit: abc1234" success=true
-```
-
-## File Structure
+### What You'll See on Startup
 
 ```
-scripts/hooks/
-├── a2a-collaboration-hook.js    # Main hook implementation
-└── README.md                    # This file
+🧠 MeMesh Memory Recall
 
-~/.claude/hooks/                 # Installed location
-├── a2a-collaboration-hook.js    # Copied from scripts/hooks/
-└── session-start.js             # Updated to call the hook
+  🕐 Last session: 2 hours ago
+  ⏱️  Duration: 45 minutes
+  🛠️  Tools used: 127
+
+  📋 Key Points:
+    📁 5 files changed in src/auth/
+    ✅ 3 commits made
+    💡 Added JWT refresh tokens
 ```
 
-## How It Works
+### What Gets Tracked
 
-### On Session Start
+| Symbol | Meaning |
+|--------|---------|
+| 📁 | Files you changed |
+| ✅ | Git commits you made |
+| 💡 | Things you learned |
+| ⚠️ | Problems you ran into |
+| 🎯 | Decisions you made |
 
-1. **Check Existing Identity**: Loads existing agent identity if session is less than 1 hour old
-2. **Pick Available Name**: Scans knowledge graph for used names and picks an available one
-3. **Register**: Creates entity in knowledge graph with observations
-4. **Check Tasks**: Queries A2A task database for pending tasks
-5. **Display**: Shows welcome message with agent info and available actions
+---
 
-### Agent Identity
+## A2A (Multi-Agent Feature)
 
-Stored in `~/.claude/state/agent-identity.json`:
+**What is it?** Run multiple Claude Code windows that can talk to each other.
 
-```json
-{
-  "name": "Alpha",
-  "agentId": "macbook-pro-lmn8x9",
-  "specialization": "Frontend Development",
-  "sessionStart": "2026-02-04T12:00:00.000Z",
-  "status": "ONLINE"
-}
-```
+### How It Works
 
-### Knowledge Graph Registration
+1. Open first Claude Code → Gets name "Alpha"
+2. Open second Claude Code → Gets name "Beta"
+3. Alpha can send tasks to Beta and vice versa
 
-The hook creates an entity in CCB's knowledge graph:
+### What You'll See
 
 ```
-Entity: "Online Agent: Alpha"
-Type: session_identity
-Observations:
-  - Agent ID: macbook-pro-lmn8x9
-  - Name: Alpha
-  - Status: ONLINE
-  - Specialization: Frontend Development
-  - Checked in: 2026-02-04T12:00:00.000Z
+🤖 MeMesh A2A Collaboration
+
+  You are: Alpha
+  Other agents online: Beta, Gamma
+
+  Commands:
+    a2a-send-task    - Send work to another agent
+    a2a-list-tasks   - See your tasks
 ```
 
-## Idempotency
-
-The installation script is safe to run multiple times:
-- Won't duplicate imports in session-start.js
-- Updates hook to latest version if changed
-- Preserves existing session-start.js functionality
-- Creates backup before modifications
+---
 
 ## Troubleshooting
 
-### Hook Not Running
+### "Hooks not working"
 
-1. Check if session-start.js exists and is executable:
 ```bash
-ls -la ~/.claude/hooks/session-start.js
+# Check if hooks exist
+ls ~/.claude/hooks/
+
+# Re-copy them
+cp scripts/hooks/*.js ~/.claude/hooks/
 ```
 
-2. Verify the integration:
+### "No memory showing"
+
 ```bash
-grep "initA2ACollaboration" ~/.claude/hooks/session-start.js
+# Check if database exists
+ls ~/.claude-code-buddy/knowledge-graph.db
 ```
 
-3. Re-run the installer:
-```bash
-./scripts/install-a2a-hook.sh
-```
+### "A2A not connecting"
 
-### Agent Name Always the Same
-
-Session identities are cached for 1 hour. To force a new name:
 ```bash
+# Reset agent identity
 rm ~/.claude/state/agent-identity.json
 ```
 
-### No Pending Tasks Shown
+---
 
-Make sure the A2A task database exists:
-```bash
-ls -la ~/.claude-code-buddy/a2a-tasks.db
+## Limitations
+
+| What | Details |
+|------|---------|
+| **Claude Code only** | Doesn't work in Cursor |
+| **7-day memory** | Old memories auto-deleted |
+| **Local only** | No sync between computers |
+
+---
+
+## Files Explained
+
+```
+~/.claude/hooks/
+├── session-start.js    ← Runs when you open Claude Code
+├── post-tool-use.js    ← Runs after each tool (quietly)
+├── stop.js             ← Runs when you close Claude Code
+├── a2a-collaboration-hook.js  ← Multi-agent stuff
+└── hook-utils.js       ← Shared helper code
 ```
 
-## Development
+---
 
-### Testing the Hook Standalone
+## For Developers
+
+### Test hooks work
 
 ```bash
-cd ~/.claude/hooks
-node a2a-collaboration-hook.js
+node --check ~/.claude/hooks/session-start.js
 ```
 
-### Updating the Hook
+### Change settings
 
-After modifying `scripts/hooks/a2a-collaboration-hook.js`:
-```bash
-./scripts/install-a2a-hook.sh
+Edit `hook-utils.js`:
+
+```javascript
+THRESHOLDS = {
+  TOKEN_SAVE: 250_000,      // When to auto-save (tokens)
+  RETENTION_DAYS: 7,        // How long to keep memories
+  MAX_ARCHIVED_SESSIONS: 30 // How many old sessions to keep
+}
 ```
 
-## Dependencies
+---
 
-- SQLite3 (for querying knowledge graph and task database)
-- Node.js 18+ (for ES modules support)
-- CCB installed and initialized
-
-## Related Scripts
-
-- `scripts/generate-a2a-token.sh` - Generate authentication tokens for A2A communication
-- `scripts/test-a2a-setup.sh` - Test A2A system setup
-- `scripts/test-a2a-communication.sh` - Test agent-to-agent communication
-
-## Architecture
-
-The A2A collaboration system consists of:
-
-1. **Agent Registry** (`~/.claude-code-buddy/a2a-registry.db`)
-   - Tracks active agents
-   - Stores heartbeat timestamps
-   - Manages agent status
-
-2. **Task Queue** (`~/.claude-code-buddy/a2a-tasks.db`)
-   - Stores task assignments
-   - Tracks task state (SUBMITTED, IN_PROGRESS, COMPLETED)
-   - Records task results
-
-3. **Knowledge Graph** (`~/.claude-code-buddy/knowledge-graph.db`)
-   - Stores agent identities as entities
-   - Tracks specializations as observations
-   - Enables agent discovery
-
-4. **Session State** (`~/.claude/state/agent-identity.json`)
-   - Persists agent identity across hook runs
-   - Caches agent info for 1 hour
-   - Stores current specialization
-
-## License
-
-Part of Claude Code Buddy (CCB) project.
+Part of MeMesh project. License: AGPL-3.0.

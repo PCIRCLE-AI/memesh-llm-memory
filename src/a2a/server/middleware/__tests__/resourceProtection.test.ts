@@ -262,6 +262,10 @@ describe('Resource Protection Middleware', () => {
   });
 
   describe('memoryPressureMiddleware', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
     it('should allow requests under normal memory pressure', () => {
       const middleware = memoryPressureMiddleware();
       const req = mockRequest();
@@ -291,8 +295,37 @@ describe('Resource Protection Middleware', () => {
 
       expect(next).toHaveBeenCalled();
       expect(res.status).not.toHaveBeenCalled();
+    });
 
-      vi.mocked(v8.getHeapStatistics).mockRestore();
+    it('should allow requests at exactly threshold boundary (85%)', () => {
+      const middleware = memoryPressureMiddleware();
+      const req = mockRequest();
+      const res = mockResponse();
+      const next = vi.fn();
+
+      // Mock memory usage at exactly 85% - should pass because threshold is > not >=
+      vi.spyOn(v8, 'getHeapStatistics').mockReturnValue({
+        total_heap_size: 100 * 1024 * 1024,
+        total_heap_size_executable: 0,
+        total_physical_size: 0,
+        total_available_size: 0,
+        used_heap_size: 85 * 1024 * 1024, // 85MB used
+        heap_size_limit: 100 * 1024 * 1024, // 100MB limit (exactly 85% = threshold)
+        malloced_memory: 0,
+        peak_malloced_memory: 0,
+        does_zap_garbage: 0,
+        number_of_native_contexts: 0,
+        number_of_detached_contexts: 0,
+        total_global_handles_size: 0,
+        used_global_handles_size: 0,
+        external_memory: 0,
+      });
+
+      middleware(req, res, next);
+
+      // At exactly 85%, should pass (threshold uses > not >=)
+      expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
     });
 
     it('should reject requests under high memory pressure', () => {
@@ -303,7 +336,6 @@ describe('Resource Protection Middleware', () => {
 
       // Mock high memory usage using v8.getHeapStatistics
       // The new logic checks used_heap_size / heap_size_limit > threshold (85%)
-      const originalGetHeapStatistics = v8.getHeapStatistics;
       vi.spyOn(v8, 'getHeapStatistics').mockReturnValue({
         total_heap_size: 100 * 1024 * 1024,
         total_heap_size_executable: 0,
@@ -331,8 +363,6 @@ describe('Resource Protection Middleware', () => {
         }),
       });
       expect(next).not.toHaveBeenCalled();
-
-      vi.mocked(v8.getHeapStatistics).mockRestore();
     });
   });
 

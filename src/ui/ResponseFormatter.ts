@@ -13,7 +13,7 @@
 
 import chalk from 'chalk';
 import Table from 'cli-table3';
-import { theme, icons } from './theme.js';
+import { icons } from './theme.js';
 import { ErrorClassifier } from '../errors/ErrorClassifier.js';
 import { getOperationDisplayName } from './design-tokens.js';
 

@@ -218,7 +218,7 @@ export class DaemonSocketServer extends EventEmitter {
     // Notify all clients of shutdown
     const shutdownMsg = createShutdown('user_requested', 5000);
 
-    for (const [clientId, clientState] of this.clients) {
+    for (const [, clientState] of this.clients) {
       try {
         this.sendMessage(clientState.socket, shutdownMsg);
         clientState.socket.destroy();

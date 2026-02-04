@@ -41,8 +41,9 @@ const IV_LENGTH = 16;
 
 /**
  * Auth tag length for GCM (16 bytes)
+ * Note: Used implicitly by Node.js crypto module; kept for documentation
  */
-const AUTH_TAG_LENGTH = 16;
+const _AUTH_TAG_LENGTH = 16; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 /**
  * Default expiration time in seconds (30 days)

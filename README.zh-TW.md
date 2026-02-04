@@ -84,9 +84,9 @@ https://github.com/user-attachments/assets/a389bcd2-1563-4d91-b363-44cdba5f4e44
 
 ```bash
 # 在 Claude Code 中
-buddy-help                              # 查看所有指令
-buddy-do "解釋 MeMesh 如何運作"         # 看它智能回應
-buddy-remember "專案決策"               # 查詢專案記憶
+buddy-help                          # 查看所有指令
+buddy-do "解釋 MeMesh 如何運作"     # 看它智能回應
+buddy-remember "專案決策"           # 查詢專案記憶
 ```
 
 **📖 [閱讀使用指南](docs/USER_GUIDE.md)** • **🔧 [API 參考](docs/api/API_REFERENCE.md)**

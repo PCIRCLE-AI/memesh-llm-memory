@@ -102,5 +102,33 @@ describe('KnowledgeGraph', () => {
       expect(results[0].observations).toEqual(['alpha', 'beta|||gamma']);
       expect(results[0].tags).toEqual(['tag-one', 'tag-two']);
     });
+
+    it('should find entities by observation content, not just name', () => {
+      // Create entity with specific observation content
+      kg.createEntity({
+        name: 'MemoryAboutGitWorkflow',
+        entityType: 'knowledge',
+        observations: [
+          'Always use feature branches for development',
+          'Never commit directly to main branch',
+        ],
+        tags: ['git', 'workflow'],
+      });
+
+      // Search by observation content (not entity name)
+      const resultsByContent = kg.searchEntities({ namePattern: 'feature branches' });
+      expect(resultsByContent).toHaveLength(1);
+      expect(resultsByContent[0].name).toBe('MemoryAboutGitWorkflow');
+
+      // Search by different observation content
+      const resultsByOtherContent = kg.searchEntities({ namePattern: 'main branch' });
+      expect(resultsByOtherContent).toHaveLength(1);
+      expect(resultsByOtherContent[0].name).toBe('MemoryAboutGitWorkflow');
+
+      // Search by entity name should still work
+      const resultsByName = kg.searchEntities({ namePattern: 'GitWorkflow' });
+      expect(resultsByName).toHaveLength(1);
+      expect(resultsByName[0].name).toBe('MemoryAboutGitWorkflow');
+    });
   });
 });

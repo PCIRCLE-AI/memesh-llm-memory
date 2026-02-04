@@ -15,8 +15,7 @@
 import Database from 'better-sqlite3';
 import { randomBytes, createCipheriv, createDecipheriv } from 'crypto';
 import { join } from 'path';
-import { promises as fsPromises, existsSync, mkdirSync } from 'fs';
-import { homedir } from 'os';
+import { promises as fsPromises } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { getDataPath, getDataDirectory } from '../utils/PathResolver.js';
 import { logger } from '../utils/logger.js';

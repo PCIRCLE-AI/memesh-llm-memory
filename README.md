@@ -190,33 +190,31 @@ buddy-secret-delete "old_key"                      # Cleanup
 
 Choose your preferred installation method:
 
-### 🏆 Official Marketplace (Coming Soon)
-Once approved by Anthropic, install with one command:
+### ⚡ npm Global Install (Easiest) ⭐ RECOMMENDED
 ```bash
-/plugin install memesh@claude-plugins-official
+npm install -g @pcircle/memesh
+# Auto-configures everything! Just restart Claude Code.
 ```
 
-### ⚡ GitHub Marketplace (Available Now)
-```bash
-# Add marketplace
-/plugin marketplace add PCIRCLE-AI/claude-code-buddy
-
-# Install plugin
-/plugin install memesh@pcircle-ai
-```
-
-### 📦 Quick Install Script (Recommended for Local Dev)
+### 📦 Quick Install Script (For Local Dev)
 ```bash
 git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
 cd claude-code-buddy
 ./scripts/quick-install.sh
-# Auto-configures ~/.claude/mcp_settings.json
-# Just restart Claude Code and you're done!
 ```
 
 ### 🎯 For Cursor Users
+
+**Quick Start** (basic features):
 ```
 cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/memesh&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL21lbWVzaCJdfQ==
+```
+
+**Full Setup** (with A2A support): See [Cursor Setup Guide](#cursor-full-setup) below.
+
+### 🏆 Claude Code Marketplace (Coming Soon)
+```bash
+/plugin install memesh@claude-plugins-official
 ```
 
 ---
@@ -257,12 +255,33 @@ The script will:
 <details>
 <summary><strong>🎯 Cursor Users</strong> (Click to expand)</summary>
 
-Cursor uses the same MCP protocol. You can use the quick install link:
-```
-cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/memesh&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL21lbWVzaCJdfQ==
-```
+<h4 id="cursor-full-setup">Cursor Full Setup (with A2A Support)</h4>
 
-**Restart Cursor** and you're set.
+The deep link provides basic features. For **full A2A (Agent-to-Agent) support**, manually configure:
+
+1. **Generate a token**:
+   ```bash
+   openssl rand -hex 32
+   ```
+
+2. **Edit Cursor MCP settings** (`~/.cursor/mcp.json` or via Cursor settings):
+   ```json
+   {
+     "mcpServers": {
+       "memesh": {
+         "command": "npx",
+         "args": ["-y", "@pcircle/memesh"],
+         "env": {
+           "MEMESH_A2A_TOKEN": "<your-64-char-hex-token>"
+         }
+       }
+     }
+   }
+   ```
+
+3. **Restart Cursor** and you're set.
+
+> **Note**: Use the same token across all sessions for A2A to work.
 
 </details>
 

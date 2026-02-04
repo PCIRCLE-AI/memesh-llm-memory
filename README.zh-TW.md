@@ -122,32 +122,31 @@ buddy-secret-delete "old_key"                      # 清理舊金鑰
 
 選擇你偏好的安裝方式：
 
-### 🏆 官方 Marketplace（即將推出）
-一旦獲得 Anthropic 批准，一行命令即可安裝：
+### ⚡ npm 全域安裝（最簡單）⭐ 推薦
 ```bash
-/plugin install memesh@claude-plugins-official
+npm install -g @pcircle/memesh
+# 自動設定完成！只需重啟 Claude Code。
 ```
 
-### ⚡ GitHub Marketplace（現已可用）
-```bash
-# 添加 marketplace
-/plugin marketplace add PCIRCLE-AI/claude-code-buddy
-
-# 安裝 plugin
-/plugin install memesh@pcircle-ai
-```
-
-### 📦 快速安裝腳本（本地開發推薦）
+### 📦 快速安裝腳本（本地開發用）
 ```bash
 git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
 cd claude-code-buddy
 ./scripts/quick-install.sh
-claude --plugin-dir /path/to/claude-code-buddy
 ```
 
 ### 🎯 Cursor 使用者
+
+**快速安裝**（基本功能）：
 ```
 cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/memesh&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL21lbWVzaCJdfQ==
+```
+
+**完整設定**（支援 A2A）：請參閱下方 [Cursor 完整設定](#cursor-完整設定)。
+
+### 🏆 Claude Code Marketplace（即將推出）
+```bash
+/plugin install memesh@claude-plugins-official
 ```
 
 ---
@@ -190,12 +189,33 @@ claude --plugin-dir /path/to/claude-code-buddy
 <details>
 <summary><strong>🎯 Cursor 使用者</strong>（點擊展開）</summary>
 
-Cursor 使用相同的 MCP 協議。你可以使用快速安裝連結：
-```
-cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/memesh&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL21lbWVzaCJdfQ==
-```
+<h4 id="cursor-完整設定">Cursor 完整設定（支援 A2A）</h4>
 
-**重啟 Cursor** 就完成了。
+Deep link 提供基本功能。如需**完整 A2A（Agent-to-Agent）支援**，請手動設定：
+
+1. **生成 token**：
+   ```bash
+   openssl rand -hex 32
+   ```
+
+2. **編輯 Cursor MCP 設定**（`~/.cursor/mcp.json` 或透過 Cursor 設定）：
+   ```json
+   {
+     "mcpServers": {
+       "memesh": {
+         "command": "npx",
+         "args": ["-y", "@pcircle/memesh"],
+         "env": {
+           "MEMESH_A2A_TOKEN": "<你的-64-字元-hex-token>"
+         }
+       }
+     }
+   }
+   ```
+
+3. **重啟 Cursor** 就完成了。
+
+> **注意**：所有 session 需使用相同的 token 才能讓 A2A 正常運作。
 
 </details>
 

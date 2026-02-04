@@ -319,6 +319,9 @@ start-session-*.sh
 *.backup
 *.bak
 
+# NPM package tarballs (built packages)
+*.tgz
+
 # Test result files
 test-results.json
 test-*.json

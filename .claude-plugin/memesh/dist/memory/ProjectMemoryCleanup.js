@@ -1,6 +1,6 @@
 export class ProjectMemoryCleanup {
     knowledgeGraph;
-    RETENTION_DAYS = 30;
+    RETENTION_DAYS = 90;
     constructor(knowledgeGraph) {
         this.knowledgeGraph = knowledgeGraph;
     }

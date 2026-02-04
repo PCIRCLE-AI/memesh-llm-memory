@@ -96,7 +96,7 @@ async function startA2AServer() {
             id: agentId,
             name: 'MeMesh (MCP)',
             description: 'AI development assistant via MCP protocol',
-            version: '2.5.3',
+            version: '2.7.0',
             capabilities: {
                 skills: [
                     {
@@ -142,6 +142,7 @@ async function startA2AServer() {
     }
 }
 async function bootstrapWithDaemon() {
+    process.env.MCP_SERVER_MODE = 'true';
     try {
         const { DaemonBootstrap, isDaemonDisabled } = await import('./daemon/DaemonBootstrap.js');
         const { logger } = await import('../utils/logger.js');
@@ -184,6 +185,7 @@ function setupSignalHandlers(shutdownFn) {
     process.once('SIGINT', () => shutdownFn('SIGINT'));
 }
 async function startAsDaemon(bootstrapper, version) {
+    process.env.MCP_SERVER_MODE = 'true';
     const { logger } = await import('../utils/logger.js');
     const { DaemonSocketServer } = await import('./daemon/DaemonSocketServer.js');
     const { DaemonLockManager } = await import('./daemon/DaemonLockManager.js');
@@ -212,19 +214,70 @@ async function startAsDaemon(bootstrapper, version) {
     logger.info('[Daemon] Socket server started', { path: transport.getPath() });
     await mcpServer.start();
     const a2aServer = await startA2AServer();
+    const cleanupDaemon = async (reason) => {
+        logger.info('[Daemon] Cleanup started', { reason });
+        try {
+            await socketServer.stop();
+        }
+        catch (error) {
+            logger.warn('[Daemon] Error stopping socket server', {
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
+        if (a2aServer) {
+            try {
+                await a2aServer.stop();
+            }
+            catch (error) {
+                logger.warn('[Daemon] Error stopping A2A server', {
+                    error: error instanceof Error ? error.message : String(error),
+                });
+            }
+        }
+        try {
+            await DaemonLockManager.releaseLock();
+        }
+        catch (error) {
+            logger.warn('[Daemon] Error releasing lock', {
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
+        try {
+            transport.cleanup();
+            logger.info('[Daemon] Socket file cleaned up');
+        }
+        catch (error) {
+            logger.warn('[Daemon] Error cleaning up socket file', {
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
+        logger.info('[Daemon] Cleanup complete');
+    };
     setupSignalHandlers(async (signal) => {
         logger.info('[Daemon] Shutdown requested', { signal });
-        await socketServer.stop();
-        if (a2aServer) {
-            await a2aServer.stop();
-        }
-        await DaemonLockManager.releaseLock();
-        logger.info('[Daemon] Shutdown complete');
+        await cleanupDaemon(`signal:${signal}`);
         process.exit(0);
+    });
+    process.once('uncaughtException', async (error) => {
+        logger.error('[Daemon] Uncaught exception', {
+            error: error.message,
+            stack: error.stack,
+        });
+        await cleanupDaemon('uncaughtException');
+        process.exit(1);
+    });
+    process.once('unhandledRejection', async (reason) => {
+        logger.error('[Daemon] Unhandled rejection', {
+            reason: reason instanceof Error ? reason.message : String(reason),
+            stack: reason instanceof Error ? reason.stack : undefined,
+        });
+        await cleanupDaemon('unhandledRejection');
+        process.exit(1);
     });
     startMCPClientWatchdog();
 }
 async function startAsProxy(bootstrapper) {
+    process.env.MCP_SERVER_MODE = 'true';
     const { logger } = await import('../utils/logger.js');
     const { StdioProxyClient } = await import('./daemon/StdioProxyClient.js');
     const version = bootstrapper.getVersion();

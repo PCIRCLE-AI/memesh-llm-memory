@@ -481,9 +481,26 @@ async function startAsProxy(bootstrapper: DaemonBootstrap) {
 
   logger.info('[Proxy] Proxy started, forwarding stdio to daemon');
 
-  // Graceful shutdown
+  // Start A2A server for this proxy session (multi-agent collaboration)
+  // Each Claude Code session needs its own A2A identity per Google A2A best practices
+  const a2aServer = await startA2AServer();
+
+  // Graceful shutdown - must also stop A2A server
   setupSignalHandlers(async (signal: string) => {
     logger.info('[Proxy] Shutdown requested', { signal });
+
+    // Stop A2A server first
+    if (a2aServer) {
+      try {
+        await a2aServer.stop();
+        logger.info('[Proxy] A2A server stopped');
+      } catch (error) {
+        logger.warn('[Proxy] Error stopping A2A server', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
     await proxyClient.stop();
     process.exit(0);
   });

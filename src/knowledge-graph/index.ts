@@ -609,8 +609,11 @@ export class KnowledgeGraph {
     }
 
     if (query.namePattern) {
-      sql += " AND e.name LIKE ? ESCAPE '!'";
-      params.push(`%${this.escapeLikePattern(query.namePattern)}%`);
+      // ✅ FIX: Search both entity name AND observations content for better recall
+      sql += " AND (e.name LIKE ? ESCAPE '!' OR e.id IN (SELECT entity_id FROM observations WHERE content LIKE ? ESCAPE '!'))";
+      const escapedPattern = `%${this.escapeLikePattern(query.namePattern)}%`;
+      params.push(escapedPattern);
+      params.push(escapedPattern);
     }
 
     sql += ' ORDER BY e.created_at DESC';

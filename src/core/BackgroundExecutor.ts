@@ -1509,7 +1509,6 @@ export class BackgroundExecutor {
     } catch (loggingError) {
       // Last resort: if even logging fails, write to stderr directly to avoid silent swallowing
       // This is intentionally console.error since the logger itself has failed
-      // eslint-disable-next-line no-console
       console.error(
         `[BackgroundExecutor] FATAL: Error handler failed for task ${taskId}:`,
         loggingError,

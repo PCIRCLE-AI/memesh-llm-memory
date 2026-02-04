@@ -138,10 +138,9 @@ function extractCauseChain(error: unknown, maxDepth: number = 10): ErrorCauseInf
 
   while (current && chain.length < maxDepth) {
     // Guard against circular cause references
-    // Note: Use truthiness check instead of explicit null comparison to avoid
-    // "comparison between inconvertible types" when comparing unknown with null.
-    // `current &&` already excludes null (falsy), then typeof narrows to object.
-    if (current && typeof current === 'object') {
+    // Note: The while loop condition already ensures `current` is truthy (not null/undefined).
+    // We only need to check typeof to narrow the type for WeakSet operations.
+    if (typeof current === 'object') {
       if (seen.has(current)) {
         chain.push({ message: '[Circular cause reference]', type: 'CircularRef' });
         break;

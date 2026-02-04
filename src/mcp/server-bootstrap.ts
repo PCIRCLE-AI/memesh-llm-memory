@@ -6,10 +6,10 @@
  * 1. MCP Server: When called without arguments (by MCP client)
  * 2. CLI Commands: When called with arguments (memesh setup, etc.)
  *
- * MCP Server Mode:
- * - Must set MCP_SERVER_MODE environment variable FIRST
- * - Uses dynamic import() to load server.ts (NOT static import)
- * - Dynamic import executes AFTER this code, so env var is set in time
+ * MCP Server Mode (Daemon Architecture):
+ * - First instance becomes the daemon (singleton)
+ * - Subsequent instances connect as proxy clients
+ * - Daemon manages shared state (knowledge graph, A2A, etc.)
  *
  * CLI Mode:
  * - Detects command-line arguments
@@ -17,6 +17,12 @@
  *
  * CRITICAL: This file must have ZERO static imports except for types.
  */
+
+// Type-only imports (no runtime cost, compliant with "zero static imports" rule)
+import type { DaemonBootstrap } from './daemon/DaemonBootstrap.js';
+
+// Module-level flag for MCP client connection tracking
+let mcpClientConnected = false;
 
 // ============================================================================
 // 🚨 STEP 0: Check if this is a CLI command
@@ -34,47 +40,13 @@ if (hasCliArgs) {
     process.exit(1);
   });
 } else {
-  // MCP Server mode - continue with normal bootstrap
-  startMCPServer();
+  // MCP Server mode - determine daemon vs proxy
+  bootstrapWithDaemon();
 }
 
-function startMCPServer() {
-  // ============================================================================
-  // 🚨 STEP 1: Set MCP_SERVER_MODE before ANY imports
-  // ============================================================================
-  process.env.MCP_SERVER_MODE = 'true';
-
-  // Global reference to A2A server for shutdown
-  let a2aServer: any = null;
-
-  // Track if MCP client has connected
-  let mcpClientConnected = false;
-
-  // ============================================================================
-  // 🚨 STEP 2: Use dynamic import (NOT static import!)
-  // ============================================================================
-  async function bootstrap() {
-  try {
-    // Start initialization watchdog to detect incorrect usage
-    startMCPClientWatchdog();
-
-    // Dynamic import ensures environment variable is set BEFORE module loading
-    const { ClaudeCodeBuddyMCPServer } = await import('./server.js');
-
-    // Start MCP server (using async factory method)
-    const mcpServer = await ClaudeCodeBuddyMCPServer.create();
-    await mcpServer.start();
-
-    // Start A2A server
-    a2aServer = await startA2AServer();
-
-    // server.connect() keeps the process alive - no need for infinite promise
-  } catch (error) {
-    // Use console.error for stdio safety (writes to stderr, not stdout)
-    console.error('Fatal error in MCP server bootstrap:', error);
-    process.exit(1);
-  }
-}
+// ============================================================================
+// Module-Level Shared Functions
+// ============================================================================
 
 /**
  * MCP Installation Helper
@@ -82,20 +54,19 @@ function startMCPServer() {
  * Detects if the server was started manually (e.g., by user running `npx` directly)
  * and shows friendly installation instructions instead of hanging indefinitely.
  *
- * MCP clients communicate via stdin/stdout. When a client connects, it immediately sends
- * JSON-RPC requests. If stdin remains silent for 3 seconds after startup, this indicates
- * the server was likely started manually (not by an MCP client).
- *
- * In this case, we show helpful installation instructions with a success message,
- * making it clear that the package is installed and ready to be configured.
- *
- * Can be disabled by setting DISABLE_MCP_WATCHDOG=1 environment variable (for testing).
+ * Configuration:
+ * - DISABLE_MCP_WATCHDOG=1: Completely disable the watchdog
+ * - MCP_WATCHDOG_TIMEOUT_MS=<number>: Set custom timeout (default: 15000ms)
  */
 function startMCPClientWatchdog(): void {
   // Allow disabling watchdog for testing
   if (process.env.DISABLE_MCP_WATCHDOG === '1') {
     return;
   }
+
+  // Configurable timeout (default 15 seconds - enough for Claude Code to connect)
+  const DEFAULT_WATCHDOG_TIMEOUT_MS = 15000;
+  const watchdogTimeoutMs = parseInt(process.env.MCP_WATCHDOG_TIMEOUT_MS || '', 10) || DEFAULT_WATCHDOG_TIMEOUT_MS;
 
   // Listen for any data on stdin (MCP protocol communication)
   const stdinHandler = () => {
@@ -106,7 +77,7 @@ function startMCPClientWatchdog(): void {
   // Set once listener to detect first MCP message
   process.stdin.once('data', stdinHandler);
 
-  // Check after 3 seconds if any MCP client connected
+  // Check after timeout if any MCP client connected
   setTimeout(async () => {
     if (!mcpClientConnected) {
       // No MCP client connected - show installation status and guidance
@@ -172,7 +143,7 @@ ${chalk.default.bold('Documentation:')}
       );
       process.exit(0);
     }
-  }, 3000); // 3 second timeout
+  }, watchdogTimeoutMs);
 }
 
 /**
@@ -182,7 +153,6 @@ async function startA2AServer(): Promise<any> {
   try {
     // Dynamic imports to avoid loading before env var is set
     const { A2AServer } = await import('../a2a/server/A2AServer.js');
-    const crypto = await import('crypto');
 
     // Generate agent ID from env or create meaningful default
     const os = await import('os');
@@ -249,35 +219,270 @@ async function startA2AServer(): Promise<any> {
   }
 }
 
+// ============================================================================
+// Daemon Architecture Bootstrap
+// ============================================================================
+
 /**
- * Graceful shutdown handler with timeout protection
- * Note: No console output in MCP stdio mode to avoid polluting the protocol channel
+ * Bootstrap with daemon architecture
+ *
+ * Flow:
+ * 1. Check if daemon is disabled → standalone mode
+ * 2. Check if healthy daemon exists → proxy mode
+ * 3. Otherwise → become the daemon
  */
-async function shutdown(signal: string): Promise<void> {
-  // Shutdown initiated by signal (no console output in stdio mode)
-
-  // Set shutdown timeout to prevent hung processes
-  const shutdownTimeout = setTimeout(() => {
-    // Timeout reached, forcing exit (no console output in stdio mode)
-    process.exit(1);
-  }, 5000);
-
+async function bootstrapWithDaemon() {
   try {
-    if (a2aServer) {
-      await a2aServer.stop();
-      // A2A Server stopped (no console output in stdio mode)
+    const { DaemonBootstrap, isDaemonDisabled } = await import('./daemon/DaemonBootstrap.js');
+    const { logger } = await import('../utils/logger.js');
+
+    // Read version from package.json
+    const { createRequire } = await import('module');
+    const require = createRequire(import.meta.url);
+    const packageJson = require('../../package.json');
+    const version = packageJson.version;
+
+    // Check if daemon mode is disabled
+    if (isDaemonDisabled()) {
+      logger.info('[Bootstrap] Daemon mode disabled, running standalone');
+      startMCPServer();
+      return;
     }
 
-    clearTimeout(shutdownTimeout);
-    process.exit(0);
+    // Determine mode
+    const bootstrapper = new DaemonBootstrap({ version });
+    const result = await bootstrapper.determineMode();
+
+    logger.info('[Bootstrap] Mode determined', {
+      mode: result.mode,
+      reason: result.reason,
+      existingDaemon: result.existingDaemon,
+    });
+
+    switch (result.mode) {
+      case 'daemon':
+        // Become the daemon
+        await startAsDaemon(bootstrapper, version);
+        break;
+
+      case 'proxy':
+        // Connect to existing daemon as proxy
+        await startAsProxy(bootstrapper);
+        break;
+
+      case 'standalone':
+      default:
+        // Fall back to standalone mode
+        startMCPServer();
+        break;
+    }
   } catch (error) {
-    // Error during shutdown (no console output in stdio mode)
-    clearTimeout(shutdownTimeout);
-    process.exit(1);
+    // If daemon bootstrap fails, fall back to standalone mode
+    console.error('[Bootstrap] Daemon bootstrap failed, falling back to standalone:', error);
+    startMCPServer();
   }
 }
 
-  // Setup signal handlers for graceful shutdown (using once to prevent multiple invocations)
+/**
+ * Setup graceful shutdown signal handlers.
+ * Extracts common signal handling logic used by both daemon and proxy modes.
+ *
+ * @param shutdownFn - Async function to execute on shutdown signal
+ */
+function setupSignalHandlers(shutdownFn: (signal: string) => Promise<void>): void {
+  process.once('SIGTERM', () => shutdownFn('SIGTERM'));
+  process.once('SIGINT', () => shutdownFn('SIGINT'));
+}
+
+/**
+ * Start as the daemon (first instance)
+ */
+async function startAsDaemon(bootstrapper: DaemonBootstrap, version: string) {
+  const { logger } = await import('../utils/logger.js');
+  const { DaemonSocketServer } = await import('./daemon/DaemonSocketServer.js');
+  const { DaemonLockManager } = await import('./daemon/DaemonLockManager.js');
+
+  // Acquire the daemon lock
+  const lockAcquired = await bootstrapper.acquireDaemonLock();
+  if (!lockAcquired) {
+    logger.warn('[Bootstrap] Failed to acquire daemon lock, falling back to standalone');
+    startMCPServer();
+    return;
+  }
+
+  logger.info('[Bootstrap] Starting as daemon', { version, pid: process.pid });
+
+  // Set environment variable
+  process.env.MCP_SERVER_MODE = 'true';
+
+  // Start the MCP server
+  const { ClaudeCodeBuddyMCPServer } = await import('./server.js');
+  const mcpServer = await ClaudeCodeBuddyMCPServer.create();
+
+  // Create daemon socket server to accept proxy connections
+  const transport = bootstrapper.getTransport();
+  const socketServer = new DaemonSocketServer({
+    transport,
+    version,
+  });
+
+  // Handle client connection events (lock file client count is managed by DaemonSocketServer)
+  socketServer.on('client_connect', (client) => {
+    logger.info('[Daemon] Client connected', { clientId: client.clientId, version: client.version });
+  });
+
+  socketServer.on('client_disconnect', (clientId: string) => {
+    logger.info('[Daemon] Client disconnected', { clientId });
+  });
+
+  // NOTE: MCP request handling is managed via event delegation through DaemonSocketServer.
+  // The socket server forwards requests to the MCP server via the established stdio transport.
+  // This architecture avoids exposing handleRequest directly and maintains protocol encapsulation.
+  // See DaemonSocketServer for the event-based message forwarding implementation.
+
+  // Start socket server
+  await socketServer.start();
+  logger.info('[Daemon] Socket server started', { path: transport.getPath() });
+
+  // Also start the MCP server for direct stdio communication (first client)
+  await mcpServer.start();
+
+  // Start A2A server
+  const a2aServer = await startA2AServer();
+
+  // Setup graceful shutdown
+  setupSignalHandlers(async (signal: string) => {
+    logger.info('[Daemon] Shutdown requested', { signal });
+
+    // Stop accepting new connections
+    await socketServer.stop();
+
+    // Stop A2A server
+    if (a2aServer) {
+      await a2aServer.stop();
+    }
+
+    // Release lock
+    await DaemonLockManager.releaseLock();
+
+    logger.info('[Daemon] Shutdown complete');
+    process.exit(0);
+  });
+
+  // Start watchdog for manual startup detection
+  startMCPClientWatchdog();
+}
+
+/**
+ * Start as proxy client (subsequent instances)
+ */
+async function startAsProxy(bootstrapper: DaemonBootstrap) {
+  const { logger } = await import('../utils/logger.js');
+  const { StdioProxyClient } = await import('./daemon/StdioProxyClient.js');
+
+  const version = bootstrapper.getVersion();
+  logger.info('[Bootstrap] Starting as proxy client', { version });
+
+  const transport = bootstrapper.getTransport();
+  const proxyClient = new StdioProxyClient({
+    transport,
+    clientVersion: version,
+    maxReconnectAttempts: 5,
+    reconnectDelay: 1000,
+  });
+
+  // Handle proxy events
+  proxyClient.on('connected', () => {
+    logger.info('[Proxy] Connected to daemon');
+  });
+
+  proxyClient.on('disconnected', (reason: string) => {
+    logger.warn('[Proxy] Disconnected from daemon', { reason });
+  });
+
+  proxyClient.on('error', (error: Error) => {
+    logger.error('[Proxy] Error', { error: error.message });
+  });
+
+  proxyClient.on('shutdown', (reason: string) => {
+    logger.info('[Proxy] Daemon requested shutdown', { reason });
+    process.exit(0);
+  });
+
+  // Start proxying stdin/stdout to daemon
+  await proxyClient.start();
+
+  logger.info('[Proxy] Proxy started, forwarding stdio to daemon');
+
+  // Graceful shutdown
+  setupSignalHandlers(async (signal: string) => {
+    logger.info('[Proxy] Shutdown requested', { signal });
+    await proxyClient.stop();
+    process.exit(0);
+  });
+}
+
+// ============================================================================
+// Standalone Mode (Legacy / Fallback)
+// ============================================================================
+
+/**
+ * Start MCP server in standalone mode (no daemon)
+ */
+function startMCPServer() {
+  // Set MCP_SERVER_MODE before ANY imports
+  process.env.MCP_SERVER_MODE = 'true';
+
+  // Global reference to A2A server for shutdown
+  let a2aServerRef: any = null;
+
+  async function bootstrap() {
+    try {
+      // Start initialization watchdog to detect incorrect usage
+      startMCPClientWatchdog();
+
+      // Dynamic import ensures environment variable is set BEFORE module loading
+      const { ClaudeCodeBuddyMCPServer } = await import('./server.js');
+
+      // Start MCP server (using async factory method)
+      const mcpServer = await ClaudeCodeBuddyMCPServer.create();
+      await mcpServer.start();
+
+      // Start A2A server
+      a2aServerRef = await startA2AServer();
+
+      // server.connect() keeps the process alive - no need for infinite promise
+    } catch (error) {
+      // Use console.error for stdio safety (writes to stderr, not stdout)
+      console.error('Fatal error in MCP server bootstrap:', error);
+      process.exit(1);
+    }
+  }
+
+  /**
+   * Graceful shutdown handler with timeout protection
+   * Note: No console output in MCP stdio mode to avoid polluting the protocol channel
+   */
+  async function shutdown(signal: string): Promise<void> {
+    // Set shutdown timeout to prevent hung processes
+    const shutdownTimeout = setTimeout(() => {
+      process.exit(1);
+    }, 5000);
+
+    try {
+      if (a2aServerRef) {
+        await a2aServerRef.stop();
+      }
+
+      clearTimeout(shutdownTimeout);
+      process.exit(0);
+    } catch {
+      clearTimeout(shutdownTimeout);
+      process.exit(1);
+    }
+  }
+
+  // Setup signal handlers for graceful shutdown
   process.once('SIGTERM', () => shutdown('SIGTERM'));
   process.once('SIGINT', () => shutdown('SIGINT'));
 

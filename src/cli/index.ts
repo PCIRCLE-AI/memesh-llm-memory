@@ -23,6 +23,7 @@ import { runTutorial } from './tutorial.js';
 import { runDashboard } from './dashboard.js';
 import { runStats } from './stats.js';
 import { showConfig, validateConfig, editConfig, resetConfig } from './config.js';
+import { createDaemonCommand } from './daemon.js';
 import { logger } from '../utils/logger.js';
 
 // Read version from package.json
@@ -184,6 +185,9 @@ config
     }
   });
 
+// Daemon commands
+program.addCommand(createDaemonCommand());
+
 // Help command (override default to show better format)
 program.on('--help', () => {
   console.log('');
@@ -191,6 +195,8 @@ program.on('--help', () => {
   console.log('  $ memesh setup           # Configure MeMesh interactively');
   console.log('  $ memesh tutorial        # Learn MeMesh in 5 minutes');
   console.log('  $ memesh dashboard       # View session health');
+  console.log('  $ memesh daemon status   # Check daemon status');
+  console.log('  $ memesh daemon logs -f  # Follow daemon logs');
   console.log('');
   console.log(chalk.bold('Documentation:'));
   console.log('  Quick Start: https://memesh.pcircle.ai/quick-start');

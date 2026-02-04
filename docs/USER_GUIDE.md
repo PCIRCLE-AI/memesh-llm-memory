@@ -15,11 +15,12 @@ Welcome to the complete MeMesh User Guide! This guide provides detailed informat
    - [A2A Protocol](#a2a-protocol-agent-to-agent-communication)
    - [Learning & Error Tracking](#learning--error-tracking)
 4. [CLI Commands](#cli-commands)
-5. [Memory System](#memory-system)
-6. [Smart Routing](#smart-routing)
-7. [Configuration](#configuration)
-8. [Advanced Usage](#advanced-usage)
-9. [Troubleshooting](#troubleshooting)
+5. [Daemon Commands](#daemon-commands)
+6. [Memory System](#memory-system)
+7. [Smart Routing](#smart-routing)
+8. [Configuration](#configuration)
+9. [Advanced Usage](#advanced-usage)
+10. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -36,29 +37,34 @@ MeMesh is your AI memory mesh for Claude Code - a persistent memory and smart ro
 
 ### Architecture Overview
 
+MeMesh uses a singleton daemon architecture for multi-session support:
+
 ```
-┌─────────────────────────────────────────────────┐
-│                  Claude Code                     │
-│                 (User Interface)                 │
-└──────────────────┬──────────────────────────────┘
-                   │ MCP Protocol
-                   ▼
-┌─────────────────────────────────────────────────┐
-│              MeMesh MCP Server                   │
-├─────────────────────────────────────────────────┤
-│  • buddy-do        Smart task routing            │
-│  • buddy-remember  Memory storage/recall         │
-│  • buddy-help      Quick help & guidance         │
-│  • Health monitoring & session tracking          │
-└──────────────────┬──────────────────────────────┘
-                   │
-    ┌──────────────┼──────────────┐
-    ▼              ▼              ▼
-┌─────────┐  ┌───────────┐  ┌──────────┐
-│ Router  │  │ Knowledge │  │  Project │
-│         │  │   Graph   │  │  Tracker │
-└─────────┘  └───────────┘  └──────────┘
+Claude Code #1 ──stdio proxy──►┐
+Claude Code #2 ──stdio proxy──►├─► MeMesh Daemon (single process)
+Claude Code #3 ──stdio proxy──►┘         │
+                                         ▼
+                            ┌─────────────────────────┐
+                            │  MeMesh MCP Server       │
+                            ├─────────────────────────┤
+                            │  • buddy-do (routing)    │
+                            │  • buddy-remember        │
+                            │  • A2A Server (shared)   │
+                            └────────────┬────────────┘
+                                         │
+                    ┌────────────────────┼────────────────────┐
+                    ▼                    ▼                    ▼
+              ┌─────────┐         ┌───────────┐        ┌──────────┐
+              │ Router  │         │ Knowledge │        │  A2A     │
+              │         │         │   Graph   │        │  State   │
+              └─────────┘         └───────────┘        └──────────┘
 ```
+
+**Benefits:**
+- Resource efficiency: Single process serves all Claude Code sessions
+- Shared state: Memory and A2A state shared across sessions
+- No port conflicts: Single A2A server instance
+- Graceful upgrades: New versions can replace running daemon
 
 ---
 
@@ -929,9 +935,9 @@ memesh tutorial
 
 ### memesh dashboard
 
-**Purpose**: View session health and metrics (Coming Soon)
+**Purpose**: View session health and metrics
 
-**Planned Features**:
+**Features**:
 - Real-time MCP server status
 - Memory usage statistics
 - Recent command history
@@ -947,9 +953,9 @@ memesh dashboard
 
 ### memesh stats
 
-**Purpose**: View usage statistics (Coming Soon)
+**Purpose**: View usage statistics
 
-**Planned Features**:
+**Features**:
 - Command frequency analysis
 - Token usage trends
 - Cost tracking
@@ -959,6 +965,12 @@ memesh dashboard
 **Usage**:
 ```bash
 memesh stats
+memesh stats --day       # Last 24 hours
+memesh stats --week      # Last 7 days
+memesh stats --month     # Last 30 days
+memesh stats --json      # Export as JSON
+memesh stats --csv       # Export as CSV
+memesh stats --verbose   # Detailed statistics
 ```
 
 ---
@@ -976,10 +988,10 @@ memesh config show
 # Validate MCP setup
 memesh config validate
 
-# Edit configuration (Coming Soon)
+# Edit configuration in default editor
 memesh config edit
 
-# Reset to defaults (Coming Soon)
+# Reset configuration to defaults
 memesh config reset
 ```
 
@@ -1003,6 +1015,99 @@ memesh report-issue
 - Provides GitHub issues link
 - Collects system information (future)
 - Suggests troubleshooting steps
+
+---
+
+## Daemon Commands
+
+MeMesh uses a singleton daemon architecture to efficiently share resources across multiple Claude Code sessions. When you open multiple Claude Code windows, they all connect to the same MeMesh daemon, sharing memory, A2A state, and databases.
+
+### memesh daemon status
+
+**Purpose**: Check daemon status and information
+
+**Usage**:
+```bash
+memesh daemon status
+```
+
+**Shows**:
+- Running state (daemon/proxy/standalone)
+- PID and uptime
+- Connected clients count
+- Socket path
+- Version information
+
+---
+
+### memesh daemon logs
+
+**Purpose**: View daemon logs
+
+**Usage**:
+```bash
+# Show recent logs
+memesh daemon logs
+
+# Follow logs in real-time
+memesh daemon logs -f
+
+# Show last N lines
+memesh daemon logs -n 100
+```
+
+---
+
+### memesh daemon stop
+
+**Purpose**: Stop the daemon process
+
+**Usage**:
+```bash
+# Graceful stop (waits for clients)
+memesh daemon stop
+
+# Force stop (immediate)
+memesh daemon stop --force
+```
+
+---
+
+### memesh daemon restart
+
+**Purpose**: Restart the daemon process
+
+**Usage**:
+```bash
+memesh daemon restart
+```
+
+Performs graceful restart with automatic client reconnection.
+
+---
+
+### memesh daemon upgrade
+
+**Purpose**: Upgrade daemon to new version
+
+**Usage**:
+```bash
+memesh daemon upgrade
+```
+
+Use when you've installed a new MeMesh version and want the running daemon to upgrade.
+
+---
+
+### Disabling Daemon Mode
+
+To run in standalone mode (original behavior):
+
+```bash
+export MEMESH_DISABLE_DAEMON=1
+```
+
+See [DAEMON_ARCHITECTURE.md](./DAEMON_ARCHITECTURE.md) for complete documentation.
 
 ---
 
@@ -1389,8 +1494,8 @@ Check logs:
 │ CLI Commands (In Terminal)                          │
 │   memesh setup            Interactive setup wizard  │
 │   memesh tutorial         5-minute guided tour      │
-│   memesh dashboard        Session health (Soon)     │
-│   memesh stats            Usage statistics (Soon)   │
+│   memesh dashboard        Session health dashboard  │
+│   memesh stats            Usage statistics          │
 │   memesh config           Manage configuration      │
 │   memesh report-issue     Bug reporting             │
 └─────────────────────────────────────────────────────┘

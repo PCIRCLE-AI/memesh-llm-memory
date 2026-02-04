@@ -4,10 +4,136 @@ Complete reference for all MeMesh commands and tools.
 
 ## Table of Contents
 
+- [Daemon Commands](#daemon-commands) (Process Management)
 - [Buddy Commands](#buddy-commands) (User-Friendly Layer)
 - [MCP Tools](#mcp-tools) (Direct Tool Access)
 - [Command Aliases](#command-aliases)
 - [Usage Examples](#usage-examples)
+
+---
+
+## Daemon Commands
+
+MeMesh uses a singleton daemon architecture to efficiently share resources across multiple Claude Code sessions.
+
+### `memesh daemon status`
+
+Check daemon status and information.
+
+**What it shows:**
+- Running state (daemon/proxy/standalone)
+- PID and uptime
+- Connected clients count
+- Socket path
+- Version information
+
+**Example:**
+```bash
+memesh daemon status
+```
+
+**Output:**
+```
+Daemon Status: running
+Mode: daemon
+PID: 12345
+Uptime: 2h 15m
+Clients: 3
+Socket: /Users/user/.memesh/daemon.sock
+Version: 2.6.6
+```
+
+---
+
+### `memesh daemon logs`
+
+View daemon logs.
+
+**Options:**
+- `-f, --follow` - Follow logs in real-time
+- `-n, --lines <number>` - Number of lines to show (default: 50)
+
+**Examples:**
+```bash
+# Show recent logs
+memesh daemon logs
+
+# Follow logs in real-time
+memesh daemon logs -f
+
+# Show last 100 lines
+memesh daemon logs -n 100
+```
+
+---
+
+### `memesh daemon stop`
+
+Stop the daemon process.
+
+**Options:**
+- `--force` - Force immediate termination (skip graceful shutdown)
+
+**Examples:**
+```bash
+# Graceful stop (waits for clients)
+memesh daemon stop
+
+# Force stop
+memesh daemon stop --force
+```
+
+**Note:** Graceful stop waits for connected clients to disconnect and in-flight requests to complete.
+
+---
+
+### `memesh daemon restart`
+
+Restart the daemon process.
+
+**What it does:**
+1. Signals existing daemon to prepare for shutdown
+2. Waits for in-flight requests to complete
+3. Starts new daemon instance
+4. Clients automatically reconnect
+
+**Example:**
+```bash
+memesh daemon restart
+```
+
+---
+
+### `memesh daemon upgrade`
+
+Request daemon upgrade when a newer version is available.
+
+**What it does:**
+1. New instance requests upgrade from running daemon
+2. Daemon enters drain mode (no new requests)
+3. Existing requests complete
+4. Lock is released
+5. New instance takes over
+
+**Example:**
+```bash
+memesh daemon upgrade
+```
+
+---
+
+### Daemon Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `MEMESH_DISABLE_DAEMON` | Disable daemon mode (`1` or `true`) | `false` |
+| `MEMESH_DAEMON_IDLE_TIMEOUT` | Idle timeout before auto-shutdown (ms) | `300000` |
+| `MEMESH_DAEMON_LOG_LEVEL` | Log level (debug/info/warn/error) | `info` |
+
+**Disable daemon mode:**
+```bash
+export MEMESH_DISABLE_DAEMON=1
+```
 
 ---
 
@@ -303,9 +429,11 @@ Securely store sensitive information (API keys, tokens, passwords) using AES-256
 **Input Schema:**
 ```json
 {
-  "name": "string (required) - Unique identifier for the secret",
-  "value": "string (required) - Secret value to store",
-  "ttl": "number (optional) - Time-to-live in seconds"
+  "name": "string (required) - Name/identifier for the secret (e.g., 'openai-api-key')",
+  "value": "string (required) - The secret value to store",
+  "type": "enum (required) - api_key | token | password | other",
+  "description": "string (optional) - Description of what this secret is for",
+  "expiresIn": "string (optional) - Expiry duration (e.g., '30d', '24h', '60m'). Default: 30 days"
 }
 ```
 
@@ -314,7 +442,9 @@ Securely store sensitive information (API keys, tokens, passwords) using AES-256
 {
   "name": "openai-api-key",
   "value": "sk-proj-...",
-  "ttl": 2592000
+  "type": "api_key",
+  "description": "OpenAI API key for GPT-4 access",
+  "expiresIn": "30d"
 }
 ```
 
@@ -322,7 +452,7 @@ Securely store sensitive information (API keys, tokens, passwords) using AES-256
 - AES-256-GCM encryption
 - Local storage only
 - Never transmitted over network
-- Optional automatic expiry
+- Optional automatic expiry with human-readable duration format
 
 ---
 
@@ -401,17 +531,19 @@ Send a task to another agent for execution (Agent-to-Agent Protocol - Phase 1.0)
 **Input Schema:**
 ```json
 {
-  "agentId": "string (required) - Target agent identifier",
-  "task": "string (required) - Task description or command",
-  "priority": "enum (optional) - high | medium | low"
+  "targetAgentId": "string (required) - ID of the target agent to send the task to",
+  "taskDescription": "string (required) - Description of the task to execute",
+  "priority": "enum (optional) - low | normal | high | urgent (default: normal)",
+  "sessionId": "string (optional) - Session ID for task tracking",
+  "metadata": "object (optional) - Additional task metadata"
 }
 ```
 
 **Example:**
 ```json
 {
-  "agentId": "code-reviewer",
-  "task": "Review src/auth.ts for security issues",
+  "targetAgentId": "code-reviewer",
+  "taskDescription": "Review src/auth.ts for security issues",
   "priority": "high"
 }
 ```
@@ -432,13 +564,13 @@ Query status and results of a sent task.
 **Input Schema:**
 ```json
 {
-  "taskId": "string (required) - Task identifier from a2a-send-task",
-  "agentId": "string (required) - Target agent identifier"
+  "targetAgentId": "string (required) - ID of the agent that owns the task",
+  "taskId": "string (required) - ID of the task to retrieve"
 }
 ```
 
 **Returns:**
-- Task status (pending/in_progress/completed/failed)
+- Task status (SUBMITTED/WORKING/INPUT_REQUIRED/COMPLETED/FAILED/CANCELED/REJECTED)
 - Task results (if completed)
 - Error information (if failed)
 
@@ -456,7 +588,19 @@ List all tasks assigned to this agent (Phase 1.0: MCP Client Polling).
 
 **Input Schema:**
 ```json
-{}
+{
+  "state": "enum (optional) - Filter by task state: SUBMITTED | WORKING | INPUT_REQUIRED | COMPLETED | FAILED | CANCELED | REJECTED",
+  "limit": "number (optional) - Maximum tasks to return (1-100)",
+  "offset": "number (optional) - Number of tasks to skip for pagination"
+}
+```
+
+**Example:**
+```json
+{
+  "state": "SUBMITTED",
+  "limit": 10
+}
 ```
 
 **Returns:**

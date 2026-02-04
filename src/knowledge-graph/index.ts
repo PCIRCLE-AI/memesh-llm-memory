@@ -329,6 +329,7 @@ export class KnowledgeGraph {
 
     // Migration 2: Populate FTS5 index from existing entities
     // ✅ CRITICAL-3 FIX: Use chunked migration to handle large datasets
+    // ✅ MAJOR-3 FIX: Add SUBSTR limits to prevent GROUP_CONCAT overflow
     try {
       // Check if FTS5 table is empty but entities exist
       const ftsCount = (this.db.prepare('SELECT COUNT(*) as count FROM entities_fts').get() as { count: number }).count;
@@ -338,9 +339,11 @@ export class KnowledgeGraph {
         logger.info('[KG] Running migration: Populating FTS5 index from existing entities');
 
         // CRITICAL-3 FIX: Process in chunks to avoid memory issues with large datasets
-        // Also limit observations per entity to prevent GROUP_CONCAT overflow
+        // MAJOR-3 FIX: Limit observation length to prevent GROUP_CONCAT overflow
         const CHUNK_SIZE = 500;
         const MAX_OBSERVATIONS_PER_ENTITY = 500;
+        const MAX_OBSERVATION_LENGTH = 2000; // Characters per observation
+        const MAX_TOTAL_LENGTH = 500000; // Total observations text per entity (500KB)
 
         const insertStmt = this.db.prepare(`
           INSERT INTO entities_fts(rowid, name, observations)
@@ -348,12 +351,16 @@ export class KnowledgeGraph {
             e.id,
             e.name,
             COALESCE(
-              (SELECT GROUP_CONCAT(content, ' ') FROM (
-                SELECT content FROM observations o
-                WHERE o.entity_id = e.id
-                ORDER BY o.created_at DESC
-                LIMIT ?
-              )),
+              SUBSTR(
+                (SELECT GROUP_CONCAT(SUBSTR(content, 1, ?), ' ') FROM (
+                  SELECT content FROM observations o
+                  WHERE o.entity_id = e.id
+                  ORDER BY o.created_at DESC
+                  LIMIT ?
+                )),
+                1,
+                ?
+              ),
               ''
             )
           FROM entities e
@@ -368,7 +375,14 @@ export class KnowledgeGraph {
         let processedCount = 0;
         for (let startId = idRange.minId - 1; startId < idRange.maxId; startId += CHUNK_SIZE) {
           const endId = startId + CHUNK_SIZE;
-          const result = insertStmt.run(MAX_OBSERVATIONS_PER_ENTITY, startId, endId);
+          // Parameters: maxObsLength, maxObsCount, maxTotalLength, startId, endId
+          const result = insertStmt.run(
+            MAX_OBSERVATION_LENGTH,
+            MAX_OBSERVATIONS_PER_ENTITY,
+            MAX_TOTAL_LENGTH,
+            startId,
+            endId
+          );
           processedCount += result.changes;
         }
 
@@ -414,6 +428,9 @@ export class KnowledgeGraph {
   /**
    * Search using FTS5 full-text search
    * Returns entity IDs matching the query, ranked by BM25
+   *
+   * ✅ MAJOR-5 FIX: BM25 weighted ranking - name matches rank higher than observations
+   * bm25(entities_fts, 10.0, 5.0) gives name column 2x the weight of observations
    */
   private searchFTS5(query: string, limit: number): number[] {
     if (!query || query.trim() === '') {
@@ -426,8 +443,12 @@ export class KnowledgeGraph {
     }
 
     try {
+      // MAJOR-5 FIX: Use weighted BM25 ranking
+      // First param (10.0) = name column weight
+      // Second param (5.0) = observations column weight
+      // This prioritizes name matches over observation content matches
       const results = this.db.prepare(`
-        SELECT rowid, bm25(entities_fts) as rank
+        SELECT rowid, bm25(entities_fts, 10.0, 5.0) as rank
         FROM entities_fts
         WHERE entities_fts MATCH ?
         ORDER BY rank
@@ -450,16 +471,33 @@ export class KnowledgeGraph {
    * Converts user query to FTS5 query syntax
    *
    * ✅ CRITICAL-2 FIX: Escapes FTS5 operators to prevent query injection
+   * ✅ MAJOR-2 FIX: Validates query length and token count to prevent DoS
    */
   private prepareFTS5Query(query: string): string {
-    const normalized = query.trim().replace(/\s+/g, ' ');
+    // MAJOR-2 FIX: Limit query length to prevent DoS
+    const MAX_QUERY_LENGTH = 10000; // Characters
+    const MAX_TOKENS = 100; // Maximum number of search tokens
+
+    let normalized = query.trim().replace(/\s+/g, ' ');
     if (!normalized) {
       return '';
     }
 
-    const tokens = normalized.split(' ').filter(t => t.length > 0);
+    // Truncate if too long
+    if (normalized.length > MAX_QUERY_LENGTH) {
+      logger.warn(`[KG] FTS5 query too long (${normalized.length} chars), truncating to ${MAX_QUERY_LENGTH}`);
+      normalized = normalized.substring(0, MAX_QUERY_LENGTH);
+    }
+
+    let tokens = normalized.split(' ').filter(t => t.length > 0);
     if (tokens.length === 0) {
       return '';
+    }
+
+    // Limit token count
+    if (tokens.length > MAX_TOKENS) {
+      logger.warn(`[KG] FTS5 query has too many tokens (${tokens.length}), using first ${MAX_TOKENS}`);
+      tokens = tokens.slice(0, MAX_TOKENS);
     }
 
     // Build FTS5 query with prefix matching
@@ -496,6 +534,9 @@ export class KnowledgeGraph {
    * Create a new entity in the knowledge graph
    *
    * CRITICAL-1 FIX: Uses content_hash for atomic deduplication
+   * ✅ MAJOR-1 FIX: Entire operation wrapped in single transaction for atomicity
+   *    (entity CRUD + FTS5 sync are atomic - no race conditions)
+   *
    * Returns the actual entity name (may differ from input if deduplicated)
    *
    * @param entity Entity to create
@@ -526,101 +567,94 @@ export class KnowledgeGraph {
         // Continue to INSERT ... ON CONFLICT(name) DO UPDATE
       }
 
-      // CRITICAL-1: INSERT with content_hash to prevent race conditions
-      // Database UNIQUE constraint provides atomic deduplication
-      const stmt = this.db.prepare(`
-        INSERT INTO entities (name, type, metadata, content_hash)
-        VALUES (?, ?, json(?), ?)
-        ON CONFLICT(name) DO UPDATE SET
-          type = excluded.type,
-          metadata = excluded.metadata,
-          content_hash = excluded.content_hash
-      `);
-
-      stmt.run(
-        entity.name,
-        entity.entityType,
-        // CRITICAL-3: Use safeJsonStringify to handle circular references
-        safeJsonStringify(entity.metadata || {}, '{}'),
-        entity.contentHash || null
-      );
-
-      // Get actual entity ID
-      const actualEntity = this.db
-        .prepare('SELECT id FROM entities WHERE name = ?')
-        .get(entity.name) as { id: number };
-
-      const actualId = actualEntity.id;
-
-      // Clear old observations/tags if updating
-      this.db.prepare('DELETE FROM observations WHERE entity_id = ?').run(actualId);
-      this.db.prepare('DELETE FROM tags WHERE entity_id = ?').run(actualId);
-
-      // Add observations
-      if (entity.observations && entity.observations.length > 0) {
-        const obsStmt = this.db.prepare(`
-          INSERT INTO observations (entity_id, content)
-          VALUES (?, ?)
+      // ✅ MAJOR-1 FIX: Wrap ENTIRE createEntity operation in a single transaction
+      // This ensures entity CRUD + FTS5 sync are atomic, preventing race conditions
+      const result = this.db.transaction(() => {
+        // CRITICAL-1: INSERT with content_hash to prevent race conditions
+        // Database UNIQUE constraint provides atomic deduplication
+        const stmt = this.db.prepare(`
+          INSERT INTO entities (name, type, metadata, content_hash)
+          VALUES (?, ?, json(?), ?)
+          ON CONFLICT(name) DO UPDATE SET
+            type = excluded.type,
+            metadata = excluded.metadata,
+            content_hash = excluded.content_hash
         `);
 
-        for (const obs of entity.observations) {
-          obsStmt.run(actualId, obs);
-        }
-      }
+        stmt.run(
+          entity.name,
+          entity.entityType,
+          // CRITICAL-3: Use safeJsonStringify to handle circular references
+          safeJsonStringify(entity.metadata || {}, '{}'),
+          entity.contentHash || null
+        );
 
-      // Add tags
-      if (entity.tags && entity.tags.length > 0) {
-        const tagStmt = this.db.prepare(`
-          INSERT INTO tags (entity_id, tag)
-          VALUES (?, ?)
-        `);
+        // Get actual entity ID
+        const actualEntity = this.db
+          .prepare('SELECT id FROM entities WHERE name = ?')
+          .get(entity.name) as { id: number };
 
-        for (const tag of entity.tags) {
-          tagStmt.run(actualId, tag);
-        }
-      }
+        const actualId = actualEntity.id;
 
-      // Sync to FTS5 index
-      // For contentless FTS5 tables, we need to handle updates specially
-      // ✅ CRITICAL-1 FIX: Wrap FTS5 sync in transaction to prevent race condition
-      // ✅ MAJOR-1 FIX: Add error handling for FTS5 sync
-      const observationsText = entity.observations ? entity.observations.join(' ') : '';
-      try {
-        this.db.transaction(() => {
-          // Query existing FTS entry to get old content for proper deletion
-          const existingFtsContent = this.db
-            .prepare('SELECT name, observations FROM entities_fts WHERE rowid = ?')
-            .get(actualId) as { name: string; observations: string } | undefined;
+        // Clear old observations/tags if updating
+        this.db.prepare('DELETE FROM observations WHERE entity_id = ?').run(actualId);
+        this.db.prepare('DELETE FROM tags WHERE entity_id = ?').run(actualId);
 
-          if (existingFtsContent) {
-            // For contentless FTS5, delete requires exact original content
-            this.db.prepare(`
-              INSERT INTO entities_fts(entities_fts, rowid, name, observations)
-              VALUES('delete', ?, ?, ?)
-            `).run(actualId, existingFtsContent.name, existingFtsContent.observations);
+        // Add observations
+        if (entity.observations && entity.observations.length > 0) {
+          const obsStmt = this.db.prepare(`
+            INSERT INTO observations (entity_id, content)
+            VALUES (?, ?)
+          `);
+
+          for (const obs of entity.observations) {
+            obsStmt.run(actualId, obs);
           }
+        }
 
-          // Insert into FTS5 with concatenated observations
+        // Add tags
+        if (entity.tags && entity.tags.length > 0) {
+          const tagStmt = this.db.prepare(`
+            INSERT INTO tags (entity_id, tag)
+            VALUES (?, ?)
+          `);
+
+          for (const tag of entity.tags) {
+            tagStmt.run(actualId, tag);
+          }
+        }
+
+        // Sync to FTS5 index (within same transaction for atomicity)
+        // For contentless FTS5 tables, we need to handle updates specially
+        const observationsText = entity.observations ? entity.observations.join(' ') : '';
+
+        // Query existing FTS entry to get old content for proper deletion
+        const existingFtsContent = this.db
+          .prepare('SELECT name, observations FROM entities_fts WHERE rowid = ?')
+          .get(actualId) as { name: string; observations: string } | undefined;
+
+        if (existingFtsContent) {
+          // For contentless FTS5, delete requires exact original content
           this.db.prepare(`
-            INSERT INTO entities_fts(rowid, name, observations)
-            VALUES (?, ?, ?)
-          `).run(actualId, entity.name, observationsText);
-        })();
-      } catch (ftsError) {
-        // Log FTS5 sync failure but don't fail the entity creation
-        // Search will fall back to LIKE for this entity
-        logger.error('[KG] FTS5 sync failed for entity creation:', {
-          entityName: entity.name,
-          entityId: actualId,
-          error: ftsError instanceof Error ? ftsError.message : String(ftsError),
-        });
-      }
+            INSERT INTO entities_fts(entities_fts, rowid, name, observations)
+            VALUES('delete', ?, ?, ?)
+          `).run(actualId, existingFtsContent.name, existingFtsContent.observations);
+        }
+
+        // Insert into FTS5 with concatenated observations
+        this.db.prepare(`
+          INSERT INTO entities_fts(rowid, name, observations)
+          VALUES (?, ?, ?)
+        `).run(actualId, entity.name, observationsText);
+
+        return entity.name;
+      })();
 
       // Invalidate cache for entity queries
       this.queryCache.invalidatePattern(/^entities:/);
 
       logger.info(`[KG] Created entity: ${entity.name} (type: ${entity.entityType})`);
-      return entity.name;
+      return result;
     } catch (error) {
       // CRITICAL-1: Handle race condition - if UNIQUE constraint on content_hash fails
       // This can happen if two concurrent requests pass the initial check
@@ -991,6 +1025,8 @@ export class KnowledgeGraph {
 
   /**
    * Delete an entity and all its relations (cascade delete)
+   * ✅ MAJOR-1 FIX: Entire operation wrapped in single transaction for atomicity
+   *
    * @param name - Entity name to delete
    * @returns true if entity was deleted, false if not found
    * @throws {ValidationError} If the name is invalid
@@ -999,16 +1035,17 @@ export class KnowledgeGraph {
     // Validate entity name before any database operations
     this.validateEntityName(name);
 
-    const getEntityId = this.db.prepare('SELECT id FROM entities WHERE name = ?');
-    const entity = getEntityId.get(name) as { id: number } | undefined;
-
-    if (!entity) {
-      return false;
-    }
-
-    // ✅ CRITICAL-1 FIX: Wrap FTS5 delete + entity delete in transaction
-    // Prevents race condition where FTS5 content changes between SELECT and DELETE
+    // ✅ MAJOR-1 FIX: Wrap ENTIRE deleteEntity operation in a single transaction
+    // This ensures entity lookup + FTS5 delete + entity delete are atomic
     const result = this.db.transaction(() => {
+      // Get entity ID (inside transaction for atomicity)
+      const entity = this.db.prepare('SELECT id FROM entities WHERE name = ?')
+        .get(name) as { id: number } | undefined;
+
+      if (!entity) {
+        return { changes: 0 };
+      }
+
       // Delete from FTS5 index first (contentless table requires special syntax)
       // Must be done before entity deletion since we need the entity data
       const existingFts = this.db.prepare(

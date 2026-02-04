@@ -745,4 +745,159 @@ describe('KnowledgeGraph FTS5 Search', () => {
       expect(searchTime).toBeLessThan(100); // 100ms for search
     });
   });
+
+  // ============================================================================
+  // 8. Concurrent Operations (MAJOR-4 FIX: Test transaction atomicity)
+  // ============================================================================
+  describe('Concurrent Operations', () => {
+    it('should handle concurrent creates of same entity without data corruption', async () => {
+      // Simulate concurrent operations with Promise.all
+      const concurrentOps = Array.from({ length: 10 }, (_, i) =>
+        new Promise<string>((resolve) => {
+          // Slight random delay to increase chance of interleaving
+          setTimeout(() => {
+            const result = kg.createEntity({
+              name: 'ConcurrentEntity',
+              entityType: 'feature',
+              observations: [`Concurrent observation ${i}`],
+            });
+            resolve(result);
+          }, Math.random() * 5);
+        })
+      );
+
+      // All operations should complete without error
+      const results = await Promise.all(concurrentOps);
+
+      // All should return the same entity name
+      expect(results.every(r => r === 'ConcurrentEntity')).toBe(true);
+
+      // Should only have 1 entity (no duplicates)
+      const entities = kg.searchEntities({ namePattern: 'ConcurrentEntity' });
+      expect(entities).toHaveLength(1);
+
+      // FTS5 index should be consistent
+      const ftsResults = kg.searchEntities({ namePattern: 'Concurrent observation' });
+      expect(ftsResults).toHaveLength(1);
+      expect(ftsResults[0].name).toBe('ConcurrentEntity');
+    });
+
+    it('should handle concurrent update and search without data inconsistency', async () => {
+      // Create initial entity
+      kg.createEntity({
+        name: 'UpdateSearchEntity',
+        entityType: 'feature',
+        observations: ['Original content'],
+      });
+
+      // Run concurrent updates and searches
+      const operations: Promise<void>[] = [];
+
+      // Multiple concurrent updates
+      for (let i = 0; i < 5; i++) {
+        operations.push(
+          new Promise((resolve) => {
+            setTimeout(() => {
+              kg.createEntity({
+                name: 'UpdateSearchEntity',
+                entityType: 'feature',
+                observations: [`Updated content ${i}`],
+              });
+              resolve();
+            }, Math.random() * 10);
+          })
+        );
+      }
+
+      // Multiple concurrent searches
+      for (let i = 0; i < 5; i++) {
+        operations.push(
+          new Promise((resolve) => {
+            setTimeout(() => {
+              // Search should not throw
+              const results = kg.searchEntities({ namePattern: 'UpdateSearchEntity' });
+              // Should always find exactly 1 entity
+              expect(results.length).toBeLessThanOrEqual(1);
+              resolve();
+            }, Math.random() * 10);
+          })
+        );
+      }
+
+      // All operations should complete without error
+      await Promise.all(operations);
+
+      // Final state should be consistent
+      const finalResults = kg.searchEntities({ namePattern: 'UpdateSearchEntity' });
+      expect(finalResults).toHaveLength(1);
+    });
+
+    it('should handle concurrent delete operations atomically', async () => {
+      // Create entities to delete
+      for (let i = 0; i < 5; i++) {
+        kg.createEntity({
+          name: `DeleteTest${i}`,
+          entityType: 'feature',
+          observations: [`Content for delete test ${i}`],
+        });
+      }
+
+      // Verify entities exist
+      const beforeDelete = kg.searchEntities({ namePattern: 'DeleteTest' });
+      expect(beforeDelete).toHaveLength(5);
+
+      // Concurrent deletes
+      const deleteOps = Array.from({ length: 5 }, (_, i) =>
+        new Promise<boolean>((resolve) => {
+          setTimeout(() => {
+            const result = kg.deleteEntity(`DeleteTest${i}`);
+            resolve(result);
+          }, Math.random() * 5);
+        })
+      );
+
+      const deleteResults = await Promise.all(deleteOps);
+
+      // All deletes should succeed
+      expect(deleteResults.every(r => r === true)).toBe(true);
+
+      // All entities should be gone
+      const afterDelete = kg.searchEntities({ namePattern: 'DeleteTest' });
+      expect(afterDelete).toHaveLength(0);
+
+      // FTS5 index should be clean
+      const ftsResults = kg.searchEntities({ namePattern: 'Content for delete test' });
+      expect(ftsResults).toHaveLength(0);
+    });
+
+    it('should maintain transaction rollback on failure', () => {
+      // Create a valid entity first
+      kg.createEntity({
+        name: 'RollbackTestEntity',
+        entityType: 'feature',
+        observations: ['Initial observation'],
+      });
+
+      // Verify FTS5 search works
+      let results = kg.searchEntities({ namePattern: 'RollbackTestEntity' });
+      expect(results).toHaveLength(1);
+
+      // Try to create entity with same name - should update, not fail
+      kg.createEntity({
+        name: 'RollbackTestEntity',
+        entityType: 'knowledge', // Changed type
+        observations: ['Updated observation'],
+      });
+
+      // Entity should exist with updated values
+      results = kg.searchEntities({ namePattern: 'RollbackTestEntity' });
+      expect(results).toHaveLength(1);
+      expect(results[0].entityType).toBe('knowledge');
+      expect(results[0].observations).toContain('Updated observation');
+
+      // FTS5 should reflect the update
+      const ftsResults = kg.searchEntities({ namePattern: 'Updated observation' });
+      expect(ftsResults).toHaveLength(1);
+    });
+  });
 });

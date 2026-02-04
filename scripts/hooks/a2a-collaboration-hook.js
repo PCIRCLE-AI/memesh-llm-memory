@@ -16,17 +16,27 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { execFileSync } from 'child_process';
+import {
+  HOME_DIR,
+  STATE_DIR,
+  MEMESH_DB_PATH,
+  readJSONFile,
+  writeJSONFile,
+  sqliteQuery,
+  sqliteQueryJSON,
+  logError,
+  ensureDir,
+  THRESHOLDS,
+} from './hook-utils.js';
 
-// ============================================
+// ============================================================================
 // Configuration
-// ============================================
+// ============================================================================
 
-const HOME_DIR = process.env.HOME || os.homedir();
 const CCB_DATA_DIR = path.join(HOME_DIR, '.claude-code-buddy');
-const KG_DB_PATH = path.join(CCB_DATA_DIR, 'knowledge-graph.db');
 const AGENT_REGISTRY_PATH = path.join(CCB_DATA_DIR, 'a2a-registry.db');
-const STATE_DIR = path.join(HOME_DIR, '.claude', 'state');
 const AGENT_IDENTITY_FILE = path.join(STATE_DIR, 'agent-identity.json');
+const TASK_DB_PATH = path.join(CCB_DATA_DIR, 'a2a-tasks.db');
 
 // Name pool (Greek letters)
 const NAME_POOL = [
@@ -36,91 +46,19 @@ const NAME_POOL = [
   'Pi', 'Rho', 'Sigma', 'Tau', 'Upsilon'
 ];
 
-// ============================================
-// Utility Functions
-// ============================================
-
-/**
- * Execute SQLite query safely with parameterized values
- *
- * @param {string} dbPath - Path to SQLite database
- * @param {string} query - SQL query (use ? for parameters)
- * @param {string[]} params - Optional parameter values to bind
- * @returns {string} Query result as string, empty string on error
- */
-function sqliteQuery(dbPath, query, params) {
-  try {
-    const args = ['-separator', '|', dbPath];
-
-    let finalQuery = query;
-    if (params && params.length > 0) {
-      // Properly escape parameters: escape single quotes and wrap in quotes
-      const escapedParams = params.map((p) =>
-        p === null || p === undefined ? 'NULL' : `'${String(p).replace(/'/g, "''")}'`
-      );
-
-      // Replace ? placeholders with escaped values
-      let paramIndex = 0;
-      finalQuery = query.replace(/\?/g, () => {
-        if (paramIndex < escapedParams.length) {
-          return escapedParams[paramIndex++];
-        }
-        return '?';
-      });
-    }
-
-    const result = execFileSync('sqlite3', [...args, finalQuery], {
-      encoding: 'utf-8',
-      timeout: 5000
-    });
-    return result.trim();
-  } catch (error) {
-    return '';
-  }
-}
-
-/**
- * Read JSON file safely
- */
-function readJSON(filePath, defaultValue = null) {
-  try {
-    if (fs.existsSync(filePath)) {
-      return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-    }
-  } catch (error) {
-    // Ignore errors
-  }
-  return defaultValue;
-}
-
-/**
- * Write JSON file safely
- */
-function writeJSON(filePath, data) {
-  try {
-    const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-    return true;
-  } catch (error) {
-    return false;
-  }
-}
-
-// ============================================
+// ============================================================================
 // 1. Agent Check-in System
-// ============================================
+// ============================================================================
 
 /**
  * Get names currently in use from knowledge graph
+ * @returns {string[]} Array of names currently in use
  */
 function getUsedNames() {
-  if (!fs.existsSync(KG_DB_PATH)) return [];
+  if (!fs.existsSync(MEMESH_DB_PATH)) return [];
 
-  const query = "SELECT name FROM entities WHERE type='session_identity' AND name LIKE 'Online Agent:%'";
-  const result = sqliteQuery(KG_DB_PATH, query);
+  const query = "SELECT name FROM entities WHERE type = ? AND name LIKE ?";
+  const result = sqliteQuery(MEMESH_DB_PATH, query, ['session_identity', 'Online Agent:%']);
 
   if (!result) return [];
 
@@ -131,12 +69,13 @@ function getUsedNames() {
 
 /**
  * Get online agents from registry
+ * @returns {string[]} Array of active agent IDs
  */
 function getOnlineAgents() {
   if (!fs.existsSync(AGENT_REGISTRY_PATH)) return [];
 
-  const query = "SELECT agent_id FROM agents WHERE status='active' ORDER BY last_heartbeat DESC LIMIT 10";
-  const result = sqliteQuery(AGENT_REGISTRY_PATH, query);
+  const query = "SELECT agent_id FROM agents WHERE status = ? ORDER BY last_heartbeat DESC LIMIT 10";
+  const result = sqliteQuery(AGENT_REGISTRY_PATH, query, ['active']);
 
   return result ? result.split('\n').filter(Boolean) : [];
 }
@@ -146,6 +85,8 @@ function getOnlineAgents() {
  *
  * Uses INSERT OR IGNORE to atomically claim a name, preventing race conditions
  * where two agents starting simultaneously could get the same name.
+ *
+ * @returns {string} Available agent name
  */
 function pickAvailableName() {
   const usedNames = getUsedNames();
@@ -153,17 +94,18 @@ function pickAvailableName() {
 
   for (const name of NAME_POOL) {
     if (!usedNames.includes(name)) {
-      if (fs.existsSync(KG_DB_PATH)) {
+      if (fs.existsSync(MEMESH_DB_PATH)) {
         const entityName = `Online Agent: ${name}`;
-        // INSERT OR IGNORE is atomic
+        // INSERT OR IGNORE is atomic - prevents race conditions
         sqliteQuery(
-          KG_DB_PATH,
+          MEMESH_DB_PATH,
           'INSERT OR IGNORE INTO entities (name, type, created_at) VALUES (?, ?, ?)',
           [entityName, 'session_identity', now]
         );
 
+        // Verify we got the name
         const verifyResult = sqliteQuery(
-          KG_DB_PATH,
+          MEMESH_DB_PATH,
           'SELECT id FROM entities WHERE name = ?',
           [entityName]
         );
@@ -171,17 +113,20 @@ function pickAvailableName() {
         if (verifyResult) {
           return name;
         }
+        // Another agent took this name, try next
         continue;
       }
       return name;
     }
   }
 
+  // Fallback: generate unique name if all Greek letters are taken
   return `Agent-${Date.now().toString(36)}`;
 }
 
 /**
  * Generate unique agent ID based on hostname and timestamp
+ * @returns {string} Unique agent ID
  */
 function generateAgentId() {
   const hostname = os.hostname().toLowerCase().replace(/[^a-z0-9]/g, '-');
@@ -191,22 +136,26 @@ function generateAgentId() {
 
 /**
  * Register agent to Knowledge Graph using atomic operations
+ * @param {object} identity - Agent identity object
+ * @returns {boolean} True if registration successful
  */
 function registerToKnowledgeGraph(identity) {
-  if (!fs.existsSync(KG_DB_PATH)) return false;
+  if (!fs.existsSync(MEMESH_DB_PATH)) return false;
 
   const entityName = `Online Agent: ${identity.name}`;
   const now = new Date().toISOString();
 
   try {
+    // Create entity with atomic operation
     sqliteQuery(
-      KG_DB_PATH,
+      MEMESH_DB_PATH,
       'INSERT OR IGNORE INTO entities (name, type, created_at) VALUES (?, ?, ?)',
       [entityName, 'session_identity', now]
     );
 
+    // Get entity ID for observations
     const entityId = sqliteQuery(
-      KG_DB_PATH,
+      MEMESH_DB_PATH,
       'SELECT id FROM entities WHERE name = ?',
       [entityName]
     );
@@ -222,7 +171,7 @@ function registerToKnowledgeGraph(identity) {
 
       for (const obs of observations) {
         sqliteQuery(
-          KG_DB_PATH,
+          MEMESH_DB_PATH,
           'INSERT INTO observations (entity_id, content, created_at) VALUES (?, ?, ?)',
           [entityId, obs, now]
         );
@@ -231,33 +180,39 @@ function registerToKnowledgeGraph(identity) {
 
     return true;
   } catch (error) {
+    logError('registerToKnowledgeGraph', error);
     return false;
   }
 }
 
 /**
- * Load existing identity
+ * Load existing agent identity from file
+ * @returns {object|null} Agent identity or null
  */
 function loadIdentity() {
-  return readJSON(AGENT_IDENTITY_FILE);
+  return readJSONFile(AGENT_IDENTITY_FILE, null);
 }
 
 /**
- * Save identity
+ * Save agent identity to file
+ * @param {object} identity - Agent identity to save
+ * @returns {boolean} True if save successful
  */
 function saveIdentity(identity) {
-  return writeJSON(AGENT_IDENTITY_FILE, identity);
+  ensureDir(STATE_DIR);
+  return writeJSONFile(AGENT_IDENTITY_FILE, identity);
 }
 
 /**
- * Check-in and broadcast
+ * Check-in and broadcast agent presence
+ * @returns {object} Agent identity
  */
 export function agentCheckIn() {
-  // Check if already checked in
+  // Check if already checked in within session timeout
   const existingIdentity = loadIdentity();
   if (existingIdentity && existingIdentity.sessionStart) {
     const sessionAge = Date.now() - new Date(existingIdentity.sessionStart).getTime();
-    if (sessionAge < 60 * 60 * 1000) {
+    if (sessionAge < THRESHOLDS.A2A_SESSION_TIMEOUT) {
       return existingIdentity;
     }
   }
@@ -279,64 +234,52 @@ export function agentCheckIn() {
   return identity;
 }
 
-// ============================================
+// ============================================================================
 // 2. Task Reception System
-// ============================================
+// ============================================================================
 
 /**
  * Check for pending tasks - uses JSON output for robust parsing
+ *
+ * JSON output mode avoids issues with pipe characters in task descriptions
+ * that would corrupt the standard pipe-delimited output format.
+ *
+ * @param {string} agentId - Agent ID to check tasks for (currently unused, checks all)
+ * @returns {Array<{id: string, description: string, state: string, createdAt: string, senderId: string}>}
  */
 export function checkPendingTasks(agentId) {
-  const taskDbPath = path.join(CCB_DATA_DIR, 'a2a-tasks.db');
-  if (!fs.existsSync(taskDbPath)) return [];
+  if (!fs.existsSync(TASK_DB_PATH)) return [];
 
   try {
-    const result = execFileSync(
-      'sqlite3',
-      [
-        '-json',
-        taskDbPath,
-        "SELECT id, description, state, created_at as createdAt, sender_id as senderId FROM tasks WHERE state='SUBMITTED' ORDER BY created_at DESC LIMIT 10"
-      ],
-      { encoding: 'utf-8', timeout: 5000 }
+    // Use JSON output mode for robust parsing (handles pipe characters in descriptions)
+    const tasks = sqliteQueryJSON(
+      TASK_DB_PATH,
+      "SELECT id, description, state, created_at as createdAt, sender_id as senderId FROM tasks WHERE state = ? ORDER BY created_at DESC LIMIT 10",
+      ['SUBMITTED']
     );
 
-    if (!result.trim()) return [];
+    if (!Array.isArray(tasks)) return [];
 
-    const parsed = JSON.parse(result);
-    return parsed.map((row) => ({
-      id: String(row.id),
+    return tasks.map((row) => ({
+      id: String(row.id || ''),
       description: row.description || '',
-      state: row.state,
+      state: row.state || '',
       createdAt: row.createdAt || '',
       senderId: row.senderId || ''
     }));
   } catch (error) {
-    // Fallback for older SQLite without -json support
-    const query = "SELECT id, description, state, created_at, sender_id FROM tasks WHERE state='SUBMITTED' ORDER BY created_at DESC LIMIT 10";
-    const result = sqliteQuery(taskDbPath, query);
-
-    if (!result) return [];
-
-    return result.split('\n').filter(Boolean).map(line => {
-      const parts = line.split('|');
-      const id = parts[0] || '';
-      const senderId = parts[parts.length - 1] || '';
-      const createdAt = parts[parts.length - 2] || '';
-      const state = parts[parts.length - 3] || '';
-      const description = parts.slice(1, -3).join('|');
-
-      return { id, description, state, createdAt, senderId };
-    });
+    logError('checkPendingTasks', error);
+    return [];
   }
 }
 
-// ============================================
+// ============================================================================
 // 3. Result Reporting System
-// ============================================
+// ============================================================================
 
 /**
- * Get latest commit hash
+ * Get latest git commit hash
+ * @returns {string|null} Short commit hash or null if not in git repo
  */
 export function getLatestCommitHash() {
   try {
@@ -346,12 +289,14 @@ export function getLatestCommitHash() {
     });
     return result.trim();
   } catch (error) {
+    logError('getLatestCommitHash', error);
     return null;
   }
 }
 
 /**
- * Get latest commit message
+ * Get latest git commit message
+ * @returns {string|null} Commit message or null if not in git repo
  */
 export function getLatestCommitMessage() {
   try {
@@ -361,12 +306,17 @@ export function getLatestCommitMessage() {
     });
     return result.trim();
   } catch (error) {
+    logError('getLatestCommitMessage', error);
     return null;
   }
 }
 
 /**
  * Format task completion report
+ * @param {string} taskId - Completed task ID
+ * @param {string} commitHash - Git commit hash
+ * @param {string} commitMessage - Git commit message
+ * @returns {object} Formatted completion report
  */
 export function formatTaskCompletionReport(taskId, commitHash, commitMessage) {
   return {
@@ -377,17 +327,20 @@ export function formatTaskCompletionReport(taskId, commitHash, commitMessage) {
   };
 }
 
-// ============================================
+// ============================================================================
 // 4. Display Functions
-// ============================================
+// ============================================================================
 
 /**
- * Display check-in broadcast
+ * Display check-in broadcast to console
+ * @param {object} identity - Agent identity
+ * @param {string[]} onlineAgents - List of online agent IDs
+ * @param {Array} pendingTasks - List of pending tasks
  */
 function displayCheckInBroadcast(identity, onlineAgents, pendingTasks) {
   console.log('');
   console.log('='.repeat(60));
-  console.log('  A2A Collaboration System');
+  console.log('  🤖 MeMesh A2A Collaboration System');
   console.log('='.repeat(60));
   console.log('');
   console.log(`  BROADCAST: ${identity.name} is now online!`);
@@ -410,7 +363,7 @@ function displayCheckInBroadcast(identity, onlineAgents, pendingTasks) {
 
   // Show pending tasks
   if (pendingTasks.length > 0) {
-    console.log('  Pending tasks for you:');
+    console.log('  📋 Pending tasks for you:');
     pendingTasks.slice(0, 3).forEach((task, i) => {
       console.log(`     ${i + 1}. [${task.state}] ${task.description?.slice(0, 50)}...`);
       console.log(`        From: ${task.senderId} | ID: ${task.id}`);
@@ -441,6 +394,7 @@ function displayCheckInBroadcast(identity, onlineAgents, pendingTasks) {
 
 /**
  * Display already checked in message
+ * @param {object} identity - Agent identity
  */
 function displayAlreadyCheckedIn(identity) {
   console.log('');
@@ -449,20 +403,22 @@ function displayAlreadyCheckedIn(identity) {
   console.log('');
 }
 
-// ============================================
+// ============================================================================
 // Main Entry Point
-// ============================================
+// ============================================================================
 
 /**
  * Main A2A collaboration initialization
+ * Called on session start to register agent and check for tasks
+ * @returns {object} Agent identity
  */
 export function initA2ACollaboration() {
-  // Check if already checked in
+  // Check if already checked in within session timeout
   const existingIdentity = loadIdentity();
 
   if (existingIdentity && existingIdentity.sessionStart) {
     const sessionAge = Date.now() - new Date(existingIdentity.sessionStart).getTime();
-    if (sessionAge < 60 * 60 * 1000) {
+    if (sessionAge < THRESHOLDS.A2A_SESSION_TIMEOUT) {
       displayAlreadyCheckedIn(existingIdentity);
       return existingIdentity;
     }
@@ -480,6 +436,8 @@ export function initA2ACollaboration() {
 
 /**
  * Update agent specialization
+ * @param {string} newSpecialization - New specialization description
+ * @returns {object|null} Updated identity or null if no identity found
  */
 export function updateSpecialization(newSpecialization) {
   const identity = loadIdentity();
@@ -493,7 +451,7 @@ export function updateSpecialization(newSpecialization) {
   saveIdentity(identity);
 
   console.log('');
-  console.log(`  Specialization updated!`);
+  console.log(`  🧠 MeMesh: Specialization updated!`);
   console.log(`     Name: ${identity.name}`);
   console.log(`     New Specialization: ${newSpecialization}`);
   console.log('');
@@ -502,13 +460,17 @@ export function updateSpecialization(newSpecialization) {
 }
 
 /**
- * Get current identity
+ * Get current agent identity
+ * @returns {object|null} Current identity or null
  */
 export function getCurrentIdentity() {
   return loadIdentity();
 }
 
-// Run if executed directly
+// ============================================================================
+// Standalone Execution
+// ============================================================================
+
 const isMainModule = process.argv[1] &&
   (process.argv[1].endsWith('a2a-collaboration-hook.js') ||
    process.argv[1].endsWith('a2a-collaboration-hook'));

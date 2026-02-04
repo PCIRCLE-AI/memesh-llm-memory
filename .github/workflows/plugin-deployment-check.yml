@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v3
-      
+      - uses: actions/checkout@v6
+
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           
@@ -67,11 +67,15 @@ jobs:
           
       - name: Check for secrets
         run: |
-          if grep -r "MEMESH_A2A_TOKEN=" .env 2>/dev/null; then
-            echo "❌ .env file should not be committed"
+          # Check for actual token VALUES (64-char hex strings), not variable NAMES
+          # Pattern: MEMESH_A2A_TOKEN= followed by 64 hex characters
+          LEAKED_FILES=$(git ls-files | xargs grep -lE "MEMESH_A2A_TOKEN=[a-f0-9]{64}" 2>/dev/null | grep -v ".env.example" || true)
+          if [ -n "$LEAKED_FILES" ]; then
+            echo "❌ Found actual token values in repository:"
+            echo "$LEAKED_FILES"
             exit 1
           fi
-          echo "✅ No secrets in repository"
+          echo "✅ No leaked secrets found"
           
       - name: Deployment Checklist Summary
         run: |

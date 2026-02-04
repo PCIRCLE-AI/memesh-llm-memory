@@ -3,7 +3,6 @@ import type { Router } from '../../orchestrator/router.js';
 import type { ResponseFormatter } from '../../ui/ResponseFormatter.js';
 import type { ProjectAutoTracker } from '../../memory/ProjectAutoTracker.js';
 import { logger } from '../../utils/logger.js';
-import { ProgressIndicator } from '../../ui/ProgressIndicator.js';
 
 export const BuddyDoInputSchema = z.object({
   task: z.string().trim().min(1).describe('Task description for MeMesh to execute with smart routing'),
@@ -122,17 +121,27 @@ export async function executeBuddyDo(
       },
     });
 
+    // MeMesh memory reminder - prompts AI to save implementation details after completion
+    const memeshReminder = [
+      '',
+      '🧠 MeMesh Auto-Memory Reminder:',
+      'After completing this task, save key implementation details:',
+      '  create-entities with observations like:',
+      '  - What was implemented (specific configs, values, patterns)',
+      '  - Key decisions made and why',
+      '  - Any gotchas or important notes for future reference',
+    ].join('\n');
+
     return {
       content: [
         {
           type: 'text' as const,
-          text: formattedResponse,
+          text: formattedResponse + memeshReminder,
         },
       ],
     };
   } catch (error) {
     const errorObj = error instanceof Error ? error : new Error(String(error));
-    const durationMs = Date.now() - startTime;
 
     logger.error('buddy_do task failed', { taskId, error: errorObj.message });
 

@@ -13,7 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions npm publish workflow - replaced invalid GitHub API method with logging
 - Fixed workflow comment step that was causing publish failures
 
-See [RELEASE_NOTES_v2.6.6.md](RELEASE_NOTES_v2.6.6.md) for detailed release notes.
 
 ## [2.6.5] - 2026-02-03
 
@@ -45,7 +44,7 @@ See [RELEASE_NOTES_v2.6.6.md](RELEASE_NOTES_v2.6.6.md) for detailed release note
 ### Documentation
 - Added comprehensive GETTING_STARTED.md guide
 - Updated docs/README.md with getting-started link
-- Created detailed release notes (RELEASE_NOTES_v2.6.5.md)
+- Created detailed release notes
 
 ### Quality
 - Code review score: 95/100 (EXCELLENT)
@@ -53,7 +52,6 @@ See [RELEASE_NOTES_v2.6.6.md](RELEASE_NOTES_v2.6.6.md) for detailed release note
 - 100% backward compatibility maintained
 - No breaking changes
 
-See [RELEASE_NOTES_v2.6.5.md](RELEASE_NOTES_v2.6.5.md) for detailed release notes.
 
 ## [2.8.0] - 2026-02-01
 

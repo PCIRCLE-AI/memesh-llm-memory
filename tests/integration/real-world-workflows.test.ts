@@ -84,14 +84,15 @@ export function divide(a: number, b: number): number {
       const testFile = path.join(TEST_WORKSPACE, 'calculator.test.ts');
       await fs.writeFile(testFile, testCode);
 
-      // 5. Verify test file was created
-      const stats = await fs.stat(testFile);
-      expect(stats.isFile()).toBe(true);
-
-      // Note: Running the generated tests requires the source file to be importable,
+      // 5. Verify test file was created and has expected content
+      // Note: We read the file directly instead of checking stats first to avoid
+      // TOCTOU (time-of-check to time-of-use) race conditions. If the file doesn't
+      // exist or isn't readable, fs.readFile will throw an error.
+      // Running the generated tests requires the source file to be importable,
       // which would require a full TypeScript compilation setup. We verify the test
       // file structure instead.
       const testContent = await fs.readFile(testFile, 'utf-8');
+      expect(testContent).toBeDefined();
       expect(testContent).toContain('import');
       expect(testContent).toContain('calculator');
     });

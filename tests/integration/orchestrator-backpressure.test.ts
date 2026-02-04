@@ -57,9 +57,9 @@ describe('P1-11: Backpressure in Parallel Execution', () => {
 
   describe('Resource Monitoring', () => {
     it('should apply backpressure when CPU usage is high', async () => {
-      // Mock high CPU usage
+      // Mock high CPU usage that transitions to normal after a few calls
       let callCount = 0;
-      vi.mocked(cpus).mockReturnValue(
+      vi.mocked(cpus).mockImplementation(() =>
         Array(8).fill({
           model: 'Mock CPU',
           speed: 3000,

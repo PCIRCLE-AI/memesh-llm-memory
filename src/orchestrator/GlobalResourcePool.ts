@@ -12,12 +12,8 @@
  */
 
 import { SystemResourceManager, SystemResourcesConfig } from '../utils/SystemResources.js';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import os from 'os';
 import { logger } from '../utils/logger.js';
-
-const execAsync = promisify(exec);
 
 export interface ResourceSlot {
   type: 'e2e' | 'build' | 'heavy_compute';

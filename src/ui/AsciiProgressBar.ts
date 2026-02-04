@@ -243,7 +243,6 @@ export function distributionBar(
   // Adjust for rounding errors
   const currentWidth = segments.join('').replace(/\u001b\[[0-9;]*m/g, '').length;
   if (currentWidth < opts.width && segments.length > 0) {
-    const lastEntry = entries[entries.length - 1];
     const lastColor = opts.colors[(entries.length - 1) % opts.colors.length];
     const lastChar = opts.chars[(entries.length - 1) % opts.chars.length];
     const colorFn = chalk[lastColor] || chalk.white;

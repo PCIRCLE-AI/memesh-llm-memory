@@ -273,8 +273,13 @@ function writeJSON(filePath: string, data: unknown): boolean {
 
 /**
  * Get names currently in use from knowledge graph
+ *
+ * @deprecated This function was part of the original TOCTOU-vulnerable implementation.
+ * It is kept for reference but no longer used. The current implementation uses atomic
+ * INSERT with WHERE NOT EXISTS in pickAvailableName() to prevent race conditions.
+ * See pickAvailableName() for the secure implementation.
  */
-function getUsedNames(): string[] {
+function _getUsedNames(): string[] {
   if (!fs.existsSync(KG_DB_PATH)) return [];
 
   const query =

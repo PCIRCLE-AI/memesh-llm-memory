@@ -12,6 +12,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import net from 'net';
+import crypto from 'crypto';
 import {
   DaemonBootstrap,
   isDaemonDisabled,
@@ -22,10 +23,10 @@ import {
 import { DaemonLockManager, type LockInfo } from '../DaemonLockManager.js';
 import { IpcTransport } from '../IpcTransport.js';
 
-// Test in a temporary directory
-const TEST_DIR = path.join(os.tmpdir(), 'memesh-bootstrap-test-' + process.pid);
-const TEST_LOCK_PATH = path.join(TEST_DIR, 'daemon.lock');
-const TEST_SOCKET_PATH = path.join(TEST_DIR, 'daemon.sock');
+// Test directory paths - initialized in beforeEach for unique isolation
+let TEST_DIR: string;
+let TEST_LOCK_PATH: string;
+let TEST_SOCKET_PATH: string;
 
 // Mock the PathResolver to use test directory
 vi.mock('../../../utils/PathResolver.js', () => ({
@@ -36,10 +37,10 @@ describe('DaemonBootstrap', () => {
   let mockServer: net.Server | null = null;
 
   beforeEach(() => {
-    // Create test directory
-    if (!fs.existsSync(TEST_DIR)) {
-      fs.mkdirSync(TEST_DIR, { recursive: true });
-    }
+    // Create unique temporary directory for test isolation using crypto.randomUUID
+    TEST_DIR = fs.mkdtempSync(path.join(os.tmpdir(), `memesh-bootstrap-test-${crypto.randomUUID().slice(0, 8)}-`));
+    TEST_LOCK_PATH = path.join(TEST_DIR, 'daemon.lock');
+    TEST_SOCKET_PATH = path.join(TEST_DIR, 'daemon.sock');
 
     // Reset environment
     delete process.env.MEMESH_DISABLE_DAEMON;

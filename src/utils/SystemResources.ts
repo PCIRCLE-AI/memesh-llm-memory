@@ -9,12 +9,8 @@
  */
 
 import os from 'os';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import { logger } from './logger.js';
 import { safeDivide, bytesToMB } from './index.js';
-
-const execAsync = promisify(exec);
 
 /**
  * Configuration for system resource management

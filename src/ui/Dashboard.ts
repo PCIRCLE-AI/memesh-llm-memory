@@ -12,6 +12,7 @@
  * - Periodic updates with configurable interval
  */
 
+import { randomUUID } from 'crypto';
 import { ResourceMonitor } from '../core/ResourceMonitor.js';
 import { UIEventBus } from './UIEventBus.js';
 import {
@@ -134,9 +135,6 @@ export class Dashboard {
    * Update dashboard (called periodically)
    */
   private updateDashboard(): void {
-    // Update resource stats
-    const resources = this.resourceMonitor.getCurrentResources();
-
     // Emit metrics update event
     this.uiEventBus.emitMetricsUpdate({
       sessionStart: this.sessionMetrics.startedAt,
@@ -231,7 +229,8 @@ export class Dashboard {
    * Generate unique ID with given prefix
    */
   private generateId(prefix: string): string {
-    return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    // Use crypto.randomUUID() for secure random ID generation (fixes insecure randomness warning)
+    return `${prefix}-${Date.now()}-${randomUUID().slice(0, 8)}`;
   }
 
   /**

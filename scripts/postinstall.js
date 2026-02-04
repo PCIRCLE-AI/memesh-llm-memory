@@ -43,13 +43,9 @@ if (!a2aToken) {
   a2aToken = randomBytes(32).toString('hex');
 
   try {
-    if (existsSync(envFile)) {
-      // Append to existing .env
-      appendFileSync(envFile, `\nMEMESH_A2A_TOKEN=${a2aToken}\n`, 'utf-8');
-    } else {
-      // Create new .env
-      writeFileSync(envFile, `MEMESH_A2A_TOKEN=${a2aToken}\n`, 'utf-8');
-    }
+    // Use atomic append operation with error handling to avoid TOCTOU race condition
+    // appendFileSync will create the file if it doesn't exist
+    appendFileSync(envFile, `MEMESH_A2A_TOKEN=${a2aToken}\n`, 'utf-8');
   } catch (error) {
     // If we can't write .env, continue anyway (user can set token manually)
     console.warn(chalk.yellow(`⚠️  Could not write .env file: ${error.message}`));
@@ -79,10 +75,8 @@ try {
     serverPath = join(projectRoot, 'dist', 'mcp', 'server-bootstrap.js');
   }
 
-  // Create ~/.claude directory if it doesn't exist
-  if (!existsSync(claudeDir)) {
-    mkdirSync(claudeDir, { recursive: true });
-  }
+  // Create ~/.claude directory (recursive: true handles existing directory safely, avoids TOCTOU race condition)
+  mkdirSync(claudeDir, { recursive: true });
 
   // Read existing config or create new one
   let mcpConfig = { mcpServers: {} };
@@ -129,7 +123,7 @@ try {
     delete mcpConfig.mcpServers['claude-code-buddy'];
   }
 
-  // Write config
+  // Write config (directory already ensured above with mkdirSync recursive)
   writeFileSync(mcpConfigPath, JSON.stringify(mcpConfig, null, 2) + '\n', 'utf-8');
   mcpConfigured = true;
 } catch (error) {

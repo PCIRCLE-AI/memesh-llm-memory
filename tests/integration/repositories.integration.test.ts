@@ -14,7 +14,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { SQLiteStore } from '../../src/evolution/storage/SQLiteStore.js';
-import type { Task, Execution, Span } from '../../src/evolution/storage/types';
+import type { Span } from '../../src/evolution/storage/types';
 import { v4 as uuid } from 'uuid';
 
 describe('Repository Pattern Integration Tests', () => {
@@ -143,26 +143,26 @@ describe('Repository Pattern Integration Tests', () => {
 
     it('should filter tasks by status', async () => {
       // Create tasks with different statuses
-      const task1 = await store.createTask({ query: 'Task 1' });
-      const task2 = await store.createTask({ query: 'Task 2' });
-      const task3 = await store.createTask({ query: 'Task 3' });
+      const taskRunning = await store.createTask({ query: 'Task 1' });
+      const taskCompleted = await store.createTask({ query: 'Task 2' });
+      const taskPending = await store.createTask({ query: 'Task 3' });
 
-      await store.updateTask(task1.id, { status: 'running' });
-      await store.updateTask(task2.id, { status: 'completed' });
-      // task3 remains pending
+      await store.updateTask(taskRunning.id, { status: 'running' });
+      await store.updateTask(taskCompleted.id, { status: 'completed' });
+      // taskPending remains pending
 
       // Filter by status
       const pendingTasks = await store.listTasks({ status: 'pending' });
       expect(pendingTasks).toHaveLength(1);
-      expect(pendingTasks[0].id).toBe(task3.id);
+      expect(pendingTasks[0].id).toBe(taskPending.id);
 
       const runningTasks = await store.listTasks({ status: 'running' });
       expect(runningTasks).toHaveLength(1);
-      expect(runningTasks[0].id).toBe(task1.id);
+      expect(runningTasks[0].id).toBe(taskRunning.id);
 
       const completedTasks = await store.listTasks({ status: 'completed' });
       expect(completedTasks).toHaveLength(1);
-      expect(completedTasks[0].id).toBe(task2.id);
+      expect(completedTasks[0].id).toBe(taskCompleted.id);
     });
 
     it('should return tasks in descending order by created_at', async () => {

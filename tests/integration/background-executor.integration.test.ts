@@ -24,7 +24,6 @@ import {
   ExecutionConfig,
   DEFAULT_EXECUTION_CONFIG,
   TaskStatus,
-  BackgroundTask,
 } from '../../src/core/types.js';
 
 /**
@@ -70,7 +69,7 @@ function createFailingTask(errorMessage: string = 'Task failed') {
  * Helper: Create a timeout task that never completes
  */
 function createTimeoutTask() {
-  return async ({ updateProgress, isCancelled }: any) => {
+  return async ({ updateProgress, isCancelled }: { updateProgress: (progress: number, stage: string) => void; isCancelled: () => boolean }) => {
     updateProgress(0.1, 'started');
     // Never completes - keeps checking for cancellation
     while (!isCancelled()) {
@@ -196,21 +195,21 @@ describe('BackgroundExecutor Integration Tests', () => {
       const executionOrder: string[] = [];
 
       // Create tasks that record execution order
-      const createOrderedTask = (name: string) => async ({ updateProgress }: any) => {
+      const createOrderedTask = (name: string) => async ({ updateProgress }: { updateProgress: (progress: number, stage: string) => void }) => {
         executionOrder.push(name);
         updateProgress(1.0, 'completed');
         return { name };
       };
 
       // Submit low priority first
-      const lowTaskId = await executor.executeTask(createOrderedTask('low'), {
+      const _lowTaskId = await executor.executeTask(createOrderedTask('low'), {
         ...DEFAULT_EXECUTION_CONFIG,
         mode: 'background',
         priority: 'low',
       });
 
       // Submit high priority second (should execute first)
-      const highTaskId = await executor.executeTask(createOrderedTask('high'), {
+      const _highTaskId = await executor.executeTask(createOrderedTask('high'), {
         ...DEFAULT_EXECUTION_CONFIG,
         mode: 'background',
         priority: 'high',
@@ -222,8 +221,8 @@ describe('BackgroundExecutor Integration Tests', () => {
       // High priority should execute first (if they were both queued)
       // Note: If low task already started, high will be second
       // We just verify both completed
-      const lowTask = executor.getTask(lowTaskId);
-      const highTask = executor.getTask(highTaskId);
+      const lowTask = executor.getTask(_lowTaskId);
+      const highTask = executor.getTask(_highTaskId);
 
       expect(lowTask!.status).toBe('completed');
       expect(highTask!.status).toBe('completed');
@@ -287,7 +286,6 @@ describe('BackgroundExecutor Integration Tests', () => {
   describe('2. Execution Monitoring Integration', () => {
     it('should track task progress from queued → running → completed', async () => {
       const progressUpdates: number[] = [];
-      const stageUpdates: string[] = [];
 
       const config: ExecutionConfig = {
         ...DEFAULT_EXECUTION_CONFIG,
@@ -562,7 +560,7 @@ describe('BackgroundExecutor Integration Tests', () => {
         },
       };
 
-      const taskIds = await Promise.all([
+      await Promise.all([
         executor.executeTask(createFastTask({ id: 1 }), config),
         executor.executeTask(createFastTask({ id: 2 }), config),
         executor.executeTask(createFastTask({ id: 3 }), config),

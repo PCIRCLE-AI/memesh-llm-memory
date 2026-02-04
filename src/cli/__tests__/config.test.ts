@@ -6,6 +6,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs-extra';
 import path from 'path';
 import os from 'os';
+import crypto from 'crypto';
 import { ConfigManager } from '../config.js';
 
 describe('ConfigManager', () => {
@@ -52,19 +53,19 @@ describe('ConfigManager', () => {
   });
 
   describe('validateConfig', () => {
-    const testConfigPath = path.join(os.tmpdir(), 'test-claude-config.json');
+    let testTempDir: string;
+    let testConfigPath: string;
 
     beforeEach(async () => {
-      // Clean up any existing test config
-      if (await fs.pathExists(testConfigPath)) {
-        await fs.remove(testConfigPath);
-      }
+      // Create unique temporary directory for test isolation
+      testTempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ccb-config-test-'));
+      testConfigPath = path.join(testTempDir, `config-${crypto.randomUUID()}.json`);
     });
 
     afterEach(async () => {
-      // Clean up test config
-      if (await fs.pathExists(testConfigPath)) {
-        await fs.remove(testConfigPath);
+      // Clean up entire temporary directory
+      if (testTempDir && await fs.pathExists(testTempDir)) {
+        await fs.remove(testTempDir);
       }
     });
 
@@ -214,17 +215,19 @@ describe('ConfigManager', () => {
   });
 
   describe('readConfig', () => {
-    const testConfigPath = path.join(os.tmpdir(), 'test-read-config.json');
+    let testTempDir: string;
+    let testConfigPath: string;
 
     beforeEach(async () => {
-      if (await fs.pathExists(testConfigPath)) {
-        await fs.remove(testConfigPath);
-      }
+      // Create unique temporary directory for test isolation
+      testTempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ccb-read-config-test-'));
+      testConfigPath = path.join(testTempDir, `config-${crypto.randomUUID()}.json`);
     });
 
     afterEach(async () => {
-      if (await fs.pathExists(testConfigPath)) {
-        await fs.remove(testConfigPath);
+      // Clean up entire temporary directory
+      if (testTempDir && await fs.pathExists(testTempDir)) {
+        await fs.remove(testTempDir);
       }
     });
 
@@ -265,17 +268,19 @@ describe('ConfigManager', () => {
   });
 
   describe('writeConfig', () => {
-    const testConfigPath = path.join(os.tmpdir(), 'test-write-config.json');
+    let testTempDir: string;
+    let testConfigPath: string;
 
     beforeEach(async () => {
-      if (await fs.pathExists(testConfigPath)) {
-        await fs.remove(testConfigPath);
-      }
+      // Create unique temporary directory for test isolation
+      testTempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ccb-write-config-test-'));
+      testConfigPath = path.join(testTempDir, `config-${crypto.randomUUID()}.json`);
     });
 
     afterEach(async () => {
-      if (await fs.pathExists(testConfigPath)) {
-        await fs.remove(testConfigPath);
+      // Clean up entire temporary directory
+      if (testTempDir && await fs.pathExists(testTempDir)) {
+        await fs.remove(testTempDir);
       }
     });
 
@@ -301,9 +306,12 @@ describe('ConfigManager', () => {
     });
 
     it('should create directory if needed', async () => {
+      // Use the already-created unique temp directory for nested path test
       const nestedPath = path.join(
-        os.tmpdir(),
-        'nested/dir/test-config.json'
+        testTempDir,
+        'nested',
+        'dir',
+        `config-${crypto.randomUUID()}.json`
       );
 
       vi.spyOn(ConfigManager, 'getConfigPath').mockReturnValue(nestedPath);
@@ -313,29 +321,24 @@ describe('ConfigManager', () => {
 
       expect(success).toBe(true);
       expect(await fs.pathExists(nestedPath)).toBe(true);
-
-      // Cleanup
-      await fs.remove(path.join(os.tmpdir(), 'nested'));
+      // Cleanup handled by afterEach removing testTempDir
     });
   });
 
   describe('backupConfig', () => {
-    const testConfigPath = path.join(os.tmpdir(), 'test-backup-config.json');
+    let testTempDir: string;
+    let testConfigPath: string;
 
     beforeEach(async () => {
-      if (await fs.pathExists(testConfigPath)) {
-        await fs.remove(testConfigPath);
-      }
+      // Create unique temporary directory for test isolation
+      testTempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ccb-backup-config-test-'));
+      testConfigPath = path.join(testTempDir, `config-${crypto.randomUUID()}.json`);
     });
 
     afterEach(async () => {
-      // Cleanup all backup files
-      const dir = path.dirname(testConfigPath);
-      const files = await fs.readdir(dir);
-      for (const file of files) {
-        if (file.includes('test-backup-config')) {
-          await fs.remove(path.join(dir, file));
-        }
+      // Clean up entire temporary directory (includes all backup files)
+      if (testTempDir && await fs.pathExists(testTempDir)) {
+        await fs.remove(testTempDir);
       }
     });
 

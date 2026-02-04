@@ -19,7 +19,6 @@ import path from 'path';
 import os from 'os';
 import inquirer from 'inquirer';
 import { SetupWizard } from '../../src/cli/setup-wizard.js';
-import { ProgressIndicator } from '../../src/ui/ProgressIndicator.js';
 import { logger } from '../../src/utils/logger.js';
 
 // Mock dependencies
@@ -35,12 +34,12 @@ vi.mock('../../src/utils/logger.js', () => ({
 vi.mock('inquirer');
 
 describe('SetupWizard Integration Tests', () => {
-  const testDir = path.join(os.tmpdir(), `setup-wizard-test-${Date.now()}`);
+  let testDir: string;
   let wizard: SetupWizard;
 
   // Store original platform and environment
-  const originalPlatform = process.platform;
-  const originalHomedir = os.homedir();
+  const _originalPlatform = process.platform;
+  const _originalHomedir = os.homedir();
   const originalEnv = { ...process.env };
 
   // Helper: Mock os.platform()
@@ -83,8 +82,8 @@ describe('SetupWizard Integration Tests', () => {
     // Reset all mocks
     vi.clearAllMocks();
 
-    // Create test directory
-    await createTestDirectory(testDir);
+    // Create secure unique test directory using mkdtempSync
+    testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'setup-wizard-test-'));
 
     // Mock console output
     mockConsole();
@@ -102,7 +101,7 @@ describe('SetupWizard Integration Tests', () => {
 
     // Restore platform
     Object.defineProperty(process, 'platform', {
-      value: originalPlatform,
+      value: _originalPlatform,
       writable: true,
       configurable: true,
     });

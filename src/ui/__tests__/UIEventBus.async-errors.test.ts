@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { UIEventBus } from '../UIEventBus.js';
-import { UIEventType, ProgressIndicator, ErrorEvent } from '../types.js';
+import { type ProgressIndicator, type ErrorEvent } from '../types.js';
 
 describe('P1-14: Unhandled Promise Rejections in Event Bus', () => {
   let eventBus: UIEventBus;

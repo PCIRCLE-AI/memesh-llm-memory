@@ -56,13 +56,17 @@ describe('P1-9: Race Condition in processQueue()', () => {
       };
 
       // Submit multiple tasks rapidly (triggers multiple processQueue calls)
-      const tasks = await Promise.all([
+      const taskIds = await Promise.all([
         executor.executeTask(async () => 'task1', config),
         executor.executeTask(async () => 'task2', config),
         executor.executeTask(async () => 'task3', config),
         executor.executeTask(async () => 'task4', config),
         executor.executeTask(async () => 'task5', config),
       ]);
+
+      // Verify all tasks were submitted successfully
+      expect(taskIds).toHaveLength(5);
+      expect(new Set(taskIds).size).toBe(5); // All unique IDs
 
       // Wait for all tasks to complete
       await new Promise(resolve => setTimeout(resolve, 200));
@@ -240,8 +244,10 @@ describe('P1-9: Race Condition in processQueue()', () => {
         );
       }
 
-      // Wait for all submissions
+      // Wait for all submissions and verify task IDs
       const taskIds = await Promise.all(tasks);
+      expect(taskIds).toHaveLength(30);
+      expect(new Set(taskIds).size).toBe(30); // All unique IDs
 
       // Wait for execution
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -309,11 +315,12 @@ describe('P1-9: Race Condition in processQueue()', () => {
         return originalGetNextTask();
       };
 
-      // Submit task that will trigger error
+      // Submit task that will trigger error - track it to verify it was queued
       const taskId1 = await executor.executeTask(
         async () => 'task1',
         config
       );
+      expect(taskId1).toBeDefined();
 
       // Wait a bit
       await new Promise(resolve => setTimeout(resolve, 100));

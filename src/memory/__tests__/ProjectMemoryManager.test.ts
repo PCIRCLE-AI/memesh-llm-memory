@@ -110,18 +110,28 @@ describe('ProjectMemoryManager', () => {
         types: ['code_change'],
       });
 
+      // Verify search was called with correct parameters
       expect(mockKG.searchEntities).toHaveBeenCalledWith({
         entityType: 'code_change',
         limit: 10,
       });
+
+      // Verify the returned memories match expected data
+      expect(recent).toHaveLength(1);
+      expect(recent[0].entityType).toBe('code_change');
+      expect(recent[0].name).toBe('Feature 1');
     });
 
     it('should use default limit if not specified', async () => {
       (mockKG.searchEntities as any).mockReturnValue([]);
 
-      await manager.recallRecentWork();
+      const recent = await manager.recallRecentWork();
 
+      // Verify search was called (uses default parameters)
       expect(mockKG.searchEntities).toHaveBeenCalled();
+
+      // Verify empty result when no entities found
+      expect(recent).toEqual([]);
     });
   });
 });

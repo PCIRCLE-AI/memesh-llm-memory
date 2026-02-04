@@ -545,10 +545,15 @@ describe('ConnectionPool Integration Tests', () => {
       const db1 = await pool.acquire();
       const db2 = await pool.acquire();
 
+      // Verify both connections are acquired and functional
+      expect(db1).toBeDefined();
+      expect(db2).toBeDefined();
+      expect(db1).not.toBe(db2); // Should be different connection instances
+
       // Release one
       pool.release(db1);
 
-      // Shutdown pool
+      // Shutdown pool (db2 is still held, but shutdown should handle it)
       await pool.shutdown();
 
       // Verify stats show empty pool
@@ -566,6 +571,11 @@ describe('ConnectionPool Integration Tests', () => {
 
       // Acquire the only connection
       const db = await pool.acquire();
+
+      // Verify connection is acquired and functional
+      expect(db).toBeDefined();
+      const result = db.prepare('SELECT 1 as value').get() as { value: number };
+      expect(result.value).toBe(1);
 
       // Try to acquire another (will wait)
       const acquirePromise = pool.acquire();

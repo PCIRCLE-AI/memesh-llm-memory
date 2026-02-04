@@ -115,10 +115,15 @@ describe('E2E Helper Functions - Usage Examples', () => {
         expect(slots[0]).toBeDefined();
         expect(slots[1]).toBeDefined();
 
-        // Use slots for multi-agent setup
+        // Destructure and verify individual slot IDs for multi-agent setup
         const [slot1, slot2] = slots;
 
-        // Example: Start two A2A servers
+        // Verify slots are unique and properly formatted
+        expect(typeof slot1).toBe('string');
+        expect(typeof slot2).toBe('string');
+        expect(slot1).not.toBe(slot2); // Each slot should be unique
+
+        // Example usage: Start two A2A servers with different agent IDs
         // const server1 = new A2AServer({ agentId: slot1, ... });
         // const server2 = new A2AServer({ agentId: slot2, ... });
 

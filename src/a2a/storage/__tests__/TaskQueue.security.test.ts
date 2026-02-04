@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdirSync, rmSync } from 'fs';
+import { rmSync } from 'fs';
 import { TaskQueue } from '../TaskQueue.js';
 import { ValidationError } from '../../../errors/index.js';
 

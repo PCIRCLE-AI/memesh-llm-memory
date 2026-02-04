@@ -27,9 +27,16 @@ describe('LinkManager', () => {
   });
 
   it('should link reward to operation span', async () => {
-    // Create operation span
+    // Create operation span with proper task/execution context
     const task = await tracker.startTask({ test: 'task' });
     const execution = await tracker.startExecution();
+
+    // Verify task and execution are properly initialized
+    expect(task).toBeDefined();
+    expect(task.id).toBeDefined();
+    expect(execution).toBeDefined();
+    expect(execution.id).toBeDefined();
+
     const span = tracker.startSpan({ name: 'code_review' });
     const spanId = span.spanId;
     await span.end();
@@ -49,8 +56,14 @@ describe('LinkManager', () => {
   });
 
   it('should query linked spans', async () => {
+    // Create task and execution context for linking
     const task = await tracker.startTask({ test: 'task' });
     const execution = await tracker.startExecution();
+
+    // Verify context is properly established before creating span
+    expect(task.id).toBeDefined();
+    expect(execution.id).toBeDefined();
+
     const span = tracker.startSpan({ name: 'code_review' });
     const spanId = span.spanId;
     await span.end();

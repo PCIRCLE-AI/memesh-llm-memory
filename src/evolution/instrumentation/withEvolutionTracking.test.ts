@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { withEvolutionTracking } from './withEvolutionTracking';
 import { SpanTracker } from './SpanTracker';
 import { SQLiteStore } from '../storage/SQLiteStore';
@@ -49,7 +49,10 @@ describe('withEvolutionTracking - Telemetry Integration', () => {
 
   it('should emit telemetry on successful agent execution', async () => {
     // Create a named function (not vi.fn()) to get proper function name in telemetry
-    const mockExecute = async ({ task }: any) => {
+    const mockExecute = async (input: { task: string }) => {
+      // Verify the input is passed correctly to the tracked function
+      expect(input).toBeDefined();
+      expect(input.task).toBe('test');
       return {
         success: true,
         qualityScore: 0.95,
@@ -76,7 +79,10 @@ describe('withEvolutionTracking - Telemetry Integration', () => {
 
   it('should emit error telemetry on agent failure', async () => {
     // Create a named function (not vi.fn()) to get proper function name in telemetry
-    const mockExecute = async ({ task }: any) => {
+    const mockExecute = async (input: { task: string }) => {
+      // Verify the input is passed correctly before throwing
+      expect(input).toBeDefined();
+      expect(input.task).toBe('test');
       throw new TypeError('Test error');
     };
     Object.defineProperty(mockExecute, 'name', { value: 'mockExecute' });

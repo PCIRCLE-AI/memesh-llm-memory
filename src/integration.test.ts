@@ -312,7 +312,7 @@ describe('Integration Tests - Evolution System Phase 1', () => {
   describe('Performance and Scalability', () => {
     it('should handle multiple concurrent tasks', async () => {
       // Create multiple tasks in parallel
-      const tasks = await Promise.all([
+      const taskIds = await Promise.all([
         (async () => {
           const t1 = await tracker.startTask({ task: 'task1' });
           await tracker.startExecution();
@@ -322,6 +322,11 @@ describe('Integration Tests - Evolution System Phase 1', () => {
           return t1.id;
         })(),
       ]);
+
+      // Verify all parallel task executions completed and returned valid IDs
+      expect(taskIds).toHaveLength(1);
+      expect(taskIds[0]).toBeDefined();
+      expect(typeof taskIds[0]).toBe('string');
 
       // All tasks should be recorded (verify via spans)
       const allSpans = await evolutionStore.querySpans({});

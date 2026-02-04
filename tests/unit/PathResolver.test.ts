@@ -28,9 +28,8 @@ vi.mock('../../src/utils/logger.js', () => ({
 }));
 
 describe('PathResolver', () => {
-  const homeDir = os.homedir();
-  const newDir = path.join(homeDir, '.memesh');
-  const legacyDir = path.join(homeDir, '.claude-code-buddy');
+  // Note: We use testDir-based paths for isolated testing, not the actual home directory paths
+  // These would be: path.join(os.homedir(), '.memesh') and path.join(os.homedir(), '.claude-code-buddy')
   const testDir = path.join(os.tmpdir(), `pathresolver-test-${Date.now()}`);
   const testNewDir = path.join(testDir, '.memesh');
   const testLegacyDir = path.join(testDir, '.claude-code-buddy');

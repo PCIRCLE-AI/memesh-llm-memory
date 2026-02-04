@@ -34,7 +34,7 @@ console.log('🔧 Preparing plugin directory for Claude Code installation...\n')
 console.log('1️⃣ Creating plugin directory structure...');
 mkdirSync(pluginMetadataDir, { recursive: true });
 console.log(`   ✅ Ensured: ${pluginRootDir.replace(projectRoot, '.')}`);
-console.log(`   ✅ Ensured: ${pluginMetadataDir.replace(projectRoot, '.')}`)
+console.log(`   ✅ Ensured: ${pluginMetadataDir.replace(projectRoot, '.')}`);
 
 // Step 2: Copy compiled dist/ to plugin directory
 console.log('\n2️⃣ Copying compiled dist/ to plugin directory...');

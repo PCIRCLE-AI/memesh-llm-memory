@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AgentSDKAdapter } from '../../../../src/agents/e2e-healing/sdk/AgentSDKAdapter.js';
-import Anthropic from '@anthropic-ai/sdk';
 
+// Mock the Anthropic SDK module - the import is only needed for type checking
+// which vi.mock handles automatically
 vi.mock('@anthropic-ai/sdk');
 
 describe('AgentSDKAdapter', () => {

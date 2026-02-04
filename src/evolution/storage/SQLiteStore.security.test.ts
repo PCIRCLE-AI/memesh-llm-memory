@@ -21,9 +21,13 @@ describe('SQLiteStore - SQL Injection Protection', () => {
 
   describe('querySpans - sort_by SQL injection protection', () => {
     it('should allow whitelisted sort columns', async () => {
-      // Create a span first
+      // Create a span first - execution provides context for span queries
       const task = await store.createTask({ test: 'task' });
       const execution = await store.createExecution(task.id);
+
+      // Verify execution was created properly as it provides span query context
+      expect(execution).toBeDefined();
+      expect(execution.id).toBeDefined();
 
       // Valid sort columns should work
       const validColumns = ['start_time', 'duration_ms', 'status_code', 'name', 'kind'];
@@ -87,9 +91,13 @@ describe('SQLiteStore - SQL Injection Protection', () => {
 
   describe('queryLinkedSpans - LIKE clause injection protection', () => {
     it('should safely escape special characters in span_id', async () => {
-      // Create test data
+      // Create test data - execution provides the context for span queries
       const task = await store.createTask({ test: 'task' });
       const execution = await store.createExecution(task.id);
+
+      // Verify execution is properly created for query context
+      expect(execution).toBeDefined();
+      expect(execution.id).toBeDefined();
 
       // Span IDs with special SQL characters
       const specialSpanIds = [
@@ -111,6 +119,10 @@ describe('SQLiteStore - SQL Injection Protection', () => {
     it('should not allow LIKE injection to bypass query', async () => {
       const task = await store.createTask({ test: 'task' });
       const execution = await store.createExecution(task.id);
+
+      // Verify execution context is established
+      expect(execution).toBeDefined();
+      expect(execution.id).toBeDefined();
 
       // LIKE injection attempts
       const injections = [
@@ -148,6 +160,10 @@ describe('SQLiteStore - SQL Injection Protection', () => {
       // Create test spans with specific tags
       const task = await store.createTask({ test: 'task' });
       const execution = await store.createExecution(task.id);
+
+      // Verify execution context is properly set up
+      expect(execution).toBeDefined();
+      expect(execution.id).toBeDefined();
 
       // Attacker tries to use wildcards to match all tags
       const injectionTags = ['%', '_', '%%'];

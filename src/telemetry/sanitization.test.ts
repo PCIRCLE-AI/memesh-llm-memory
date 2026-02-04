@@ -3,7 +3,7 @@ import {
   sanitizeEvent,
   looksLikeSensitive,
   hashValue,
-  BANNED_FIELDS
+  BANNED_FIELDS,
 } from './sanitization';
 
 describe('Telemetry Sanitization', () => {
@@ -38,5 +38,19 @@ describe('Telemetry Sanitization', () => {
     const hashed = hashValue('sk-proj-secret-key-123');
     expect(hashed).not.toContain('secret');
     expect(hashed).toHaveLength(16);
+  });
+
+  it('should have comprehensive banned fields list', () => {
+    // Verify BANNED_FIELDS contains essential privacy-sensitive field names
+    expect(BANNED_FIELDS).toContain('email');
+    expect(BANNED_FIELDS).toContain('password');
+    expect(BANNED_FIELDS).toContain('api_key');
+    expect(BANNED_FIELDS).toContain('token');
+    expect(BANNED_FIELDS).toContain('file_content');
+    expect(BANNED_FIELDS).toContain('file_path');
+
+    // Verify it's a non-empty array
+    expect(Array.isArray(BANNED_FIELDS)).toBe(true);
+    expect(BANNED_FIELDS.length).toBeGreaterThan(10);
   });
 });

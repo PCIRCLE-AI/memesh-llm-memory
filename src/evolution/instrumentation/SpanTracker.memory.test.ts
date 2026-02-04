@@ -22,13 +22,17 @@ describe('SpanTracker - Memory Leak Prevention', () => {
     await tracker.startTask({ task: 'test' });
     await tracker.startExecution();
 
-    // Create some spans
+    // Create some spans - span2 and span3 intentionally not captured
+    // as we're testing that task cleanup handles uncaptured span references
     const span1 = tracker.startSpan({ name: 'span1' });
     const span2 = tracker.startSpan({ name: 'span2' });
     const span3 = tracker.startSpan({ name: 'span3' });
 
-    // Verify spans are tracked
+    // Verify all spans are tracked and have valid IDs
     expect(tracker.getActiveSpans().length).toBe(3);
+    expect(span1.spanId).toBeDefined();
+    expect(span2.spanId).toBeDefined();
+    expect(span3.spanId).toBeDefined();
 
     // End some spans manually
     await span1.end();
@@ -104,10 +108,14 @@ describe('SpanTracker - Memory Leak Prevention', () => {
     await tracker.startTask({ task: 'test' });
     await tracker.startExecution();
 
-    const span1 = tracker.startSpan({ name: 'span1' });
-    const span2 = tracker.startSpan({ name: 'span2' });
+    // Capture spans to verify they were properly created before becoming orphaned
+    const orphanSpan1 = tracker.startSpan({ name: 'span1' });
+    const orphanSpan2 = tracker.startSpan({ name: 'span2' });
     // Intentionally NOT ending these spans (simulating error scenario)
 
+    // Verify orphaned spans were properly created with valid IDs
+    expect(orphanSpan1.spanId).toBeDefined();
+    expect(orphanSpan2.spanId).toBeDefined();
     expect(tracker.getActiveSpans().length).toBe(2);
 
     // End task (should force-end orphaned spans)

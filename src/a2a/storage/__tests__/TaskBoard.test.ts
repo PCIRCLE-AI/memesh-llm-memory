@@ -735,4 +735,266 @@ describe('TaskBoard', () => {
       });
     });
   });
+
+  describe('Task Claiming and Releasing', () => {
+    describe('claimTask', () => {
+      it('should claim a pending task successfully', () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Pending Task',
+          status: 'pending',
+          creator_platform: 'claude-code',
+        });
+
+        taskBoard.claimTask(taskId, 'agent-1');
+
+        const task = taskBoard.getTask(taskId);
+        expect(task?.status).toBe('in_progress');
+        expect(task?.owner).toBe('agent-1');
+      });
+
+      it('should throw when claiming non-pending task', () => {
+        const taskId = taskBoard.createTask({
+          subject: 'In Progress Task',
+          status: 'in_progress',
+          owner: 'agent-1',
+          creator_platform: 'claude-code',
+        });
+
+        expect(() => {
+          taskBoard.claimTask(taskId, 'agent-2');
+        }).toThrow(/not in pending status/);
+      });
+
+      it('should throw when claiming non-existent task', () => {
+        expect(() => {
+          taskBoard.claimTask('12345678-1234-4567-8901-234567890123', 'agent-1');
+        }).toThrow('Task not found');
+      });
+
+      it('should update task owner and status when claimed', () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Claim Test',
+          status: 'pending',
+          creator_platform: 'claude-code',
+        });
+
+        const beforeClaim = taskBoard.getTask(taskId);
+        expect(beforeClaim?.owner).toBeUndefined();
+        expect(beforeClaim?.status).toBe('pending');
+
+        taskBoard.claimTask(taskId, 'agent-1');
+
+        const afterClaim = taskBoard.getTask(taskId);
+        expect(afterClaim?.owner).toBe('agent-1');
+        expect(afterClaim?.status).toBe('in_progress');
+      });
+
+      it('should record history when task is claimed', () => {
+        const taskId = taskBoard.createTask({
+          subject: 'History Claim Test',
+          status: 'pending',
+          creator_platform: 'claude-code',
+        });
+
+        taskBoard.claimTask(taskId, 'agent-1');
+
+        const history = taskBoard.getTaskHistory(taskId);
+        expect(history).toHaveLength(1);
+        expect(history[0].task_id).toBe(taskId);
+        expect(history[0].agent_id).toBe('agent-1');
+        expect(history[0].action).toBe('claimed');
+        expect(history[0].old_status).toBe('pending');
+        expect(history[0].new_status).toBe('in_progress');
+        expect(history[0].timestamp).toBeGreaterThan(0);
+      });
+
+      it('should throw on empty agent ID', () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Test Task',
+          status: 'pending',
+          creator_platform: 'claude-code',
+        });
+
+        expect(() => {
+          taskBoard.claimTask(taskId, '');
+        }).toThrow('Agent ID is required');
+      });
+
+      it('should throw on whitespace-only agent ID', () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Test Task',
+          status: 'pending',
+          creator_platform: 'claude-code',
+        });
+
+        expect(() => {
+          taskBoard.claimTask(taskId, '   ');
+        }).toThrow('Agent ID is required');
+      });
+
+      it('should throw on invalid task ID format', () => {
+        expect(() => {
+          taskBoard.claimTask('not-a-uuid', 'agent-1');
+        }).toThrow('Invalid task ID format');
+      });
+    });
+
+    describe('releaseTask', () => {
+      it('should release a claimed task back to pending', () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Claimed Task',
+          status: 'in_progress',
+          owner: 'agent-1',
+          creator_platform: 'claude-code',
+        });
+
+        taskBoard.releaseTask(taskId);
+
+        const task = taskBoard.getTask(taskId);
+        expect(task?.status).toBe('pending');
+        expect(task?.owner).toBeUndefined();
+      });
+
+      it('should update task owner to null and status to pending', () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Release Test',
+          status: 'in_progress',
+          owner: 'agent-1',
+          creator_platform: 'claude-code',
+        });
+
+        const beforeRelease = taskBoard.getTask(taskId);
+        expect(beforeRelease?.owner).toBe('agent-1');
+        expect(beforeRelease?.status).toBe('in_progress');
+
+        taskBoard.releaseTask(taskId);
+
+        const afterRelease = taskBoard.getTask(taskId);
+        expect(afterRelease?.owner).toBeUndefined();
+        expect(afterRelease?.status).toBe('pending');
+      });
+
+      it('should record history when task is released', () => {
+        const taskId = taskBoard.createTask({
+          subject: 'History Release Test',
+          status: 'in_progress',
+          owner: 'agent-1',
+          creator_platform: 'claude-code',
+        });
+
+        taskBoard.releaseTask(taskId);
+
+        const history = taskBoard.getTaskHistory(taskId);
+        expect(history).toHaveLength(1);
+        expect(history[0].task_id).toBe(taskId);
+        expect(history[0].agent_id).toBe('agent-1');
+        expect(history[0].action).toBe('released');
+        expect(history[0].old_status).toBe('in_progress');
+        expect(history[0].new_status).toBe('pending');
+        expect(history[0].timestamp).toBeGreaterThan(0);
+      });
+
+      it('should throw on non-existent task', () => {
+        expect(() => {
+          taskBoard.releaseTask('12345678-1234-4567-8901-234567890123');
+        }).toThrow('Task not found');
+      });
+
+      it('should throw on invalid task ID format', () => {
+        expect(() => {
+          taskBoard.releaseTask('not-a-uuid');
+        }).toThrow('Invalid task ID format');
+      });
+    });
+
+    describe('getTaskHistory', () => {
+      it('should return task history in reverse chronological order', async () => {
+        const taskId = taskBoard.createTask({
+          subject: 'History Order Test',
+          status: 'pending',
+          creator_platform: 'claude-code',
+        });
+
+        // Claim task
+        taskBoard.claimTask(taskId, 'agent-1');
+
+        // Wait a bit to ensure different timestamps
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        // Release task
+        taskBoard.releaseTask(taskId);
+
+        // Wait a bit to ensure different timestamps
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        // Claim again
+        taskBoard.claimTask(taskId, 'agent-2');
+
+        const history = taskBoard.getTaskHistory(taskId);
+        expect(history).toHaveLength(3);
+
+        // Verify newest first (reverse chronological)
+        expect(history[0].action).toBe('claimed');
+        expect(history[0].agent_id).toBe('agent-2');
+        expect(history[1].action).toBe('released');
+        expect(history[1].agent_id).toBe('agent-1');
+        expect(history[2].action).toBe('claimed');
+        expect(history[2].agent_id).toBe('agent-1');
+
+        // Verify timestamps are in descending order
+        expect(history[0].timestamp).toBeGreaterThan(history[1].timestamp);
+        expect(history[1].timestamp).toBeGreaterThan(history[2].timestamp);
+      });
+
+      it('should return empty array for task with no history', () => {
+        const taskId = taskBoard.createTask({
+          subject: 'No History Task',
+          status: 'pending',
+          creator_platform: 'claude-code',
+        });
+
+        const history = taskBoard.getTaskHistory(taskId);
+        expect(history).toHaveLength(0);
+      });
+
+      it('should return empty array for non-existent task', () => {
+        const history = taskBoard.getTaskHistory('12345678-1234-4567-8901-234567890123');
+        expect(history).toHaveLength(0);
+      });
+
+      it('should include all history entry fields', () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Fields Test',
+          status: 'pending',
+          creator_platform: 'claude-code',
+        });
+
+        taskBoard.claimTask(taskId, 'agent-1');
+
+        const history = taskBoard.getTaskHistory(taskId);
+        expect(history).toHaveLength(1);
+
+        const entry = history[0];
+        expect(entry).toHaveProperty('id');
+        expect(entry).toHaveProperty('task_id');
+        expect(entry).toHaveProperty('agent_id');
+        expect(entry).toHaveProperty('action');
+        expect(entry).toHaveProperty('old_status');
+        expect(entry).toHaveProperty('new_status');
+        expect(entry).toHaveProperty('timestamp');
+
+        expect(typeof entry.id).toBe('number');
+        expect(typeof entry.task_id).toBe('string');
+        expect(typeof entry.agent_id).toBe('string');
+        expect(typeof entry.action).toBe('string');
+        expect(typeof entry.timestamp).toBe('number');
+      });
+
+      it('should throw on invalid task ID format', () => {
+        expect(() => {
+          taskBoard.getTaskHistory('not-a-uuid');
+        }).toThrow('Invalid task ID format');
+      });
+    });
+  });
 });

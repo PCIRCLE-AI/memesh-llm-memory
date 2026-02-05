@@ -55,6 +55,19 @@ export interface TaskFilter {
 }
 
 /**
+ * Task history entry for audit trail
+ */
+export interface TaskHistoryEntry {
+  id: number;
+  task_id: string;
+  agent_id: string;
+  action: string;
+  old_status: string | null;
+  new_status: string | null;
+  timestamp: number;
+}
+
+/**
  * TaskBoard - Unified task storage with platform tracking
  *
  * Features:
@@ -481,12 +494,127 @@ export class TaskBoard {
   }
 
   /**
+   * Claim a pending task for an agent
+   *
+   * Atomically updates task status to 'in_progress' and assigns ownership.
+   * Only pending tasks can be claimed to prevent race conditions.
+   *
+   * @param taskId - Task ID to claim
+   * @param agentId - Agent ID claiming the task
+   * @throws Error if task not found, not pending, or validation fails
+   */
+  claimTask(taskId: string, agentId: string): void {
+    this.validateTaskId(taskId);
+
+    if (!agentId || agentId.trim() === '') {
+      throw new Error('Agent ID is required');
+    }
+
+    // Check task exists and is pending
+    const task = this.db.prepare('SELECT status FROM tasks WHERE id = ?').get(taskId) as { status: string } | undefined;
+    if (!task) {
+      throw new Error(`Task not found: ${taskId}`);
+    }
+    if (task.status !== 'pending') {
+      throw new Error(`Task ${taskId} is not in pending status (current: ${task.status})`);
+    }
+
+    // Atomic update with transaction
+    const transaction = this.db.transaction(() => {
+      const now = Date.now();
+      this.db.prepare('UPDATE tasks SET owner = ?, status = ?, updated_at = ? WHERE id = ?')
+        .run(agentId, 'in_progress', now, taskId);
+      this.recordHistory(taskId, agentId, 'claimed', 'pending', 'in_progress');
+    });
+
+    transaction();
+  }
+
+  /**
+   * Release a task back to pending status
+   *
+   * Atomically clears task ownership and resets status to pending.
+   * Allows other agents to claim the task.
+   *
+   * @param taskId - Task ID to release
+   * @throws Error if task not found or validation fails
+   */
+  releaseTask(taskId: string): void {
+    this.validateTaskId(taskId);
+
+    // Check task exists
+    if (!this.taskExists(taskId)) {
+      throw new Error(`Task not found: ${taskId}`);
+    }
+
+    // Get current owner and status for history
+    const task = this.db.prepare('SELECT owner, status FROM tasks WHERE id = ?').get(taskId) as { owner: string | null, status: string } | undefined;
+
+    // Atomic update with transaction
+    const transaction = this.db.transaction(() => {
+      const now = Date.now();
+      this.db.prepare('UPDATE tasks SET owner = NULL, status = ?, updated_at = ? WHERE id = ?')
+        .run('pending', now, taskId);
+
+      // Record history with previous owner
+      const previousOwner = task?.owner || 'unknown';
+      const previousStatus = task?.status || 'unknown';
+      this.recordHistory(taskId, previousOwner, 'released', previousStatus, 'pending');
+    });
+
+    transaction();
+  }
+
+  /**
+   * Get task history for audit trail
+   *
+   * Returns all history entries for a task in reverse chronological order (newest first).
+   *
+   * @param taskId - Task ID to get history for
+   * @returns Array of history entries (empty if no history)
+   */
+  getTaskHistory(taskId: string): TaskHistoryEntry[] {
+    this.validateTaskId(taskId);
+
+    const entries = this.db.prepare(`
+      SELECT * FROM task_history
+      WHERE task_id = ?
+      ORDER BY timestamp DESC
+    `).all(taskId) as TaskHistoryEntry[];
+
+    return entries;
+  }
+
+  /**
    * Close database connection (idempotent)
    */
   close(): void {
     if (this.db && this.db.open) {
       this.db.close();
     }
+  }
+
+  /**
+   * Record task history entry (private helper)
+   *
+   * @param taskId - Task ID
+   * @param agentId - Agent ID performing the action
+   * @param action - Action performed (e.g., 'claimed', 'released')
+   * @param oldStatus - Previous status (optional)
+   * @param newStatus - New status (optional)
+   */
+  private recordHistory(
+    taskId: string,
+    agentId: string,
+    action: string,
+    oldStatus?: string,
+    newStatus?: string
+  ): void {
+    const now = Date.now();
+    this.db.prepare(`
+      INSERT INTO task_history (task_id, agent_id, action, old_status, new_status, timestamp)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(taskId, agentId, action, oldStatus || null, newStatus || null, now);
   }
 
   /**

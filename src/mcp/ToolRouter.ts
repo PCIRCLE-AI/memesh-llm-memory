@@ -26,6 +26,7 @@ import type { TaskQueue } from '../a2a/storage/TaskQueue.js';
 import type { MCPTaskDelegator } from '../a2a/delegator/MCPTaskDelegator.js';
 import { a2aListTasks, A2AListTasksInputSchema } from './tools/a2a-list-tasks.js';
 import { a2aReportResult, A2AReportResultInputSchema } from './tools/a2a-report-result.js';
+import { handleA2ABoard, A2ABoardInputSchema } from './tools/a2a-board.js';
 
 /**
  * Tool Router Configuration
@@ -528,6 +529,23 @@ export class ToolRouter {
         );
       }
       return await a2aReportResult(validationResult.data, this.taskQueue, this.mcpTaskDelegator);
+    }
+
+    if (toolName === 'a2a-board') {
+      // Unified Task Board - Kanban-style view of all tasks
+      const validationResult = A2ABoardInputSchema.safeParse(args);
+      if (!validationResult.success) {
+        throw new ValidationError(
+          `Invalid input for ${toolName}: ${validationResult.error.message}`,
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+            zodError: validationResult.error,
+          }
+        );
+      }
+      return handleA2ABoard(validationResult.data);
     }
 
     // ✅ FIX MINOR (Round 1): Sanitize toolName in error message

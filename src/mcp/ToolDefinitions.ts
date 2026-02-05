@@ -679,6 +679,47 @@ Returns agents with format: {agentId, url, port, status, lastHeartbeat}
     },
   };
 
+  const a2aBoardTool: MCPToolDefinition = {
+    name: 'a2a-board',
+    description: `📋 View all tasks in the unified task board with optional filtering (Kanban style).
+
+Displays tasks grouped by status (pending, in_progress, completed) with summary statistics.
+Supports filtering by status, platform, and owner.
+
+**Usage:**
+• No params: Show all tasks in Kanban view
+• {status: "pending"}: Show only pending tasks
+• {platform: "claude-code"}: Show tasks from specific platform
+• {owner: "agent-id"}: Show tasks assigned to specific agent
+
+**Output:** Kanban-style board with sections for each status, task IDs, subjects, platforms, and owners.`,
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        status: {
+          type: 'string',
+          enum: ['pending', 'in_progress', 'completed', 'deleted'],
+          description: 'Filter by task status',
+        },
+        platform: {
+          type: 'string',
+          description: 'Filter by creator platform (e.g., claude-code, chatgpt, cursor)',
+        },
+        owner: {
+          type: 'string',
+          description: 'Filter by owner agent ID',
+        },
+      },
+    },
+    annotations: {
+      title: 'A2A Task Board',
+      readOnlyHint: true,       // Read-only operation
+      destructiveHint: false,
+      idempotentHint: true,     // Same query returns same result
+      openWorldHint: false,     // Limited to unified task board
+    },
+  };
+
   // ========================================
   // Test Generation Tools
   // ========================================
@@ -859,6 +900,7 @@ Returns agents with format: {agentId, url, port, status, lastHeartbeat}
     a2aListTasksTool,
     a2aListAgentsTool,
     a2aReportResultTool,
+    a2aBoardTool,
 
     // Hook Integration
     hookToolUseTool,

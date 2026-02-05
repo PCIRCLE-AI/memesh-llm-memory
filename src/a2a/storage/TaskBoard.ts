@@ -9,6 +9,50 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+import crypto from 'crypto';
+
+/**
+ * Task status type
+ */
+export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'deleted';
+
+/**
+ * Input for creating a new task
+ */
+export interface CreateTaskInput {
+  subject: string;
+  description?: string;
+  activeForm?: string;
+  status: TaskStatus;
+  owner?: string;
+  creator_platform: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Task representation
+ */
+export interface Task {
+  id: string;
+  subject: string;
+  description?: string;
+  activeForm?: string;
+  status: TaskStatus;
+  owner?: string;
+  creator_platform: string;
+  created_at: number;
+  updated_at: number;
+  metadata?: string; // JSON string
+}
+
+/**
+ * Filter options for listing tasks
+ */
+export interface TaskFilter {
+  status?: TaskStatus;
+  owner?: string;
+  creator_platform?: string;
+}
 
 /**
  * Unified TaskBoard storage using SQLite with WAL mode for concurrent access
@@ -213,6 +257,162 @@ export class TaskBoard {
       name: col.name,
       type: col.type,
     }));
+  }
+
+  /**
+   * Create a new task
+   *
+   * @param input - Task creation input
+   * @returns Task ID (UUID)
+   * @throws Error if validation fails or database operation fails
+   */
+  createTask(input: CreateTaskInput): string {
+    // Input validation
+    if (!input.subject || typeof input.subject !== 'string' || input.subject.trim() === '') {
+      throw new Error('Task subject is required');
+    }
+    if (!input.status) {
+      throw new Error('Task status is required');
+    }
+    if (!input.creator_platform || typeof input.creator_platform !== 'string') {
+      throw new Error('Creator platform is required');
+    }
+
+    // Generate ID and timestamps
+    const id = crypto.randomUUID();
+    const now = Date.now();
+
+    // Serialize metadata if provided
+    const metadata = input.metadata ? JSON.stringify(input.metadata) : null;
+
+    // Insert with prepared statement (SQL injection safe)
+    const stmt = this.db.prepare(`
+      INSERT INTO tasks (id, subject, description, activeForm, status, owner, creator_platform, created_at, updated_at, metadata)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    stmt.run(
+      id,
+      input.subject,
+      input.description || null,
+      input.activeForm || null,
+      input.status,
+      input.owner || null,
+      input.creator_platform,
+      now,
+      now,
+      metadata
+    );
+
+    return id;
+  }
+
+  /**
+   * Get a task by ID
+   *
+   * @param taskId - Task ID
+   * @returns Task object or null if not found
+   */
+  getTask(taskId: string): Task | null {
+    const stmt = this.db.prepare('SELECT * FROM tasks WHERE id = ?');
+    const row = stmt.get(taskId) as any;
+
+    if (!row) {
+      return null;
+    }
+
+    // Return task with proper typing
+    return {
+      id: row.id,
+      subject: row.subject,
+      description: row.description || undefined,
+      activeForm: row.activeForm || undefined,
+      status: row.status,
+      owner: row.owner || undefined,
+      creator_platform: row.creator_platform,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      metadata: row.metadata || undefined,
+    };
+  }
+
+  /**
+   * List tasks with optional filters
+   *
+   * @param filter - Optional filter criteria
+   * @returns Array of tasks matching filter
+   */
+  listTasks(filter?: TaskFilter): Task[] {
+    let query = 'SELECT * FROM tasks WHERE 1=1';
+    const params: any[] = [];
+
+    // Apply filters using parameterized queries
+    if (filter?.status) {
+      query += ' AND status = ?';
+      params.push(filter.status);
+    }
+    if (filter?.owner) {
+      query += ' AND owner = ?';
+      params.push(filter.owner);
+    }
+    if (filter?.creator_platform) {
+      query += ' AND creator_platform = ?';
+      params.push(filter.creator_platform);
+    }
+
+    const stmt = this.db.prepare(query);
+    const rows = stmt.all(...params) as any[];
+
+    // Map rows to Task objects
+    return rows.map((row) => ({
+      id: row.id,
+      subject: row.subject,
+      description: row.description || undefined,
+      activeForm: row.activeForm || undefined,
+      status: row.status,
+      owner: row.owner || undefined,
+      creator_platform: row.creator_platform,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      metadata: row.metadata || undefined,
+    }));
+  }
+
+  /**
+   * Update task status
+   *
+   * @param taskId - Task ID
+   * @param status - New status
+   * @throws Error if task not found or database operation fails
+   */
+  updateTaskStatus(taskId: string, status: TaskStatus): void {
+    // Check if task exists
+    const task = this.getTask(taskId);
+    if (!task) {
+      throw new Error('Task not found');
+    }
+
+    const now = Date.now();
+
+    const stmt = this.db.prepare('UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?');
+    stmt.run(status, now, taskId);
+  }
+
+  /**
+   * Delete a task
+   *
+   * @param taskId - Task ID
+   * @throws Error if task not found
+   */
+  deleteTask(taskId: string): void {
+    // Check if task exists
+    const task = this.getTask(taskId);
+    if (!task) {
+      throw new Error('Task not found');
+    }
+
+    const stmt = this.db.prepare('DELETE FROM tasks WHERE id = ?');
+    stmt.run(taskId);
   }
 
   /**

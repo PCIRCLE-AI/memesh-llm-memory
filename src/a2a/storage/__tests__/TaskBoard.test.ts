@@ -276,4 +276,392 @@ describe('TaskBoard', () => {
       }).not.toThrow();
     });
   });
+
+  describe('Task CRUD Operations', () => {
+    describe('createTask', () => {
+      it('should create task with all fields', () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Test Task',
+          description: 'This is a test task',
+          activeForm: 'form-1',
+          status: 'pending',
+          owner: 'agent-1',
+          creator_platform: 'claude-code',
+          metadata: { priority: 'high', tags: ['test', 'important'] },
+        });
+
+        expect(taskId).toBeDefined();
+        expect(typeof taskId).toBe('string');
+        expect(taskId.length).toBeGreaterThan(0);
+
+        // Verify task was created
+        const task = taskBoard.getTask(taskId);
+        expect(task).toBeDefined();
+        expect(task?.subject).toBe('Test Task');
+        expect(task?.description).toBe('This is a test task');
+        expect(task?.activeForm).toBe('form-1');
+        expect(task?.status).toBe('pending');
+        expect(task?.owner).toBe('agent-1');
+        expect(task?.creator_platform).toBe('claude-code');
+        expect(task?.metadata).toBe(JSON.stringify({ priority: 'high', tags: ['test', 'important'] }));
+      });
+
+      it('should create task with minimal required fields', () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Minimal Task',
+          status: 'pending',
+          creator_platform: 'claude-code',
+        });
+
+        expect(taskId).toBeDefined();
+
+        const task = taskBoard.getTask(taskId);
+        expect(task).toBeDefined();
+        expect(task?.subject).toBe('Minimal Task');
+        expect(task?.status).toBe('pending');
+        expect(task?.creator_platform).toBe('claude-code');
+        expect(task?.description).toBeUndefined();
+        expect(task?.owner).toBeUndefined();
+        expect(task?.metadata).toBeUndefined();
+      });
+
+      it('should throw on empty subject', () => {
+        expect(() =>
+          taskBoard.createTask({
+            subject: '',
+            status: 'pending',
+            creator_platform: 'claude-code',
+          })
+        ).toThrow('Task subject is required');
+      });
+
+      it('should throw on whitespace-only subject', () => {
+        expect(() =>
+          taskBoard.createTask({
+            subject: '   ',
+            status: 'pending',
+            creator_platform: 'claude-code',
+          })
+        ).toThrow('Task subject is required');
+      });
+
+      it('should throw on missing subject', () => {
+        expect(() =>
+          taskBoard.createTask({
+            subject: undefined as any,
+            status: 'pending',
+            creator_platform: 'claude-code',
+          })
+        ).toThrow('Task subject is required');
+      });
+
+      it('should throw on missing status', () => {
+        expect(() =>
+          taskBoard.createTask({
+            subject: 'Test',
+            status: undefined as any,
+            creator_platform: 'claude-code',
+          })
+        ).toThrow('Task status is required');
+      });
+
+      it('should throw on missing creator_platform', () => {
+        expect(() =>
+          taskBoard.createTask({
+            subject: 'Test',
+            status: 'pending',
+            creator_platform: undefined as any,
+          })
+        ).toThrow('Creator platform is required');
+      });
+
+      it('should set created_at and updated_at timestamps', () => {
+        const beforeCreate = Date.now();
+        const taskId = taskBoard.createTask({
+          subject: 'Time Test',
+          status: 'pending',
+          creator_platform: 'claude-code',
+        });
+        const afterCreate = Date.now();
+
+        const task = taskBoard.getTask(taskId);
+        expect(task?.created_at).toBeGreaterThanOrEqual(beforeCreate);
+        expect(task?.created_at).toBeLessThanOrEqual(afterCreate);
+        expect(task?.updated_at).toBe(task?.created_at);
+      });
+
+      it('should generate unique task IDs', () => {
+        const id1 = taskBoard.createTask({
+          subject: 'Task 1',
+          status: 'pending',
+          creator_platform: 'claude-code',
+        });
+        const id2 = taskBoard.createTask({
+          subject: 'Task 2',
+          status: 'pending',
+          creator_platform: 'claude-code',
+        });
+
+        expect(id1).not.toBe(id2);
+      });
+    });
+
+    describe('getTask', () => {
+      it('should return existing task', () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Get Task Test',
+          description: 'Test description',
+          status: 'in_progress',
+          owner: 'agent-1',
+          creator_platform: 'claude-code',
+        });
+
+        const task = taskBoard.getTask(taskId);
+        expect(task).toBeDefined();
+        expect(task?.id).toBe(taskId);
+        expect(task?.subject).toBe('Get Task Test');
+        expect(task?.description).toBe('Test description');
+        expect(task?.status).toBe('in_progress');
+        expect(task?.owner).toBe('agent-1');
+      });
+
+      it('should return null for non-existent task', () => {
+        const task = taskBoard.getTask('non-existent-id');
+        expect(task).toBeNull();
+      });
+
+      it('should deserialize metadata correctly', () => {
+        const metadata = { key: 'value', nested: { prop: 123 } };
+        const taskId = taskBoard.createTask({
+          subject: 'Metadata Test',
+          status: 'pending',
+          creator_platform: 'claude-code',
+          metadata,
+        });
+
+        const task = taskBoard.getTask(taskId);
+        expect(task?.metadata).toBe(JSON.stringify(metadata));
+      });
+    });
+
+    describe('listTasks', () => {
+      beforeEach(() => {
+        // Create test tasks
+        taskBoard.createTask({
+          subject: 'Task 1',
+          status: 'pending',
+          owner: 'agent-1',
+          creator_platform: 'claude-code',
+        });
+        taskBoard.createTask({
+          subject: 'Task 2',
+          status: 'in_progress',
+          owner: 'agent-1',
+          creator_platform: 'claude-code',
+        });
+        taskBoard.createTask({
+          subject: 'Task 3',
+          status: 'completed',
+          owner: 'agent-2',
+          creator_platform: 'mcp-server',
+        });
+        taskBoard.createTask({
+          subject: 'Task 4',
+          status: 'pending',
+          owner: 'agent-2',
+          creator_platform: 'mcp-server',
+        });
+      });
+
+      it('should list all tasks when no filter provided', () => {
+        const tasks = taskBoard.listTasks();
+        expect(tasks).toHaveLength(4);
+      });
+
+      it('should filter tasks by status', () => {
+        const pending = taskBoard.listTasks({ status: 'pending' });
+        expect(pending).toHaveLength(2);
+        expect(pending.every((t) => t.status === 'pending')).toBe(true);
+
+        const inProgress = taskBoard.listTasks({ status: 'in_progress' });
+        expect(inProgress).toHaveLength(1);
+        expect(inProgress[0].subject).toBe('Task 2');
+
+        const completed = taskBoard.listTasks({ status: 'completed' });
+        expect(completed).toHaveLength(1);
+        expect(completed[0].subject).toBe('Task 3');
+      });
+
+      it('should filter tasks by owner', () => {
+        const agent1Tasks = taskBoard.listTasks({ owner: 'agent-1' });
+        expect(agent1Tasks).toHaveLength(2);
+        expect(agent1Tasks.every((t) => t.owner === 'agent-1')).toBe(true);
+
+        const agent2Tasks = taskBoard.listTasks({ owner: 'agent-2' });
+        expect(agent2Tasks).toHaveLength(2);
+        expect(agent2Tasks.every((t) => t.owner === 'agent-2')).toBe(true);
+      });
+
+      it('should filter tasks by creator_platform', () => {
+        const claudeTasks = taskBoard.listTasks({ creator_platform: 'claude-code' });
+        expect(claudeTasks).toHaveLength(2);
+        expect(claudeTasks.every((t) => t.creator_platform === 'claude-code')).toBe(true);
+
+        const mcpTasks = taskBoard.listTasks({ creator_platform: 'mcp-server' });
+        expect(mcpTasks).toHaveLength(2);
+        expect(mcpTasks.every((t) => t.creator_platform === 'mcp-server')).toBe(true);
+      });
+
+      it('should filter tasks by multiple criteria', () => {
+        const filtered = taskBoard.listTasks({
+          status: 'pending',
+          owner: 'agent-2',
+        });
+        expect(filtered).toHaveLength(1);
+        expect(filtered[0].subject).toBe('Task 4');
+        expect(filtered[0].status).toBe('pending');
+        expect(filtered[0].owner).toBe('agent-2');
+      });
+
+      it('should return empty array when no tasks match filter', () => {
+        const tasks = taskBoard.listTasks({ status: 'deleted' });
+        expect(tasks).toHaveLength(0);
+      });
+    });
+
+    describe('updateTaskStatus', () => {
+      it('should update task status', () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Update Test',
+          status: 'pending',
+          creator_platform: 'claude-code',
+        });
+
+        taskBoard.updateTaskStatus(taskId, 'in_progress');
+
+        const task = taskBoard.getTask(taskId);
+        expect(task?.status).toBe('in_progress');
+      });
+
+      it('should update updated_at timestamp', async () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Timestamp Test',
+          status: 'pending',
+          creator_platform: 'claude-code',
+        });
+
+        const originalTask = taskBoard.getTask(taskId);
+        const originalUpdatedAt = originalTask?.updated_at;
+
+        // Wait a bit to ensure timestamp difference
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        taskBoard.updateTaskStatus(taskId, 'in_progress');
+
+        const updatedTask = taskBoard.getTask(taskId);
+        expect(updatedTask?.updated_at).toBeGreaterThan(originalUpdatedAt!);
+        expect(updatedTask?.created_at).toBe(originalTask?.created_at);
+      });
+
+      it('should throw on non-existent task', () => {
+        expect(() => {
+          taskBoard.updateTaskStatus('non-existent-id', 'in_progress');
+        }).toThrow('Task not found');
+      });
+
+      it('should throw on invalid status', () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Invalid Status Test',
+          status: 'pending',
+          creator_platform: 'claude-code',
+        });
+
+        expect(() => {
+          taskBoard.updateTaskStatus(taskId, 'invalid_status' as any);
+        }).toThrow(/CHECK constraint failed/);
+      });
+    });
+
+    describe('deleteTask', () => {
+      it('should delete task', () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Delete Test',
+          status: 'pending',
+          creator_platform: 'claude-code',
+        });
+
+        // Verify task exists
+        expect(taskBoard.getTask(taskId)).toBeDefined();
+
+        // Delete task
+        taskBoard.deleteTask(taskId);
+
+        // Verify task is gone
+        expect(taskBoard.getTask(taskId)).toBeNull();
+      });
+
+      it('should throw on non-existent task', () => {
+        expect(() => {
+          taskBoard.deleteTask('non-existent-id');
+        }).toThrow('Task not found');
+      });
+
+      it('should cascade delete dependencies', () => {
+        const db = (taskBoard as any).db;
+
+        // Create tasks
+        const task1 = taskBoard.createTask({
+          subject: 'Task 1',
+          status: 'pending',
+          creator_platform: 'claude-code',
+        });
+        const task2 = taskBoard.createTask({
+          subject: 'Task 2',
+          status: 'pending',
+          creator_platform: 'claude-code',
+        });
+
+        // Create dependency
+        db.prepare('INSERT INTO task_dependencies (task_id, blocks) VALUES (?, ?)').run(task1, task2);
+
+        // Verify dependency exists
+        let deps = db.prepare('SELECT * FROM task_dependencies WHERE task_id = ?').all(task1);
+        expect(deps).toHaveLength(1);
+
+        // Delete task1
+        taskBoard.deleteTask(task1);
+
+        // Verify dependency deleted (CASCADE)
+        deps = db.prepare('SELECT * FROM task_dependencies WHERE task_id = ?').all(task1);
+        expect(deps).toHaveLength(0);
+      });
+
+      it('should cascade delete task history', () => {
+        const db = (taskBoard as any).db;
+
+        // Create task
+        const taskId = taskBoard.createTask({
+          subject: 'History Test',
+          status: 'pending',
+          creator_platform: 'claude-code',
+        });
+
+        // Create history entry
+        db.prepare(
+          'INSERT INTO task_history (task_id, agent_id, action, old_status, new_status, timestamp) VALUES (?, ?, ?, ?, ?, ?)'
+        ).run(taskId, 'agent-1', 'created', null, 'pending', Date.now());
+
+        // Verify history exists
+        let history = db.prepare('SELECT * FROM task_history WHERE task_id = ?').all(taskId);
+        expect(history).toHaveLength(1);
+
+        // Delete task
+        taskBoard.deleteTask(taskId);
+
+        // Verify history deleted (CASCADE)
+        history = db.prepare('SELECT * FROM task_history WHERE task_id = ?').all(taskId);
+        expect(history).toHaveLength(0);
+      });
+    });
+  });
 });

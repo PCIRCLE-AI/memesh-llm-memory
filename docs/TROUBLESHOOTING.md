@@ -1,11 +1,14 @@
-# Troubleshooting Guide
-## Common Issues and Solutions for MeMesh
+# ⚠️ Troubleshooting Guide
 
-This guide helps you diagnose and fix common issues with MeMesh.
+## 💡 TL;DR
+If you're in a hurry:
+1. Run `memesh setup` to fix installation and path issues.
+2. Run `memesh daemon restart` if commands are slow or stuck.
+3. Verify your Node.js version is **>= v20.0.0**.
 
 ---
 
-## Quick Diagnostic Commands
+## 🔧 Quick Diagnostic Commands
 
 Before troubleshooting, run these commands to gather information:
 
@@ -26,65 +29,55 @@ npx @pcircle/memesh --help
 
 ---
 
-## Issue Categories
+## 📍 Issue Categories
 
 - [Most Common Issues](#most-common-issues)
 - [Daemon Issues](#daemon-issues)
+- [Performance & Persistence](#performance--persistence)
 - [Getting Help](#getting-help)
 
 ---
 
-## Most Common Issues
+## ✅ Most Common Issues
 
 ### 1. "buddy-help" command not found
-
+**Symptoms**: Shell returns "command not found" after installation.
 **Quick Fix:**
 ```bash
-memesh setup  # Run interactive setup
-# Restart Claude Code
+memesh setup  # Run interactive setup to fix PATH
+# Restart your terminal or Claude Code
 # Try: buddy-help
 ```
 
 ### 2. "MCP Server Connection Failed"
-
+**Symptoms**: Claude Code cannot connect to the MeMesh server.
 **Quick Fix:**
 ```bash
 # Restart Claude Code completely
-# Wait 10 seconds
-# Try command again
+# Wait 10 seconds for daemon to initialize
+# Try the command again
 ```
 
 ### 3. "Permission denied" errors
-
+**Symptoms**: Errors during `npm install` or file access.
 **Quick Fix:**
-```bash
-sudo npm install -g @pcircle/memesh  # macOS/Linux
-# Or configure npm prefix (see docs)
-```
-
-### 4. Commands are slow
-
-**Quick Fix:**
-- Simplify task descriptions
-- Restart Claude Code
-- Check network connection
+- **Avoid sudo**: Use an npm prefix or a version manager like `nvm`.
+- **Manual fix**: `sudo npm install -g @pcircle/memesh` (not recommended for long-term).
 
 ---
 
-## Daemon Issues
+## 🔧 Daemon Issues
 
 MeMesh uses a singleton daemon architecture. Here are common daemon-related issues:
 
-### 5. "Failed to acquire daemon lock"
-
-**Cause:** Another daemon is running or stale lock file exists.
-
+### 4. "Failed to acquire daemon lock"
+**Cause:** Another daemon is running or a stale lock file exists.
 **Quick Fix:**
 ```bash
 # Check daemon status
 memesh daemon status
 
-# If stale, clean up
+# If stale, clean up manually
 rm ~/.memesh/daemon.lock
 rm ~/.memesh/daemon.sock
 
@@ -92,76 +85,53 @@ rm ~/.memesh/daemon.sock
 memesh daemon restart
 ```
 
-### 6. "ECONNREFUSED" when connecting to daemon
-
+### 5. "ECONNREFUSED" when connecting to daemon
 **Cause:** Daemon is not running or socket file is missing.
-
 **Quick Fix:**
-```bash
-# Check status
-memesh daemon status
+- Check status: `memesh daemon status`
+- Restart daemon: `memesh daemon restart`
+- Verify socket exists: `ls -la ~/.memesh/daemon.sock`
 
-# Restart daemon
-memesh daemon restart
-
-# Verify socket exists
-ls -la ~/.memesh/daemon.sock
-```
-
-### 7. "Protocol version mismatch"
-
-**Cause:** Client and daemon have incompatible versions.
-
+### 6. "Protocol version mismatch"
+**Cause:** Client and daemon are running incompatible versions.
 **Quick Fix:**
-```bash
-# Upgrade daemon to new version
-memesh daemon upgrade
-
-# Or force restart
-memesh daemon stop --force
-```
-
-### 8. Daemon using high memory
-
-**Cause:** Many connected clients or memory leak.
-
-**Quick Fix:**
-```bash
-# Check client count
-memesh daemon status
-
-# Restart to clear state
-memesh daemon restart
-
-# Check logs for issues
-memesh daemon logs | grep -i memory
-```
-
-### 9. Disable daemon mode
-
-If daemon mode causes issues, run in standalone mode:
-
-```bash
-# Temporary disable
-export MEMESH_DISABLE_DAEMON=1
-
-# Or add to shell profile
-echo 'export MEMESH_DISABLE_DAEMON=1' >> ~/.zshrc
-
-# Emergency cleanup
-rm ~/.memesh/daemon.lock ~/.memesh/daemon.sock
-pkill -f "memesh.*daemon"
-```
+- Upgrade daemon: `memesh daemon upgrade`
+- Or force restart: `memesh daemon stop --force`
 
 ---
 
-## Getting Help
+## 🧠 Performance & Persistence
+
+### 7. Commands are slow or hanging
+**Symptoms**: CCB takes too long to respond or hangs indefinitely.
+**Quick Fix:**
+- **Pkill**: `pkill -f memesh` then `memesh daemon start`.
+- **Simplify**: Break complex tasks into smaller sub-tasks.
+- **Network**: Verify your internet connection to the LLM provider.
+
+### 8. Memory not persisting
+**Symptoms**: Information or context from previous sessions is lost.
+**Quick Fix:**
+- Check permissions for `~/.memesh/memory.json`.
+- Verify `MEMESH_STORAGE_PATH` in your `.env` if you are using a custom location.
+- Run `memesh config validate` to ensure storage is correctly configured.
+
+### 9. Disable daemon mode
+If daemon mode causes consistent issues, you can run in standalone mode:
+- **Temporary**: `export MEMESH_DISABLE_DAEMON=1`
+- **Permanent**: Add `export MEMESH_DISABLE_DAEMON=1` to your `~/.zshrc` or `~/.bashrc`.
+- **Cleanup**: `rm ~/.memesh/daemon.lock ~/.memesh/daemon.sock && pkill -f "memesh.*daemon"`
+
+---
+
+## 🆘 Getting Help
 
 1. **Quick Start:** [docs/QUICK_START.md](./QUICK_START.md)
 2. **Report Issue:** `memesh report-issue`
-3. **GitHub:** https://github.com/PCIRCLE-AI/claude-code-buddy/issues
+3. **GitHub:** [Issues](https://github.com/PCIRCLE-AI/claude-code-buddy/issues)
+4. **Discussions:** [GitHub Discussions](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
 
 ---
 
-**Version**: 2.7.0
-**Last Updated**: 2026-02-04
+**Version**: 2.7.1
+**Last Updated**: 2026-02-05

@@ -12,6 +12,7 @@ export const ErrorMessages = {
     [ErrorCodes.TASK_GET_FAILED]: (taskId, targetAgentId, error) => `Failed to get task ${taskId} from ${targetAgentId}: ${error}`,
     [ErrorCodes.TASK_LIST_FAILED]: (targetAgentId, error) => `Failed to list tasks from ${targetAgentId}: ${error}`,
     [ErrorCodes.TASK_CANCEL_FAILED]: (taskId, targetAgentId, error) => `Failed to cancel task ${taskId} on ${targetAgentId}: ${error}`,
+    [ErrorCodes.TASK_UPDATE_FAILED]: (taskId, state, error) => `Failed to update task ${taskId} to state ${state}: ${error}`,
     [ErrorCodes.PORT_NOT_AVAILABLE]: (min, max) => `No available port in range ${min}-${max}`,
     [ErrorCodes.SERVER_ERROR]: (error) => `Server error: ${error}`,
     [ErrorCodes.INVALID_JSON]: (context, preview) => `Invalid JSON data in ${context}${preview ? `: ${preview}` : ''}`,
@@ -19,6 +20,11 @@ export const ErrorMessages = {
     [ErrorCodes.TIMEOUT_CHECKER_ERROR]: (error) => `TimeoutChecker error: ${error}`,
     [ErrorCodes.TIMEOUT_CHECKER_CIRCUIT_OPEN]: (failureCount, maxRetries) => `TimeoutChecker circuit breaker is open (${failureCount}/${maxRetries} consecutive failures). Service temporarily degraded.`,
     [ErrorCodes.HTTP_ERROR]: (status, message) => `HTTP error ${status}${message ? `: ${message}` : ''}`,
+    [ErrorCodes.REQUEST_TIMEOUT]: (url, timeoutMs) => `Request to ${url} aborted due to timeout (${timeoutMs}ms)`,
+    [ErrorCodes.INVALID_CONTENT_TYPE]: (contentType, status) => `Unexpected Content-Type: ${contentType}, expected application/json (status: ${status})`,
+    [ErrorCodes.RESPONSE_TOO_LARGE]: (size) => `Response size exceeds maximum allowed (size: ${size} bytes, max: 10MB)`,
+    [ErrorCodes.INVALID_PARAMETER]: (fieldName, reason) => `Invalid parameter '${fieldName}': ${reason}`,
+    [ErrorCodes.INVALID_RESPONSE_SCHEMA]: (details) => `Response schema validation failed: ${details}`,
     [ErrorCodes.UNKNOWN_ERROR]: 'An unknown error occurred',
 };
 export function formatErrorMessage(code, ...args) {

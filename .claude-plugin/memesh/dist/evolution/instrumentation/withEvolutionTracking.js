@@ -25,7 +25,6 @@ export function withEvolutionTracking(fn, options = {}) {
         const startTime = Date.now();
         try {
             const result = await fn(...args);
-            const duration = Date.now() - startTime;
             let outputAttributes = {};
             if (options.extractOutputAttributes) {
                 outputAttributes = options.extractOutputAttributes(result);
@@ -48,7 +47,6 @@ export function withEvolutionTracking(fn, options = {}) {
             return result;
         }
         catch (error) {
-            const duration = Date.now() - startTime;
             const errorDetails = getErrorDetails(error);
             const sanitizedMessage = sanitizeErrorMessage(errorDetails.message);
             span.setStatus({

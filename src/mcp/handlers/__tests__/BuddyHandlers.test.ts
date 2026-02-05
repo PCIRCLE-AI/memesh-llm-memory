@@ -183,7 +183,7 @@ describe('BuddyHandlers', () => {
 
       expect(mockProjectMemoryManager.search).toHaveBeenCalledWith(
         'TypeScript',
-        5 // Default limit
+        10 // Default limit (changed from 5 to 10 with semantic search support)
       );
     });
 

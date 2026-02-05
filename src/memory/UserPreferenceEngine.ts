@@ -29,7 +29,7 @@ import { logger } from '../utils/logger.js';
  * Prefix for preference IDs (internal tracking)
  * Reserved for future use in preference ID generation
  */
-const _PREFERENCE_PREFIX = 'user-preference-'; // eslint-disable-line @typescript-eslint/no-unused-vars
+const _PREFERENCE_PREFIX = 'user-preference-';  
 
 /**
  * Tag used to identify preference memories

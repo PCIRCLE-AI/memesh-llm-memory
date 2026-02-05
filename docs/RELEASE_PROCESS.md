@@ -4,19 +4,27 @@ This document describes the complete release process for MeMesh, including versi
 
 ## Overview
 
-MeMesh uses **automated npm publishing** triggered by GitHub Releases. When a new release is published on GitHub, a GitHub Actions workflow automatically builds, tests, and publishes the package to npm.
+MeMesh uses **fully automated release and publishing** triggered by version changes. When `package.json` version is updated and pushed to main, GitHub Actions automatically:
+
+1. Detects the version change
+2. Creates a git tag
+3. Creates a GitHub Release with changelog
+4. Publishes to npm
+
+This automation prevents version/tag discrepancies and ensures every version bump gets a proper release.
 
 ## Release Workflow
 
 ```mermaid
 graph LR
     A[Bump Version] --> B[Update CHANGELOG]
-    B --> C[Commit & Push]
-    C --> D[Create GitHub Release]
-    D --> E[GitHub Actions Triggered]
-    E --> F[Build & Test]
-    F --> G[Publish to npm]
-    G --> H[Verify Publication]
+    B --> C[Commit & Push to main]
+    C --> D{Version Changed?}
+    D -->|Yes| E[Auto: Create Git Tag]
+    E --> F[Auto: Create GitHub Release]
+    F --> G[Auto: Publish to npm]
+    D -->|No| H[No Action]
+    G --> I[Verify Publication]
 ```
 
 ## Step-by-Step Guide
@@ -131,52 +139,61 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 git push origin main
 ```
 
-Wait for CI checks to pass (if applicable).
+**✨ That's it!** The automated workflow will now:
+1. Detect the version change in `package.json`
+2. Extract changelog for the new version
+3. Create a git tag `vX.Y.Z`
+4. Create a GitHub Release with changelog
+5. Trigger npm publishing workflow
 
-### 6. Create GitHub Release
+You can monitor the progress in GitHub Actions.
 
-#### Using GitHub CLI (Recommended)
+### 6. Monitor Automated Release Creation
+
+#### Using GitHub CLI
 
 ```bash
-gh release create vX.Y.Z \
-  --title "vX.Y.Z - Release Title" \
-  --notes "## 🎉 What's New
+# Watch the auto-release workflow
+gh run watch --repo PCIRCLE-AI/claude-code-buddy
 
-### ✨ Features
-- Feature 1
-- Feature 2
-
-### 🔧 Fixes
-- Fix 1
-- Fix 2
-
-### 📚 Documentation
-- Doc updates
-
----
-
-For detailed changes, see [CHANGELOG.md](https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/CHANGELOG.md)."
+# Or list recent runs
+gh run list --workflow=auto-release.yml --limit 3
 ```
 
 #### Using GitHub Web Interface
 
-1. Go to https://github.com/PCIRCLE-AI/claude-code-buddy/releases
-2. Click "Draft a new release"
-3. Choose tag: `vX.Y.Z` (create new tag)
-4. Set target: `main`
-5. Fill release title: `vX.Y.Z - Release Title`
-6. Write release notes (markdown supported)
-7. Click "Publish release"
+1. Go to https://github.com/PCIRCLE-AI/claude-code-buddy/actions
+2. Check the "Auto Release" workflow
+3. Verify tag creation and release creation steps succeed
+4. Then check "Publish to npm" workflow
 
-### 7. Automated Publishing
+### 7. Automated Release and Publishing
 
-Once the GitHub Release is published:
+The automation happens in two stages:
 
-1. **GitHub Actions Workflow Triggered**
-   - Workflow: `.github/workflows/publish-npm.yml`
-   - Trigger: `release: types: [published]`
+#### Stage 1: Auto Release (.github/workflows/auto-release.yml)
 
-2. **Workflow Steps**:
+Triggered when `package.json` is pushed to main:
+
+1. **Check Version Change**
+   - Compares current vs. previous package.json version
+   - Skips if version unchanged
+
+2. **Create Release** (if version changed):
+   ```yaml
+   ✓ Extract changelog for version
+   ✓ Create annotated git tag
+   ✓ Push tag to GitHub
+   ✓ Create GitHub Release with changelog
+   ```
+
+3. **Expected Duration**: ~1-2 minutes
+
+#### Stage 2: NPM Publishing (.github/workflows/publish-npm.yml)
+
+Triggered when GitHub Release is published:
+
+1. **Build and Test**:
    ```yaml
    ✓ Checkout code
    ✓ Setup Node.js 20
@@ -184,28 +201,36 @@ Once the GitHub Release is published:
    ✓ Build project (npm run build)
    ✓ Run tests (npm test)
    ✓ Run installation tests
+   ✓ Verify package contents
    ✓ Publish to npm (with provenance)
    ✓ Log success
    ```
 
-3. **Expected Duration**: ~2-3 minutes
+2. **Expected Duration**: ~2-3 minutes
 
-### 8. Monitor Workflow
+**Total Time**: ~3-5 minutes from push to npm publication
+
+### 8. Monitor Workflows
 
 #### Using GitHub CLI
 
 ```bash
-# Watch the workflow
-gh run watch
+# Watch auto-release workflow
+gh run watch --workflow=auto-release.yml
 
-# Or list recent runs
-gh run list --workflow=publish-npm.yml --limit 3
+# Watch npm publish workflow (after release is created)
+gh run watch --workflow=publish-npm.yml
+
+# Or list all recent workflow runs
+gh run list --limit 5
 ```
 
 #### Using GitHub Web Interface
 
 1. Go to https://github.com/PCIRCLE-AI/claude-code-buddy/actions
-2. Check the "Publish to npm" workflow
+2. Check both workflows:
+   - "Auto Release" - Creates tag and release
+   - "Publish to npm" - Publishes to npm
 3. Verify all steps complete successfully
 
 ### 9. Verify Publication
@@ -238,11 +263,34 @@ memesh --help
 
 ## Troubleshooting
 
-### Workflow Fails
+### Auto Release Workflow Fails
 
 1. **Check workflow logs**:
    ```bash
-   gh run view --log-failed
+   gh run view --workflow=auto-release.yml --log-failed
+   ```
+
+2. **Common issues**:
+   - **Version not detected**: Check package.json was actually modified
+   - **Tag already exists**: Delete the tag first (`git push --delete origin vX.Y.Z`)
+   - **CHANGELOG extraction fails**: Ensure CHANGELOG.md follows the format `## [X.Y.Z]`
+   - **Permission denied**: Check workflow has `contents: write` permission
+
+3. **Manual fallback** (if auto-release fails):
+   ```bash
+   # Create tag manually
+   git tag -a vX.Y.Z -m "Release vX.Y.Z"
+   git push origin vX.Y.Z
+
+   # Create release manually
+   gh release create vX.Y.Z --title "vX.Y.Z" --notes-file CHANGELOG.md
+   ```
+
+### NPM Publish Workflow Fails
+
+1. **Check workflow logs**:
+   ```bash
+   gh run view --workflow=publish-npm.yml --log-failed
    ```
 
 2. **Common issues**:
@@ -283,27 +331,49 @@ If authentication fails:
 
 ## GitHub Actions Workflow Details
 
-### Workflow File
+### Workflow Files
 
-Location: `.github/workflows/publish-npm.yml`
+MeMesh uses two automated workflows:
 
-### Trigger Configuration
+#### 1. Auto Release Workflow
 
+**Location**: `.github/workflows/auto-release.yml`
+
+**Trigger**: Push to main branch with package.json changes
+```yaml
+on:
+  push:
+    branches: [main]
+    paths: ['package.json']
+```
+
+**Key Features**:
+- Detects version changes automatically
+- Extracts changelog from CHANGELOG.md
+- Creates annotated git tags
+- Creates GitHub Releases with proper notes
+- Runs only when version actually changes
+
+**Permissions**: `contents: write` (to create tags and releases)
+
+#### 2. NPM Publish Workflow
+
+**Location**: `.github/workflows/publish-npm.yml`
+
+**Trigger**: When GitHub Release is published
 ```yaml
 on:
   release:
     types: [published]
 ```
 
-### Key Features
-
+**Key Features**:
 - **Provenance**: Publishes with `--provenance` for supply chain security
 - **Public Access**: Uses `--access public` for scoped package
 - **Test Integration**: Runs full test suite including installation tests
-- **Continue on Error**: Tests continue even if some fail (non-blocking)
+- **Package Verification**: Checks package contents before publishing
 
-### Environment Variables
-
+**Environment Variables**:
 - `NODE_AUTH_TOKEN`: From `secrets.NPM_TOKEN`
 - `NODE_VERSION`: 20
 - `REGISTRY_URL`: https://registry.npmjs.org
@@ -374,16 +444,25 @@ If a release has critical issues:
 
 Use this checklist for every release:
 
+### Manual Steps (You Do)
 - [ ] Pull latest changes from main
 - [ ] All tests pass locally
-- [ ] Version bumped in package.json
-- [ ] CHANGELOG.md updated
-- [ ] Changes committed and pushed
-- [ ] GitHub Release created
-- [ ] Workflow completed successfully
-- [ ] Package published to npm
-- [ ] Version verified on npm
-- [ ] Installation tested
+- [ ] Version bumped in package.json (using `npm version`)
+- [ ] CHANGELOG.md updated with changes
+- [ ] Changes committed and pushed to main
+
+### Automated Steps (GitHub Actions Does)
+- [ ] ✨ Auto Release workflow detects version change
+- [ ] ✨ Git tag created automatically
+- [ ] ✨ GitHub Release created with changelog
+- [ ] ✨ NPM Publish workflow triggered
+- [ ] ✨ Package built and tested
+- [ ] ✨ Package published to npm
+
+### Verification Steps (You Check)
+- [ ] Both workflows completed successfully
+- [ ] Version verified on npm (`npm view @pcircle/memesh version`)
+- [ ] Installation tested (`npm install -g @pcircle/memesh@latest`)
 - [ ] Documentation updated (if needed)
 - [ ] Announcement posted (if major release)
 

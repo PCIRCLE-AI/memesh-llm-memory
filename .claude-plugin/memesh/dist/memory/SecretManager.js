@@ -8,7 +8,7 @@ import { logger } from '../utils/logger.js';
 import { DEFAULT_SECRET_PATTERNS } from './types/secret-types.js';
 const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
-const AUTH_TAG_LENGTH = 16;
+const _AUTH_TAG_LENGTH = 16;
 const DEFAULT_EXPIRATION_SECONDS = 30 * 24 * 60 * 60;
 export class SecretManager {
     db;

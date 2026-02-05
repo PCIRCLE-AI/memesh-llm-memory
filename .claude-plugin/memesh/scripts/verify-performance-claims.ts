@@ -7,8 +7,6 @@
  */
 
 import { performance } from 'perf_hooks';
-import * as fs from 'fs';
-import * as path from 'path';
 
 interface BenchmarkResult {
   test: string;

@@ -5,7 +5,12 @@ CREATE TABLE IF NOT EXISTS entities (
   name TEXT PRIMARY KEY,
   entity_type TEXT NOT NULL,
   created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-  updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+  updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+  -- Embedding columns for vector semantic search
+  embedding BLOB,                                          -- 384 float32 values as BLOB
+  embedding_model TEXT DEFAULT 'all-MiniLM-L6-v2',         -- ONNX model name
+  embedding_version INTEGER DEFAULT 1,                     -- Embedding version for re-computation
+  embedded_at INTEGER                                      -- Timestamp when embedding was generated
 );
 
 -- Observations table (one-to-many with entities)
@@ -33,6 +38,9 @@ CREATE INDEX IF NOT EXISTS idx_observations_entity ON observations(entity_name);
 CREATE INDEX IF NOT EXISTS idx_relations_from ON relations(from_entity);
 CREATE INDEX IF NOT EXISTS idx_relations_to ON relations(to_entity);
 CREATE INDEX IF NOT EXISTS idx_entities_type ON entities(entity_type);
+
+-- Partial index for entities with embeddings (optimization for semantic search)
+CREATE INDEX IF NOT EXISTS idx_entities_has_embedding ON entities(name) WHERE embedding IS NOT NULL;
 
 -- Full-text search for observations (optional, for advanced search)
 CREATE VIRTUAL TABLE IF NOT EXISTS observations_fts USING fts5(

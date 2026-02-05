@@ -279,18 +279,111 @@ Error: Task execution timeout (exceeded 30000ms)
 
 After testing is complete, confirm all the following items are successful:
 
+**Basic Flow (Phase 0.5+)**:
 - [ ] Session 1 can list available agents
 - [ ] Session 1 successfully sends task and receives `taskId`
 - [ ] Session 2 can list pending tasks
 - [ ] Session 2 successfully reports task result
-- [ ] Session 1 can query task completion status and result
-- [ ] Task status transitions correctly: SUBMITTED → WORKING → COMPLETED
+- [ ] Session 1 can query task completion status
+
+**Phase 1.0 Features**:
+- [ ] Task Result Query: Can query detailed execution result with `a2a-get-result`
+- [ ] State Machine: Task transitions correctly SUBMITTED → WORKING → COMPLETED
+- [ ] State Update: Can manually update task state to WORKING
+- [ ] Auto State Update: `a2a-report-result` automatically updates state to COMPLETED/FAILED
+- [ ] Failure Handling: Failed tasks show state=FAILED with error message
+- [ ] Security: Response size limit prevents DoS attacks
+- [ ] Security: Input validation blocks path traversal attempts
+- [ ] Security: Schema validation prevents type confusion
 
 ---
 
 ## 🎯 Advanced Test Scenarios
 
-### Scenario 1: Task Failure Handling
+### Scenario 1: Task Result Query (Phase 1.0 Feature)
+
+After task is completed, use the new result query API:
+
+**In Session 1**:
+```
+Please use the mcp__memesh__a2a-get-result tool to query task result:
+
+{
+  "targetAgentId": "ccb-mcp-yyyyy",
+  "taskId": "task-abc123def456"
+}
+```
+
+**Expected Output**:
+```json
+{
+  "taskId": "task-abc123def456",
+  "state": "COMPLETED",
+  "success": true,
+  "result": {
+    "answer": 579,
+    "calculation": "123 + 456 = 579"
+  },
+  "executedAt": "2026-02-05T10:00:00.000Z",
+  "executedBy": "ccb-mcp-yyyyy",
+  "durationMs": 150
+}
+```
+
+**Verification**:
+- ✅ Result query works for completed tasks
+- ✅ Returns detailed execution metadata
+- ✅ Shows execution duration and executor
+
+---
+
+### Scenario 2: Complete State Machine (Phase 1.0 Feature)
+
+Test full state transition: SUBMITTED → WORKING → COMPLETED
+
+**Step 1 - Session 1 sends task**:
+```json
+{
+  "targetAgentId": "ccb-mcp-yyyyy",
+  "taskDescription": "Calculate Fibonacci(10)",
+  "priority": "normal"
+}
+```
+Expected: State = `SUBMITTED`
+
+**Step 2 - Session 2 starts work**:
+```
+Use mcp__memesh__a2a-update-task-state:
+{
+  "taskId": "task-xyz789",
+  "state": "WORKING"
+}
+```
+Expected: State = `WORKING`
+
+**Step 3 - Session 2 completes work**:
+```json
+{
+  "taskId": "task-xyz789",
+  "result": "Fibonacci(10) = 55",
+  "success": true
+}
+```
+Expected: State = `COMPLETED` (automatic transition)
+
+**Step 4 - Session 1 verifies**:
+```
+Use a2a-get-task to confirm state is COMPLETED
+```
+
+**Verification**:
+- ✅ State transitions: SUBMITTED → WORKING → COMPLETED
+- ✅ a2a-report-result automatically updates state
+- ✅ Invalid transitions are rejected
+
+---
+
+### Scenario 3: Task Failure Handling
 
 Report failure in Session 2:
 ```json
@@ -302,7 +395,68 @@ Report failure in Session 2:
 }
 ```
 
-### Scenario 2: Priority Tasks
+**Expected Behavior**:
+- Task state updates to `FAILED`
+- Error message is stored
+- Session 1 can query failure details with `a2a-get-result`
+
+**Verification**:
+- ✅ State = `FAILED`
+- ✅ Error message preserved
+- ✅ Success = false
+
+---
+
+### Scenario 4: Security Validations (Phase 1.0 Feature)
+
+Test security protections added in Phase 1:
+
+#### 4.1 Response Size Limit (DoS Prevention)
+
+Send task with extremely large result (> 10MB):
+```json
+{
+  "taskId": "task-large",
+  "result": "[10MB+ data]",
+  "success": true
+}
+```
+
+**Expected**: Error with `RESPONSE_TOO_LARGE` code
+
+#### 4.2 Input Validation (Path Traversal Protection)
+
+Try to query with malicious task ID:
+```json
+{
+  "targetAgentId": "ccb-mcp-yyyyy",
+  "taskId": "../../../etc/passwd"
+}
+```
+
+**Expected**: Error with `INVALID_PARAMETER` code
+
+#### 4.3 Schema Validation (Type Confusion Prevention)
+
+Send invalid result format:
+```json
+{
+  "taskId": "task-xyz",
+  "result": 12345,  // Should be string
+  "success": "yes"  // Should be boolean
+}
+```
+
+**Expected**: Error with `INVALID_RESPONSE_SCHEMA` code
+
+**Verification**:
+- ✅ All security validations working
+- ✅ Clear error messages
+- ✅ No security vulnerabilities
+
+---
+
+### Scenario 5: Priority Tasks
 
 Send high-priority task:
 ```json
@@ -313,7 +467,9 @@ Send high-priority task:
 }
 ```
 
-### Scenario 3: Multiple Concurrent Tasks
+---
+
+### Scenario 6: Multiple Concurrent Tasks
 
 Send multiple tasks from Session 1 to different agents to test concurrent processing capabilities.
 

@@ -10,15 +10,20 @@ import { AgentRegistry } from '../../a2a/storage/AgentRegistry.js';
 import {
   A2ASendTaskInputSchema,
   A2AGetTaskInputSchema,
+  A2AGetResultInputSchema,
   A2AListTasksInputSchema,
   A2AListAgentsInputSchema,
+  A2AReportResultInputSchema,
   formatValidationError,
   type ValidatedA2ASendTaskInput,
   type ValidatedA2AGetTaskInput,
+  type ValidatedA2AGetResultInput,
   type ValidatedA2AListTasksInput,
   type ValidatedA2AListAgentsInput,
+  type ValidatedA2AReportResultInput,
 } from '../validation.js';
-import type { Task, TaskStatus, AgentRegistryEntry } from '../../a2a/types/index.js';
+import type { Task, TaskStatus, TaskResult, AgentRegistryEntry } from '../../a2a/types/index.js';
+import { isValidStateTransition, isTerminalState } from '../../a2a/types/task.js';
 
 /**
  * Special agent ID representing the current agent (self)
@@ -86,14 +91,15 @@ export class A2AToolHandlers {
         ],
       };
     } catch (error) {
-      // ✅ FIX MINOR-21: Improve error messages with actionable hints
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new Error(
-        `Failed to send task to agent ${input.targetAgentId}: ${errorMsg}\n\n` +
-        `💡 Troubleshooting tips:\n` +
-        `  - Verify the agent ID is correct using 'a2a-list-agents' tool\n` +
-        `  - Check if the target agent is running and accessible\n` +
-        `  - Ensure MEMESH_A2A_TOKEN is configured in .env file`
+      // ✅ FIX ISSUE-6: Standardize error message format
+      throw this.formatErrorWithTips(
+        `send task to agent ${input.targetAgentId}`,
+        error,
+        [
+          "Verify the agent ID is correct using 'a2a-list-agents' tool",
+          'Check if the target agent is running and accessible',
+          'Ensure MEMESH_A2A_TOKEN is configured in .env file',
+        ]
       );
     }
   }
@@ -128,14 +134,58 @@ export class A2AToolHandlers {
         ],
       };
     } catch (error) {
-      // ✅ FIX MINOR-21: Improve error messages with actionable hints
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new Error(
-        `Failed to get task ${input.taskId} from agent ${input.targetAgentId}: ${errorMsg}\n\n` +
-        `💡 Troubleshooting tips:\n` +
-        `  - Verify the task ID exists using 'a2a-list-tasks' tool\n` +
-        `  - Check if the target agent is running and responding\n` +
-        `  - Confirm you have permission to access this task`
+      // ✅ FIX ISSUE-6: Standardize error message format
+      throw this.formatErrorWithTips(
+        `get task ${input.taskId} from agent ${input.targetAgentId}`,
+        error,
+        [
+          "Verify the task ID exists using 'a2a-list-tasks' tool",
+          'Check if the target agent is running and responding',
+          'Confirm you have permission to access this task',
+        ]
+      );
+    }
+  }
+
+  /**
+   * Handle a2a-get-result tool
+   * Get task execution result from target agent
+   */
+  async handleA2AGetResult(args: unknown): Promise<CallToolResult> {
+    // Validate input
+    const parseResult = A2AGetResultInputSchema.safeParse(args);
+    if (!parseResult.success) {
+      throw new ValidationError(formatValidationError(parseResult.error), {
+        component: 'A2AToolHandlers',
+        method: 'handleA2AGetResult',
+        providedArgs: args,
+      });
+    }
+
+    const input: ValidatedA2AGetResultInput = parseResult.data;
+
+    try {
+      // Get task result via A2A client
+      const result = await this.client.getTaskResult(input.targetAgentId, input.taskId);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: this.formatTaskResultResponse(result),
+          },
+        ],
+      };
+    } catch (error) {
+      // ✅ FIX ISSUE-6: Standardize error message format
+      throw this.formatErrorWithTips(
+        `get result for task ${input.taskId} from agent ${input.targetAgentId}`,
+        error,
+        [
+          'Verify the task has been executed and completed',
+          'Check if the target agent is running and responding',
+          "Use 'a2a-get-task' to check task state first",
+        ]
       );
     }
   }
@@ -174,14 +224,15 @@ export class A2AToolHandlers {
         ],
       };
     } catch (error) {
-      // ✅ FIX MINOR-21: Improve error messages with actionable hints
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new Error(
-        `Failed to list tasks: ${errorMsg}\n\n` +
-        `💡 Troubleshooting tips:\n` +
-        `  - Verify A2A server is running\n` +
-        `  - Check MEMESH_A2A_TOKEN configuration in .env\n` +
-        `  - Ensure network connectivity to A2A server`
+      // ✅ FIX ISSUE-6: Standardize error message format
+      throw this.formatErrorWithTips(
+        'list tasks',
+        error,
+        [
+          'Verify A2A server is running',
+          'Check MEMESH_A2A_TOKEN configuration in .env',
+          'Ensure network connectivity to A2A server',
+        ]
       );
     }
   }
@@ -222,14 +273,71 @@ export class A2AToolHandlers {
         ],
       };
     } catch (error) {
-      // ✅ FIX MINOR-21: Improve error messages with actionable hints
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new Error(
-        `Failed to list agents: ${errorMsg}\n\n` +
-        `💡 Troubleshooting tips:\n` +
-        `  - Check if agent registry is initialized\n` +
-        `  - Verify A2A protocol is enabled\n` +
-        `  - Try restarting the MCP server`
+      // ✅ FIX ISSUE-6: Standardize error message format
+      throw this.formatErrorWithTips(
+        'list agents',
+        error,
+        [
+          'Check if agent registry is initialized',
+          'Verify A2A protocol is enabled',
+          'Try restarting the MCP server',
+        ]
+      );
+    }
+  }
+
+  /**
+   * Handle a2a-report-result tool
+   * Report task execution result and update task state
+   */
+  async handleA2AReportResult(args: unknown): Promise<CallToolResult> {
+    // Validate input
+    const parseResult = A2AReportResultInputSchema.safeParse(args);
+    if (!parseResult.success) {
+      throw new ValidationError(formatValidationError(parseResult.error), {
+        component: 'A2AToolHandlers',
+        method: 'handleA2AReportResult',
+        providedArgs: args,
+      });
+    }
+
+    const input: ValidatedA2AReportResultInput = parseResult.data;
+
+    try {
+      // Determine new state based on success/failure
+      const newState = input.success ? 'COMPLETED' : 'FAILED';
+
+      // Note: Ideally we should fetch current state and validate transition
+      // using isValidStateTransition(). However, this requires an additional
+      // API call (getTask) which adds latency. For now, we rely on server-side
+      // validation in the /tasks/:taskId/state endpoint.
+      //
+      // TODO: Consider adding optimistic validation here if performance allows,
+      // or implement a lightweight state query endpoint.
+
+      await this.client.updateTaskState(input.taskId, newState, {
+        result: input.success ? input.result : undefined,
+        error: input.success ? undefined : input.error,
+      });
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: this.formatReportResultResponse(input),
+          },
+        ],
+      };
+    } catch (error) {
+      // ✅ FIX ISSUE-6: Standardize error message format
+      throw this.formatErrorWithTips(
+        `report result for task ${input.taskId}`,
+        error,
+        [
+          'Verify the task exists',
+          'Check if you have permission to update this task',
+          'Ensure the task is in a valid state for updates',
+        ]
       );
     }
   }
@@ -237,6 +345,27 @@ export class A2AToolHandlers {
   // ========================================
   // Private Helper Methods
   // ========================================
+
+  /**
+   * Format error message with troubleshooting tips
+   *
+   * Standardizes error message format across all handlers.
+   *
+   * @param operation - Description of the failed operation (e.g., "send task to agent X")
+   * @param error - The caught error
+   * @param tips - Array of troubleshooting tip strings
+   * @returns Formatted error with tips
+   */
+  private formatErrorWithTips(operation: string, error: unknown, tips: string[]): Error {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    const tipsSection = tips.map(tip => `  - ${tip}`).join('\n');
+
+    return new Error(
+      `Failed to ${operation}: ${errorMsg}\n\n` +
+      `💡 Troubleshooting tips:\n` +
+      tipsSection
+    );
+  }
 
   /**
    * Format task sent response
@@ -344,6 +473,80 @@ export class A2AToolHandlers {
         ``
       );
     });
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Format task result response
+   */
+  private formatTaskResultResponse(result: TaskResult): string {
+    const lines: string[] = [];
+
+    if (result.success) {
+      lines.push(`✅ Task Execution Result`, ``);
+    } else {
+      lines.push(`❌ Task Execution Failed`, ``);
+    }
+
+    lines.push(
+      `Task ID: ${result.taskId}`,
+      `State: ${result.state}`,
+      `Success: ${result.success}`,
+      `Executed At: ${result.executedAt}`,
+      `Executed By: ${result.executedBy}`
+    );
+
+    if (result.durationMs !== undefined) {
+      lines.push(`Duration: ${result.durationMs} ms`);
+    }
+
+    lines.push(``);
+
+    if (result.success && result.result) {
+      lines.push(
+        `📦 Result:`,
+        '```json',
+        JSON.stringify(result.result, null, 2),
+        '```'
+      );
+    } else if (result.error) {
+      lines.push(`❌ Error: ${result.error}`);
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Format report result response
+   */
+  private formatReportResultResponse(input: ValidatedA2AReportResultInput): string {
+    const lines: string[] = [];
+
+    if (input.success) {
+      lines.push(`✅ Task result reported successfully`, ``);
+    } else {
+      lines.push(`✅ Task failure reported successfully`, ``);
+    }
+
+    lines.push(
+      `Task ID: ${input.taskId}`,
+      `Status: ${input.success ? 'COMPLETED' : 'FAILED'}`,
+      `Success: ${input.success}`
+    );
+
+    lines.push(``);
+
+    if (input.success && input.result) {
+      lines.push(
+        `📦 Result:`,
+        '```json',
+        JSON.stringify(input.result, null, 2),
+        '```'
+      );
+    } else if (input.error) {
+      lines.push(`❌ Error: ${input.error}`);
+    }
 
     return lines.join('\n');
   }

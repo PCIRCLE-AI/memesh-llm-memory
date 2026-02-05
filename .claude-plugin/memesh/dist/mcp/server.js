@@ -148,6 +148,94 @@ class ClaudeCodeBuddyMCPServer {
         const transport = new StdioServerTransport();
         await this.server.connect(transport);
     }
+    async handleRequest(request) {
+        const requestId = generateRequestId();
+        if (!request || typeof request !== 'object') {
+            return {
+                jsonrpc: '2.0',
+                id: null,
+                error: { code: -32600, message: 'Invalid Request' },
+            };
+        }
+        const req = request;
+        const method = req.method;
+        const params = req.params;
+        const id = req.id;
+        try {
+            if (method === 'tools/list') {
+                const tools = getAllToolDefinitions();
+                return {
+                    jsonrpc: '2.0',
+                    id,
+                    result: { tools },
+                };
+            }
+            if (method === 'tools/call') {
+                const startTime = Date.now();
+                const callParams = params;
+                const toolName = callParams?.name || 'unknown';
+                logger.debug('[MCP] Daemon handling tool call request', {
+                    requestId,
+                    toolName,
+                    component: 'ClaudeCodeBuddyMCPServer',
+                });
+                const toolPromise = this.toolRouter.routeToolCall(callParams, undefined, requestId);
+                let timeoutId;
+                const timeoutPromise = new Promise((_, reject) => {
+                    timeoutId = setTimeout(() => {
+                        const elapsed = Date.now() - startTime;
+                        reject(new ToolCallTimeoutError(toolName, toolTimeoutMs, elapsed));
+                    }, toolTimeoutMs);
+                });
+                let result;
+                try {
+                    result = await Promise.race([toolPromise, timeoutPromise]);
+                }
+                finally {
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                    }
+                }
+                const finalResult = await this.sessionBootstrapper.maybePrepend(result);
+                return {
+                    jsonrpc: '2.0',
+                    id,
+                    result: finalResult,
+                };
+            }
+            return {
+                jsonrpc: '2.0',
+                id,
+                error: { code: -32601, message: `Method not found: ${method}` },
+            };
+        }
+        catch (error) {
+            const elapsed = Date.now();
+            if (error instanceof ToolCallTimeoutError) {
+                logger.error('[MCP] Daemon tool call timed out', {
+                    requestId,
+                    toolName: error.toolName,
+                    timeoutMs: toolTimeoutMs,
+                    component: 'ClaudeCodeBuddyMCPServer',
+                });
+            }
+            logError(error, {
+                component: 'ClaudeCodeBuddyMCPServer',
+                method: 'handleRequest',
+                requestId,
+            });
+            const errorResult = formatMCPError(error, {
+                component: 'ClaudeCodeBuddyMCPServer',
+                method: 'handleRequest',
+                requestId,
+            });
+            return {
+                jsonrpc: '2.0',
+                id,
+                result: errorResult,
+            };
+        }
+    }
     setupSignalHandlers() {
         this.server.onclose = () => {
             logger.warn('MCP transport closed');

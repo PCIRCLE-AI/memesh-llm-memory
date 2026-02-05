@@ -26,6 +26,7 @@ import type { Router } from '../../orchestrator/router.js';
 import type { ResponseFormatter } from '../../ui/ResponseFormatter.js';
 import type { ProjectMemoryManager } from '../../memory/ProjectMemoryManager.js';
 import type { ProjectAutoTracker } from '../../memory/ProjectAutoTracker.js';
+import type { KnowledgeGraph } from '../../knowledge-graph/index.js';
 
 // Import buddy command functions and schemas
 import {
@@ -67,6 +68,7 @@ export class BuddyHandlers {
   private formatter: ResponseFormatter;
   private projectMemoryManager: ProjectMemoryManager;
   private autoTracker?: ProjectAutoTracker;
+  private knowledgeGraph?: KnowledgeGraph;
 
   /**
    * Create a new BuddyHandlers instance
@@ -75,17 +77,20 @@ export class BuddyHandlers {
    * @param formatter - Response formatting utility
    * @param projectMemoryManager - Project memory management system
    * @param autoTracker - Optional project auto-tracker for Phase 0.6 enhanced memory
+   * @param knowledgeGraph - Optional knowledge graph for semantic search support
    */
   constructor(
     router: Router,
     formatter: ResponseFormatter,
     projectMemoryManager: ProjectMemoryManager,
-    autoTracker?: ProjectAutoTracker
+    autoTracker?: ProjectAutoTracker,
+    knowledgeGraph?: KnowledgeGraph
   ) {
     this.router = router;
     this.formatter = formatter;
     this.projectMemoryManager = projectMemoryManager;
     this.autoTracker = autoTracker;
+    this.knowledgeGraph = knowledgeGraph;
   }
 
   /**
@@ -257,7 +262,12 @@ export class BuddyHandlers {
     }
 
     try {
-      return await executeBuddyRemember(validatedInput, this.projectMemoryManager, this.formatter);
+      return await executeBuddyRemember(
+        validatedInput,
+        this.projectMemoryManager,
+        this.formatter,
+        this.knowledgeGraph
+      );
     } catch (error) {
       logError(error, {
         component: 'BuddyHandlers',

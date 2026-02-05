@@ -22,7 +22,9 @@ export const A2AListTasksInputSchema = z.object({
     .min(1, 'Agent ID cannot be empty')
     .max(MAX_AGENT_ID_LENGTH, `Agent ID too long (max ${MAX_AGENT_ID_LENGTH} characters)`)
     .regex(AGENT_ID_PATTERN, 'Agent ID must contain only alphanumeric characters, hyphens, and underscores')
-    .describe('Agent ID to list pending tasks for'),
+    .optional()
+    .default('self')
+    .describe('Agent ID to list pending tasks for (default: "self")'),
 });
 
 export type ValidatedA2AListTasksInput = z.infer<typeof A2AListTasksInputSchema>;

@@ -466,6 +466,10 @@ export class ToolRouter {
       return await this.a2aHandlers.handleA2AGetTask(args);
     }
 
+    if (toolName === 'a2a-get-result') {
+      return await this.a2aHandlers.handleA2AGetResult(args);
+    }
+
     if (toolName === 'a2a-list-tasks') {
       // MCP Client polling interface - queries MCPTaskDelegator's in-memory queue
       if (!this.mcpTaskDelegator) {

@@ -233,6 +233,7 @@ export class A2AServer {
           agentId: this.config.agentId,
           baseUrl,
           port,
+          processPid: process.pid, // For orphan detection
           capabilities: this.config.agentCard.capabilities,
         });
 

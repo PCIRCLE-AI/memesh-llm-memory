@@ -1,11 +1,14 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { AgentCard } from '../types/index.js';
 import { TaskQueue } from '../storage/TaskQueue.js';
+import type { MCPTaskDelegator } from '../delegator/MCPTaskDelegator.js';
 export declare class A2ARoutes {
     private _agentId;
     private taskQueue;
     private agentCard;
+    private delegator;
     constructor(_agentId: string, taskQueue: TaskQueue, agentCard: AgentCard);
+    setDelegator(delegator: MCPTaskDelegator): void;
     sendMessage: (req: Request, res: Response, next: NextFunction) => Promise<void>;
     getTask: (req: Request, res: Response, next: NextFunction) => Promise<void>;
     listTasks: (req: Request, res: Response, next: NextFunction) => Promise<void>;

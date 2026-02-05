@@ -92,19 +92,37 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
 
   const buddyRememberTool: MCPToolDefinition = {
     name: 'buddy-remember',
-    description: 'Search project memory for past decisions, bugs, patterns, and architecture choices',
+    description: `Search project memory using semantic similarity or keyword matching.
+
+Examples:
+- buddy-remember "how do we handle authentication" -> finds JWT, OAuth, session memories
+- buddy-remember "database" mode=keyword -> exact keyword match only
+- buddy-remember "user login" mode=semantic minSimilarity=0.5 -> high-quality semantic matches only
+
+The default 'hybrid' mode combines semantic understanding with keyword matching for best results.`,
     inputSchema: {
       type: 'object' as const,
       properties: {
         query: {
           type: 'string',
-          description: 'What to remember/recall (e.g., "api design decisions", "authentication approach")',
+          description: 'Search query (natural language supported for semantic search)',
+        },
+        mode: {
+          type: 'string',
+          enum: ['semantic', 'keyword', 'hybrid'],
+          description: 'Search mode: semantic (AI similarity), keyword (exact match), hybrid (both combined). Default: hybrid',
         },
         limit: {
           type: 'number',
-          description: 'Maximum number of memories to retrieve (1-50, default: 5)',
+          description: 'Maximum number of results to return (1-50, default: 10)',
           minimum: 1,
           maximum: 50,
+        },
+        minSimilarity: {
+          type: 'number',
+          description: 'Minimum similarity score (0-1) for semantic/hybrid search. Default: 0.3',
+          minimum: 0,
+          maximum: 1,
         },
       },
       required: ['query'],
@@ -532,6 +550,32 @@ priority: "high"
     },
   };
 
+  const a2aGetResultTool: MCPToolDefinition = {
+    name: 'a2a-get-result',
+    description: '🎁 MeMesh A2A: Get task execution result from target agent.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        targetAgentId: {
+          type: 'string',
+          description: 'ID of the agent that executed the task',
+        },
+        taskId: {
+          type: 'string',
+          description: 'ID of the task to get result for',
+        },
+      },
+      required: ['targetAgentId', 'taskId'],
+    },
+    annotations: {
+      title: 'A2A Task Result Retriever',
+      readOnlyHint: true,       // Read-only operation
+      destructiveHint: false,
+      idempotentHint: true,     // Same query returns same result
+      openWorldHint: false,     // Requires specific task ID
+    },
+  };
+
   const a2aListTasksTool: MCPToolDefinition = {
     name: 'a2a-list-tasks',
     description: `📋 MeMesh A2A: List tasks assigned to you or another agent.
@@ -552,7 +596,8 @@ priority: "high"
       properties: {
         agentId: {
           type: 'string',
-          description: 'Agent ID to list tasks for. Use "self" for your tasks (default: "self")',
+          description: 'Agent ID to list tasks for. Use "self" for your tasks',
+          default: 'self',
         },
         state: {
           type: 'string',
@@ -828,6 +873,7 @@ Returns agents with format: {agentId, url, port, status, lastHeartbeat}
     // A2A Protocol Tools
     a2aSendTaskTool,
     a2aGetTaskTool,
+    a2aGetResultTool,
     a2aListTasksTool,
     a2aListAgentsTool,
     a2aReportResultTool,

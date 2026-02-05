@@ -33,16 +33,19 @@ export function requestLogger(req, res, next) {
 }
 export function corsMiddleware(req, res, next) {
     const origin = req.headers.origin;
-    const isLocalhost = origin && (origin.startsWith('http://localhost:') ||
-        origin.startsWith('http://127.0.0.1:') ||
-        origin.startsWith('https://localhost:') ||
-        origin.startsWith('https://127.0.0.1:'));
-    if (isLocalhost) {
+    const ALLOWED_LOCALHOST_PATTERNS = [
+        'http://localhost:',
+        'http://127.0.0.1:',
+        'https://localhost:',
+        'https://127.0.0.1:',
+    ];
+    const isValidLocalhost = origin && ALLOWED_LOCALHOST_PATTERNS.some((pattern) => origin.startsWith(pattern));
+    if (isValidLocalhost) {
         res.header('Access-Control-Allow-Origin', origin);
+        res.header('Access-Control-Allow-Credentials', 'true');
     }
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.header('Access-Control-Allow-Credentials', 'true');
     if (req.method === 'OPTIONS') {
         res.sendStatus(200);
     }

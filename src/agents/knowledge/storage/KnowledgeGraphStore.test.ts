@@ -179,4 +179,169 @@ describe('KnowledgeGraphStore', () => {
       expect(retrieved?.observations).toContain('persisted');
     });
   });
+
+  describe('Embedding Operations', () => {
+    beforeEach(async () => {
+      // Run migration to add embedding columns
+      await store.migrateEmbeddingColumns();
+    });
+
+    it('should update and retrieve entity embedding', async () => {
+      // Create entity
+      await store.createEntity({
+        name: 'Embedding Test',
+        entityType: 'concept',
+        observations: ['test observation'],
+      });
+
+      // Create a test embedding (384 dimensions for all-MiniLM-L6-v2)
+      const embedding = new Float32Array(384);
+      for (let i = 0; i < 384; i++) {
+        embedding[i] = Math.random();
+      }
+
+      // Update embedding
+      await store.updateEntityEmbedding('Embedding Test', embedding);
+
+      // Retrieve embedding
+      const retrieved = await store.getEntityEmbedding('Embedding Test');
+
+      expect(retrieved).not.toBeNull();
+      expect(retrieved).toBeInstanceOf(Float32Array);
+      expect(retrieved?.length).toBe(384);
+
+      // Verify values match (within floating point tolerance)
+      for (let i = 0; i < 384; i++) {
+        expect(retrieved![i]).toBeCloseTo(embedding[i], 5);
+      }
+    });
+
+    it('should return null for entity without embedding', async () => {
+      await store.createEntity({
+        name: 'No Embedding',
+        entityType: 'concept',
+        observations: ['test'],
+      });
+
+      const embedding = await store.getEntityEmbedding('No Embedding');
+      expect(embedding).toBeNull();
+    });
+
+    it('should get entities without embeddings', async () => {
+      // Create entities
+      await store.createEntity({
+        name: 'Entity With Embedding',
+        entityType: 'concept',
+        observations: ['has embedding'],
+      });
+      await store.createEntity({
+        name: 'Entity Without Embedding 1',
+        entityType: 'concept',
+        observations: ['no embedding'],
+      });
+      await store.createEntity({
+        name: 'Entity Without Embedding 2',
+        entityType: 'concept',
+        observations: ['no embedding'],
+      });
+
+      // Add embedding to one entity
+      const embedding = new Float32Array(384).fill(0.5);
+      await store.updateEntityEmbedding('Entity With Embedding', embedding);
+
+      // Get entities without embeddings
+      const entitiesWithout = await store.getEntitiesWithoutEmbeddings();
+      expect(entitiesWithout.length).toBe(2);
+      expect(entitiesWithout.map(e => e.name)).toContain('Entity Without Embedding 1');
+      expect(entitiesWithout.map(e => e.name)).toContain('Entity Without Embedding 2');
+    });
+
+    it('should respect limit in getEntitiesWithoutEmbeddings', async () => {
+      // Create 3 entities without embeddings
+      for (let i = 1; i <= 3; i++) {
+        await store.createEntity({
+          name: `Entity ${i}`,
+          entityType: 'concept',
+          observations: ['test'],
+        });
+      }
+
+      const limited = await store.getEntitiesWithoutEmbeddings(2);
+      expect(limited.length).toBe(2);
+    });
+
+    it('should get embedding stats', async () => {
+      // Create entities
+      await store.createEntity({
+        name: 'With Embedding',
+        entityType: 'concept',
+        observations: ['test'],
+      });
+      await store.createEntity({
+        name: 'Without Embedding',
+        entityType: 'concept',
+        observations: ['test'],
+      });
+
+      // Add embedding to one
+      const embedding = new Float32Array(384).fill(0.5);
+      await store.updateEntityEmbedding('With Embedding', embedding);
+
+      // Check stats
+      const stats = await store.getEmbeddingStats();
+      expect(stats.withEmbeddings).toBe(1);
+      expect(stats.withoutEmbeddings).toBe(1);
+      expect(stats.total).toBe(2);
+    });
+
+    it('should bulk update embeddings', async () => {
+      // Create entities
+      await store.createEntity({
+        name: 'Bulk Entity 1',
+        entityType: 'concept',
+        observations: ['test'],
+      });
+      await store.createEntity({
+        name: 'Bulk Entity 2',
+        entityType: 'concept',
+        observations: ['test'],
+      });
+
+      // Bulk update
+      const embeddings = [
+        { entityName: 'Bulk Entity 1', embedding: new Float32Array(384).fill(0.1) },
+        { entityName: 'Bulk Entity 2', embedding: new Float32Array(384).fill(0.2) },
+      ];
+      await store.bulkUpdateEmbeddings(embeddings);
+
+      // Verify
+      const emb1 = await store.getEntityEmbedding('Bulk Entity 1');
+      const emb2 = await store.getEntityEmbedding('Bulk Entity 2');
+
+      expect(emb1).not.toBeNull();
+      expect(emb2).not.toBeNull();
+      expect(emb1![0]).toBeCloseTo(0.1, 5);
+      expect(emb2![0]).toBeCloseTo(0.2, 5);
+    });
+
+    it('should make migration idempotent', async () => {
+      // Run migration multiple times - should not throw
+      await store.migrateEmbeddingColumns();
+      await store.migrateEmbeddingColumns();
+      await store.migrateEmbeddingColumns();
+
+      // Create entity and add embedding to verify columns work
+      await store.createEntity({
+        name: 'Idempotent Test',
+        entityType: 'concept',
+        observations: ['test'],
+      });
+
+      const embedding = new Float32Array(384).fill(0.5);
+      await store.updateEntityEmbedding('Idempotent Test', embedding);
+
+      const retrieved = await store.getEntityEmbedding('Idempotent Test');
+      expect(retrieved).not.toBeNull();
+    });
+  });
 });

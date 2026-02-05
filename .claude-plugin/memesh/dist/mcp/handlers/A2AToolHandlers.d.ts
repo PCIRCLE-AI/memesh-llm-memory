@@ -7,11 +7,16 @@ export declare class A2AToolHandlers {
     constructor(client?: A2AClient, registry?: AgentRegistry);
     handleA2ASendTask(args: unknown): Promise<CallToolResult>;
     handleA2AGetTask(args: unknown): Promise<CallToolResult>;
+    handleA2AGetResult(args: unknown): Promise<CallToolResult>;
     handleA2AListTasks(args: unknown): Promise<CallToolResult>;
     handleA2AListAgents(args: unknown): Promise<CallToolResult>;
+    handleA2AReportResult(args: unknown): Promise<CallToolResult>;
+    private formatErrorWithTips;
     private formatTaskSentResponse;
     private formatTaskDetailsResponse;
     private formatTaskListResponse;
     private formatAgentListResponse;
+    private formatTaskResultResponse;
+    private formatReportResultResponse;
 }
 //# sourceMappingURL=A2AToolHandlers.d.ts.map

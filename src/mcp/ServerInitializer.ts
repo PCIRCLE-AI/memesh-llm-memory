@@ -249,7 +249,8 @@ export class ServerInitializer {
         router,
         formatter,
         projectMemoryManager,
-        projectAutoTracker
+        projectAutoTracker,
+        knowledgeGraph
       );
 
       // Initialize A2A handlers

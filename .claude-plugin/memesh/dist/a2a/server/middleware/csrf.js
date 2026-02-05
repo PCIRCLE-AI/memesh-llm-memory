@@ -1,14 +1,40 @@
 import { randomBytes } from 'crypto';
 import { logger } from '../../../utils/logger.js';
 import { LRUCache } from '../../../utils/lru-cache.js';
-const MAX_TOKENS = 10_000;
-const TOKEN_EXPIRATION_MS = 60 * 60 * 1000;
+const CONFIG_BOUNDS = {
+    maxTokens: { min: 100, max: 1_000_000, default: 10_000 },
+    tokenExpirationMs: { min: 60_000, max: 86_400_000, default: 3_600_000 },
+    evictionWarningCooldownMs: { min: 1_000, max: 3_600_000, default: 60_000 },
+};
+function getConfigValue(envVar, defaultValue, min, max) {
+    const envValue = process.env[envVar];
+    if (!envValue) {
+        return defaultValue;
+    }
+    const parsed = parseInt(envValue, 10);
+    if (isNaN(parsed)) {
+        logger.warn(`[CSRF] Invalid ${envVar}="${envValue}" (not a number), using default ${defaultValue}`);
+        return defaultValue;
+    }
+    if (parsed < min || parsed > max) {
+        logger.warn(`[CSRF] Invalid ${envVar}=${parsed} (out of bounds [${min}, ${max}]), using default ${defaultValue}`);
+        return defaultValue;
+    }
+    return parsed;
+}
+const MAX_TOKENS = getConfigValue('CSRF_MAX_TOKENS', CONFIG_BOUNDS.maxTokens.default, CONFIG_BOUNDS.maxTokens.min, CONFIG_BOUNDS.maxTokens.max);
+const TOKEN_EXPIRATION_MS = getConfigValue('CSRF_TOKEN_EXPIRATION_MS', CONFIG_BOUNDS.tokenExpirationMs.default, CONFIG_BOUNDS.tokenExpirationMs.min, CONFIG_BOUNDS.tokenExpirationMs.max);
 const tokens = new LRUCache({
     maxSize: MAX_TOKENS,
     ttl: TOKEN_EXPIRATION_MS,
 });
 let lastEvictionWarningTime = 0;
-const EVICTION_WARNING_COOLDOWN_MS = 60_000;
+const EVICTION_WARNING_COOLDOWN_MS = getConfigValue('CSRF_EVICTION_WARNING_COOLDOWN_MS', CONFIG_BOUNDS.evictionWarningCooldownMs.default, CONFIG_BOUNDS.evictionWarningCooldownMs.min, CONFIG_BOUNDS.evictionWarningCooldownMs.max);
+logger.info('[CSRF] Configuration loaded', {
+    maxTokens: MAX_TOKENS,
+    tokenExpirationMs: TOKEN_EXPIRATION_MS,
+    evictionWarningCooldownMs: EVICTION_WARNING_COOLDOWN_MS,
+});
 const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
 function generateToken() {
     return randomBytes(32).toString('hex');

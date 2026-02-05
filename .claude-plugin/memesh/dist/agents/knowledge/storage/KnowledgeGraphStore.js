@@ -178,11 +178,13 @@ export class KnowledgeGraphStore {
         }
     }
     sanitizeSearchQuery(query) {
+        const ESCAPE_CHAR = '\\';
         return query
-            .replace(/%/g, '\\%')
-            .replace(/_/g, '\\_')
+            .replace(/\\/g, ESCAPE_CHAR + ESCAPE_CHAR)
+            .replace(/%/g, ESCAPE_CHAR + '%')
+            .replace(/_/g, ESCAPE_CHAR + '_')
             .replace(/\[/g, '')
-            .replace(/\]/g, '')
+            .replace(/]/g, '')
             .replace(/</g, '')
             .replace(/>/g, '')
             .replace(/{/g, '')

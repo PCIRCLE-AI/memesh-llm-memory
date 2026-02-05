@@ -45,6 +45,8 @@ import Database from 'better-sqlite3';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import { logger } from '../../utils/logger.js';
 import { getDataPath } from '../../utils/PathResolver.js';
 import type {
@@ -52,6 +54,8 @@ import type {
   RegisterAgentParams,
   AgentCapabilities,
 } from '../types/index.js';
+
+const execFileAsync = promisify(execFile);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -79,6 +83,7 @@ interface AgentRow {
   port: number;
   status: string;
   last_heartbeat: string;
+  process_pid: number | null;
   capabilities: string | null;
   metadata: string | null;
   created_at: string;
@@ -95,6 +100,10 @@ export class AgentRegistry {
    * Reduces statement compilation overhead for frequently used queries
    */
   private preparedStatements: Map<string, Database.Statement>;
+  /**
+   * Flag to prevent concurrent cleanup operations (race condition protection)
+   */
+  private cleanupInProgress = false;
 
   private constructor(dbPath?: string) {
     // Use PathResolver for automatic fallback to legacy location
@@ -218,7 +227,46 @@ export class AgentRegistry {
   private initializeSchema(): void {
     const schemaPath = join(__dirname, 'registry-schemas.sql');
     const schema = readFileSync(schemaPath, 'utf-8');
-    this.db.exec(schema);
+
+    // Split schema into statements to handle migrations separately
+    const statements = schema.split(';').filter((stmt) => stmt.trim());
+
+    for (const statement of statements) {
+      const trimmed = statement.trim();
+      if (!trimmed) continue;
+
+      // Handle ALTER TABLE migrations safely by checking if column exists first
+      if (trimmed.toUpperCase().includes('ALTER TABLE') && trimmed.toUpperCase().includes('ADD COLUMN')) {
+        // Extract column name from "ALTER TABLE xxx ADD COLUMN column_name ..."
+        const columnMatch = trimmed.match(/ADD\s+COLUMN\s+(\w+)/i);
+        if (columnMatch) {
+          const columnName = columnMatch[1];
+          const tableMatch = trimmed.match(/ALTER\s+TABLE\s+(\w+)/i);
+          const tableName = tableMatch ? tableMatch[1] : 'agents';
+
+          // Check if column already exists using PRAGMA
+          const columns = this.db
+            .prepare(`PRAGMA table_info(${tableName})`)
+            .all() as Array<{ name: string }>;
+
+          if (columns.some((col) => col.name === columnName)) {
+            // Column already exists, skip migration
+            continue;
+          }
+        }
+      }
+
+      try {
+        this.db.exec(trimmed);
+      } catch (error) {
+        // Still handle errors gracefully for edge cases
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        if (trimmed.includes('ALTER TABLE') && errorMsg.includes('duplicate column')) {
+          continue;
+        }
+        throw error;
+      }
+    }
   }
 
   register(params: RegisterAgentParams): AgentRegistryEntry {
@@ -232,7 +280,7 @@ export class AgentRegistry {
         'updateAgent',
         `UPDATE agents
          SET base_url = ?, port = ?, status = 'active', last_heartbeat = ?,
-             capabilities = ?, metadata = ?, updated_at = ?
+             process_pid = ?, capabilities = ?, metadata = ?, updated_at = ?
          WHERE agent_id = ?`
       );
 
@@ -240,6 +288,7 @@ export class AgentRegistry {
         params.baseUrl,
         params.port,
         now,
+        params.processPid || null,
         params.capabilities ? JSON.stringify(params.capabilities) : null,
         params.metadata ? JSON.stringify(params.metadata) : null,
         now,
@@ -250,8 +299,8 @@ export class AgentRegistry {
       const stmt = this.getStatement(
         'insertAgent',
         `INSERT INTO agents (agent_id, base_url, port, status, last_heartbeat,
-                            capabilities, metadata, created_at, updated_at)
-         VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?)`
+                            process_pid, capabilities, metadata, created_at, updated_at)
+         VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?, ?)`
       );
 
       stmt.run(
@@ -259,6 +308,7 @@ export class AgentRegistry {
         params.baseUrl,
         params.port,
         now,
+        params.processPid || null,
         params.capabilities ? JSON.stringify(params.capabilities) : null,
         params.metadata ? JSON.stringify(params.metadata) : null,
         now,
@@ -330,19 +380,149 @@ export class AgentRegistry {
     return result.changes > 0;
   }
 
-  cleanupStale(staleThresholdMs: number = 5 * 60 * 1000): number {
+  /**
+   * TTY prefixes that indicate an active terminal session
+   * - macOS: ttys00X
+   * - Linux: pts/X (pseudo-terminal), ttyX (virtual console)
+   */
+  private static readonly ACTIVE_TTY_PATTERNS = [
+    /^ttys\d+$/, // macOS: ttys000, ttys001, etc.
+    /^pts\/\d+$/, // Linux: pts/0, pts/1, etc.
+    /^tty\d+$/, // Linux: tty1, tty2, etc.
+  ];
+
+  /**
+   * Check if a process is active (has a controlling terminal)
+   * Active session = TTY is ttys00X (macOS) or pts/X (Linux)
+   * Orphaned process = TTY is ?? (no controlling terminal)
+   *
+   * @param pid - Process ID to check
+   * @returns true if process is active (has TTY), false if orphaned or doesn't exist
+   */
+  private async isProcessActive(pid: number): Promise<boolean> {
+    // Windows doesn't have the same orphan process concept
+    // On Windows, processes are managed differently and don't have TTY in the same way
+    if (process.platform === 'win32') {
+      try {
+        // On Windows, just check if process exists using tasklist
+        const { stdout } = await execFileAsync('tasklist', [
+          '/FI',
+          `PID eq ${pid}`,
+          '/NH',
+          '/FO',
+          'CSV',
+        ]);
+        // If process exists, tasklist returns a line with the process info
+        return stdout.includes(String(pid));
+      } catch {
+        return false;
+      }
+    }
+
+    // macOS / Linux
+    try {
+      // Use ps to check TTY
+      // -p <pid>: select process by PID
+      // -o tty=: output TTY with no headers
+      const { stdout } = await execFileAsync('ps', ['-p', String(pid), '-o', 'tty=']);
+
+      if (!stdout) {
+        // Process doesn't exist
+        return false;
+      }
+
+      const tty = stdout.trim();
+
+      // Check if TTY matches any active terminal pattern
+      // Orphaned processes have TTY = ?? or empty
+      if (tty === '??' || tty === '' || tty === '-') {
+        return false;
+      }
+
+      return AgentRegistry.ACTIVE_TTY_PATTERNS.some((pattern) => pattern.test(tty));
+    } catch (error) {
+      // Process doesn't exist or ps command failed
+      logger.warn('[AgentRegistry] Failed to check process TTY', {
+        pid,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return false;
+    }
+  }
+
+  async cleanupStale(staleThresholdMs: number = 5 * 60 * 1000): Promise<number> {
+    // Prevent concurrent cleanup operations (race condition protection)
+    if (this.cleanupInProgress) {
+      logger.debug('[AgentRegistry] Cleanup already in progress, skipping');
+      return 0;
+    }
+
+    this.cleanupInProgress = true;
+    try {
+      return await this.performCleanup(staleThresholdMs);
+    } finally {
+      this.cleanupInProgress = false;
+    }
+  }
+
+  /**
+   * Internal cleanup implementation
+   */
+  private async performCleanup(staleThresholdMs: number): Promise<number> {
     const threshold = new Date(Date.now() - staleThresholdMs).toISOString();
     const now = new Date().toISOString();
 
-    // Use cached prepared statement
-    // Mark both active and inactive agents as stale if heartbeat is old
+    // Step 1: Mark agents with orphaned processes (no TTY) as stale
+    let orphanCount = 0;
+    const allAgents = this.listAll();
+    for (const agent of allAgents) {
+      if (agent.status !== 'active' && agent.status !== 'inactive') {
+        continue; // Skip already-stale agents
+      }
+
+      if (agent.processPid) {
+        const isActive = await this.isProcessActive(agent.processPid);
+        if (!isActive) {
+          // Process doesn't have TTY (orphaned) or doesn't exist
+          // Kill the orphaned process first
+          try {
+            process.kill(agent.processPid, 'SIGTERM');
+            logger.info('[AgentRegistry] Killed orphaned process', {
+              agentId: agent.agentId,
+              processPid: agent.processPid,
+            });
+          } catch (killError) {
+            // Process might already be dead, which is fine
+            logger.debug('[AgentRegistry] Failed to kill orphaned process (may already be dead)', {
+              agentId: agent.agentId,
+              processPid: agent.processPid,
+              error: killError instanceof Error ? killError.message : String(killError),
+            });
+          }
+
+          // Mark as stale in database
+          const stmt = this.getStatement(
+            'markOrphanStale',
+            "UPDATE agents SET status = 'stale', updated_at = ? WHERE agent_id = ?"
+          );
+          stmt.run(now, agent.agentId);
+          orphanCount++;
+          logger.info('[AgentRegistry] Marked orphaned agent as stale (no TTY)', {
+            agentId: agent.agentId,
+            processPid: agent.processPid,
+          });
+        }
+      }
+    }
+
+    // Step 2: Mark agents with old heartbeats as stale (original behavior)
     const stmt = this.getStatement(
       'cleanupStale',
       "UPDATE agents SET status = 'stale', updated_at = ? WHERE last_heartbeat < ? AND status IN ('active', 'inactive')"
     );
 
     const result = stmt.run(now, threshold);
-    return result.changes;
+    return result.changes + orphanCount;
   }
 
   deleteStale(): number {
@@ -386,6 +566,7 @@ export class AgentRegistry {
       port: row.port,
       status: row.status as 'active' | 'inactive' | 'stale',
       lastHeartbeat: row.last_heartbeat,
+      processPid: row.process_pid || undefined,
       capabilities: capabilities || undefined,
       metadata: metadata || undefined,
     };
@@ -423,10 +604,12 @@ export function startAgentRegistryCleanup(): void {
 
   const registry = AgentRegistry.getInstance();
 
-  const cleanup = (): void => {
+  const cleanup = async (): Promise<void> => {
     try {
-      // Mark agents as stale if heartbeat is older than 5 minutes
-      const markedStale = registry.cleanupStale(5 * 60 * 1000);
+      // Mark agents as stale if:
+      // 1. Process has no TTY (orphaned), OR
+      // 2. Heartbeat is older than 5 minutes
+      const markedStale = await registry.cleanupStale(5 * 60 * 1000);
 
       // Delete stale agents from registry
       const deleted = registry.deleteStale();
@@ -444,11 +627,21 @@ export function startAgentRegistryCleanup(): void {
     }
   };
 
-  // Run cleanup immediately on start
-  cleanup();
+  // Run cleanup immediately on start (async, don't await to avoid blocking)
+  cleanup().catch((error) => {
+    logger.error('[Agent Registry] Initial cleanup failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  });
 
   // Then run periodically
-  cleanupTimer = setInterval(cleanup, intervalMs);
+  cleanupTimer = setInterval(() => {
+    cleanup().catch((error) => {
+      logger.error('[Agent Registry] Periodic cleanup failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
+  }, intervalMs);
 
   logger.info('[Agent Registry] Periodic cleanup started', {
     intervalMs,

@@ -191,7 +191,6 @@ class MemoryMigrator {
     // Current system uses 1MB total limit (not per-field)
     const MAX_TOTAL_SIZE = 1024 * 1024; // 1MB
     const validated: any = {};
-    let hasOversizedField = false;
 
     // Check total size first
     const totalJson = JSON.stringify(metadata);
@@ -222,7 +221,6 @@ class MemoryMigrator {
           currentSize += fieldSize;
         } else {
           console.warn(`    → Dropped field '${field.key}' (${fieldSize} bytes)`);
-          hasOversizedField = true;
         }
       }
 

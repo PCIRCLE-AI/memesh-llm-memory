@@ -1,6 +1,6 @@
 import { ValidationError } from '../../errors/index.js';
 const MAX_FILTER_ARRAY_SIZE = 100;
-const VALID_TASK_STATES = [
+export const VALID_TASK_STATES = [
     'SUBMITTED',
     'WORKING',
     'INPUT_REQUIRED',
@@ -10,6 +10,16 @@ const VALID_TASK_STATES = [
     'REJECTED',
     'TIMEOUT',
 ];
+export const TaskStateConstants = {
+    SUBMITTED: 'SUBMITTED',
+    WORKING: 'WORKING',
+    INPUT_REQUIRED: 'INPUT_REQUIRED',
+    COMPLETED: 'COMPLETED',
+    FAILED: 'FAILED',
+    CANCELED: 'CANCELED',
+    REJECTED: 'REJECTED',
+    TIMEOUT: 'TIMEOUT',
+};
 const VALID_TASK_PRIORITIES = [
     'low',
     'normal',

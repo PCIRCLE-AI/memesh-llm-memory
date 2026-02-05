@@ -31,6 +31,9 @@ export type {
   Artifact,
 } from './task.js';
 
+// Task state machine
+export { VALID_STATE_TRANSITIONS, isValidStateTransition, isTerminalState } from './task.js';
+
 // Message types
 export type {
   Message,
@@ -58,3 +61,6 @@ export type {
   RateLimitError,
   RateLimitStats,
 } from './rateLimit.js';
+
+// Task result types
+export type { TaskResult } from './TaskResult.js';

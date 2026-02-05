@@ -620,15 +620,70 @@ List all tasks assigned to this agent (Phase 1.0: MCP Client Polling).
 
 ---
 
+### `a2a-get-result` ✨ NEW in Phase 1.0
+
+Query the execution result of a completed task.
+
+**What it does:**
+- Retrieves detailed execution result including success status, output, duration, and executor
+- Works only for tasks in COMPLETED or FAILED state
+- Returns TaskResult object with comprehensive execution metadata
+- Uses secure validation (response size limit, schema validation, input validation)
+
+**Input Schema:**
+```json
+{
+  "targetAgentId": "string (required) - ID of the agent that executed the task",
+  "taskId": "string (required) - ID of the task to query result for"
+}
+```
+
+**Example:**
+```json
+{
+  "targetAgentId": "agent-2",
+  "taskId": "task-abc123"
+}
+```
+
+**Returns:**
+```json
+{
+  "taskId": "task-abc123",
+  "state": "COMPLETED",
+  "success": true,
+  "result": {
+    "answer": 579,
+    "calculation": "123 + 456 = 579"
+  },
+  "executedAt": "2026-02-05T10:00:00.000Z",
+  "executedBy": "agent-2",
+  "durationMs": 150
+}
+```
+
+**When to Use:**
+- After task reaches COMPLETED or FAILED state
+- To retrieve detailed execution results and metadata
+- To verify task execution success and performance
+
+**Security Features (Phase 1.0):**
+- Response size limit (10MB) prevents DoS attacks
+- Input validation blocks path traversal attempts
+- Schema validation prevents type confusion
+
+---
+
 ### `a2a-report-result`
 
-Report task execution result (Phase 1.0: MCP Client → Task Queue).
+Report task execution result (Phase 1.0: Automatic State Transition).
 
 **What it does:**
 - MCP Client reports task execution result
-- Updates TaskQueue status to COMPLETED or FAILED
-- Removes task from MCPTaskDelegator pending queue
-- Completes the MCP Client Delegation workflow
+- **Automatically** updates task state to COMPLETED (success=true) or FAILED (success=false)
+- Stores result/error in task data
+- Triggers state transition validation (WORKING → COMPLETED/FAILED)
+- Updates task `updated_at` timestamp
 
 **Input Schema:**
 ```json
@@ -648,6 +703,7 @@ Report task execution result (Phase 1.0: MCP Client → Task Queue).
   "success": true
 }
 ```
+→ **Automatic state transition**: WORKING → COMPLETED
 
 **Example (Failure):**
 ```json
@@ -658,11 +714,17 @@ Report task execution result (Phase 1.0: MCP Client → Task Queue).
   "error": "File src/auth.ts not found"
 }
 ```
+→ **Automatic state transition**: WORKING → FAILED
 
 **When to Use:**
 - After MCP Client completes task execution
-- To update task status from IN_PROGRESS to COMPLETED/FAILED
+- To report result and automatically update task state
 - Required for proper task lifecycle management
+
+**Phase 1.0 Behavior:**
+- ✅ Validates state transitions (must be in WORKING or SUBMITTED state)
+- ✅ Automatically updates state based on success flag
+- ✅ Stores execution metadata (timestamp, result/error)
 
 ---
 

@@ -11,6 +11,7 @@ export declare const ErrorMessages: {
     readonly TASK_GET_FAILED: (taskId: string, targetAgentId: string, error: string) => string;
     readonly TASK_LIST_FAILED: (targetAgentId: string, error: string) => string;
     readonly TASK_CANCEL_FAILED: (taskId: string, targetAgentId: string, error: string) => string;
+    readonly TASK_UPDATE_FAILED: (taskId: string, state: string, error: string) => string;
     readonly PORT_NOT_AVAILABLE: (min: number, max: number) => string;
     readonly SERVER_ERROR: (error: string) => string;
     readonly INVALID_JSON: (context: string, preview?: string) => string;
@@ -18,6 +19,11 @@ export declare const ErrorMessages: {
     readonly TIMEOUT_CHECKER_ERROR: (error: string) => string;
     readonly TIMEOUT_CHECKER_CIRCUIT_OPEN: (failureCount: number, maxRetries: number) => string;
     readonly HTTP_ERROR: (status: number, message?: string) => string;
+    readonly REQUEST_TIMEOUT: (url: string, timeoutMs: number) => string;
+    readonly INVALID_CONTENT_TYPE: (contentType: string, status: number) => string;
+    readonly RESPONSE_TOO_LARGE: (size: string | number) => string;
+    readonly INVALID_PARAMETER: (fieldName: string, reason: string) => string;
+    readonly INVALID_RESPONSE_SCHEMA: (details: string) => string;
     readonly UNKNOWN_ERROR: "An unknown error occurred";
 };
 export declare function formatErrorMessage(code: keyof typeof ErrorMessages, ...args: any[]): string;

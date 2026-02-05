@@ -75,8 +75,9 @@ export class AutoTagger {
             let pattern;
             if (tech.includes('+') || tech.includes('#') || tech.includes('.')) {
                 const escapedTech = tech
+                    .replace(/\\/g, '\\\\')
                     .replace(/\+/g, '\\+')
-                    .replace(/#/g, '#')
+                    .replace(/#/g, '\\#')
                     .replace(/\./g, '\\.');
                 pattern = `(?<!\\w)${escapedTech}(?!\\w)`;
             }

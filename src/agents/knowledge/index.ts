@@ -475,6 +475,13 @@ export function getKnowledgeAgent(): KnowledgeAgent {
 
 // Re-export types
 export type { Entity, Relation, SearchOptions } from './KnowledgeGraph.js';
+export type {
+  SemanticSearchOptions,
+  SemanticSearchResult,
+  HybridSearchOptions,
+  CreateEntityOptions,
+  KnowledgeGraphOptions
+} from './KnowledgeGraphSQLite.js';
 
 // Legacy types for backward compatibility (stub implementations)
 export interface SimilarTask {

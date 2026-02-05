@@ -9,14 +9,14 @@ import type { MessagePart } from './protocol.js';
  * Task lifecycle states
  */
 export type TaskState =
-  | 'SUBMITTED'
-  | 'WORKING'
-  | 'INPUT_REQUIRED'
-  | 'COMPLETED'
-  | 'FAILED'
-  | 'CANCELED'
-  | 'REJECTED'
-  | 'TIMEOUT';
+  | 'SUBMITTED' // Initial state when task is created
+  | 'WORKING' // Agent has started processing the task
+  | 'INPUT_REQUIRED' // Task requires input from user
+  | 'COMPLETED' // Task completed successfully
+  | 'FAILED' // Task failed with error
+  | 'CANCELED' // Task was canceled
+  | 'REJECTED' // Task was rejected (invalid or cannot be processed)
+  | 'TIMEOUT'; // Task exceeded time limit
 
 /**
  * Task priority levels
@@ -118,4 +118,49 @@ export interface UpdateTaskParams {
   description?: string;
   priority?: TaskPriority;
   metadata?: Record<string, unknown>;
+}
+
+/**
+ * Valid state transitions map
+ * Defines which state transitions are allowed in the task lifecycle
+ */
+export const VALID_STATE_TRANSITIONS: Record<TaskState, TaskState[]> = {
+  SUBMITTED: ['WORKING', 'CANCELED', 'REJECTED'],
+  WORKING: ['COMPLETED', 'FAILED', 'TIMEOUT', 'CANCELED', 'INPUT_REQUIRED'],
+  INPUT_REQUIRED: ['WORKING', 'CANCELED'],
+  COMPLETED: [],
+  FAILED: [],
+  TIMEOUT: [],
+  CANCELED: [],
+  REJECTED: [],
+};
+
+/**
+ * Check if a state transition is valid
+ *
+ * @param from - Current state
+ * @param to - Target state
+ * @returns true if transition is valid
+ *
+ * @example
+ * isValidStateTransition('SUBMITTED', 'WORKING') // true
+ * isValidStateTransition('SUBMITTED', 'COMPLETED') // false (must go through WORKING)
+ * isValidStateTransition('COMPLETED', 'WORKING') // false (terminal state)
+ */
+export function isValidStateTransition(from: TaskState, to: TaskState): boolean {
+  return VALID_STATE_TRANSITIONS[from]?.includes(to) ?? false;
+}
+
+/**
+ * Check if a state is terminal (no further transitions allowed)
+ *
+ * @param state - State to check
+ * @returns true if state is terminal
+ *
+ * @example
+ * isTerminalState('COMPLETED') // true
+ * isTerminalState('WORKING') // false
+ */
+export function isTerminalState(state: TaskState): boolean {
+  return VALID_STATE_TRANSITIONS[state].length === 0;
 }

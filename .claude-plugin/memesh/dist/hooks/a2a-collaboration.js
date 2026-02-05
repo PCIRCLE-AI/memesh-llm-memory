@@ -31,11 +31,35 @@ const NAME_POOL = [
     'Upsilon',
 ];
 function sqliteQuery(dbPath, query, params) {
+    const result = sqliteQueryWithStatus(dbPath, query, params);
+    return result.output;
+}
+function escapeSqlValue(value) {
+    if (value === null || value === undefined) {
+        return 'NULL';
+    }
+    if (typeof value === 'number') {
+        if (!Number.isFinite(value)) {
+            return 'NULL';
+        }
+        return String(value);
+    }
+    if (typeof value === 'boolean') {
+        return value ? '1' : '0';
+    }
+    const strValue = String(value);
+    if (strValue.includes('\x00')) {
+        throw new Error('SQL parameter contains null byte - potential injection attack');
+    }
+    const escaped = strValue.replace(/'/g, "''");
+    return `'${escaped}'`;
+}
+function sqliteQueryWithStatus(dbPath, query, params) {
     try {
         const args = ['-separator', '|', dbPath];
         let finalQuery = query;
         if (params && params.length > 0) {
-            const escapedParams = params.map((p) => p === null || p === undefined ? 'NULL' : `'${String(p).replace(/'/g, "''")}'`);
+            const escapedParams = params.map(escapeSqlValue);
             let paramIndex = 0;
             finalQuery = query.replace(/\?/g, () => {
                 if (paramIndex < escapedParams.length) {
@@ -48,10 +72,18 @@ function sqliteQuery(dbPath, query, params) {
             encoding: 'utf-8',
             timeout: 5000,
         });
-        return result.trim();
+        return {
+            output: result.trim(),
+            success: true,
+        };
     }
-    catch {
-        return '';
+    catch (e) {
+        const error = e instanceof Error ? e.message : String(e);
+        return {
+            output: '',
+            success: false,
+            error,
+        };
     }
 }
 function readJSON(filePath, defaultValue = null) {
@@ -78,7 +110,7 @@ function writeJSON(filePath, data) {
         return false;
     }
 }
-function getUsedNames() {
+function _getUsedNames() {
     if (!fs.existsSync(KG_DB_PATH))
         return [];
     const query = "SELECT name FROM entities WHERE type='session_identity' AND name LIKE 'Online Agent:%'";
@@ -97,24 +129,47 @@ function getOnlineAgents() {
     const result = sqliteQuery(AGENT_REGISTRY_PATH, query);
     return result ? result.split('\n').filter(Boolean) : [];
 }
+function generateUniqueFallbackName() {
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substring(2, 6);
+    return `Agent-${timestamp}-${random}`;
+}
+function tryClaimName(entityName, now) {
+    const atomicInsertQuery = `
+    INSERT INTO entities (name, type, created_at)
+    SELECT ?, 'session_identity', ?
+    WHERE NOT EXISTS (SELECT 1 FROM entities WHERE name = ?);
+    SELECT changes();
+  `;
+    const result = sqliteQueryWithStatus(KG_DB_PATH, atomicInsertQuery, [entityName, now, entityName]);
+    if (!result.success) {
+        return false;
+    }
+    const changesCount = parseInt(result.output, 10);
+    return changesCount === 1;
+}
 function pickAvailableName() {
-    const usedNames = getUsedNames();
+    if (!fs.existsSync(KG_DB_PATH)) {
+        return NAME_POOL[0];
+    }
     const now = new Date().toISOString();
     for (const name of NAME_POOL) {
-        if (!usedNames.includes(name)) {
-            if (fs.existsSync(KG_DB_PATH)) {
-                const entityName = `Online Agent: ${name}`;
-                sqliteQuery(KG_DB_PATH, 'INSERT OR IGNORE INTO entities (name, type, created_at) VALUES (?, ?, ?)', [entityName, 'session_identity', now]);
-                const verifyResult = sqliteQuery(KG_DB_PATH, 'SELECT id FROM entities WHERE name = ?', [entityName]);
-                if (verifyResult) {
-                    return name;
-                }
-                continue;
-            }
+        const entityName = `Online Agent: ${name}`;
+        if (tryClaimName(entityName, now)) {
             return name;
         }
     }
-    return `Agent-${Date.now().toString(36)}`;
+    for (let attempt = 0; attempt < 10; attempt++) {
+        const fallbackName = generateUniqueFallbackName();
+        const entityName = `Online Agent: ${fallbackName}`;
+        if (tryClaimName(entityName, now)) {
+            return fallbackName;
+        }
+    }
+    const ultimateFallback = `Agent-${Date.now().toString(36)}-${process.pid}`;
+    const entityName = `Online Agent: ${ultimateFallback}`;
+    tryClaimName(entityName, now);
+    return ultimateFallback;
 }
 function generateAgentId() {
     const hostname = os.hostname().toLowerCase().replace(/[^a-z0-9]/g, '-');
@@ -176,16 +231,16 @@ export function agentCheckIn() {
     registerToKnowledgeGraph(identity);
     return identity;
 }
-export function checkPendingTasks(_agentId) {
+export function checkPendingTasks(agentId) {
     const taskDbPath = path.join(CCB_DATA_DIR, 'a2a-tasks.db');
     if (!fs.existsSync(taskDbPath))
         return [];
+    const baseQuery = 'SELECT id, description, state, created_at as createdAt, sender_id as senderId FROM tasks WHERE state=\'SUBMITTED\'';
+    const query = agentId
+        ? `${baseQuery} AND assigned_agent_id=${escapeSqlValue(agentId)} ORDER BY created_at DESC LIMIT 10`
+        : `${baseQuery} ORDER BY created_at DESC LIMIT 10`;
     try {
-        const result = execFileSync('sqlite3', [
-            '-json',
-            taskDbPath,
-            "SELECT id, description, state, created_at as createdAt, sender_id as senderId FROM tasks WHERE state='SUBMITTED' ORDER BY created_at DESC LIMIT 10",
-        ], { encoding: 'utf-8', timeout: 5000 });
+        const result = execFileSync('sqlite3', ['-json', taskDbPath, query], { encoding: 'utf-8', timeout: 5000 });
         if (!result.trim())
             return [];
         const parsed = JSON.parse(result);
@@ -198,8 +253,8 @@ export function checkPendingTasks(_agentId) {
         }));
     }
     catch {
-        const query = "SELECT id, description, state, created_at, sender_id FROM tasks WHERE state='SUBMITTED' ORDER BY created_at DESC LIMIT 10";
-        const result = sqliteQuery(taskDbPath, query);
+        const fallbackQuery = "SELECT id, description, state, created_at, sender_id FROM tasks WHERE state='SUBMITTED' ORDER BY created_at DESC LIMIT 10";
+        const result = sqliteQuery(taskDbPath, fallbackQuery);
         if (!result)
             return [];
         return result

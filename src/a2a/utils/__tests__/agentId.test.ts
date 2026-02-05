@@ -127,4 +127,93 @@ describe('generateAgentId', () => {
 
     expect(agentId).toBe('server-admin-unknown');
   });
+
+  // Edge case tests
+  it('should handle consecutive special characters in hostname', () => {
+    vi.mocked(os.hostname).mockReturnValue('test...machine');
+    vi.mocked(os.userInfo).mockReturnValue({
+      username: 'user',
+      uid: 1000,
+      gid: 1000,
+      shell: '/bin/bash',
+      homedir: '/home/user',
+    });
+    vi.mocked(detectPlatform).mockReturnValue('claude-code');
+
+    const agentId = generateAgentId();
+
+    expect(agentId).toBe('test-machine-user-claude-code'); // Single hyphen, not triple
+  });
+
+  it('should remove leading and trailing hyphens', () => {
+    vi.mocked(os.hostname).mockReturnValue('-hostname-');
+    vi.mocked(os.userInfo).mockReturnValue({
+      username: '-user-',
+      uid: 1000,
+      gid: 1000,
+      shell: '/bin/bash',
+      homedir: '/home/user',
+    });
+    vi.mocked(detectPlatform).mockReturnValue('claude-code');
+
+    const agentId = generateAgentId();
+
+    expect(agentId).toBe('hostname-user-claude-code');
+  });
+
+  it('should throw error for empty hostname after sanitization', () => {
+    vi.mocked(os.hostname).mockReturnValue('...');
+    vi.mocked(os.userInfo).mockReturnValue({
+      username: 'user',
+      uid: 1000,
+      gid: 1000,
+      shell: '/bin/bash',
+      homedir: '/home/user',
+    });
+    vi.mocked(detectPlatform).mockReturnValue('claude-code');
+
+    expect(() => generateAgentId()).toThrow('hostname or username is empty');
+  });
+
+  it('should throw error for empty username after sanitization', () => {
+    vi.mocked(os.hostname).mockReturnValue('hostname');
+    vi.mocked(os.userInfo).mockReturnValue({
+      username: '...',
+      uid: 1000,
+      gid: 1000,
+      shell: '/bin/bash',
+      homedir: '/home/user',
+    });
+    vi.mocked(detectPlatform).mockReturnValue('claude-code');
+
+    expect(() => generateAgentId()).toThrow('hostname or username is empty');
+  });
+
+  it('should handle os.hostname() throwing error', () => {
+    vi.mocked(os.hostname).mockImplementation(() => {
+      throw new Error('Unable to get hostname');
+    });
+    vi.mocked(os.userInfo).mockReturnValue({
+      username: 'user',
+      uid: 1000,
+      gid: 1000,
+      shell: '/bin/bash',
+      homedir: '/home/user',
+    });
+    vi.mocked(detectPlatform).mockReturnValue('claude-code');
+
+    expect(() => generateAgentId()).toThrow('Failed to generate agent ID');
+    expect(() => generateAgentId()).toThrow('Unable to get hostname');
+  });
+
+  it('should handle os.userInfo() throwing error', () => {
+    vi.mocked(os.hostname).mockReturnValue('hostname');
+    vi.mocked(os.userInfo).mockImplementation(() => {
+      throw new Error('Unable to get user info');
+    });
+    vi.mocked(detectPlatform).mockReturnValue('claude-code');
+
+    expect(() => generateAgentId()).toThrow('Failed to generate agent ID');
+    expect(() => generateAgentId()).toThrow('Unable to get user info');
+  });
 });

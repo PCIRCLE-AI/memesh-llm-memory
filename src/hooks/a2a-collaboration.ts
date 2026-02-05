@@ -15,6 +15,7 @@ import path from 'path';
 import os from 'os';
 import { execFileSync } from 'child_process';
 import { expandHome } from '../utils/paths.js';
+import { generateAgentId } from '../a2a/utils/agentId.js';
 
 // ============================================
 // Configuration
@@ -415,15 +416,6 @@ function pickAvailableName(): string {
   const entityName = `Online Agent: ${ultimateFallback}`;
   tryClaimName(entityName, now); // Best effort, return name regardless
   return ultimateFallback;
-}
-
-/**
- * Generate unique agent ID based on hostname and timestamp
- */
-function generateAgentId(): string {
-  const hostname = os.hostname().toLowerCase().replace(/[^a-z0-9]/g, '-');
-  const timestamp = Date.now().toString(36);
-  return `${hostname}-${timestamp}`;
 }
 
 /**

@@ -27,6 +27,7 @@ import * as os from 'os';
  * Sanitizes a string to be safe for use in an agent ID.
  *
  * Converts to lowercase and replaces all non-alphanumeric characters with hyphens.
+ * Removes consecutive hyphens and trims leading/trailing hyphens.
  *
  * @param value - The string to sanitize
  * @returns Sanitized string containing only lowercase alphanumeric characters and hyphens
@@ -35,10 +36,16 @@ import * as os from 'os';
  * ```typescript
  * sanitize('MacBook.Pro_123') // 'macbook-pro-123'
  * sanitize('Test Machine') // 'test-machine'
+ * sanitize('Test...Machine') // 'test-machine' (consecutive hyphens collapsed)
+ * sanitize('-hostname-') // 'hostname' (leading/trailing hyphens removed)
  * ```
  */
 function sanitize(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')  // Replace non-alphanumeric sequences with single hyphen
+    .replace(/-+/g, '-')           // Collapse consecutive hyphens
+    .replace(/^-+|-+$/g, '');      // Remove leading/trailing hyphens
 }
 
 /**
@@ -55,9 +62,12 @@ function sanitize(value: string): string {
  * **Sanitization Rules:**
  * - Convert to lowercase
  * - Replace non-alphanumeric characters with hyphens
+ * - Collapse consecutive hyphens
+ * - Remove leading/trailing hyphens
  * - Result matches pattern: `/^[a-z0-9-]+$/`
  *
  * @returns {string} Agent ID in format `hostname-username-platform`
+ * @throws {Error} If hostname or username is empty after sanitization, or if OS calls fail
  *
  * @example
  * ```typescript
@@ -69,9 +79,20 @@ function sanitize(value: string): string {
  * ```
  */
 export function generateAgentId(): string {
-  const hostname = sanitize(os.hostname());
-  const username = sanitize(os.userInfo().username);
-  const platform = detectPlatform();
+  try {
+    const platform = detectPlatform();
+    const hostname = sanitize(os.hostname());
+    const username = sanitize(os.userInfo().username);
 
-  return `${hostname}-${username}-${platform}`;
+    if (!hostname || !username) {
+      throw new Error(
+        'Unable to generate agent ID: hostname or username is empty after sanitization'
+      );
+    }
+
+    return `${hostname}-${username}-${platform}`;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to generate agent ID: ${errorMessage}`);
+  }
 }

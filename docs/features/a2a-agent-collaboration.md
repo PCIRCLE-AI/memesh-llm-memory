@@ -1,8 +1,8 @@
-# A2A (Agent-to-Agent) Protocol - Phase 0.5
+# A2A (Agent-to-Agent) Protocol - Phase 1.0
 
-**Status**: Foundational Implementation Complete
-**Version**: 0.5.0
-**Last Updated**: 2026-01-31
+**Status**: Phase 1 Complete - Result Query & State Machine
+**Version**: 1.0.0
+**Last Updated**: 2026-02-05
 
 ---
 
@@ -619,6 +619,73 @@ Use a2a-list-agents with:
 
 ---
 
+### a2a-report-result
+
+**Description**: Report task execution result back to MeMesh Server. Automatically updates task state to COMPLETED or FAILED.
+
+**Input Schema**:
+```typescript
+{
+  taskId: string;      // Required - Task ID to report result for
+  result: string;      // Required - Execution output or result
+  success: boolean;    // Required - Whether execution succeeded
+  error?: string;      // Optional - Error message if success=false
+}
+```
+
+**Example Usage (Success)**:
+```
+Use a2a-report-result with:
+- taskId: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+- result: "579"
+- success: true
+```
+
+**Response**:
+```
+✅ Task Result Reported
+
+Task ID: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+Status: COMPLETED
+Result: 579
+
+Task state has been updated to COMPLETED
+```
+
+**Example Usage (Failure)**:
+```
+Use a2a-report-result with:
+- taskId: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+- result: ""
+- success: false
+- error: "Division by zero error"
+```
+
+**Response**:
+```
+❌ Task Failed
+
+Task ID: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+Status: FAILED
+Error: Division by zero error
+
+Task state has been updated to FAILED
+```
+
+**Annotations**:
+- `readOnlyHint: false` - Updates task state
+- `destructiveHint: false` - Non-destructive operation
+- `idempotentHint: true` - Same report produces same result
+- `openWorldHint: false` - Requires specific task ID
+
+**Behavior**:
+- Automatically updates task state to `COMPLETED` (success=true) or `FAILED` (success=false)
+- Stores result/error in task data
+- Triggers state transition validation
+- Updates task `updated_at` timestamp
+
+---
+
 ## Example Workflows
 
 ### Workflow 1: Simple Task Delegation
@@ -732,7 +799,7 @@ Use a2a-list-agents with:
 
 ---
 
-## Phase 0.5 Limitations
+## Current Limitations
 
 ### Simplified Task Execution
 
@@ -741,20 +808,20 @@ Use a2a-list-agents with:
 - No actual MCP client delegation
 - Response format: `"Echo: [original task description]"`
 
-**Why Echo Only in Phase 0.5**:
+**Why Echo Only**:
 - MeMesh is an MCP Server, not a standalone AI agent
 - Tasks should be delegated to connected MCP client (Claude Code/Claude Desktop)
-- Phase 0.5 validates A2A Protocol infrastructure without MCP delegation complexity
+- Current implementation validates A2A Protocol infrastructure without MCP delegation complexity
 
 **Example**:
 ```
 Task: "Analyze API performance"
 Response: "Echo: Analyze API performance
 
-[Phase 0.5 - Simplified executor response. Phase 1 will delegate to MCP client.]"
+[Simplified executor response. Future phase will delegate to MCP client.]"
 ```
 
-**Coming in Phase 1**:
+**Coming in Future Phase**:
 - MCP client task delegation
 - Real task execution through connected Claude client
 - Multi-turn conversations via MCP Protocol
@@ -799,14 +866,19 @@ Response: "Echo: Analyze API performance
 ### No Push Notifications
 
 **Current Behavior**:
-- Must **poll** for task status updates
+- Must **poll** for task status updates using `a2a-get-task`
 - No real-time notifications
 - Inefficient for long-running tasks
 
-**Coming in Phase 1**:
-- WebSocket support for real-time updates
-- Server-Sent Events (SSE) for streaming
+**Workaround (Phase 1)**:
+- Use `a2a-report-result` to update task state when work completes
+- Poll with reasonable intervals (5-10 seconds for active tasks)
+
+**Coming in Phase 2**:
+- Server-Sent Events (SSE) for real-time state changes
+- WebSocket support for bidirectional communication
 - Task completion callbacks
+- Auto-polling mechanism with exponential backoff
 
 ---
 
@@ -840,36 +912,37 @@ Response: "Echo: Analyze API performance
 
 ## Roadmap
 
-### Phase 1: MCP Client Task Delegation (Next)
+### ✅ Phase 1: Result Query & State Machine (COMPLETED)
 
-**Goal**: Delegate tasks to connected MCP client instead of echo responses.
+**Status**: ✅ Complete (2026-02-05)
 
-**Features**:
-- MCP Protocol task delegation (to Claude Code/Claude Desktop)
-- Streaming responses via MCP connection
-- Multi-turn conversation support through MCP
-- Tool calling via MCP Protocol
+**Features Implemented**:
+- ✅ Task Result Query API (`getTaskResult()`)
+- ✅ Complete State Machine (SUBMITTED → WORKING → COMPLETED/FAILED/TIMEOUT)
+- ✅ State Update API (`updateTaskState()`)
+- ✅ `a2a-report-result` MCP tool with automatic state updates
+- ✅ Security Validations:
+  - Response size limit (10MB DoS prevention)
+  - Input validation (path traversal protection)
+  - Schema validation (type confusion prevention)
+- ✅ Integration Tests (280+ assertions)
+- ✅ Complete API Documentation
+
+**See**: `docs/api/a2a-phase1-improvements.md` for detailed API reference
+
+---
+
+### Phase 2: Event Notifications & Auto-Polling (Next)
+
+**Goal**: Real-time task status updates without manual polling.
+
+**Planned Features**:
+- Server-Sent Events (SSE) for task state changes
+- WebSocket support for real-time bidirectional communication
+- Auto-polling mechanism with exponential backoff
+- Task completion callbacks
+- Timeout/retry handling with configurable policies
 - `a2a-cancel-task` MCP tool
-- Real-time task notifications
-
-**Architecture**:
-```
-A2A Agent (MeMesh) receives task
-    ↓
-Delegates to connected MCP client (Claude Code)
-    ↓
-MCP client uses Claude API to execute
-    ↓
-Returns result to A2A Agent
-    ↓
-A2A Agent returns result to requester
-```
-
-**Why MCP Delegation, Not Direct API**:
-- MeMesh is an MCP Server, not a standalone AI agent
-- Maintains separation of concerns (MCP Server vs AI execution)
-- Leverages existing MCP client capabilities
-- No need to duplicate Claude API integration logic
 
 **Timeline**: Q1 2026
 
@@ -1103,10 +1176,30 @@ Includes:
 
 ---
 
-**Document Version**: 1.0
+**Document Version**: 1.1
 **Author**: MeMesh Team
 **License**: AGPL-3.0
+**Phase**: 1.0 (Result Query & State Machine)
 
 ---
 
-**🎉 Phase 0.5 Complete!** The foundation is solid. Phase 1 will bring real Claude integration and make this truly powerful.
+## What's New in Phase 1.0
+
+✅ **Task Result Query**: Query execution results of completed tasks with `getTaskResult()` API and `a2a-get-result` MCP tool
+
+✅ **Complete State Machine**: Full lifecycle management with SUBMITTED → WORKING → COMPLETED/FAILED/TIMEOUT transitions
+
+✅ **State Update API**: Programmatic state updates with `updateTaskState()` API
+
+✅ **Enhanced Result Reporting**: `a2a-report-result` automatically updates task state
+
+✅ **Security Hardening**:
+  - 10MB response size limit (DoS prevention)
+  - Input validation (path traversal protection)
+  - Schema validation (type confusion prevention)
+
+✅ **Comprehensive Testing**: 280+ integration test assertions covering all Phase 1 features
+
+---
+
+**🎉 Phase 1.0 Complete!** The A2A Protocol now supports complete task lifecycle management with proper state machine and result querying. Phase 2 will add real-time notifications and auto-polling.

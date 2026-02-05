@@ -578,7 +578,8 @@ priority: "high"
       properties: {
         agentId: {
           type: 'string',
-          description: 'Agent ID to list tasks for. Use "self" for your tasks (default: "self")',
+          description: 'Agent ID to list tasks for. Use "self" for your tasks',
+          default: 'self',
         },
         state: {
           type: 'string',

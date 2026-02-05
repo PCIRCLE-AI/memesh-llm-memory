@@ -720,6 +720,77 @@ Supports filtering by status, platform, and owner.
     },
   };
 
+  const a2aClaimTaskTool: MCPToolDefinition = {
+    name: 'a2a-claim-task',
+    description: `🙋 Claim a pending task from the unified task board for the current agent.
+
+**Usage:**
+• Call with taskId of a pending task to claim ownership
+• Task must be in 'pending' status to be claimed
+• After claiming, task status becomes 'in_progress' with you as owner
+
+**Workflow:**
+1. View available tasks with a2a-board (filter by status: "pending")
+2. Claim a task with a2a-claim-task
+3. Complete work on the task
+4. Mark complete with a2a-complete-task (or release with a2a-release-task)
+
+**Error Conditions:**
+• Task not found: Invalid taskId
+• Task not pending: Already claimed or completed by another agent`,
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        taskId: {
+          type: 'string',
+          description: 'UUID of the task to claim',
+        },
+      },
+      required: ['taskId'],
+    },
+    annotations: {
+      title: 'A2A Task Claim',
+      readOnlyHint: false,      // Modifies task status and ownership
+      destructiveHint: false,
+      idempotentHint: false,    // Claiming twice will fail
+      openWorldHint: false,     // Limited to unified task board
+    },
+  };
+
+  const a2aReleaseTaskTool: MCPToolDefinition = {
+    name: 'a2a-release-task',
+    description: `🔓 Release a claimed task back to pending status for other agents to claim.
+
+**Usage:**
+• Call with taskId of your claimed task to release it
+• Task ownership is cleared and status becomes 'pending'
+• Other agents can then claim the released task
+
+**When to Use:**
+• Cannot complete a task you claimed
+• Need to hand off work to another agent
+• Task needs to be reassigned
+
+**Idempotent:** Releasing an already pending task is safe (no-op).`,
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        taskId: {
+          type: 'string',
+          description: 'UUID of the task to release',
+        },
+      },
+      required: ['taskId'],
+    },
+    annotations: {
+      title: 'A2A Task Release',
+      readOnlyHint: false,      // Modifies task status and ownership
+      destructiveHint: false,
+      idempotentHint: true,     // Releasing already pending task is safe
+      openWorldHint: false,     // Limited to unified task board
+    },
+  };
+
   // ========================================
   // Test Generation Tools
   // ========================================
@@ -901,6 +972,8 @@ Supports filtering by status, platform, and owner.
     a2aListAgentsTool,
     a2aReportResultTool,
     a2aBoardTool,
+    a2aClaimTaskTool,
+    a2aReleaseTaskTool,
 
     // Hook Integration
     hookToolUseTool,

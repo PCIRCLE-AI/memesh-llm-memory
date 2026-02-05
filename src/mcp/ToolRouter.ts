@@ -27,6 +27,8 @@ import type { MCPTaskDelegator } from '../a2a/delegator/MCPTaskDelegator.js';
 import { a2aListTasks, A2AListTasksInputSchema } from './tools/a2a-list-tasks.js';
 import { a2aReportResult, A2AReportResultInputSchema } from './tools/a2a-report-result.js';
 import { handleA2ABoard, A2ABoardInputSchema } from './tools/a2a-board.js';
+import { handleA2AClaimTask, A2AClaimTaskInputSchema } from './tools/a2a-claim-task.js';
+import { handleA2AReleaseTask, A2AReleaseTaskInputSchema } from './tools/a2a-release-task.js';
 
 /**
  * Tool Router Configuration
@@ -546,6 +548,40 @@ export class ToolRouter {
         );
       }
       return handleA2ABoard(validationResult.data);
+    }
+
+    if (toolName === 'a2a-claim-task') {
+      // Claim a pending task from the unified task board
+      const validationResult = A2AClaimTaskInputSchema.safeParse(args);
+      if (!validationResult.success) {
+        throw new ValidationError(
+          `Invalid input for ${toolName}: ${validationResult.error.message}`,
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+            zodError: validationResult.error,
+          }
+        );
+      }
+      return handleA2AClaimTask(validationResult.data);
+    }
+
+    if (toolName === 'a2a-release-task') {
+      // Release a claimed task back to pending status
+      const validationResult = A2AReleaseTaskInputSchema.safeParse(args);
+      if (!validationResult.success) {
+        throw new ValidationError(
+          `Invalid input for ${toolName}: ${validationResult.error.message}`,
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+            zodError: validationResult.error,
+          }
+        );
+      }
+      return handleA2AReleaseTask(validationResult.data);
     }
 
     // ✅ FIX MINOR (Round 1): Sanitize toolName in error message

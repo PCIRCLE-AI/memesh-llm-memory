@@ -386,18 +386,10 @@ export class A2AServer {
     return new Promise((resolve) => {
       const server = createServer();
 
-      server.once('error', (err: NodeJS.ErrnoException) => {
-        if (err.code === 'EADDRINUSE') {
-          resolve(false);
-        } else {
-          resolve(false);
-        }
-      });
+      server.once('error', () => resolve(false));
 
       server.once('listening', () => {
-        server.close(() => {
-          resolve(true);
-        });
+        server.close(() => resolve(true));
       });
 
       server.listen(port, '127.0.0.1');

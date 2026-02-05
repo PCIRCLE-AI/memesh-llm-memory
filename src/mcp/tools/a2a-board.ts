@@ -84,21 +84,21 @@ export function handleA2ABoard(
  * @returns Formatted string output
  */
 function formatTaskBoard(tasks: Task[], filter: A2ABoardInput): string {
-  // Group tasks by status
-  const grouped: GroupedTasks = {
-    pending: tasks.filter((t) => t.status === 'pending'),
-    in_progress: tasks.filter((t) => t.status === 'in_progress'),
-    completed: tasks.filter((t) => t.status === 'completed'),
-    deleted: tasks.filter((t) => t.status === 'deleted'),
-  };
+  // Group tasks by status using reduce for single-pass grouping
+  const grouped = tasks.reduce<GroupedTasks>(
+    (acc, task) => {
+      acc[task.status].push(task);
+      return acc;
+    },
+    { pending: [], in_progress: [], completed: [], deleted: [] }
+  );
 
   // Build summary
   const total = tasks.length;
-  const summaryParts: string[] = [];
-  if (grouped.pending.length > 0) summaryParts.push(`${grouped.pending.length} pending`);
-  if (grouped.in_progress.length > 0) summaryParts.push(`${grouped.in_progress.length} in_progress`);
-  if (grouped.completed.length > 0) summaryParts.push(`${grouped.completed.length} completed`);
-  if (grouped.deleted.length > 0) summaryParts.push(`${grouped.deleted.length} deleted`);
+  const statuses = ['pending', 'in_progress', 'completed', 'deleted'] as const;
+  const summaryParts = statuses
+    .filter((status) => grouped[status].length > 0)
+    .map((status) => `${grouped[status].length} ${status}`);
 
   const summaryDetail = summaryParts.length > 0 ? ` (${summaryParts.join(', ')})` : '';
   const summary = `${total} task${total !== 1 ? 's' : ''}${summaryDetail}`;

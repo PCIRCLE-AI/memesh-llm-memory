@@ -12,6 +12,19 @@ import os from 'os';
 import crypto from 'crypto';
 
 /**
+ * Safely parse JSON string, returning undefined if invalid (defense-in-depth)
+ */
+function safeParseJson(json: string | null): string | undefined {
+  if (!json) return undefined;
+  try {
+    JSON.parse(json);
+    return json;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Task status type
  */
 export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'deleted';
@@ -403,7 +416,13 @@ export class TaskBoard {
       return null;
     }
 
-    // Return task with proper typing
+    return this.rowToTask(row);
+  }
+
+  /**
+   * Convert database row to Task object
+   */
+  private rowToTask(row: any): Task {
     return {
       id: row.id,
       subject: row.subject,
@@ -414,17 +433,7 @@ export class TaskBoard {
       creator_platform: row.creator_platform,
       created_at: row.created_at,
       updated_at: row.updated_at,
-      metadata: row.metadata ? (() => {
-        try {
-          // Validate JSON by parsing (defense-in-depth)
-          JSON.parse(row.metadata);
-          return row.metadata;
-        } catch (err) {
-          // Defense-in-depth: return undefined for corrupted metadata
-          // This should never happen if createTask always uses JSON.stringify
-          return undefined;
-        }
-      })() : undefined,
+      metadata: safeParseJson(row.metadata),
     };
   }
 
@@ -472,29 +481,7 @@ export class TaskBoard {
     const stmt = this.db.prepare(query);
     const rows = stmt.all(...params) as any[];
 
-    // Map rows to Task objects
-    return rows.map((row) => ({
-      id: row.id,
-      subject: row.subject,
-      description: row.description || undefined,
-      activeForm: row.activeForm || undefined,
-      status: row.status,
-      owner: row.owner || undefined,
-      creator_platform: row.creator_platform,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      metadata: row.metadata ? (() => {
-        try {
-          // Validate JSON by parsing (defense-in-depth)
-          JSON.parse(row.metadata);
-          return row.metadata;
-        } catch (err) {
-          // Defense-in-depth: return undefined for corrupted metadata
-          // This should never happen if createTask always uses JSON.stringify
-          return undefined;
-        }
-      })() : undefined,
-    }));
+    return rows.map((row) => this.rowToTask(row));
   }
 
   /**
@@ -639,31 +626,25 @@ export class TaskBoard {
    */
   registerAgent(agent: RegisterAgentInput): void {
     // Validate required fields
-    if (!agent.agent_id || typeof agent.agent_id !== 'string' || agent.agent_id.trim() === '') {
-      throw new Error('agent_id, platform, hostname, and username are required');
-    }
-    if (!agent.platform || typeof agent.platform !== 'string' || agent.platform.trim() === '') {
-      throw new Error('agent_id, platform, hostname, and username are required');
-    }
-    if (!agent.hostname || typeof agent.hostname !== 'string' || agent.hostname.trim() === '') {
-      throw new Error('agent_id, platform, hostname, and username are required');
-    }
-    if (!agent.username || typeof agent.username !== 'string' || agent.username.trim() === '') {
-      throw new Error('agent_id, platform, hostname, and username are required');
+    const requiredFields = ['agent_id', 'platform', 'hostname', 'username'] as const;
+    for (const field of requiredFields) {
+      const value = agent[field];
+      if (!value || typeof value !== 'string' || value.trim() === '') {
+        throw new Error('agent_id, platform, hostname, and username are required');
+      }
     }
 
     // Validate maximum lengths
-    if (agent.agent_id.length > TaskBoard.MAX_AGENT_ID_LENGTH) {
-      throw new Error(`agent_id exceeds maximum length of ${TaskBoard.MAX_AGENT_ID_LENGTH} characters`);
-    }
-    if (agent.platform.length > TaskBoard.MAX_PLATFORM_LENGTH) {
-      throw new Error(`platform exceeds maximum length of ${TaskBoard.MAX_PLATFORM_LENGTH} characters`);
-    }
-    if (agent.hostname.length > TaskBoard.MAX_HOSTNAME_LENGTH) {
-      throw new Error(`hostname exceeds maximum length of ${TaskBoard.MAX_HOSTNAME_LENGTH} characters`);
-    }
-    if (agent.username.length > TaskBoard.MAX_USERNAME_LENGTH) {
-      throw new Error(`username exceeds maximum length of ${TaskBoard.MAX_USERNAME_LENGTH} characters`);
+    const lengthLimits: Array<[string, string, number]> = [
+      ['agent_id', agent.agent_id, TaskBoard.MAX_AGENT_ID_LENGTH],
+      ['platform', agent.platform, TaskBoard.MAX_PLATFORM_LENGTH],
+      ['hostname', agent.hostname, TaskBoard.MAX_HOSTNAME_LENGTH],
+      ['username', agent.username, TaskBoard.MAX_USERNAME_LENGTH],
+    ];
+    for (const [fieldName, value, maxLength] of lengthLimits) {
+      if (value.length > maxLength) {
+        throw new Error(`${fieldName} exceeds maximum length of ${maxLength} characters`);
+      }
     }
 
     // Serialize skills array to JSON string
@@ -709,7 +690,13 @@ export class TaskBoard {
       return null;
     }
 
-    // Return agent with proper typing
+    return this.rowToAgent(row);
+  }
+
+  /**
+   * Convert database row to Agent object
+   */
+  private rowToAgent(row: any): Agent {
     return {
       agent_id: row.agent_id,
       platform: row.platform,
@@ -718,16 +705,7 @@ export class TaskBoard {
       base_url: row.base_url,
       port: row.port,
       process_pid: row.process_pid,
-      skills: row.skills ? (() => {
-        try {
-          // Validate JSON by parsing (defense-in-depth)
-          JSON.parse(row.skills);
-          return row.skills;
-        } catch {
-          // Defense-in-depth: return null for corrupted skills
-          return null;
-        }
-      })() : null,
+      skills: safeParseJson(row.skills) ?? null,
       last_heartbeat: row.last_heartbeat,
       status: row.status,
       created_at: row.created_at,
@@ -773,29 +751,7 @@ export class TaskBoard {
     const stmt = this.db.prepare(query);
     const rows = stmt.all(...params) as any[];
 
-    // Map rows to Agent objects
-    return rows.map((row) => ({
-      agent_id: row.agent_id,
-      platform: row.platform,
-      hostname: row.hostname,
-      username: row.username,
-      base_url: row.base_url,
-      port: row.port,
-      process_pid: row.process_pid,
-      skills: row.skills ? (() => {
-        try {
-          // Validate JSON by parsing (defense-in-depth)
-          JSON.parse(row.skills);
-          return row.skills;
-        } catch {
-          // Defense-in-depth: return null for corrupted skills
-          return null;
-        }
-      })() : null,
-      last_heartbeat: row.last_heartbeat,
-      status: row.status,
-      created_at: row.created_at,
-    }));
+    return rows.map((row) => this.rowToAgent(row));
   }
 
   /**

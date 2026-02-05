@@ -532,6 +532,32 @@ priority: "high"
     },
   };
 
+  const a2aGetResultTool: MCPToolDefinition = {
+    name: 'a2a-get-result',
+    description: '🎁 MeMesh A2A: Get task execution result from target agent.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        targetAgentId: {
+          type: 'string',
+          description: 'ID of the agent that executed the task',
+        },
+        taskId: {
+          type: 'string',
+          description: 'ID of the task to get result for',
+        },
+      },
+      required: ['targetAgentId', 'taskId'],
+    },
+    annotations: {
+      title: 'A2A Task Result Retriever',
+      readOnlyHint: true,       // Read-only operation
+      destructiveHint: false,
+      idempotentHint: true,     // Same query returns same result
+      openWorldHint: false,     // Requires specific task ID
+    },
+  };
+
   const a2aListTasksTool: MCPToolDefinition = {
     name: 'a2a-list-tasks',
     description: `📋 MeMesh A2A: List tasks assigned to you or another agent.
@@ -828,6 +854,7 @@ Returns agents with format: {agentId, url, port, status, lastHeartbeat}
     // A2A Protocol Tools
     a2aSendTaskTool,
     a2aGetTaskTool,
+    a2aGetResultTool,
     a2aListTasksTool,
     a2aListAgentsTool,
     a2aReportResultTool,

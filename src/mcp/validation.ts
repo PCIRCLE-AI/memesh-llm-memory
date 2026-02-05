@@ -263,6 +263,14 @@ export const A2AGetTaskInputSchema = z.object({
 });
 
 /**
+ * Schema for a2a-get-result tool input
+ */
+export const A2AGetResultInputSchema = z.object({
+  targetAgentId: z.string().min(1, 'targetAgentId is required'),
+  taskId: z.string().min(1, 'taskId is required'),
+});
+
+/**
  * A2A list tasks input schema
  */
 export const A2AListTasksInputSchema = z.object({
@@ -291,6 +299,7 @@ export const A2AListAgentsInputSchema = z.object({
  */
 export type ValidatedA2ASendTaskInput = z.infer<typeof A2ASendTaskInputSchema>;
 export type ValidatedA2AGetTaskInput = z.infer<typeof A2AGetTaskInputSchema>;
+export type ValidatedA2AGetResultInput = z.infer<typeof A2AGetResultInputSchema>;
 export type ValidatedA2AListTasksInput = z.infer<typeof A2AListTasksInputSchema>;
 export type ValidatedA2AListAgentsInput = z.infer<typeof A2AListAgentsInputSchema>;
 

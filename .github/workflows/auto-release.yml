@@ -1,0 +1,133 @@
+name: Auto Release
+
+# Automatically create git tag and GitHub release when package.json version changes on main branch
+# This prevents version/tag discrepancies and ensures every version bump gets a proper release
+#
+# Workflow: PR merged → Version changed → Create tag → Create release → Trigger npm publish
+# Duration: ~1-2 minutes
+#
+# Requirements:
+#   - GITHUB_TOKEN is automatically available
+#   - Requires write permissions for contents
+#
+# For manual release creation, see docs/RELEASE_PROCESS.md
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'package.json'
+
+permissions:
+  contents: write  # Required to create tags and releases
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version-changed: ${{ steps.check.outputs.changed }}
+      new-version: ${{ steps.check.outputs.version }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2  # Need previous commit to compare
+
+      - name: Check if version changed
+        id: check
+        run: |
+          # Get current version from package.json
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+
+          # Get previous version from parent commit
+          git checkout HEAD~1 package.json 2>/dev/null || echo "First commit"
+          PREVIOUS_VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "none")
+          echo "Previous version: $PREVIOUS_VERSION"
+
+          # Restore package.json
+          git checkout HEAD package.json
+
+          # Check if version changed
+          if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ]; then
+            echo "✅ Version changed: $PREVIOUS_VERSION → $CURRENT_VERSION"
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "⏭️  Version unchanged: $CURRENT_VERSION"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+  create-release:
+    needs: check-version
+    if: needs.check-version.outputs.version-changed == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Extract changelog for version
+        id: changelog
+        env:
+          VERSION: ${{ needs.check-version.outputs.new-version }}
+        run: |
+          echo "📝 Extracting changelog for v$VERSION"
+
+          # Extract changelog section for this version
+          # This is a simple extraction - can be enhanced with a proper parser
+          if [ -f "CHANGELOG.md" ]; then
+            # Extract content between [VERSION] and next [VERSION] or end
+            CHANGELOG=$(awk "/## \[$VERSION\]/,/## \[/" CHANGELOG.md | sed '$d' | tail -n +2)
+
+            if [ -n "$CHANGELOG" ]; then
+              echo "✅ Found changelog for v$VERSION"
+              # Save to file for multi-line content
+              echo "$CHANGELOG" > changelog.txt
+            else
+              echo "⚠️  No changelog found for v$VERSION, using default"
+              echo "Release v$VERSION" > changelog.txt
+              echo "" >> changelog.txt
+              echo "See [CHANGELOG.md](CHANGELOG.md) for details." >> changelog.txt
+            fi
+          else
+            echo "⚠️  CHANGELOG.md not found, using default release notes"
+            echo "Release v$VERSION" > changelog.txt
+          fi
+
+      - name: Create git tag
+        env:
+          VERSION: ${{ needs.check-version.outputs.new-version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create annotated tag with changelog
+          git tag -a "v$VERSION" -F changelog.txt
+          git push origin "v$VERSION"
+
+          echo "✅ Created and pushed tag v$VERSION"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.check-version.outputs.new-version }}
+          name: v${{ needs.check-version.outputs.new-version }}
+          body_path: changelog.txt
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log success
+        env:
+          VERSION: ${{ needs.check-version.outputs.new-version }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "🎉 Successfully created release v$VERSION"
+          echo "📦 Tag: v$VERSION"
+          echo "🔗 Release URL: https://github.com/$REPO/releases/tag/v$VERSION"
+          echo ""
+          echo "⏭️  Next: The publish-npm.yml workflow will automatically publish to npm"

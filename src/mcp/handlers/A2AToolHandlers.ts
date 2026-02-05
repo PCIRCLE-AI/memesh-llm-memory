@@ -10,15 +10,17 @@ import { AgentRegistry } from '../../a2a/storage/AgentRegistry.js';
 import {
   A2ASendTaskInputSchema,
   A2AGetTaskInputSchema,
+  A2AGetResultInputSchema,
   A2AListTasksInputSchema,
   A2AListAgentsInputSchema,
   formatValidationError,
   type ValidatedA2ASendTaskInput,
   type ValidatedA2AGetTaskInput,
+  type ValidatedA2AGetResultInput,
   type ValidatedA2AListTasksInput,
   type ValidatedA2AListAgentsInput,
 } from '../validation.js';
-import type { Task, TaskStatus, AgentRegistryEntry } from '../../a2a/types/index.js';
+import type { Task, TaskStatus, TaskResult, AgentRegistryEntry } from '../../a2a/types/index.js';
 
 /**
  * Special agent ID representing the current agent (self)
@@ -136,6 +138,47 @@ export class A2AToolHandlers {
         `  - Verify the task ID exists using 'a2a-list-tasks' tool\n` +
         `  - Check if the target agent is running and responding\n` +
         `  - Confirm you have permission to access this task`
+      );
+    }
+  }
+
+  /**
+   * Handle a2a-get-result tool
+   * Get task execution result from target agent
+   */
+  async handleA2AGetResult(args: unknown): Promise<CallToolResult> {
+    // Validate input
+    const parseResult = A2AGetResultInputSchema.safeParse(args);
+    if (!parseResult.success) {
+      throw new ValidationError(formatValidationError(parseResult.error), {
+        component: 'A2AToolHandlers',
+        method: 'handleA2AGetResult',
+        providedArgs: args,
+      });
+    }
+
+    const input: ValidatedA2AGetResultInput = parseResult.data;
+
+    try {
+      // Get task result via A2A client
+      const result = await this.client.getTaskResult(input.targetAgentId, input.taskId);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: this.formatTaskResultResponse(result),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      throw new Error(
+        `Failed to get result for task ${input.taskId} from agent ${input.targetAgentId}: ${errorMsg}\n\n` +
+        `💡 Troubleshooting tips:\n` +
+        `  - Verify the task has been executed and completed\n` +
+        `  - Check if the target agent is running and responding\n` +
+        `  - Use 'a2a-get-task' to check task state first`
       );
     }
   }
@@ -344,6 +387,46 @@ export class A2AToolHandlers {
         ``
       );
     });
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Format task result response
+   */
+  private formatTaskResultResponse(result: TaskResult): string {
+    const lines: string[] = [];
+
+    if (result.success) {
+      lines.push(`✅ Task Execution Result`, ``);
+    } else {
+      lines.push(`❌ Task Execution Failed`, ``);
+    }
+
+    lines.push(
+      `Task ID: ${result.taskId}`,
+      `State: ${result.state}`,
+      `Success: ${result.success}`,
+      `Executed At: ${result.executedAt}`,
+      `Executed By: ${result.executedBy}`
+    );
+
+    if (result.durationMs !== undefined) {
+      lines.push(`Duration: ${result.durationMs} ms`);
+    }
+
+    lines.push(``);
+
+    if (result.success && result.result) {
+      lines.push(
+        `📦 Result:`,
+        '```json',
+        JSON.stringify(result.result, null, 2),
+        '```'
+      );
+    } else if (result.error) {
+      lines.push(`❌ Error: ${result.error}`);
+    }
 
     return lines.join('\n');
   }

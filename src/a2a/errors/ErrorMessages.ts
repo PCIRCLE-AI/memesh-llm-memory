@@ -56,6 +56,14 @@ export const ErrorMessages = {
   [ErrorCodes.INVALID_CONTENT_TYPE]: (contentType: string, status: number) =>
     `Unexpected Content-Type: ${contentType}, expected application/json (status: ${status})`,
 
+  // Validation & Security
+  [ErrorCodes.RESPONSE_TOO_LARGE]: (size: string | number) =>
+    `Response size exceeds maximum allowed (size: ${size} bytes, max: 10MB)`,
+  [ErrorCodes.INVALID_PARAMETER]: (fieldName: string, reason: string) =>
+    `Invalid parameter '${fieldName}': ${reason}`,
+  [ErrorCodes.INVALID_RESPONSE_SCHEMA]: (details: string) =>
+    `Response schema validation failed: ${details}`,
+
   // Generic
   [ErrorCodes.UNKNOWN_ERROR]: 'An unknown error occurred',
 } as const;

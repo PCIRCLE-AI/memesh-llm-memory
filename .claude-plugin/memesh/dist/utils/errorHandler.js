@@ -32,7 +32,7 @@ function extractCauseChain(error, maxDepth = 10) {
     let current = error.cause;
     const seen = new WeakSet();
     while (current && chain.length < maxDepth) {
-        if (typeof current === 'object' && current !== null) {
+        if (typeof current === 'object') {
             if (seen.has(current)) {
                 chain.push({ message: '[Circular cause reference]', type: 'CircularRef' });
                 break;

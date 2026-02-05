@@ -20,7 +20,7 @@ export interface TaskCompletionReport {
     completedAt: string;
 }
 export declare function agentCheckIn(): AgentIdentity;
-export declare function checkPendingTasks(_agentId: string): A2ATask[];
+export declare function checkPendingTasks(agentId?: string): A2ATask[];
 export declare function getLatestCommitHash(): string | null;
 export declare function getLatestCommitMessage(): string | null;
 export declare function formatTaskCompletionReport(taskId: string, commitHash: string, commitMessage: string): TaskCompletionReport;

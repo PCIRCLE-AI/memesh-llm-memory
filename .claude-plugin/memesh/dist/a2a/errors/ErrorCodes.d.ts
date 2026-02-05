@@ -11,6 +11,7 @@ export declare const ErrorCodes: {
     readonly TASK_GET_FAILED: "TASK_GET_FAILED";
     readonly TASK_LIST_FAILED: "TASK_LIST_FAILED";
     readonly TASK_CANCEL_FAILED: "TASK_CANCEL_FAILED";
+    readonly TASK_UPDATE_FAILED: "TASK_UPDATE_FAILED";
     readonly PORT_NOT_AVAILABLE: "PORT_NOT_AVAILABLE";
     readonly SERVER_ERROR: "SERVER_ERROR";
     readonly INVALID_JSON: "INVALID_JSON";
@@ -18,6 +19,11 @@ export declare const ErrorCodes: {
     readonly TIMEOUT_CHECKER_ERROR: "TIMEOUT_CHECKER_ERROR";
     readonly TIMEOUT_CHECKER_CIRCUIT_OPEN: "TIMEOUT_CHECKER_CIRCUIT_OPEN";
     readonly HTTP_ERROR: "HTTP_ERROR";
+    readonly REQUEST_TIMEOUT: "REQUEST_TIMEOUT";
+    readonly INVALID_CONTENT_TYPE: "INVALID_CONTENT_TYPE";
+    readonly RESPONSE_TOO_LARGE: "RESPONSE_TOO_LARGE";
+    readonly INVALID_PARAMETER: "INVALID_PARAMETER";
+    readonly INVALID_RESPONSE_SCHEMA: "INVALID_RESPONSE_SCHEMA";
     readonly UNKNOWN_ERROR: "UNKNOWN_ERROR";
 };
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];

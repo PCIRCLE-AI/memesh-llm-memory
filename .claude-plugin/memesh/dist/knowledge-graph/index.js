@@ -140,6 +140,16 @@ export class KnowledgeGraph {
       CREATE INDEX IF NOT EXISTS idx_tags_entity_tag ON tags(entity_id, tag);
     `;
         this.db.exec(schema);
+        const fts5Schema = `
+      -- FTS5 virtual table for entities full-text search
+      CREATE VIRTUAL TABLE IF NOT EXISTS entities_fts USING fts5(
+        name,
+        observations,
+        content='',
+        tokenize='unicode61 remove_diacritics 1'
+      );
+    `;
+        this.db.exec(fts5Schema);
         this.runMigrations();
     }
     runMigrations() {
@@ -165,6 +175,51 @@ export class KnowledgeGraph {
             });
             throw error;
         }
+        try {
+            const ftsCount = this.db.prepare('SELECT COUNT(*) as count FROM entities_fts').get().count;
+            const entityCount = this.db.prepare('SELECT COUNT(*) as count FROM entities').get().count;
+            if (ftsCount === 0 && entityCount > 0) {
+                logger.info('[KG] Running migration: Populating FTS5 index from existing entities');
+                const CHUNK_SIZE = 500;
+                const MAX_OBSERVATIONS_PER_ENTITY = 500;
+                const MAX_OBSERVATION_LENGTH = 2000;
+                const MAX_TOTAL_LENGTH = 500000;
+                const insertStmt = this.db.prepare(`
+          INSERT INTO entities_fts(rowid, name, observations)
+          SELECT
+            e.id,
+            e.name,
+            COALESCE(
+              SUBSTR(
+                (SELECT GROUP_CONCAT(SUBSTR(content, 1, ?), ' ') FROM (
+                  SELECT content FROM observations o
+                  WHERE o.entity_id = e.id
+                  ORDER BY o.created_at DESC
+                  LIMIT ?
+                )),
+                1,
+                ?
+              ),
+              ''
+            )
+          FROM entities e
+          WHERE e.id > ? AND e.id <= ?
+        `);
+                const idRange = this.db.prepare('SELECT MIN(id) as minId, MAX(id) as maxId FROM entities').get();
+                let processedCount = 0;
+                for (let startId = idRange.minId - 1; startId < idRange.maxId; startId += CHUNK_SIZE) {
+                    const endId = startId + CHUNK_SIZE;
+                    const result = insertStmt.run(MAX_OBSERVATION_LENGTH, MAX_OBSERVATIONS_PER_ENTITY, MAX_TOTAL_LENGTH, startId, endId);
+                    processedCount += result.changes;
+                }
+                logger.info(`[KG] Migration complete: Populated FTS5 index with ${processedCount} entities`);
+            }
+        }
+        catch (error) {
+            logger.error('[KG] FTS5 population migration failed:', {
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
     }
     escapeLikePattern(pattern) {
         if (typeof pattern !== 'string') {
@@ -176,6 +231,75 @@ export class KnowledgeGraph {
             .replace(/_/g, '!_')
             .replace(/\[/g, '![')
             .replace(/\]/g, '!]');
+    }
+    searchFTS5(query, limit) {
+        if (!query || query.trim() === '') {
+            return [];
+        }
+        const ftsQuery = this.prepareFTS5Query(query);
+        if (!ftsQuery) {
+            return [];
+        }
+        try {
+            const results = this.db.prepare(`
+        SELECT rowid, bm25(entities_fts, 10.0, 5.0) as rank
+        FROM entities_fts
+        WHERE entities_fts MATCH ?
+        ORDER BY rank
+        LIMIT ?
+      `).all(ftsQuery, limit);
+            return results.map(r => r.rowid);
+        }
+        catch (error) {
+            logger.warn('[KG] FTS5 search failed, will use LIKE fallback:', {
+                query,
+                ftsQuery,
+                error: error instanceof Error ? error.message : String(error)
+            });
+            return [];
+        }
+    }
+    prepareFTS5Query(query) {
+        const MAX_QUERY_LENGTH = 10000;
+        const MAX_TOKENS = 100;
+        let normalized = query.trim().replace(/\s+/g, ' ');
+        if (!normalized) {
+            return '';
+        }
+        if (normalized.length > MAX_QUERY_LENGTH) {
+            logger.warn(`[KG] FTS5 query too long (${normalized.length} chars), truncating to ${MAX_QUERY_LENGTH}`);
+            normalized = normalized.substring(0, MAX_QUERY_LENGTH);
+        }
+        let tokens = normalized.split(' ').filter(t => t.length > 0);
+        if (tokens.length === 0) {
+            return '';
+        }
+        if (tokens.length > MAX_TOKENS) {
+            logger.warn(`[KG] FTS5 query has too many tokens (${tokens.length}), using first ${MAX_TOKENS}`);
+            tokens = tokens.slice(0, MAX_TOKENS);
+        }
+        const ftsTokens = tokens
+            .filter(token => {
+            const upper = token.toUpperCase();
+            return upper !== 'AND' && upper !== 'OR' && upper !== 'NOT' && upper !== 'NEAR';
+        })
+            .map(token => {
+            const escaped = token
+                .replace(/"/g, '""')
+                .replace(/\*/g, '')
+                .replace(/\^/g, '')
+                .replace(/:/g, '')
+                .replace(/[(){}[\]]/g, '');
+            if (!escaped) {
+                return null;
+            }
+            return `"${escaped}"*`;
+        })
+            .filter((t) => t !== null);
+        if (ftsTokens.length === 0) {
+            return '';
+        }
+        return ftsTokens.join(' OR ');
     }
     createEntity(entity) {
         this.validateEntityName(entity.name);
@@ -189,42 +313,59 @@ export class KnowledgeGraph {
                     return existing.name;
                 }
             }
-            const stmt = this.db.prepare(`
-        INSERT INTO entities (name, type, metadata, content_hash)
-        VALUES (?, ?, json(?), ?)
-        ON CONFLICT(name) DO UPDATE SET
-          type = excluded.type,
-          metadata = excluded.metadata,
-          content_hash = excluded.content_hash
-      `);
-            stmt.run(entity.name, entity.entityType, safeJsonStringify(entity.metadata || {}, '{}'), entity.contentHash || null);
-            const actualEntity = this.db
-                .prepare('SELECT id FROM entities WHERE name = ?')
-                .get(entity.name);
-            const actualId = actualEntity.id;
-            this.db.prepare('DELETE FROM observations WHERE entity_id = ?').run(actualId);
-            this.db.prepare('DELETE FROM tags WHERE entity_id = ?').run(actualId);
-            if (entity.observations && entity.observations.length > 0) {
-                const obsStmt = this.db.prepare(`
-          INSERT INTO observations (entity_id, content)
-          VALUES (?, ?)
+            const result = this.db.transaction(() => {
+                const stmt = this.db.prepare(`
+          INSERT INTO entities (name, type, metadata, content_hash)
+          VALUES (?, ?, json(?), ?)
+          ON CONFLICT(name) DO UPDATE SET
+            type = excluded.type,
+            metadata = excluded.metadata,
+            content_hash = excluded.content_hash
         `);
-                for (const obs of entity.observations) {
-                    obsStmt.run(actualId, obs);
+                stmt.run(entity.name, entity.entityType, safeJsonStringify(entity.metadata || {}, '{}'), entity.contentHash || null);
+                const actualEntity = this.db
+                    .prepare('SELECT id FROM entities WHERE name = ?')
+                    .get(entity.name);
+                const actualId = actualEntity.id;
+                this.db.prepare('DELETE FROM observations WHERE entity_id = ?').run(actualId);
+                this.db.prepare('DELETE FROM tags WHERE entity_id = ?').run(actualId);
+                if (entity.observations && entity.observations.length > 0) {
+                    const obsStmt = this.db.prepare(`
+            INSERT INTO observations (entity_id, content)
+            VALUES (?, ?)
+          `);
+                    for (const obs of entity.observations) {
+                        obsStmt.run(actualId, obs);
+                    }
                 }
-            }
-            if (entity.tags && entity.tags.length > 0) {
-                const tagStmt = this.db.prepare(`
-          INSERT INTO tags (entity_id, tag)
-          VALUES (?, ?)
-        `);
-                for (const tag of entity.tags) {
-                    tagStmt.run(actualId, tag);
+                if (entity.tags && entity.tags.length > 0) {
+                    const tagStmt = this.db.prepare(`
+            INSERT INTO tags (entity_id, tag)
+            VALUES (?, ?)
+          `);
+                    for (const tag of entity.tags) {
+                        tagStmt.run(actualId, tag);
+                    }
                 }
-            }
+                const observationsText = entity.observations ? entity.observations.join(' ') : '';
+                const existingFtsContent = this.db
+                    .prepare('SELECT name, observations FROM entities_fts WHERE rowid = ?')
+                    .get(actualId);
+                if (existingFtsContent) {
+                    this.db.prepare(`
+            INSERT INTO entities_fts(entities_fts, rowid, name, observations)
+            VALUES('delete', ?, ?, ?)
+          `).run(actualId, existingFtsContent.name, existingFtsContent.observations);
+                }
+                this.db.prepare(`
+          INSERT INTO entities_fts(rowid, name, observations)
+          VALUES (?, ?, ?)
+        `).run(actualId, entity.name, observationsText);
+                return entity.name;
+            })();
             this.queryCache.invalidatePattern(/^entities:/);
             logger.info(`[KG] Created entity: ${entity.name} (type: ${entity.entityType})`);
-            return entity.name;
+            return result;
         }
         catch (error) {
             if (error instanceof Error &&
@@ -324,8 +465,17 @@ export class KnowledgeGraph {
             params.push(query.tag);
         }
         if (query.namePattern) {
-            sql += " AND e.name LIKE ? ESCAPE '!'";
-            params.push(`%${this.escapeLikePattern(query.namePattern)}%`);
+            const ftsResults = this.searchFTS5(query.namePattern, effectiveLimit || 100);
+            if (ftsResults.length > 0) {
+                sql += ' AND e.id IN (' + ftsResults.map(() => '?').join(',') + ')';
+                params.push(...ftsResults);
+            }
+            else {
+                sql += " AND (e.name LIKE ? ESCAPE '!' OR e.id IN (SELECT entity_id FROM observations WHERE content LIKE ? ESCAPE '!'))";
+                const escapedPattern = `%${this.escapeLikePattern(query.namePattern)}%`;
+                params.push(escapedPattern);
+                params.push(escapedPattern);
+            }
         }
         sql += ' ORDER BY e.created_at DESC';
         if (effectiveLimit !== undefined) {
@@ -433,13 +583,22 @@ export class KnowledgeGraph {
     }
     deleteEntity(name) {
         this.validateEntityName(name);
-        const getEntityId = this.db.prepare('SELECT id FROM entities WHERE name = ?');
-        const entity = getEntityId.get(name);
-        if (!entity) {
-            return false;
-        }
-        const stmt = this.db.prepare('DELETE FROM entities WHERE name = ?');
-        const result = stmt.run(name);
+        const result = this.db.transaction(() => {
+            const entity = this.db.prepare('SELECT id FROM entities WHERE name = ?')
+                .get(name);
+            if (!entity) {
+                return { changes: 0 };
+            }
+            const existingFts = this.db.prepare('SELECT name, observations FROM entities_fts WHERE rowid = ?').get(entity.id);
+            if (existingFts) {
+                this.db.prepare(`
+          INSERT INTO entities_fts(entities_fts, rowid, name, observations)
+          VALUES('delete', ?, ?, ?)
+        `).run(entity.id, existingFts.name, existingFts.observations);
+            }
+            const stmt = this.db.prepare('DELETE FROM entities WHERE name = ?');
+            return stmt.run(name);
+        })();
         this.queryCache.invalidatePattern(/^entities:/);
         this.queryCache.invalidatePattern(/^relations:/);
         this.queryCache.invalidatePattern(/^trace:/);

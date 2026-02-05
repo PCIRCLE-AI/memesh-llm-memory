@@ -19,6 +19,7 @@ declare class ClaudeCodeBuddyMCPServer {
     static create(): Promise<ClaudeCodeBuddyMCPServer>;
     private setupHandlers;
     start(): Promise<void>;
+    handleRequest(request: unknown): Promise<unknown>;
     private setupSignalHandlers;
     private shutdown;
     private performShutdown;

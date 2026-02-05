@@ -70,4 +70,7 @@ export interface UpdateTaskParams {
     priority?: TaskPriority;
     metadata?: Record<string, unknown>;
 }
+export declare const VALID_STATE_TRANSITIONS: Record<TaskState, TaskState[]>;
+export declare function isValidStateTransition(from: TaskState, to: TaskState): boolean;
+export declare function isTerminalState(state: TaskState): boolean;
 //# sourceMappingURL=task.d.ts.map

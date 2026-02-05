@@ -33,6 +33,7 @@ export class A2AServer {
         this.app = this.createApp();
         this.delegator = new MCPTaskDelegator(this.taskQueue, logger);
         this.timeoutChecker = new TimeoutChecker(this.delegator);
+        this.routes.setDelegator(this.delegator);
     }
     createApp() {
         const app = express();

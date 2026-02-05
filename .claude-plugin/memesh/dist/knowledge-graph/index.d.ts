@@ -10,6 +10,8 @@ export declare class KnowledgeGraph {
     private initialize;
     private runMigrations;
     private escapeLikePattern;
+    private searchFTS5;
+    private prepareFTS5Query;
     createEntity(entity: Entity): string;
     createRelation(relation: Relation): void;
     searchEntities(query: SearchQuery): Entity[];

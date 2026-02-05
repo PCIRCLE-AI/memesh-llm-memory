@@ -1,5 +1,33 @@
 #!/usr/bin/env node
 let mcpClientConnected = false;
+const stdinBuffer = [];
+let stdinBufferingActive = false;
+function startStdinBuffering() {
+    if (stdinBufferingActive)
+        return;
+    stdinBufferingActive = true;
+    process.stdin.pause();
+    const bufferHandler = (chunk) => {
+        stdinBuffer.push(chunk);
+    };
+    process.stdin.on('data', bufferHandler);
+    startStdinBuffering._handler = bufferHandler;
+}
+function stopStdinBufferingAndReplay() {
+    if (!stdinBufferingActive)
+        return;
+    stdinBufferingActive = false;
+    const handler = startStdinBuffering._handler;
+    if (handler) {
+        process.stdin.removeListener('data', handler);
+    }
+    if (stdinBuffer.length > 0) {
+        const combined = Buffer.concat(stdinBuffer);
+        stdinBuffer.length = 0;
+        process.stdin.unshift(combined);
+    }
+    process.stdin.resume();
+}
 const args = process.argv.slice(2);
 const hasCliArgs = args.length > 0;
 if (hasCliArgs) {
@@ -143,6 +171,7 @@ async function startA2AServer() {
 }
 async function bootstrapWithDaemon() {
     process.env.MCP_SERVER_MODE = 'true';
+    startStdinBuffering();
     try {
         const { DaemonBootstrap, isDaemonDisabled } = await import('./daemon/DaemonBootstrap.js');
         const { logger } = await import('../utils/logger.js');
@@ -210,8 +239,12 @@ async function startAsDaemon(bootstrapper, version) {
     socketServer.on('client_disconnect', (clientId) => {
         logger.info('[Daemon] Client disconnected', { clientId });
     });
+    socketServer.setMcpHandler(async (request) => {
+        return mcpServer.handleRequest(request);
+    });
     await socketServer.start();
     logger.info('[Daemon] Socket server started', { path: transport.getPath() });
+    stopStdinBufferingAndReplay();
     await mcpServer.start();
     const a2aServer = await startA2AServer();
     const cleanupDaemon = async (reason) => {
@@ -302,10 +335,23 @@ async function startAsProxy(bootstrapper) {
         logger.info('[Proxy] Daemon requested shutdown', { reason });
         process.exit(0);
     });
+    stopStdinBufferingAndReplay();
     await proxyClient.start();
     logger.info('[Proxy] Proxy started, forwarding stdio to daemon');
+    const a2aServer = await startA2AServer();
     setupSignalHandlers(async (signal) => {
         logger.info('[Proxy] Shutdown requested', { signal });
+        if (a2aServer) {
+            try {
+                await a2aServer.stop();
+                logger.info('[Proxy] A2A server stopped');
+            }
+            catch (error) {
+                logger.warn('[Proxy] Error stopping A2A server', {
+                    error: error instanceof Error ? error.message : String(error),
+                });
+            }
+        }
         await proxyClient.stop();
         process.exit(0);
     });
@@ -318,6 +364,7 @@ function startMCPServer() {
             startMCPClientWatchdog();
             const { ClaudeCodeBuddyMCPServer } = await import('./server.js');
             const mcpServer = await ClaudeCodeBuddyMCPServer.create();
+            stopStdinBufferingAndReplay();
             await mcpServer.start();
             a2aServerRef = await startA2AServer();
         }

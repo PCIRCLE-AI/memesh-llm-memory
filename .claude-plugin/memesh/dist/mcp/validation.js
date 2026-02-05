@@ -121,7 +121,21 @@ export const A2ASendTaskInputSchema = z.object({
 });
 export const A2AGetTaskInputSchema = z.object({
     targetAgentId: z.string().min(1, 'Target agent ID cannot be empty'),
-    taskId: z.string().min(1, 'Task ID cannot be empty'),
+    taskId: z
+        .string()
+        .min(1, 'Task ID cannot be empty')
+        .refine((val) => val.trim().length > 0, {
+        message: 'Task ID cannot be only whitespace',
+    }),
+});
+export const A2AGetResultInputSchema = z.object({
+    targetAgentId: z.string().min(1, 'targetAgentId is required'),
+    taskId: z
+        .string()
+        .min(1, 'taskId is required')
+        .refine((val) => val.trim().length > 0, {
+        message: 'Task ID cannot be only whitespace',
+    }),
 });
 export const A2AListTasksInputSchema = z.object({
     state: z.enum([
@@ -138,6 +152,17 @@ export const A2AListTasksInputSchema = z.object({
 });
 export const A2AListAgentsInputSchema = z.object({
     status: z.enum(['active', 'inactive', 'all']).optional(),
+});
+export const A2AReportResultInputSchema = z.object({
+    taskId: z
+        .string()
+        .min(1, 'Task ID cannot be empty')
+        .refine((val) => val.trim().length > 0, {
+        message: 'Task ID cannot be only whitespace',
+    }),
+    success: z.boolean().describe('Whether execution succeeded (true) or failed (false)'),
+    result: z.unknown().optional().describe('Execution result if success=true'),
+    error: z.string().optional().describe('Error message if success=false'),
 });
 export const GenerateTestsInputSchema = z.object({
     specification: z.string().max(10000, 'Specification too long (max 10,000 characters)').optional(),

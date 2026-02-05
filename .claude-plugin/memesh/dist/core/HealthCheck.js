@@ -27,65 +27,49 @@ export class HealthChecker {
     }
     async checkAll(options = {}) {
         const startTime = Date.now();
-        try {
-            const timeout = options.timeout || this.timeout;
-            const skip = new Set(options.skip || []);
-            const checks = [];
-            if (!skip.has('database'))
-                checks.push(() => this.checkDatabase(timeout));
-            if (!skip.has('filesystem'))
-                checks.push(() => this.checkFilesystem(timeout));
-            if (!skip.has('memory'))
-                checks.push(() => this.checkMemory(timeout));
-            const components = await Promise.all(checks.map(check => check()));
-            const unhealthyCount = components.filter(c => c.status === 'unhealthy').length;
-            const degradedCount = components.filter(c => c.status === 'degraded').length;
-            let status;
-            let isHealthy;
-            if (unhealthyCount > 0) {
-                status = 'unhealthy';
-                isHealthy = false;
-            }
-            else if (degradedCount > 0) {
-                status = 'degraded';
-                isHealthy = true;
-            }
-            else {
-                status = 'healthy';
-                isHealthy = true;
-            }
-            const summary = this.generateSummary(components);
-            const totalDurationMs = Date.now() - startTime;
-            const result = {
-                status,
-                isHealthy,
-                components,
-                summary,
-                totalDurationMs,
-                timestamp: new Date(),
-            };
-            logger.debug('Health check completed', {
-                status,
-                isHealthy,
-                totalDurationMs,
-                componentCount: components.length,
-            });
-            return result;
+        const timeout = options.timeout || this.timeout;
+        const skip = new Set(options.skip || []);
+        const checks = [];
+        if (!skip.has('database'))
+            checks.push(() => this.checkDatabase(timeout));
+        if (!skip.has('filesystem'))
+            checks.push(() => this.checkFilesystem(timeout));
+        if (!skip.has('memory'))
+            checks.push(() => this.checkMemory(timeout));
+        const components = await Promise.all(checks.map(check => check()));
+        const unhealthyCount = components.filter(c => c.status === 'unhealthy').length;
+        const degradedCount = components.filter(c => c.status === 'degraded').length;
+        let status;
+        let isHealthy;
+        if (unhealthyCount > 0) {
+            status = 'unhealthy';
+            isHealthy = false;
         }
-        catch (error) {
-            logger.error('Health check failed', {
-                error: error instanceof Error ? error.message : String(error),
-                stack: error instanceof Error ? error.stack : undefined,
-            });
-            return {
-                status: 'unhealthy',
-                isHealthy: false,
-                components: [],
-                summary: 'Health check failed with error',
-                totalDurationMs: Date.now() - startTime,
-                timestamp: new Date(),
-            };
+        else if (degradedCount > 0) {
+            status = 'degraded';
+            isHealthy = true;
         }
+        else {
+            status = 'healthy';
+            isHealthy = true;
+        }
+        const summary = this.generateSummary(components);
+        const totalDurationMs = Date.now() - startTime;
+        const result = {
+            status,
+            isHealthy,
+            components,
+            summary,
+            totalDurationMs,
+            timestamp: new Date(),
+        };
+        logger.debug('Health check completed', {
+            status,
+            isHealthy,
+            totalDurationMs,
+            componentCount: components.length,
+        });
+        return result;
     }
     async checkDatabase(timeout) {
         const startTime = Date.now();
@@ -191,18 +175,9 @@ export class HealthChecker {
     }
 }
 export async function isSystemHealthy(options) {
-    try {
-        const checker = new HealthChecker();
-        const health = await checker.checkAll(options);
-        return health.isHealthy;
-    }
-    catch (error) {
-        logger.error('System health check failed', {
-            error: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined,
-        });
-        return false;
-    }
+    const checker = new HealthChecker();
+    const health = await checker.checkAll(options);
+    return health.isHealthy;
 }
 export function formatHealthStatus(health) {
     const lines = [];
@@ -236,18 +211,9 @@ export function formatHealthStatus(health) {
     return lines.join('\n');
 }
 export async function getHealthStatus(options) {
-    try {
-        const checker = new HealthChecker();
-        const health = await checker.checkAll(options);
-        return formatHealthStatus(health);
-    }
-    catch (error) {
-        logger.error('Failed to get health status', {
-            error: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined,
-        });
-        return 'Error: Unable to retrieve health status';
-    }
+    const checker = new HealthChecker();
+    const health = await checker.checkAll(options);
+    return formatHealthStatus(health);
 }
 export default HealthChecker;
 //# sourceMappingURL=HealthCheck.js.map

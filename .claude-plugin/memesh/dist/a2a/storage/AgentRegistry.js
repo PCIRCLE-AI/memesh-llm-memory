@@ -23,16 +23,56 @@ function safeJsonParse(jsonString) {
 export class AgentRegistry {
     db;
     static instance = null;
+    static currentDbPath;
+    preparedStatements;
     constructor(dbPath) {
         const path = dbPath || getDataPath('a2a-registry.db');
         this.db = new Database(path);
+        this.preparedStatements = new Map();
         this.initializeSchema();
+    }
+    getStatement(key, sql) {
+        let stmt = this.preparedStatements.get(key);
+        if (!stmt) {
+            stmt = this.db.prepare(sql);
+            this.preparedStatements.set(key, stmt);
+        }
+        return stmt;
     }
     static getInstance(dbPath) {
         if (!AgentRegistry.instance) {
-            AgentRegistry.instance = new AgentRegistry(dbPath);
+            const resolvedPath = dbPath || getDataPath('a2a-registry.db');
+            AgentRegistry.currentDbPath = resolvedPath;
+            AgentRegistry.instance = new AgentRegistry(resolvedPath);
+            return AgentRegistry.instance;
+        }
+        if (dbPath !== undefined) {
+            const resolvedNewPath = dbPath;
+            if (resolvedNewPath !== AgentRegistry.currentDbPath) {
+                throw new Error(`AgentRegistry singleton already exists with path "${AgentRegistry.currentDbPath}". ` +
+                    `Cannot create with different path "${resolvedNewPath}". ` +
+                    `Call AgentRegistry.resetInstance() first if you need a different database.`);
+            }
         }
         return AgentRegistry.instance;
+    }
+    static resetInstance() {
+        if (AgentRegistry.instance) {
+            try {
+                AgentRegistry.instance.preparedStatements.clear();
+                AgentRegistry.instance.db.close();
+            }
+            catch (error) {
+                logger.warn('[AgentRegistry] Error closing database during reset', {
+                    error: error instanceof Error ? error.message : String(error),
+                });
+            }
+            AgentRegistry.instance = null;
+            AgentRegistry.currentDbPath = undefined;
+        }
+    }
+    static getCurrentDbPath() {
+        return AgentRegistry.currentDbPath;
     }
     initializeSchema() {
         const schemaPath = join(__dirname, 'registry-schemas.sql');
@@ -43,85 +83,63 @@ export class AgentRegistry {
         const now = new Date().toISOString();
         const existing = this.get(params.agentId);
         if (existing) {
-            const stmt = this.db.prepare(`
-        UPDATE agents
-        SET base_url = ?, port = ?, status = 'active', last_heartbeat = ?,
-            capabilities = ?, metadata = ?, updated_at = ?
-        WHERE agent_id = ?
-      `);
+            const stmt = this.getStatement('updateAgent', `UPDATE agents
+         SET base_url = ?, port = ?, status = 'active', last_heartbeat = ?,
+             capabilities = ?, metadata = ?, updated_at = ?
+         WHERE agent_id = ?`);
             stmt.run(params.baseUrl, params.port, now, params.capabilities ? JSON.stringify(params.capabilities) : null, params.metadata ? JSON.stringify(params.metadata) : null, now, params.agentId);
         }
         else {
-            const stmt = this.db.prepare(`
-        INSERT INTO agents (agent_id, base_url, port, status, last_heartbeat,
-                           capabilities, metadata, created_at, updated_at)
-        VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?)
-      `);
+            const stmt = this.getStatement('insertAgent', `INSERT INTO agents (agent_id, base_url, port, status, last_heartbeat,
+                            capabilities, metadata, created_at, updated_at)
+         VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?)`);
             stmt.run(params.agentId, params.baseUrl, params.port, now, params.capabilities ? JSON.stringify(params.capabilities) : null, params.metadata ? JSON.stringify(params.metadata) : null, now, now);
         }
         return this.get(params.agentId);
     }
     get(agentId) {
-        const stmt = this.db.prepare(`
-      SELECT * FROM agents WHERE agent_id = ?
-    `);
+        const stmt = this.getStatement('getAgent', 'SELECT * FROM agents WHERE agent_id = ?');
         const row = stmt.get(agentId);
         if (!row)
             return null;
         return this.rowToEntry(row);
     }
     listActive() {
-        const stmt = this.db.prepare(`
-      SELECT * FROM agents WHERE status = 'active' ORDER BY last_heartbeat DESC
-    `);
+        const stmt = this.getStatement('listActiveAgents', "SELECT * FROM agents WHERE status = 'active' ORDER BY last_heartbeat DESC");
         const rows = stmt.all();
         return rows.map((row) => this.rowToEntry(row));
     }
     listAll() {
-        const stmt = this.db.prepare(`
-      SELECT * FROM agents ORDER BY last_heartbeat DESC
-    `);
+        const stmt = this.getStatement('listAllAgents', 'SELECT * FROM agents ORDER BY last_heartbeat DESC');
         const rows = stmt.all();
         return rows.map((row) => this.rowToEntry(row));
     }
     heartbeat(agentId) {
         const now = new Date().toISOString();
-        const stmt = this.db.prepare(`
-      UPDATE agents SET last_heartbeat = ?, status = 'active', updated_at = ?
-      WHERE agent_id = ?
-    `);
+        const stmt = this.getStatement('heartbeat', "UPDATE agents SET last_heartbeat = ?, status = 'active', updated_at = ? WHERE agent_id = ?");
         const result = stmt.run(now, now, agentId);
         return result.changes > 0;
     }
     deactivate(agentId) {
         const now = new Date().toISOString();
-        const stmt = this.db.prepare(`
-      UPDATE agents SET status = 'inactive', updated_at = ?
-      WHERE agent_id = ?
-    `);
+        const stmt = this.getStatement('deactivate', "UPDATE agents SET status = 'inactive', updated_at = ? WHERE agent_id = ?");
         const result = stmt.run(now, agentId);
         return result.changes > 0;
     }
     cleanupStale(staleThresholdMs = 5 * 60 * 1000) {
         const threshold = new Date(Date.now() - staleThresholdMs).toISOString();
         const now = new Date().toISOString();
-        const stmt = this.db.prepare(`
-      UPDATE agents SET status = 'stale', updated_at = ?
-      WHERE last_heartbeat < ? AND status = 'active'
-    `);
+        const stmt = this.getStatement('cleanupStale', "UPDATE agents SET status = 'stale', updated_at = ? WHERE last_heartbeat < ? AND status IN ('active', 'inactive')");
         const result = stmt.run(now, threshold);
         return result.changes;
     }
     deleteStale() {
-        const stmt = this.db.prepare(`
-      DELETE FROM agents WHERE status = 'stale'
-    `);
+        const stmt = this.getStatement('deleteStale', "DELETE FROM agents WHERE status = 'stale'");
         const result = stmt.run();
         return result.changes;
     }
     close() {
-        this.db.close();
-        AgentRegistry.instance = null;
+        AgentRegistry.resetInstance();
     }
     rowToEntry(row) {
         const capabilities = safeJsonParse(row.capabilities);

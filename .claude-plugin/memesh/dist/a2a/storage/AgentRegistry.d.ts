@@ -2,8 +2,13 @@ import type { AgentRegistryEntry, RegisterAgentParams } from '../types/index.js'
 export declare class AgentRegistry {
     private db;
     private static instance;
+    private static currentDbPath;
+    private preparedStatements;
     private constructor();
+    private getStatement;
     static getInstance(dbPath?: string): AgentRegistry;
+    static resetInstance(): void;
+    static getCurrentDbPath(): string | undefined;
     private initializeSchema;
     register(params: RegisterAgentParams): AgentRegistryEntry;
     get(agentId: string): AgentRegistryEntry | null;

@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { UIEventBus } from './UIEventBus.js';
 import { DEFAULT_UI_CONFIG, } from './types.js';
 export class Dashboard {
@@ -60,7 +61,6 @@ export class Dashboard {
         };
     }
     updateDashboard() {
-        const resources = this.resourceMonitor.getCurrentResources();
         this.uiEventBus.emitMetricsUpdate({
             sessionStart: this.sessionMetrics.startedAt,
             totalTasks: this.sessionMetrics.tasksCompleted + this.sessionMetrics.tasksFailed,
@@ -123,7 +123,7 @@ export class Dashboard {
         }
     }
     generateId(prefix) {
-        return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+        return `${prefix}-${Date.now()}-${randomUUID().slice(0, 8)}`;
     }
     generateSessionId() {
         return this.generateId('session');

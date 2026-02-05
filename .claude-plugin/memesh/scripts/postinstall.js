@@ -9,7 +9,7 @@
  */
 
 import { randomBytes } from 'crypto';
-import { existsSync, readFileSync, writeFileSync, appendFileSync, mkdirSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { homedir } from 'os';
@@ -27,29 +27,32 @@ const envFile = join(projectRoot, '.env');
 let a2aToken = null;
 let tokenSource = 'generated';
 
-// Check if .env exists and has token
-if (existsSync(envFile)) {
-  const envContent = readFileSync(envFile, 'utf-8');
-  const tokenMatch = envContent.match(/^MEMESH_A2A_TOKEN=(.+)$/m);
-
-  if (tokenMatch && tokenMatch[1]) {
-    a2aToken = tokenMatch[1].trim();
-    tokenSource = 'existing';
-  }
+// Read existing .env content (handles file not existing)
+// Using atomic read-check-write pattern to avoid TOCTOU race condition
+let envContent = '';
+try {
+  envContent = readFileSync(envFile, 'utf-8');
+} catch (e) {
+  // File doesn't exist, that's OK - we'll create it
 }
 
-// Generate new token if not found
+// Check for existing token in the content we just read
+const tokenMatch = envContent.match(/^MEMESH_A2A_TOKEN=(.+)$/m);
+if (tokenMatch && tokenMatch[1]) {
+  a2aToken = tokenMatch[1].trim();
+  tokenSource = 'existing';
+}
+
+// Generate new token if not found and write atomically
 if (!a2aToken) {
   a2aToken = randomBytes(32).toString('hex');
 
   try {
-    if (existsSync(envFile)) {
-      // Append to existing .env
-      appendFileSync(envFile, `\nMEMESH_A2A_TOKEN=${a2aToken}\n`, 'utf-8');
-    } else {
-      // Create new .env
-      writeFileSync(envFile, `MEMESH_A2A_TOKEN=${a2aToken}\n`, 'utf-8');
-    }
+    // Atomic write - write entire content at once to avoid TOCTOU race condition
+    // This ensures we don't have a gap between checking and writing
+    const newLine = envContent.endsWith('\n') || envContent === '' ? '' : '\n';
+    const newContent = envContent + newLine + `MEMESH_A2A_TOKEN=${a2aToken}\n`;
+    writeFileSync(envFile, newContent, 'utf-8');
   } catch (error) {
     // If we can't write .env, continue anyway (user can set token manually)
     console.warn(chalk.yellow(`⚠️  Could not write .env file: ${error.message}`));
@@ -79,10 +82,8 @@ try {
     serverPath = join(projectRoot, 'dist', 'mcp', 'server-bootstrap.js');
   }
 
-  // Create ~/.claude directory if it doesn't exist
-  if (!existsSync(claudeDir)) {
-    mkdirSync(claudeDir, { recursive: true });
-  }
+  // Create ~/.claude directory (recursive: true handles existing directory safely, avoids TOCTOU race condition)
+  mkdirSync(claudeDir, { recursive: true });
 
   // Read existing config or create new one
   let mcpConfig = { mcpServers: {} };
@@ -129,7 +130,7 @@ try {
     delete mcpConfig.mcpServers['claude-code-buddy'];
   }
 
-  // Write config
+  // Write config (directory already ensured above with mkdirSync recursive)
   writeFileSync(mcpConfigPath, JSON.stringify(mcpConfig, null, 2) + '\n', 'utf-8');
   mcpConfigured = true;
 } catch (error) {

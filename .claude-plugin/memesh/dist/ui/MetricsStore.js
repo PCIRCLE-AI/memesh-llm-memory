@@ -30,8 +30,8 @@ export class MetricsStore {
     }
     async persist() {
         const data = JSON.stringify(this.currentSession, null, 2);
-        await fs.mkdir(path.dirname(this.storePath), { recursive: true });
-        await fs.writeFile(this.storePath, data, 'utf-8');
+        await fs.mkdir(path.dirname(this.storePath), { recursive: true, mode: 0o700 });
+        await fs.writeFile(this.storePath, data, { encoding: 'utf-8', mode: 0o600 });
     }
     async load() {
         try {

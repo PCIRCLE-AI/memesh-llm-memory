@@ -588,7 +588,7 @@ export class BackgroundExecutor {
             clearTimeout(timeoutId);
         }
         this.activeTimeouts.clear();
-        for (const [taskId, timerId] of this.cleanupTimers) {
+        for (const [_taskId, timerId] of this.cleanupTimers) {
             clearTimeout(timerId);
         }
         this.cleanupTimers.clear();

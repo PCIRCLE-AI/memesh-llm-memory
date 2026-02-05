@@ -1,9 +1,6 @@
 import { SystemResourceManager } from '../utils/SystemResources.js';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import os from 'os';
 import { logger } from '../utils/logger.js';
-const execAsync = promisify(exec);
 export class GlobalResourcePool {
     static instance = null;
     resourceManager;

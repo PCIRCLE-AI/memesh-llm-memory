@@ -1,23 +1,36 @@
+import { validateSendMessageRequest } from './validation/index.js';
+import { logger } from '../../utils/logger.js';
+import { TaskStateConstants } from '../storage/inputValidation.js';
 export class A2ARoutes {
     _agentId;
     taskQueue;
     agentCard;
+    delegator = null;
     constructor(_agentId, taskQueue, agentCard) {
         this._agentId = _agentId;
         this.taskQueue = taskQueue;
         this.agentCard = agentCard;
     }
+    setDelegator(delegator) {
+        this.delegator = delegator;
+    }
     sendMessage = async (req, res, next) => {
         try {
-            const request = req.body;
-            if (!request.message || !request.message.parts) {
+            const validationResult = validateSendMessageRequest(req.body);
+            if (!validationResult.success) {
+                logger.warn('SendMessage validation failed', {
+                    errorCode: validationResult.error?.code,
+                    detailsCount: validationResult.error?.details?.length,
+                });
                 const error = {
-                    code: 'INVALID_REQUEST',
-                    message: 'Missing required field: message.parts',
+                    code: validationResult.error?.code || 'VALIDATION_ERROR',
+                    message: validationResult.error?.message || 'Request validation failed',
+                    details: validationResult.error?.details,
                 };
                 res.status(400).json({ success: false, error });
                 return;
             }
+            const request = validationResult.data;
             let taskId = request.taskId;
             if (!taskId) {
                 const task = this.taskQueue.createTask({
@@ -39,7 +52,7 @@ export class A2ARoutes {
             }
             const response = {
                 taskId,
-                status: 'SUBMITTED',
+                status: TaskStateConstants.SUBMITTED,
             };
             const result = {
                 success: true,
@@ -135,7 +148,7 @@ export class A2ARoutes {
                 return;
             }
             const updated = this.taskQueue.updateTaskStatus(taskId, {
-                state: 'CANCELED',
+                state: TaskStateConstants.CANCELED,
             });
             if (!updated) {
                 const error = {
@@ -145,9 +158,13 @@ export class A2ARoutes {
                 res.status(404).json({ success: false, error });
                 return;
             }
+            if (this.delegator) {
+                await this.delegator.removeTask(taskId);
+                logger.info('[A2ARoutes] Task removed from delegator queue on cancel', { taskId });
+            }
             const result = {
                 success: true,
-                data: { taskId, status: 'CANCELED' },
+                data: { taskId, status: TaskStateConstants.CANCELED },
             };
             res.status(200).json(result);
         }

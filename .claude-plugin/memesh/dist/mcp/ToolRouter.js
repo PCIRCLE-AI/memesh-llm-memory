@@ -205,6 +205,9 @@ export class ToolRouter {
         if (toolName === 'a2a-get-task') {
             return await this.a2aHandlers.handleA2AGetTask(args);
         }
+        if (toolName === 'a2a-get-result') {
+            return await this.a2aHandlers.handleA2AGetResult(args);
+        }
         if (toolName === 'a2a-list-tasks') {
             if (!this.mcpTaskDelegator) {
                 throw new OperationError('MCPTaskDelegator is not configured', {

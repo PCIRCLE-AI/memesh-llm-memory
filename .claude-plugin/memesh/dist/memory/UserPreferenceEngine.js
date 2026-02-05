@@ -1,5 +1,5 @@
 import { logger } from '../utils/logger.js';
-const PREFERENCE_PREFIX = 'user-preference-';
+const _PREFERENCE_PREFIX = 'user-preference-';
 const PREFERENCE_TAG = 'user-preference';
 const PREFERENCE_METADATA_KEY = 'preferenceData';
 export class UserPreferenceEngine {

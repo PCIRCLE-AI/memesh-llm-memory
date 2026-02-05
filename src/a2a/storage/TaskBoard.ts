@@ -143,7 +143,7 @@ export interface TaskHistoryEntry {
  * });
  */
 export class TaskBoard {
-  private db: Database.Database;
+  private db!: Database.Database;
 
   // Maximum length constraints for input validation
   private static readonly MAX_SUBJECT_LENGTH = 500;

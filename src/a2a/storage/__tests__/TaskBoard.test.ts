@@ -1147,6 +1147,54 @@ describe('TaskBoard', () => {
         const parsed = JSON.parse(agent!.skills!);
         expect(parsed).toEqual(['skill-a', 'skill-b', 'skill-c']);
       });
+
+      it('should throw on agent_id exceeding max length', () => {
+        const longAgentId = 'a'.repeat(501); // MAX_AGENT_ID_LENGTH is 500
+        expect(() =>
+          taskBoard.registerAgent({
+            agent_id: longAgentId,
+            platform: 'claude-code',
+            hostname: 'localhost',
+            username: 'user',
+          })
+        ).toThrow(/agent_id exceeds maximum length of 500 characters/);
+      });
+
+      it('should throw on platform exceeding max length', () => {
+        const longPlatform = 'p'.repeat(101); // MAX_PLATFORM_LENGTH is 100
+        expect(() =>
+          taskBoard.registerAgent({
+            agent_id: 'agent-1',
+            platform: longPlatform,
+            hostname: 'localhost',
+            username: 'user',
+          })
+        ).toThrow(/platform exceeds maximum length of 100 characters/);
+      });
+
+      it('should throw on hostname exceeding max length', () => {
+        const longHostname = 'h'.repeat(256); // MAX_HOSTNAME_LENGTH is 255
+        expect(() =>
+          taskBoard.registerAgent({
+            agent_id: 'agent-1',
+            platform: 'claude-code',
+            hostname: longHostname,
+            username: 'user',
+          })
+        ).toThrow(/hostname exceeds maximum length of 255 characters/);
+      });
+
+      it('should throw on username exceeding max length', () => {
+        const longUsername = 'u'.repeat(256); // MAX_USERNAME_LENGTH is 255
+        expect(() =>
+          taskBoard.registerAgent({
+            agent_id: 'agent-1',
+            platform: 'claude-code',
+            hostname: 'localhost',
+            username: longUsername,
+          })
+        ).toThrow(/username exceeds maximum length of 255 characters/);
+      });
     });
 
     describe('getAgent', () => {
@@ -1179,6 +1227,21 @@ describe('TaskBoard', () => {
 
         const agent = taskBoard.getAgent('agent-parse');
         expect(agent?.skills).toBe(JSON.stringify(['a', 'b']));
+      });
+
+      it('should return null for corrupted skills JSON', () => {
+        // Manually insert agent with corrupted JSON
+        const db = (taskBoard as any).db;
+        const now = Date.now();
+        db.prepare(`
+          INSERT INTO agents (agent_id, platform, hostname, username, skills, last_heartbeat, status, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run('agent-corrupted', 'claude-code', 'localhost', 'user', '{invalid json', now, 'active', now);
+
+        const agent = taskBoard.getAgent('agent-corrupted');
+        expect(agent).toBeDefined();
+        expect(agent?.agent_id).toBe('agent-corrupted');
+        expect(agent?.skills).toBeNull(); // Should return null for corrupted JSON
       });
     });
 
@@ -1262,6 +1325,26 @@ describe('TaskBoard', () => {
         const agents = taskBoard.listAgents({ platform: 'test' });
         expect(agents).toHaveLength(1);
         expect(agents[0].skills).toBe(JSON.stringify(['s1', 's2']));
+      });
+
+      it('should return null for agents with corrupted skills JSON', () => {
+        // Manually insert agents with corrupted JSON
+        const db = (taskBoard as any).db;
+        const now = Date.now();
+        db.prepare(`
+          INSERT INTO agents (agent_id, platform, hostname, username, skills, last_heartbeat, status, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run('agent-corrupted-1', 'corrupted-platform', 'host1', 'user1', '[invalid', now, 'active', now);
+
+        db.prepare(`
+          INSERT INTO agents (agent_id, platform, hostname, username, skills, last_heartbeat, status, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run('agent-corrupted-2', 'corrupted-platform', 'host2', 'user2', 'not json at all', now, 'active', now);
+
+        const agents = taskBoard.listAgents({ platform: 'corrupted-platform' });
+        expect(agents).toHaveLength(2);
+        expect(agents[0].skills).toBeNull(); // Should return null for corrupted JSON
+        expect(agents[1].skills).toBeNull(); // Should return null for corrupted JSON
       });
     });
 

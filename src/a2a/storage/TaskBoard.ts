@@ -136,6 +136,10 @@ export class TaskBoard {
   private static readonly MAX_SUBJECT_LENGTH = 500;
   private static readonly MAX_DESCRIPTION_LENGTH = 10000;
   private static readonly MAX_ACTIVE_FORM_LENGTH = 500;
+  private static readonly MAX_AGENT_ID_LENGTH = 500;
+  private static readonly MAX_PLATFORM_LENGTH = 100;
+  private static readonly MAX_HOSTNAME_LENGTH = 255;
+  private static readonly MAX_USERNAME_LENGTH = 255;
 
   /**
    * Initialize TaskBoard storage
@@ -648,6 +652,20 @@ export class TaskBoard {
       throw new Error('agent_id, platform, hostname, and username are required');
     }
 
+    // Validate maximum lengths
+    if (agent.agent_id.length > TaskBoard.MAX_AGENT_ID_LENGTH) {
+      throw new Error(`agent_id exceeds maximum length of ${TaskBoard.MAX_AGENT_ID_LENGTH} characters`);
+    }
+    if (agent.platform.length > TaskBoard.MAX_PLATFORM_LENGTH) {
+      throw new Error(`platform exceeds maximum length of ${TaskBoard.MAX_PLATFORM_LENGTH} characters`);
+    }
+    if (agent.hostname.length > TaskBoard.MAX_HOSTNAME_LENGTH) {
+      throw new Error(`hostname exceeds maximum length of ${TaskBoard.MAX_HOSTNAME_LENGTH} characters`);
+    }
+    if (agent.username.length > TaskBoard.MAX_USERNAME_LENGTH) {
+      throw new Error(`username exceeds maximum length of ${TaskBoard.MAX_USERNAME_LENGTH} characters`);
+    }
+
     // Serialize skills array to JSON string
     const skills = agent.skills ? JSON.stringify(agent.skills) : null;
 
@@ -700,7 +718,16 @@ export class TaskBoard {
       base_url: row.base_url,
       port: row.port,
       process_pid: row.process_pid,
-      skills: row.skills,
+      skills: row.skills ? (() => {
+        try {
+          // Validate JSON by parsing (defense-in-depth)
+          JSON.parse(row.skills);
+          return row.skills;
+        } catch {
+          // Defense-in-depth: return null for corrupted skills
+          return null;
+        }
+      })() : null,
       last_heartbeat: row.last_heartbeat,
       status: row.status,
       created_at: row.created_at,
@@ -755,7 +782,16 @@ export class TaskBoard {
       base_url: row.base_url,
       port: row.port,
       process_pid: row.process_pid,
-      skills: row.skills,
+      skills: row.skills ? (() => {
+        try {
+          // Validate JSON by parsing (defense-in-depth)
+          JSON.parse(row.skills);
+          return row.skills;
+        } catch {
+          // Defense-in-depth: return null for corrupted skills
+          return null;
+        }
+      })() : null,
       last_heartbeat: row.last_heartbeat,
       status: row.status,
       created_at: row.created_at,

@@ -404,6 +404,41 @@ describe('TaskBoard', () => {
 
         expect(id1).not.toBe(id2);
       });
+
+      it('should throw when subject exceeds maximum length', () => {
+        const longSubject = 'a'.repeat(501); // Exceeds MAX_SUBJECT_LENGTH of 500
+        expect(() =>
+          taskBoard.createTask({
+            subject: longSubject,
+            status: 'pending',
+            creator_platform: 'claude-code',
+          })
+        ).toThrow('Task subject exceeds maximum length of 500 characters');
+      });
+
+      it('should throw when description exceeds maximum length', () => {
+        const longDescription = 'a'.repeat(10001); // Exceeds MAX_DESCRIPTION_LENGTH of 10000
+        expect(() =>
+          taskBoard.createTask({
+            subject: 'Test',
+            description: longDescription,
+            status: 'pending',
+            creator_platform: 'claude-code',
+          })
+        ).toThrow('Task description exceeds maximum length of 10000 characters');
+      });
+
+      it('should throw when activeForm exceeds maximum length', () => {
+        const longActiveForm = 'a'.repeat(501); // Exceeds MAX_ACTIVE_FORM_LENGTH of 500
+        expect(() =>
+          taskBoard.createTask({
+            subject: 'Test',
+            activeForm: longActiveForm,
+            status: 'pending',
+            creator_platform: 'claude-code',
+          })
+        ).toThrow('Task activeForm exceeds maximum length of 500 characters');
+      });
     });
 
     describe('getTask', () => {
@@ -426,7 +461,8 @@ describe('TaskBoard', () => {
       });
 
       it('should return null for non-existent task', () => {
-        const task = taskBoard.getTask('non-existent-id');
+        // Use valid UUID format that doesn't exist
+        const task = taskBoard.getTask('12345678-1234-4567-8901-234567890123');
         expect(task).toBeNull();
       });
 
@@ -441,6 +477,27 @@ describe('TaskBoard', () => {
 
         const task = taskBoard.getTask(taskId);
         expect(task?.metadata).toBe(JSON.stringify(metadata));
+      });
+
+      it('should throw on invalid task ID format', () => {
+        expect(() => taskBoard.getTask('not-a-uuid')).toThrow('Invalid task ID format: not-a-uuid');
+      });
+
+      it('should handle corrupted metadata gracefully', () => {
+        const db = (taskBoard as any).db;
+        const taskId = 'a1b2c3d4-e5f6-4789-abcd-ef0123456789';
+        const now = Date.now();
+
+        // Manually insert task with corrupted JSON metadata
+        db.prepare(`
+          INSERT INTO tasks (id, subject, status, created_at, updated_at, metadata)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).run(taskId, 'Corrupted Task', 'pending', now, now, '{invalid json');
+
+        // Should not throw, but return undefined metadata
+        const task = taskBoard.getTask(taskId);
+        expect(task).not.toBeNull();
+        expect(task?.metadata).toBeUndefined();
       });
     });
 
@@ -565,7 +622,8 @@ describe('TaskBoard', () => {
 
       it('should throw on non-existent task', () => {
         expect(() => {
-          taskBoard.updateTaskStatus('non-existent-id', 'in_progress');
+          // Use valid UUID format that doesn't exist
+          taskBoard.updateTaskStatus('12345678-1234-4567-8901-234567890123', 'in_progress');
         }).toThrow('Task not found');
       });
 
@@ -579,6 +637,12 @@ describe('TaskBoard', () => {
         expect(() => {
           taskBoard.updateTaskStatus(taskId, 'invalid_status' as any);
         }).toThrow(/CHECK constraint failed/);
+      });
+
+      it('should throw on invalid task ID format in updateTaskStatus', () => {
+        expect(() => {
+          taskBoard.updateTaskStatus('not-a-uuid', 'in_progress');
+        }).toThrow('Invalid task ID format: not-a-uuid');
       });
     });
 
@@ -602,7 +666,8 @@ describe('TaskBoard', () => {
 
       it('should throw on non-existent task', () => {
         expect(() => {
-          taskBoard.deleteTask('non-existent-id');
+          // Use valid UUID format that doesn't exist
+          taskBoard.deleteTask('12345678-1234-4567-8901-234567890123');
         }).toThrow('Task not found');
       });
 
@@ -661,6 +726,12 @@ describe('TaskBoard', () => {
         // Verify history deleted (CASCADE)
         history = db.prepare('SELECT * FROM task_history WHERE task_id = ?').all(taskId);
         expect(history).toHaveLength(0);
+      });
+
+      it('should throw on invalid task ID format in deleteTask', () => {
+        expect(() => {
+          taskBoard.deleteTask('not-a-uuid');
+        }).toThrow('Invalid task ID format: not-a-uuid');
       });
     });
   });

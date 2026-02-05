@@ -55,20 +55,35 @@ export interface TaskFilter {
 }
 
 /**
- * Unified TaskBoard storage using SQLite with WAL mode for concurrent access
- *
- * Database location: ~/.claude-code-buddy/task-board.db
+ * TaskBoard - Unified task storage with platform tracking
  *
  * Features:
- * - WAL mode for concurrent reads/writes
- * - Foreign key constraints for data integrity
- * - Comprehensive indexes for performance
- * - Task dependencies tracking (blocks relationships)
- * - Agent registry for multi-agent coordination
- * - Task history for audit trail
+ * - Single SQLite database for all platforms
+ * - Platform-aware task tracking (creator_platform)
+ * - Task dependencies with CASCADE delete
+ * - Task history audit trail
+ * - Agent registry with skills
+ *
+ * **Concurrency Model**: Designed for single-process access.
+ * Multiple TaskBoard instances in the same process share the same
+ * database file (WAL mode allows concurrent reads). Cross-process
+ * coordination requires external locking mechanism.
+ *
+ * @example
+ * const board = new TaskBoard();
+ * const taskId = board.createTask({
+ *   subject: 'Implement feature X',
+ *   status: 'pending',
+ *   creator_platform: 'claude-code'
+ * });
  */
 export class TaskBoard {
   private db: Database.Database;
+
+  // Maximum length constraints for input validation
+  private static readonly MAX_SUBJECT_LENGTH = 500;
+  private static readonly MAX_DESCRIPTION_LENGTH = 10000;
+  private static readonly MAX_ACTIVE_FORM_LENGTH = 500;
 
   /**
    * Initialize TaskBoard storage
@@ -271,6 +286,15 @@ export class TaskBoard {
     if (!input.subject || typeof input.subject !== 'string' || input.subject.trim() === '') {
       throw new Error('Task subject is required');
     }
+    if (input.subject.length > TaskBoard.MAX_SUBJECT_LENGTH) {
+      throw new Error(`Task subject exceeds maximum length of ${TaskBoard.MAX_SUBJECT_LENGTH} characters`);
+    }
+    if (input.description && input.description.length > TaskBoard.MAX_DESCRIPTION_LENGTH) {
+      throw new Error(`Task description exceeds maximum length of ${TaskBoard.MAX_DESCRIPTION_LENGTH} characters`);
+    }
+    if (input.activeForm && input.activeForm.length > TaskBoard.MAX_ACTIVE_FORM_LENGTH) {
+      throw new Error(`Task activeForm exceeds maximum length of ${TaskBoard.MAX_ACTIVE_FORM_LENGTH} characters`);
+    }
     if (!input.status) {
       throw new Error('Task status is required');
     }
@@ -314,6 +338,8 @@ export class TaskBoard {
    * @returns Task object or null if not found
    */
   getTask(taskId: string): Task | null {
+    this.validateTaskId(taskId);
+
     const stmt = this.db.prepare('SELECT * FROM tasks WHERE id = ?');
     const row = stmt.get(taskId) as any;
 
@@ -332,15 +358,42 @@ export class TaskBoard {
       creator_platform: row.creator_platform,
       created_at: row.created_at,
       updated_at: row.updated_at,
-      metadata: row.metadata || undefined,
+      metadata: row.metadata ? (() => {
+        try {
+          // Validate JSON by parsing (defense-in-depth)
+          JSON.parse(row.metadata);
+          return row.metadata;
+        } catch (err) {
+          // Defense-in-depth: return undefined for corrupted metadata
+          // This should never happen if createTask always uses JSON.stringify
+          return undefined;
+        }
+      })() : undefined,
     };
   }
 
   /**
-   * List tasks with optional filters
+   * List tasks with optional filtering
+   *
+   * Filters use AND logic when multiple criteria provided.
+   * All matches are exact (case-sensitive, no wildcards).
+   * Empty filter {} returns all tasks.
    *
    * @param filter - Optional filter criteria
-   * @returns Array of tasks matching filter
+   *   - status: Exact match on task status ('pending' | 'in_progress' | 'completed' | 'deleted')
+   *   - owner: Exact match on owner agent ID
+   *   - creator_platform: Exact match on platform that created task
+   * @returns Array of tasks matching all provided criteria (empty array if no matches)
+   *
+   * @example
+   * // Get all pending tasks
+   * taskBoard.listTasks({ status: 'pending' });
+   *
+   * // Get tasks for specific agent
+   * taskBoard.listTasks({ owner: 'agent-123' });
+   *
+   * // Combine filters (AND logic)
+   * taskBoard.listTasks({ status: 'pending', creator_platform: 'claude-code' });
    */
   listTasks(filter?: TaskFilter): Task[] {
     let query = 'SELECT * FROM tasks WHERE 1=1';
@@ -374,7 +427,17 @@ export class TaskBoard {
       creator_platform: row.creator_platform,
       created_at: row.created_at,
       updated_at: row.updated_at,
-      metadata: row.metadata || undefined,
+      metadata: row.metadata ? (() => {
+        try {
+          // Validate JSON by parsing (defense-in-depth)
+          JSON.parse(row.metadata);
+          return row.metadata;
+        } catch (err) {
+          // Defense-in-depth: return undefined for corrupted metadata
+          // This should never happen if createTask always uses JSON.stringify
+          return undefined;
+        }
+      })() : undefined,
     }));
   }
 
@@ -386,10 +449,11 @@ export class TaskBoard {
    * @throws Error if task not found or database operation fails
    */
   updateTaskStatus(taskId: string, status: TaskStatus): void {
+    this.validateTaskId(taskId);
+
     // Check if task exists
-    const task = this.getTask(taskId);
-    if (!task) {
-      throw new Error('Task not found');
+    if (!this.taskExists(taskId)) {
+      throw new Error(`Task not found: ${taskId}`);
     }
 
     const now = Date.now();
@@ -405,10 +469,11 @@ export class TaskBoard {
    * @throws Error if task not found
    */
   deleteTask(taskId: string): void {
+    this.validateTaskId(taskId);
+
     // Check if task exists
-    const task = this.getTask(taskId);
-    if (!task) {
-      throw new Error('Task not found');
+    if (!this.taskExists(taskId)) {
+      throw new Error(`Task not found: ${taskId}`);
     }
 
     const stmt = this.db.prepare('DELETE FROM tasks WHERE id = ?');
@@ -422,5 +487,26 @@ export class TaskBoard {
     if (this.db && this.db.open) {
       this.db.close();
     }
+  }
+
+  /**
+   * Validate that a taskId is a valid UUID v4 format
+   * @throws Error if taskId is not a valid UUID
+   */
+  private validateTaskId(taskId: string): void {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(taskId)) {
+      throw new Error(`Invalid task ID format: ${taskId}`);
+    }
+  }
+
+  /**
+   * Check if a task exists in the database
+   * @param taskId - Task ID to check
+   * @returns true if task exists, false otherwise
+   */
+  private taskExists(taskId: string): boolean {
+    const result = this.db.prepare('SELECT 1 FROM tasks WHERE id = ?').get(taskId);
+    return !!result;
   }
 }

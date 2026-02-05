@@ -300,6 +300,7 @@ describe('Agent Activation Validation', () => {
         // A2A Protocol Tools (Phase 1.0)
         'a2a-send-task',
         'a2a-get-task',
+        'a2a-get-result',
         'a2a-list-tasks',
         'a2a-list-agents',
         'a2a-report-result',

@@ -13,12 +13,14 @@ import {
   A2AGetResultInputSchema,
   A2AListTasksInputSchema,
   A2AListAgentsInputSchema,
+  A2AReportResultInputSchema,
   formatValidationError,
   type ValidatedA2ASendTaskInput,
   type ValidatedA2AGetTaskInput,
   type ValidatedA2AGetResultInput,
   type ValidatedA2AListTasksInput,
   type ValidatedA2AListAgentsInput,
+  type ValidatedA2AReportResultInput,
 } from '../validation.js';
 import type { Task, TaskStatus, TaskResult, AgentRegistryEntry } from '../../a2a/types/index.js';
 
@@ -277,6 +279,51 @@ export class A2AToolHandlers {
     }
   }
 
+  /**
+   * Handle a2a-report-result tool
+   * Report task execution result and update task state
+   */
+  async handleA2AReportResult(args: unknown): Promise<CallToolResult> {
+    // Validate input
+    const parseResult = A2AReportResultInputSchema.safeParse(args);
+    if (!parseResult.success) {
+      throw new ValidationError(formatValidationError(parseResult.error), {
+        component: 'A2AToolHandlers',
+        method: 'handleA2AReportResult',
+        providedArgs: args,
+      });
+    }
+
+    const input: ValidatedA2AReportResultInput = parseResult.data;
+
+    try {
+      // Update task state based on success/failure
+      const newState = input.success ? 'COMPLETED' : 'FAILED';
+      await this.client.updateTaskState(input.taskId, newState, {
+        result: input.success ? input.result : undefined,
+        error: input.success ? undefined : input.error,
+      });
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: this.formatReportResultResponse(input),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      throw new Error(
+        `Failed to report result for task ${input.taskId}: ${errorMsg}\n\n` +
+        `💡 Troubleshooting tips:\n` +
+        `  - Verify the task exists\n` +
+        `  - Check if you have permission to update this task\n` +
+        `  - Ensure the task is in a valid state for updates`
+      );
+    }
+  }
+
   // ========================================
   // Private Helper Methods
   // ========================================
@@ -426,6 +473,40 @@ export class A2AToolHandlers {
       );
     } else if (result.error) {
       lines.push(`❌ Error: ${result.error}`);
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Format report result response
+   */
+  private formatReportResultResponse(input: ValidatedA2AReportResultInput): string {
+    const lines: string[] = [];
+
+    if (input.success) {
+      lines.push(`✅ Task result reported successfully`, ``);
+    } else {
+      lines.push(`✅ Task failure reported successfully`, ``);
+    }
+
+    lines.push(
+      `Task ID: ${input.taskId}`,
+      `Status: ${input.success ? 'COMPLETED' : 'FAILED'}`,
+      `Success: ${input.success}`
+    );
+
+    lines.push(``);
+
+    if (input.success && input.result) {
+      lines.push(
+        `📦 Result:`,
+        '```json',
+        JSON.stringify(input.result, null, 2),
+        '```'
+      );
+    } else if (input.error) {
+      lines.push(`❌ Error: ${input.error}`);
     }
 
     return lines.join('\n');

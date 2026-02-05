@@ -19,6 +19,7 @@ import type {
   ServiceResponse,
   Task,
   TaskStatus,
+  TaskState,
   AgentCard,
   TaskResult,
 } from '../types/index.js';
@@ -555,6 +556,57 @@ export class A2AClient {
         ErrorCodes.TASK_GET_FAILED,
         taskId,
         targetAgentId,
+        getErrorMessage(error)
+      );
+    }
+  }
+
+  /**
+   * Update task state
+   *
+   * Updates the state of a task and optionally stores result/error data.
+   * Used internally when agent reports task execution result.
+   *
+   * @param taskId - ID of the task to update
+   * @param state - New state (WORKING, COMPLETED, FAILED, etc.)
+   * @param data - Optional data to store (result or error)
+   */
+  async updateTaskState(
+    taskId: string,
+    state: TaskState,
+    data?: { result?: unknown; error?: string }
+  ): Promise<void> {
+    try {
+      return await retryWithBackoff(
+        async () => {
+          // Use 'self' to indicate we're updating our own task
+          const url = `${process.env.MEMESH_BASE_URL || 'http://localhost:3000'}/a2a/tasks/${encodeURIComponent(taskId)}/state`;
+
+          const response = await this.fetchWithTimeout(url, {
+            method: 'PATCH',
+            headers: this.getAuthHeaders(),
+            body: JSON.stringify({
+              state,
+              ...data,
+            }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.message || `Failed to update task state: ${response.status}`);
+          }
+        },
+        {
+          ...this.retryConfig,
+          operationName: `A2A updateTaskState ${taskId} to ${state}`,
+          isRetryable: this.isRetryableHttpError.bind(this),
+        }
+      );
+    } catch (error) {
+      throw createError(
+        ErrorCodes.TASK_UPDATE_FAILED,
+        taskId,
+        state,
         getErrorMessage(error)
       );
     }

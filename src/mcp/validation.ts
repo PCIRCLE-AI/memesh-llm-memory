@@ -295,6 +295,16 @@ export const A2AListAgentsInputSchema = z.object({
 });
 
 /**
+ * A2A report result input schema
+ */
+export const A2AReportResultInputSchema = z.object({
+  taskId: z.string().min(1, 'Task ID cannot be empty'),
+  success: z.boolean().describe('Whether execution succeeded (true) or failed (false)'),
+  result: z.unknown().optional().describe('Execution result if success=true'),
+  error: z.string().optional().describe('Error message if success=false'),
+});
+
+/**
  * Type exports for A2A validated inputs
  */
 export type ValidatedA2ASendTaskInput = z.infer<typeof A2ASendTaskInputSchema>;
@@ -302,6 +312,7 @@ export type ValidatedA2AGetTaskInput = z.infer<typeof A2AGetTaskInputSchema>;
 export type ValidatedA2AGetResultInput = z.infer<typeof A2AGetResultInputSchema>;
 export type ValidatedA2AListTasksInput = z.infer<typeof A2AListTasksInputSchema>;
 export type ValidatedA2AListAgentsInput = z.infer<typeof A2AListAgentsInputSchema>;
+export type ValidatedA2AReportResultInput = z.infer<typeof A2AReportResultInputSchema>;
 
 /**
  * Generate tests input schema for generate-tests tool

@@ -31,6 +31,8 @@ export const ErrorMessages = {
     `Failed to list tasks from ${targetAgentId}: ${error}`,
   [ErrorCodes.TASK_CANCEL_FAILED]: (taskId: string, targetAgentId: string, error: string) =>
     `Failed to cancel task ${taskId} on ${targetAgentId}: ${error}`,
+  [ErrorCodes.TASK_UPDATE_FAILED]: (taskId: string, state: string, error: string) =>
+    `Failed to update task ${taskId} to state ${state}: ${error}`,
 
   // Server Operations
   [ErrorCodes.PORT_NOT_AVAILABLE]: (min: number, max: number) =>

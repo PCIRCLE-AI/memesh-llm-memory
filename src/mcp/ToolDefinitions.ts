@@ -791,6 +791,99 @@ Supports filtering by status, platform, and owner.
     },
   };
 
+  const a2aFindTasksTool: MCPToolDefinition = {
+    name: 'a2a-find-tasks',
+    description: `🔍 Find tasks matching specified skills or criteria from the unified task board.
+
+**Usage:**
+• Find tasks by skills: {skills: ["typescript", "testing"]}
+• Filter by status: {status: "pending"} (default)
+• Limit results: {limit: 5} (default: 10, max: 50)
+
+**Matching Logic:**
+• Skills match against task metadata.required_skills (exact match)
+• Skills also match against task subject text (case-insensitive)
+• Results sorted by relevance (tasks with more skill matches first)
+
+**Examples:**
+• Find TypeScript tasks: {skills: ["typescript"]}
+• Find any pending tasks: {} (no filters)
+• Find in-progress testing tasks: {skills: ["testing"], status: "in_progress"}`,
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        skills: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of skill strings to match against task metadata or subject',
+        },
+        status: {
+          type: 'string',
+          enum: ['pending', 'in_progress', 'completed', 'deleted'],
+          description: 'Task status filter (default: pending)',
+          default: 'pending',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of results (default: 10, max: 50)',
+          minimum: 1,
+          maximum: 50,
+          default: 10,
+        },
+      },
+    },
+    annotations: {
+      title: 'A2A Task Finder',
+      readOnlyHint: true,       // Read-only operation
+      destructiveHint: false,
+      idempotentHint: true,     // Same query returns same result
+      openWorldHint: false,     // Limited to unified task board
+    },
+  };
+
+  const a2aSetSkillsTool: MCPToolDefinition = {
+    name: 'a2a-set-skills',
+    description: `🎯 Set skills for the current agent to enable skill-based task matching.
+
+**Usage:**
+• Set your agent's skills: {skills: ["typescript", "testing", "code-review"]}
+• Clear all skills: {skills: []}
+
+**How it works:**
+• Skills are used by a2a-find-tasks to match agents with suitable tasks
+• Auto-registers your agent if not already registered
+• Skills are stored persistently in the task board
+
+**Examples:**
+• Backend developer: {skills: ["nodejs", "postgresql", "api-design"]}
+• Frontend developer: {skills: ["react", "typescript", "css"]}
+• DevOps engineer: {skills: ["docker", "kubernetes", "ci-cd"]}
+
+**Next step:** Use a2a-find-tasks to discover tasks matching your skills.`,
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        skills: {
+          type: 'array',
+          items: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 100,
+          },
+          description: 'Array of skill strings (e.g., ["typescript", "testing", "code-review"])',
+        },
+      },
+      required: ['skills'],
+    },
+    annotations: {
+      title: 'A2A Set Agent Skills',
+      readOnlyHint: false,      // Modifies agent record
+      destructiveHint: false,
+      idempotentHint: true,     // Setting same skills twice is safe
+      openWorldHint: false,     // Limited to skill strings
+    },
+  };
+
   // ========================================
   // Test Generation Tools
   // ========================================
@@ -974,6 +1067,8 @@ Supports filtering by status, platform, and owner.
     a2aBoardTool,
     a2aClaimTaskTool,
     a2aReleaseTaskTool,
+    a2aFindTasksTool,
+    a2aSetSkillsTool,
 
     // Hook Integration
     hookToolUseTool,

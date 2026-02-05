@@ -592,7 +592,7 @@ export class A2AClient {
           });
 
           if (!response.ok) {
-            const error = await response.json().catch(() => ({}));
+            const error = await response.json().catch(() => ({})) as { message?: string };
             throw new Error(error.message || `Failed to update task state: ${response.status}`);
           }
         },

@@ -17,10 +17,33 @@ export interface TaskResult {
   /** Whether execution succeeded */
   success: boolean;
 
-  /** Actual result data (only if success=true) */
+  /**
+   * Actual result data (only if success=true)
+   *
+   * @remarks
+   * Maximum size: 10MB (enforced at runtime via A2AClient)
+   * Large results should be stored externally (e.g., S3, database)
+   * and referenced by URL or ID here instead.
+   *
+   * @example
+   * ```typescript
+   * // Small result - OK
+   * { answer: 42, calculation: "2 + 2" }
+   *
+   * // Large result - use reference
+   * { dataUrl: "https://storage.example.com/results/task-123.json" }
+   * ```
+   */
   result?: unknown;
 
-  /** Error message (only if success=false) */
+  /**
+   * Error message (only if success=false)
+   *
+   * @remarks
+   * Maximum length: 10,000 characters (enforced at runtime via Zod schema)
+   * Should contain human-readable error description.
+   * Stack traces should be logged separately, not included here.
+   */
   error?: string;
 
   /** When task was executed */

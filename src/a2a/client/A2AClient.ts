@@ -46,9 +46,19 @@ const RETRY_BOUNDS = {
 } as const;
 
 /**
- * Maximum response size to prevent DoS attacks (10MB)
+ * Maximum response size to prevent DoS attacks
+ *
+ * Set to 10MB based on:
+ * - Typical task results are < 1MB (JSON payloads)
+ * - Allows reasonable data payloads without memory exhaustion
+ * - Prevents malicious responses from consuming excessive memory
+ * - Large datasets should be stored externally (S3, database) and referenced by URL
+ *
+ * @remarks
+ * This limit is enforced in handleResponse() for all HTTP responses.
+ * Responses exceeding this limit will throw RESPONSE_TOO_LARGE error.
  */
-const MAX_RESPONSE_SIZE = 10_000_000;
+const MAX_RESPONSE_SIZE = 10_000_000; // 10MB in bytes
 
 /**
  * TaskResult schema for response validation
@@ -240,14 +250,23 @@ export class A2AClient {
    */
   private async fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.retryConfig.timeout);
+    let completed = false;
+
+    const timeoutId = setTimeout(() => {
+      if (!completed) {
+        controller.abort();
+      }
+    }, this.retryConfig.timeout);
 
     try {
-      return await fetch(url, {
+      const response = await fetch(url, {
         ...options,
         signal: controller.signal,
       });
+      completed = true;
+      return response;
     } catch (error) {
+      completed = true;
       // Handle AbortError specifically and convert to REQUEST_TIMEOUT
       if (error instanceof Error && error.name === 'AbortError') {
         throw createError(ErrorCodes.REQUEST_TIMEOUT, url, this.retryConfig.timeout);
@@ -592,8 +611,23 @@ export class A2AClient {
           });
 
           if (!response.ok) {
-            const error = await response.json().catch(() => ({})) as { message?: string };
-            throw new Error(error.message || `Failed to update task state: ${response.status}`);
+            // Consistent error handling pattern with handleResponse()
+            let errorMessage: string | undefined;
+            try {
+              const errorData = await response.json() as { message?: string };
+              errorMessage = errorData.message;
+            } catch (jsonError) {
+              // ✅ FIX ISSUE-9: Log JSON parsing failures for debugging
+              // Server may have returned non-JSON error (HTML, plain text)
+              // This is expected for some error responses, proceed with HTTP status
+              if (process.env.NODE_ENV !== 'test') {
+                console.warn(
+                  `[A2AClient] Failed to parse error response as JSON for task ${taskId}:`,
+                  jsonError instanceof Error ? jsonError.message : String(jsonError)
+                );
+              }
+            }
+            throw createError(ErrorCodes.HTTP_ERROR, response.status, errorMessage);
           }
         },
         {
@@ -660,8 +694,16 @@ export class A2AClient {
         if (errorData.error) {
           errorMessage = errorData.error.message;
         }
-      } catch {
-        // Ignore JSON parsing error
+      } catch (jsonError) {
+        // ✅ FIX ISSUE-9: Log JSON parsing failures for debugging
+        // Server may have returned non-JSON error (HTML, plain text)
+        // This is expected for some error responses, proceed with HTTP status
+        if (process.env.NODE_ENV !== 'test') {
+          console.warn(
+            `[A2AClient] Failed to parse error response as JSON (HTTP ${response.status}):`,
+            jsonError instanceof Error ? jsonError.message : String(jsonError)
+          );
+        }
       }
       throw createError(ErrorCodes.HTTP_ERROR, response.status, errorMessage);
     }

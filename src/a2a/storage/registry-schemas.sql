@@ -21,6 +21,7 @@ CREATE INDEX IF NOT EXISTS idx_agents_last_heartbeat ON agents(last_heartbeat);
 CREATE INDEX IF NOT EXISTS idx_agents_port ON agents(port);
 
 -- Migration: Add process_pid column if it doesn't exist (for existing databases)
--- SQLite doesn't support IF NOT EXISTS for ALTER COLUMN, so we use a workaround
--- This will fail silently if the column already exists (which is fine)
+-- SQLite doesn't support IF NOT EXISTS for ALTER TABLE ADD COLUMN.
+-- The AgentRegistry.initializeSchema() method checks PRAGMA table_info()
+-- before executing this statement to avoid duplicate column errors.
 ALTER TABLE agents ADD COLUMN process_pid INTEGER;

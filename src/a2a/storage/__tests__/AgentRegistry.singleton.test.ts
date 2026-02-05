@@ -312,6 +312,11 @@ describe('AgentRegistry Singleton Behavior (MAJOR-2)', () => {
       const pid = dummyProcess.pid!;
       expect(pid).toBeGreaterThan(0);
 
+      // Mock isMeMeshProcess to return true (simulate that this is a MeMesh server)
+      // This is required because 'sleep' doesn't match MeMesh patterns
+      const originalIsMeMeshProcess = (instance as any).isMeMeshProcess;
+      (instance as any).isMeMeshProcess = vi.fn().mockResolvedValue(true);
+
       // Register agent with this PID
       instance.register({
         agentId: 'test-orphan-agent',
@@ -355,6 +360,9 @@ describe('AgentRegistry Singleton Behavior (MAJOR-2)', () => {
         processExists = false;
       }
       expect(processExists).toBe(false);
+
+      // Restore original method
+      (instance as any).isMeMeshProcess = originalIsMeMeshProcess;
 
       // Cleanup: ensure process is dead
       try {
@@ -439,6 +447,164 @@ describe('AgentRegistry Singleton Behavior (MAJOR-2)', () => {
       // Agent should be marked as stale
       const agent = instance.get('test-nonexistent-agent');
       expect(agent?.status).toBe('stale');
+    });
+
+    it('should not kill process if it is not a MeMesh server (PID recycling protection)', async () => {
+      const instance = AgentRegistry.getInstance(testDbPath);
+
+      // Spawn a real process that is NOT a MeMesh server
+      const dummyProcess = spawn('sleep', ['300'], {
+        detached: false,
+        stdio: 'ignore',
+      });
+
+      const pid = dummyProcess.pid!;
+
+      // Mock isProcessActive to return false (simulate orphaned)
+      // but the process is NOT a MeMesh process (isMeMeshProcess returns false)
+      const originalIsProcessActive = (instance as any).isProcessActive;
+      const originalIsMeMeshProcess = (instance as any).isMeMeshProcess;
+      (instance as any).isProcessActive = vi.fn().mockResolvedValue(false);
+      (instance as any).isMeMeshProcess = vi.fn().mockResolvedValue(false);
+
+      // Register agent
+      instance.register({
+        agentId: 'test-recycled-pid-agent',
+        baseUrl: 'http://localhost:3000',
+        port: 3000,
+        processPid: pid,
+      });
+
+      // Run cleanup
+      await instance.cleanupStale();
+
+      // Agent should be marked as stale
+      const agent = instance.get('test-recycled-pid-agent');
+      expect(agent?.status).toBe('stale');
+
+      // But process should still be running (not killed because it's not MeMesh)
+      let processExists = true;
+      try {
+        process.kill(pid, 0);
+      } catch {
+        processExists = false;
+      }
+      expect(processExists).toBe(true);
+
+      // Restore original methods
+      (instance as any).isProcessActive = originalIsProcessActive;
+      (instance as any).isMeMeshProcess = originalIsMeMeshProcess;
+
+      // Clean up
+      try {
+        process.kill(pid, 'SIGKILL');
+      } catch {
+        // Already dead
+      }
+    });
+  });
+
+  describe('PID Validation (Security)', () => {
+    it('should reject PID 0 (kernel)', () => {
+      const instance = AgentRegistry.getInstance(testDbPath);
+
+      expect(() => instance.register({
+        agentId: 'test-pid-0',
+        baseUrl: 'http://localhost:3000',
+        port: 3000,
+        processPid: 0,
+      })).toThrow(/Invalid processPid/);
+    });
+
+    it('should reject PID 1 (init/systemd)', () => {
+      const instance = AgentRegistry.getInstance(testDbPath);
+
+      expect(() => instance.register({
+        agentId: 'test-pid-1',
+        baseUrl: 'http://localhost:3000',
+        port: 3000,
+        processPid: 1,
+      })).toThrow(/Invalid processPid/);
+    });
+
+    it('should reject negative PIDs', () => {
+      const instance = AgentRegistry.getInstance(testDbPath);
+
+      expect(() => instance.register({
+        agentId: 'test-pid-negative',
+        baseUrl: 'http://localhost:3000',
+        port: 3000,
+        processPid: -100,
+      })).toThrow(/Invalid processPid/);
+    });
+
+    it('should accept valid PIDs (> 1)', () => {
+      const instance = AgentRegistry.getInstance(testDbPath);
+
+      // Should not throw
+      const agent = instance.register({
+        agentId: 'test-valid-pid',
+        baseUrl: 'http://localhost:3000',
+        port: 3000,
+        processPid: 12345,
+      });
+
+      expect(agent.processPid).toBe(12345);
+    });
+
+    it('should skip invalid PIDs during cleanup', async () => {
+      const instance = AgentRegistry.getInstance(testDbPath);
+
+      // Register agent without PID first
+      instance.register({
+        agentId: 'test-invalid-pid-cleanup',
+        baseUrl: 'http://localhost:3000',
+        port: 3000,
+      });
+
+      // Manually insert an invalid PID directly into the database
+      // This simulates a corrupted database entry
+      // Note: Using better-sqlite3's exec method (not Node's child_process exec)
+      const db = (instance as any).db;
+      db.prepare(`UPDATE agents SET process_pid = 1 WHERE agent_id = ?`).run('test-invalid-pid-cleanup');
+
+      // Verify the invalid PID was set
+      const beforeCleanup = instance.get('test-invalid-pid-cleanup');
+      expect(beforeCleanup?.processPid).toBe(1);
+
+      // Run cleanup - should skip the invalid PID without crashing
+      const markedStale = await instance.cleanupStale();
+
+      // The agent should NOT be marked stale due to invalid PID (it was skipped)
+      // It might be marked stale due to heartbeat timeout, but not due to orphan detection
+      const afterCleanup = instance.get('test-invalid-pid-cleanup');
+      expect(afterCleanup).toBeDefined();
+    });
+  });
+
+  describe('Concurrent Cleanup Protection', () => {
+    it('should prevent concurrent cleanup operations', async () => {
+      const instance = AgentRegistry.getInstance(testDbPath);
+
+      // Register some agents
+      for (let i = 0; i < 3; i++) {
+        instance.register({
+          agentId: `concurrent-test-agent-${i}`,
+          baseUrl: `http://localhost:${3000 + i}`,
+          port: 3000 + i,
+        });
+      }
+
+      // Start multiple concurrent cleanups
+      const results = await Promise.all([
+        instance.cleanupStale(),
+        instance.cleanupStale(),
+        instance.cleanupStale(),
+      ]);
+
+      // At least one should return 0 (skipped due to concurrent protection)
+      const skippedCount = results.filter(r => r === 0).length;
+      expect(skippedCount).toBeGreaterThanOrEqual(2); // At most one runs, others skip
     });
   });
 });

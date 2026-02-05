@@ -244,7 +244,14 @@ export class AgentRegistry {
           const tableMatch = trimmed.match(/ALTER\s+TABLE\s+(\w+)/i);
           const tableName = tableMatch ? tableMatch[1] : 'agents';
 
+          // SECURITY: Validate table name against allowlist to prevent SQL injection
+          if (!AgentRegistry.VALID_TABLE_NAMES.includes(tableName.toLowerCase())) {
+            logger.warn('[AgentRegistry] Skipping migration for unknown table', { tableName });
+            continue;
+          }
+
           // Check if column already exists using PRAGMA
+          // Safe because tableName is validated against allowlist
           const columns = this.db
             .prepare(`PRAGMA table_info(${tableName})`)
             .all() as Array<{ name: string }>;
@@ -271,6 +278,13 @@ export class AgentRegistry {
 
   register(params: RegisterAgentParams): AgentRegistryEntry {
     const now = new Date().toISOString();
+
+    // SECURITY: Validate PID if provided to prevent killing critical system processes
+    if (params.processPid !== undefined && !AgentRegistry.isValidPid(params.processPid)) {
+      throw new Error(
+        `Invalid processPid: ${params.processPid}. PID must be an integer greater than 1.`
+      );
+    }
 
     const existing = this.get(params.agentId);
 
@@ -392,6 +406,68 @@ export class AgentRegistry {
   ];
 
   /**
+   * Patterns to identify MeMesh server processes (for safe process killing)
+   * Used to verify a process is actually a MeMesh server before terminating it
+   */
+  private static readonly MEMESH_PROCESS_PATTERNS = [
+    /server-bootstrap/i,
+    /memesh/i,
+    /mcp.*server/i,
+    /claude-code-buddy/i,
+  ];
+
+  /**
+   * Valid table names for schema migrations (SQL injection prevention)
+   */
+  private static readonly VALID_TABLE_NAMES = ['agents'];
+
+  /**
+   * Verify that a process is actually a MeMesh server before killing it.
+   * This prevents accidentally killing unrelated processes due to PID recycling.
+   *
+   * @param pid - Process ID to verify
+   * @returns true if process command line matches MeMesh server patterns
+   */
+  private async isMeMeshProcess(pid: number): Promise<boolean> {
+    const cmdline = await this.getProcessCommandLine(pid);
+    if (!cmdline) return false;
+
+    return AgentRegistry.MEMESH_PROCESS_PATTERNS.some((pattern) => pattern.test(cmdline));
+  }
+
+  /**
+   * Get the command line of a process by PID
+   * @returns Command line string or null if process doesn't exist
+   */
+  private async getProcessCommandLine(pid: number): Promise<string | null> {
+    try {
+      if (process.platform === 'win32') {
+        const { stdout } = await execFileAsync('wmic', [
+          'process', 'where', `ProcessId=${pid}`, 'get', 'CommandLine', '/value',
+        ]);
+        return stdout || null;
+      }
+
+      // macOS / Linux: ps -p <pid> -o args=
+      const { stdout } = await execFileAsync('ps', ['-p', String(pid), '-o', 'args=']);
+      return stdout?.trim() || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Validate a PID value for safety
+   * @param pid - Process ID to validate
+   * @returns true if PID is valid and safe to use
+   */
+  private static isValidPid(pid: number): boolean {
+    // PID must be a positive integer greater than 1
+    // PID 0 is the kernel, PID 1 is init/systemd - never kill these
+    return Number.isInteger(pid) && pid > 1;
+  }
+
+  /**
    * Check if a process is active (has a controlling terminal)
    * Active session = TTY is ttys00X (macOS) or pts/X (Linux)
    * Orphaned process = TTY is ?? (no controlling terminal)
@@ -400,48 +476,44 @@ export class AgentRegistry {
    * @returns true if process is active (has TTY), false if orphaned or doesn't exist
    */
   private async isProcessActive(pid: number): Promise<boolean> {
-    // Windows doesn't have the same orphan process concept
-    // On Windows, processes are managed differently and don't have TTY in the same way
+    // Windows: processes don't have TTY in the same way, just check if process exists
     if (process.platform === 'win32') {
-      try {
-        // On Windows, just check if process exists using tasklist
-        const { stdout } = await execFileAsync('tasklist', [
-          '/FI',
-          `PID eq ${pid}`,
-          '/NH',
-          '/FO',
-          'CSV',
-        ]);
-        // If process exists, tasklist returns a line with the process info
-        return stdout.includes(String(pid));
-      } catch {
-        return false;
-      }
+      return this.isWindowsProcessRunning(pid);
     }
 
-    // macOS / Linux
-    try {
-      // Use ps to check TTY
-      // -p <pid>: select process by PID
-      // -o tty=: output TTY with no headers
-      const { stdout } = await execFileAsync('ps', ['-p', String(pid), '-o', 'tty=']);
+    // macOS / Linux: check if process has an active TTY
+    return this.hasActiveTty(pid);
+  }
 
-      if (!stdout) {
-        // Process doesn't exist
-        return false;
-      }
+  /**
+   * Check if a Windows process is running
+   */
+  private async isWindowsProcessRunning(pid: number): Promise<boolean> {
+    try {
+      const { stdout } = await execFileAsync('tasklist', [
+        '/FI', `PID eq ${pid}`, '/NH', '/FO', 'CSV',
+      ]);
+      return stdout.includes(String(pid));
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Check if a Unix/Linux process has an active TTY (not orphaned)
+   */
+  private async hasActiveTty(pid: number): Promise<boolean> {
+    try {
+      const { stdout } = await execFileAsync('ps', ['-p', String(pid), '-o', 'tty=']);
+      if (!stdout) return false;
 
       const tty = stdout.trim();
 
-      // Check if TTY matches any active terminal pattern
-      // Orphaned processes have TTY = ?? or empty
-      if (tty === '??' || tty === '' || tty === '-') {
-        return false;
-      }
+      // Orphaned processes have TTY = ??, empty, or -
+      if (tty === '??' || tty === '' || tty === '-') return false;
 
       return AgentRegistry.ACTIVE_TTY_PATTERNS.some((pattern) => pattern.test(tty));
     } catch (error) {
-      // Process doesn't exist or ps command failed
       logger.warn('[AgentRegistry] Failed to check process TTY', {
         pid,
         error: error instanceof Error ? error.message : String(error),
@@ -473,47 +545,7 @@ export class AgentRegistry {
     const now = new Date().toISOString();
 
     // Step 1: Mark agents with orphaned processes (no TTY) as stale
-    let orphanCount = 0;
-    const allAgents = this.listAll();
-    for (const agent of allAgents) {
-      if (agent.status !== 'active' && agent.status !== 'inactive') {
-        continue; // Skip already-stale agents
-      }
-
-      if (agent.processPid) {
-        const isActive = await this.isProcessActive(agent.processPid);
-        if (!isActive) {
-          // Process doesn't have TTY (orphaned) or doesn't exist
-          // Kill the orphaned process first
-          try {
-            process.kill(agent.processPid, 'SIGTERM');
-            logger.info('[AgentRegistry] Killed orphaned process', {
-              agentId: agent.agentId,
-              processPid: agent.processPid,
-            });
-          } catch (killError) {
-            // Process might already be dead, which is fine
-            logger.debug('[AgentRegistry] Failed to kill orphaned process (may already be dead)', {
-              agentId: agent.agentId,
-              processPid: agent.processPid,
-              error: killError instanceof Error ? killError.message : String(killError),
-            });
-          }
-
-          // Mark as stale in database
-          const stmt = this.getStatement(
-            'markOrphanStale',
-            "UPDATE agents SET status = 'stale', updated_at = ? WHERE agent_id = ?"
-          );
-          stmt.run(now, agent.agentId);
-          orphanCount++;
-          logger.info('[AgentRegistry] Marked orphaned agent as stale (no TTY)', {
-            agentId: agent.agentId,
-            processPid: agent.processPid,
-          });
-        }
-      }
-    }
+    const orphanCount = await this.cleanupOrphanedAgents(now);
 
     // Step 2: Mark agents with old heartbeats as stale (original behavior)
     const stmt = this.getStatement(
@@ -523,6 +555,90 @@ export class AgentRegistry {
 
     const result = stmt.run(now, threshold);
     return result.changes + orphanCount;
+  }
+
+  /**
+   * Clean up agents with orphaned processes (no TTY or dead process)
+   * @returns Number of agents marked as stale
+   */
+  private async cleanupOrphanedAgents(now: string): Promise<number> {
+    let orphanCount = 0;
+    const allAgents = this.listAll();
+
+    for (const agent of allAgents) {
+      // Skip agents that are already stale
+      if (agent.status !== 'active' && agent.status !== 'inactive') continue;
+
+      // Skip agents without a PID
+      if (!agent.processPid) continue;
+
+      // SECURITY: Validate PID before any operations
+      if (!AgentRegistry.isValidPid(agent.processPid)) {
+        logger.warn('[AgentRegistry] Skipping invalid PID in cleanup', {
+          agentId: agent.agentId,
+          processPid: agent.processPid,
+        });
+        continue;
+      }
+
+      // Skip if process is still active (has TTY)
+      if (await this.isProcessActive(agent.processPid)) continue;
+
+      // Process is orphaned - attempt to kill if it's a MeMesh process
+      await this.tryKillOrphanedProcess(agent.agentId, agent.processPid);
+
+      // Mark as stale in database regardless (the MeMesh process is gone either way)
+      this.markAgentStale(agent.agentId, agent.processPid, now);
+      orphanCount++;
+    }
+
+    return orphanCount;
+  }
+
+  /**
+   * Attempt to kill an orphaned process if it's a MeMesh server
+   * SECURITY: Verifies process identity before killing to prevent PID recycling attacks
+   */
+  private async tryKillOrphanedProcess(agentId: string, pid: number): Promise<void> {
+    const isMeMesh = await this.isMeMeshProcess(pid);
+
+    if (!isMeMesh) {
+      logger.warn('[AgentRegistry] PID no longer belongs to MeMesh server, not killing', {
+        agentId,
+        processPid: pid,
+      });
+      return;
+    }
+
+    try {
+      process.kill(pid, 'SIGTERM');
+      logger.info('[AgentRegistry] Killed orphaned MeMesh process', {
+        agentId,
+        processPid: pid,
+      });
+    } catch (error) {
+      // Process might already be dead, which is fine
+      logger.debug('[AgentRegistry] Failed to kill orphaned process (may already be dead)', {
+        agentId,
+        processPid: pid,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  /**
+   * Mark an agent as stale in the database
+   */
+  private markAgentStale(agentId: string, processPid: number, now: string): void {
+    const stmt = this.getStatement(
+      'markOrphanStale',
+      "UPDATE agents SET status = 'stale', updated_at = ? WHERE agent_id = ?"
+    );
+    stmt.run(now, agentId);
+    logger.info('[AgentRegistry] Marked orphaned agent as stale (no TTY)', {
+      agentId,
+      processPid,
+    });
   }
 
   deleteStale(): number {
@@ -642,6 +758,10 @@ export function startAgentRegistryCleanup(): void {
       });
     });
   }, intervalMs);
+
+  // Allow Node.js process to exit even if this timer is still running
+  // This prevents the cleanup timer from blocking graceful shutdown
+  cleanupTimer.unref();
 
   logger.info('[Agent Registry] Periodic cleanup started', {
     intervalMs,

@@ -30,29 +30,58 @@ export class TaskBoard {
    * Initialize TaskBoard storage
    *
    * @param dbPath - Optional custom database path (for testing). Defaults to ~/.claude-code-buddy/task-board.db
+   * @throws Error if initialization fails or path is invalid
    */
   constructor(dbPath?: string) {
-    // Default path: ~/.claude-code-buddy/task-board.db
-    const defaultPath = path.join(os.homedir(), '.claude-code-buddy', 'task-board.db');
-    const finalPath = dbPath || defaultPath;
+    try {
+      // Validate dbPath if provided
+      if (dbPath !== undefined) {
+        if (typeof dbPath !== 'string' || dbPath.trim() === '') {
+          throw new Error('dbPath must be a non-empty string');
+        }
+        const normalized = path.normalize(dbPath);
+        if (normalized.includes('..')) {
+          throw new Error('Path traversal not allowed in dbPath');
+        }
+      }
 
-    // Ensure directory exists
-    const dir = path.dirname(finalPath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+      // Default path: ~/.claude-code-buddy/task-board.db
+      const defaultPath = path.join(os.homedir(), '.claude-code-buddy', 'task-board.db');
+      const finalPath = dbPath || defaultPath;
+
+      // Ensure directory exists (fix TOCTOU race)
+      const dir = path.dirname(finalPath);
+      try {
+        fs.mkdirSync(dir, { recursive: true });
+      } catch (err: any) {
+        if (err.code !== 'EEXIST') {
+          throw new Error(`Failed to create directory ${dir}: ${err.message}`);
+        }
+      }
+
+      // Open database
+      this.db = new Database(finalPath);
+
+      // Enable WAL mode for concurrent access
+      this.db.pragma('journal_mode = WAL');
+
+      // Enable foreign keys
+      this.db.pragma('foreign_keys = ON');
+
+      // Initialize schema
+      this.initSchema();
+    } catch (error) {
+      // Clean up if initialization fails
+      if (this.db) {
+        try {
+          this.db.close();
+        } catch {
+          // Ignore close errors during cleanup
+        }
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to initialize TaskBoard: ${errorMessage}`);
     }
-
-    // Open database
-    this.db = new Database(finalPath);
-
-    // Enable WAL mode for concurrent access
-    this.db.pragma('journal_mode = WAL');
-
-    // Enable foreign keys
-    this.db.pragma('foreign_keys = ON');
-
-    // Initialize schema
-    this.initSchema();
   }
 
   /**
@@ -162,8 +191,15 @@ export class TaskBoard {
    *
    * @param tableName - Name of the table
    * @returns Array of column information
+   * @throws Error if table name is invalid (SQL injection protection)
    */
   getTableSchema(tableName: string): Array<{ name: string; type: string }> {
+    // Whitelist validation to prevent SQL injection
+    const validTables = ['tasks', 'task_dependencies', 'agents', 'task_history'];
+    if (!validTables.includes(tableName)) {
+      throw new Error(`Invalid table name: ${tableName}`);
+    }
+
     const result = this.db.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{
       cid: number;
       name: string;
@@ -180,9 +216,11 @@ export class TaskBoard {
   }
 
   /**
-   * Close database connection
+   * Close database connection (idempotent)
    */
   close(): void {
-    this.db.close();
+    if (this.db && this.db.open) {
+      this.db.close();
+    }
   }
 }

@@ -147,4 +147,133 @@ describe('TaskBoard', () => {
       expect(timestampCol?.type).toBe('INTEGER');
     });
   });
+
+  describe('Constraint Enforcement', () => {
+    it('should enforce foreign key on task_dependencies', () => {
+      const db = (taskBoard as any).db;
+
+      expect(() => {
+        db.prepare('INSERT INTO task_dependencies (task_id, blocks) VALUES (?, ?)').run(
+          'non-existent',
+          'task-1'
+        );
+      }).toThrow(/FOREIGN KEY constraint failed/);
+    });
+
+    it('should enforce status CHECK constraint', () => {
+      const db = (taskBoard as any).db;
+
+      expect(() => {
+        db.prepare(`
+          INSERT INTO tasks (id, subject, status, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?)
+        `).run('task-1', 'Test', 'invalid_status', Date.now(), Date.now());
+      }).toThrow(/CHECK constraint failed/);
+    });
+
+    it('should CASCADE delete dependencies when task deleted', () => {
+      const db = (taskBoard as any).db;
+      const now = Date.now();
+
+      // Insert tasks
+      db.prepare('INSERT INTO tasks (id, subject, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?)').run(
+        'task-1',
+        'T1',
+        'pending',
+        now,
+        now
+      );
+      db.prepare('INSERT INTO tasks (id, subject, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?)').run(
+        'task-2',
+        'T2',
+        'pending',
+        now,
+        now
+      );
+
+      // Insert dependency
+      db.prepare('INSERT INTO task_dependencies (task_id, blocks) VALUES (?, ?)').run('task-1', 'task-2');
+
+      // Verify dependency exists
+      let deps = db.prepare('SELECT * FROM task_dependencies WHERE task_id = ?').all('task-1');
+      expect(deps).toHaveLength(1);
+
+      // Delete task-1
+      db.prepare('DELETE FROM tasks WHERE id = ?').run('task-1');
+
+      // Verify dependency deleted (CASCADE)
+      deps = db.prepare('SELECT * FROM task_dependencies WHERE task_id = ?').all('task-1');
+      expect(deps).toHaveLength(0);
+    });
+
+    it('should CASCADE delete task_history when task deleted', () => {
+      const db = (taskBoard as any).db;
+      const now = Date.now();
+
+      // Insert task
+      db.prepare('INSERT INTO tasks (id, subject, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?)').run(
+        'task-1',
+        'T1',
+        'pending',
+        now,
+        now
+      );
+
+      // Insert history entry
+      db.prepare(
+        'INSERT INTO task_history (task_id, agent_id, action, old_status, new_status, timestamp) VALUES (?, ?, ?, ?, ?, ?)'
+      ).run('task-1', 'agent-1', 'created', null, 'pending', now);
+
+      // Verify history exists
+      let history = db.prepare('SELECT * FROM task_history WHERE task_id = ?').all('task-1');
+      expect(history).toHaveLength(1);
+
+      // Delete task
+      db.prepare('DELETE FROM tasks WHERE id = ?').run('task-1');
+
+      // Verify history deleted (CASCADE)
+      history = db.prepare('SELECT * FROM task_history WHERE task_id = ?').all('task-1');
+      expect(history).toHaveLength(0);
+    });
+
+    it('should enforce agent status CHECK constraint', () => {
+      const db = (taskBoard as any).db;
+
+      expect(() => {
+        db.prepare(`
+          INSERT INTO agents (agent_id, platform, hostname, username, last_heartbeat, status, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run('agent-1', 'claude-code', 'localhost', 'user', Date.now(), 'invalid_status', Date.now());
+      }).toThrow(/CHECK constraint failed/);
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should throw on invalid table name in getTableSchema', () => {
+      expect(() => taskBoard.getTableSchema('DROP TABLE tasks')).toThrow('Invalid table name');
+    });
+
+    it('should throw on SQL injection attempt in getTableSchema', () => {
+      expect(() => taskBoard.getTableSchema("tasks'; DROP TABLE tasks; --")).toThrow('Invalid table name');
+    });
+
+    it('should throw on path traversal attempt', () => {
+      expect(() => new TaskBoard('../../etc/passwd')).toThrow(/Path traversal not allowed/);
+    });
+
+    it('should throw on empty dbPath', () => {
+      expect(() => new TaskBoard('')).toThrow('dbPath must be a non-empty string');
+    });
+
+    it('should throw on non-string dbPath', () => {
+      expect(() => new TaskBoard('   ')).toThrow('dbPath must be a non-empty string');
+    });
+
+    it('should handle close() being called multiple times (idempotency)', () => {
+      expect(() => {
+        taskBoard.close();
+        taskBoard.close();
+      }).not.toThrow();
+    });
+  });
 });

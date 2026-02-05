@@ -25,6 +25,72 @@ import type { DaemonBootstrap } from './daemon/DaemonBootstrap.js';
 let mcpClientConnected = false;
 
 // ============================================================================
+// Stdin Buffer for Initialization Race Condition Fix
+// ============================================================================
+// Problem: Claude Code sends 'initialize' immediately after spawning the server.
+// During daemon/proxy bootstrap (lock checks, socket setup, etc.), stdin data
+// arrives BEFORE the MCP transport is connected, causing "Method not found" errors.
+//
+// Solution: Pause stdin immediately, buffer data during bootstrap, then replay
+// once the transport is connected.
+// ============================================================================
+
+/** Buffer to store stdin data during initialization */
+const stdinBuffer: Buffer[] = [];
+
+/** Flag to track if stdin buffering is active */
+let stdinBufferingActive = false;
+
+/**
+ * Start buffering stdin data.
+ * Call this IMMEDIATELY when MCP server mode starts, before any async operations.
+ */
+function startStdinBuffering(): void {
+  if (stdinBufferingActive) return;
+  stdinBufferingActive = true;
+
+  // Pause stdin to prevent data loss
+  process.stdin.pause();
+
+  // Buffer any data that arrives
+  const bufferHandler = (chunk: Buffer) => {
+    stdinBuffer.push(chunk);
+  };
+  process.stdin.on('data', bufferHandler);
+
+  // Store handler reference for cleanup
+  (startStdinBuffering as any)._handler = bufferHandler;
+}
+
+/**
+ * Stop buffering and replay buffered data.
+ * Call this AFTER the MCP transport is connected.
+ */
+function stopStdinBufferingAndReplay(): void {
+  if (!stdinBufferingActive) return;
+  stdinBufferingActive = false;
+
+  // Remove our buffer handler
+  const handler = (startStdinBuffering as any)._handler;
+  if (handler) {
+    process.stdin.removeListener('data', handler);
+  }
+
+  // Replay buffered data by unshifting back to the stream
+  // The MCP transport will receive this data when it starts reading
+  if (stdinBuffer.length > 0) {
+    const combined = Buffer.concat(stdinBuffer);
+    stdinBuffer.length = 0; // Clear buffer
+
+    // Unshift the data back to stdin so the transport receives it
+    process.stdin.unshift(combined);
+  }
+
+  // Resume stdin for normal operation
+  process.stdin.resume();
+}
+
+// ============================================================================
 // 🚨 STEP 0: Check if this is a CLI command
 // ============================================================================
 const args = process.argv.slice(2);
@@ -236,6 +302,10 @@ async function bootstrapWithDaemon() {
   // This prevents stdout pollution that breaks JSON-RPC communication
   process.env.MCP_SERVER_MODE = 'true';
 
+  // CRITICAL: Start buffering stdin IMMEDIATELY to prevent data loss during async bootstrap
+  // Claude Code sends 'initialize' right after spawning - we must capture it before any async ops
+  startStdinBuffering();
+
   try {
     const { DaemonBootstrap, isDaemonDisabled } = await import('./daemon/DaemonBootstrap.js');
     const { logger } = await import('../utils/logger.js');
@@ -352,6 +422,10 @@ async function startAsDaemon(bootstrapper: DaemonBootstrap, version: string) {
   // Start socket server
   await socketServer.start();
   logger.info('[Daemon] Socket server started', { path: transport.getPath() });
+
+  // CRITICAL: Stop stdin buffering and replay data BEFORE starting MCP server
+  // This ensures the 'initialize' message reaches the transport
+  stopStdinBufferingAndReplay();
 
   // Also start the MCP server for direct stdio communication (first client)
   await mcpServer.start();
@@ -476,6 +550,10 @@ async function startAsProxy(bootstrapper: DaemonBootstrap) {
     process.exit(0);
   });
 
+  // CRITICAL: Stop stdin buffering and replay data BEFORE starting proxy
+  // This ensures the 'initialize' message reaches the proxy client
+  stopStdinBufferingAndReplay();
+
   // Start proxying stdin/stdout to daemon
   await proxyClient.start();
 
@@ -530,6 +608,11 @@ function startMCPServer() {
 
       // Start MCP server (using async factory method)
       const mcpServer = await ClaudeCodeBuddyMCPServer.create();
+
+      // CRITICAL: Stop stdin buffering and replay data BEFORE starting MCP server
+      // This ensures the 'initialize' message reaches the transport
+      stopStdinBufferingAndReplay();
+
       await mcpServer.start();
 
       // Start A2A server

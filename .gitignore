@@ -339,6 +339,9 @@ MARKETPLACE_SUBMISSION.md
 DEPLOYMENT_CHECKLIST.md
 PRE_RELEASE_CHECKLIST.md
 
+# Exception: Allow API documentation with -improvements suffix
+!docs/api/*-improvements.md
+
 # Internal development standards and checklists
 PLUGIN_DEPLOYMENT_CHECKLIST.md
 INSTALLATION_STANDARD.md

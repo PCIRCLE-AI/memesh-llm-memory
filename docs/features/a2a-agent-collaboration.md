@@ -189,6 +189,85 @@ Latest Message (assistant):
 
 ---
 
+## Task Result Query (Phase 1 Improvement)
+
+Query the execution result of a completed task:
+
+```typescript
+// After task is completed, query the result
+const result = await client.getTaskResult('agent-2', taskId);
+
+if (result.success) {
+  console.log('Result:', result.result);
+  console.log('Duration:', result.durationMs, 'ms');
+} else {
+  console.error('Task failed:', result.error);
+}
+```
+
+**MCP Tool Usage:**
+
+```
+a2a-get-result agent-2 task-123
+```
+
+**Response:**
+```
+✅ Task Execution Result
+
+Task ID: task-123
+State: COMPLETED
+Success: true
+Executed At: 2026-02-05T10:00:00.000Z
+Executed By: agent-2
+Duration: 150 ms
+
+📦 Result:
+{
+  "answer": 4,
+  "calculation": "2 + 2 = 4",
+  "message": "Task completed successfully"
+}
+```
+
+## Task State Machine (Phase 1 Improvement)
+
+Tasks now follow a complete state machine:
+
+```
+SUBMITTED → WORKING → COMPLETED
+                   → FAILED
+                   → TIMEOUT
+           → CANCELED
+```
+
+**State Transitions:**
+- `SUBMITTED`: Initial state when task is created
+- `WORKING`: Agent has started processing the task
+- `COMPLETED`: Task completed successfully
+- `FAILED`: Task failed with error
+- `TIMEOUT`: Task exceeded time limit
+- `CANCELED`: Task was canceled
+
+**Updating Task State:**
+
+```typescript
+// When starting work on a task
+await client.updateTaskState(taskId, 'WORKING');
+
+// When completing successfully
+await client.updateTaskState(taskId, 'COMPLETED', {
+  result: { answer: 4 }
+});
+
+// When failing
+await client.updateTaskState(taskId, 'FAILED', {
+  error: 'Division by zero'
+});
+```
+
+---
+
 ## Architecture
 
 ### Components

@@ -55,6 +55,45 @@ export interface TaskFilter {
 }
 
 /**
+ * Input for registering an agent
+ */
+export interface RegisterAgentInput {
+  agent_id: string;
+  platform: string;
+  hostname: string;
+  username: string;
+  base_url?: string;
+  port?: number;
+  process_pid?: number;
+  skills?: string[];
+}
+
+/**
+ * Agent representation
+ */
+export interface Agent {
+  agent_id: string;
+  platform: string;
+  hostname: string;
+  username: string;
+  base_url: string | null;
+  port: number | null;
+  process_pid: number | null;
+  skills: string | null; // JSON array string
+  last_heartbeat: number;
+  status: 'active' | 'inactive';
+  created_at: number;
+}
+
+/**
+ * Filter options for listing agents
+ */
+export interface AgentFilter {
+  status?: 'active' | 'inactive';
+  platform?: string;
+}
+
+/**
  * Task history entry for audit trail
  */
 export interface TaskHistoryEntry {
@@ -583,6 +622,191 @@ export class TaskBoard {
     `).all(taskId) as TaskHistoryEntry[];
 
     return entries;
+  }
+
+  /**
+   * Register an agent with platform information
+   *
+   * Uses UPSERT (INSERT OR REPLACE) for idempotency - allows agents to re-register
+   * without losing their original created_at timestamp.
+   *
+   * @param agent - Agent registration input
+   * @throws Error if required fields are missing or validation fails
+   */
+  registerAgent(agent: RegisterAgentInput): void {
+    // Validate required fields
+    if (!agent.agent_id || typeof agent.agent_id !== 'string' || agent.agent_id.trim() === '') {
+      throw new Error('agent_id, platform, hostname, and username are required');
+    }
+    if (!agent.platform || typeof agent.platform !== 'string' || agent.platform.trim() === '') {
+      throw new Error('agent_id, platform, hostname, and username are required');
+    }
+    if (!agent.hostname || typeof agent.hostname !== 'string' || agent.hostname.trim() === '') {
+      throw new Error('agent_id, platform, hostname, and username are required');
+    }
+    if (!agent.username || typeof agent.username !== 'string' || agent.username.trim() === '') {
+      throw new Error('agent_id, platform, hostname, and username are required');
+    }
+
+    // Serialize skills array to JSON string
+    const skills = agent.skills ? JSON.stringify(agent.skills) : null;
+
+    // UPSERT: INSERT OR REPLACE with created_at preservation
+    const now = Date.now();
+    this.db.prepare(`
+      INSERT OR REPLACE INTO agents
+      (agent_id, platform, hostname, username, base_url, port, process_pid, skills, last_heartbeat, status, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active',
+              COALESCE((SELECT created_at FROM agents WHERE agent_id = ?), ?))
+    `).run(
+      agent.agent_id,
+      agent.platform,
+      agent.hostname,
+      agent.username,
+      agent.base_url || null,
+      agent.port || null,
+      agent.process_pid || null,
+      skills,
+      now,
+      agent.agent_id,
+      now
+    );
+  }
+
+  /**
+   * Get an agent by ID
+   *
+   * @param agentId - Agent ID
+   * @returns Agent object or null if not found
+   */
+  getAgent(agentId: string): Agent | null {
+    if (!agentId || agentId.trim() === '') {
+      return null;
+    }
+
+    const stmt = this.db.prepare('SELECT * FROM agents WHERE agent_id = ?');
+    const row = stmt.get(agentId) as any;
+
+    if (!row) {
+      return null;
+    }
+
+    // Return agent with proper typing
+    return {
+      agent_id: row.agent_id,
+      platform: row.platform,
+      hostname: row.hostname,
+      username: row.username,
+      base_url: row.base_url,
+      port: row.port,
+      process_pid: row.process_pid,
+      skills: row.skills,
+      last_heartbeat: row.last_heartbeat,
+      status: row.status,
+      created_at: row.created_at,
+    };
+  }
+
+  /**
+   * List agents with optional filtering
+   *
+   * Filters use AND logic when multiple criteria provided.
+   * All matches are exact (case-sensitive, no wildcards).
+   * Empty filter {} returns all agents.
+   *
+   * @param filter - Optional filter criteria
+   *   - status: Exact match on agent status ('active' | 'inactive')
+   *   - platform: Exact match on platform name
+   * @returns Array of agents matching all provided criteria (empty array if no matches)
+   *
+   * @example
+   * // Get all active agents
+   * taskBoard.listAgents({ status: 'active' });
+   *
+   * // Get agents for specific platform
+   * taskBoard.listAgents({ platform: 'claude-code' });
+   *
+   * // Combine filters (AND logic)
+   * taskBoard.listAgents({ status: 'active', platform: 'claude-code' });
+   */
+  listAgents(filter?: AgentFilter): Agent[] {
+    let query = 'SELECT * FROM agents WHERE 1=1';
+    const params: any[] = [];
+
+    // Apply filters using parameterized queries
+    if (filter?.status) {
+      query += ' AND status = ?';
+      params.push(filter.status);
+    }
+    if (filter?.platform) {
+      query += ' AND platform = ?';
+      params.push(filter.platform);
+    }
+
+    const stmt = this.db.prepare(query);
+    const rows = stmt.all(...params) as any[];
+
+    // Map rows to Agent objects
+    return rows.map((row) => ({
+      agent_id: row.agent_id,
+      platform: row.platform,
+      hostname: row.hostname,
+      username: row.username,
+      base_url: row.base_url,
+      port: row.port,
+      process_pid: row.process_pid,
+      skills: row.skills,
+      last_heartbeat: row.last_heartbeat,
+      status: row.status,
+      created_at: row.created_at,
+    }));
+  }
+
+  /**
+   * Update agent skills
+   *
+   * @param agentId - Agent ID
+   * @param skills - New skills array
+   * @throws Error if agent not found or validation fails
+   */
+  updateAgentSkills(agentId: string, skills: string[]): void {
+    if (!agentId || agentId.trim() === '') {
+      throw new Error('Agent ID is required');
+    }
+
+    // Check if agent exists
+    const agent = this.getAgent(agentId);
+    if (!agent) {
+      throw new Error(`Agent not found: ${agentId}`);
+    }
+
+    // Serialize skills to JSON
+    const skillsJson = JSON.stringify(skills);
+
+    const stmt = this.db.prepare('UPDATE agents SET skills = ? WHERE agent_id = ?');
+    stmt.run(skillsJson, agentId);
+  }
+
+  /**
+   * Update agent heartbeat timestamp
+   *
+   * @param agentId - Agent ID
+   * @throws Error if agent not found or validation fails
+   */
+  updateAgentHeartbeat(agentId: string): void {
+    if (!agentId || agentId.trim() === '') {
+      throw new Error('Agent ID is required');
+    }
+
+    // Check if agent exists
+    const agent = this.getAgent(agentId);
+    if (!agent) {
+      throw new Error(`Agent not found: ${agentId}`);
+    }
+
+    const now = Date.now();
+    const stmt = this.db.prepare('UPDATE agents SET last_heartbeat = ? WHERE agent_id = ?');
+    stmt.run(now, agentId);
   }
 
   /**

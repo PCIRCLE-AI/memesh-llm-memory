@@ -997,4 +997,350 @@ describe('TaskBoard', () => {
       });
     });
   });
+
+  describe('Agent Registry', () => {
+    describe('registerAgent', () => {
+      it('should register agent with all fields', () => {
+        const beforeRegister = Date.now();
+        taskBoard.registerAgent({
+          agent_id: 'agent-1',
+          platform: 'claude-code',
+          hostname: 'localhost',
+          username: 'test-user',
+          base_url: 'http://localhost:3000',
+          port: 3000,
+          process_pid: 12345,
+          skills: ['code-review', 'refactoring', 'testing'],
+        });
+        const afterRegister = Date.now();
+
+        const agent = taskBoard.getAgent('agent-1');
+        expect(agent).toBeDefined();
+        expect(agent?.agent_id).toBe('agent-1');
+        expect(agent?.platform).toBe('claude-code');
+        expect(agent?.hostname).toBe('localhost');
+        expect(agent?.username).toBe('test-user');
+        expect(agent?.base_url).toBe('http://localhost:3000');
+        expect(agent?.port).toBe(3000);
+        expect(agent?.process_pid).toBe(12345);
+        expect(agent?.skills).toBe(JSON.stringify(['code-review', 'refactoring', 'testing']));
+        expect(agent?.status).toBe('active');
+        expect(agent?.last_heartbeat).toBeGreaterThanOrEqual(beforeRegister);
+        expect(agent?.last_heartbeat).toBeLessThanOrEqual(afterRegister);
+        expect(agent?.created_at).toBeGreaterThanOrEqual(beforeRegister);
+        expect(agent?.created_at).toBeLessThanOrEqual(afterRegister);
+      });
+
+      it('should register agent with minimal fields (only required)', () => {
+        taskBoard.registerAgent({
+          agent_id: 'agent-minimal',
+          platform: 'mcp-server',
+          hostname: 'server1',
+          username: 'user1',
+        });
+
+        const agent = taskBoard.getAgent('agent-minimal');
+        expect(agent).toBeDefined();
+        expect(agent?.agent_id).toBe('agent-minimal');
+        expect(agent?.platform).toBe('mcp-server');
+        expect(agent?.hostname).toBe('server1');
+        expect(agent?.username).toBe('user1');
+        expect(agent?.base_url).toBeNull();
+        expect(agent?.port).toBeNull();
+        expect(agent?.process_pid).toBeNull();
+        expect(agent?.skills).toBeNull();
+        expect(agent?.status).toBe('active');
+      });
+
+      it('should upsert agent on re-registration (preserving created_at)', async () => {
+        // First registration
+        taskBoard.registerAgent({
+          agent_id: 'agent-upsert',
+          platform: 'claude-code',
+          hostname: 'host1',
+          username: 'user1',
+          skills: ['skill1'],
+        });
+
+        const firstAgent = taskBoard.getAgent('agent-upsert');
+        const originalCreatedAt = firstAgent?.created_at;
+        const originalHeartbeat = firstAgent?.last_heartbeat;
+
+        // Wait to ensure different timestamps
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        // Re-register with updated info
+        taskBoard.registerAgent({
+          agent_id: 'agent-upsert',
+          platform: 'claude-code-v2',
+          hostname: 'host2',
+          username: 'user2',
+          skills: ['skill2', 'skill3'],
+        });
+
+        const secondAgent = taskBoard.getAgent('agent-upsert');
+        expect(secondAgent?.platform).toBe('claude-code-v2');
+        expect(secondAgent?.hostname).toBe('host2');
+        expect(secondAgent?.username).toBe('user2');
+        expect(secondAgent?.skills).toBe(JSON.stringify(['skill2', 'skill3']));
+        expect(secondAgent?.created_at).toBe(originalCreatedAt); // PRESERVED
+        expect(secondAgent?.last_heartbeat).toBeGreaterThan(originalHeartbeat!); // UPDATED
+      });
+
+      it('should throw on missing agent_id', () => {
+        expect(() =>
+          taskBoard.registerAgent({
+            agent_id: '',
+            platform: 'claude-code',
+            hostname: 'localhost',
+            username: 'user',
+          })
+        ).toThrow(/agent_id.*required/);
+      });
+
+      it('should throw on missing platform', () => {
+        expect(() =>
+          taskBoard.registerAgent({
+            agent_id: 'agent-1',
+            platform: '',
+            hostname: 'localhost',
+            username: 'user',
+          })
+        ).toThrow(/platform.*required/);
+      });
+
+      it('should throw on missing hostname', () => {
+        expect(() =>
+          taskBoard.registerAgent({
+            agent_id: 'agent-1',
+            platform: 'claude-code',
+            hostname: '',
+            username: 'user',
+          })
+        ).toThrow(/hostname.*required/);
+      });
+
+      it('should throw on missing username', () => {
+        expect(() =>
+          taskBoard.registerAgent({
+            agent_id: 'agent-1',
+            platform: 'claude-code',
+            hostname: 'localhost',
+            username: '',
+          })
+        ).toThrow(/username.*required/);
+      });
+
+      it('should serialize skills to JSON correctly', () => {
+        taskBoard.registerAgent({
+          agent_id: 'agent-skills',
+          platform: 'claude-code',
+          hostname: 'localhost',
+          username: 'user',
+          skills: ['skill-a', 'skill-b', 'skill-c'],
+        });
+
+        const agent = taskBoard.getAgent('agent-skills');
+        expect(agent?.skills).toBe(JSON.stringify(['skill-a', 'skill-b', 'skill-c']));
+
+        // Verify it's valid JSON
+        const parsed = JSON.parse(agent!.skills!);
+        expect(parsed).toEqual(['skill-a', 'skill-b', 'skill-c']);
+      });
+    });
+
+    describe('getAgent', () => {
+      it('should return existing agent', () => {
+        taskBoard.registerAgent({
+          agent_id: 'agent-get',
+          platform: 'claude-code',
+          hostname: 'localhost',
+          username: 'user',
+        });
+
+        const agent = taskBoard.getAgent('agent-get');
+        expect(agent).toBeDefined();
+        expect(agent?.agent_id).toBe('agent-get');
+      });
+
+      it('should return null for non-existent agent', () => {
+        const agent = taskBoard.getAgent('non-existent-agent');
+        expect(agent).toBeNull();
+      });
+
+      it('should parse skills JSON correctly', () => {
+        taskBoard.registerAgent({
+          agent_id: 'agent-parse',
+          platform: 'claude-code',
+          hostname: 'localhost',
+          username: 'user',
+          skills: ['a', 'b'],
+        });
+
+        const agent = taskBoard.getAgent('agent-parse');
+        expect(agent?.skills).toBe(JSON.stringify(['a', 'b']));
+      });
+    });
+
+    describe('listAgents', () => {
+      beforeEach(() => {
+        // Create test agents
+        taskBoard.registerAgent({
+          agent_id: 'agent-1',
+          platform: 'claude-code',
+          hostname: 'host1',
+          username: 'user1',
+        });
+        taskBoard.registerAgent({
+          agent_id: 'agent-2',
+          platform: 'claude-code',
+          hostname: 'host2',
+          username: 'user2',
+        });
+        taskBoard.registerAgent({
+          agent_id: 'agent-3',
+          platform: 'mcp-server',
+          hostname: 'host3',
+          username: 'user3',
+        });
+
+        // Manually set one agent to inactive for filtering tests
+        const db = (taskBoard as any).db;
+        db.prepare("UPDATE agents SET status = 'inactive' WHERE agent_id = ?").run('agent-2');
+      });
+
+      it('should list all agents when no filter provided', () => {
+        const agents = taskBoard.listAgents();
+        expect(agents).toHaveLength(3);
+      });
+
+      it('should filter agents by status', () => {
+        const active = taskBoard.listAgents({ status: 'active' });
+        expect(active).toHaveLength(2);
+        expect(active.every((a) => a.status === 'active')).toBe(true);
+
+        const inactive = taskBoard.listAgents({ status: 'inactive' });
+        expect(inactive).toHaveLength(1);
+        expect(inactive[0].agent_id).toBe('agent-2');
+      });
+
+      it('should filter agents by platform', () => {
+        const claudeAgents = taskBoard.listAgents({ platform: 'claude-code' });
+        expect(claudeAgents).toHaveLength(2);
+        expect(claudeAgents.every((a) => a.platform === 'claude-code')).toBe(true);
+
+        const mcpAgents = taskBoard.listAgents({ platform: 'mcp-server' });
+        expect(mcpAgents).toHaveLength(1);
+        expect(mcpAgents[0].agent_id).toBe('agent-3');
+      });
+
+      it('should filter agents by multiple criteria', () => {
+        const filtered = taskBoard.listAgents({
+          status: 'active',
+          platform: 'claude-code',
+        });
+        expect(filtered).toHaveLength(1);
+        expect(filtered[0].agent_id).toBe('agent-1');
+        expect(filtered[0].status).toBe('active');
+        expect(filtered[0].platform).toBe('claude-code');
+      });
+
+      it('should return empty array when no agents match filter', () => {
+        const agents = taskBoard.listAgents({ platform: 'non-existent-platform' });
+        expect(agents).toHaveLength(0);
+      });
+
+      it('should parse skills for all agents', () => {
+        taskBoard.registerAgent({
+          agent_id: 'agent-with-skills',
+          platform: 'test',
+          hostname: 'host',
+          username: 'user',
+          skills: ['s1', 's2'],
+        });
+
+        const agents = taskBoard.listAgents({ platform: 'test' });
+        expect(agents).toHaveLength(1);
+        expect(agents[0].skills).toBe(JSON.stringify(['s1', 's2']));
+      });
+    });
+
+    describe('updateAgentSkills', () => {
+      it('should update agent skills', () => {
+        taskBoard.registerAgent({
+          agent_id: 'agent-update-skills',
+          platform: 'claude-code',
+          hostname: 'localhost',
+          username: 'user',
+          skills: ['old-skill'],
+        });
+
+        taskBoard.updateAgentSkills('agent-update-skills', ['new-skill-1', 'new-skill-2']);
+
+        const agent = taskBoard.getAgent('agent-update-skills');
+        expect(agent?.skills).toBe(JSON.stringify(['new-skill-1', 'new-skill-2']));
+      });
+
+      it('should allow updating skills to empty array', () => {
+        taskBoard.registerAgent({
+          agent_id: 'agent-clear-skills',
+          platform: 'claude-code',
+          hostname: 'localhost',
+          username: 'user',
+          skills: ['skill1', 'skill2'],
+        });
+
+        taskBoard.updateAgentSkills('agent-clear-skills', []);
+
+        const agent = taskBoard.getAgent('agent-clear-skills');
+        expect(agent?.skills).toBe(JSON.stringify([]));
+      });
+
+      it('should throw on non-existent agent', () => {
+        expect(() => {
+          taskBoard.updateAgentSkills('non-existent', ['skill']);
+        }).toThrow(/Agent not found/);
+      });
+
+      it('should throw on empty agent_id', () => {
+        expect(() => {
+          taskBoard.updateAgentSkills('', ['skill']);
+        }).toThrow(/Agent ID is required/);
+      });
+    });
+
+    describe('updateAgentHeartbeat', () => {
+      it('should update agent heartbeat timestamp', async () => {
+        taskBoard.registerAgent({
+          agent_id: 'agent-heartbeat',
+          platform: 'claude-code',
+          hostname: 'localhost',
+          username: 'user',
+        });
+
+        const before = taskBoard.getAgent('agent-heartbeat');
+        const originalHeartbeat = before?.last_heartbeat;
+
+        // Wait to ensure different timestamp
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        taskBoard.updateAgentHeartbeat('agent-heartbeat');
+
+        const after = taskBoard.getAgent('agent-heartbeat');
+        expect(after?.last_heartbeat).toBeGreaterThan(originalHeartbeat!);
+      });
+
+      it('should throw on non-existent agent', () => {
+        expect(() => {
+          taskBoard.updateAgentHeartbeat('non-existent');
+        }).toThrow(/Agent not found/);
+      });
+
+      it('should throw on empty agent_id', () => {
+        expect(() => {
+          taskBoard.updateAgentHeartbeat('');
+        }).toThrow(/Agent ID is required/);
+      });
+    });
+  });
 });

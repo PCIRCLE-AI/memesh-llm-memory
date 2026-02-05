@@ -1,19 +1,20 @@
-# A2A (Agent-to-Agent) Protocol - Phase 1.0
+# A2A (Agent-to-Agent) Protocol - Phase 2.2
 
-**Status**: Phase 1 Complete - Result Query & State Machine
-**Version**: 1.0.0
-**Last Updated**: 2026-02-05
+**Status**: Phase 2.2 - Unified Task Board
+**Version**: 2.2.0
+**Last Updated**: 2026-02-06
 
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
+- [Unified Task Board (Phase 2.2)](#unified-task-board-phase-22)
 - [Quick Start](#quick-start)
 - [Architecture](#architecture)
 - [MCP Tools Reference](#mcp-tools-reference)
 - [Example Workflows](#example-workflows)
-- [Phase 0.5 Limitations](#phase-05-limitations)
+- [Current Limitations](#current-limitations)
 - [Roadmap](#roadmap)
 - [Troubleshooting](#troubleshooting)
 
@@ -48,6 +49,88 @@ A2A is an HTTP-based protocol that allows AI agents to:
 - Scale horizontally by adding more agents
 - Process multiple tasks concurrently
 - Avoid single-agent bottlenecks
+
+---
+
+## Unified Task Board (Phase 2.2)
+
+**NEW in Phase 2.2**: The A2A Protocol now includes a **Unified Task Board** for cross-platform task visibility and collaboration.
+
+### What Changed
+
+| Before (Per-Agent) | After (Unified) |
+|-------------------|-----------------|
+| Separate `a2a-tasks-{agentId}.db` files | Single `task-board.db` |
+| Tasks only visible to owning agent | Tasks visible to ALL agents |
+| No cross-platform collaboration | Full cross-platform support |
+| Random agent IDs per session | Deterministic platform-aware IDs |
+
+### Platform-Aware Agent IDs
+
+Agent IDs are now generated in format: **`hostname-username-platform`**
+
+| Platform | Example Agent ID |
+|----------|-----------------|
+| Claude Code | `macbook-pro-john-claude-code` |
+| ChatGPT | `macbook-pro-john-chatgpt` |
+| Gemini | `macbook-pro-john-gemini` |
+| Cursor | `macbook-pro-john-cursor` |
+| VS Code | `macbook-pro-john-vscode` |
+
+This ensures stable agent identification across sessions - same machine + user + platform always generates the same ID.
+
+### New MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `a2a-board` | View unified task board (Kanban-style) with filtering |
+| `a2a-claim-task` | Claim a pending task for the current agent |
+| `a2a-release-task` | Release a claimed task back to pending |
+| `a2a-find-tasks` | Find tasks matching agent skills |
+| `a2a-set-skills` | Register skills for skill-based task matching |
+
+### Quick Example
+
+```typescript
+// 1. Register your skills
+a2a-set-skills({ skills: ["typescript", "testing"] })
+
+// 2. View available tasks
+a2a-board({ status: "pending" })
+
+// 3. Find tasks matching your skills
+a2a-find-tasks({ skills: ["typescript"], status: "pending" })
+
+// 4. Claim a task
+a2a-claim-task({ taskId: "abc12345-..." })
+
+// 5. Complete work, then release if needed
+a2a-release-task({ taskId: "abc12345-..." })
+```
+
+### Migration from Per-Agent Databases
+
+Existing tasks can be migrated to the unified task board:
+
+```typescript
+import { migrateToUnifiedTaskBoard } from './src/a2a/migration/migrateToUnifiedTaskBoard.js';
+
+// Dry-run to preview
+const preview = migrateToUnifiedTaskBoard({ dryRun: true });
+
+// Actual migration with backup
+const result = migrateToUnifiedTaskBoard({ backup: true });
+```
+
+**State Mapping**:
+- `SUBMITTED` -> `pending`
+- `WORKING` -> `in_progress`
+- `COMPLETED`, `FAILED`, `TIMEOUT` -> `completed`
+- `CANCELED`, `REJECTED` -> `deleted`
+
+**See**: [Unified Task Board Guide](../a2a/UNIFIED_TASK_BOARD.md) for complete documentation.
+
+---
 
 ### Architecture at a Glance
 
@@ -801,6 +884,10 @@ Task state has been updated to FAILED
 
 ## Current Limitations
 
+### ~~Unified Task Board~~ (RESOLVED in Phase 2.2)
+
+Previously, each agent had its own database (`a2a-tasks-{agentId}.db`) and tasks were not visible across agents. This is now **resolved** with the unified `task-board.db`.
+
 ### Simplified Task Execution
 
 **Current Behavior**:
@@ -932,7 +1019,29 @@ Response: "Echo: Analyze API performance
 
 ---
 
-### Phase 2: Event Notifications & Auto-Polling (Next)
+### ✅ Phase 2.2: Unified Task Board (COMPLETED)
+
+**Status**: ✅ Complete (2026-02-06)
+
+**Features Implemented**:
+- ✅ Unified `task-board.db` replacing per-agent databases
+- ✅ Platform-aware Agent ID generation (`hostname-username-platform`)
+- ✅ Cross-platform task visibility (Claude Code, ChatGPT, Gemini, Cursor, VS Code)
+- ✅ New MCP Tools:
+  - `a2a-board` - Kanban-style task board view
+  - `a2a-claim-task` - Atomic task claiming
+  - `a2a-release-task` - Release claimed tasks
+  - `a2a-find-tasks` - Skill-based task discovery
+  - `a2a-set-skills` - Agent skill registration
+- ✅ Migration script from old databases
+- ✅ Task history audit trail
+- ✅ Agent registry with skills
+
+**See**: `docs/a2a/UNIFIED_TASK_BOARD.md` for detailed guide
+
+---
+
+### Phase 2.3: Event Notifications & Auto-Polling (Next)
 
 **Goal**: Real-time task status updates without manual polling.
 
@@ -948,7 +1057,7 @@ Response: "Echo: Analyze API performance
 
 ---
 
-### Phase 2: Cross-Machine Networking
+### Phase 3: Cross-Machine Networking
 
 **Goal**: Enable agents to collaborate across different machines.
 
@@ -964,7 +1073,7 @@ Response: "Echo: Analyze API performance
 
 ---
 
-### Phase 3: Advanced Workflows
+### Phase 4: Advanced Workflows
 
 **Goal**: Support complex multi-agent orchestration.
 
@@ -980,7 +1089,7 @@ Response: "Echo: Analyze API performance
 
 ---
 
-### Phase 4: Enterprise Features
+### Phase 5: Enterprise Features
 
 **Goal**: Production-ready multi-agent system.
 
@@ -1176,30 +1285,43 @@ Includes:
 
 ---
 
-**Document Version**: 1.1
+**Document Version**: 2.2
 **Author**: MeMesh Team
 **License**: AGPL-3.0
-**Phase**: 1.0 (Result Query & State Machine)
+**Phase**: 2.2 (Unified Task Board)
+
+---
+
+## What's New in Phase 2.2
+
+**Unified Task Board** - Cross-platform task visibility and collaboration:
+
+- **Single Database**: Unified `task-board.db` replaces per-agent databases
+- **Platform-Aware Agent IDs**: Deterministic IDs (`hostname-username-platform`) for stable identification
+- **Cross-Platform Support**: Claude Code, ChatGPT, Gemini, Cursor, VS Code agents all share the same task board
+- **New MCP Tools**:
+  - `a2a-board` - View all tasks in Kanban-style format
+  - `a2a-claim-task` - Claim pending tasks atomically
+  - `a2a-release-task` - Release claimed tasks for other agents
+  - `a2a-find-tasks` - Find tasks matching agent skills
+  - `a2a-set-skills` - Register skills for task matching
+- **Migration Script**: Convert old per-agent databases to unified format
+- **Task History**: Audit trail for task state changes
+- **Agent Registry**: Track agents with platform and skill information
+
+**See**: [Unified Task Board Guide](../a2a/UNIFIED_TASK_BOARD.md) for complete documentation.
 
 ---
 
 ## What's New in Phase 1.0
 
-✅ **Task Result Query**: Query execution results of completed tasks with `getTaskResult()` API and `a2a-get-result` MCP tool
-
-✅ **Complete State Machine**: Full lifecycle management with SUBMITTED → WORKING → COMPLETED/FAILED/TIMEOUT transitions
-
-✅ **State Update API**: Programmatic state updates with `updateTaskState()` API
-
-✅ **Enhanced Result Reporting**: `a2a-report-result` automatically updates task state
-
-✅ **Security Hardening**:
-  - 10MB response size limit (DoS prevention)
-  - Input validation (path traversal protection)
-  - Schema validation (type confusion prevention)
-
-✅ **Comprehensive Testing**: 280+ integration test assertions covering all Phase 1 features
+- **Task Result Query**: Query execution results of completed tasks with `getTaskResult()` API and `a2a-get-result` MCP tool
+- **Complete State Machine**: Full lifecycle management with SUBMITTED - WORKING - COMPLETED/FAILED/TIMEOUT transitions
+- **State Update API**: Programmatic state updates with `updateTaskState()` API
+- **Enhanced Result Reporting**: `a2a-report-result` automatically updates task state
+- **Security Hardening**: Response size limits, input validation, schema validation
+- **Comprehensive Testing**: 280+ integration test assertions
 
 ---
 
-**🎉 Phase 1.0 Complete!** The A2A Protocol now supports complete task lifecycle management with proper state machine and result querying. Phase 2 will add real-time notifications and auto-polling.
+**Phase 2.2 Complete!** The A2A Protocol now supports unified cross-platform task management. Phase 2.3 will add real-time notifications and auto-polling.

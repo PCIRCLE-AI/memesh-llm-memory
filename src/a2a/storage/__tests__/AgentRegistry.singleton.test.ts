@@ -8,11 +8,12 @@
  * 4. resetInstance() for test isolation (if implemented)
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AgentRegistry } from '../AgentRegistry.js';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { spawn } from 'child_process';
 
 // Helper to clean up singleton state between tests
 function resetSingleton(): void {
@@ -295,6 +296,149 @@ describe('AgentRegistry Singleton Behavior (MAJOR-2)', () => {
 
       expect(activeAgents.length).toBe(10);
       expect(activeAgents.some(a => a.agentId === 'agent-5')).toBe(true);
+    });
+  });
+
+  describe('Orphan Process Cleanup', () => {
+    it('should kill orphaned process when cleaning up stale agents', async () => {
+      const instance = AgentRegistry.getInstance(testDbPath);
+
+      // Spawn a dummy long-running process to simulate MeMesh server
+      const dummyProcess = spawn('sleep', ['300'], {
+        detached: false, // Attached to this test process
+        stdio: 'ignore',
+      });
+
+      const pid = dummyProcess.pid!;
+      expect(pid).toBeGreaterThan(0);
+
+      // Register agent with this PID
+      instance.register({
+        agentId: 'test-orphan-agent',
+        baseUrl: 'http://localhost:3000',
+        port: 3000,
+        processPid: pid,
+      });
+
+      // Verify agent registered
+      const agent = instance.get('test-orphan-agent');
+      expect(agent).toBeDefined();
+      expect(agent?.processPid).toBe(pid);
+
+      // Verify process is running
+      let processExists = true;
+      try {
+        process.kill(pid, 0); // Signal 0 just checks if process exists
+      } catch {
+        processExists = false;
+      }
+      expect(processExists).toBe(true);
+
+      // Make the process an orphan by killing its parent (simulate detached process)
+      // Since we can't easily make it truly orphaned in test, we'll unref it
+      dummyProcess.unref();
+
+      // Run cleanup (should detect orphan and kill it)
+      const markedStale = await instance.cleanupStale();
+      expect(markedStale).toBeGreaterThan(0);
+
+      // Delete stale agents
+      const deleted = instance.deleteStale();
+      expect(deleted).toBeGreaterThan(0);
+
+      // Verify process was killed
+      await new Promise((resolve) => setTimeout(resolve, 100)); // Wait for kill signal
+      processExists = true;
+      try {
+        process.kill(pid, 0);
+      } catch {
+        processExists = false;
+      }
+      expect(processExists).toBe(false);
+
+      // Cleanup: ensure process is dead
+      try {
+        process.kill(pid, 'SIGKILL');
+      } catch {
+        // Already dead, which is good
+      }
+    });
+
+    it('should not kill process if isProcessActive returns true (has TTY)', async () => {
+      const instance = AgentRegistry.getInstance(testDbPath);
+
+      // Spawn a real process
+      const dummyProcess = spawn('sleep', ['300'], {
+        detached: false,
+        stdio: 'ignore',
+      });
+
+      const pid = dummyProcess.pid!;
+
+      // Mock isProcessActive to return true (simulate having TTY)
+      const originalMethod = (instance as any).isProcessActive;
+      (instance as any).isProcessActive = vi.fn().mockResolvedValue(true);
+
+      // Register agent
+      instance.register({
+        agentId: 'test-active-agent',
+        baseUrl: 'http://localhost:3000',
+        port: 3000,
+        processPid: pid,
+      });
+
+      // Run cleanup
+      const markedStale = await instance.cleanupStale();
+
+      // Should NOT mark as stale because isProcessActive returned true
+      expect(markedStale).toBe(0);
+
+      // Agent should still be active
+      const agent = instance.get('test-active-agent');
+      expect(agent?.status).toBe('active');
+
+      // Verify process is still running (not killed)
+      let processExists = true;
+      try {
+        process.kill(pid, 0);
+      } catch {
+        processExists = false;
+      }
+      expect(processExists).toBe(true);
+
+      // Restore original method
+      (instance as any).isProcessActive = originalMethod;
+
+      // Clean up
+      dummyProcess.unref();
+      try {
+        process.kill(pid, 'SIGKILL');
+      } catch {
+        // Already dead
+      }
+    });
+
+    it('should mark agent as stale if process does not exist', async () => {
+      const instance = AgentRegistry.getInstance(testDbPath);
+
+      // Use a PID that definitely doesn't exist (very high number)
+      const fakePid = 999999;
+
+      // Register agent with fake PID
+      instance.register({
+        agentId: 'test-nonexistent-agent',
+        baseUrl: 'http://localhost:3000',
+        port: 3000,
+        processPid: fakePid,
+      });
+
+      // Run cleanup
+      const markedStale = await instance.cleanupStale();
+      expect(markedStale).toBeGreaterThan(0);
+
+      // Agent should be marked as stale
+      const agent = instance.get('test-nonexistent-agent');
+      expect(agent?.status).toBe('stale');
     });
   });
 });

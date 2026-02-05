@@ -78,6 +78,7 @@ export interface AgentRegistryEntry {
   port: number;
   status: 'active' | 'inactive' | 'stale';
   lastHeartbeat: string; // ISO 8601 timestamp
+  processPid?: number; // PID of the MeMesh server process for orphan detection
   capabilities?: AgentCapabilities;
   metadata?: Record<string, unknown>;
 }
@@ -89,6 +90,7 @@ export interface RegisterAgentParams {
   agentId: string;
   baseUrl: string;
   port: number;
+  processPid?: number; // PID of the MeMesh server process for orphan detection
   capabilities?: AgentCapabilities;
   metadata?: Record<string, unknown>;
 }

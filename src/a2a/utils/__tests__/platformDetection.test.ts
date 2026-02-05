@@ -71,4 +71,16 @@ describe('Platform Detection', () => {
     const platform = detectPlatform();
     expect(platform).toBe('claude-code');
   });
+
+  it('should return unknown for empty string env vars', () => {
+    process.env.CLAUDE_CODE_VERSION = '';
+    const platform = detectPlatform();
+    expect(platform).toBe('unknown');
+  });
+
+  it('should return unknown for whitespace-only env vars', () => {
+    process.env.CLAUDE_CODE_VERSION = '   ';
+    const platform = detectPlatform();
+    expect(platform).toBe('unknown');
+  });
 });

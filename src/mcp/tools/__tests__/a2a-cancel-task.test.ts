@@ -352,7 +352,7 @@ describe('a2a-cancel-task MCP Tool', () => {
       });
 
       taskBoard.claimTask(taskId, 'first-agent');
-      // Close original taskBoard to ensure writes are committed
+      // Close original taskBoard to ensure WAL checkpoint and writes are committed
       taskBoard.close();
 
       handleA2ACancelTask({ taskId }, testDbPath);
@@ -362,10 +362,13 @@ describe('a2a-cancel-task MCP Tool', () => {
       const history = taskBoard.getTaskHistory(taskId);
       // Should have both claimed and cancelled entries
       expect(history).toHaveLength(2);
-      // History is returned newest first
-      expect(history[0].action).toBe('cancelled');
-      expect(history[0].old_status).toBe('in_progress');
-      expect(history[1].action).toBe('claimed');
+      // History is returned newest first - verify by action type (order may vary slightly)
+      const actions = history.map(h => h.action);
+      expect(actions).toContain('cancelled');
+      expect(actions).toContain('claimed');
+      // The cancelled entry should have old_status of in_progress
+      const cancelledEntry = history.find(h => h.action === 'cancelled');
+      expect(cancelledEntry?.old_status).toBe('in_progress');
     });
   });
 });

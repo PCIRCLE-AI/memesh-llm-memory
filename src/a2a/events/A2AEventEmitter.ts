@@ -116,8 +116,12 @@ export function getGlobalEventEmitter(): A2AEventEmitter {
 /**
  * Reset the global event emitter (for testing)
  *
- * Clears the singleton so a fresh instance is created on next access.
+ * Disposes the existing emitter and clears the singleton so a fresh
+ * instance is created on next access.
  */
 export function resetGlobalEventEmitter(): void {
+  if (globalEmitter) {
+    globalEmitter.dispose();
+  }
   globalEmitter = null;
 }

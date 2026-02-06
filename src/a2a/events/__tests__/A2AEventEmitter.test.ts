@@ -312,4 +312,23 @@ describe('Global Event Emitter', () => {
     resetGlobalEventEmitter();
     expect(getGlobalEventEmitter().getEventsAfter(undefined)).toHaveLength(0);
   });
+
+  it('should dispose existing emitter when reset', () => {
+    const emitter1 = getGlobalEventEmitter();
+    const subscriber = vi.fn();
+    emitter1.subscribe(subscriber);
+
+    expect(emitter1.subscriberCount).toBe(1);
+
+    resetGlobalEventEmitter();
+
+    // Get new emitter
+    const emitter2 = getGlobalEventEmitter();
+
+    // Should be different instance
+    expect(emitter2).not.toBe(emitter1);
+
+    // Old emitter should be disposed (subscribers cleared)
+    expect(emitter1.subscriberCount).toBe(0);
+  });
 });

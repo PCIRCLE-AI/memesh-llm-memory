@@ -1,17 +1,15 @@
 /**
  * Prompt Templates for Specialized Agents
  *
- * This file contains all constant template data extracted from PromptEnhancer:
+ * This file contains constant template data:
  * - Agent personas (expert identities and capabilities)
  * - Agent tools (available tools for each agent type)
  * - Model suggestions (complexity-based model selection)
  *
- * Extracted to reduce PromptEnhancer size from 1,615 lines to ~195 lines (88% reduction).
- *
  * @module PromptTemplates
  */
 
-import { AgentType } from '../../orchestrator/types.js';
+import type { AgentType } from '../../types/AgentClassification.js';
 
 /**
  * Agent Persona Definitions

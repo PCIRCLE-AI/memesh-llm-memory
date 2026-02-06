@@ -12,7 +12,9 @@ import type {
   TelemetryConfig,
   EventFilters
 } from './types';
-import type { SQLParams } from '../evolution/storage/types.js';
+/** Valid SQL parameter types for better-sqlite3 */
+type SQLParam = string | number | null | Buffer;
+type SQLParams = SQLParam[];
 import { NotFoundError } from '../errors/index.js';
 import { getDataPath } from '../utils/PathResolver.js';
 

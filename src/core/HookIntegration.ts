@@ -1,7 +1,7 @@
 /**
  * Hook Integration - Claude Code Hooks Bridge
  *
- * Bridges Claude Code hooks with the Development Butler checkpoint detection system.
+ * Bridges Claude Code hooks with the checkpoint detection system.
  * Monitors tool execution (Write, Edit, Bash) and automatically triggers appropriate
  * workflow checkpoints when relevant patterns are detected.
  *
@@ -23,15 +23,9 @@
  * ```typescript
  * import { HookIntegration } from './HookIntegration.js';
  * import { CheckpointDetector } from './CheckpointDetector.js';
- * import { DevelopmentButler } from '../agents/DevelopmentButler.js';
  *
  * const detector = new CheckpointDetector();
- * const butler = new DevelopmentButler(detector, mcpTools);
- * const hooks = new HookIntegration(detector, butler);
- *
- * // Optional: Enable project memory recording immediately
- * // (otherwise auto-initialized on first hook when memory support is available)
- * hooks.initializeProjectMemory(mcpTools);
+ * const hooks = new HookIntegration(detector, autoTracker);
  *
  * // Register callback for checkpoint triggers
  * hooks.onButlerTrigger((context) => {
@@ -51,9 +45,7 @@
  */
 
 import { CheckpointDetector } from './CheckpointDetector.js';
-import { DevelopmentButler } from '../agents/DevelopmentButler.js';
 import { ProjectAutoTracker } from '../memory/ProjectAutoTracker.js';
-import type { MCPToolInterface } from './MCPToolInterface.js';
 import { logger } from '../utils/logger.js';
 import { TestOutputParser, type TestResults } from './TestOutputParser.js';
 
@@ -217,8 +209,8 @@ export interface CheckpointContext {
 /**
  * Hook Integration Class
  *
- * Monitors tool execution from Claude Code hooks and triggers Development Butler
- * checkpoints when relevant workflow patterns are detected. Acts as the bridge
+ * Monitors tool execution from Claude Code hooks and triggers workflow
+ * checkpoints when relevant patterns are detected. Acts as the bridge
  * between Claude Code's tool execution hooks and the checkpoint-based workflow system.
  *
  * Detection Patterns:
@@ -230,12 +222,7 @@ export interface CheckpointContext {
  * @example
  * ```typescript
  * const detector = new CheckpointDetector();
- * const butler = new DevelopmentButler(detector, mcpTools);
- * const hooks = new HookIntegration(detector, butler);
- *
- * // Enable project memory immediately (optional)
- * // Auto-initialization also happens on first hook when memory is available
- * hooks.initializeProjectMemory(mcpTools);
+ * const hooks = new HookIntegration(detector, autoTracker);
  *
  * // Register callback for all checkpoint triggers
  * hooks.onButlerTrigger((context) => {
@@ -252,7 +239,6 @@ export interface CheckpointContext {
  */
 export class HookIntegration {
   private detector: CheckpointDetector;
-  private butler: DevelopmentButler;
   private triggerCallbacks: Array<(context: CheckpointContext) => void> = [];
   private projectMemory?: ProjectAutoTracker;
   private lastCheckpoint?: string;
@@ -267,25 +253,26 @@ export class HookIntegration {
    * processToolUse() is called with tool execution data.
    *
    * @param checkpointDetector - Checkpoint detector to trigger checkpoints through
-   * @param developmentButler - Development Butler instance for workflow automation
-   * @param projectAutoTracker - Optional ProjectAutoTracker for error recording
+   * @param projectAutoTracker - Optional ProjectAutoTracker for error recording and memory
    *
    * @example
    * ```typescript
    * const detector = new CheckpointDetector();
-   * const butler = new DevelopmentButler(detector, mcpTools);
-   * const hooks = new HookIntegration(detector, butler);
+   * const hooks = new HookIntegration(detector, autoTracker);
    * ```
    */
   constructor(
     checkpointDetector: CheckpointDetector,
-    developmentButler: DevelopmentButler,
     projectAutoTracker?: ProjectAutoTracker
   ) {
     this.detector = checkpointDetector;
-    this.butler = developmentButler;
     this.testParser = new TestOutputParser();
     this.projectAutoTracker = projectAutoTracker;
+
+    // Initialize project memory from autoTracker if available
+    if (projectAutoTracker) {
+      this.projectMemory = projectAutoTracker;
+    }
   }
 
   /**
@@ -322,12 +309,14 @@ export class HookIntegration {
    * // Automatically records file change and token usage
    * ```
    */
-  initializeProjectMemory(mcp: MCPToolInterface): void {
+  /**
+   * Set the project memory tracker (used for late initialization)
+   */
+  setProjectMemory(tracker: ProjectAutoTracker): void {
     if (this.projectMemory) {
       return;
     }
-
-    this.projectMemory = new ProjectAutoTracker(mcp);
+    this.projectMemory = tracker;
   }
 
   /**
@@ -485,8 +474,7 @@ export class HookIntegration {
    *
    * @example
    * ```typescript
-   * const hooks = new HookIntegration(detector, butler);
-   * hooks.initializeProjectMemory(mcpTools);
+   * const hooks = new HookIntegration(detector, autoTracker);
    *
    * // Register callback
    * hooks.onButlerTrigger((context) => {
@@ -566,8 +554,8 @@ export class HookIntegration {
    * Record checkpoint events to project memory
    *
    * Private helper that records checkpoint-specific data to the project knowledge graph
-   * via ProjectAutoTracker. Only called if project memory was initialized via
-   * initializeProjectMemory(). Handles different checkpoint types appropriately.
+   * via ProjectAutoTracker. Only called if project memory was initialized.
+   * Handles different checkpoint types appropriately.
    *
    * Recorded Data by Checkpoint:
    * - **code-written**: File paths and change type (new-file/modification)
@@ -742,16 +730,14 @@ export class HookIntegration {
    * Auto-initialize project memory when hooks are first used
    */
   private ensureProjectMemoryInitialized(): void {
-    if (this.projectMemory) {
+    if (this.projectMemory && this.projectAutoTracker) {
       return;
     }
 
-    const mcp = this.butler.getToolInterface();
-    if (!mcp.supportsMemory()) {
-      return;
+    // If autoTracker was provided but projectMemory not yet set
+    if (this.projectAutoTracker && !this.projectMemory) {
+      this.projectMemory = this.projectAutoTracker;
     }
-
-    this.initializeProjectMemory(mcp);
   }
 
   /**

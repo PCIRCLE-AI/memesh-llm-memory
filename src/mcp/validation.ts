@@ -135,23 +135,6 @@ export const UninstallInputSchema = z.object({
 });
 
 /**
- * Workflow guidance input schema for get-workflow-guidance
- */
-export const WorkflowGuidanceInputSchema = z.object({
-  phase: z.string().min(1, 'Phase cannot be empty'),
-  filesChanged: z.array(z.string().min(1)).optional(),
-  testsPassing: z.boolean().optional(),
-});
-
-/**
- * Record token usage input schema for record-token-usage
- */
-export const RecordTokenUsageInputSchema = z.object({
-  inputTokens: z.number().int().nonnegative('Input tokens must be non-negative'),
-  outputTokens: z.number().int().nonnegative('Output tokens must be non-negative'),
-});
-
-/**
  * Hook tool use input schema for hook-tool-use
  */
 export const HookToolUseInputSchema = z.object({
@@ -161,18 +144,6 @@ export const HookToolUseInputSchema = z.object({
   duration: z.number().int().nonnegative('Duration must be non-negative').optional(),
   tokensUsed: z.number().int().nonnegative('Tokens used must be non-negative').optional(),
   output: z.string().optional(),
-});
-
-/**
- * Generate smart plan input schema for generate-smart-plan
- */
-export const GenerateSmartPlanInputSchema = z.object({
-  featureDescription: z
-    .string()
-    .min(1, 'Feature description cannot be empty')
-    .max(MAX_TASK_DESCRIPTION_LENGTH, `Feature description too long (max ${MAX_TASK_DESCRIPTION_LENGTH} characters)`),
-  requirements: z.array(z.string()).optional(),
-  constraints: z.array(z.string()).optional(),
 });
 
 /**
@@ -231,10 +202,7 @@ export type ValidatedDashboardInput = z.infer<typeof DashboardInputSchema>;
 export type ValidatedListAgentsInput = z.infer<typeof ListAgentsInputSchema>;
 export type ValidatedListSkillsInput = z.infer<typeof ListSkillsInputSchema>;
 export type ValidatedUninstallInput = z.infer<typeof UninstallInputSchema>;
-export type ValidatedWorkflowGuidanceInput = z.infer<typeof WorkflowGuidanceInputSchema>;
-export type ValidatedRecordTokenUsageInput = z.infer<typeof RecordTokenUsageInputSchema>;
 export type ValidatedHookToolUseInput = z.infer<typeof HookToolUseInputSchema>;
-export type ValidatedGenerateSmartPlanInput = z.infer<typeof GenerateSmartPlanInputSchema>;
 export type ValidatedRecallMemoryInput = z.infer<typeof RecallMemoryInputSchema>;
 export type ValidatedCreateEntitiesInput = z.infer<typeof CreateEntitiesInputSchema>;
 export type ValidatedAddObservationsInput = z.infer<typeof AddObservationsInputSchema>;

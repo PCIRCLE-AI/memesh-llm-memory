@@ -57,8 +57,7 @@
  * ```
  */
 
-import { AgentType } from '../orchestrator/types.js';
-import { AgentClassification } from '../types/AgentClassification.js';
+import { AgentType, AgentClassification } from '../types/AgentClassification.js';
 import { ValidationError } from '../errors/index.js';
 
 /**

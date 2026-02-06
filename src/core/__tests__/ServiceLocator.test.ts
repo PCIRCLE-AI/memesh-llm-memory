@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ServiceLocator } from '../ServiceLocator';
+import { logger } from '../../utils/logger.js';
 
 describe('ServiceLocator', () => {
   beforeEach(() => {
@@ -67,7 +68,7 @@ describe('ServiceLocator', () => {
   });
 
   it('should warn when overwriting existing service', () => {
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
 
     ServiceLocator.register('logger', { version: 1 });
     ServiceLocator.register('logger', { version: 2 });

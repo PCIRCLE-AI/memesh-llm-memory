@@ -59,6 +59,8 @@ import { TimeoutChecker } from '../jobs/TimeoutChecker.js';
 import { TIME, NETWORK } from '../constants.js';
 import { tracingMiddleware, spanMiddleware } from '../../utils/tracing/index.js';
 import { generateAgentId } from '../utils/agentId.js';
+import { A2AEventEmitter, getGlobalEventEmitter } from '../events/index.js';
+import { createEventsRouter } from './routes/events.js';
 
 /**
  * A2A Server Configuration
@@ -119,6 +121,7 @@ export class A2AServer {
   private delegator: MCPTaskDelegator;
   private timeoutChecker: TimeoutChecker;
   private agentId: string;
+  private eventEmitter: A2AEventEmitter;
 
   /**
    * Create a new A2A Server
@@ -128,6 +131,9 @@ export class A2AServer {
   constructor(private config: A2AServerConfig) {
     // Generate agent ID if not provided (platform-aware)
     this.agentId = config.agentId || generateAgentId();
+
+    // Initialize event emitter (global singleton for cross-component event sharing)
+    this.eventEmitter = getGlobalEventEmitter();
 
     this.taskQueue = new TaskQueue(this.agentId);
     this.registry = AgentRegistry.getInstance();
@@ -199,6 +205,10 @@ export class A2AServer {
 
     // Public route - agent card discovery
     app.get('/a2a/agent-card', spanMiddleware('a2a.agent-card'), this.routes.getAgentCard);
+
+    // SSE events endpoint for real-time notifications
+    // Note: Authentication for SSE is handled by the events router if needed
+    app.use('/a2a/events', createEventsRouter(this.eventEmitter));
 
     app.use(jsonErrorHandler);
     app.use(errorHandler);
@@ -358,6 +368,15 @@ export class A2AServer {
    */
   getTaskQueue(): TaskQueue {
     return this.taskQueue;
+  }
+
+  /**
+   * Get the event emitter instance
+   *
+   * @returns A2AEventEmitter instance used by this server
+   */
+  getEventEmitter(): A2AEventEmitter {
+    return this.eventEmitter;
   }
 
   /**

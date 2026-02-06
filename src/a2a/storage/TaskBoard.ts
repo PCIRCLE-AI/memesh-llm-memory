@@ -561,6 +561,9 @@ export class TaskBoard {
   /**
    * Update task status
    *
+   * Uses atomic UPDATE pattern to prevent TOCTOU race conditions.
+   * The existence check is done via result.changes instead of separate query.
+   *
    * @param taskId - Task ID
    * @param status - New status
    * @throws Error if task not found or database operation fails
@@ -568,15 +571,14 @@ export class TaskBoard {
   updateTaskStatus(taskId: string, status: TaskStatus): void {
     this.validateTaskId(taskId);
 
-    // Check if task exists
-    if (!this.taskExists(taskId)) {
-      throw new Error(`Task not found: ${taskId}`);
-    }
-
     const now = Date.now();
 
     const stmt = this.db.prepare('UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?');
-    stmt.run(status, now, taskId);
+    const result = stmt.run(status, now, taskId);
+
+    if (result.changes === 0) {
+      throw new Error(`Task not found: ${taskId}`);
+    }
   }
 
   /**
@@ -990,6 +992,9 @@ export class TaskBoard {
   /**
    * Update agent skills
    *
+   * Uses atomic UPDATE pattern to prevent TOCTOU race conditions.
+   * The existence check is done via result.changes instead of separate query.
+   *
    * @param agentId - Agent ID
    * @param skills - New skills array
    * @throws Error if agent not found or validation fails
@@ -999,21 +1004,23 @@ export class TaskBoard {
       throw new Error('Agent ID is required');
     }
 
-    // Check if agent exists
-    const agent = this.getAgent(agentId);
-    if (!agent) {
-      throw new Error(`Agent not found: ${agentId}`);
-    }
-
-    // Serialize skills to JSON
     const skillsJson = JSON.stringify(skills);
 
-    const stmt = this.db.prepare('UPDATE agents SET skills = ? WHERE agent_id = ?');
-    stmt.run(skillsJson, agentId);
+    const stmt = this.db.prepare(
+      'UPDATE agents SET skills = ? WHERE agent_id = ?'
+    );
+    const result = stmt.run(skillsJson, agentId);
+
+    if (result.changes === 0) {
+      throw new Error(`Agent not found: ${agentId}`);
+    }
   }
 
   /**
    * Update agent heartbeat timestamp
+   *
+   * Uses atomic UPDATE pattern to prevent TOCTOU race conditions.
+   * The existence check is done via result.changes instead of separate query.
    *
    * @param agentId - Agent ID
    * @throws Error if agent not found or validation fails
@@ -1023,15 +1030,14 @@ export class TaskBoard {
       throw new Error('Agent ID is required');
     }
 
-    // Check if agent exists
-    const agent = this.getAgent(agentId);
-    if (!agent) {
+    const now = Date.now();
+
+    const stmt = this.db.prepare('UPDATE agents SET last_heartbeat = ? WHERE agent_id = ?');
+    const result = stmt.run(now, agentId);
+
+    if (result.changes === 0) {
       throw new Error(`Agent not found: ${agentId}`);
     }
-
-    const now = Date.now();
-    const stmt = this.db.prepare('UPDATE agents SET last_heartbeat = ? WHERE agent_id = ?');
-    stmt.run(now, agentId);
   }
 
   /**

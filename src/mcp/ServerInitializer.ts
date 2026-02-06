@@ -28,11 +28,9 @@ import { ProjectAutoTracker } from '../memory/ProjectAutoTracker.js';
 import { UnifiedMemoryStore } from '../memory/UnifiedMemoryStore.js';
 import { SessionMemoryPipeline } from '../integrations/session-memory/index.js';
 import { RateLimiter } from '../utils/RateLimiter.js';
-import { ToolHandlers, BuddyHandlers, A2AToolHandlers } from './handlers/index.js';
+import { ToolHandlers, BuddyHandlers } from './handlers/index.js';
 import { SamplingClient } from './SamplingClient.js';
 import { SecretManager } from '../memory/SecretManager.js';
-import { TaskQueue } from '../a2a/storage/TaskQueue.js';
-import { MCPTaskDelegator } from '../a2a/delegator/MCPTaskDelegator.js';
 import { logger } from '../utils/logger.js';
 import { logError } from '../utils/errorHandler.js';
 
@@ -75,15 +73,12 @@ export interface ServerComponents {
   // Sampling
   samplingClient: SamplingClient;
 
-  // Security & Task Management
+  // Security
   secretManager: SecretManager;
-  taskQueue: TaskQueue;
-  mcpTaskDelegator: MCPTaskDelegator;
 
   // Handler modules
   toolHandlers: ToolHandlers;
   buddyHandlers: BuddyHandlers;
-  a2aHandlers: A2AToolHandlers;
 }
 
 /**
@@ -117,7 +112,7 @@ export class ServerInitializer {
    * 2. **Evolution System**: Performance tracking, learning, adaptation
    * 3. **Development Tools**: DevelopmentButler
    * 4. **Memory Systems**: KnowledgeGraph, ProjectMemoryManager, ProjectAutoTracker
-   * 5. **Security & Task Management**: SecretManager, TaskQueue, MCPTaskDelegator
+   * 5. **Security**: SecretManager
    * 6. **Hook Integration**: HookIntegration
    * 7. **Handler Modules**: ToolHandlers, BuddyHandlers
    *
@@ -137,7 +132,6 @@ export class ServerInitializer {
     // Track resources that need cleanup on error
     let knowledgeGraph: KnowledgeGraph | undefined;
     let secretManager: SecretManager | undefined;
-    let taskQueue: TaskQueue | undefined;
 
     try {
       // Core components
@@ -220,15 +214,9 @@ export class ServerInitializer {
         throw new Error('Sampling not yet connected. This will be wired when MCP SDK sampling is available.');
       });
 
-      // Initialize Security & Task Management (Phase 5)
+      // Initialize Security
       // SecretManager: Secure storage for API tokens and sensitive data (track for cleanup)
       secretManager = await SecretManager.create();
-
-      // TaskQueue: SQLite-based task storage (using 'mcp-server' as default agent ID) (track for cleanup)
-      taskQueue = new TaskQueue('mcp-server');
-
-      // MCPTaskDelegator: Manages task delegation from A2A agents to MCP clients
-      const mcpTaskDelegator = new MCPTaskDelegator(taskQueue, logger);
 
       // Initialize handler modules
       const toolHandlers = new ToolHandlers(
@@ -257,9 +245,6 @@ export class ServerInitializer {
         projectAutoTracker
       );
 
-      // Initialize A2A handlers
-      const a2aHandlers = new A2AToolHandlers();
-
       // Return all initialized components
       return {
         router,
@@ -284,26 +269,14 @@ export class ServerInitializer {
         rateLimiter,
         samplingClient,
         secretManager,
-        taskQueue,
-        mcpTaskDelegator,
         toolHandlers,
         buddyHandlers,
-        a2aHandlers,
       };
     } catch (error) {
       // ✅ FIX MAJOR-13: Clean up resources on initialization failure
       logger.error('Initialization failed, cleaning up resources...');
 
       // Clean up database connections in reverse order of creation
-      if (taskQueue) {
-        try {
-          taskQueue.close();
-          logger.info('TaskQueue cleaned up');
-        } catch (cleanupError) {
-          logger.error('Failed to clean up TaskQueue:', cleanupError);
-        }
-      }
-
       if (secretManager) {
         try {
           secretManager.close();

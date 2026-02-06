@@ -10,8 +10,6 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 import crypto from 'crypto';
-import { A2AEventEmitter } from '../events/A2AEventEmitter.js';
-import { A2AEvent, TaskEventData, EventType } from '../events/types.js';
 import { validateJsonString } from './jsonUtils.js';
 
 /**
@@ -136,7 +134,6 @@ export interface TaskHistoryEntry {
  */
 export class TaskBoard {
   private db!: Database.Database;
-  private eventEmitter?: A2AEventEmitter;
 
   // Maximum length constraints for input validation
   private static readonly MAX_SUBJECT_LENGTH = 500;
@@ -151,11 +148,9 @@ export class TaskBoard {
    * Initialize TaskBoard storage
    *
    * @param dbPath - Optional custom database path (for testing). Defaults to ~/.claude-code-buddy/task-board.db
-   * @param eventEmitter - Optional A2AEventEmitter for real-time event notifications
    * @throws Error if initialization fails or path is invalid
    */
-  constructor(dbPath?: string, eventEmitter?: A2AEventEmitter) {
-    this.eventEmitter = eventEmitter;
+  constructor(dbPath?: string) {
     try {
       // Validate dbPath if provided
       if (dbPath !== undefined) {
@@ -481,27 +476,11 @@ export class TaskBoard {
    * @param actor - Optional agent ID that performed the action
    */
   private emitTaskEvent(
-    type: EventType,
-    task: Task,
-    actor?: string
+    _type: string,
+    _task: Task,
+    _actor?: string
   ): void {
-    if (!this.eventEmitter) return;
-
-    const event: A2AEvent<TaskEventData> = {
-      id: crypto.randomUUID(),
-      type,
-      timestamp: Date.now(),
-      data: {
-        taskId: task.id,
-        subject: task.subject,
-        status: task.status,
-        owner: task.owner || null,
-        creator_platform: task.creator_platform,
-        actor,
-      },
-    };
-
-    this.eventEmitter.emit(event);
+    // Event emission removed — will be replaced by Cloud sync in Phase 1
   }
 
   /**

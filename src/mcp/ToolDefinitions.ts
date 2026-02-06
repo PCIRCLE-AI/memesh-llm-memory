@@ -6,8 +6,6 @@
  */
 
 import { OutputSchemas } from './schemas/OutputSchemas.js';
-import { a2aCancelTaskToolDefinition } from './tools/a2a-cancel-task.js';
-import { a2aSubscribeToolDefinition } from './tools/a2a-subscribe.js';
 
 
 /**
@@ -447,239 +445,8 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
   };
 
   // ========================================
-  // A2A Protocol Tools (Agent-to-Agent)
+  // Task Board Tools (Local Task Management)
   // ========================================
-
-  const a2aSendTaskTool: MCPToolDefinition = {
-    name: 'a2a-send-task',
-    description: `🤝 MeMesh A2A: Send a task to another A2A agent for execution.
-
-**Workflow:**
-1. List agents with a2a-list-agents to get targetAgentId
-2. Send task with clear, specific description
-3. Track with returned taskId via a2a-get-task
-4. Receive result when complete
-
-**Example:**
-targetAgentId: "kts-macbook-xyz789"
-taskDescription: "Analyze error logs from last 24h and summarize top 3 issues"
-priority: "high"
-
-**Priority Levels:**
-• low: Background tasks
-• normal: Default priority
-• high: Important, time-sensitive
-• urgent: Critical, immediate attention`,
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        targetAgentId: {
-          type: 'string',
-          description: 'ID of the target agent (format: ${hostname}-${timestamp}). Get from a2a-list-agents',
-        },
-        taskDescription: {
-          type: 'string',
-          description: 'Clear, specific task description. Be detailed about expected output and constraints.',
-        },
-        priority: {
-          type: 'string',
-          enum: ['low', 'normal', 'high', 'urgent'],
-          description: 'Task priority (optional, default: normal)',
-        },
-        sessionId: {
-          type: 'string',
-          description: 'Session ID for task tracking (optional)',
-        },
-        metadata: {
-          type: 'object',
-          description: 'Additional task metadata (optional)',
-        },
-      },
-      required: ['targetAgentId', 'taskDescription'],
-    },
-    outputSchema: OutputSchemas.a2aSendTask,
-    annotations: {
-      title: 'A2A Task Sender',
-      readOnlyHint: false,      // Creates tasks
-      destructiveHint: false,   // Non-destructive
-      idempotentHint: false,    // Each call creates new task
-      openWorldHint: true,      // Can handle various task types
-    },
-  };
-
-  const a2aGetTaskTool: MCPToolDefinition = {
-    name: 'a2a-get-task',
-    description: '🔍 MeMesh A2A: Get task status and details from another A2A agent.',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        targetAgentId: {
-          type: 'string',
-          description: 'ID of the agent that owns the task',
-        },
-        taskId: {
-          type: 'string',
-          description: 'ID of the task to retrieve',
-        },
-      },
-      required: ['targetAgentId', 'taskId'],
-    },
-    outputSchema: OutputSchemas.a2aGetTask,
-    annotations: {
-      title: 'A2A Task Retriever',
-      readOnlyHint: true,       // Read-only operation
-      destructiveHint: false,
-      idempotentHint: true,     // Same query returns same result
-      openWorldHint: false,     // Requires specific task ID
-    },
-  };
-
-  const a2aGetResultTool: MCPToolDefinition = {
-    name: 'a2a-get-result',
-    description: '🎁 MeMesh A2A: Get task execution result from target agent.',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        targetAgentId: {
-          type: 'string',
-          description: 'ID of the agent that executed the task',
-        },
-        taskId: {
-          type: 'string',
-          description: 'ID of the task to get result for',
-        },
-      },
-      required: ['targetAgentId', 'taskId'],
-    },
-    annotations: {
-      title: 'A2A Task Result Retriever',
-      readOnlyHint: true,       // Read-only operation
-      destructiveHint: false,
-      idempotentHint: true,     // Same query returns same result
-      openWorldHint: false,     // Requires specific task ID
-    },
-  };
-
-  const a2aListTasksTool: MCPToolDefinition = {
-    name: 'a2a-list-tasks',
-    description: `📋 MeMesh A2A: List tasks assigned to you or another agent.
-
-**Task States:**
-• SUBMITTED: Received, not started
-• WORKING: Currently being processed
-• INPUT_REQUIRED: Waiting for additional input
-• COMPLETED: Successfully finished
-• FAILED: Execution failed
-• CANCELED: Canceled by sender
-• REJECTED: Rejected by agent
-
-**Default:** Lists YOUR tasks (agentId: "self")
-**Custom:** Specify agentId to list another agent's tasks`,
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        agentId: {
-          type: 'string',
-          description: 'Agent ID to list tasks for. Use "self" for your tasks',
-          default: 'self',
-        },
-        state: {
-          type: 'string',
-          enum: ['SUBMITTED', 'WORKING', 'INPUT_REQUIRED', 'COMPLETED', 'FAILED', 'CANCELED', 'REJECTED'],
-          description: 'Filter by task state (optional)',
-        },
-        limit: {
-          type: 'number',
-          description: 'Maximum number of tasks to return (1-100, default: 10)',
-          minimum: 1,
-          maximum: 100,
-        },
-        offset: {
-          type: 'number',
-          description: 'Number of tasks to skip for pagination (optional, default: 0)',
-          minimum: 0,
-        },
-      },
-    },
-    outputSchema: OutputSchemas.a2aListTasks,
-    annotations: {
-      title: 'A2A Task Lister',
-      readOnlyHint: true,       // Read-only operation
-      destructiveHint: false,
-      idempotentHint: true,     // Same query returns same result
-      openWorldHint: false,     // Limited to tasks
-    },
-  };
-
-  const a2aListAgentsTool: MCPToolDefinition = {
-    name: 'a2a-list-agents',
-    description: `🤖 MeMesh A2A: List available A2A agents in the registry.
-
-Returns agents with format: {agentId, url, port, status, lastHeartbeat}
-
-**Agent ID Format:** \${hostname}-\${timestamp} (e.g., "kts-macbook-ml8cy34o")
-**Note:** Check-in name (e.g., "Lambda") ≠ Agent ID
-
-**Find Your Agent ID:** curl -s http://localhost:3000/a2a/agent-card | grep id
-
-**Status Types:**
-• active: Currently running (heartbeat < 5min ago)
-• inactive: Not running (no recent heartbeat)
-• stale: No heartbeat for 5+ minutes`,
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        status: {
-          type: 'string',
-          enum: ['active', 'inactive', 'all'],
-          description: 'Filter by agent status (optional, default: active)',
-        },
-      },
-    },
-    outputSchema: OutputSchemas.a2aListAgents,
-    annotations: {
-      title: 'A2A Agent Registry',
-      readOnlyHint: true,       // Read-only operation
-      destructiveHint: false,
-      idempotentHint: true,     // Same query returns same result
-      openWorldHint: false,     // Limited to registry
-    },
-  };
-
-  const a2aReportResultTool: MCPToolDefinition = {
-    name: 'a2a-report-result',
-    description: '✅ MeMesh A2A: Report task execution result back to MeMesh Server (used by MCP Clients).',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        taskId: {
-          type: 'string',
-          description: 'Task ID to report result for',
-        },
-        result: {
-          type: 'string',
-          description: 'Execution output or result',
-        },
-        success: {
-          type: 'boolean',
-          description: 'Whether execution succeeded (true) or failed (false)',
-        },
-        error: {
-          type: 'string',
-          description: 'Error message if success=false (optional)',
-        },
-      },
-      required: ['taskId', 'result', 'success'],
-    },
-    outputSchema: OutputSchemas.a2aReportResult,
-    annotations: {
-      title: 'A2A Result Reporter',
-      readOnlyHint: false,      // Updates task status
-      destructiveHint: false,
-      idempotentHint: true,     // Reporting same result multiple times is safe
-      openWorldHint: false,     // Requires specific task ID
-    },
-  };
 
   const a2aBoardTool: MCPToolDefinition = {
     name: 'a2a-board',
@@ -692,9 +459,7 @@ Supports filtering by status, platform, and owner.
 • No params: Show all tasks in Kanban view
 • {status: "pending"}: Show only pending tasks
 • {platform: "claude-code"}: Show tasks from specific platform
-• {owner: "agent-id"}: Show tasks assigned to specific agent
-
-**Output:** Kanban-style board with sections for each status, task IDs, subjects, platforms, and owners.`,
+• {owner: "agent-id"}: Show tasks assigned to specific agent`,
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -714,32 +479,22 @@ Supports filtering by status, platform, and owner.
       },
     },
     annotations: {
-      title: 'A2A Task Board',
-      readOnlyHint: true,       // Read-only operation
+      title: 'Task Board',
+      readOnlyHint: true,
       destructiveHint: false,
-      idempotentHint: true,     // Same query returns same result
-      openWorldHint: false,     // Limited to unified task board
+      idempotentHint: true,
+      openWorldHint: false,
     },
   };
 
   const a2aClaimTaskTool: MCPToolDefinition = {
     name: 'a2a-claim-task',
-    description: `🙋 Claim a pending task from the unified task board for the current agent.
-
-**Usage:**
-• Call with taskId of a pending task to claim ownership
-• Task must be in 'pending' status to be claimed
-• After claiming, task status becomes 'in_progress' with you as owner
+    description: `🙋 Claim a pending task from the task board for the current agent.
 
 **Workflow:**
 1. View available tasks with a2a-board (filter by status: "pending")
 2. Claim a task with a2a-claim-task
-3. Complete work on the task
-4. Mark complete with a2a-complete-task (or release with a2a-release-task)
-
-**Error Conditions:**
-• Task not found: Invalid taskId
-• Task not pending: Already claimed or completed by another agent`,
+3. Complete work on the task`,
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -751,66 +506,22 @@ Supports filtering by status, platform, and owner.
       required: ['taskId'],
     },
     annotations: {
-      title: 'A2A Task Claim',
-      readOnlyHint: false,      // Modifies task status and ownership
+      title: 'Task Claim',
+      readOnlyHint: false,
       destructiveHint: false,
-      idempotentHint: false,    // Claiming twice will fail
-      openWorldHint: false,     // Limited to unified task board
-    },
-  };
-
-  const a2aReleaseTaskTool: MCPToolDefinition = {
-    name: 'a2a-release-task',
-    description: `🔓 Release a claimed task back to pending status for other agents to claim.
-
-**Usage:**
-• Call with taskId of your claimed task to release it
-• Task ownership is cleared and status becomes 'pending'
-• Other agents can then claim the released task
-
-**When to Use:**
-• Cannot complete a task you claimed
-• Need to hand off work to another agent
-• Task needs to be reassigned
-
-**Idempotent:** Releasing an already pending task is safe (no-op).`,
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        taskId: {
-          type: 'string',
-          description: 'UUID of the task to release',
-        },
-      },
-      required: ['taskId'],
-    },
-    annotations: {
-      title: 'A2A Task Release',
-      readOnlyHint: false,      // Modifies task status and ownership
-      destructiveHint: false,
-      idempotentHint: true,     // Releasing already pending task is safe
-      openWorldHint: false,     // Limited to unified task board
+      idempotentHint: false,
+      openWorldHint: false,
     },
   };
 
   const a2aFindTasksTool: MCPToolDefinition = {
     name: 'a2a-find-tasks',
-    description: `🔍 Find tasks matching specified skills or criteria from the unified task board.
+    description: `🔍 Find tasks matching specified skills or criteria from the task board.
 
 **Usage:**
 • Find tasks by skills: {skills: ["typescript", "testing"]}
 • Filter by status: {status: "pending"} (default)
-• Limit results: {limit: 5} (default: 10, max: 50)
-
-**Matching Logic:**
-• Skills match against task metadata.required_skills (exact match)
-• Skills also match against task subject text (case-insensitive)
-• Results sorted by relevance (tasks with more skill matches first)
-
-**Examples:**
-• Find TypeScript tasks: {skills: ["typescript"]}
-• Find any pending tasks: {} (no filters)
-• Find in-progress testing tasks: {skills: ["testing"], status: "in_progress"}`,
+• Limit results: {limit: 5} (default: 10, max: 50)`,
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -835,54 +546,11 @@ Supports filtering by status, platform, and owner.
       },
     },
     annotations: {
-      title: 'A2A Task Finder',
-      readOnlyHint: true,       // Read-only operation
+      title: 'Task Finder',
+      readOnlyHint: true,
       destructiveHint: false,
-      idempotentHint: true,     // Same query returns same result
-      openWorldHint: false,     // Limited to unified task board
-    },
-  };
-
-  const a2aSetSkillsTool: MCPToolDefinition = {
-    name: 'a2a-set-skills',
-    description: `🎯 Set skills for the current agent to enable skill-based task matching.
-
-**Usage:**
-• Set your agent's skills: {skills: ["typescript", "testing", "code-review"]}
-• Clear all skills: {skills: []}
-
-**How it works:**
-• Skills are used by a2a-find-tasks to match agents with suitable tasks
-• Auto-registers your agent if not already registered
-• Skills are stored persistently in the task board
-
-**Examples:**
-• Backend developer: {skills: ["nodejs", "postgresql", "api-design"]}
-• Frontend developer: {skills: ["react", "typescript", "css"]}
-• DevOps engineer: {skills: ["docker", "kubernetes", "ci-cd"]}
-
-**Next step:** Use a2a-find-tasks to discover tasks matching your skills.`,
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        skills: {
-          type: 'array',
-          items: {
-            type: 'string',
-            minLength: 1,
-            maxLength: 100,
-          },
-          description: 'Array of skill strings (e.g., ["typescript", "testing", "code-review"])',
-        },
-      },
-      required: ['skills'],
-    },
-    annotations: {
-      title: 'A2A Set Agent Skills',
-      readOnlyHint: false,      // Modifies agent record
-      destructiveHint: false,
-      idempotentHint: true,     // Setting same skills twice is safe
-      openWorldHint: false,     // Limited to skill strings
+      idempotentHint: true,
+      openWorldHint: false,
     },
   };
 
@@ -1059,20 +727,10 @@ Supports filtering by status, platform, and owner.
     buddySecretListTool,
     buddySecretDeleteTool,
 
-    // A2A Protocol Tools
-    a2aSendTaskTool,
-    a2aGetTaskTool,
-    a2aGetResultTool,
-    a2aListTasksTool,
-    a2aListAgentsTool,
-    a2aReportResultTool,
+    // Task Board Tools
     a2aBoardTool,
     a2aClaimTaskTool,
-    a2aReleaseTaskTool,
     a2aFindTasksTool,
-    a2aSetSkillsTool,
-    a2aCancelTaskToolDefinition,
-    a2aSubscribeToolDefinition,
 
     // Hook Integration
     hookToolUseTool,

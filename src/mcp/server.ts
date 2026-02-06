@@ -171,10 +171,7 @@ class ClaudeCodeBuddyMCPServer {
       rateLimiter: this.components.rateLimiter,
       toolHandlers: this.components.toolHandlers,
       buddyHandlers: this.components.buddyHandlers,
-      a2aHandlers: this.components.a2aHandlers,
       secretManager: this.components.secretManager,
-      taskQueue: this.components.taskQueue,
-      mcpTaskDelegator: this.components.mcpTaskDelegator,
     });
     this.components.toolInterface.attachToolDispatcher(this.toolRouter);
     this.sessionBootstrapper = new SessionBootstrapper(
@@ -550,20 +547,6 @@ class ClaudeCodeBuddyMCPServer {
       logger.error('Failed to close secret manager cleanly:', error);
     }
 
-    // 2.6. Close TaskQueue database (A2A Protocol Phase 1.0)
-    try {
-      logger.info('Closing task queue database...');
-      if (this.components.taskQueue) {
-        this.components.taskQueue.close();
-      }
-    } catch (error) {
-      logError(error, {
-        component: 'ClaudeCodeBuddyMCPServer',
-        method: 'shutdown',
-        operation: 'closing task queue',
-      });
-      logger.error('Failed to close task queue cleanly:', error);
-    }
 
     // 3. Stop rate limiter (cleanup intervals)
     try {

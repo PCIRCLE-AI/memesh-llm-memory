@@ -311,6 +311,7 @@ export class ToolRouter {
     const args = params.arguments;
 
     // Route to appropriate handler based on tool name
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- handlers validate args via Zod
     return await this.dispatch(toolName, args as any);
   }
 
@@ -318,8 +319,8 @@ export class ToolRouter {
    * Dispatch tool call to appropriate handler
    *
    * Internal routing logic that maps tool names to handler methods. Supports:
-   * - Buddy tools (buddy_*)
-   * - Workflow guidance tools (get-workflow-guidance, etc.)
+   * - Buddy tools (buddy-do, buddy-remember, buddy-help)
+   * - Task board tools (a2a-board, a2a-claim-task, a2a-find-tasks)
    *
    * @param toolName - Name of the tool to execute
    * @param args - Tool arguments (validated by individual handlers)
@@ -331,6 +332,7 @@ export class ToolRouter {
    *
    * @private
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- each handler validates via Zod schemas
   private async dispatch(toolName: string, args: any): Promise<CallToolResult> {
     // Buddy Commands
     if (toolName === 'buddy-do') {

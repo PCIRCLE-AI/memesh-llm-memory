@@ -11,6 +11,19 @@
 import { logger } from '../../utils/logger.js';
 
 /**
+ * Maximum number of unique metric keys.
+ * When exceeded, oldest (least recently used) metrics are evicted.
+ * To avoid hitting this limit, use low-cardinality labels (avoid unique IDs).
+ */
+const MAX_METRIC_KEYS = 10000;
+
+/**
+ * Maximum recommended number of labels per metric.
+ * Exceeding this may cause high cardinality issues.
+ */
+const MAX_RECOMMENDED_LABELS = 10;
+
+/**
  * Metric types supported
  */
 export type MetricType = 'counter' | 'gauge' | 'histogram';
@@ -58,10 +71,12 @@ export interface MetricValue {
 export class A2AMetrics {
   private static instance: A2AMetrics | null = null;
   private metrics: Map<string, MetricValue>;
+  private metricAccessOrder: string[];
   private enabled: boolean;
 
   private constructor() {
     this.metrics = new Map();
+    this.metricAccessOrder = [];
     this.enabled = process.env.A2A_METRICS_ENABLED !== 'false';
 
     if (this.enabled) {
@@ -113,6 +128,9 @@ export class A2AMetrics {
   ): void {
     if (!this.enabled) return;
 
+    // Validate labels for cardinality
+    this.validateLabels(labels);
+
     // Validate value - must be finite and non-negative
     if (!Number.isFinite(value)) {
       logger.error('[A2A Metrics] Counter increment value must be finite', {
@@ -147,6 +165,9 @@ export class A2AMetrics {
       });
     }
 
+    // Enforce metric limit with LRU eviction
+    this.enforceMetricLimit(key);
+
     logger.debug(`[A2A Metrics] Counter ${name} = ${this.metrics.get(key)?.value}`, labels);
   }
 
@@ -166,6 +187,9 @@ export class A2AMetrics {
   setGauge(name: string, value: number, labels: Record<string, string> = {}): void {
     if (!this.enabled) return;
 
+    // Validate labels for cardinality
+    this.validateLabels(labels);
+
     // Validate value - must be finite
     if (!Number.isFinite(value)) {
       logger.error('[A2A Metrics] Gauge value must be finite', {
@@ -183,6 +207,9 @@ export class A2AMetrics {
       labels,
       timestamp: Date.now(),
     });
+
+    // Enforce metric limit with LRU eviction
+    this.enforceMetricLimit(key);
 
     logger.debug(`[A2A Metrics] Gauge ${name} = ${value}`, labels);
   }
@@ -208,6 +235,9 @@ export class A2AMetrics {
     labels: Record<string, string> = {}
   ): void {
     if (!this.enabled) return;
+
+    // Validate labels for cardinality
+    this.validateLabels(labels);
 
     // Validate value - must be finite and non-negative
     if (!Number.isFinite(value)) {
@@ -238,6 +268,9 @@ export class A2AMetrics {
       timestamp: Date.now(),
     });
 
+    // Enforce metric limit with LRU eviction
+    this.enforceMetricLimit(key);
+
     logger.debug(`[A2A Metrics] Histogram ${name} = ${value}`, labels);
   }
 
@@ -267,6 +300,7 @@ export class A2AMetrics {
    */
   clear(): void {
     this.metrics.clear();
+    this.metricAccessOrder = [];
     logger.debug('[A2A Metrics] All metrics cleared');
   }
 
@@ -288,6 +322,46 @@ export class A2AMetrics {
       .join(',');
 
     return labelStr ? `${name}{${labelStr}}` : name;
+  }
+
+  /**
+   * Enforce metric limit using LRU eviction.
+   * Updates access order and evicts oldest metrics when over limit.
+   *
+   * @param key The metric key that was just accessed/updated
+   */
+  private enforceMetricLimit(key: string): void {
+    // Update access order (move to end = most recently used)
+    const existingIdx = this.metricAccessOrder.indexOf(key);
+    if (existingIdx !== -1) {
+      this.metricAccessOrder.splice(existingIdx, 1);
+    }
+    this.metricAccessOrder.push(key);
+
+    // Evict oldest if over limit
+    while (this.metrics.size > MAX_METRIC_KEYS) {
+      const oldestKey = this.metricAccessOrder.shift();
+      if (oldestKey) {
+        this.metrics.delete(oldestKey);
+        logger.warn('[A2A Metrics] Evicted oldest metric due to limit', { key: oldestKey });
+      }
+    }
+  }
+
+  /**
+   * Validate labels for potential high cardinality issues.
+   * Warns if too many labels are provided.
+   *
+   * @param labels Labels to validate
+   */
+  private validateLabels(labels: Record<string, string>): void {
+    const labelCount = Object.keys(labels).length;
+    if (labelCount > MAX_RECOMMENDED_LABELS) {
+      logger.warn('[A2A Metrics] Too many labels may cause high cardinality', {
+        labelCount,
+        maxRecommended: MAX_RECOMMENDED_LABELS,
+      });
+    }
   }
 }
 

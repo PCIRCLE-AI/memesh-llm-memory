@@ -1,6 +1,6 @@
 # Unified Task Board
 
-**Version**: Phase 2.2
+**Version**: Phase 2.3
 **Last Updated**: 2026-02-06
 
 ---
@@ -318,6 +318,231 @@ Skills: typescript, react, testing, code-review
 
 Your agent is now registered for skill-based task matching.
 Use a2a-find-tasks to discover tasks matching your skills.
+```
+
+---
+
+### a2a-cancel-task
+
+Cancel a pending or in-progress task. Only the task owner or creator can cancel a task.
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `taskId` | string (UUID) | Yes | UUID of the task to cancel |
+| `reason` | string | No | Reason for cancellation |
+
+**Example:**
+
+```typescript
+a2a-cancel-task({
+  taskId: "abc12345-6789-4def-a012-345678901234",
+  reason: "Requirements changed"
+})
+```
+
+**Output (Success):**
+
+```
+✅ Task cancelled successfully!
+
+Task: [abc12345] Implement user authentication
+Status: deleted
+Reason: Requirements changed
+
+Task has been removed from the active board.
+```
+
+**Output (Error):**
+
+```
+❌ Error cancelling task [abc12345]
+
+Reason: Cannot cancel task in 'completed' status
+```
+
+---
+
+### a2a-subscribe
+
+Subscribe to task board events via Server-Sent Events (SSE). Returns connection information for monitoring task changes in real-time.
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `status` | string | No | (all) | Filter by task status |
+| `platform` | string | No | (all) | Filter by creator platform |
+| `skills` | string[] | No | `[]` | Filter by skills |
+| `types` | string[] | No | (all) | Event types to receive |
+
+**Example:**
+
+```typescript
+// Subscribe to all events
+a2a-subscribe({})
+
+// Subscribe to specific events with filters
+a2a-subscribe({
+  status: "pending",
+  skills: ["typescript", "react"],
+  types: ["task.created", "task.claimed"]
+})
+```
+
+**Output:**
+
+```
+🔔 SSE Subscription Info
+
+Endpoint: http://localhost:3000/a2a/events
+Filters:
+  Status: pending
+  Skills: typescript, react
+  Types: task.created, task.claimed
+
+Connection URL:
+http://localhost:3000/a2a/events?status=pending&skills=typescript,react&types=task.created,task.claimed
+
+To connect via curl:
+curl -N "http://localhost:3000/a2a/events?status=pending&skills=typescript,react&types=task.created,task.claimed"
+
+To resume after disconnect, use:
+curl -N -H "Last-Event-ID: <last-event-id>" "<url>"
+```
+
+---
+
+## Event Notifications
+
+Phase 2.3 introduces real-time event notifications via Server-Sent Events (SSE).
+
+### SSE Endpoint
+
+**URL**: `GET /a2a/events`
+
+Connect to receive real-time notifications for task board changes.
+
+### Event Types
+
+| Event | Description | Payload |
+|-------|-------------|---------|
+| `connected` | Connection established | `{ message, timestamp, filters }` |
+| `heartbeat` | Keep-alive signal (30s) | `{ timestamp }` |
+| `task.created` | New task added | `{ taskId, subject, status, platform, timestamp }` |
+| `task.claimed` | Task claimed by agent | `{ taskId, subject, status, owner, platform, timestamp }` |
+| `task.released` | Task released to pending | `{ taskId, subject, status, platform, timestamp }` |
+| `task.completed` | Task marked complete | `{ taskId, subject, status, owner, platform, timestamp }` |
+| `task.cancelled` | Task cancelled | `{ taskId, subject, status, reason, platform, timestamp }` |
+| `task.updated` | Task details changed | `{ taskId, subject, status, changes, platform, timestamp }` |
+
+### Event Format
+
+Events follow the SSE specification with `event`, `id`, and `data` fields:
+
+```
+event: task.created
+id: evt_1707220800000_abc123
+data: {"taskId":"abc12345-6789-4def-a012-345678901234","subject":"Implement feature X","status":"pending","platform":"claude-code","timestamp":"2026-02-06T12:00:00.000Z"}
+
+event: heartbeat
+id: evt_1707220830000_hb
+data: {"timestamp":"2026-02-06T12:00:30.000Z"}
+```
+
+### Filtering
+
+Filter events using query parameters:
+
+```bash
+# All events (no filter)
+curl -N http://localhost:3000/a2a/events
+
+# Only pending tasks
+curl -N "http://localhost:3000/a2a/events?status=pending"
+
+# Only from Claude Code
+curl -N "http://localhost:3000/a2a/events?platform=claude-code"
+
+# Tasks matching skills
+curl -N "http://localhost:3000/a2a/events?skills=typescript,react"
+
+# Specific event types
+curl -N "http://localhost:3000/a2a/events?types=task.created,task.claimed"
+
+# Combined filters
+curl -N "http://localhost:3000/a2a/events?status=pending&platform=claude-code&skills=typescript"
+```
+
+### Reconnection
+
+If a connection drops, resume from the last received event using the `Last-Event-ID` header:
+
+```bash
+# Initial connection
+curl -N http://localhost:3000/a2a/events
+# Receives events with IDs: evt_001, evt_002, evt_003
+# Connection drops...
+
+# Reconnect and resume from evt_003
+curl -N -H "Last-Event-ID: evt_003" http://localhost:3000/a2a/events
+# Receives: evt_004, evt_005, ... (all events after evt_003)
+```
+
+The server maintains an event buffer and replays missed events upon reconnection.
+
+### JavaScript Client Example
+
+```javascript
+const eventSource = new EventSource('http://localhost:3000/a2a/events?status=pending');
+
+eventSource.addEventListener('connected', (e) => {
+  console.log('Connected:', JSON.parse(e.data));
+});
+
+eventSource.addEventListener('task.created', (e) => {
+  const task = JSON.parse(e.data);
+  console.log('New task:', task.subject);
+});
+
+eventSource.addEventListener('task.claimed', (e) => {
+  const task = JSON.parse(e.data);
+  console.log(`Task ${task.taskId} claimed by ${task.owner}`);
+});
+
+eventSource.addEventListener('heartbeat', (e) => {
+  console.log('Heartbeat received');
+});
+
+eventSource.onerror = (e) => {
+  console.error('Connection error, will auto-reconnect');
+};
+```
+
+### Node.js Client Example
+
+```typescript
+import EventSource from 'eventsource';
+
+const url = 'http://localhost:3000/a2a/events?skills=typescript,react';
+const es = new EventSource(url);
+
+es.addEventListener('task.created', (event: MessageEvent) => {
+  const data = JSON.parse(event.data);
+  console.log(`New task matching skills: ${data.subject}`);
+});
+
+es.addEventListener('task.claimed', (event: MessageEvent) => {
+  const data = JSON.parse(event.data);
+  console.log(`Task claimed: ${data.taskId} by ${data.owner}`);
+});
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+  es.close();
+  process.exit(0);
+});
 ```
 
 ---
@@ -700,5 +925,5 @@ board.createTask({
 
 ---
 
-**Document Version**: 1.0
-**Phase**: 2.2 (Unified Task Board)
+**Document Version**: 2.0
+**Phase**: 2.3 (Event Notifications & Auto-Polling)

@@ -644,12 +644,10 @@ export class A2AClient {
               // ✅ FIX ISSUE-9: Log JSON parsing failures for debugging
               // Server may have returned non-JSON error (HTML, plain text)
               // This is expected for some error responses, proceed with HTTP status
-              if (process.env.NODE_ENV !== 'test') {
-                console.warn(
-                  `[A2AClient] Failed to parse error response as JSON for task ${taskId}:`,
-                  jsonError instanceof Error ? jsonError.message : String(jsonError)
-                );
-              }
+              logger.warn(
+                `[A2AClient] Failed to parse error response as JSON for task ${taskId}:`,
+                { error: jsonError instanceof Error ? jsonError.message : String(jsonError) }
+              );
             }
             throw createError(ErrorCodes.HTTP_ERROR, response.status, errorMessage);
           }
@@ -722,12 +720,10 @@ export class A2AClient {
         // ✅ FIX ISSUE-9: Log JSON parsing failures for debugging
         // Server may have returned non-JSON error (HTML, plain text)
         // This is expected for some error responses, proceed with HTTP status
-        if (process.env.NODE_ENV !== 'test') {
-          console.warn(
-            `[A2AClient] Failed to parse error response as JSON (HTTP ${response.status}):`,
-            jsonError instanceof Error ? jsonError.message : String(jsonError)
-          );
-        }
+        logger.warn(
+          `[A2AClient] Failed to parse error response as JSON (HTTP ${response.status}):`,
+          { error: jsonError instanceof Error ? jsonError.message : String(jsonError) }
+        );
       }
       throw createError(ErrorCodes.HTTP_ERROR, response.status, errorMessage);
     }

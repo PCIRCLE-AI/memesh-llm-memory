@@ -1508,12 +1508,8 @@ export class BackgroundExecutor {
       }
     } catch (loggingError) {
       // Last resort: if even logging fails, write to stderr directly to avoid silent swallowing
-      // This is intentionally console.error since the logger itself has failed
-      console.error(
-        `[BackgroundExecutor] FATAL: Error handler failed for task ${taskId}:`,
-        loggingError,
-        'Original error:',
-        error
+      process.stderr.write(
+        `[BackgroundExecutor] FATAL: Error handler failed for task ${taskId}: ${loggingError}\nOriginal error: ${error}\n`
       );
     }
   }

@@ -102,7 +102,7 @@ if (hasCliArgs) {
     const { runCLI } = await import('../cli/index.js');
     await runCLI();
   })().catch((error) => {
-    console.error('CLI error:', error);
+    process.stderr.write(`CLI error: ${error}\n`);
     process.exit(1);
   });
 } else {
@@ -199,13 +199,13 @@ ${chalk.default.bold('Documentation:')}
   ${chalk.default.underline('https://github.com/PCIRCLE-AI/claude-code-buddy#installation')}
 `;
 
-      console.log(
+      process.stderr.write(
         boxen(message, {
           padding: 1,
           margin: 1,
           borderStyle: 'round',
           borderColor: 'yellow',
-        })
+        }) + '\n'
       );
       process.exit(0);
     }
@@ -352,7 +352,7 @@ async function bootstrapWithDaemon() {
     }
   } catch (error) {
     // If daemon bootstrap fails, fall back to standalone mode
-    console.error('[Bootstrap] Daemon bootstrap failed, falling back to standalone:', error);
+    process.stderr.write(`[Bootstrap] Daemon bootstrap failed, falling back to standalone: ${error}\n`);
     startMCPServer();
   }
 }
@@ -620,8 +620,7 @@ function startMCPServer() {
 
       // server.connect() keeps the process alive - no need for infinite promise
     } catch (error) {
-      // Use console.error for stdio safety (writes to stderr, not stdout)
-      console.error('Fatal error in MCP server bootstrap:', error);
+      process.stderr.write(`Fatal error in MCP server bootstrap: ${error}\n`);
       process.exit(1);
     }
   }

@@ -7,6 +7,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { UIEventBus } from '../UIEventBus.js';
 import { type ProgressIndicator, type ErrorEvent } from '../types.js';
+import { logger } from '../../utils/logger.js';
 
 describe('P1-14: Unhandled Promise Rejections in Event Bus', () => {
   let eventBus: UIEventBus;
@@ -350,9 +351,9 @@ describe('P1-14: Unhandled Promise Rejections in Event Bus', () => {
     });
   });
 
-  describe('Console Fallback', () => {
-    it('should log to console if error emission fails', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  describe('Logger Fallback', () => {
+    it('should log to logger if error emission fails', async () => {
+      const loggerErrorSpy = vi.spyOn(logger, 'error').mockImplementation(() => logger);
 
       // Make emit throw for error events
       const originalEmit = eventBus.emit.bind(eventBus);
@@ -379,17 +380,17 @@ describe('P1-14: Unhandled Promise Rejections in Event Bus', () => {
       // Wait for async error handling
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Should have logged to console as fallback
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      // Should have logged to logger as fallback
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('Failed to emit error event'),
         expect.anything()
       );
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('Original async handler error'),
         expect.anything()
       );
 
-      consoleErrorSpy.mockRestore();
+      loggerErrorSpy.mockRestore();
     });
   });
 

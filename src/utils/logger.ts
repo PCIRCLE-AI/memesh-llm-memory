@@ -191,7 +191,7 @@ function buildFileTransports(): winston.transport[] {
     }
   } catch (error) {
     // Fall back to console-only logging if filesystem is not writable
-    console.warn('Logger: failed to create logs directory, using console-only logging');
+    process.stderr.write('Logger: failed to create logs directory, using console-only logging\n');
     return [];
   }
 

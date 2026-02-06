@@ -13,6 +13,8 @@
  * Supports reconnection via Last-Event-ID header.
  */
 
+import { logger } from '../../../utils/logger.js';
+
 import { Router, Request, Response } from 'express';
 import { A2AEventEmitter } from '../../events/A2AEventEmitter.js';
 import { A2AEvent, isTaskEvent } from '../../events/types.js';
@@ -199,7 +201,7 @@ export function createEventsRouter(eventEmitter: A2AEventEmitter): Router {
             res.write(formatSSE(event));
           }
         } catch (error) {
-          console.error('SSE write failed for buffered event:', error);
+          logger.error('SSE write failed for buffered event:', error);
         }
       }
     }
@@ -210,7 +212,7 @@ export function createEventsRouter(eventEmitter: A2AEventEmitter): Router {
         try {
           res.write(':heartbeat\n\n');
         } catch (error) {
-          console.error('SSE heartbeat failed:', error);
+          logger.error('SSE heartbeat failed:', error);
           clearInterval(heartbeatInterval);
         }
       }
@@ -224,7 +226,7 @@ export function createEventsRouter(eventEmitter: A2AEventEmitter): Router {
             res.write(formatSSE(event));
           }
         } catch (error) {
-          console.error('SSE write failed:', error);
+          logger.error('SSE write failed:', error);
           unsubscribe();
           clearInterval(heartbeatInterval);
         }

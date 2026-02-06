@@ -646,16 +646,14 @@ function displayCheckInBroadcast(
     `        "${identity.name}, you handle frontend" or "${identity.name}, you handle backend API"`
   );
   console.log('');
-  console.log('     Send task to another agent:');
-  console.log('        a2a-send-task targetAgentId="<agent>" taskDescription="..."');
+  console.log('     View task board:');
+  console.log('        a2a-board');
   console.log('');
-  console.log('     Check your tasks:');
-  console.log('        a2a-list-tasks');
+  console.log('     Find available tasks:');
+  console.log('        a2a-find-tasks status="PENDING"');
   console.log('');
-  console.log('     Report task completion:');
-  console.log(
-    '        a2a-report-result taskId="<id>" result="Done! Commit: xxx" success=true'
-  );
+  console.log('     Claim a task:');
+  console.log('        a2a-claim-task taskId="<id>" assignee="<name>"');
   console.log('');
   console.log('='.repeat(60));
   console.log('');

@@ -7,38 +7,8 @@
  */
 
 import { vi } from 'vitest';
-import type { A2AClient } from '../../src/a2a/client/A2AClient.js';
 import type { AgentRegistry } from '../../src/core/AgentRegistry.js';
 import type { SecretManager } from '../../src/memory/SecretManager.js';
-
-/**
- * Create a complete mock A2AClient with all methods stubbed
- *
- * All methods default to vi.fn() stubs. Provide overrides to customize
- * specific methods for your test scenarios.
- *
- * @param overrides - Partial overrides for specific methods
- * @returns Complete A2AClient mock
- *
- * @example
- * ```typescript
- * const mockClient = createMockA2AClient({
- *   sendMessage: vi.fn().mockResolvedValue({ taskId: 'test-123' }),
- *   getTask: vi.fn().mockResolvedValue({ id: 'test-123', state: 'COMPLETED' }),
- * });
- * ```
- */
-export function createMockA2AClient(overrides: Partial<A2AClient> = {}): A2AClient {
-  return {
-    sendMessage: vi.fn(),
-    getTask: vi.fn(),
-    listTasks: vi.fn(),
-    getAgentCard: vi.fn(),
-    cancelTask: vi.fn(),
-    listAvailableAgents: vi.fn(),
-    ...overrides,
-  } as A2AClient;
-}
 
 /**
  * Create a complete mock AgentRegistry with all methods stubbed

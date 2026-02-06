@@ -63,7 +63,7 @@ export interface ToolRouterConfig {
  * - Minimum length of 1 character
  *
  * This aligns with the MCP protocol convention where tool names like
- * 'buddy-do', 'get-workflow-guidance', 'a2a-send-task' are used.
+ * 'buddy-do', 'memesh-remember', 'a2a-board' are used.
  */
 const TOOL_NAME_REGEX = /^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$/;
 const TOOL_NAME_MAX_LENGTH = 64;
@@ -137,7 +137,7 @@ function validateToolName(toolName: string): void {
         method: 'validateToolName',
         providedName: safeName,
         pattern: TOOL_NAME_REGEX.source,
-        hint: 'Example valid names: buddy-do, get-workflow-guidance, a2a-send-task',
+        hint: 'Example valid names: buddy-do, memesh-remember, a2a-board',
       }
     );
   }
@@ -151,8 +151,8 @@ function validateToolName(toolName: string): void {
  *
  * The router supports main categories of tools:
  * - **Buddy Tools**: buddy-do, buddy-remember, buddy-help
- * - **Workflow Guidance Tools**: get-workflow-guidance, get-session-health
- * - **Planning Tools**: generate-smart-plan
+ * - **MeMesh Tools**: memesh-do, memesh-remember, memesh-help
+ * - **A2A Tools**: a2a-board, a2a-claim-task, a2a-find-tasks
  * - **Hook Tools**: hook-tool-use
  *
  * Architecture:

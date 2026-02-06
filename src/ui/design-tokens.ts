@@ -22,11 +22,9 @@ export const operationDisplayNames: Record<string, string> = {
   'search-nodes': 'Knowledge Search',
 
   // Agent-to-Agent operations
-  'a2a-send-task': 'Agent Communication',
-  'a2a-discover-agents': 'Agent Discovery',
-  'a2a-query-status': 'Status Check',
-  'a2a-list-tasks': 'Task List',
-  'a2a-list-agents': 'Agent Registry',
+  'a2a-board': 'Task Board',
+  'a2a-claim-task': 'Claim Task',
+  'a2a-find-tasks': 'Find Tasks',
 
   // Legacy buddy-* aliases (deprecated)
   'buddy-remember': 'Memory Search',
@@ -35,10 +33,6 @@ export const operationDisplayNames: Record<string, string> = {
   'buddy-record-mistake': 'Error Recording',
   'buddy-secret-store': 'Secret Storage',
   'buddy-secret-get': 'Secret Retrieval',
-
-  // System operations
-  'get-session-health': 'Health Check',
-  'get-workflow-guidance': 'Workflow Guide',
 };
 
 /**

@@ -161,6 +161,7 @@ class ClaudeCodeBuddyMCPServer {
       toolHandlers: this.components.toolHandlers,
       buddyHandlers: this.components.buddyHandlers,
       secretManager: this.components.secretManager,
+      knowledgeGraph: this.components.knowledgeGraph,
     });
     this.components.toolInterface.attachToolDispatcher(this.toolRouter);
     this.sessionBootstrapper = new SessionBootstrapper(

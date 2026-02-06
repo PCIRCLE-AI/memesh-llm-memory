@@ -21,9 +21,11 @@ import {
   handleBuddySecretDelete,
 } from './handlers/index.js';
 import type { SecretManager } from '../memory/SecretManager.js';
+import type { KnowledgeGraph } from '../knowledge-graph/index.js';
 import { handleA2ABoard, A2ABoardInputSchema } from './tools/a2a-board.js';
 import { handleA2AClaimTask, A2AClaimTaskInputSchema } from './tools/a2a-claim-task.js';
 import { handleA2AFindTasks, A2AFindTasksInputSchema } from './tools/a2a-find-tasks.js';
+import { handleCloudSync, CloudSyncInputSchema } from './tools/memesh-cloud-sync.js';
 
 /**
  * Tool Router Configuration
@@ -37,6 +39,11 @@ export interface ToolRouterConfig {
    * Secret Manager for secure secret storage (Phase 0.7.0)
    */
   secretManager?: SecretManager;
+
+  /**
+   * Knowledge Graph for cloud sync operations
+   */
+  knowledgeGraph?: KnowledgeGraph;
 
   /**
    * CSRF protection for future HTTP transport
@@ -180,6 +187,7 @@ export class ToolRouter {
   private toolHandlers: ToolHandlers;
   private buddyHandlers: BuddyHandlers;
   private secretManager?: SecretManager;
+  private knowledgeGraph?: KnowledgeGraph;
 
   private readonly allowedOrigins?: string[];
   private readonly transportMode: 'stdio' | 'http';
@@ -194,6 +202,7 @@ export class ToolRouter {
     this.toolHandlers = config.toolHandlers;
     this.buddyHandlers = config.buddyHandlers;
     this.secretManager = config.secretManager;
+    this.knowledgeGraph = config.knowledgeGraph;
     this.allowedOrigins = config.allowedOrigins;
     this.transportMode = config.transportMode || 'stdio';
   }
@@ -422,6 +431,18 @@ export class ToolRouter {
         );
       }
       return await handleBuddySecretDelete(args, this.secretManager);
+    }
+
+    // Cloud Sync tools
+    if (toolName === 'memesh-cloud-sync') {
+      const validationResult = CloudSyncInputSchema.safeParse(args);
+      if (!validationResult.success) {
+        throw new ValidationError(
+          `Invalid input for ${toolName}: ${validationResult.error.message}`,
+          { component: 'ToolRouter', method: 'dispatch', toolName, zodError: validationResult.error }
+        );
+      }
+      return handleCloudSync(validationResult.data, this.knowledgeGraph);
     }
 
     // Task Board tools (local task management)

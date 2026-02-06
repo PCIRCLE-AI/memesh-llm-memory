@@ -16,6 +16,7 @@ import os from 'os';
 import { execFileSync } from 'child_process';
 import { expandHome } from '../utils/paths.js';
 import { generateAgentId } from '../a2a/utils/agentId.js';
+import { detectPlatform } from '../a2a/utils/platformDetection.js';
 
 // ============================================
 // Configuration
@@ -442,6 +443,35 @@ function registerToKnowledgeGraph(identity: AgentIdentity): boolean {
   }
 }
 
+/**
+ * Register agent with MeMesh Cloud (optional, fire-and-forget).
+ * Only runs when MEMESH_API_KEY is configured.
+ */
+function registerToCloud(identity: AgentIdentity): void {
+  try {
+    // Dynamic import to avoid loading cloud module when not needed
+    import('../cloud/index.js').then(({ isCloudEnabled, getCloudClient }) => {
+      if (!isCloudEnabled()) return;
+
+      const client = getCloudClient();
+      const platform = detectPlatform();
+
+      client.registerAgent({
+        agentId: identity.agentId,
+        name: identity.name,
+        platform,
+        specialization: identity.specialization,
+      }).catch(() => {
+        // Silent failure - cloud registration is optional
+      });
+    }).catch(() => {
+      // Dynamic import failed - cloud module not available
+    });
+  } catch {
+    // Ignore all errors - cloud registration must never block session start
+  }
+}
+
 function loadIdentity(): AgentIdentity | null {
   return readJSON<AgentIdentity>(AGENT_IDENTITY_FILE);
 }
@@ -475,6 +505,7 @@ export function agentCheckIn(): AgentIdentity {
 
   saveIdentity(identity);
   registerToKnowledgeGraph(identity);
+  registerToCloud(identity);
 
   return identity;
 }

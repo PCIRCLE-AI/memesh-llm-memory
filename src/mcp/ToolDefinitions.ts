@@ -388,6 +388,58 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
   };
 
   // ========================================
+  // Cloud Sync Tools
+  // ========================================
+
+  const cloudSyncTool: MCPToolDefinition = {
+    name: 'memesh-cloud-sync',
+    description: `☁️ Sync local Knowledge Graph memories with MeMesh Cloud.
+
+**Actions:**
+• {action: "status"}: Compare local vs cloud memory counts
+• {action: "push"}: Push local memories to cloud
+• {action: "pull"}: Pull cloud memories to local
+• {action: "push", dryRun: true}: Preview what would be synced
+
+Requires MEMESH_API_KEY to be configured. Without it, all actions return a setup guide.`,
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        action: {
+          type: 'string',
+          enum: ['push', 'pull', 'status'],
+          description: 'Sync action: push (local→cloud), pull (cloud→local), status (compare)',
+        },
+        query: {
+          type: 'string',
+          description: 'Optional search query to filter which memories to sync',
+        },
+        limit: {
+          type: 'number',
+          description: 'Max memories per batch (default: 100, max: 500)',
+          minimum: 1,
+          maximum: 500,
+          default: 100,
+        },
+        dryRun: {
+          type: 'boolean',
+          description: 'Preview sync without executing (default: false)',
+          default: false,
+        },
+      },
+      required: ['action'],
+    },
+    outputSchema: OutputSchemas.cloudSync,
+    annotations: {
+      title: 'Cloud Sync',
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+  };
+
+  // ========================================
   // Task Board Tools (Local Task Management)
   // ========================================
 
@@ -667,6 +719,9 @@ Supports filtering by status, platform, and owner.
     buddySecretGetTool,
     buddySecretListTool,
     buddySecretDeleteTool,
+
+    // Cloud Sync
+    cloudSyncTool,
 
     // Task Board Tools
     a2aBoardTool,

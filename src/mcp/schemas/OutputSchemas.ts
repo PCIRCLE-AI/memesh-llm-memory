@@ -206,6 +206,29 @@ export const OutputSchemas = {
     },
     required: ['testCode', 'message'],
   },
+
+  /**
+   * memesh-cloud-sync output structure
+   */
+  cloudSync: {
+    type: 'object' as const,
+    properties: {
+      success: { type: 'boolean' },
+      action: { type: 'string', enum: ['push', 'pull', 'status'] },
+      message: { type: 'string' },
+      pushed: { type: 'number' },
+      pulled: { type: 'number' },
+      errors: { type: 'number' },
+      dryRun: { type: 'boolean' },
+      connected: { type: 'boolean' },
+      local: { type: 'object', properties: { count: { type: 'number' } } },
+      cloud: { type: 'object', properties: { count: { type: 'number' } } },
+      delta: { type: 'number' },
+      hasMore: { type: 'boolean' },
+      hint: { type: 'string' },
+    },
+    required: ['success'],
+  },
 };
 
 /**

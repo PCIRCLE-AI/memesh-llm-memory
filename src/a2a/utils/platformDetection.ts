@@ -5,6 +5,7 @@
  * This enables platform-aware features like agent ID generation and task routing.
  *
  * Detection is done in priority order:
+ * 0. MEMESH_PLATFORM override (highest priority, explicit user setting)
  * 1. Claude Code (CLAUDE_CODE_VERSION)
  * 2. ChatGPT (OPENAI_API_KEY)
  * 3. Gemini (GEMINI_API_KEY)
@@ -23,6 +24,15 @@ export type Platform =
   | 'cursor'
   | 'vscode'
   | 'unknown';
+
+const VALID_PLATFORMS: ReadonlySet<string> = new Set<Platform>([
+  'claude-code', 'chatgpt', 'gemini', 'cursor', 'vscode', 'unknown',
+]);
+
+/** Type guard for Platform values */
+function isValidPlatform(value: string): value is Platform {
+  return VALID_PLATFORMS.has(value);
+}
 
 /**
  * Detects the current AI platform from environment variables.
@@ -55,7 +65,13 @@ export type Platform =
  * ```
  */
 export function detectPlatform(): Platform {
-  // Priority order matters - check from highest to lowest priority
+  // Explicit override takes highest priority
+  const override = process.env.MEMESH_PLATFORM?.trim()?.toLowerCase();
+  if (override && isValidPlatform(override)) {
+    return override;
+  }
+
+  // Auto-detection in priority order
   if (process.env.CLAUDE_CODE_VERSION?.trim()) {
     return 'claude-code';
   }

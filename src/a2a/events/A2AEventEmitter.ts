@@ -29,7 +29,9 @@ export class A2AEventEmitter {
    */
   emit(event: A2AEvent): void {
     this.buffer.add(event);
-    for (const callback of this.subscribers) {
+    // Snapshot subscribers to handle concurrent modifications safely
+    const subscribers = Array.from(this.subscribers);
+    for (const callback of subscribers) {
       try {
         callback(event);
       } catch (error) {
@@ -79,6 +81,17 @@ export class A2AEventEmitter {
    * Clear all events from buffer (mainly for testing)
    */
   clearBuffer(): void {
+    this.buffer.clear();
+  }
+
+  /**
+   * Dispose the emitter and release all resources
+   *
+   * Clears all subscribers and the event buffer. Call this when the emitter
+   * is no longer needed to ensure proper cleanup.
+   */
+  dispose(): void {
+    this.subscribers.clear();
     this.buffer.clear();
   }
 }

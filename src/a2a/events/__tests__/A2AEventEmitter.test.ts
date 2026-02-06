@@ -75,6 +75,64 @@ describe('A2AEventEmitter', () => {
       expect(errorCallback).toHaveBeenCalled();
       expect(goodCallback).toHaveBeenCalledWith(event);
     });
+
+    it('should handle subscriber unsubscribing during emit (concurrent modification)', () => {
+      const callOrder: string[] = [];
+      let unsubscribe2: () => void;
+
+      const callback1 = vi.fn(() => {
+        callOrder.push('callback1');
+        // Unsubscribe callback2 during iteration
+        unsubscribe2();
+      });
+
+      const callback2 = vi.fn(() => {
+        callOrder.push('callback2');
+      });
+
+      const callback3 = vi.fn(() => {
+        callOrder.push('callback3');
+      });
+
+      emitter.subscribe(callback1);
+      unsubscribe2 = emitter.subscribe(callback2);
+      emitter.subscribe(callback3);
+
+      const event = createTaskEvent('task.created');
+      emitter.emit(event);
+
+      // All callbacks should be called because we snapshot before iterating
+      expect(callback1).toHaveBeenCalledWith(event);
+      expect(callback2).toHaveBeenCalledWith(event);
+      expect(callback3).toHaveBeenCalledWith(event);
+      expect(callOrder).toEqual(['callback1', 'callback2', 'callback3']);
+
+      // After emit, callback2 should be unsubscribed
+      expect(emitter.subscriberCount).toBe(2);
+    });
+
+    it('should handle subscriber unsubscribing itself during emit', () => {
+      let unsubscribeSelf: () => void;
+
+      const selfUnsubscribeCallback = vi.fn(() => {
+        unsubscribeSelf();
+      });
+
+      const otherCallback = vi.fn();
+
+      unsubscribeSelf = emitter.subscribe(selfUnsubscribeCallback);
+      emitter.subscribe(otherCallback);
+
+      const event = createTaskEvent('task.created');
+      emitter.emit(event);
+
+      // Both should be called despite self-unsubscription
+      expect(selfUnsubscribeCallback).toHaveBeenCalledWith(event);
+      expect(otherCallback).toHaveBeenCalledWith(event);
+
+      // Self-unsubscribing callback should be gone
+      expect(emitter.subscriberCount).toBe(1);
+    });
   });
 
   describe('subscribe', () => {
@@ -166,6 +224,52 @@ describe('A2AEventEmitter', () => {
 
       // Only last 3 events should be kept
       expect(smallEmitter.getEventsAfter(undefined)).toHaveLength(3);
+    });
+  });
+
+  describe('dispose', () => {
+    it('should clear all subscribers', () => {
+      const callback1 = vi.fn();
+      const callback2 = vi.fn();
+      emitter.subscribe(callback1);
+      emitter.subscribe(callback2);
+
+      expect(emitter.subscriberCount).toBe(2);
+
+      emitter.dispose();
+
+      expect(emitter.subscriberCount).toBe(0);
+    });
+
+    it('should clear event buffer', () => {
+      emitter.emit(createTaskEvent('task.created'));
+      emitter.emit(createTaskEvent('task.claimed'));
+
+      expect(emitter.getEventsAfter(undefined)).toHaveLength(2);
+
+      emitter.dispose();
+
+      expect(emitter.getEventsAfter(undefined)).toHaveLength(0);
+    });
+
+    it('should not emit to subscribers after dispose', () => {
+      const callback = vi.fn();
+      emitter.subscribe(callback);
+
+      emitter.dispose();
+      emitter.emit(createTaskEvent('task.created'));
+
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it('should allow multiple dispose calls without error', () => {
+      emitter.subscribe(() => {});
+      emitter.emit(createTaskEvent('task.created'));
+
+      expect(() => {
+        emitter.dispose();
+        emitter.dispose();
+      }).not.toThrow();
     });
   });
 });

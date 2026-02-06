@@ -9,6 +9,21 @@ describe('EventBuffer', () => {
     buffer = new EventBuffer(5); // Small buffer for testing
   });
 
+  describe('constructor', () => {
+    it('should accept valid buffer sizes', () => {
+      expect(() => new EventBuffer(1)).not.toThrow();
+      expect(() => new EventBuffer(100)).not.toThrow();
+    });
+
+    it('should throw error for invalid buffer size (less than 1)', () => {
+      expect(() => new EventBuffer(0)).toThrow('Buffer size must be at least 1');
+      expect(() => new EventBuffer(-1)).toThrow('Buffer size must be at least 1');
+      expect(() => new EventBuffer(-100)).toThrow(
+        'Buffer size must be at least 1'
+      );
+    });
+  });
+
   const createEvent = (id: string): A2AEvent => ({
     id,
     type: 'task.created',

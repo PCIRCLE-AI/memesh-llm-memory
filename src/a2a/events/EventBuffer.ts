@@ -12,6 +12,9 @@ export class EventBuffer {
   private readonly maxSize: number;
 
   constructor(maxSize: number = 100) {
+    if (maxSize < 1) {
+      throw new Error('Buffer size must be at least 1');
+    }
     this.maxSize = maxSize;
   }
 

@@ -6,6 +6,8 @@
  */
 
 import { OutputSchemas } from './schemas/OutputSchemas.js';
+import { a2aCancelTaskToolDefinition } from './tools/a2a-cancel-task.js';
+import { a2aSubscribeToolDefinition } from './tools/a2a-subscribe.js';
 
 
 /**
@@ -1069,6 +1071,8 @@ Supports filtering by status, platform, and owner.
     a2aReleaseTaskTool,
     a2aFindTasksTool,
     a2aSetSkillsTool,
+    a2aCancelTaskToolDefinition,
+    a2aSubscribeToolDefinition,
 
     // Hook Integration
     hookToolUseTool,

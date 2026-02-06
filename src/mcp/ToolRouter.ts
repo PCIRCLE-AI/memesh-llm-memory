@@ -31,6 +31,8 @@ import { handleA2AClaimTask, A2AClaimTaskInputSchema } from './tools/a2a-claim-t
 import { handleA2AReleaseTask, A2AReleaseTaskInputSchema } from './tools/a2a-release-task.js';
 import { handleA2AFindTasks, A2AFindTasksInputSchema } from './tools/a2a-find-tasks.js';
 import { handleA2ASetSkills, A2ASetSkillsInputSchema } from './tools/a2a-set-skills.js';
+import { handleA2ACancelTask, A2ACancelTaskInputSchema } from './tools/a2a-cancel-task.js';
+import { handleA2ASubscribe, A2ASubscribeInputSchema } from './tools/a2a-subscribe.js';
 
 /**
  * Tool Router Configuration
@@ -618,6 +620,40 @@ export class ToolRouter {
         );
       }
       return handleA2ASetSkills(validationResult.data);
+    }
+
+    if (toolName === 'a2a-cancel-task') {
+      // Cancel a pending or in-progress task from the unified task board
+      const validationResult = A2ACancelTaskInputSchema.safeParse(args);
+      if (!validationResult.success) {
+        throw new ValidationError(
+          `Invalid input for ${toolName}: ${validationResult.error.message}`,
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+            zodError: validationResult.error,
+          }
+        );
+      }
+      return handleA2ACancelTask(validationResult.data);
+    }
+
+    if (toolName === 'a2a-subscribe') {
+      // Get SSE events endpoint URL for real-time task notifications
+      const validationResult = A2ASubscribeInputSchema.safeParse(args);
+      if (!validationResult.success) {
+        throw new ValidationError(
+          `Invalid input for ${toolName}: ${validationResult.error.message}`,
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+            zodError: validationResult.error,
+          }
+        );
+      }
+      return handleA2ASubscribe(validationResult.data);
     }
 
     // ✅ FIX MINOR (Round 1): Sanitize toolName in error message

@@ -393,4 +393,29 @@ export class MCPTaskDelegator {
       // An unhandled rejection here would crash the entire Node.js process.
     }
   }
+
+  /**
+   * Dispose the delegator and clear all pending tasks.
+   *
+   * Call this during graceful shutdown or for testing cleanup.
+   * Clears all in-memory state without persisting changes.
+   *
+   * @example
+   * ```typescript
+   * // During graceful shutdown
+   * process.on('SIGTERM', () => {
+   *   delegator.dispose();
+   * });
+   *
+   * // In tests
+   * afterEach(() => {
+   *   delegator.dispose();
+   * });
+   * ```
+   */
+  dispose(): void {
+    this.pendingTasks.clear();
+    this.pendingTasksByAgent.clear();
+    this.logger.info('[MCPTaskDelegator] Disposed - all pending tasks cleared');
+  }
 }

@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createEventsRouter, matchesFilter, formatSSE } from '../events.js';
+import { createEventsRouter, matchesFilter, formatSSE, getActiveConnectionCount, clearActiveConnections } from '../events.js';
 import { A2AEventEmitter } from '../../../events/A2AEventEmitter.js';
 import type { A2AEvent, TaskEventData, AgentEventData } from '../../../events/types.js';
 import type { Request, Response } from 'express';
@@ -19,6 +19,8 @@ describe('SSE Events Endpoint', () => {
 
   afterEach(() => {
     eventEmitter.dispose();
+    // Clean up active connections between tests
+    clearActiveConnections();
   });
 
   describe('createEventsRouter', () => {
@@ -474,6 +476,74 @@ describe('SSE Events Endpoint', () => {
       const formatted = formatSSE(event);
 
       expect(formatted).toContain('Test \\"quoted\\" task');
+    });
+  });
+
+  describe('Connection Limits (CRITICAL-SSE-2)', () => {
+    it('should track active connections', () => {
+      const router = createEventsRouter(eventEmitter);
+
+      const mockReq = {
+        query: {},
+        headers: {},
+        on: vi.fn(),
+      } as unknown as Request;
+
+      const mockRes = {
+        setHeader: vi.fn(),
+        flushHeaders: vi.fn(),
+        write: vi.fn(),
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
+      } as unknown as Response;
+
+      expect(getActiveConnectionCount()).toBe(0);
+
+      const handler = router.stack[0].route.stack[0].handle;
+      handler(mockReq, mockRes, vi.fn());
+
+      expect(getActiveConnectionCount()).toBe(1);
+    });
+
+    it('should remove connection on close', () => {
+      const router = createEventsRouter(eventEmitter);
+
+      let closeHandler: (() => void) | undefined;
+      const mockReq = {
+        query: {},
+        headers: {},
+        on: vi.fn((event: string, handler: () => void) => {
+          if (event === 'close') {
+            closeHandler = handler;
+          }
+        }),
+      } as unknown as Request;
+
+      const mockRes = {
+        setHeader: vi.fn(),
+        flushHeaders: vi.fn(),
+        write: vi.fn(),
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
+      } as unknown as Response;
+
+      const handler = router.stack[0].route.stack[0].handle;
+      handler(mockReq, mockRes, vi.fn());
+
+      expect(getActiveConnectionCount()).toBe(1);
+
+      // Simulate connection close
+      closeHandler!();
+
+      expect(getActiveConnectionCount()).toBe(0);
+    });
+
+    it('should provide utility functions for testing', () => {
+      expect(typeof getActiveConnectionCount).toBe('function');
+      expect(typeof clearActiveConnections).toBe('function');
+
+      // Verify clearActiveConnections works
+      expect(getActiveConnectionCount()).toBe(0);
     });
   });
 });

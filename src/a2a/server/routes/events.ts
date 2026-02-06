@@ -23,6 +23,29 @@ import { A2AEvent, isTaskEvent } from '../../events/types.js';
  */
 const MAX_SSE_CONNECTIONS = 100;
 
+// Validation constants for query parameters (MAJOR-5)
+const MAX_FILTER_ITEMS = 20;
+const MAX_STRING_LENGTH = 100;
+
+/**
+ * Parse and validate a comma-separated filter array from query string
+ * Prevents DoS via excessive input length and limits array size
+ *
+ * @param value - The raw query parameter value
+ * @returns Validated array of filter values, or undefined if invalid
+ */
+function parseFilterArray(value: unknown): string[] | undefined {
+  if (!value || typeof value !== 'string') return undefined;
+  // Reject overly long input to prevent DoS
+  if (value.length > MAX_STRING_LENGTH * MAX_FILTER_ITEMS) return undefined;
+  const items = value
+    .split(',')
+    .slice(0, MAX_FILTER_ITEMS)
+    .map((s) => s.trim().substring(0, MAX_STRING_LENGTH))
+    .filter((s) => s.length > 0);
+  return items.length > 0 ? items : undefined;
+}
+
 /**
  * Track active SSE connections for connection limiting
  */
@@ -156,12 +179,18 @@ export function createEventsRouter(eventEmitter: A2AEventEmitter): Router {
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
-    // Parse filter from query params
+    // Parse filter from query params with validation (MAJOR-5)
     const filter: EventFilter = {
-      status: req.query.status as string | undefined,
-      platform: req.query.platform as string | undefined,
-      skills: req.query.skills ? (req.query.skills as string).split(',') : undefined,
-      types: req.query.types ? (req.query.types as string).split(',') : undefined,
+      status:
+        typeof req.query.status === 'string'
+          ? req.query.status.substring(0, MAX_STRING_LENGTH)
+          : undefined,
+      platform:
+        typeof req.query.platform === 'string'
+          ? req.query.platform.substring(0, MAX_STRING_LENGTH)
+          : undefined,
+      skills: parseFilterArray(req.query.skills),
+      types: parseFilterArray(req.query.types),
     };
 
     // Send any buffered events matching filter (for reconnection)
@@ -208,6 +237,8 @@ export function createEventsRouter(eventEmitter: A2AEventEmitter): Router {
 
     // Cleanup on disconnect
     req.on('close', () => {
+      // 🔒 SECURITY: Remove from active connections (CRITICAL-SSE-2)
+      activeConnections.delete(res);
       clearInterval(heartbeatInterval);
       unsubscribe();
     });

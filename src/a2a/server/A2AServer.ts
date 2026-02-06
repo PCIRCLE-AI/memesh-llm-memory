@@ -207,8 +207,8 @@ export class A2AServer {
     app.get('/a2a/agent-card', spanMiddleware('a2a.agent-card'), this.routes.getAgentCard);
 
     // SSE events endpoint for real-time notifications
-    // Note: Authentication for SSE is handled by the events router if needed
-    app.use('/a2a/events', createEventsRouter(this.eventEmitter));
+    // 🔒 SECURITY: Authentication and rate limiting required (CRITICAL-SSE-1)
+    app.use('/a2a/events', authenticateToken, rateLimitMiddleware, createEventsRouter(this.eventEmitter));
 
     app.use(jsonErrorHandler);
     app.use(errorHandler);

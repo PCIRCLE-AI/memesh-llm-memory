@@ -240,6 +240,21 @@ describe('SessionMemoryPipeline', () => {
       await pipeline.stop();
       expect(pipeline.isRunning).toBe(false);
     });
+
+    it('should support restart: start -> stop -> start', async () => {
+      const pipeline = new SessionMemoryPipeline(mockKG as any);
+
+      await pipeline.start();
+      expect(pipeline.isRunning).toBe(true);
+
+      await pipeline.stop();
+      expect(pipeline.isRunning).toBe(false);
+
+      await pipeline.start();
+      expect(pipeline.isRunning).toBe(true);
+      expect(mockWatcherStart).toHaveBeenCalledTimes(2);
+      expect(mockWatcherStop).toHaveBeenCalledTimes(1);
+    });
   });
 
   // ─── End-to-end: handleMemoryUpdate pipeline ───────────────────
@@ -317,7 +332,8 @@ describe('SessionMemoryPipeline', () => {
 
   describe('error handling', () => {
     it('should catch and log parser errors without crashing', async () => {
-      const pipeline = new SessionMemoryPipeline(mockKG as any);
+      // Construction captures the onMemoryUpdate callback (pipeline itself unused)
+      const _pipeline = new SessionMemoryPipeline(mockKG as any);
 
       const event = createEvent();
       mockParse.mockImplementation(() => {
@@ -341,7 +357,7 @@ describe('SessionMemoryPipeline', () => {
     });
 
     it('should catch and log ingester errors without crashing', async () => {
-      const pipeline = new SessionMemoryPipeline(mockKG as any);
+      const _pipeline = new SessionMemoryPipeline(mockKG as any);
 
       const event = createEvent();
       const parsed = createParsedMemory();
@@ -363,7 +379,7 @@ describe('SessionMemoryPipeline', () => {
     });
 
     it('should handle non-Error thrown values gracefully', async () => {
-      const pipeline = new SessionMemoryPipeline(mockKG as any);
+      const _pipeline = new SessionMemoryPipeline(mockKG as any);
 
       const event = createEvent();
       mockParse.mockImplementation(() => {

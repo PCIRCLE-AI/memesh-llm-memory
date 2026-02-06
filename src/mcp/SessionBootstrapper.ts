@@ -78,7 +78,7 @@ export class SessionBootstrapper {
         text += '━'.repeat(60) + '\n';
       }
     } catch (error) {
-      logger.warn('Failed to preload project memories:', error);
+      logger.error('Failed to preload project memories:', error);
     }
 
     // 2. Append session memory context from Knowledge Graph (if pipeline available)

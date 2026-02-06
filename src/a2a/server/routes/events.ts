@@ -18,6 +18,31 @@ import { A2AEventEmitter } from '../../events/A2AEventEmitter.js';
 import { A2AEvent, isTaskEvent } from '../../events/types.js';
 
 /**
+ * Maximum number of concurrent SSE connections allowed
+ * Prevents resource exhaustion from too many open connections (CRITICAL-SSE-2)
+ */
+const MAX_SSE_CONNECTIONS = 100;
+
+/**
+ * Track active SSE connections for connection limiting
+ */
+const activeConnections = new Set<Response>();
+
+/**
+ * Get current number of active SSE connections (for testing/monitoring)
+ */
+export function getActiveConnectionCount(): number {
+  return activeConnections.size;
+}
+
+/**
+ * Clear all active connections (for testing cleanup)
+ */
+export function clearActiveConnections(): void {
+  activeConnections.clear();
+}
+
+/**
  * Event filter options for SSE streaming
  */
 export interface EventFilter {
@@ -118,6 +143,13 @@ export function createEventsRouter(eventEmitter: A2AEventEmitter): Router {
   const router = Router();
 
   router.get('/', (req: Request, res: Response) => {
+    // 🔒 SECURITY: Check connection limit (CRITICAL-SSE-2)
+    if (activeConnections.size >= MAX_SSE_CONNECTIONS) {
+      res.status(503).json({ error: 'Too many SSE connections' });
+      return;
+    }
+    activeConnections.add(res);
+
     // Set SSE headers
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -137,19 +169,46 @@ export function createEventsRouter(eventEmitter: A2AEventEmitter): Router {
     const missedEvents = eventEmitter.getEventsAfter(lastEventId);
     for (const event of missedEvents) {
       if (matchesFilter(event, filter)) {
-        res.write(formatSSE(event));
+        try {
+          if (!res.writableEnded) {
+            res.write(formatSSE(event));
+          }
+        } catch (error) {
+          console.error('SSE write failed for buffered event:', error);
+        }
       }
     }
 
-    // Subscribe to new events
+    // Add heartbeat to detect stale connections
+    const heartbeatInterval = setInterval(() => {
+      if (!res.writableEnded) {
+        try {
+          res.write(':heartbeat\n\n');
+        } catch (error) {
+          console.error('SSE heartbeat failed:', error);
+          clearInterval(heartbeatInterval);
+        }
+      }
+    }, 30000);
+
+    // Subscribe to new events with error handling
     const unsubscribe = eventEmitter.subscribe((event) => {
       if (matchesFilter(event, filter)) {
-        res.write(formatSSE(event));
+        try {
+          if (!res.writableEnded) {
+            res.write(formatSSE(event));
+          }
+        } catch (error) {
+          console.error('SSE write failed:', error);
+          unsubscribe();
+          clearInterval(heartbeatInterval);
+        }
       }
     });
 
     // Cleanup on disconnect
     req.on('close', () => {
+      clearInterval(heartbeatInterval);
       unsubscribe();
     });
   });

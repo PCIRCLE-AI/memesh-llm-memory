@@ -304,6 +304,15 @@ describe('Agent Activation Validation', () => {
         'a2a-list-tasks',
         'a2a-list-agents',
         'a2a-report-result',
+        // A2A Unified Task Board Tools (Phase 2.2)
+        'a2a-board',
+        'a2a-claim-task',
+        'a2a-release-task',
+        'a2a-find-tasks',
+        'a2a-set-skills',
+        // A2A Event Notification Tools (Phase 2.3)
+        'a2a-cancel-task',
+        'a2a-subscribe',
         'hook-tool-use',
         'generate-tests',
       ];

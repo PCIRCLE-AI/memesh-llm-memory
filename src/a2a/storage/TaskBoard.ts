@@ -12,19 +12,7 @@ import os from 'os';
 import crypto from 'crypto';
 import { A2AEventEmitter } from '../events/A2AEventEmitter.js';
 import { A2AEvent, TaskEventData, EventType } from '../events/types.js';
-
-/**
- * Safely parse JSON string, returning undefined if invalid (defense-in-depth)
- */
-function safeParseJson(json: string | null): string | undefined {
-  if (!json) return undefined;
-  try {
-    JSON.parse(json);
-    return json;
-  } catch {
-    return undefined;
-  }
-}
+import { validateJsonString } from './jsonUtils.js';
 
 /**
  * Task status type
@@ -196,6 +184,11 @@ export class TaskBoard {
 
       // Open database
       this.db = new Database(finalPath);
+
+      // Configure busy timeout for automatic retry on SQLITE_BUSY
+      // This provides built-in resilience for concurrent access
+      const BUSY_TIMEOUT_MS = 5000;
+      this.db.pragma(`busy_timeout = ${BUSY_TIMEOUT_MS}`);
 
       // Enable WAL mode for concurrent access
       this.db.pragma('journal_mode = WAL');
@@ -474,7 +467,7 @@ export class TaskBoard {
       creator_platform: row.creator_platform,
       created_at: row.created_at,
       updated_at: row.updated_at,
-      metadata: safeParseJson(row.metadata),
+      metadata: validateJsonString(row.metadata),
       cancelled_by: row.cancelled_by || undefined,
       cancel_reason: row.cancel_reason || undefined,
     };
@@ -584,23 +577,43 @@ export class TaskBoard {
   /**
    * Delete a task
    *
+   * Uses a transaction to atomically read task data (for event emission)
+   * and delete it, preventing TOCTOU race conditions where the task
+   * could be modified or deleted between the read and delete operations.
+   *
    * @param taskId - Task ID
    * @throws Error if task not found
    */
   deleteTask(taskId: string): void {
     this.validateTaskId(taskId);
 
-    // Get task before deletion (for event emission)
-    const task = this.getTask(taskId);
-    if (!task) {
-      throw new Error(`Task not found: ${taskId}`);
+    let deletedTask: Task | null = null;
+
+    // Use transaction to atomically read and delete
+    const transaction = this.db.transaction(() => {
+      // Get task before deletion (for event emission)
+      const task = this.getTask(taskId);
+      if (!task) {
+        throw new Error(`Task not found: ${taskId}`);
+      }
+
+      deletedTask = task;
+
+      const stmt = this.db.prepare('DELETE FROM tasks WHERE id = ?');
+      const result = stmt.run(taskId);
+
+      // Defense-in-depth: verify deletion actually happened
+      if (result.changes === 0) {
+        throw new Error(`Task not found: ${taskId}`);
+      }
+    });
+
+    transaction();
+
+    // Emit task.deleted event (outside transaction for performance)
+    if (deletedTask) {
+      this.emitTaskEvent('task.deleted', deletedTask);
     }
-
-    const stmt = this.db.prepare('DELETE FROM tasks WHERE id = ?');
-    stmt.run(taskId);
-
-    // Emit task.deleted event
-    this.emitTaskEvent('task.deleted', task);
   }
 
   /**
@@ -940,7 +953,7 @@ export class TaskBoard {
       base_url: row.base_url,
       port: row.port,
       process_pid: row.process_pid,
-      skills: safeParseJson(row.skills) ?? null,
+      skills: validateJsonString(row.skills) ?? null,
       last_heartbeat: row.last_heartbeat,
       status: row.status,
       created_at: row.created_at,
@@ -1081,15 +1094,5 @@ export class TaskBoard {
     if (!uuidRegex.test(taskId)) {
       throw new Error(`Invalid task ID format: ${taskId}`);
     }
-  }
-
-  /**
-   * Check if a task exists in the database
-   * @param taskId - Task ID to check
-   * @returns true if task exists, false otherwise
-   */
-  private taskExists(taskId: string): boolean {
-    const result = this.db.prepare('SELECT 1 FROM tasks WHERE id = ?').get(taskId);
-    return !!result;
   }
 }

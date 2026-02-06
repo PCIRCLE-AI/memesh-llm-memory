@@ -49,6 +49,7 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { logger } from '../../utils/logger.js';
 import { getDataPath } from '../../utils/PathResolver.js';
+import { safeJsonParse } from './jsonUtils.js';
 import type {
   AgentRegistryEntry,
   RegisterAgentParams,
@@ -59,22 +60,6 @@ const execFileAsync = promisify(execFile);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-/**
- * Safely parse JSON string, returning null if invalid
- */
-function safeJsonParse<T>(jsonString: string | null | undefined): T | null {
-  if (!jsonString) return null;
-  try {
-    return JSON.parse(jsonString) as T;
-  } catch (error) {
-    logger.error('[AgentRegistry] Invalid JSON data', {
-      error: error instanceof Error ? error.message : String(error),
-      jsonString: jsonString?.substring(0, 100),
-    });
-    return null;
-  }
-}
 
 // Database row interface
 interface AgentRow {
@@ -286,49 +271,38 @@ export class AgentRegistry {
       );
     }
 
-    const existing = this.get(params.agentId);
+    // Use UPSERT (INSERT OR REPLACE) to avoid TOCTOU race condition
+    // This is atomic - no window between check and insert/update
+    // Preserves created_at from existing record if present
+    const stmt = this.getStatement(
+      'upsertAgent',
+      `INSERT INTO agents (agent_id, base_url, port, status, last_heartbeat,
+                          process_pid, capabilities, metadata, created_at, updated_at)
+       VALUES (?, ?, ?, 'active', ?, ?, ?, ?,
+               COALESCE((SELECT created_at FROM agents WHERE agent_id = ?), ?), ?)
+       ON CONFLICT(agent_id) DO UPDATE SET
+         base_url = excluded.base_url,
+         port = excluded.port,
+         status = 'active',
+         last_heartbeat = excluded.last_heartbeat,
+         process_pid = excluded.process_pid,
+         capabilities = excluded.capabilities,
+         metadata = excluded.metadata,
+         updated_at = excluded.updated_at`
+    );
 
-    if (existing) {
-      // Use cached prepared statement for update
-      const stmt = this.getStatement(
-        'updateAgent',
-        `UPDATE agents
-         SET base_url = ?, port = ?, status = 'active', last_heartbeat = ?,
-             process_pid = ?, capabilities = ?, metadata = ?, updated_at = ?
-         WHERE agent_id = ?`
-      );
-
-      stmt.run(
-        params.baseUrl,
-        params.port,
-        now,
-        params.processPid || null,
-        params.capabilities ? JSON.stringify(params.capabilities) : null,
-        params.metadata ? JSON.stringify(params.metadata) : null,
-        now,
-        params.agentId
-      );
-    } else {
-      // Use cached prepared statement for insert
-      const stmt = this.getStatement(
-        'insertAgent',
-        `INSERT INTO agents (agent_id, base_url, port, status, last_heartbeat,
-                            process_pid, capabilities, metadata, created_at, updated_at)
-         VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?, ?)`
-      );
-
-      stmt.run(
-        params.agentId,
-        params.baseUrl,
-        params.port,
-        now,
-        params.processPid || null,
-        params.capabilities ? JSON.stringify(params.capabilities) : null,
-        params.metadata ? JSON.stringify(params.metadata) : null,
-        now,
-        now
-      );
-    }
+    stmt.run(
+      params.agentId,
+      params.baseUrl,
+      params.port,
+      now,
+      params.processPid || null,
+      params.capabilities ? JSON.stringify(params.capabilities) : null,
+      params.metadata ? JSON.stringify(params.metadata) : null,
+      params.agentId,
+      now,
+      now
+    );
 
     return this.get(params.agentId)!;
   }
@@ -673,8 +647,8 @@ export class AgentRegistry {
   }
 
   private rowToEntry(row: AgentRow): AgentRegistryEntry {
-    const capabilities = safeJsonParse<AgentCapabilities>(row.capabilities);
-    const metadata = safeJsonParse<Record<string, unknown>>(row.metadata);
+    const capabilities = safeJsonParse<AgentCapabilities>(row.capabilities, 'AgentRegistry');
+    const metadata = safeJsonParse<Record<string, unknown>>(row.metadata, 'AgentRegistry');
 
     return {
       agentId: row.agent_id,

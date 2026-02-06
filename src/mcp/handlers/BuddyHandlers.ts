@@ -1,19 +1,12 @@
 /**
  * Buddy Command Handlers Module
  *
- * Provides user-friendly "buddy" commands for common operations. These commands
- * use natural language and hide technical complexity from users.
+ * Provides user-friendly "buddy" commands for common operations.
  *
- * **Available Commands**:
- * - **buddy_do**: Execute tasks with smart routing (replaces smart_route_task/sa_task)
- * - **buddy_remember**: Recall project memory (search knowledge graph)
- * - **buddy_help**: Get help and usage instructions
- *
- * **Design Philosophy**:
- * - Natural language interface
- * - Beginner-friendly error messages
- * - Contextual help and suggestions
- * - Progressive disclosure of advanced features
+ * Available Commands:
+ * - buddy_do: Record tasks to knowledge graph
+ * - buddy_remember: Recall project memory (search knowledge graph)
+ * - buddy_help: Get help and usage instructions
  *
  * @module BuddyHandlers
  */
@@ -22,12 +15,10 @@ import { z } from 'zod';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { ValidationError } from '../../errors/index.js';
 import { logError } from '../../utils/errorHandler.js';
-import type { Router } from '../../orchestrator/router.js';
 import type { ResponseFormatter } from '../../ui/ResponseFormatter.js';
 import type { ProjectMemoryManager } from '../../memory/ProjectMemoryManager.js';
 import type { ProjectAutoTracker } from '../../memory/ProjectAutoTracker.js';
 
-// Import buddy command functions and schemas
 import {
   executeBuddyDo,
   BuddyDoInputSchema,
@@ -47,86 +38,29 @@ import {
 /**
  * Buddy Command Handler Class
  *
- * Provides simplified, user-friendly interfaces for common operations. Acts as
- * a facade over more complex underlying systems (Router, Memory, etc.).
- *
- * **Command Categories**:
- * - **Task Execution**: buddy_do (delegated to Router)
- * - **Memory**: buddy_remember (delegated to ProjectMemoryManager)
- * - **Help**: buddy_help (contextual documentation)
- *
- * **Error Handling**:
- * All commands use consistent error handling:
- * - Input validation with Zod schemas
- * - Structured error logging
- * - User-friendly error messages
- * - Suggested next steps on failures
+ * Provides simplified, user-friendly interfaces for common operations.
  */
 export class BuddyHandlers {
-  private router: Router;
   private formatter: ResponseFormatter;
   private projectMemoryManager: ProjectMemoryManager;
   private autoTracker?: ProjectAutoTracker;
 
-  /**
-   * Create a new BuddyHandlers instance
-   *
-   * @param router - Main task routing engine
-   * @param formatter - Response formatting utility
-   * @param projectMemoryManager - Project memory management system
-   * @param autoTracker - Optional project auto-tracker for Phase 0.6 enhanced memory
-   */
   constructor(
-    router: Router,
     formatter: ResponseFormatter,
     projectMemoryManager: ProjectMemoryManager,
     autoTracker?: ProjectAutoTracker
   ) {
-    this.router = router;
     this.formatter = formatter;
     this.projectMemoryManager = projectMemoryManager;
     this.autoTracker = autoTracker;
   }
 
   /**
-   * Handle buddy_do command - Execute tasks with smart routing
-   *
-   * Natural language interface for task execution. Automatically routes tasks
-   * to the most appropriate capability and returns enhanced prompts.
-   *
-   * This replaces smart_route_task/sa_task with:
-   * - More forgiving input validation
-   * - Friendlier error messages
-   * - Contextual usage tips
-   *
-   * **Workflow**:
-   * 1. Validate task description
-   * 2. Route through main Router (TaskAnalyzer → AgentRouter)
-   * 3. Format response with ResponseFormatter
-   * 4. Return enhanced prompt + capability recommendation
-   *
-   * @param args - Buddy do arguments
-   * @param args.task - Task description in natural language
-   * @returns Promise resolving to formatted task response
-   *
-   * @throws ValidationError if task description is missing/invalid
-   *
-   * @example
-   * ```typescript
-   * await handleBuddyDo({
-   *   task: 'Create a React component for user profile'
-   * });
-   *
-   * // Returns:
-   * // 🤖 Routing to: frontend-developer
-   * // 📝 Enhanced Prompt:
-   * // [Detailed instructions for building the component]
-   * ```
+   * Handle buddy_do command - Record task to knowledge graph
    */
   async handleBuddyDo(
     args: unknown
   ): Promise<CallToolResult> {
-    // Validate input
     let validatedInput: ValidatedBuddyDoInput;
     try {
       validatedInput = BuddyDoInputSchema.parse(args);
@@ -149,7 +83,6 @@ export class BuddyHandlers {
           }
         );
 
-        // Return formatted validation error instead of throwing
         const errorText = `${validationError.name}: ${validationError.message}`;
 
         return {
@@ -166,7 +99,7 @@ export class BuddyHandlers {
     }
 
     try {
-      return await executeBuddyDo(validatedInput, this.router, this.formatter, this.autoTracker);
+      return await executeBuddyDo(validatedInput, this.formatter, this.autoTracker);
     } catch (error) {
       logError(error, {
         component: 'BuddyHandlers',
@@ -180,44 +113,10 @@ export class BuddyHandlers {
 
   /**
    * Handle buddy_remember command - Recall project memory
-   *
-   * Searches the knowledge graph for relevant project memories. Useful for:
-   * - Recalling past decisions and their rationale
-   * - Finding similar problems and solutions
-   * - Understanding project history
-   * - Discovering related features
-   *
-   * **Search Capabilities**:
-   * - Semantic search (meaning-based, not just keywords)
-   * - Entity relationship traversal
-   * - Temporal filtering (recent vs. historical)
-   * - Type-based filtering (decisions, lessons, features, etc.)
-   *
-   * @param args - Buddy remember arguments
-   * @param args.query - Search query in natural language
-   * @returns Promise resolving to formatted memory results
-   *
-   * @example
-   * ```typescript
-   * await handleBuddyRemember({
-   *   query: 'authentication implementation'
-   * });
-   *
-   * // Returns:
-   * // 📚 Found 3 relevant memories:
-   * // 1. 2025-01-01: Implemented JWT authentication
-   * //    - Used passport.js library
-   * //    - Token expiration: 24 hours
-   * //    - Refresh token rotation enabled
-   * // 2. 2024-12-15: Authentication architecture decision
-   * //    - Chose JWT over sessions for scalability
-   * //    ...
-   * ```
    */
   async handleBuddyRemember(
     args: unknown
   ): Promise<CallToolResult> {
-    // Validate input
     let validatedInput: ValidatedBuddyRememberInput;
     try {
       validatedInput = BuddyRememberInputSchema.parse(args);
@@ -240,7 +139,6 @@ export class BuddyHandlers {
           }
         );
 
-        // Return formatted validation error instead of throwing
         const errorText = `${validationError.name}: ${validationError.message}`;
 
         return {
@@ -275,7 +173,6 @@ export class BuddyHandlers {
   async handleBuddyHelp(
     args: unknown
   ): Promise<CallToolResult> {
-    // Validate input
     let validatedInput: ValidatedBuddyHelpInput;
     try {
       validatedInput = BuddyHelpInputSchema.parse(args);
@@ -298,7 +195,6 @@ export class BuddyHandlers {
           }
         );
 
-        // Return formatted validation error instead of throwing
         const errorText = `${validationError.name}: ${validationError.message}`;
 
         return {

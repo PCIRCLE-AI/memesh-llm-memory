@@ -20,11 +20,9 @@ describe('MCP Compliance Audit', () => {
   // Load tools once for all tests
   tools = getAllToolDefinitions();
 
-  it('should have exactly 19 tools defined', () => {
-    // 13 original + 4 secret management tools (Phase 0.7.0) + 2 A2A tools (Phase 1.0)
-    // generate-smart-plan removed - planning delegated to Claude's built-in capabilities
-    // A2A tools: a2a-send-task, a2a-get-task, a2a-get-result, a2a-list-tasks, a2a-list-agents, a2a-report-result
-    expect(tools).toHaveLength(19);
+  it('should have exactly 15 tools defined', () => {
+    // 3 buddy commands + 1 learning + 1 knowledge graph + 4 secrets + 1 cloud sync + 3 task board + 1 hook + 1 test gen
+    expect(tools).toHaveLength(15);
   });
 
   it('should have all tools with outputSchema defined (MCP Spec 2025-11-25)', () => {
@@ -38,8 +36,8 @@ describe('MCP Compliance Audit', () => {
       });
     }
 
-    // 6 original + 4 secret management tools (Phase 0.7.0) without outputSchema
-    expect(toolsWithoutOutputSchema.length).toBeLessThanOrEqual(10);
+    // 6 original + 4 secret management + 1 cloud sync (Phase 1) without outputSchema
+    expect(toolsWithoutOutputSchema.length).toBeLessThanOrEqual(11);
   });
 
   it('should have all tools with annotations defined (MCP Spec 2025-11-25)', () => {

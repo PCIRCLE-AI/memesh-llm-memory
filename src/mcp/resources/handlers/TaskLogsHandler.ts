@@ -23,7 +23,7 @@ export class TaskLogsHandler {
       throw new Error('Missing required parameter: taskId');
     }
 
-    // In real implementation, fetch from BackgroundExecutor or task storage
+    // In real implementation, fetch from Cloud API or task storage
     const logs = await this.fetchTaskLogs(taskId);
 
     return {
@@ -39,11 +39,11 @@ export class TaskLogsHandler {
    * @param taskId - Task ID
    * @returns Task logs as plain text
    *
-   * NOTE: This feature is not yet implemented. BackgroundExecutor does not
-   * currently expose log retrieval methods. To implement this properly:
-   * 1. Add getTaskLogs() method to BackgroundExecutor
-   * 2. Store execution logs in EvolutionStore
-   * 3. Inject BackgroundExecutor or EvolutionStore into this handler
+   * NOTE: This feature is not yet implemented. Task logging will be
+   * implemented via MeMesh Cloud integration. To implement this properly:
+   * 1. Add getTaskLogs() method to Cloud API client
+   * 2. Store execution logs in Cloud storage
+   * 3. Inject Cloud API client into this handler
    *
    * For now, this returns a clear message about the limitation.
    */
@@ -56,16 +56,15 @@ Task ID: ${taskId}
 Detailed task execution logs are not yet available in this version.
 
 This feature requires:
-- Log capture in BackgroundExecutor
-- Log storage in EvolutionStore
+- Log capture in task storage
+- Log storage in Cloud storage
 - Integration with task lifecycle tracking
 
 Current workaround:
-- Check task status via BackgroundExecutor.getProgress()
 - Monitor console logs during task execution
 - Use UIEventBus for progress events
 
-Status: Planned for future release
+Status: Planned for MeMesh Cloud integration
 `;
   }
 }

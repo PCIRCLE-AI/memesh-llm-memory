@@ -10,7 +10,9 @@ import { promises as fsPromises, existsSync, mkdirSync } from 'fs';
 import { NotFoundError, ValidationError } from '../errors/index.js';
 import { SimpleDatabaseFactory } from '../config/simple-config.js';
 import type { Entity, Relation, SearchQuery, RelationTrace, EntityType, RelationType } from './types.js';
-import type { SQLParams } from '../evolution/storage/types.js';
+/** Valid SQL parameter types for better-sqlite3 */
+type SQLParam = string | number | null | Buffer;
+type SQLParams = SQLParam[];
 import { logger } from '../utils/logger.js';
 import { QueryCache } from '../db/QueryCache.js';
 import { safeJsonParse, safeJsonStringify } from '../utils/json.js';

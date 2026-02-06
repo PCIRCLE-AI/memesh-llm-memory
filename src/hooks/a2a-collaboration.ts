@@ -16,6 +16,7 @@ import os from 'os';
 import { execFileSync } from 'child_process';
 import { expandHome } from '../utils/paths.js';
 import { generateAgentId } from '../a2a/utils/agentId.js';
+import { detectPlatform } from '../a2a/utils/platformDetection.js';
 
 // ============================================
 // Configuration
@@ -442,6 +443,35 @@ function registerToKnowledgeGraph(identity: AgentIdentity): boolean {
   }
 }
 
+/**
+ * Register agent with MeMesh Cloud (optional, fire-and-forget).
+ * Only runs when MEMESH_API_KEY is configured.
+ */
+function registerToCloud(identity: AgentIdentity): void {
+  try {
+    // Dynamic import to avoid loading cloud module when not needed
+    import('../cloud/index.js').then(({ isCloudEnabled, getCloudClient }) => {
+      if (!isCloudEnabled()) return;
+
+      const client = getCloudClient();
+      const platform = detectPlatform();
+
+      client.registerAgent({
+        agentId: identity.agentId,
+        name: identity.name,
+        platform,
+        specialization: identity.specialization,
+      }).catch(() => {
+        // Silent failure - cloud registration is optional
+      });
+    }).catch(() => {
+      // Dynamic import failed - cloud module not available
+    });
+  } catch {
+    // Ignore all errors - cloud registration must never block session start
+  }
+}
+
 function loadIdentity(): AgentIdentity | null {
   return readJSON<AgentIdentity>(AGENT_IDENTITY_FILE);
 }
@@ -475,6 +505,7 @@ export function agentCheckIn(): AgentIdentity {
 
   saveIdentity(identity);
   registerToKnowledgeGraph(identity);
+  registerToCloud(identity);
 
   return identity;
 }
@@ -646,16 +677,14 @@ function displayCheckInBroadcast(
     `        "${identity.name}, you handle frontend" or "${identity.name}, you handle backend API"`
   );
   console.log('');
-  console.log('     Send task to another agent:');
-  console.log('        a2a-send-task targetAgentId="<agent>" taskDescription="..."');
+  console.log('     View task board:');
+  console.log('        a2a-board');
   console.log('');
-  console.log('     Check your tasks:');
-  console.log('        a2a-list-tasks');
+  console.log('     Find available tasks:');
+  console.log('        a2a-find-tasks status="PENDING"');
   console.log('');
-  console.log('     Report task completion:');
-  console.log(
-    '        a2a-report-result taskId="<id>" result="Done! Commit: xxx" success=true'
-  );
+  console.log('     Claim a task:');
+  console.log('        a2a-claim-task taskId="<id>" assignee="<name>"');
   console.log('');
   console.log('='.repeat(60));
   console.log('');

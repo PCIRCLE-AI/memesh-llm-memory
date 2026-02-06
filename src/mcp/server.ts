@@ -3,14 +3,12 @@
  * MeMesh MCP Server
  *
  * Features:
- * - Exposes 7 focused MCP tools
- * - Routes tasks through TaskAnalyzer → AgentRouter pipeline
- * - Returns enhanced prompts (Prompt Enhancement Mode)
+ * - Exposes focused MCP tools for memory, knowledge graph, and hooks
  * - Formats responses using ResponseFormatter
  * - Integrates with Claude Code via Model Context Protocol
  *
  * Architecture:
- * - MCP Server → Router → TaskAnalyzer → AgentRouter → PromptEnhancer
+ * - MCP Server → ToolRouter → Handler Modules
  * - Responses formatted via ResponseFormatter for Terminal output
  */
 
@@ -69,8 +67,8 @@ export class ToolCallTimeoutError extends Error {
  * MeMesh MCP Server
  *
  * Main server class that integrates Model Context Protocol (MCP) with the MeMesh
- * multi-agent system. Provides intelligent task routing, agent orchestration, and enhanced
- * prompt generation for software development workflows.
+ * system. Provides knowledge graph memory, hook integration, and development
+ * workflow tools.
  *
  * Architecture:
  * - MCP Server handles protocol-level communication
@@ -79,10 +77,10 @@ export class ToolCallTimeoutError extends Error {
  * - ResponseFormatter ensures consistent output formatting
  *
  * Features:
- * - 7 focused development capabilities (routing, planning, memory, hooks)
- * - Smart task analysis and routing
- * - Evolution monitoring and continuous learning
- * - Project memory management
+ * - Knowledge graph for project memory
+ * - Hook integration for workflow automation
+ * - Secret management
+ * - Test generation
  *
  * @example
  * ```typescript
@@ -119,15 +117,6 @@ class ClaudeCodeBuddyMCPServer {
    */
   public get buddyHandlers() {
     return this.components.buddyHandlers;
-  }
-
-  /**
-   * Get Development Butler module (exposed for testing)
-   *
-   * @returns DevelopmentButler instance
-   */
-  public get developmentButler() {
-    return this.components.developmentButler;
   }
 
   /**
@@ -171,10 +160,8 @@ class ClaudeCodeBuddyMCPServer {
       rateLimiter: this.components.rateLimiter,
       toolHandlers: this.components.toolHandlers,
       buddyHandlers: this.components.buddyHandlers,
-      a2aHandlers: this.components.a2aHandlers,
       secretManager: this.components.secretManager,
-      taskQueue: this.components.taskQueue,
-      mcpTaskDelegator: this.components.mcpTaskDelegator,
+      knowledgeGraph: this.components.knowledgeGraph,
     });
     this.components.toolInterface.attachToolDispatcher(this.toolRouter);
     this.sessionBootstrapper = new SessionBootstrapper(
@@ -523,19 +510,7 @@ class ClaudeCodeBuddyMCPServer {
       logger.error('Failed to close knowledge graph cleanly:', error);
     }
 
-    // 2. Evolution monitor cleanup (no cleanup needed after simplification)
-    try {
-      logger.info('Evolution monitor ready for shutdown...');
-    } catch (error) {
-      logError(error, {
-        component: 'ClaudeCodeBuddyMCPServer',
-        method: 'shutdown',
-        operation: 'closing evolution monitor',
-      });
-      logger.error('Failed to close evolution monitor cleanly:', error);
-    }
-
-    // 2.5. Close SecretManager database (Phase 0.7.0)
+    // 2. Close SecretManager database (Phase 0.7.0)
     try {
       logger.info('Closing secret manager database...');
       if (this.components.secretManager) {
@@ -550,20 +525,6 @@ class ClaudeCodeBuddyMCPServer {
       logger.error('Failed to close secret manager cleanly:', error);
     }
 
-    // 2.6. Close TaskQueue database (A2A Protocol Phase 1.0)
-    try {
-      logger.info('Closing task queue database...');
-      if (this.components.taskQueue) {
-        this.components.taskQueue.close();
-      }
-    } catch (error) {
-      logError(error, {
-        component: 'ClaudeCodeBuddyMCPServer',
-        method: 'shutdown',
-        operation: 'closing task queue',
-      });
-      logger.error('Failed to close task queue cleanly:', error);
-    }
 
     // 3. Stop rate limiter (cleanup intervals)
     try {

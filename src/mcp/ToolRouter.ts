@@ -15,24 +15,17 @@ import { RateLimiter } from '../utils/RateLimiter.js';
 import {
   ToolHandlers,
   BuddyHandlers,
-  A2AToolHandlers,
   handleBuddySecretStore,
   handleBuddySecretGet,
   handleBuddySecretList,
   handleBuddySecretDelete,
 } from './handlers/index.js';
 import type { SecretManager } from '../memory/SecretManager.js';
-import type { TaskQueue } from '../a2a/storage/TaskQueue.js';
-import type { MCPTaskDelegator } from '../a2a/delegator/MCPTaskDelegator.js';
-import { a2aListTasks, A2AListTasksInputSchema } from './tools/a2a-list-tasks.js';
-import { a2aReportResult, A2AReportResultInputSchema } from './tools/a2a-report-result.js';
+import type { KnowledgeGraph } from '../knowledge-graph/index.js';
 import { handleA2ABoard, A2ABoardInputSchema } from './tools/a2a-board.js';
 import { handleA2AClaimTask, A2AClaimTaskInputSchema } from './tools/a2a-claim-task.js';
-import { handleA2AReleaseTask, A2AReleaseTaskInputSchema } from './tools/a2a-release-task.js';
 import { handleA2AFindTasks, A2AFindTasksInputSchema } from './tools/a2a-find-tasks.js';
-import { handleA2ASetSkills, A2ASetSkillsInputSchema } from './tools/a2a-set-skills.js';
-import { handleA2ACancelTask, A2ACancelTaskInputSchema } from './tools/a2a-cancel-task.js';
-import { handleA2ASubscribe, A2ASubscribeInputSchema } from './tools/a2a-subscribe.js';
+import { handleCloudSync, CloudSyncInputSchema } from './tools/memesh-cloud-sync.js';
 
 /**
  * Tool Router Configuration
@@ -41,7 +34,6 @@ export interface ToolRouterConfig {
   rateLimiter: RateLimiter;
   toolHandlers: ToolHandlers;
   buddyHandlers: BuddyHandlers;
-  a2aHandlers: A2AToolHandlers;
 
   /**
    * Secret Manager for secure secret storage (Phase 0.7.0)
@@ -49,24 +41,19 @@ export interface ToolRouterConfig {
   secretManager?: SecretManager;
 
   /**
-   * Task Queue for A2A task management
+   * Knowledge Graph for cloud sync operations
    */
-  taskQueue?: TaskQueue;
+  knowledgeGraph?: KnowledgeGraph;
 
   /**
-   * MCP Task Delegator for A2A task delegation
-   */
-  mcpTaskDelegator?: MCPTaskDelegator;
-
-  /**
-   * ✅ FIX HIGH-5: CSRF protection for future HTTP transport
+   * CSRF protection for future HTTP transport
    * Allowed request origins (for HTTP mode only, stdio doesn't need this)
    * @default undefined (stdio mode, no origin validation)
    */
   allowedOrigins?: string[];
 
   /**
-   * ✅ FIX HIGH-5: Transport mode
+   * Transport mode
    * @default 'stdio' (current implementation)
    */
   transportMode?: 'stdio' | 'http';
@@ -83,7 +70,7 @@ export interface ToolRouterConfig {
  * - Minimum length of 1 character
  *
  * This aligns with the MCP protocol convention where tool names like
- * 'buddy-do', 'get-workflow-guidance', 'a2a-send-task' are used.
+ * 'buddy-do', 'memesh-remember', 'a2a-board' are used.
  */
 const TOOL_NAME_REGEX = /^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$/;
 const TOOL_NAME_MAX_LENGTH = 64;
@@ -157,7 +144,7 @@ function validateToolName(toolName: string): void {
         method: 'validateToolName',
         providedName: safeName,
         pattern: TOOL_NAME_REGEX.source,
-        hint: 'Example valid names: buddy-do, get-workflow-guidance, a2a-send-task',
+        hint: 'Example valid names: buddy-do, memesh-remember, a2a-board',
       }
     );
   }
@@ -171,8 +158,8 @@ function validateToolName(toolName: string): void {
  *
  * The router supports main categories of tools:
  * - **Buddy Tools**: buddy-do, buddy-remember, buddy-help
- * - **Workflow Guidance Tools**: get-workflow-guidance, get-session-health
- * - **Planning Tools**: generate-smart-plan
+ * - **MeMesh Tools**: memesh-do, memesh-remember, memesh-help
+ * - **A2A Tools**: a2a-board, a2a-claim-task, a2a-find-tasks
  * - **Hook Tools**: hook-tool-use
  *
  * Architecture:
@@ -199,14 +186,9 @@ export class ToolRouter {
   private rateLimiter: RateLimiter;
   private toolHandlers: ToolHandlers;
   private buddyHandlers: BuddyHandlers;
-  private a2aHandlers: A2AToolHandlers;
   private secretManager?: SecretManager;
-  private taskQueue?: TaskQueue;
-  private mcpTaskDelegator?: MCPTaskDelegator;
+  private knowledgeGraph?: KnowledgeGraph;
 
-  /**
-   * ✅ FIX HIGH-5: CSRF protection configuration
-   */
   private readonly allowedOrigins?: string[];
   private readonly transportMode: 'stdio' | 'http';
 
@@ -219,12 +201,8 @@ export class ToolRouter {
     this.rateLimiter = config.rateLimiter;
     this.toolHandlers = config.toolHandlers;
     this.buddyHandlers = config.buddyHandlers;
-    this.a2aHandlers = config.a2aHandlers;
     this.secretManager = config.secretManager;
-    this.taskQueue = config.taskQueue;
-    this.mcpTaskDelegator = config.mcpTaskDelegator;
-
-    // ✅ FIX HIGH-5: Initialize CSRF protection config
+    this.knowledgeGraph = config.knowledgeGraph;
     this.allowedOrigins = config.allowedOrigins;
     this.transportMode = config.transportMode || 'stdio';
   }
@@ -342,6 +320,7 @@ export class ToolRouter {
     const args = params.arguments;
 
     // Route to appropriate handler based on tool name
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- handlers validate args via Zod
     return await this.dispatch(toolName, args as any);
   }
 
@@ -349,8 +328,8 @@ export class ToolRouter {
    * Dispatch tool call to appropriate handler
    *
    * Internal routing logic that maps tool names to handler methods. Supports:
-   * - Buddy tools (buddy_*)
-   * - Workflow guidance tools (get-workflow-guidance, etc.)
+   * - Buddy tools (buddy-do, buddy-remember, buddy-help)
+   * - Task board tools (a2a-board, a2a-claim-task, a2a-find-tasks)
    *
    * @param toolName - Name of the tool to execute
    * @param args - Tool arguments (validated by individual handlers)
@@ -362,6 +341,7 @@ export class ToolRouter {
    *
    * @private
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- each handler validates via Zod schemas
   private async dispatch(toolName: string, args: any): Promise<CallToolResult> {
     // Buddy Commands
     if (toolName === 'buddy-do') {
@@ -375,17 +355,6 @@ export class ToolRouter {
     if (toolName === 'buddy-help') {
       return await this.buddyHandlers.handleBuddyHelp(args);
     }
-
-    // Workflow Guidance tools
-    if (toolName === 'get-workflow-guidance') {
-      return await this.toolHandlers.handleGetWorkflowGuidance(args);
-    }
-
-    if (toolName === 'get-session-health') {
-      return await this.toolHandlers.handleGetSessionHealth();
-    }
-
-    // Planning tools removed - planning delegated to LLM's built-in capabilities
 
     // Hook integration tools
     if (toolName === 'hook-tool-use') {
@@ -464,199 +433,53 @@ export class ToolRouter {
       return await handleBuddySecretDelete(args, this.secretManager);
     }
 
-    // A2A Protocol tools
-    if (toolName === 'a2a-send-task') {
-      return await this.a2aHandlers.handleA2ASendTask(args);
-    }
-
-    if (toolName === 'a2a-get-task') {
-      return await this.a2aHandlers.handleA2AGetTask(args);
-    }
-
-    if (toolName === 'a2a-get-result') {
-      return await this.a2aHandlers.handleA2AGetResult(args);
-    }
-
-    if (toolName === 'a2a-list-tasks') {
-      // MCP Client polling interface - queries MCPTaskDelegator's in-memory queue
-      if (!this.mcpTaskDelegator) {
-        throw new OperationError(
-          'MCPTaskDelegator is not configured',
-          {
-            component: 'ToolRouter',
-            method: 'dispatch',
-            toolName,
-          }
-        );
-      }
-      // Validate input using Zod schema
-      const validationResult = A2AListTasksInputSchema.safeParse(args);
+    // Cloud Sync tools
+    if (toolName === 'memesh-cloud-sync') {
+      const validationResult = CloudSyncInputSchema.safeParse(args);
       if (!validationResult.success) {
         throw new ValidationError(
           `Invalid input for ${toolName}: ${validationResult.error.message}`,
-          {
-            component: 'ToolRouter',
-            method: 'dispatch',
-            toolName,
-            zodError: validationResult.error,
-          }
+          { component: 'ToolRouter', method: 'dispatch', toolName, zodError: validationResult.error }
         );
       }
-      return await a2aListTasks(validationResult.data, this.mcpTaskDelegator);
+      return handleCloudSync(validationResult.data, this.knowledgeGraph);
     }
 
-    if (toolName === 'a2a-list-agents') {
-      return await this.a2aHandlers.handleA2AListAgents(args);
-    }
-
-    if (toolName === 'a2a-report-result') {
-      // MCP Client reports task result back to MeMesh Server
-      if (!this.taskQueue || !this.mcpTaskDelegator) {
-        throw new OperationError(
-          'TaskQueue or MCPTaskDelegator is not configured',
-          {
-            component: 'ToolRouter',
-            method: 'dispatch',
-            toolName,
-          }
-        );
-      }
-      // Validate input using Zod schema
-      const validationResult = A2AReportResultInputSchema.safeParse(args);
-      if (!validationResult.success) {
-        throw new ValidationError(
-          `Invalid input for ${toolName}: ${validationResult.error.message}`,
-          {
-            component: 'ToolRouter',
-            method: 'dispatch',
-            toolName,
-            zodError: validationResult.error,
-          }
-        );
-      }
-      return await a2aReportResult(validationResult.data, this.taskQueue, this.mcpTaskDelegator);
-    }
-
+    // Task Board tools (local task management)
     if (toolName === 'a2a-board') {
-      // Unified Task Board - Kanban-style view of all tasks
       const validationResult = A2ABoardInputSchema.safeParse(args);
       if (!validationResult.success) {
         throw new ValidationError(
           `Invalid input for ${toolName}: ${validationResult.error.message}`,
-          {
-            component: 'ToolRouter',
-            method: 'dispatch',
-            toolName,
-            zodError: validationResult.error,
-          }
+          { component: 'ToolRouter', method: 'dispatch', toolName, zodError: validationResult.error }
         );
       }
       return handleA2ABoard(validationResult.data);
     }
 
     if (toolName === 'a2a-claim-task') {
-      // Claim a pending task from the unified task board
       const validationResult = A2AClaimTaskInputSchema.safeParse(args);
       if (!validationResult.success) {
         throw new ValidationError(
           `Invalid input for ${toolName}: ${validationResult.error.message}`,
-          {
-            component: 'ToolRouter',
-            method: 'dispatch',
-            toolName,
-            zodError: validationResult.error,
-          }
+          { component: 'ToolRouter', method: 'dispatch', toolName, zodError: validationResult.error }
         );
       }
       return handleA2AClaimTask(validationResult.data);
     }
 
-    if (toolName === 'a2a-release-task') {
-      // Release a claimed task back to pending status
-      const validationResult = A2AReleaseTaskInputSchema.safeParse(args);
-      if (!validationResult.success) {
-        throw new ValidationError(
-          `Invalid input for ${toolName}: ${validationResult.error.message}`,
-          {
-            component: 'ToolRouter',
-            method: 'dispatch',
-            toolName,
-            zodError: validationResult.error,
-          }
-        );
-      }
-      return handleA2AReleaseTask(validationResult.data);
-    }
-
     if (toolName === 'a2a-find-tasks') {
-      // Find tasks matching specified skills or criteria
       const validationResult = A2AFindTasksInputSchema.safeParse(args);
       if (!validationResult.success) {
         throw new ValidationError(
           `Invalid input for ${toolName}: ${validationResult.error.message}`,
-          {
-            component: 'ToolRouter',
-            method: 'dispatch',
-            toolName,
-            zodError: validationResult.error,
-          }
+          { component: 'ToolRouter', method: 'dispatch', toolName, zodError: validationResult.error }
         );
       }
       return handleA2AFindTasks(validationResult.data);
     }
 
-    if (toolName === 'a2a-set-skills') {
-      // Set skills for current agent to enable skill-based task matching
-      const validationResult = A2ASetSkillsInputSchema.safeParse(args);
-      if (!validationResult.success) {
-        throw new ValidationError(
-          `Invalid input for ${toolName}: ${validationResult.error.message}`,
-          {
-            component: 'ToolRouter',
-            method: 'dispatch',
-            toolName,
-            zodError: validationResult.error,
-          }
-        );
-      }
-      return handleA2ASetSkills(validationResult.data);
-    }
-
-    if (toolName === 'a2a-cancel-task') {
-      // Cancel a pending or in-progress task from the unified task board
-      const validationResult = A2ACancelTaskInputSchema.safeParse(args);
-      if (!validationResult.success) {
-        throw new ValidationError(
-          `Invalid input for ${toolName}: ${validationResult.error.message}`,
-          {
-            component: 'ToolRouter',
-            method: 'dispatch',
-            toolName,
-            zodError: validationResult.error,
-          }
-        );
-      }
-      return handleA2ACancelTask(validationResult.data);
-    }
-
-    if (toolName === 'a2a-subscribe') {
-      // Get SSE events endpoint URL for real-time task notifications
-      const validationResult = A2ASubscribeInputSchema.safeParse(args);
-      if (!validationResult.success) {
-        throw new ValidationError(
-          `Invalid input for ${toolName}: ${validationResult.error.message}`,
-          {
-            component: 'ToolRouter',
-            method: 'dispatch',
-            toolName,
-            zodError: validationResult.error,
-          }
-        );
-      }
-      return handleA2ASubscribe(validationResult.data);
-    }
-
-    // ✅ FIX MINOR (Round 1): Sanitize toolName in error message
+    // Sanitize toolName in error message
     const safeName = sanitizeToolNameForError(toolName);
     throw new NotFoundError(
       `Unknown tool: ${safeName}`,

@@ -15,7 +15,7 @@ import { formatShortId } from './a2a-utils.js';
  */
 export const A2ABoardInputSchema = z.object({
   status: z
-    .enum(['pending', 'in_progress', 'completed', 'deleted'])
+    .enum(['pending', 'in_progress', 'completed', 'cancelled', 'deleted'])
     .optional()
     .describe('Filter by task status'),
   platform: z
@@ -37,6 +37,7 @@ interface GroupedTasks {
   pending: Task[];
   in_progress: Task[];
   completed: Task[];
+  cancelled: Task[];
   deleted: Task[];
 }
 
@@ -91,12 +92,12 @@ function formatTaskBoard(tasks: Task[], filter: A2ABoardInput): string {
       acc[task.status].push(task);
       return acc;
     },
-    { pending: [], in_progress: [], completed: [], deleted: [] }
+    { pending: [], in_progress: [], completed: [], cancelled: [], deleted: [] }
   );
 
   // Build summary
   const total = tasks.length;
-  const statuses = ['pending', 'in_progress', 'completed', 'deleted'] as const;
+  const statuses = ['pending', 'in_progress', 'completed', 'cancelled', 'deleted'] as const;
   const summaryParts = statuses
     .filter((status) => grouped[status].length > 0)
     .map((status) => `${grouped[status].length} ${status}`);

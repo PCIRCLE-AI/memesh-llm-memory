@@ -413,6 +413,24 @@ describe('SSE Events Endpoint', () => {
       // because status is a task-specific filter
       expect(matchesFilter(agentEvent, { status: 'pending' })).toBe(true);
     });
+
+    it('should handle malformed JSON in metadata gracefully', () => {
+      const event: A2AEvent<TaskEventData> = {
+        id: 'test-1',
+        type: 'task.created',
+        timestamp: Date.now(),
+        data: {
+          taskId: 'task-1',
+          subject: 'Test',
+          status: 'pending',
+          owner: null,
+          creator_platform: 'claude-code',
+          metadata: 'not-valid-json',
+        },
+      };
+      // Should not throw, should pass through (no skills filter applied)
+      expect(matchesFilter(event, { skills: ['typescript'] })).toBe(true);
+    });
   });
 
   describe('formatSSE', () => {

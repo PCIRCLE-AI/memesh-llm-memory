@@ -104,4 +104,28 @@ describe('EventBuffer', () => {
       expect(buffer.getAll()).toHaveLength(0);
     });
   });
+
+  describe('size property', () => {
+    it('should return 0 for empty buffer', () => {
+      const emptyBuffer = new EventBuffer();
+      expect(emptyBuffer.size).toBe(0);
+    });
+
+    it('should return correct count after adding events', () => {
+      const sizeBuffer = new EventBuffer();
+      sizeBuffer.add(createEvent('1'));
+      expect(sizeBuffer.size).toBe(1);
+      sizeBuffer.add(createEvent('2'));
+      expect(sizeBuffer.size).toBe(2);
+    });
+
+    it('should not exceed maxSize', () => {
+      const smallBuffer = new EventBuffer(3);
+      smallBuffer.add(createEvent('1'));
+      smallBuffer.add(createEvent('2'));
+      smallBuffer.add(createEvent('3'));
+      smallBuffer.add(createEvent('4'));
+      expect(smallBuffer.size).toBe(3);
+    });
+  });
 });

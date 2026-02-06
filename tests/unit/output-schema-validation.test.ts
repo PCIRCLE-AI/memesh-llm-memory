@@ -18,16 +18,9 @@ import type {
   BuddyDoOutput,
   BuddyRememberOutput,
   BuddyHelpOutput,
-  SessionHealthOutput,
-  WorkflowGuidanceOutput,
-  SmartPlanOutput,
   HookToolUseOutput,
   BuddyRecordMistakeOutput,
   CreateEntitiesOutput,
-  A2ASendTaskOutput,
-  A2AGetTaskOutput,
-  A2AListTasksOutput,
-  A2AListAgentsOutput,
 } from '../../src/mcp/schemas/OutputSchemas.js';
 
 describe('Output Schema Validation', () => {
@@ -221,103 +214,6 @@ describe('Output Schema Validation', () => {
     });
   });
 
-  describe('get-session-health Output Validation', () => {
-    const schema = OutputSchemas.getSessionHealth;
-    let validate: ReturnType<typeof ajv.compile>;
-
-    beforeAll(() => {
-      validate = ajv.compile(schema);
-    });
-
-    it('should validate correct session health output', () => {
-      const validOutput: SessionHealthOutput = {
-        status: 'healthy',
-        tokenUsagePercentage: 45.5,
-        timestamp: '2025-01-31T12:00:00Z',
-        warnings: [],
-        recommendations: ['Continue with current approach'],
-      };
-
-      const result = validate(validOutput);
-      expect(result).toBe(true);
-      expect(validate.errors).toBeNull();
-    });
-
-    it('should reject invalid status enum', () => {
-      const invalidOutput = {
-        status: 'critical', // Invalid enum value
-        tokenUsagePercentage: 95,
-        timestamp: '2025-01-31T12:00:00Z',
-      };
-
-      const result = validate(invalidOutput);
-      expect(result).toBe(false);
-      expect(validate.errors).toBeDefined();
-    });
-  });
-
-  describe('get-workflow-guidance Output Validation', () => {
-    const schema = OutputSchemas.getWorkflowGuidance;
-    let validate: ReturnType<typeof ajv.compile>;
-
-    beforeAll(() => {
-      validate = ajv.compile(schema);
-    });
-
-    it('should validate correct workflow guidance output', () => {
-      const validOutput: WorkflowGuidanceOutput = {
-        currentPhase: 'code-written',
-        recommendations: [
-          {
-            action: 'Run tests',
-            priority: 'high',
-            confidence: 0.9,
-            suggestedAgent: 'test-runner',
-            reasoning: 'Code changes detected, verification needed',
-          },
-        ],
-        nextSteps: ['Execute test suite', 'Review results'],
-      };
-
-      const result = validate(validOutput);
-      expect(result).toBe(true);
-      expect(validate.errors).toBeNull();
-    });
-  });
-
-  describe('generate-smart-plan Output Validation', () => {
-    const schema = OutputSchemas.generateSmartPlan;
-    let validate: ReturnType<typeof ajv.compile>;
-
-    beforeAll(() => {
-      validate = ajv.compile(schema);
-    });
-
-    it('should validate correct smart plan output', () => {
-      const validOutput: SmartPlanOutput = {
-        planId: 'plan-123',
-        featureDescription: 'User authentication system',
-        tasks: [
-          {
-            id: 'task-1',
-            title: 'Setup auth middleware',
-            description: 'Create Express middleware for JWT validation',
-            estimatedDuration: '2-5 min',
-            requiredCapabilities: ['backend', 'security'],
-            dependencies: [],
-            testCriteria: ['Middleware validates JWT', 'Invalid tokens rejected'],
-          },
-        ],
-        totalEstimatedDuration: '10-20 min',
-        risks: ['Token expiration handling', 'Rate limiting'],
-      };
-
-      const result = validate(validOutput);
-      expect(result).toBe(true);
-      expect(validate.errors).toBeNull();
-    });
-  });
-
   describe('hook-tool-use Output Validation', () => {
     const schema = OutputSchemas.hookToolUse;
     let validate: ReturnType<typeof ajv.compile>;
@@ -403,103 +299,6 @@ describe('Output Schema Validation', () => {
             error: 'Duplicate entity name',
           },
         ],
-      };
-
-      const result = validate(validOutput);
-      expect(result).toBe(true);
-      expect(validate.errors).toBeNull();
-    });
-  });
-
-  describe('A2A Protocol Output Validation', () => {
-    it('should validate a2a-send-task output', () => {
-      const schema = OutputSchemas.a2aSendTask;
-      const validate = ajv.compile(schema);
-
-      const validOutput: A2ASendTaskOutput = {
-        success: true,
-        targetAgentId: 'agent-123',
-        task: {
-          id: 'task-456',
-          state: 'SUBMITTED',
-          name: 'Process data',
-          priority: 'normal',
-          createdAt: '2025-01-31T12:00:00Z',
-          updatedAt: '2025-01-31T12:00:00Z',
-        },
-      };
-
-      const result = validate(validOutput);
-      expect(result).toBe(true);
-      expect(validate.errors).toBeNull();
-    });
-
-    it('should validate a2a-get-task output', () => {
-      const schema = OutputSchemas.a2aGetTask;
-      const validate = ajv.compile(schema);
-
-      const validOutput: A2AGetTaskOutput = {
-        task: {
-          id: 'task-456',
-          state: 'WORKING',
-          name: 'Process data',
-          description: 'Process incoming data stream',
-          priority: 'high',
-          createdAt: '2025-01-31T12:00:00Z',
-          updatedAt: '2025-01-31T12:05:00Z',
-          sessionId: 'session-789',
-          messageCount: 3,
-          artifactCount: 1,
-        },
-      };
-
-      const result = validate(validOutput);
-      expect(result).toBe(true);
-      expect(validate.errors).toBeNull();
-    });
-
-    it('should validate a2a-list-tasks output', () => {
-      const schema = OutputSchemas.a2aListTasks;
-      const validate = ajv.compile(schema);
-
-      const validOutput: A2AListTasksOutput = {
-        tasks: [
-          {
-            id: 'task-1',
-            state: 'COMPLETED',
-            name: 'Task 1',
-            priority: 'normal',
-            createdAt: '2025-01-31T12:00:00Z',
-            updatedAt: '2025-01-31T12:10:00Z',
-            messageCount: 5,
-            artifactCount: 2,
-          },
-        ],
-        count: 1,
-      };
-
-      const result = validate(validOutput);
-      expect(result).toBe(true);
-      expect(validate.errors).toBeNull();
-    });
-
-    it('should validate a2a-list-agents output', () => {
-      const schema = OutputSchemas.a2aListAgents;
-      const validate = ajv.compile(schema);
-
-      const validOutput: A2AListAgentsOutput = {
-        agents: [
-          {
-            agentId: 'agent-123',
-            baseUrl: 'http://localhost',
-            port: 3000,
-            status: 'active',
-            lastHeartbeat: '2025-01-31T12:00:00Z',
-            capabilities: { tasks: true },
-            metadata: { version: '1.0.0' },
-          },
-        ],
-        count: 1,
       };
 
       const result = validate(validOutput);
@@ -613,66 +412,6 @@ describe('Output Schema Validation', () => {
       expect(validate.errors).toBeNull();
     });
 
-    it('should validate session-health handler output structure', async () => {
-      const schema = OutputSchemas.getSessionHealth;
-      const validate = ajv.compile(schema);
-
-      // Mock a realistic session health response
-      const handlerOutput = {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify({
-              status: 'healthy',
-              tokenUsagePercentage: 45.5,
-              timestamp: new Date().toISOString(),
-              warnings: [],
-              recommendations: ['Continue with current approach'],
-            }),
-          },
-        ],
-      };
-
-      const parsedData = JSON.parse(handlerOutput.content[0].text);
-
-      const result = validate(parsedData);
-      expect(result).toBe(true);
-      expect(validate.errors).toBeNull();
-    });
-
-    it('should validate workflow-guidance handler output structure', async () => {
-      const schema = OutputSchemas.getWorkflowGuidance;
-      const validate = ajv.compile(schema);
-
-      // Mock a realistic workflow guidance response
-      const handlerOutput = {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify({
-              currentPhase: 'code-written',
-              recommendations: [
-                {
-                  action: 'Run tests',
-                  priority: 'high',
-                  confidence: 0.9,
-                  suggestedAgent: 'test-runner',
-                  reasoning: 'Code changes detected',
-                },
-              ],
-              nextSteps: ['Execute test suite'],
-            }),
-          },
-        ],
-      };
-
-      const parsedData = JSON.parse(handlerOutput.content[0].text);
-
-      const result = validate(parsedData);
-      expect(result).toBe(true);
-      expect(validate.errors).toBeNull();
-    });
-
     it('should validate create-entities handler output structure', async () => {
       const schema = OutputSchemas.createEntities;
       const validate = ajv.compile(schema);
@@ -698,36 +437,5 @@ describe('Output Schema Validation', () => {
       expect(validate.errors).toBeNull();
     });
 
-    it('should validate a2a-send-task handler output structure', async () => {
-      const schema = OutputSchemas.a2aSendTask;
-      const validate = ajv.compile(schema);
-
-      // Mock a realistic A2A send task response
-      const handlerOutput = {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify({
-              success: true,
-              targetAgentId: 'agent-123',
-              task: {
-                id: 'task-456',
-                state: 'SUBMITTED',
-                name: 'Process data',
-                priority: 'normal',
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-              },
-            }),
-          },
-        ],
-      };
-
-      const parsedData = JSON.parse(handlerOutput.content[0].text);
-
-      const result = validate(parsedData);
-      expect(result).toBe(true);
-      expect(validate.errors).toBeNull();
-    });
   });
 });

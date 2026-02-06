@@ -291,61 +291,6 @@ export type CreateEntitiesOutput = {
   }>;
 };
 
-export type A2ASendTaskOutput = {
-  success: boolean;
-  targetAgentId: string;
-  task: {
-    id: string;
-    state: 'SUBMITTED' | 'WORKING' | 'INPUT_REQUIRED' | 'COMPLETED' | 'FAILED' | 'CANCELED' | 'REJECTED';
-    createdAt: string;
-    updatedAt: string;
-    name?: string;
-    priority?: 'low' | 'normal' | 'high' | 'urgent';
-  };
-};
-
-export type A2AGetTaskOutput = {
-  task: {
-    id: string;
-    state: 'SUBMITTED' | 'WORKING' | 'INPUT_REQUIRED' | 'COMPLETED' | 'FAILED' | 'CANCELED' | 'REJECTED';
-    createdAt: string;
-    updatedAt: string;
-    name?: string;
-    description?: string;
-    priority?: 'low' | 'normal' | 'high' | 'urgent';
-    sessionId?: string;
-    messageCount?: number;
-    artifactCount?: number;
-  };
-};
-
-export type A2AListTasksOutput = {
-  tasks: Array<{
-    id: string;
-    state: 'SUBMITTED' | 'WORKING' | 'INPUT_REQUIRED' | 'COMPLETED' | 'FAILED' | 'CANCELED' | 'REJECTED';
-    createdAt: string;
-    updatedAt: string;
-    messageCount: number;
-    artifactCount: number;
-    name?: string;
-    priority?: 'low' | 'normal' | 'high' | 'urgent';
-  }>;
-  count: number;
-};
-
-export type A2AListAgentsOutput = {
-  agents: Array<{
-    agentId: string;
-    baseUrl: string;
-    port: number;
-    status: 'active' | 'inactive' | 'stale';
-    lastHeartbeat: string;
-    capabilities?: Record<string, unknown>;
-    metadata?: Record<string, unknown>;
-  }>;
-  count: number;
-};
-
 export type GenerateTestsOutput = {
   testCode: string;
   message: string;

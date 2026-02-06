@@ -132,8 +132,8 @@ describe('a2a-release-task MCP Tool', () => {
     });
   });
 
-  describe('handleA2AReleaseTask - Release Pending Task (Idempotent)', () => {
-    it('should release a pending task (idempotent operation)', () => {
+  describe('handleA2AReleaseTask - Release Pending Task', () => {
+    it('should fail to release an already pending task', () => {
       // Create a pending task (no owner)
       const taskId = taskBoard.createTask({
         subject: 'Already pending task',
@@ -144,10 +144,9 @@ describe('a2a-release-task MCP Tool', () => {
       const result = handleA2AReleaseTask({ taskId }, testDbPath);
       const text = result.content[0].text;
 
-      // Should succeed even if already pending
-      expect(text).toContain('Task released successfully!');
-      expect(text).toContain('Status: pending');
-      expect(text).toContain('(unassigned)');
+      // Should fail - task is not in_progress
+      expect(text).toContain('Error');
+      expect(text).toContain('not in in_progress status');
 
       // Verify task is still pending
       const task = taskBoard.getTask(taskId);
@@ -242,7 +241,7 @@ describe('a2a-release-task MCP Tool', () => {
       expect(history[0].agent_id).toBe('releasing-agent');
     });
 
-    it('should record release action for pending task with unknown owner', () => {
+    it('should not record release action for pending task (release fails)', () => {
       const taskId = taskBoard.createTask({
         subject: 'No owner task',
         status: 'pending',
@@ -251,13 +250,9 @@ describe('a2a-release-task MCP Tool', () => {
 
       handleA2AReleaseTask({ taskId }, testDbPath);
 
-      // Verify history was recorded with 'unknown' owner
+      // Verify no history was recorded since release failed
       const history = taskBoard.getTaskHistory(taskId);
-      expect(history).toHaveLength(1);
-      expect(history[0].action).toBe('released');
-      expect(history[0].old_status).toBe('pending');
-      expect(history[0].new_status).toBe('pending');
-      expect(history[0].agent_id).toBe('unknown');
+      expect(history).toHaveLength(0);
     });
   });
 });

@@ -124,17 +124,21 @@ describe('A2A Integration Tests', () => {
     });
 
     it('should track task history throughout lifecycle', () => {
-      // Create and claim a task
+      // Create a task
       const taskId = taskBoard.createTask({
         subject: 'History tracking test',
         status: 'pending',
         creator_platform: 'claude-code',
       });
+      // Close original taskBoard to ensure writes are committed
+      taskBoard.close();
 
+      // Claim and release using handlers (each creates its own connection)
       handleA2AClaimTask({ taskId }, testDbPath);
       handleA2AReleaseTask({ taskId }, testDbPath);
 
-      // Check history reflects all actions
+      // Re-open taskBoard to read history
+      taskBoard = new TaskBoard(testDbPath);
       const history = taskBoard.getTaskHistory(taskId);
 
       expect(history).toHaveLength(2);

@@ -352,8 +352,13 @@ describe('a2a-cancel-task MCP Tool', () => {
       });
 
       taskBoard.claimTask(taskId, 'first-agent');
+      // Close original taskBoard to ensure writes are committed
+      taskBoard.close();
+
       handleA2ACancelTask({ taskId }, testDbPath);
 
+      // Re-open taskBoard to read history
+      taskBoard = new TaskBoard(testDbPath);
       const history = taskBoard.getTaskHistory(taskId);
       // Should have both claimed and cancelled entries
       expect(history).toHaveLength(2);

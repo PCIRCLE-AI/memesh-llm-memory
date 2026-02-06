@@ -1426,4 +1426,121 @@ describe('TaskBoard', () => {
       });
     });
   });
+
+  describe('Cancelled Status', () => {
+    it('should allow creating tasks with cancelled status', () => {
+      const taskId = taskBoard.createTask({
+        subject: 'Cancelled task',
+        status: 'cancelled',
+        creator_platform: 'test',
+      });
+
+      const task = taskBoard.getTask(taskId);
+      expect(task?.status).toBe('cancelled');
+    });
+
+    it('should support cancelled_by and cancel_reason columns', () => {
+      const taskId = taskBoard.createTask({
+        subject: 'Task to cancel',
+        status: 'pending',
+        creator_platform: 'test',
+      });
+
+      taskBoard.cancelTask(taskId, 'test-agent', 'No longer needed');
+
+      const task = taskBoard.getTask(taskId);
+      expect(task?.status).toBe('cancelled');
+      expect(task?.cancelled_by).toBe('test-agent');
+      expect(task?.cancel_reason).toBe('No longer needed');
+    });
+
+    it('should not allow cancelling completed tasks', () => {
+      const taskId = taskBoard.createTask({
+        subject: 'Completed task',
+        status: 'completed',
+        creator_platform: 'test',
+      });
+
+      expect(() => taskBoard.cancelTask(taskId, 'test-agent')).toThrow('Cannot cancel completed task');
+    });
+
+    it('should not allow cancelling already cancelled tasks', () => {
+      const taskId = taskBoard.createTask({
+        subject: 'Task to cancel',
+        status: 'pending',
+        creator_platform: 'test',
+      });
+
+      taskBoard.cancelTask(taskId, 'test-agent');
+
+      expect(() => taskBoard.cancelTask(taskId, 'test-agent')).toThrow('Task already cancelled');
+    });
+
+    it('should record history when task is cancelled', () => {
+      const taskId = taskBoard.createTask({
+        subject: 'Task to cancel',
+        status: 'pending',
+        creator_platform: 'test',
+      });
+
+      taskBoard.cancelTask(taskId, 'test-agent', 'No longer needed');
+
+      const history = taskBoard.getTaskHistory(taskId);
+      expect(history.some((h) => h.action === 'cancelled')).toBe(true);
+    });
+
+    it('should throw on non-existent task', () => {
+      expect(() => {
+        taskBoard.cancelTask('12345678-1234-4567-8901-234567890123', 'test-agent');
+      }).toThrow('Task not found');
+    });
+
+    it('should throw on invalid task ID format', () => {
+      expect(() => {
+        taskBoard.cancelTask('not-a-uuid', 'test-agent');
+      }).toThrow('Invalid task ID format');
+    });
+
+    it('should not allow cancelling deleted tasks', () => {
+      const taskId = taskBoard.createTask({
+        subject: 'Deleted task',
+        status: 'deleted',
+        creator_platform: 'test',
+      });
+
+      expect(() => taskBoard.cancelTask(taskId, 'test-agent')).toThrow('Task not found');
+    });
+
+    it('should allow cancelling in_progress tasks', () => {
+      const taskId = taskBoard.createTask({
+        subject: 'In progress task',
+        status: 'in_progress',
+        owner: 'agent-1',
+        creator_platform: 'test',
+      });
+
+      taskBoard.cancelTask(taskId, 'test-agent', 'Cancelled by user');
+
+      const task = taskBoard.getTask(taskId);
+      expect(task?.status).toBe('cancelled');
+      expect(task?.cancelled_by).toBe('test-agent');
+      expect(task?.cancel_reason).toBe('Cancelled by user');
+      expect(task?.owner).toBeUndefined(); // Owner should be cleared
+    });
+
+    it('should allow cancelling without a reason', () => {
+      const taskId = taskBoard.createTask({
+        subject: 'Task to cancel',
+        status: 'pending',
+        creator_platform: 'test',
+      });
+
+      taskBoard.cancelTask(taskId, 'test-agent');
+
+      const task = taskBoard.getTask(taskId);
+      expect(task?.status).toBe('cancelled');
+      expect(task?.cancelled_by).toBe('test-agent');
+      expect(task?.cancel_reason).toBeUndefined();
+    });
+  });
 });

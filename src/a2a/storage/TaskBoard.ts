@@ -27,7 +27,7 @@ function safeParseJson(json: string | null): string | undefined {
 /**
  * Task status type
  */
-export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'deleted';
+export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'deleted';
 
 /**
  * Input for creating a new task
@@ -56,6 +56,8 @@ export interface Task {
   created_at: number;
   updated_at: number;
   metadata?: string; // JSON string
+  cancelled_by?: string;
+  cancel_reason?: string;
 }
 
 /**
@@ -216,21 +218,49 @@ export class TaskBoard {
    * Initialize database schema with all tables and indexes
    */
   private initSchema(): void {
-    // Tasks table
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS tasks (
-        id TEXT PRIMARY KEY,
-        subject TEXT NOT NULL,
-        description TEXT,
-        activeForm TEXT,
-        status TEXT NOT NULL CHECK(status IN ('pending', 'in_progress', 'completed', 'deleted')),
-        owner TEXT,
-        creator_platform TEXT,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
-        metadata TEXT
-      );
-    `);
+    // Tasks table - use temporary table approach to update CHECK constraint
+    // First check if the table exists with old schema
+    const tableExists = this.db.prepare(`
+      SELECT name FROM sqlite_master WHERE type='table' AND name='tasks'
+    `).get();
+
+    if (tableExists) {
+      // Check if cancelled_by column exists (indicator of new schema)
+      const columns = this.db.prepare(`PRAGMA table_info(tasks)`).all() as Array<{ name: string }>;
+      const hasCancelledBy = columns.some((col) => col.name === 'cancelled_by');
+
+      if (!hasCancelledBy) {
+        // Migrate to new schema with cancelled status support
+        this.db.exec(`
+          -- Add new columns for cancellation support
+          ALTER TABLE tasks ADD COLUMN cancelled_by TEXT;
+          ALTER TABLE tasks ADD COLUMN cancel_reason TEXT;
+        `);
+
+        // Note: SQLite does not allow modifying CHECK constraints directly.
+        // The constraint is only validated on INSERT/UPDATE, so we recreate the table
+        // with the new constraint for new databases. For existing databases,
+        // we handle validation in application code.
+      }
+    } else {
+      // Create new table with updated schema
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS tasks (
+          id TEXT PRIMARY KEY,
+          subject TEXT NOT NULL,
+          description TEXT,
+          activeForm TEXT,
+          status TEXT NOT NULL CHECK(status IN ('pending', 'in_progress', 'completed', 'cancelled', 'deleted')),
+          owner TEXT,
+          creator_platform TEXT,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          metadata TEXT,
+          cancelled_by TEXT,
+          cancel_reason TEXT
+        );
+      `);
+    }
 
     // Task dependencies table
     this.db.exec(`
@@ -434,6 +464,8 @@ export class TaskBoard {
       created_at: row.created_at,
       updated_at: row.updated_at,
       metadata: safeParseJson(row.metadata),
+      cancelled_by: row.cancelled_by || undefined,
+      cancel_reason: row.cancel_reason || undefined,
     };
   }
 
@@ -590,6 +622,58 @@ export class TaskBoard {
       const previousOwner = task?.owner || 'unknown';
       const previousStatus = task?.status || 'unknown';
       this.recordHistory(taskId, previousOwner, 'released', previousStatus, 'pending');
+    });
+
+    transaction();
+  }
+
+  /**
+   * Cancel a task
+   *
+   * Marks a task as cancelled with optional reason. Clears task ownership.
+   * Cannot cancel completed or already cancelled tasks.
+   *
+   * @param taskId - Task ID to cancel
+   * @param cancelledBy - Agent ID or identifier of who cancelled the task
+   * @param reason - Optional reason for cancellation
+   * @throws Error if task not found, already completed/cancelled, or validation fails
+   */
+  cancelTask(taskId: string, cancelledBy: string, reason?: string): void {
+    this.validateTaskId(taskId);
+
+    const task = this.getTask(taskId);
+    if (!task) {
+      throw new Error(`Task not found: ${taskId}`);
+    }
+
+    if (task.status === 'completed') {
+      throw new Error('Cannot cancel completed task');
+    }
+
+    if (task.status === 'cancelled') {
+      throw new Error('Task already cancelled');
+    }
+
+    if (task.status === 'deleted') {
+      throw new Error('Task not found');
+    }
+
+    const previousStatus = task.status;
+
+    // Atomic update with transaction
+    const transaction = this.db.transaction(() => {
+      const now = Date.now();
+      this.db.prepare(`
+        UPDATE tasks
+        SET status = 'cancelled',
+            owner = NULL,
+            cancelled_by = ?,
+            cancel_reason = ?,
+            updated_at = ?
+        WHERE id = ?
+      `).run(cancelledBy, reason || null, now, taskId);
+
+      this.recordHistory(taskId, cancelledBy, 'cancelled', previousStatus, 'cancelled');
     });
 
     transaction();

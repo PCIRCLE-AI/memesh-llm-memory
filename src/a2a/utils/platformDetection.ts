@@ -27,8 +27,18 @@ export type Platform =
 /**
  * Detects the current AI platform from environment variables.
  *
+ * This is for detecting "API usage context" - which AI platform's tools or
+ * environment the code is running within. It is NOT a reliable indicator of
+ * which AI is actually executing the code.
+ *
  * ⚠️ SECURITY: This function checks for API keys in env vars.
  * Never log process.env or expose these values in error messages.
+ *
+ * ⚠️ WARNING: OPENAI_API_KEY and GEMINI_API_KEY detection may cause false
+ * positives. These keys are commonly set by developers for various purposes
+ * unrelated to the current execution context. For example, a user may have
+ * OPENAI_API_KEY set while running code in Claude Code. Use this detection
+ * as a hint, not a definitive determination.
  *
  * Checks environment variables in priority order to determine which
  * AI platform the code is running on. If multiple platform indicators

@@ -27,6 +27,9 @@ const AGENT_REGISTRY_PATH = path.join(CCB_DATA_DIR, 'a2a-registry.db');
 const STATE_DIR = expandHome('~/.claude/state');
 const AGENT_IDENTITY_FILE = path.join(STATE_DIR, 'agent-identity.json');
 
+// Session expiry time (1 hour in milliseconds)
+const SESSION_EXPIRY_MS = 60 * 60 * 1000;
+
 // Name pool (Greek letters)
 const NAME_POOL = [
   'Alpha',
@@ -273,29 +276,6 @@ function writeJSON(filePath: string, data: unknown): boolean {
 // ============================================
 
 /**
- * Get names currently in use from knowledge graph
- *
- * @deprecated This function was part of the original TOCTOU-vulnerable implementation.
- * It is kept for reference but no longer used. The current implementation uses atomic
- * INSERT with WHERE NOT EXISTS in pickAvailableName() to prevent race conditions.
- * See pickAvailableName() for the secure implementation.
- */
-function _getUsedNames(): string[] {
-  if (!fs.existsSync(KG_DB_PATH)) return [];
-
-  const query =
-    "SELECT name FROM entities WHERE type='session_identity' AND name LIKE 'Online Agent:%'";
-  const result = sqliteQuery(KG_DB_PATH, query);
-
-  if (!result) return [];
-
-  return result
-    .split('\n')
-    .map((line) => line.replace('Online Agent: ', '').replace(/ \(.*\)$/, '').trim())
-    .filter(Boolean);
-}
-
-/**
  * Get online agents from registry
  */
 function getOnlineAgents(): string[] {
@@ -477,7 +457,7 @@ export function agentCheckIn(): AgentIdentity {
   const existingIdentity = loadIdentity();
   if (existingIdentity?.sessionStart) {
     const sessionAge = Date.now() - new Date(existingIdentity.sessionStart).getTime();
-    if (sessionAge < 60 * 60 * 1000) {
+    if (sessionAge < SESSION_EXPIRY_MS) {
       return existingIdentity;
     }
   }
@@ -697,7 +677,7 @@ export function initA2ACollaboration(): AgentIdentity {
 
   if (existingIdentity?.sessionStart) {
     const sessionAge = Date.now() - new Date(existingIdentity.sessionStart).getTime();
-    if (sessionAge < 60 * 60 * 1000) {
+    if (sessionAge < SESSION_EXPIRY_MS) {
       displayAlreadyCheckedIn(existingIdentity);
       return existingIdentity;
     }

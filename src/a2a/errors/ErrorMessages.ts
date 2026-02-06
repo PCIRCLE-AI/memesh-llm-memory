@@ -57,6 +57,8 @@ export const ErrorMessages = {
     `Request to ${url} aborted due to timeout (${timeoutMs}ms)`,
   [ErrorCodes.INVALID_CONTENT_TYPE]: (contentType: string, status: number) =>
     `Unexpected Content-Type: ${contentType}, expected application/json (status: ${status})`,
+  [ErrorCodes.RATE_LIMIT_EXCEEDED]: (retryAfterMs?: number) =>
+    `Rate limit exceeded${retryAfterMs ? `, retry after ${Math.ceil(retryAfterMs / 1000)}s` : ''}`,
 
   // Validation & Security
   [ErrorCodes.RESPONSE_TOO_LARGE]: (size: string | number) =>

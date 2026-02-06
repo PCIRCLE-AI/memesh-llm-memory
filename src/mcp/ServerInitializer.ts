@@ -26,6 +26,7 @@ import type { EntityType } from '../knowledge-graph/types.js';
 import { ProjectMemoryManager } from '../memory/ProjectMemoryManager.js';
 import { ProjectAutoTracker } from '../memory/ProjectAutoTracker.js';
 import { UnifiedMemoryStore } from '../memory/UnifiedMemoryStore.js';
+import { SessionMemoryPipeline } from '../integrations/session-memory/index.js';
 import { RateLimiter } from '../utils/RateLimiter.js';
 import { ToolHandlers, BuddyHandlers, A2AToolHandlers } from './handlers/index.js';
 import { SamplingClient } from './SamplingClient.js';
@@ -66,6 +67,7 @@ export interface ServerComponents {
   projectMemoryManager: ProjectMemoryManager;
   projectAutoTracker: ProjectAutoTracker;
   unifiedMemoryStore: UnifiedMemoryStore;
+  sessionMemoryPipeline: SessionMemoryPipeline;
 
   // Rate limiting
   rateLimiter: RateLimiter;
@@ -167,6 +169,9 @@ export class ServerInitializer {
 
       // Initialize Unified Memory Store (Phase 0.7.0)
       const unifiedMemoryStore = new UnifiedMemoryStore(knowledgeGraph);
+
+      // Initialize Session Memory Pipeline (file watcher → parser → KG ingester)
+      const sessionMemoryPipeline = new SessionMemoryPipeline(knowledgeGraph);
 
       // Initialize DevelopmentButler with UnifiedMemoryStore
       const developmentButler = new DevelopmentButler(
@@ -275,6 +280,7 @@ export class ServerInitializer {
         projectMemoryManager,
         projectAutoTracker,
         unifiedMemoryStore,
+        sessionMemoryPipeline,
         rateLimiter,
         samplingClient,
         secretManager,

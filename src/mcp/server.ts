@@ -178,8 +178,15 @@ class ClaudeCodeBuddyMCPServer {
     });
     this.components.toolInterface.attachToolDispatcher(this.toolRouter);
     this.sessionBootstrapper = new SessionBootstrapper(
-      this.components.projectMemoryManager
+      this.components.projectMemoryManager,
+      undefined,
+      this.components.sessionMemoryPipeline,
     );
+
+    // Start session memory pipeline (file watcher for native summary.md files)
+    void this.components.sessionMemoryPipeline.start().catch(err => {
+      logger.warn('SessionMemoryPipeline failed to start:', err);
+    });
 
     // Setup MCP request handlers
     this.setupHandlers();
@@ -484,6 +491,21 @@ class ClaudeCodeBuddyMCPServer {
   private async performShutdown(reason: string): Promise<void> {
 
     logger.warn(`Shutting down MCP server (${reason})...`);
+
+    // 0. Stop session memory pipeline (must stop before KG closes)
+    try {
+      logger.info('Stopping session memory pipeline...');
+      if (this.components.sessionMemoryPipeline) {
+        await this.components.sessionMemoryPipeline.stop();
+      }
+    } catch (error) {
+      logError(error, {
+        component: 'ClaudeCodeBuddyMCPServer',
+        method: 'shutdown',
+        operation: 'stopping session memory pipeline',
+      });
+      logger.error('Failed to stop session memory pipeline cleanly:', error);
+    }
 
     // ✅ FIX HIGH-7: Close resources in proper order
     // 1. Close databases first (most critical for data integrity)

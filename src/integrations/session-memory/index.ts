@@ -10,6 +10,8 @@ export { SessionMemoryIngester } from './SessionMemoryIngester.js';
 export { SessionMemoryWatcher } from './SessionMemoryWatcher.js';
 export { SessionContextInjector } from './SessionContextInjector.js';
 export type { InjectionConfig, InjectionContext } from './SessionContextInjector.js';
+export { SessionMemoryPipeline } from './SessionMemoryPipeline.js';
+export type { PipelineConfig } from './SessionMemoryPipeline.js';
 export type {
   ParsedSessionMemory,
   SessionMemoryEvent,

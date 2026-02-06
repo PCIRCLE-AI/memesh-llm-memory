@@ -8,11 +8,7 @@
 import { z } from 'zod';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { TaskBoard, Task } from '../../a2a/storage/TaskBoard.js';
-
-/**
- * UUID v4 regex pattern for validation
- */
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import { UUID_V4_REGEX, formatShortId, createErrorResult, getErrorMessage } from './a2a-utils.js';
 
 /**
  * Input schema validation for a2a-release-task tool
@@ -21,7 +17,7 @@ export const A2AReleaseTaskInputSchema = z.object({
   taskId: z
     .string()
     .min(1, 'taskId is required')
-    .regex(UUID_REGEX, 'taskId must be a valid UUID v4'),
+    .regex(UUID_V4_REGEX, 'taskId must be a valid UUID v4'),
 });
 
 export type A2AReleaseTaskInput = z.infer<typeof A2AReleaseTaskInputSchema>;
@@ -56,13 +52,8 @@ export function handleA2AReleaseTask(
       content: [{ type: 'text', text: output }],
     };
   } catch (error) {
-    // Format error response
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const output = formatErrorResponse(input.taskId, errorMessage);
-
-    return {
-      content: [{ type: 'text', text: output }],
-    };
+    const shortId = formatShortId(input.taskId);
+    return createErrorResult(`❌ Error releasing task [${shortId}]`, getErrorMessage(error));
   } finally {
     taskBoard.close();
   }
@@ -75,29 +66,13 @@ export function handleA2AReleaseTask(
  * @returns Formatted success message
  */
 function formatSuccessResponse(task: Task): string {
-  const shortId = task.id.substring(0, 8);
+  const shortId = formatShortId(task.id);
 
   let output = `✅ Task released successfully!\n\n`;
   output += `Task: [${shortId}] ${task.subject}\n`;
   output += `Status: ${task.status}\n`;
   output += `Owner: (unassigned)\n\n`;
   output += `Task is now available for other agents to claim.`;
-
-  return output;
-}
-
-/**
- * Format an error response
- *
- * @param taskId - The task ID that failed to release
- * @param errorMessage - The error message
- * @returns Formatted error message
- */
-function formatErrorResponse(taskId: string, errorMessage: string): string {
-  const shortId = taskId.substring(0, 8);
-
-  let output = `❌ Error releasing task [${shortId}]\n\n`;
-  output += `Reason: ${errorMessage}\n`;
 
   return output;
 }
@@ -116,7 +91,7 @@ export const a2aReleaseTaskToolDefinition = {
       taskId: {
         type: 'string',
         description: 'UUID of the task to release',
-        pattern: UUID_REGEX.source,
+        pattern: UUID_V4_REGEX.source,
       },
     },
     required: ['taskId'],

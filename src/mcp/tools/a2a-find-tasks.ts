@@ -8,6 +8,7 @@
 import { z } from 'zod';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { TaskBoard, Task, TaskStatus } from '../../a2a/storage/TaskBoard.js';
+import { formatShortId, getErrorMessage } from './a2a-utils.js';
 
 /**
  * Valid task status values for filtering
@@ -108,9 +109,8 @@ export function handleA2AFindTasks(
     return { content: [{ type: 'text', text: output }] };
 
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
-      content: [{ type: 'text', text: `Error finding tasks: ${errorMessage}` }],
+      content: [{ type: 'text', text: `Error finding tasks: ${getErrorMessage(error)}` }],
     };
   } finally {
     taskBoard.close();
@@ -196,7 +196,7 @@ function formatSuccessResponse(
   let output = `🔍 Found ${displayCount} task(s) matching criteria\n\n`;
 
   tasksWithMatches.forEach((item, index) => {
-    const shortId = item.task.id.substring(0, 8);
+    const shortId = formatShortId(item.task.id);
     output += `${index + 1}. [${shortId}] ${item.task.subject}\n`;
     output += `   Status: ${item.task.status} | Platform: ${item.task.creator_platform}\n`;
 
@@ -208,11 +208,7 @@ function formatSuccessResponse(
   });
 
   output += '---\n';
-  if (displayCount < totalMatches) {
-    output += `Showing ${displayCount} of ${totalMatches} total matching tasks`;
-  } else {
-    output += `Showing ${displayCount} of ${totalMatches} total matching tasks`;
-  }
+  output += `Showing ${displayCount} of ${totalMatches} total matching tasks`;
 
   return output;
 }

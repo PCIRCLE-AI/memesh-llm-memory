@@ -9,11 +9,7 @@ import { z } from 'zod';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { TaskBoard, Task } from '../../a2a/storage/TaskBoard.js';
 import { generateAgentId } from '../../a2a/utils/agentId.js';
-
-/**
- * UUID v4 regex pattern for validation
- */
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import { UUID_V4_REGEX, formatShortId, createErrorResult, getErrorMessage } from './a2a-utils.js';
 
 /**
  * Input schema validation for a2a-claim-task tool
@@ -22,7 +18,7 @@ export const A2AClaimTaskInputSchema = z.object({
   taskId: z
     .string()
     .min(1, 'taskId is required')
-    .regex(UUID_REGEX, 'taskId must be a valid UUID v4'),
+    .regex(UUID_V4_REGEX, 'taskId must be a valid UUID v4'),
 });
 
 export type A2AClaimTaskInput = z.infer<typeof A2AClaimTaskInputSchema>;
@@ -60,13 +56,8 @@ export function handleA2AClaimTask(
       content: [{ type: 'text', text: output }],
     };
   } catch (error) {
-    // Format error response
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const output = formatErrorResponse(input.taskId, errorMessage);
-
-    return {
-      content: [{ type: 'text', text: output }],
-    };
+    const shortId = formatShortId(input.taskId);
+    return createErrorResult(`❌ Error claiming task [${shortId}]`, getErrorMessage(error));
   } finally {
     taskBoard.close();
   }
@@ -80,28 +71,12 @@ export function handleA2AClaimTask(
  * @returns Formatted success message
  */
 function formatSuccessResponse(task: Task, agentId: string): string {
-  const shortId = task.id.substring(0, 8);
+  const shortId = formatShortId(task.id);
 
   let output = `✅ Task claimed successfully!\n\n`;
   output += `Task: [${shortId}] ${task.subject}\n`;
   output += `Claimed by: ${agentId}\n`;
   output += `Status: ${task.status}\n`;
-
-  return output;
-}
-
-/**
- * Format an error response
- *
- * @param taskId - The task ID that failed to claim
- * @param errorMessage - The error message
- * @returns Formatted error message
- */
-function formatErrorResponse(taskId: string, errorMessage: string): string {
-  const shortId = taskId.substring(0, 8);
-
-  let output = `❌ Error claiming task [${shortId}]\n\n`;
-  output += `Reason: ${errorMessage}\n`;
 
   return output;
 }
@@ -120,7 +95,7 @@ export const a2aClaimTaskToolDefinition = {
       taskId: {
         type: 'string',
         description: 'UUID of the task to claim',
-        pattern: UUID_REGEX.source,
+        pattern: UUID_V4_REGEX.source,
       },
     },
     required: ['taskId'],

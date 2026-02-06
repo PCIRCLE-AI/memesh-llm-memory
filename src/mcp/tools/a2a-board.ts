@@ -8,6 +8,7 @@
 import { z } from 'zod';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { TaskBoard, TaskFilter, Task, TaskStatus } from '../../a2a/storage/TaskBoard.js';
+import { formatShortId } from './a2a-utils.js';
 
 /**
  * Input schema validation for a2a-board tool
@@ -148,8 +149,7 @@ function formatSection(title: string, tasks: Task[]): string {
     section += '(none)\n\n';
   } else {
     for (const task of tasks) {
-      // Use first 8 characters of UUID for short ID
-      const shortId = task.id.substring(0, 8);
+      const shortId = formatShortId(task.id);
       section += `• [${shortId}] ${task.subject}\n`;
       section += `  Platform: ${task.creator_platform || 'unknown'} | Owner: ${task.owner || '(unassigned)'}\n`;
       section += '\n';

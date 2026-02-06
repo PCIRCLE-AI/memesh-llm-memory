@@ -71,6 +71,13 @@ export class A2AMetrics {
 
   /**
    * Get singleton instance
+   *
+   * **Thread Safety**: This singleton is intended for single-process use only.
+   * In multi-process environments (e.g., cluster mode), each process will have
+   * its own independent metrics instance. For distributed metrics aggregation,
+   * use an external metrics system (Prometheus, StatsD, etc.) instead.
+   *
+   * @returns The global A2AMetrics instance
    */
   static getInstance(): A2AMetrics {
     if (!A2AMetrics.instance) {

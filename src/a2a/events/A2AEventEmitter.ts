@@ -7,6 +7,7 @@
 
 import { A2AEvent } from './types.js';
 import { EventBuffer } from './EventBuffer.js';
+import { logger } from '../../utils/logger.js';
 
 type EventCallback = (event: A2AEvent) => void;
 
@@ -36,7 +37,10 @@ export class A2AEventEmitter {
         callback(event);
       } catch (error) {
         // Don't let one subscriber's error affect others
-        console.error('Event subscriber error:', error);
+        logger.error('[A2AEventEmitter] Event subscriber error', {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
       }
     }
   }
@@ -103,6 +107,11 @@ let globalEmitter: A2AEventEmitter | null = null;
  * Get the global event emitter singleton
  *
  * Creates the emitter on first access (lazy initialization).
+ *
+ * **Thread Safety**: This singleton is intended for single-process use only.
+ * In multi-process environments (e.g., cluster mode), each process will have
+ * its own independent instance. For distributed scenarios, use an external
+ * event bus (Redis Pub/Sub, NATS, etc.) instead.
  *
  * @returns The global A2AEventEmitter instance
  */

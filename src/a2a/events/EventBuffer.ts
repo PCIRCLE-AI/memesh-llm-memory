@@ -7,6 +7,9 @@
 
 import { A2AEvent } from './types.js';
 
+/** Maximum allowed buffer size to prevent excessive memory usage */
+const MAX_BUFFER_SIZE = 10000;
+
 export class EventBuffer {
   private buffer: A2AEvent[] = [];
   private readonly maxSize: number;
@@ -14,6 +17,9 @@ export class EventBuffer {
   constructor(maxSize: number = 100) {
     if (maxSize < 1) {
       throw new Error('Buffer size must be at least 1');
+    }
+    if (maxSize > MAX_BUFFER_SIZE) {
+      throw new Error(`Buffer size must not exceed ${MAX_BUFFER_SIZE} to prevent excessive memory usage`);
     }
     this.maxSize = maxSize;
   }

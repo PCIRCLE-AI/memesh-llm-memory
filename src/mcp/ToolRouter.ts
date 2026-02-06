@@ -26,6 +26,13 @@ import type { TaskQueue } from '../a2a/storage/TaskQueue.js';
 import type { MCPTaskDelegator } from '../a2a/delegator/MCPTaskDelegator.js';
 import { a2aListTasks, A2AListTasksInputSchema } from './tools/a2a-list-tasks.js';
 import { a2aReportResult, A2AReportResultInputSchema } from './tools/a2a-report-result.js';
+import { handleA2ABoard, A2ABoardInputSchema } from './tools/a2a-board.js';
+import { handleA2AClaimTask, A2AClaimTaskInputSchema } from './tools/a2a-claim-task.js';
+import { handleA2AReleaseTask, A2AReleaseTaskInputSchema } from './tools/a2a-release-task.js';
+import { handleA2AFindTasks, A2AFindTasksInputSchema } from './tools/a2a-find-tasks.js';
+import { handleA2ASetSkills, A2ASetSkillsInputSchema } from './tools/a2a-set-skills.js';
+import { handleA2ACancelTask, A2ACancelTaskInputSchema } from './tools/a2a-cancel-task.js';
+import { handleA2ASubscribe, A2ASubscribeInputSchema } from './tools/a2a-subscribe.js';
 
 /**
  * Tool Router Configuration
@@ -528,6 +535,125 @@ export class ToolRouter {
         );
       }
       return await a2aReportResult(validationResult.data, this.taskQueue, this.mcpTaskDelegator);
+    }
+
+    if (toolName === 'a2a-board') {
+      // Unified Task Board - Kanban-style view of all tasks
+      const validationResult = A2ABoardInputSchema.safeParse(args);
+      if (!validationResult.success) {
+        throw new ValidationError(
+          `Invalid input for ${toolName}: ${validationResult.error.message}`,
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+            zodError: validationResult.error,
+          }
+        );
+      }
+      return handleA2ABoard(validationResult.data);
+    }
+
+    if (toolName === 'a2a-claim-task') {
+      // Claim a pending task from the unified task board
+      const validationResult = A2AClaimTaskInputSchema.safeParse(args);
+      if (!validationResult.success) {
+        throw new ValidationError(
+          `Invalid input for ${toolName}: ${validationResult.error.message}`,
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+            zodError: validationResult.error,
+          }
+        );
+      }
+      return handleA2AClaimTask(validationResult.data);
+    }
+
+    if (toolName === 'a2a-release-task') {
+      // Release a claimed task back to pending status
+      const validationResult = A2AReleaseTaskInputSchema.safeParse(args);
+      if (!validationResult.success) {
+        throw new ValidationError(
+          `Invalid input for ${toolName}: ${validationResult.error.message}`,
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+            zodError: validationResult.error,
+          }
+        );
+      }
+      return handleA2AReleaseTask(validationResult.data);
+    }
+
+    if (toolName === 'a2a-find-tasks') {
+      // Find tasks matching specified skills or criteria
+      const validationResult = A2AFindTasksInputSchema.safeParse(args);
+      if (!validationResult.success) {
+        throw new ValidationError(
+          `Invalid input for ${toolName}: ${validationResult.error.message}`,
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+            zodError: validationResult.error,
+          }
+        );
+      }
+      return handleA2AFindTasks(validationResult.data);
+    }
+
+    if (toolName === 'a2a-set-skills') {
+      // Set skills for current agent to enable skill-based task matching
+      const validationResult = A2ASetSkillsInputSchema.safeParse(args);
+      if (!validationResult.success) {
+        throw new ValidationError(
+          `Invalid input for ${toolName}: ${validationResult.error.message}`,
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+            zodError: validationResult.error,
+          }
+        );
+      }
+      return handleA2ASetSkills(validationResult.data);
+    }
+
+    if (toolName === 'a2a-cancel-task') {
+      // Cancel a pending or in-progress task from the unified task board
+      const validationResult = A2ACancelTaskInputSchema.safeParse(args);
+      if (!validationResult.success) {
+        throw new ValidationError(
+          `Invalid input for ${toolName}: ${validationResult.error.message}`,
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+            zodError: validationResult.error,
+          }
+        );
+      }
+      return handleA2ACancelTask(validationResult.data);
+    }
+
+    if (toolName === 'a2a-subscribe') {
+      // Get SSE events endpoint URL for real-time task notifications
+      const validationResult = A2ASubscribeInputSchema.safeParse(args);
+      if (!validationResult.success) {
+        throw new ValidationError(
+          `Invalid input for ${toolName}: ${validationResult.error.message}`,
+          {
+            component: 'ToolRouter',
+            method: 'dispatch',
+            toolName,
+            zodError: validationResult.error,
+          }
+        );
+      }
+      return handleA2ASubscribe(validationResult.data);
     }
 
     // ✅ FIX MINOR (Round 1): Sanitize toolName in error message

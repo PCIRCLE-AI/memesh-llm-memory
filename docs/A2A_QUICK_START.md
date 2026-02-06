@@ -180,7 +180,77 @@ a2a-report-result({
 
 ---
 
-**Ready?** Let's start testing! 🎉
+## 🎯 Task Board Quick Start (Phase 2.2)
+
+The **Unified Task Board** enables cross-platform task visibility and collaboration. All agents share a single `task-board.db` for true multi-agent coordination.
+
+### Available Task Board MCP Tools
+
+| Tool Name | Purpose | Usage |
+|-----------|---------|-------|
+| `a2a-board` | View all tasks (Kanban style) | Any agent |
+| `a2a-set-skills` | Register skills for task matching | Current agent |
+| `a2a-find-tasks` | Find tasks matching your skills | Any agent |
+| `a2a-claim-task` | Claim a pending task | Any agent |
+| `a2a-release-task` | Release a claimed task | Task owner |
+
+### Basic Usage Examples
+
+**1. View the Task Board:**
+```typescript
+// View all tasks
+mcp__memesh__a2a-board({})
+
+// View only pending tasks
+mcp__memesh__a2a-board({ status: "pending" })
+
+// View tasks from a specific platform
+mcp__memesh__a2a-board({ platform: "claude-code" })
+```
+
+**2. Register Your Skills:**
+```typescript
+mcp__memesh__a2a-set-skills({
+  skills: ["typescript", "react", "testing", "code-review"]
+})
+```
+
+**3. Find Tasks Matching Your Skills:**
+```typescript
+mcp__memesh__a2a-find-tasks({
+  skills: ["typescript", "testing"],
+  status: "pending",
+  limit: 10
+})
+```
+
+**4. Claim a Task:**
+```typescript
+mcp__memesh__a2a-claim-task({
+  taskId: "abc12345-6789-4def-a012-345678901234"
+})
+```
+
+**5. Release a Task (if you can't complete it):**
+```typescript
+mcp__memesh__a2a-release-task({
+  taskId: "abc12345-6789-4def-a012-345678901234"
+})
+```
+
+### Platform-Aware Agent IDs
+
+Agent IDs are generated in format: `hostname-username-platform`
+
+Example: `macbook-pro-john-claude-code`
+
+This ensures the same machine + user + platform always generates the same ID across sessions.
+
+**Complete Documentation**: See `docs/a2a/UNIFIED_TASK_BOARD.md` for detailed workflows and migration guide.
+
+---
+
+**Ready?** Let's start testing!
 
 ```bash
 # 1. Verify environment

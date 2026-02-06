@@ -13,7 +13,6 @@
  * @module a2a/executor
  */
 
-import type { TaskQueue } from '../storage/TaskQueue.js';
 import type { ILogger } from '../../utils/ILogger.js';
 import type { MCPTaskDelegator } from '../delegator/MCPTaskDelegator.js';
 
@@ -25,7 +24,7 @@ import type { MCPTaskDelegator } from '../delegator/MCPTaskDelegator.js';
  *
  * @example
  * ```typescript
- * const executor = new TaskExecutor(taskQueue, logger, delegator);
+ * const executor = new TaskExecutor(logger, delegator);
  *
  * // Execute a task (delegates to MCP client)
  * await executor.executeTask('task-123', 'Calculate 2+2', 'agent-1');
@@ -34,23 +33,19 @@ import type { MCPTaskDelegator } from '../delegator/MCPTaskDelegator.js';
  * ```
  */
 export class TaskExecutor {
-  private taskQueue: TaskQueue;
   private logger: ILogger;
   private delegator: MCPTaskDelegator;
 
   /**
    * Create a new TaskExecutor
    *
-   * @param taskQueue - TaskQueue instance for task storage
    * @param logger - Logger instance for logging
    * @param delegator - MCPTaskDelegator instance for MCP client delegation
    */
   constructor(
-    taskQueue: TaskQueue,
     logger: ILogger,
     delegator: MCPTaskDelegator
   ) {
-    this.taskQueue = taskQueue;
     this.logger = logger;
     this.delegator = delegator;
   }

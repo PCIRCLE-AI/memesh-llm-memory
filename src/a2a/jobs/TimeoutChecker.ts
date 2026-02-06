@@ -179,6 +179,19 @@ export class TimeoutChecker {
   }
 
   /**
+   * Dispose the timeout checker and release all resources
+   *
+   * Stops the checker if running and resets all internal state.
+   * Call this when the checker is no longer needed to ensure proper cleanup.
+   */
+  dispose(): void {
+    this.stop();
+    this.resetStatistics();
+
+    logger.debug('[TimeoutChecker] Disposed');
+  }
+
+  /**
    * Check if the timeout checker is currently running
    *
    * @returns true if running, false otherwise

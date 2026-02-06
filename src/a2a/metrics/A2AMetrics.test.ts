@@ -1,11 +1,12 @@
 /**
  * A2AMetrics - Validation Tests
  *
- * Tests for NaN/Infinity validation in metric methods
+ * Tests for NaN/Infinity validation and LRU eviction in metric methods
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { A2AMetrics } from './A2AMetrics.js';
+import { logger } from '../../utils/logger.js';
 
 describe('A2AMetrics - Validation', () => {
   let metrics: A2AMetrics;
@@ -135,6 +136,86 @@ describe('A2AMetrics - Validation', () => {
     it('should handle decimal values', () => {
       metrics.recordHistogram('test.histogram', 123.456);
       expect(metrics.getValue('test.histogram')).toBe(123.456);
+    });
+  });
+
+  describe('LRU eviction', () => {
+    it('should maintain metrics under the limit', () => {
+      // Add some metrics
+      for (let i = 0; i < 100; i++) {
+        metrics.incrementCounter('test.counter', { id: `${i}` });
+      }
+
+      const snapshot = metrics.getSnapshot();
+      expect(snapshot.size).toBe(100);
+    });
+
+    it('should update access order on metric update', () => {
+      // Create metrics in order
+      metrics.incrementCounter('test.counter', { id: '1' });
+      metrics.incrementCounter('test.counter', { id: '2' });
+      metrics.incrementCounter('test.counter', { id: '3' });
+
+      // Access the first one again to move it to end of LRU
+      metrics.incrementCounter('test.counter', { id: '1' });
+
+      // All metrics should still exist
+      expect(metrics.getValue('test.counter', { id: '1' })).toBe(2);
+      expect(metrics.getValue('test.counter', { id: '2' })).toBe(1);
+      expect(metrics.getValue('test.counter', { id: '3' })).toBe(1);
+    });
+
+    it('should clear access order when metrics are cleared', () => {
+      metrics.incrementCounter('test.counter', { id: '1' });
+      metrics.incrementCounter('test.counter', { id: '2' });
+
+      metrics.clear();
+
+      const snapshot = metrics.getSnapshot();
+      expect(snapshot.size).toBe(0);
+    });
+  });
+
+  describe('label cardinality validation', () => {
+    it('should warn when too many labels are provided', () => {
+      const warnSpy = vi.spyOn(logger, 'warn');
+
+      // Create labels object with more than 10 labels
+      const manyLabels: Record<string, string> = {};
+      for (let i = 0; i < 15; i++) {
+        manyLabels[`label${i}`] = `value${i}`;
+      }
+
+      metrics.incrementCounter('test.counter', manyLabels);
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[A2A Metrics] Too many labels may cause high cardinality',
+        expect.objectContaining({
+          labelCount: 15,
+          maxRecommended: 10,
+        })
+      );
+
+      warnSpy.mockRestore();
+    });
+
+    it('should not warn when label count is within limit', () => {
+      const warnSpy = vi.spyOn(logger, 'warn');
+
+      const fewLabels: Record<string, string> = {
+        agent: 'agent-1',
+        status: 'completed',
+      };
+
+      metrics.incrementCounter('test.counter', fewLabels);
+
+      // Should not have been called with the cardinality warning
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        '[A2A Metrics] Too many labels may cause high cardinality',
+        expect.anything()
+      );
+
+      warnSpy.mockRestore();
     });
   });
 });

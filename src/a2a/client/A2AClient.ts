@@ -341,6 +341,9 @@ export class A2AClient {
     targetAgentId: string,
     request: SendMessageRequest
   ): Promise<SendMessageResponse> {
+    // Validate targetAgentId to prevent path traversal
+    this.validateId(targetAgentId, 'targetAgentId');
+
     try {
       return await retryWithBackoff(
         async () => {
@@ -371,6 +374,10 @@ export class A2AClient {
   }
 
   async getTask(targetAgentId: string, taskId: string): Promise<Task> {
+    // Validate IDs to prevent path traversal
+    this.validateId(targetAgentId, 'targetAgentId');
+    this.validateId(taskId, 'taskId');
+
     try {
       return await retryWithBackoff(
         async () => {
@@ -409,6 +416,9 @@ export class A2AClient {
     targetAgentId: string,
     params?: { status?: string; limit?: number; offset?: number }
   ): Promise<TaskStatus[]> {
+    // Validate targetAgentId to prevent path traversal
+    this.validateId(targetAgentId, 'targetAgentId');
+
     try {
       return await retryWithBackoff(
         async () => {
@@ -444,6 +454,9 @@ export class A2AClient {
   }
 
   async getAgentCard(targetAgentId: string): Promise<AgentCard> {
+    // Validate targetAgentId to prevent path traversal
+    this.validateId(targetAgentId, 'targetAgentId');
+
     try {
       return await retryWithBackoff(
         async () => {
@@ -473,6 +486,10 @@ export class A2AClient {
   }
 
   async cancelTask(targetAgentId: string, taskId: string): Promise<void> {
+    // Validate IDs to prevent path traversal
+    this.validateId(targetAgentId, 'targetAgentId');
+    this.validateId(taskId, 'taskId');
+
     try {
       await retryWithBackoff(
         async () => {
@@ -595,11 +612,18 @@ export class A2AClient {
     state: TaskState,
     data?: { result?: unknown; error?: string }
   ): Promise<void> {
+    // Validate taskId to prevent path traversal
+    this.validateId(taskId, 'taskId');
+
     try {
       return await retryWithBackoff(
         async () => {
-          // Use 'self' to indicate we're updating our own task
-          const url = `${process.env.MEMESH_BASE_URL || 'http://localhost:3000'}/a2a/tasks/${encodeURIComponent(taskId)}/state`;
+          // Fail fast if MEMESH_BASE_URL is not configured
+          const baseUrl = process.env.MEMESH_BASE_URL;
+          if (!baseUrl) {
+            throw createError(ErrorCodes.SERVER_ERROR, 'MEMESH_BASE_URL environment variable is not configured');
+          }
+          const url = `${baseUrl}/a2a/tasks/${encodeURIComponent(taskId)}/state`;
 
           const response = await this.fetchWithTimeout(url, {
             method: 'PATCH',

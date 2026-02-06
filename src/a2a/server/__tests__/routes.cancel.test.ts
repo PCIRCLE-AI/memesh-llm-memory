@@ -206,7 +206,8 @@ describe('Cancel Task (MAJOR-3)', () => {
 
   describe('cancelTask on non-existent task returns 404', () => {
     it('should return 404 for non-existent taskId', async () => {
-      const req = mockRequest({ taskId: 'non-existent-task-id' });
+      // Use valid UUID v4 format that doesn't exist in the system
+      const req = mockRequest({ taskId: '00000000-0000-4000-8000-000000000000' });
       const res = mockResponse();
       const next = vi.fn();
 
@@ -218,6 +219,23 @@ describe('Cancel Task (MAJOR-3)', () => {
         error: {
           code: 'NOT_FOUND',
           message: expect.stringContaining('not found'),
+        },
+      });
+    });
+
+    it('should return 400 for invalid taskId format', async () => {
+      const req = mockRequest({ taskId: 'not-a-valid-uuid' });
+      const res = mockResponse();
+      const next = vi.fn();
+
+      await routes.cancelTask(req, res, next);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.jsonData).toMatchObject({
+        success: false,
+        error: {
+          code: 'INVALID_REQUEST',
+          message: expect.stringContaining('Invalid task ID format'),
         },
       });
     });

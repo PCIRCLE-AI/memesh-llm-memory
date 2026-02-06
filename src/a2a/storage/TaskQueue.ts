@@ -41,6 +41,7 @@ import {
   validatePositiveInteger,
   validateISOTimestamp,
 } from './inputValidation.js';
+import { safeJsonParse } from './jsonUtils.js';
 import type {
   Task,
   TaskState,
@@ -124,22 +125,6 @@ function assertPlaceholderParamMatch(
       `[TaskQueue] Placeholder/parameter count mismatch in ${context}: ` +
       `query has ${placeholderCount} placeholder(s) but ${params.length} parameter(s) were provided`
     );
-  }
-}
-
-/**
- * Safely parse JSON string, returning null if invalid
- */
-function safeJsonParse<T>(jsonString: string | null | undefined): T | null {
-  if (!jsonString) return null;
-  try {
-    return JSON.parse(jsonString) as T;
-  } catch (error) {
-    logger.error('[TaskQueue] Invalid JSON data', {
-      error: error instanceof Error ? error.message : String(error),
-      jsonString: jsonString?.substring(0, 100),
-    });
-    return null;
   }
 }
 
@@ -481,8 +466,8 @@ export class TaskQueue {
     const rows = stmt.all(taskId) as MessageRow[];
 
     return rows.map((row) => {
-      const parts = safeJsonParse<MessagePart[]>(row.parts);
-      const metadata = safeJsonParse<Record<string, unknown>>(row.metadata);
+      const parts = safeJsonParse<MessagePart[]>(row.parts, 'TaskQueue');
+      const metadata = safeJsonParse<Record<string, unknown>>(row.metadata, 'TaskQueue');
 
       return {
         id: row.id,
@@ -548,7 +533,7 @@ export class TaskQueue {
     const rows = stmt.all(taskId) as ArtifactRow[];
 
     return rows.map((row) => {
-      const metadata = safeJsonParse<Record<string, unknown>>(row.metadata);
+      const metadata = safeJsonParse<Record<string, unknown>>(row.metadata, 'TaskQueue');
 
       return {
         id: row.id,
@@ -577,7 +562,7 @@ export class TaskQueue {
   }
 
   private rowToTask(row: TaskRow): Task {
-    const metadata = safeJsonParse<Record<string, unknown>>(row.metadata);
+    const metadata = safeJsonParse<Record<string, unknown>>(row.metadata, 'TaskQueue');
 
     return {
       id: row.id,

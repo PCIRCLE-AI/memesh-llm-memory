@@ -58,13 +58,16 @@ import { MCPTaskDelegator } from '../delegator/MCPTaskDelegator.js';
 import { TimeoutChecker } from '../jobs/TimeoutChecker.js';
 import { TIME, NETWORK } from '../constants.js';
 import { tracingMiddleware, spanMiddleware } from '../../utils/tracing/index.js';
+import { generateAgentId } from '../utils/agentId.js';
+import { A2AEventEmitter, getGlobalEventEmitter } from '../events/index.js';
+import { createEventsRouter } from './routes/events.js';
 
 /**
  * A2A Server Configuration
  */
 export interface A2AServerConfig {
-  /** Agent identifier */
-  agentId: string;
+  /** Agent identifier (optional, will be auto-generated if not provided using platform-aware format) */
+  agentId?: string;
   /** Agent card with capabilities and metadata */
   agentCard: AgentCard;
   /** Fixed port number (optional, will use dynamic port if not specified) */
@@ -117,6 +120,8 @@ export class A2AServer {
   private port: number = 0;
   private delegator: MCPTaskDelegator;
   private timeoutChecker: TimeoutChecker;
+  private agentId: string;
+  private eventEmitter: A2AEventEmitter;
 
   /**
    * Create a new A2A Server
@@ -124,9 +129,15 @@ export class A2AServer {
    * @param config - Server configuration including agent ID, card, and port settings
    */
   constructor(private config: A2AServerConfig) {
-    this.taskQueue = new TaskQueue(config.agentId);
+    // Generate agent ID if not provided (platform-aware)
+    this.agentId = config.agentId || generateAgentId();
+
+    // Initialize event emitter (global singleton for cross-component event sharing)
+    this.eventEmitter = getGlobalEventEmitter();
+
+    this.taskQueue = new TaskQueue(this.agentId);
     this.registry = AgentRegistry.getInstance();
-    this.routes = new A2ARoutes(config.agentId, this.taskQueue, config.agentCard);
+    this.routes = new A2ARoutes(this.agentId, this.taskQueue, config.agentCard);
     this.app = this.createApp();
     this.delegator = new MCPTaskDelegator(this.taskQueue, logger);
     this.timeoutChecker = new TimeoutChecker(this.delegator);
@@ -195,6 +206,10 @@ export class A2AServer {
     // Public route - agent card discovery
     app.get('/a2a/agent-card', spanMiddleware('a2a.agent-card'), this.routes.getAgentCard);
 
+    // SSE events endpoint for real-time notifications
+    // 🔒 SECURITY: Authentication and rate limiting required (CRITICAL-SSE-1)
+    app.use('/a2a/events', authenticateToken, rateLimitMiddleware, createEventsRouter(this.eventEmitter));
+
     app.use(jsonErrorHandler);
     app.use(errorHandler);
 
@@ -230,7 +245,7 @@ export class A2AServer {
 
         const baseUrl = `http://localhost:${port}`;
         this.registry.register({
-          agentId: this.config.agentId,
+          agentId: this.agentId,
           baseUrl,
           port,
           processPid: process.pid, // For orphan detection
@@ -312,7 +327,7 @@ export class A2AServer {
       this.heartbeatTimer = null;
     }
 
-    this.registry.deactivate(this.config.agentId);
+    this.registry.deactivate(this.agentId);
 
     if (this.server) {
       return new Promise((resolve) => {
@@ -326,6 +341,15 @@ export class A2AServer {
       // Server was never started, but still need to close the TaskQueue
       this.taskQueue.close();
     }
+  }
+
+  /**
+   * Get the agent ID used by this server
+   *
+   * @returns Agent ID (platform-aware format if auto-generated)
+   */
+  getAgentId(): string {
+    return this.agentId;
   }
 
   /**
@@ -344,6 +368,15 @@ export class A2AServer {
    */
   getTaskQueue(): TaskQueue {
     return this.taskQueue;
+  }
+
+  /**
+   * Get the event emitter instance
+   *
+   * @returns A2AEventEmitter instance used by this server
+   */
+  getEventEmitter(): A2AEventEmitter {
+    return this.eventEmitter;
   }
 
   /**
@@ -372,18 +405,10 @@ export class A2AServer {
     return new Promise((resolve) => {
       const server = createServer();
 
-      server.once('error', (err: NodeJS.ErrnoException) => {
-        if (err.code === 'EADDRINUSE') {
-          resolve(false);
-        } else {
-          resolve(false);
-        }
-      });
+      server.once('error', () => resolve(false));
 
       server.once('listening', () => {
-        server.close(() => {
-          resolve(true);
-        });
+        server.close(() => resolve(true));
       });
 
       server.listen(port, '127.0.0.1');
@@ -399,8 +424,8 @@ export class A2AServer {
     const interval = this.config.heartbeatInterval || TIME.HEARTBEAT_INTERVAL_MS;
 
     this.heartbeatTimer = setInterval(() => {
-      this.registry.heartbeat(this.config.agentId);
-      logger.debug('[A2A Server] Heartbeat sent', { agentId: this.config.agentId });
+      this.registry.heartbeat(this.agentId);
+      logger.debug('[A2A Server] Heartbeat sent', { agentId: this.agentId });
     }, interval);
   }
 }

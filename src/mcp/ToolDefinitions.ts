@@ -6,6 +6,8 @@
  */
 
 import { OutputSchemas } from './schemas/OutputSchemas.js';
+import { a2aCancelTaskToolDefinition } from './tools/a2a-cancel-task.js';
+import { a2aSubscribeToolDefinition } from './tools/a2a-subscribe.js';
 
 
 /**
@@ -679,6 +681,211 @@ Returns agents with format: {agentId, url, port, status, lastHeartbeat}
     },
   };
 
+  const a2aBoardTool: MCPToolDefinition = {
+    name: 'a2a-board',
+    description: `📋 View all tasks in the unified task board with optional filtering (Kanban style).
+
+Displays tasks grouped by status (pending, in_progress, completed) with summary statistics.
+Supports filtering by status, platform, and owner.
+
+**Usage:**
+• No params: Show all tasks in Kanban view
+• {status: "pending"}: Show only pending tasks
+• {platform: "claude-code"}: Show tasks from specific platform
+• {owner: "agent-id"}: Show tasks assigned to specific agent
+
+**Output:** Kanban-style board with sections for each status, task IDs, subjects, platforms, and owners.`,
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        status: {
+          type: 'string',
+          enum: ['pending', 'in_progress', 'completed', 'deleted'],
+          description: 'Filter by task status',
+        },
+        platform: {
+          type: 'string',
+          description: 'Filter by creator platform (e.g., claude-code, chatgpt, cursor)',
+        },
+        owner: {
+          type: 'string',
+          description: 'Filter by owner agent ID',
+        },
+      },
+    },
+    annotations: {
+      title: 'A2A Task Board',
+      readOnlyHint: true,       // Read-only operation
+      destructiveHint: false,
+      idempotentHint: true,     // Same query returns same result
+      openWorldHint: false,     // Limited to unified task board
+    },
+  };
+
+  const a2aClaimTaskTool: MCPToolDefinition = {
+    name: 'a2a-claim-task',
+    description: `🙋 Claim a pending task from the unified task board for the current agent.
+
+**Usage:**
+• Call with taskId of a pending task to claim ownership
+• Task must be in 'pending' status to be claimed
+• After claiming, task status becomes 'in_progress' with you as owner
+
+**Workflow:**
+1. View available tasks with a2a-board (filter by status: "pending")
+2. Claim a task with a2a-claim-task
+3. Complete work on the task
+4. Mark complete with a2a-complete-task (or release with a2a-release-task)
+
+**Error Conditions:**
+• Task not found: Invalid taskId
+• Task not pending: Already claimed or completed by another agent`,
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        taskId: {
+          type: 'string',
+          description: 'UUID of the task to claim',
+        },
+      },
+      required: ['taskId'],
+    },
+    annotations: {
+      title: 'A2A Task Claim',
+      readOnlyHint: false,      // Modifies task status and ownership
+      destructiveHint: false,
+      idempotentHint: false,    // Claiming twice will fail
+      openWorldHint: false,     // Limited to unified task board
+    },
+  };
+
+  const a2aReleaseTaskTool: MCPToolDefinition = {
+    name: 'a2a-release-task',
+    description: `🔓 Release a claimed task back to pending status for other agents to claim.
+
+**Usage:**
+• Call with taskId of your claimed task to release it
+• Task ownership is cleared and status becomes 'pending'
+• Other agents can then claim the released task
+
+**When to Use:**
+• Cannot complete a task you claimed
+• Need to hand off work to another agent
+• Task needs to be reassigned
+
+**Idempotent:** Releasing an already pending task is safe (no-op).`,
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        taskId: {
+          type: 'string',
+          description: 'UUID of the task to release',
+        },
+      },
+      required: ['taskId'],
+    },
+    annotations: {
+      title: 'A2A Task Release',
+      readOnlyHint: false,      // Modifies task status and ownership
+      destructiveHint: false,
+      idempotentHint: true,     // Releasing already pending task is safe
+      openWorldHint: false,     // Limited to unified task board
+    },
+  };
+
+  const a2aFindTasksTool: MCPToolDefinition = {
+    name: 'a2a-find-tasks',
+    description: `🔍 Find tasks matching specified skills or criteria from the unified task board.
+
+**Usage:**
+• Find tasks by skills: {skills: ["typescript", "testing"]}
+• Filter by status: {status: "pending"} (default)
+• Limit results: {limit: 5} (default: 10, max: 50)
+
+**Matching Logic:**
+• Skills match against task metadata.required_skills (exact match)
+• Skills also match against task subject text (case-insensitive)
+• Results sorted by relevance (tasks with more skill matches first)
+
+**Examples:**
+• Find TypeScript tasks: {skills: ["typescript"]}
+• Find any pending tasks: {} (no filters)
+• Find in-progress testing tasks: {skills: ["testing"], status: "in_progress"}`,
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        skills: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of skill strings to match against task metadata or subject',
+        },
+        status: {
+          type: 'string',
+          enum: ['pending', 'in_progress', 'completed', 'deleted'],
+          description: 'Task status filter (default: pending)',
+          default: 'pending',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of results (default: 10, max: 50)',
+          minimum: 1,
+          maximum: 50,
+          default: 10,
+        },
+      },
+    },
+    annotations: {
+      title: 'A2A Task Finder',
+      readOnlyHint: true,       // Read-only operation
+      destructiveHint: false,
+      idempotentHint: true,     // Same query returns same result
+      openWorldHint: false,     // Limited to unified task board
+    },
+  };
+
+  const a2aSetSkillsTool: MCPToolDefinition = {
+    name: 'a2a-set-skills',
+    description: `🎯 Set skills for the current agent to enable skill-based task matching.
+
+**Usage:**
+• Set your agent's skills: {skills: ["typescript", "testing", "code-review"]}
+• Clear all skills: {skills: []}
+
+**How it works:**
+• Skills are used by a2a-find-tasks to match agents with suitable tasks
+• Auto-registers your agent if not already registered
+• Skills are stored persistently in the task board
+
+**Examples:**
+• Backend developer: {skills: ["nodejs", "postgresql", "api-design"]}
+• Frontend developer: {skills: ["react", "typescript", "css"]}
+• DevOps engineer: {skills: ["docker", "kubernetes", "ci-cd"]}
+
+**Next step:** Use a2a-find-tasks to discover tasks matching your skills.`,
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        skills: {
+          type: 'array',
+          items: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 100,
+          },
+          description: 'Array of skill strings (e.g., ["typescript", "testing", "code-review"])',
+        },
+      },
+      required: ['skills'],
+    },
+    annotations: {
+      title: 'A2A Set Agent Skills',
+      readOnlyHint: false,      // Modifies agent record
+      destructiveHint: false,
+      idempotentHint: true,     // Setting same skills twice is safe
+      openWorldHint: false,     // Limited to skill strings
+    },
+  };
+
   // ========================================
   // Test Generation Tools
   // ========================================
@@ -859,6 +1066,13 @@ Returns agents with format: {agentId, url, port, status, lastHeartbeat}
     a2aListTasksTool,
     a2aListAgentsTool,
     a2aReportResultTool,
+    a2aBoardTool,
+    a2aClaimTaskTool,
+    a2aReleaseTaskTool,
+    a2aFindTasksTool,
+    a2aSetSkillsTool,
+    a2aCancelTaskToolDefinition,
+    a2aSubscribeToolDefinition,
 
     // Hook Integration
     hookToolUseTool,

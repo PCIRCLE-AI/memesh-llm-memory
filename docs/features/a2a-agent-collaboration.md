@@ -1,19 +1,21 @@
-# A2A (Agent-to-Agent) Protocol - Phase 1.0
+# A2A (Agent-to-Agent) Protocol - Phase 2.3
 
-**Status**: Phase 1 Complete - Result Query & State Machine
-**Version**: 1.0.0
-**Last Updated**: 2026-02-05
+**Status**: Phase 2.3 - Event Notifications & Auto-Polling
+**Version**: 2.3.0
+**Last Updated**: 2026-02-06
 
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
+- [Unified Task Board (Phase 2.2)](#unified-task-board-phase-22)
+- [Event Notifications (Phase 2.3)](#event-notifications-phase-23)
 - [Quick Start](#quick-start)
 - [Architecture](#architecture)
 - [MCP Tools Reference](#mcp-tools-reference)
 - [Example Workflows](#example-workflows)
-- [Phase 0.5 Limitations](#phase-05-limitations)
+- [Current Limitations](#current-limitations)
 - [Roadmap](#roadmap)
 - [Troubleshooting](#troubleshooting)
 
@@ -48,6 +50,192 @@ A2A is an HTTP-based protocol that allows AI agents to:
 - Scale horizontally by adding more agents
 - Process multiple tasks concurrently
 - Avoid single-agent bottlenecks
+
+---
+
+## Unified Task Board (Phase 2.2)
+
+**NEW in Phase 2.2**: The A2A Protocol now includes a **Unified Task Board** for cross-platform task visibility and collaboration.
+
+### What Changed
+
+| Before (Per-Agent) | After (Unified) |
+|-------------------|-----------------|
+| Separate `a2a-tasks-{agentId}.db` files | Single `task-board.db` |
+| Tasks only visible to owning agent | Tasks visible to ALL agents |
+| No cross-platform collaboration | Full cross-platform support |
+| Random agent IDs per session | Deterministic platform-aware IDs |
+
+### Platform-Aware Agent IDs
+
+Agent IDs are now generated in format: **`hostname-username-platform`**
+
+| Platform | Example Agent ID |
+|----------|-----------------|
+| Claude Code | `macbook-pro-john-claude-code` |
+| ChatGPT | `macbook-pro-john-chatgpt` |
+| Gemini | `macbook-pro-john-gemini` |
+| Cursor | `macbook-pro-john-cursor` |
+| VS Code | `macbook-pro-john-vscode` |
+
+This ensures stable agent identification across sessions - same machine + user + platform always generates the same ID.
+
+### New MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `a2a-board` | View unified task board (Kanban-style) with filtering |
+| `a2a-claim-task` | Claim a pending task for the current agent |
+| `a2a-release-task` | Release a claimed task back to pending |
+| `a2a-find-tasks` | Find tasks matching agent skills |
+| `a2a-set-skills` | Register skills for skill-based task matching |
+
+### Quick Example
+
+```typescript
+// 1. Register your skills
+a2a-set-skills({ skills: ["typescript", "testing"] })
+
+// 2. View available tasks
+a2a-board({ status: "pending" })
+
+// 3. Find tasks matching your skills
+a2a-find-tasks({ skills: ["typescript"], status: "pending" })
+
+// 4. Claim a task
+a2a-claim-task({ taskId: "abc12345-..." })
+
+// 5. Complete work, then release if needed
+a2a-release-task({ taskId: "abc12345-..." })
+```
+
+### Migration from Per-Agent Databases
+
+Existing tasks can be migrated to the unified task board:
+
+```typescript
+import { migrateToUnifiedTaskBoard } from './src/a2a/migration/migrateToUnifiedTaskBoard.js';
+
+// Dry-run to preview
+const preview = migrateToUnifiedTaskBoard({ dryRun: true });
+
+// Actual migration with backup
+const result = migrateToUnifiedTaskBoard({ backup: true });
+```
+
+**State Mapping**:
+- `SUBMITTED` -> `pending`
+- `WORKING` -> `in_progress`
+- `COMPLETED`, `FAILED`, `TIMEOUT` -> `completed`
+- `CANCELED`, `REJECTED` -> `deleted`
+
+**See**: [Unified Task Board Guide](../a2a/UNIFIED_TASK_BOARD.md) for complete documentation.
+
+---
+
+## Event Notifications (Phase 2.3)
+
+**NEW in Phase 2.3**: Real-time task notifications via Server-Sent Events (SSE), eliminating the need for manual polling.
+
+### What Changed
+
+| Before (Polling) | After (SSE) |
+|-----------------|-------------|
+| Manual `a2a-get-task` polling | Real-time event notifications |
+| No cancellation support | `a2a-cancel-task` tool |
+| No subscription mechanism | `a2a-subscribe` tool |
+| Delayed task updates | Instant state change notifications |
+
+### SSE Endpoint
+
+**Endpoint**: `GET /a2a/events`
+
+The SSE endpoint provides real-time notifications for task board changes.
+
+**Event Types**:
+
+| Event Type | Description |
+|------------|-------------|
+| `task.created` | New task added to the board |
+| `task.claimed` | Task claimed by an agent |
+| `task.released` | Task released back to pending |
+| `task.completed` | Task marked as completed |
+| `task.cancelled` | Task cancelled |
+| `task.updated` | Task metadata or details changed |
+| `connected` | Initial connection established |
+| `heartbeat` | Keep-alive signal (every 30s) |
+
+**Filtering Options**:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `status` | string | Filter by task status: `pending`, `in_progress`, `completed`, `deleted` |
+| `platform` | string | Filter by creator platform (e.g., `claude-code`, `chatgpt`) |
+| `skills` | string | Comma-separated skills to match |
+| `types` | string | Comma-separated event types to receive |
+
+**Example Connection**:
+
+```bash
+# Basic connection (all events)
+curl -N http://localhost:3000/a2a/events
+
+# Filter by status
+curl -N "http://localhost:3000/a2a/events?status=pending"
+
+# Filter by platform and skills
+curl -N "http://localhost:3000/a2a/events?platform=claude-code&skills=typescript,react"
+
+# Subscribe to specific event types
+curl -N "http://localhost:3000/a2a/events?types=task.created,task.claimed"
+```
+
+**Event Format**:
+
+```
+event: task.created
+id: evt_abc123
+data: {"taskId":"abc12345-...","subject":"Implement feature","status":"pending","platform":"claude-code","timestamp":"2026-02-06T12:00:00.000Z"}
+
+event: task.claimed
+id: evt_def456
+data: {"taskId":"abc12345-...","subject":"Implement feature","status":"in_progress","owner":"macbook-pro-john-cursor","platform":"claude-code","timestamp":"2026-02-06T12:01:00.000Z"}
+```
+
+### Reconnection Support
+
+SSE connections can be resumed using the `Last-Event-ID` header:
+
+```bash
+# Resume from last received event
+curl -N -H "Last-Event-ID: evt_abc123" http://localhost:3000/a2a/events
+```
+
+The server replays any missed events since the provided event ID.
+
+### New MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `a2a-cancel-task` | Cancel a pending or in-progress task |
+| `a2a-subscribe` | Subscribe to task board events with filters |
+
+### Quick Example
+
+```typescript
+// 1. Subscribe to events (background)
+a2a-subscribe({ types: ["task.created", "task.claimed"], skills: ["typescript"] })
+
+// 2. Cancel a task if needed
+a2a-cancel-task({ taskId: "abc12345-..." })
+
+// 3. View current board state
+a2a-board({ status: "pending" })
+```
+
+**See**: [Unified Task Board Guide](../a2a/UNIFIED_TASK_BOARD.md#event-notifications) for complete SSE documentation.
+
+---
 
 ### Architecture at a Glance
 
@@ -801,6 +989,10 @@ Task state has been updated to FAILED
 
 ## Current Limitations
 
+### ~~Unified Task Board~~ (RESOLVED in Phase 2.2)
+
+Previously, each agent had its own database (`a2a-tasks-{agentId}.db`) and tasks were not visible across agents. This is now **resolved** with the unified `task-board.db`.
+
 ### Simplified Task Execution
 
 **Current Behavior**:
@@ -863,36 +1055,26 @@ Response: "Echo: Analyze API performance
 
 ---
 
-### No Push Notifications
+### ~~No Push Notifications~~ (RESOLVED in Phase 2.3)
 
-**Current Behavior**:
-- Must **poll** for task status updates using `a2a-get-task`
-- No real-time notifications
-- Inefficient for long-running tasks
+Previously, you had to poll for task status updates. This is now **resolved** with Server-Sent Events (SSE).
 
-**Workaround (Phase 1)**:
-- Use `a2a-report-result` to update task state when work completes
-- Poll with reasonable intervals (5-10 seconds for active tasks)
-
-**Coming in Phase 2**:
-- Server-Sent Events (SSE) for real-time state changes
-- WebSocket support for bidirectional communication
-- Task completion callbacks
-- Auto-polling mechanism with exponential backoff
+**Phase 2.3 Features**:
+- SSE endpoint (`/a2a/events`) for real-time state changes
+- Event filtering by status, platform, skills, and event types
+- Reconnection support with `Last-Event-ID`
+- `a2a-subscribe` MCP tool for easy subscription
 
 ---
 
-### No Task Cancellation UI
+### ~~No Task Cancellation UI~~ (RESOLVED in Phase 2.3)
 
-**Current Behavior**:
-- Cancel endpoint exists (`POST /a2a/tasks/:taskId/cancel`)
-- **Not exposed** via MCP tools yet
-- Must use HTTP directly
+Previously, task cancellation required direct HTTP calls. This is now **resolved** with the `a2a-cancel-task` MCP tool.
 
-**Coming in Phase 1**:
-- `a2a-cancel-task` MCP tool
-- Task lifecycle management UI
-- Bulk cancellation support
+**Phase 2.3 Features**:
+- `a2a-cancel-task` MCP tool for task cancellation
+- Automatic SSE notification on cancellation
+- Cancellation recorded in task history
 
 ---
 
@@ -932,23 +1114,49 @@ Response: "Echo: Analyze API performance
 
 ---
 
-### Phase 2: Event Notifications & Auto-Polling (Next)
+### ✅ Phase 2.2: Unified Task Board (COMPLETED)
 
-**Goal**: Real-time task status updates without manual polling.
+**Status**: ✅ Complete (2026-02-06)
 
-**Planned Features**:
-- Server-Sent Events (SSE) for task state changes
-- WebSocket support for real-time bidirectional communication
-- Auto-polling mechanism with exponential backoff
-- Task completion callbacks
-- Timeout/retry handling with configurable policies
-- `a2a-cancel-task` MCP tool
+**Features Implemented**:
+- ✅ Unified `task-board.db` replacing per-agent databases
+- ✅ Platform-aware Agent ID generation (`hostname-username-platform`)
+- ✅ Cross-platform task visibility (Claude Code, ChatGPT, Gemini, Cursor, VS Code)
+- ✅ New MCP Tools:
+  - `a2a-board` - Kanban-style task board view
+  - `a2a-claim-task` - Atomic task claiming
+  - `a2a-release-task` - Release claimed tasks
+  - `a2a-find-tasks` - Skill-based task discovery
+  - `a2a-set-skills` - Agent skill registration
+- ✅ Migration script from old databases
+- ✅ Task history audit trail
+- ✅ Agent registry with skills
 
-**Timeline**: Q1 2026
+**See**: `docs/a2a/UNIFIED_TASK_BOARD.md` for detailed guide
 
 ---
 
-### Phase 2: Cross-Machine Networking
+### ✅ Phase 2.3: Event Notifications & Auto-Polling (COMPLETED)
+
+**Status**: ✅ Complete (2026-02-06)
+
+**Features Implemented**:
+- ✅ Server-Sent Events (SSE) endpoint (`/a2a/events`)
+- ✅ Event types: `task.created`, `task.claimed`, `task.released`, `task.completed`, `task.cancelled`, `task.updated`
+- ✅ Event filtering by status, platform, skills, and event types
+- ✅ Reconnection support with `Last-Event-ID` header
+- ✅ Heartbeat mechanism (30-second intervals)
+- ✅ New MCP Tools:
+  - `a2a-cancel-task` - Cancel pending/in-progress tasks
+  - `a2a-subscribe` - Subscribe to task board events
+- ✅ Integration with TaskBoard for real-time notifications
+- ✅ Comprehensive test coverage
+
+**See**: [Unified Task Board Guide](../a2a/UNIFIED_TASK_BOARD.md#event-notifications) for detailed SSE documentation
+
+---
+
+### Phase 3: Cross-Machine Networking
 
 **Goal**: Enable agents to collaborate across different machines.
 
@@ -964,7 +1172,7 @@ Response: "Echo: Analyze API performance
 
 ---
 
-### Phase 3: Advanced Workflows
+### Phase 4: Advanced Workflows
 
 **Goal**: Support complex multi-agent orchestration.
 
@@ -980,7 +1188,7 @@ Response: "Echo: Analyze API performance
 
 ---
 
-### Phase 4: Enterprise Features
+### Phase 5: Enterprise Features
 
 **Goal**: Production-ready multi-agent system.
 
@@ -1176,30 +1384,60 @@ Includes:
 
 ---
 
-**Document Version**: 1.1
+**Document Version**: 2.3
 **Author**: MeMesh Team
 **License**: AGPL-3.0
-**Phase**: 1.0 (Result Query & State Machine)
+**Phase**: 2.3 (Event Notifications & Auto-Polling)
+
+---
+
+## What's New in Phase 2.3
+
+**Event Notifications** - Real-time task updates via Server-Sent Events:
+
+- **SSE Endpoint**: `/a2a/events` provides real-time task notifications
+- **Event Types**: `task.created`, `task.claimed`, `task.released`, `task.completed`, `task.cancelled`, `task.updated`
+- **Event Filtering**: Filter by status, platform, skills, and event types
+- **Reconnection Support**: Resume connections with `Last-Event-ID` header
+- **Heartbeat**: 30-second keep-alive signals
+- **New MCP Tools**:
+  - `a2a-cancel-task` - Cancel pending or in-progress tasks
+  - `a2a-subscribe` - Subscribe to task board events with filters
+
+**See**: [Unified Task Board Guide](../a2a/UNIFIED_TASK_BOARD.md#event-notifications) for complete documentation.
+
+---
+
+## What's New in Phase 2.2
+
+**Unified Task Board** - Cross-platform task visibility and collaboration:
+
+- **Single Database**: Unified `task-board.db` replaces per-agent databases
+- **Platform-Aware Agent IDs**: Deterministic IDs (`hostname-username-platform`) for stable identification
+- **Cross-Platform Support**: Claude Code, ChatGPT, Gemini, Cursor, VS Code agents all share the same task board
+- **New MCP Tools**:
+  - `a2a-board` - View all tasks in Kanban-style format
+  - `a2a-claim-task` - Claim pending tasks atomically
+  - `a2a-release-task` - Release claimed tasks for other agents
+  - `a2a-find-tasks` - Find tasks matching agent skills
+  - `a2a-set-skills` - Register skills for task matching
+- **Migration Script**: Convert old per-agent databases to unified format
+- **Task History**: Audit trail for task state changes
+- **Agent Registry**: Track agents with platform and skill information
+
+**See**: [Unified Task Board Guide](../a2a/UNIFIED_TASK_BOARD.md) for complete documentation.
 
 ---
 
 ## What's New in Phase 1.0
 
-✅ **Task Result Query**: Query execution results of completed tasks with `getTaskResult()` API and `a2a-get-result` MCP tool
-
-✅ **Complete State Machine**: Full lifecycle management with SUBMITTED → WORKING → COMPLETED/FAILED/TIMEOUT transitions
-
-✅ **State Update API**: Programmatic state updates with `updateTaskState()` API
-
-✅ **Enhanced Result Reporting**: `a2a-report-result` automatically updates task state
-
-✅ **Security Hardening**:
-  - 10MB response size limit (DoS prevention)
-  - Input validation (path traversal protection)
-  - Schema validation (type confusion prevention)
-
-✅ **Comprehensive Testing**: 280+ integration test assertions covering all Phase 1 features
+- **Task Result Query**: Query execution results of completed tasks with `getTaskResult()` API and `a2a-get-result` MCP tool
+- **Complete State Machine**: Full lifecycle management with SUBMITTED - WORKING - COMPLETED/FAILED/TIMEOUT transitions
+- **State Update API**: Programmatic state updates with `updateTaskState()` API
+- **Enhanced Result Reporting**: `a2a-report-result` automatically updates task state
+- **Security Hardening**: Response size limits, input validation, schema validation
+- **Comprehensive Testing**: 280+ integration test assertions
 
 ---
 
-**🎉 Phase 1.0 Complete!** The A2A Protocol now supports complete task lifecycle management with proper state machine and result querying. Phase 2 will add real-time notifications and auto-polling.
+**Phase 2.3 Complete!** The A2A Protocol now supports real-time event notifications via SSE. Phase 3 will add cross-machine networking.

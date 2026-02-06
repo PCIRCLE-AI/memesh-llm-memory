@@ -1,13 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TaskExecutor } from '../../../src/a2a/executor/TaskExecutor.js';
 import type { MCPTaskDelegator } from '../../../src/a2a/delegator/MCPTaskDelegator.js';
-import type { TaskQueue } from '../../../src/a2a/storage/TaskQueue.js';
 import type { Logger } from '../../../src/utils/logger.js';
 
 describe('TaskExecutor (Phase 1.0)', () => {
   let executor: TaskExecutor;
   let mockDelegator: MCPTaskDelegator;
-  let mockQueue: TaskQueue;
   let mockLogger: Logger;
 
   beforeEach(() => {
@@ -15,15 +13,13 @@ describe('TaskExecutor (Phase 1.0)', () => {
       addTask: vi.fn().mockResolvedValue(undefined)
     } as any;
 
-    mockQueue = {} as TaskQueue;
-
     mockLogger = {
       info: vi.fn(),
       warn: vi.fn(),
       error: vi.fn()
     } as any;
 
-    executor = new TaskExecutor(mockQueue, mockLogger, mockDelegator);
+    executor = new TaskExecutor(mockLogger, mockDelegator);
   });
 
   describe('executeTask', () => {

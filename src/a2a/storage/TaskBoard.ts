@@ -10,6 +10,8 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 import crypto from 'crypto';
+import { A2AEventEmitter } from '../events/A2AEventEmitter.js';
+import { A2AEvent, TaskEventData, EventType } from '../events/types.js';
 
 /**
  * Safely parse JSON string, returning undefined if invalid (defense-in-depth)
@@ -146,6 +148,7 @@ export interface TaskHistoryEntry {
  */
 export class TaskBoard {
   private db!: Database.Database;
+  private eventEmitter?: A2AEventEmitter;
 
   // Maximum length constraints for input validation
   private static readonly MAX_SUBJECT_LENGTH = 500;
@@ -160,9 +163,11 @@ export class TaskBoard {
    * Initialize TaskBoard storage
    *
    * @param dbPath - Optional custom database path (for testing). Defaults to ~/.claude-code-buddy/task-board.db
+   * @param eventEmitter - Optional A2AEventEmitter for real-time event notifications
    * @throws Error if initialization fails or path is invalid
    */
-  constructor(dbPath?: string) {
+  constructor(dbPath?: string, eventEmitter?: A2AEventEmitter) {
+    this.eventEmitter = eventEmitter;
     try {
       // Validate dbPath if provided
       if (dbPath !== undefined) {
@@ -427,6 +432,12 @@ export class TaskBoard {
       metadata
     );
 
+    // Emit task.created event
+    const task = this.getTask(id);
+    if (task) {
+      this.emitTaskEvent('task.created', task);
+    }
+
     return id;
   }
 
@@ -467,6 +478,37 @@ export class TaskBoard {
       cancelled_by: row.cancelled_by || undefined,
       cancel_reason: row.cancel_reason || undefined,
     };
+  }
+
+  /**
+   * Emit a task lifecycle event
+   *
+   * @param type - Event type (task.created, task.claimed, etc.)
+   * @param task - Task object with current state
+   * @param actor - Optional agent ID that performed the action
+   */
+  private emitTaskEvent(
+    type: EventType,
+    task: Task,
+    actor?: string
+  ): void {
+    if (!this.eventEmitter) return;
+
+    const event: A2AEvent<TaskEventData> = {
+      id: crypto.randomUUID(),
+      type,
+      timestamp: Date.now(),
+      data: {
+        taskId: task.id,
+        subject: task.subject,
+        status: task.status,
+        owner: task.owner || null,
+        creator_platform: task.creator_platform,
+        actor,
+      },
+    };
+
+    this.eventEmitter.emit(event);
   }
 
   /**
@@ -546,13 +588,17 @@ export class TaskBoard {
   deleteTask(taskId: string): void {
     this.validateTaskId(taskId);
 
-    // Check if task exists
-    if (!this.taskExists(taskId)) {
+    // Get task before deletion (for event emission)
+    const task = this.getTask(taskId);
+    if (!task) {
       throw new Error(`Task not found: ${taskId}`);
     }
 
     const stmt = this.db.prepare('DELETE FROM tasks WHERE id = ?');
     stmt.run(taskId);
+
+    // Emit task.deleted event
+    this.emitTaskEvent('task.deleted', task);
   }
 
   /**
@@ -590,6 +636,12 @@ export class TaskBoard {
     });
 
     transaction();
+
+    // Emit task.claimed event
+    const updatedTask = this.getTask(taskId);
+    if (updatedTask) {
+      this.emitTaskEvent('task.claimed', updatedTask, agentId);
+    }
   }
 
   /**
@@ -625,6 +677,12 @@ export class TaskBoard {
     });
 
     transaction();
+
+    // Emit task.released event
+    const updatedTask = this.getTask(taskId);
+    if (updatedTask) {
+      this.emitTaskEvent('task.released', updatedTask, task?.owner ?? undefined);
+    }
   }
 
   /**
@@ -677,6 +735,57 @@ export class TaskBoard {
     });
 
     transaction();
+
+    // Emit task.cancelled event
+    const updatedTask = this.getTask(taskId);
+    if (updatedTask) {
+      this.emitTaskEvent('task.cancelled', updatedTask, cancelledBy);
+    }
+  }
+
+  /**
+   * Complete a task
+   *
+   * Marks a task as completed. Only in_progress tasks can be completed.
+   *
+   * @param taskId - Task ID to complete
+   * @param completedBy - Agent ID that completed the task
+   * @throws Error if task not found, not in_progress, or validation fails
+   */
+  completeTask(taskId: string, completedBy: string): void {
+    this.validateTaskId(taskId);
+
+    const task = this.getTask(taskId);
+    if (!task) {
+      throw new Error(`Task not found: ${taskId}`);
+    }
+
+    if (task.status !== 'in_progress') {
+      throw new Error(`Task ${taskId} is not in in_progress status (current: ${task.status})`);
+    }
+
+    const previousStatus = task.status;
+
+    // Atomic update with transaction
+    const transaction = this.db.transaction(() => {
+      const now = Date.now();
+      this.db.prepare(`
+        UPDATE tasks
+        SET status = 'completed',
+            updated_at = ?
+        WHERE id = ?
+      `).run(now, taskId);
+
+      this.recordHistory(taskId, completedBy, 'completed', previousStatus, 'completed');
+    });
+
+    transaction();
+
+    // Emit task.completed event
+    const updatedTask = this.getTask(taskId);
+    if (updatedTask) {
+      this.emitTaskEvent('task.completed', updatedTask, completedBy);
+    }
   }
 
   /**

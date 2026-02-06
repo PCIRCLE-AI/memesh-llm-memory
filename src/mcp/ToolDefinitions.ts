@@ -142,63 +142,6 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
   };
 
   // ========================================
-  // Workflow Guidance Tools
-  // ========================================
-
-  const getWorkflowGuidanceTool: MCPToolDefinition = {
-    name: 'get-workflow-guidance',
-    description: 'Get next steps and recommendations for current development phase (code-written, test-complete, commit-ready)',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        phase: {
-          type: 'string',
-          enum: ['idle', 'code-written', 'test-complete', 'commit-ready', 'committed'],
-          description: 'Current workflow phase',
-        },
-        filesChanged: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'List of files that were changed',
-        },
-        testsPassing: {
-          type: 'boolean',
-          description: 'Whether tests are passing',
-        },
-      },
-      required: ['phase'],
-    },
-    outputSchema: OutputSchemas.getWorkflowGuidance,
-    annotations: {
-      title: 'Workflow Recommendations',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: false,    // Results depend on current state
-      openWorldHint: false,
-    },
-  };
-
-  const getSessionHealthTool: MCPToolDefinition = {
-    name: 'get-session-health',
-    description: '💊 MeMesh: Check session health including token usage and quality metrics',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {},
-      additionalProperties: false,  // No parameters accepted
-    },
-    outputSchema: OutputSchemas.getSessionHealth,
-    annotations: {
-      title: 'Session Health Check',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: false,    // Results change over time
-      openWorldHint: false,
-    },
-  };
-
-  // generate-smart-plan tool removed - planning delegated to Claude's built-in capabilities
-
-  // ========================================
   // Learning Tools (Feedback & Improvement)
   // ========================================
 
@@ -712,8 +655,6 @@ Supports filtering by status, platform, and owner.
     buddyDoTool,
     buddyRememberTool,
     buddyHelpTool,
-    getSessionHealthTool,
-    getWorkflowGuidanceTool,
 
     // Learning Tools
     buddyRecordMistakeTool,

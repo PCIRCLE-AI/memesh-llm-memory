@@ -6,7 +6,7 @@
  * Every mistake must be converted into an executable prevention rule.
  */
 
-import type { AIMistake } from '../../evolution/types.js';
+import type { AIMistake } from '../../types/AgentClassification.js';
 
 /**
  * Categories of prevention rules

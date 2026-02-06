@@ -24,8 +24,5 @@ export type {
   BuddyDoOutput,
   BuddyRememberOutput,
   BuddyHelpOutput,
-  SessionHealthOutput,
-  WorkflowGuidanceOutput,
-  SmartPlanOutput,
   HookToolUseOutput,
 } from './schemas/OutputSchemas.js';

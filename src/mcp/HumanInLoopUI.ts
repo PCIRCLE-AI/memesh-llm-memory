@@ -5,7 +5,7 @@
  * showing recommendations with reasoning and alternatives.
  */
 
-import { AgentType } from '../orchestrator/types.js';
+import type { AgentType } from '../types/AgentClassification.js';
 import { ValidationError } from '../errors/index.js';
 
 /**

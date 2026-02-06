@@ -345,17 +345,6 @@ export class ToolRouter {
       return await this.buddyHandlers.handleBuddyHelp(args);
     }
 
-    // Workflow Guidance tools
-    if (toolName === 'get-workflow-guidance') {
-      return await this.toolHandlers.handleGetWorkflowGuidance(args);
-    }
-
-    if (toolName === 'get-session-health') {
-      return await this.toolHandlers.handleGetSessionHealth();
-    }
-
-    // Planning tools removed - planning delegated to LLM's built-in capabilities
-
     // Hook integration tools
     if (toolName === 'hook-tool-use') {
       return await this.toolHandlers.handleHookToolUse(args);

@@ -94,10 +94,8 @@ export interface EventFilter {
  */
 export function matchesFilter(event: A2AEvent, filter: EventFilter): boolean {
   // Filter by event type
-  if (filter.types && filter.types.length > 0) {
-    if (!filter.types.includes(event.type)) {
-      return false;
-    }
+  if (filter.types?.length && !filter.types.includes(event.type)) {
+    return false;
   }
 
   // For task events, apply task-specific filters
@@ -108,18 +106,16 @@ export function matchesFilter(event: A2AEvent, filter: EventFilter): boolean {
       metadata?: string;
     };
 
-    // Filter by status
     if (filter.status && data.status !== filter.status) {
       return false;
     }
 
-    // Filter by platform
     if (filter.platform && data.creator_platform !== filter.platform) {
       return false;
     }
 
     // Filter by skills (match if ANY skill overlaps)
-    if (filter.skills && filter.skills.length > 0) {
+    if (filter.skills?.length) {
       try {
         const metadata = data.metadata ? JSON.parse(data.metadata) : {};
         const requiredSkills: string[] = metadata.required_skills || [];

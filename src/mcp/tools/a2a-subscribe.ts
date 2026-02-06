@@ -25,6 +25,14 @@ export const A2ASubscribeInputSchema = z.object({
 export type A2ASubscribeInput = z.infer<typeof A2ASubscribeInputSchema>;
 
 /**
+ * Build a comma-separated URL parameter from an array
+ */
+function buildArrayParam(name: string, values: string[] | undefined): string | null {
+  if (!values?.length) return null;
+  return `${name}=${values.map((v) => encodeURIComponent(v)).join(',')}`;
+}
+
+/**
  * Handle a2a-subscribe MCP tool invocation
  *
  * Returns SSE endpoint URL with optional filters and usage instructions.
@@ -33,27 +41,16 @@ export type A2ASubscribeInput = z.infer<typeof A2ASubscribeInputSchema>;
  * @returns Formatted endpoint information and usage examples
  */
 export function handleA2ASubscribe(input: A2ASubscribeInput): CallToolResult {
-  // Build query parameters manually to avoid URL-encoding commas for readability
-  const params: string[] = [];
+  // Build query parameters, filtering out null values
+  const params = [
+    input.status ? `status=${input.status}` : null,
+    input.platform ? `platform=${encodeURIComponent(input.platform)}` : null,
+    buildArrayParam('skills', input.skills),
+    buildArrayParam('types', input.types),
+  ].filter((p): p is string => p !== null);
 
-  if (input.status) {
-    params.push(`status=${input.status}`);
-  }
-  if (input.platform) {
-    params.push(`platform=${encodeURIComponent(input.platform)}`);
-  }
-  // Skills - URL encode each value (MAJOR-6)
-  if (input.skills && input.skills.length > 0) {
-    params.push(`skills=${input.skills.map((s) => encodeURIComponent(s)).join(',')}`);
-  }
-  // Types - URL encode each value (MAJOR-6)
-  if (input.types && input.types.length > 0) {
-    params.push(`types=${input.types.map((t) => encodeURIComponent(t)).join(',')}`);
-  }
-
-  const queryString = params.join('&');
   const baseUrl = '/a2a/events';
-  const fullUrl = queryString ? `${baseUrl}?${queryString}` : baseUrl;
+  const fullUrl = params.length ? `${baseUrl}?${params.join('&')}` : baseUrl;
 
   // Build output
   let output = `SSE Event Subscription Endpoint\n\n`;

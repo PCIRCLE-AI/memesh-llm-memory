@@ -78,16 +78,14 @@ export function handleA2ACancelTask(
  */
 function formatSuccessResponse(task: Task, agentId: string, reason?: string): string {
   const shortId = formatShortId(task.id);
+  const reasonLine = reason ? `Reason: ${reason}\n` : '';
 
-  let output = `✅ Task cancelled successfully!\n\n`;
-  output += `Task: [${shortId}] ${task.subject}\n`;
-  output += `Status: ${task.status}\n`;
-  if (reason) {
-    output += `Reason: ${reason}\n`;
-  }
-  output += `Cancelled by: ${agentId}\n`;
+  return `✅ Task cancelled successfully!
 
-  return output;
+Task: [${shortId}] ${task.subject}
+Status: ${task.status}
+${reasonLine}Cancelled by: ${agentId}
+`;
 }
 
 /**

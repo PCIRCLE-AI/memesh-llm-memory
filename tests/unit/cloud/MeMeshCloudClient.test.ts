@@ -10,7 +10,11 @@ describe('MeMeshCloudClient', () => {
   let client: MeMeshCloudClient;
 
   beforeEach(() => {
-    client = new MeMeshCloudClient('mk_test_key_123', 'https://api.test.memesh.ai', 5000);
+    client = new MeMeshCloudClient('mk_test_key_123', 'https://test.memesh-backend.fly.dev', 5000);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('constructor', () => {
@@ -48,16 +52,23 @@ describe('MeMeshCloudClient', () => {
       expect(result.valid).toBe(false);
     });
 
-    it('should call auth endpoint and return user info on success', async () => {
-      const mockResponse = { userId: 'user-1', plan: 'pro' };
+    it('should call /agents/me and return agent info on success', async () => {
+      const mockAgent = {
+        id: 'agent-1',
+        agentType: 'claude',
+        agentName: 'Test Agent',
+        status: 'online',
+        capabilities: {},
+        createdAt: '2026-01-01T00:00:00Z',
+      };
       vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-        new Response(JSON.stringify(mockResponse), { status: 200 })
+        new Response(JSON.stringify(mockAgent), { status: 200 })
       );
 
       const result = await client.authenticate();
       expect(result.valid).toBe(true);
-      expect(result.userId).toBe('user-1');
-      expect(result.plan).toBe('pro');
+      expect(result.agentId).toBe('agent-1');
+      expect(result.agentType).toBe('claude');
     });
 
     it('should return invalid on auth failure', async () => {
@@ -75,27 +86,28 @@ describe('MeMeshCloudClient', () => {
       const noKeyClient = new MeMeshCloudClient('');
       await expect(noKeyClient.writeMemory({
         content: 'test',
-        tags: ['test'],
+        space: 'default',
       })).rejects.toThrow('MeMesh Cloud API key not configured');
     });
 
-    it('should POST to memories endpoint', async () => {
+    it('should POST to /memory/write with x-api-key header', async () => {
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
         new Response(JSON.stringify({ id: 'mem-1' }), { status: 200 })
       );
 
       const id = await client.writeMemory({
         content: 'Test memory',
+        space: 'default',
         tags: ['test'],
       });
 
       expect(id).toBe('mem-1');
       expect(fetchSpy).toHaveBeenCalledWith(
-        'https://api.test.memesh.ai/v1/memories',
+        'https://test.memesh-backend.fly.dev/memory/write',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            'Authorization': 'Bearer mk_test_key_123',
+            'x-api-key': 'mk_test_key_123',
           }),
         })
       );
@@ -103,36 +115,82 @@ describe('MeMeshCloudClient', () => {
   });
 
   describe('writeMemories (batch)', () => {
-    it('should POST batch to memories/batch endpoint', async () => {
-      const mockResult = { ids: ['m1', 'm2'], errors: [] };
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-        new Response(JSON.stringify(mockResult), { status: 200 })
-      );
-
-      const result = await client.writeMemories([
-        { content: 'Memory 1', tags: ['a'] },
-        { content: 'Memory 2', tags: ['b'] },
-      ]);
-
-      expect(result.ids).toEqual(['m1', 'm2']);
-      expect(result.errors).toEqual([]);
-    });
-  });
-
-  describe('searchMemory', () => {
-    it('should GET search endpoint with query params', async () => {
-      const mockResult = { memories: [], total: 0, hasMore: false };
+    it('should POST batch to /memory/batch endpoint', async () => {
+      const mockResult = {
+        total: 2,
+        succeeded: 2,
+        failed: 0,
+        successes: [
+          { index: 0, id: 'm1', content: 'Memory 1', createdAt: '2026-01-01' },
+          { index: 1, id: 'm2', content: 'Memory 2', createdAt: '2026-01-01' },
+        ],
+        failures: [],
+        transactional: false,
+      };
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
         new Response(JSON.stringify(mockResult), { status: 200 })
       );
 
-      await client.searchMemory('api design', { limit: 10, tags: ['decision'] });
+      const result = await client.writeMemories([
+        { content: 'Memory 1', space: 'default', tags: ['a'] },
+        { content: 'Memory 2', space: 'default', tags: ['b'] },
+      ]);
 
-      const calledUrl = (fetchSpy.mock.calls[0][0] as string);
-      expect(calledUrl).toContain('/v1/memories/search');
-      expect(calledUrl).toContain('q=api+design');
+      expect(result.total).toBe(2);
+      expect(result.succeeded).toBe(2);
+      expect(result.failed).toBe(0);
+      expect(result.successes).toHaveLength(2);
+
+      // Verify batch payload shape
+      const body = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
+      expect(body.memories).toHaveLength(2);
+      expect(body.transactional).toBe(false);
+    });
+
+    it('should throw when not configured', async () => {
+      const noKeyClient = new MeMeshCloudClient('');
+      await expect(noKeyClient.writeMemories([{
+        content: 'test',
+        space: 'default',
+      }])).rejects.toThrow('MeMesh Cloud API key not configured');
+    });
+  });
+
+  describe('searchMemory', () => {
+    it('should GET /memory/search with query params', async () => {
+      const mockResult = [
+        { id: 'm1', content: 'Result', space: 'default', tags: ['a'], createdAt: '2026-01-01' },
+      ];
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(JSON.stringify(mockResult), { status: 200 })
+      );
+
+      const results = await client.searchMemory('api design', { limit: 10 });
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id).toBe('m1');
+
+      const calledUrl = fetchSpy.mock.calls[0][0] as string;
+      expect(calledUrl).toContain('/memory/search');
+      expect(calledUrl).toContain('query=api+design');
       expect(calledUrl).toContain('limit=10');
-      expect(calledUrl).toContain('tags=decision');
+    });
+
+    it('should pass spaces filter when provided', async () => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(JSON.stringify([]), { status: 200 })
+      );
+
+      await client.searchMemory('test', { spaces: ['work', 'personal'] });
+
+      const calledUrl = fetchSpy.mock.calls[0][0] as string;
+      expect(calledUrl).toContain('spaces=work%2Cpersonal');
+    });
+
+    it('should throw when not configured', async () => {
+      const noKeyClient = new MeMeshCloudClient('');
+      await expect(noKeyClient.searchMemory('test'))
+        .rejects.toThrow('MeMesh Cloud API key not configured');
     });
   });
 
@@ -142,11 +200,12 @@ describe('MeMeshCloudClient', () => {
       const result = await noKeyClient.getSyncStatus(42);
       expect(result.connected).toBe(false);
       expect(result.localCount).toBe(42);
+      expect(result.cloudCount).toBe(0);
     });
 
-    it('should return sync status from cloud', async () => {
+    it('should return sync status from /memory/count', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-        new Response(JSON.stringify({ count: 100, lastSync: '2025-01-01T00:00:00Z' }), { status: 200 })
+        new Response(JSON.stringify({ count: 100 }), { status: 200 })
       );
 
       const result = await client.getSyncStatus(50);
@@ -164,44 +223,36 @@ describe('MeMeshCloudClient', () => {
   });
 
   describe('registerAgent', () => {
-    it('should POST to agents/register endpoint', async () => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-        new Response(null, { status: 204 })
+    it('should POST to /agents/register and return CloudAgentInfo', async () => {
+      const mockAgent = {
+        id: 'agent-1',
+        agentType: 'claude',
+        agentName: 'Test Agent',
+        status: 'online',
+        capabilities: { platform: 'claude-code' },
+        createdAt: '2026-01-01T00:00:00Z',
+      };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(JSON.stringify(mockAgent), { status: 200 })
       );
 
-      await expect(client.registerAgent({
-        agentId: 'agent-1',
-        name: 'Alpha',
-        platform: 'claude-code',
-      })).resolves.not.toThrow();
-    });
-  });
+      const result = await client.registerAgent({
+        agentType: 'claude',
+        agentName: 'Test Agent',
+        capabilities: { platform: 'claude-code' },
+      });
 
-  describe('writeMemories (requireAuth)', () => {
-    it('should throw when not configured', async () => {
-      const noKeyClient = new MeMeshCloudClient('');
-      await expect(noKeyClient.writeMemories([{
-        content: 'test',
-        tags: [],
-      }])).rejects.toThrow('MeMesh Cloud API key not configured');
-    });
-  });
+      expect(result.id).toBe('agent-1');
+      expect(result.agentType).toBe('claude');
 
-  describe('searchMemory (requireAuth)', () => {
-    it('should throw when not configured', async () => {
-      const noKeyClient = new MeMeshCloudClient('');
-      await expect(noKeyClient.searchMemory('test'))
-        .rejects.toThrow('MeMesh Cloud API key not configured');
+      const calledUrl = fetchSpy.mock.calls[0][0] as string;
+      expect(calledUrl).toContain('/agents/register');
     });
-  });
 
-  describe('registerAgent (requireAuth)', () => {
     it('should throw when not configured', async () => {
       const noKeyClient = new MeMeshCloudClient('');
       await expect(noKeyClient.registerAgent({
-        agentId: 'a1',
-        name: 'Test',
-        platform: 'test',
+        agentType: 'test',
       })).rejects.toThrow('MeMesh Cloud API key not configured');
     });
   });
@@ -214,7 +265,7 @@ describe('MeMeshCloudClient', () => {
 
       await expect(client.writeMemory({
         content: 'test',
-        tags: [],
+        space: 'default',
       })).rejects.toThrow('MeMesh Cloud API error: 500');
     });
 
@@ -225,7 +276,7 @@ describe('MeMeshCloudClient', () => {
       );
 
       try {
-        await client.writeMemory({ content: 'test', tags: [] });
+        await client.writeMemory({ content: 'test', space: 'default' });
         expect.fail('Should have thrown');
       } catch (error: unknown) {
         const err = error as Error & { context?: Record<string, unknown> };
@@ -242,13 +293,10 @@ describe('MeMeshCloudClient', () => {
 
       await expect(client.writeMemory({
         content: 'test',
-        tags: [],
+        space: 'default',
       })).rejects.toThrow('timed out');
     });
-  });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 });
 

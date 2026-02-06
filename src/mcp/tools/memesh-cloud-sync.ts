@@ -3,6 +3,8 @@
  *
  * MCP tool handler for syncing local Knowledge Graph with MeMesh Cloud.
  * Supports: push (local→cloud), pull (cloud→local), status (compare).
+ *
+ * API contracts aligned with memesh-cloud NestJS server (2026-02).
  */
 
 import { z } from 'zod';
@@ -19,6 +21,9 @@ export const CloudSyncInputSchema = z.object({
   ),
   query: z.string().optional().describe(
     'Optional search query to filter which memories to sync (default: all)'
+  ),
+  space: z.string().default('default').describe(
+    'Cloud memory space to sync with (default: "default")'
   ),
   limit: z.number().min(1).max(500).default(100).describe(
     'Maximum number of memories to sync per batch (default: 100)'
@@ -97,7 +102,6 @@ async function handleStatus(
         connected: status.connected,
         local: { count: status.localCount },
         cloud: { count: status.cloudCount },
-        lastSync: status.lastSync || 'never',
         delta: status.localCount - status.cloudCount,
       }, null, 2),
     }],
@@ -150,6 +154,7 @@ async function handlePush(
           action: 'push',
           dryRun: true,
           wouldPush: entities.length,
+          space: input.space,
           preview: entities.slice(0, 5).map(e => ({
             name: e.name,
             type: e.entityType,
@@ -163,21 +168,16 @@ async function handlePush(
   // Convert KG entities to Cloud memory format
   const memories: CloudMemoryWriteRequest[] = entities.map(entity => ({
     content: `[${entity.entityType}] ${entity.name}: ${entity.observations.join(' | ')}`,
+    space: input.space,
     tags: [entity.entityType, ...(entity.tags || [])],
-    metadata: {
-      ...entity.metadata,
-      entityName: entity.name,
-      entityType: entity.entityType,
-      source: 'local-kg',
-    },
-    contentHash: entity.contentHash,
+    source: 'memesh-local',
   }));
 
   const result = await client.writeMemories(memories);
 
   logger.info('Cloud sync push completed', {
-    pushed: result.ids.length,
-    errors: result.errors.length,
+    succeeded: result.succeeded,
+    failed: result.failed,
   });
 
   return {
@@ -186,9 +186,12 @@ async function handlePush(
       text: JSON.stringify({
         success: true,
         action: 'push',
-        pushed: result.ids.length,
-        errors: result.errors.length,
-        errorDetails: result.errors.length > 0 ? result.errors.slice(0, 5) : undefined,
+        pushed: result.succeeded,
+        failed: result.failed,
+        total: result.total,
+        errorDetails: result.failed > 0
+          ? result.failures.slice(0, 5).map(f => f.errorMessage)
+          : undefined,
       }, null, 2),
     }],
   };
@@ -198,12 +201,15 @@ async function handlePull(
   client: ReturnType<typeof getCloudClient>,
   input: CloudSyncInput
 ): Promise<CallToolResult> {
-  const searchResult = await client.searchMemory(
+  const memories = await client.searchMemory(
     input.query || '*',
-    { limit: input.limit }
+    {
+      limit: input.limit,
+      spaces: input.space !== 'default' ? [input.space] : undefined,
+    }
   );
 
-  if (searchResult.memories.length === 0) {
+  if (memories.length === 0) {
     return {
       content: [{
         type: 'text',
@@ -225,33 +231,30 @@ async function handlePull(
           success: true,
           action: 'pull',
           dryRun: true,
-          wouldPull: searchResult.memories.length,
-          hasMore: searchResult.hasMore,
-          preview: searchResult.memories.slice(0, 5).map(m => ({
+          wouldPull: memories.length,
+          preview: memories.slice(0, 5).map(m => ({
             id: m.id,
             content: m.content.substring(0, 100),
             tags: m.tags,
+            space: m.space,
           })),
         }, null, 2),
       }],
     };
   }
 
-  // Pull returns cloud memories for the agent to review/process.
-  // Full bidirectional sync with KG entity creation will be added
-  // when MeMesh Cloud API stabilizes its entity format.
   return {
     content: [{
       type: 'text',
       text: JSON.stringify({
         success: true,
         action: 'pull',
-        pulled: searchResult.memories.length,
-        hasMore: searchResult.hasMore,
-        memories: searchResult.memories.map(m => ({
+        pulled: memories.length,
+        memories: memories.map(m => ({
           id: m.id,
           content: m.content,
           tags: m.tags,
+          space: m.space,
           createdAt: m.createdAt,
         })),
       }, null, 2),

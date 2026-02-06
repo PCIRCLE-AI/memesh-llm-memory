@@ -457,10 +457,13 @@ function registerToCloud(identity: AgentIdentity): void {
       const platform = detectPlatform();
 
       client.registerAgent({
-        agentId: identity.agentId,
-        name: identity.name,
-        platform,
-        specialization: identity.specialization,
+        agentType: platform === 'claude-code' ? 'claude' : 'custom',
+        agentName: identity.name,
+        capabilities: {
+          platform,
+          specialization: identity.specialization,
+          agentId: identity.agentId,
+        },
       }).catch(() => {
         // Silent failure - cloud registration is optional
       });

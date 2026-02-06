@@ -24,8 +24,6 @@ function createMockKG(entities: Array<{
   entityType: string;
   observations: string[];
   tags?: string[];
-  metadata?: Record<string, unknown>;
-  contentHash?: string;
 }> = []) {
   return {
     searchEntities: vi.fn(() => entities),
@@ -36,6 +34,10 @@ function createMockKG(entities: Array<{
 
 function parseResult(result: { content: Array<{ type: string; text: string }> }) {
   return JSON.parse(result.content[0].text);
+}
+
+function defaultInput(overrides: Partial<CloudSyncInput> = {}): CloudSyncInput {
+  return { action: 'status', space: 'default', limit: 100, dryRun: false, ...overrides };
 }
 
 // -- Tests -------------------------------------------------------------------
@@ -56,7 +58,7 @@ describe('handleCloudSync', () => {
     it('should return setup guide', async () => {
       vi.mocked(isCloudEnabled).mockReturnValue(false);
 
-      const result = await handleCloudSync({ action: 'status', limit: 100, dryRun: false });
+      const result = await handleCloudSync(defaultInput());
       const data = parseResult(result);
 
       expect(data.success).toBe(false);
@@ -77,11 +79,9 @@ describe('handleCloudSync', () => {
         connected: true,
         localCount: 1,
         cloudCount: 10,
-        lastSync: '2025-01-01T00:00:00Z',
       });
 
-      const input: CloudSyncInput = { action: 'status', limit: 100, dryRun: false };
-      const result = await handleCloudSync(input, kg);
+      const result = await handleCloudSync(defaultInput(), kg);
       const data = parseResult(result);
 
       expect(data.success).toBe(true);
@@ -89,6 +89,7 @@ describe('handleCloudSync', () => {
       expect(data.connected).toBe(true);
       expect(data.local.count).toBe(1);
       expect(data.cloud.count).toBe(10);
+      expect(data.delta).toBe(-9);
     });
 
     it('should return 0 local count when no KG', async () => {
@@ -98,7 +99,7 @@ describe('handleCloudSync', () => {
         cloudCount: 5,
       });
 
-      const result = await handleCloudSync({ action: 'status', limit: 100, dryRun: false });
+      const result = await handleCloudSync(defaultInput());
       const data = parseResult(result);
 
       expect(data.local.count).toBe(0);
@@ -110,7 +111,7 @@ describe('handleCloudSync', () => {
         connected: true, localCount: 0, cloudCount: 0,
       });
 
-      await handleCloudSync({ action: 'status', query: 'api', limit: 100, dryRun: false }, kg);
+      await handleCloudSync(defaultInput({ query: 'api' }), kg);
 
       expect(kg.searchEntities).toHaveBeenCalledWith({
         namePattern: 'api',
@@ -124,7 +125,7 @@ describe('handleCloudSync', () => {
         connected: true, localCount: 0, cloudCount: 0,
       });
 
-      await handleCloudSync({ action: 'status', query: '', limit: 100, dryRun: false }, kg);
+      await handleCloudSync(defaultInput({ query: '' }), kg);
 
       expect(kg.searchEntities).toHaveBeenCalledWith({
         namePattern: undefined,
@@ -137,7 +138,7 @@ describe('handleCloudSync', () => {
 
   describe('push action', () => {
     it('should return error when no KG available', async () => {
-      const result = await handleCloudSync({ action: 'push', limit: 100, dryRun: false });
+      const result = await handleCloudSync(defaultInput({ action: 'push' }));
       const data = parseResult(result);
 
       expect(data.success).toBe(false);
@@ -147,7 +148,7 @@ describe('handleCloudSync', () => {
     it('should return 0 pushed when no entities found', async () => {
       const kg = createMockKG([]);
 
-      const result = await handleCloudSync({ action: 'push', limit: 100, dryRun: false }, kg);
+      const result = await handleCloudSync(defaultInput({ action: 'push' }), kg);
       const data = parseResult(result);
 
       expect(data.success).toBe(true);
@@ -160,12 +161,13 @@ describe('handleCloudSync', () => {
         { name: 'entity2', entityType: 'decision', observations: ['obs3'] },
       ]);
 
-      const result = await handleCloudSync({ action: 'push', limit: 100, dryRun: true }, kg);
+      const result = await handleCloudSync(defaultInput({ action: 'push', dryRun: true }), kg);
       const data = parseResult(result);
 
       expect(data.success).toBe(true);
       expect(data.dryRun).toBe(true);
       expect(data.wouldPush).toBe(2);
+      expect(data.space).toBe('default');
       expect(data.preview).toHaveLength(2);
       expect(data.preview[0].name).toBe('entity1');
       expect(mockClient.writeMemories).not.toHaveBeenCalled();
@@ -177,54 +179,79 @@ describe('handleCloudSync', () => {
       ]);
 
       mockClient.writeMemories.mockResolvedValue({
-        ids: ['cloud-id-1'],
-        errors: [],
+        total: 1,
+        succeeded: 1,
+        failed: 0,
+        successes: [{ index: 0, id: 'cloud-id-1', content: '[concept] e1: obs1', createdAt: '2026-01-01' }],
+        failures: [],
+        transactional: false,
       });
 
-      const result = await handleCloudSync({ action: 'push', limit: 100, dryRun: false }, kg);
+      const result = await handleCloudSync(defaultInput({ action: 'push' }), kg);
       const data = parseResult(result);
 
       expect(data.success).toBe(true);
       expect(data.pushed).toBe(1);
-      expect(data.errors).toBe(0);
+      expect(data.failed).toBe(0);
+      expect(data.total).toBe(1);
 
       // Verify memory format sent to cloud
       expect(mockClient.writeMemories).toHaveBeenCalledWith([
         expect.objectContaining({
           content: expect.stringContaining('[concept] e1'),
+          space: 'default',
           tags: expect.arrayContaining(['concept', 'tag1']),
-          metadata: expect.objectContaining({
-            entityName: 'e1',
-            entityType: 'concept',
-            source: 'local-kg',
-          }),
+          source: 'memesh-local',
         }),
       ]);
     });
 
-    it('should report partial errors from cloud', async () => {
+    it('should push to non-default space', async () => {
+      const kg = createMockKG([
+        { name: 'e1', entityType: 'concept', observations: ['obs1'] },
+      ]);
+
+      mockClient.writeMemories.mockResolvedValue({
+        total: 1, succeeded: 1, failed: 0,
+        successes: [{ index: 0, id: 'id1', content: 'test', createdAt: '2026-01-01' }],
+        failures: [], transactional: false,
+      });
+
+      await handleCloudSync(defaultInput({ action: 'push', space: 'work' }), kg);
+
+      expect(mockClient.writeMemories).toHaveBeenCalledWith([
+        expect.objectContaining({ space: 'work' }),
+      ]);
+    });
+
+    it('should report partial failures from cloud', async () => {
       const kg = createMockKG([
         { name: 'e1', entityType: 'concept', observations: ['o1'] },
         { name: 'e2', entityType: 'concept', observations: ['o2'] },
       ]);
 
       mockClient.writeMemories.mockResolvedValue({
-        ids: ['id1'],
-        errors: ['Failed to write e2: duplicate'],
+        total: 2,
+        succeeded: 1,
+        failed: 1,
+        successes: [{ index: 0, id: 'id1', content: 'test', createdAt: '2026-01-01' }],
+        failures: [{ index: 1, content: 'test', errorCode: 'DUPLICATE', errorMessage: 'Duplicate content' }],
+        transactional: false,
       });
 
-      const result = await handleCloudSync({ action: 'push', limit: 100, dryRun: false }, kg);
+      const result = await handleCloudSync(defaultInput({ action: 'push' }), kg);
       const data = parseResult(result);
 
       expect(data.pushed).toBe(1);
-      expect(data.errors).toBe(1);
+      expect(data.failed).toBe(1);
       expect(data.errorDetails).toHaveLength(1);
+      expect(data.errorDetails[0]).toBe('Duplicate content');
     });
 
     it('should pass namePattern from query to KG search on push', async () => {
       const kg = createMockKG([]);
 
-      await handleCloudSync({ action: 'push', query: 'test', limit: 50, dryRun: false }, kg);
+      await handleCloudSync(defaultInput({ action: 'push', query: 'test', limit: 50 }), kg);
 
       expect(kg.searchEntities).toHaveBeenCalledWith({
         namePattern: 'test',
@@ -237,13 +264,9 @@ describe('handleCloudSync', () => {
 
   describe('pull action', () => {
     it('should return 0 pulled when no cloud memories', async () => {
-      mockClient.searchMemory.mockResolvedValue({
-        memories: [],
-        total: 0,
-        hasMore: false,
-      });
+      mockClient.searchMemory.mockResolvedValue([]);
 
-      const result = await handleCloudSync({ action: 'pull', limit: 100, dryRun: false });
+      const result = await handleCloudSync(defaultInput({ action: 'pull' }));
       const data = parseResult(result);
 
       expect(data.success).toBe(true);
@@ -251,65 +274,68 @@ describe('handleCloudSync', () => {
     });
 
     it('should perform dry run for pull', async () => {
-      mockClient.searchMemory.mockResolvedValue({
-        memories: [
-          { id: 'm1', content: 'Memory 1', tags: ['a'], createdAt: '2025-01-01' },
-        ],
-        total: 1,
-        hasMore: false,
-      });
+      mockClient.searchMemory.mockResolvedValue([
+        { id: 'm1', content: 'Memory 1', space: 'default', tags: ['a'], createdAt: '2026-01-01' },
+      ]);
 
-      const result = await handleCloudSync({ action: 'pull', limit: 100, dryRun: true });
+      const result = await handleCloudSync(defaultInput({ action: 'pull', dryRun: true }));
       const data = parseResult(result);
 
       expect(data.success).toBe(true);
       expect(data.dryRun).toBe(true);
       expect(data.wouldPull).toBe(1);
       expect(data.preview).toHaveLength(1);
+      expect(data.preview[0].space).toBe('default');
     });
 
-    it('should return pulled memories', async () => {
-      mockClient.searchMemory.mockResolvedValue({
-        memories: [
-          { id: 'm1', content: 'Memory content', tags: ['tag1'], createdAt: '2025-01-01' },
-          { id: 'm2', content: 'Another memory', tags: [], createdAt: '2025-01-02' },
-        ],
-        total: 2,
-        hasMore: true,
-      });
+    it('should return pulled memories with space field', async () => {
+      mockClient.searchMemory.mockResolvedValue([
+        { id: 'm1', content: 'Memory content', space: 'default', tags: ['tag1'], createdAt: '2026-01-01' },
+        { id: 'm2', content: 'Another memory', space: 'work', tags: [], createdAt: '2026-01-02' },
+      ]);
 
-      const result = await handleCloudSync({ action: 'pull', limit: 100, dryRun: false });
+      const result = await handleCloudSync(defaultInput({ action: 'pull' }));
       const data = parseResult(result);
 
       expect(data.success).toBe(true);
       expect(data.pulled).toBe(2);
-      expect(data.hasMore).toBe(true);
       expect(data.memories).toHaveLength(2);
       expect(data.memories[0].id).toBe('m1');
+      expect(data.memories[0].space).toBe('default');
+      expect(data.memories[1].space).toBe('work');
     });
 
     it('should pass query and limit to cloud searchMemory', async () => {
-      mockClient.searchMemory.mockResolvedValue({
-        memories: [],
-        total: 0,
-        hasMore: false,
+      mockClient.searchMemory.mockResolvedValue([]);
+
+      await handleCloudSync(defaultInput({ action: 'pull', query: 'my-query', limit: 25 }));
+
+      expect(mockClient.searchMemory).toHaveBeenCalledWith('my-query', {
+        limit: 25,
+        spaces: undefined,
       });
+    });
 
-      await handleCloudSync({ action: 'pull', query: 'my-query', limit: 25, dryRun: false });
+    it('should pass spaces filter for non-default space', async () => {
+      mockClient.searchMemory.mockResolvedValue([]);
 
-      expect(mockClient.searchMemory).toHaveBeenCalledWith('my-query', { limit: 25 });
+      await handleCloudSync(defaultInput({ action: 'pull', space: 'work' }));
+
+      expect(mockClient.searchMemory).toHaveBeenCalledWith('*', {
+        limit: 100,
+        spaces: ['work'],
+      });
     });
 
     it('should use wildcard when query is empty', async () => {
-      mockClient.searchMemory.mockResolvedValue({
-        memories: [],
-        total: 0,
-        hasMore: false,
+      mockClient.searchMemory.mockResolvedValue([]);
+
+      await handleCloudSync(defaultInput({ action: 'pull' }));
+
+      expect(mockClient.searchMemory).toHaveBeenCalledWith('*', {
+        limit: 100,
+        spaces: undefined,
       });
-
-      await handleCloudSync({ action: 'pull', limit: 100, dryRun: false });
-
-      expect(mockClient.searchMemory).toHaveBeenCalledWith('*', { limit: 100 });
     });
   });
 });

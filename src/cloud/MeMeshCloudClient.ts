@@ -1,50 +1,82 @@
 /**
  * MeMesh Cloud REST Client
  *
- * Thin adapter connecting the local MCP server to MeMesh Cloud (api.memesh.ai).
+ * Thin adapter connecting the local MCP server to MeMesh Cloud.
  * Activated only when MEMESH_API_KEY is set. No API key = pure offline mode.
  *
- * Provides: memory sync, agent registration, and authentication.
+ * API contracts aligned with memesh-cloud NestJS server (2026-02).
+ * Auth: x-api-key header. Base URL default: https://memesh-backend.fly.dev
  */
 
 import { logger } from '../utils/logger.js';
 import { ExternalServiceError } from '../errors/index.js';
 
-// -- Types ------------------------------------------------------------------
+// -- Types (matching Cloud API contracts) ------------------------------------
 
+/** Memory returned from Cloud search */
 export interface CloudMemory {
   id: string;
   content: string;
+  summary?: string;
+  space: string;
   tags: string[];
-  metadata?: Record<string, unknown>;
+  similarity?: number;
   createdAt: string;
-  contentHash?: string;
 }
 
+/** Request body for POST /memory/write */
 export interface CloudMemoryWriteRequest {
   content: string;
-  tags: string[];
-  metadata?: Record<string, unknown>;
-  contentHash?: string;
+  space: string;
+  summary?: string;
+  tags?: string[];
+  sensitivity?: 'normal' | 'sensitive' | 'critical';
+  source?: string;
 }
 
-export interface CloudMemorySearchResult {
-  memories: CloudMemory[];
+/** Response from GET /memory/search (array) */
+export type CloudMemorySearchResult = CloudMemory[];
+
+/** Request body for POST /memory/batch */
+export interface CloudBatchWriteRequest {
+  memories: CloudMemoryWriteRequest[];
+  transactional?: boolean;
+}
+
+/** Response from POST /memory/batch */
+export interface CloudBatchWriteResult {
   total: number;
-  hasMore: boolean;
+  succeeded: number;
+  failed: number;
+  successes: Array<{ index: number; id: string; content: string; createdAt: string }>;
+  failures: Array<{ index: number; content: string; errorCode: string; errorMessage: string }>;
+  transactional: boolean;
 }
 
+/** Request body for POST /agents/register */
+export interface CloudAgentRegisterRequest {
+  agentType: string;
+  agentName?: string;
+  agentVersion?: string;
+  capabilities?: Record<string, unknown>;
+}
+
+/** Response from POST /agents/register and GET /agents/me */
 export interface CloudAgentInfo {
-  agentId: string;
-  name: string;
-  platform: string;
-  specialization?: string;
-  capabilities?: string[];
+  id: string;
+  agentType: string;
+  agentName: string;
+  agentVersion?: string;
+  status: string;
+  capabilities: Record<string, unknown>;
+  createdAt: string;
+  lastHeartbeat?: string;
+  pendingMessages?: number;
 }
 
+/** Computed sync status (not a direct API response) */
 export interface CloudSyncStatus {
   connected: boolean;
-  lastSync?: string;
   localCount: number;
   cloudCount: number;
 }
@@ -63,7 +95,7 @@ export class MeMeshCloudClient {
   ) {
     // Read from env directly to avoid circular import with appConfig
     this.apiKey = apiKey ?? process.env.MEMESH_API_KEY ?? '';
-    this.baseUrl = (baseUrl ?? process.env.MEMESH_BASE_URL ?? 'https://api.memesh.ai').replace(/\/+$/, '');
+    this.baseUrl = (baseUrl ?? process.env.MEMESH_BASE_URL ?? 'https://memesh-backend.fly.dev').replace(/\/+$/, '');
     this.timeoutMs = timeoutMs ?? parseInt(process.env.MEMESH_TIMEOUT_MS ?? '10000', 10);
 
     if (!this.apiKey) {
@@ -78,15 +110,15 @@ export class MeMeshCloudClient {
 
   // -- Authentication -------------------------------------------------------
 
-  /** Verify API key is valid and get account info */
-  async authenticate(): Promise<{ valid: boolean; userId?: string; plan?: string }> {
+  /** Verify API key is valid by fetching current agent info */
+  async authenticate(): Promise<{ valid: boolean; agentId?: string; agentType?: string }> {
     if (!this.isConfigured) {
       return { valid: false };
     }
 
     try {
-      const response = await this.request<{ userId: string; plan: string }>('GET', '/v1/auth/me');
-      return { valid: true, userId: response.userId, plan: response.plan };
+      const agent = await this.request<CloudAgentInfo>('GET', '/agents/me');
+      return { valid: true, agentId: agent.id, agentType: agent.agentType };
     } catch (error) {
       logger.warn('Cloud authentication failed', { error: String(error) });
       return { valid: false };
@@ -95,52 +127,51 @@ export class MeMeshCloudClient {
 
   // -- Memory Operations ----------------------------------------------------
 
-  /** Write a memory to the cloud */
+  /** Write a single memory to the cloud */
   async writeMemory(memory: CloudMemoryWriteRequest): Promise<string> {
     this.requireAuth();
 
-    const response = await this.request<{ id: string }>('POST', '/v1/memories', memory);
+    const response = await this.request<{ id: string }>('POST', '/memory/write', memory);
     return response.id;
   }
 
   /** Write multiple memories in a single batch request */
-  async writeMemories(memories: CloudMemoryWriteRequest[]): Promise<{ ids: string[]; errors: string[] }> {
+  async writeMemories(
+    memories: CloudMemoryWriteRequest[],
+    transactional = false
+  ): Promise<CloudBatchWriteResult> {
     this.requireAuth();
 
-    return this.request<{ ids: string[]; errors: string[] }>('POST', '/v1/memories/batch', {
+    return this.request<CloudBatchWriteResult>('POST', '/memory/batch', {
       memories,
+      transactional,
     });
   }
 
-  /** Search cloud memories by query */
+  /** Search cloud memories by query (semantic search via pgvector) */
   async searchMemory(
     query: string,
-    options?: { limit?: number; offset?: number; tags?: string[] }
+    options?: { limit?: number; spaces?: string[] }
   ): Promise<CloudMemorySearchResult> {
     this.requireAuth();
 
-    const params = new URLSearchParams({ q: query });
+    const params = new URLSearchParams({ query });
     if (options?.limit) params.set('limit', String(options.limit));
-    if (options?.offset) params.set('offset', String(options.offset));
-    if (options?.tags?.length) params.set('tags', options.tags.join(','));
+    if (options?.spaces?.length) params.set('spaces', options.spaces.join(','));
 
-    return this.request<CloudMemorySearchResult>('GET', `/v1/memories/search?${params}`);
+    return this.request<CloudMemorySearchResult>('GET', `/memory/search?${params}`);
   }
 
-  /** Get sync status: compare local and cloud memory counts */
+  /** Get memory count and compute sync status */
   async getSyncStatus(localCount: number): Promise<CloudSyncStatus> {
     if (!this.isConfigured) {
       return { connected: false, localCount, cloudCount: 0 };
     }
 
     try {
-      const response = await this.request<{ count: number; lastSync?: string }>(
-        'GET',
-        '/v1/memories/stats'
-      );
+      const response = await this.request<{ count: number }>('GET', '/memory/count');
       return {
         connected: true,
-        lastSync: response.lastSync,
         localCount,
         cloudCount: response.count,
       };
@@ -152,11 +183,12 @@ export class MeMeshCloudClient {
   // -- Agent Registration ---------------------------------------------------
 
   /** Register this agent with MeMesh Cloud */
-  async registerAgent(agent: CloudAgentInfo): Promise<void> {
+  async registerAgent(agent: CloudAgentRegisterRequest): Promise<CloudAgentInfo> {
     this.requireAuth();
 
-    await this.request('POST', '/v1/agents/register', agent);
-    logger.info('Agent registered with MeMesh Cloud', { agentId: agent.agentId });
+    const result = await this.request<CloudAgentInfo>('POST', '/agents/register', agent);
+    logger.info('Agent registered with MeMesh Cloud', { agentId: result.id, agentType: result.agentType });
+    return result;
   }
 
   // -- HTTP Layer -----------------------------------------------------------
@@ -182,7 +214,7 @@ export class MeMeshCloudClient {
 
     try {
       const headers: Record<string, string> = {
-        'Authorization': `Bearer ${this.apiKey}`,
+        'x-api-key': this.apiKey,
         'Content-Type': 'application/json',
         'User-Agent': 'memesh-local/1.0',
       };

@@ -414,6 +414,11 @@ Requires MEMESH_API_KEY to be configured. Without it, all actions return a setup
           type: 'string',
           description: 'Optional search query to filter which memories to sync',
         },
+        space: {
+          type: 'string',
+          description: 'Cloud memory space to sync with (default: "default")',
+          default: 'default',
+        },
         limit: {
           type: 'number',
           description: 'Max memories per batch (default: 100, max: 500)',

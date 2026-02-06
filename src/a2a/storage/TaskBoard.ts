@@ -607,6 +607,10 @@ export class TaskBoard {
    * Atomically updates task status to 'in_progress' and assigns ownership.
    * Only pending tasks can be claimed to prevent race conditions.
    *
+   * Uses atomic UPDATE with WHERE clause to prevent TOCTOU race conditions.
+   * The status check is part of the UPDATE statement itself, ensuring no
+   * window exists between checking status and updating it.
+   *
    * @param taskId - Task ID to claim
    * @param agentId - Agent ID claiming the task
    * @throws Error if task not found, not pending, or validation fails
@@ -618,20 +622,27 @@ export class TaskBoard {
       throw new Error('Agent ID is required');
     }
 
-    // Check task exists and is pending
-    const task = this.db.prepare('SELECT status FROM tasks WHERE id = ?').get(taskId) as { status: string } | undefined;
-    if (!task) {
-      throw new Error(`Task not found: ${taskId}`);
-    }
-    if (task.status !== 'pending') {
-      throw new Error(`Task ${taskId} is not in pending status (current: ${task.status})`);
-    }
+    const now = Date.now();
 
-    // Atomic update with transaction
+    // Atomic update with transaction - status check is in WHERE clause
+    // This prevents TOCTOU race conditions where two agents could both
+    // pass a separate status check before either updates the database
     const transaction = this.db.transaction(() => {
-      const now = Date.now();
-      this.db.prepare('UPDATE tasks SET owner = ?, status = ?, updated_at = ? WHERE id = ?')
-        .run(agentId, 'in_progress', now, taskId);
+      const result = this.db.prepare(`
+        UPDATE tasks
+        SET owner = ?, status = 'in_progress', updated_at = ?
+        WHERE id = ? AND status = 'pending'
+      `).run(agentId, now, taskId);
+
+      if (result.changes === 0) {
+        // Either task doesn't exist or status wasn't pending
+        const task = this.db.prepare('SELECT status FROM tasks WHERE id = ?').get(taskId) as { status: string } | undefined;
+        if (!task) {
+          throw new Error(`Task not found: ${taskId}`);
+        }
+        throw new Error(`Task ${taskId} is not in pending status (current: ${task.status})`);
+      }
+
       this.recordHistory(taskId, agentId, 'claimed', 'pending', 'in_progress');
     });
 
@@ -650,30 +661,45 @@ export class TaskBoard {
    * Atomically clears task ownership and resets status to pending.
    * Allows other agents to claim the task.
    *
+   * Uses atomic UPDATE with WHERE clause to prevent TOCTOU race conditions.
+   * Only in_progress tasks can be released.
+   *
    * @param taskId - Task ID to release
-   * @throws Error if task not found or validation fails
+   * @throws Error if task not found, not in_progress, or validation fails
    */
   releaseTask(taskId: string): void {
     this.validateTaskId(taskId);
 
-    // Check task exists
-    if (!this.taskExists(taskId)) {
-      throw new Error(`Task not found: ${taskId}`);
-    }
+    const now = Date.now();
+    let previousOwner: string | null = null;
 
-    // Get current owner and status for history
-    const task = this.db.prepare('SELECT owner, status FROM tasks WHERE id = ?').get(taskId) as { owner: string | null, status: string } | undefined;
-
-    // Atomic update with transaction
+    // Atomic update with transaction - status check is in WHERE clause
+    // This prevents TOCTOU race conditions
     const transaction = this.db.transaction(() => {
-      const now = Date.now();
-      this.db.prepare('UPDATE tasks SET owner = NULL, status = ?, updated_at = ? WHERE id = ?')
-        .run('pending', now, taskId);
+      // Get current owner before update for history recording
+      const task = this.db.prepare('SELECT owner, status FROM tasks WHERE id = ?').get(taskId) as { owner: string | null, status: string } | undefined;
+
+      if (!task) {
+        throw new Error(`Task not found: ${taskId}`);
+      }
+
+      previousOwner = task.owner;
+      const previousStatus = task.status;
+
+      // Atomic update - only update if task is in_progress
+      const result = this.db.prepare(`
+        UPDATE tasks
+        SET owner = NULL, status = 'pending', updated_at = ?
+        WHERE id = ? AND status = 'in_progress'
+      `).run(now, taskId);
+
+      if (result.changes === 0) {
+        // Task exists but status wasn't in_progress
+        throw new Error(`Task ${taskId} is not in in_progress status (current: ${task.status})`);
+      }
 
       // Record history with previous owner
-      const previousOwner = task?.owner || 'unknown';
-      const previousStatus = task?.status || 'unknown';
-      this.recordHistory(taskId, previousOwner, 'released', previousStatus, 'pending');
+      this.recordHistory(taskId, previousOwner || 'unknown', 'released', previousStatus, 'pending');
     });
 
     transaction();
@@ -681,7 +707,7 @@ export class TaskBoard {
     // Emit task.released event
     const updatedTask = this.getTask(taskId);
     if (updatedTask) {
-      this.emitTaskEvent('task.released', updatedTask, task?.owner ?? undefined);
+      this.emitTaskEvent('task.released', updatedTask, previousOwner ?? undefined);
     }
   }
 
@@ -691,6 +717,9 @@ export class TaskBoard {
    * Marks a task as cancelled with optional reason. Clears task ownership.
    * Cannot cancel completed or already cancelled tasks.
    *
+   * Uses atomic UPDATE with WHERE clause to prevent TOCTOU race conditions.
+   * Only pending or in_progress tasks can be cancelled.
+   *
    * @param taskId - Task ID to cancel
    * @param cancelledBy - Agent ID or identifier of who cancelled the task
    * @param reason - Optional reason for cancellation
@@ -699,37 +728,45 @@ export class TaskBoard {
   cancelTask(taskId: string, cancelledBy: string, reason?: string): void {
     this.validateTaskId(taskId);
 
-    const task = this.getTask(taskId);
-    if (!task) {
-      throw new Error(`Task not found: ${taskId}`);
-    }
+    const now = Date.now();
+    let previousStatus: string | null = null;
 
-    if (task.status === 'completed') {
-      throw new Error('Cannot cancel completed task');
-    }
-
-    if (task.status === 'cancelled') {
-      throw new Error('Task already cancelled');
-    }
-
-    if (task.status === 'deleted') {
-      throw new Error('Task not found');
-    }
-
-    const previousStatus = task.status;
-
-    // Atomic update with transaction
+    // Atomic update with transaction - status check is in WHERE clause
+    // This prevents TOCTOU race conditions
     const transaction = this.db.transaction(() => {
-      const now = Date.now();
-      this.db.prepare(`
+      // Get current status before update for proper error message and history
+      const task = this.db.prepare('SELECT status FROM tasks WHERE id = ?').get(taskId) as { status: string } | undefined;
+
+      if (!task) {
+        throw new Error(`Task not found: ${taskId}`);
+      }
+
+      previousStatus = task.status;
+
+      // Atomic update - only update if task is pending or in_progress
+      const result = this.db.prepare(`
         UPDATE tasks
         SET status = 'cancelled',
             owner = NULL,
             cancelled_by = ?,
             cancel_reason = ?,
             updated_at = ?
-        WHERE id = ?
+        WHERE id = ? AND status IN ('pending', 'in_progress')
       `).run(cancelledBy, reason || null, now, taskId);
+
+      if (result.changes === 0) {
+        // Task exists but status wasn't cancellable
+        if (task.status === 'completed') {
+          throw new Error('Cannot cancel completed task');
+        }
+        if (task.status === 'cancelled') {
+          throw new Error('Task already cancelled');
+        }
+        if (task.status === 'deleted') {
+          throw new Error('Task not found');
+        }
+        throw new Error(`Cannot cancel task with status: ${task.status}`);
+      }
 
       this.recordHistory(taskId, cancelledBy, 'cancelled', previousStatus, 'cancelled');
     });
@@ -748,6 +785,8 @@ export class TaskBoard {
    *
    * Marks a task as completed. Only in_progress tasks can be completed.
    *
+   * Uses atomic UPDATE with WHERE clause to prevent TOCTOU race conditions.
+   *
    * @param taskId - Task ID to complete
    * @param completedBy - Agent ID that completed the task
    * @throws Error if task not found, not in_progress, or validation fails
@@ -755,28 +794,29 @@ export class TaskBoard {
   completeTask(taskId: string, completedBy: string): void {
     this.validateTaskId(taskId);
 
-    const task = this.getTask(taskId);
-    if (!task) {
-      throw new Error(`Task not found: ${taskId}`);
-    }
+    const now = Date.now();
 
-    if (task.status !== 'in_progress') {
-      throw new Error(`Task ${taskId} is not in in_progress status (current: ${task.status})`);
-    }
-
-    const previousStatus = task.status;
-
-    // Atomic update with transaction
+    // Atomic update with transaction - status check is in WHERE clause
+    // This prevents TOCTOU race conditions
     const transaction = this.db.transaction(() => {
-      const now = Date.now();
-      this.db.prepare(`
+      // Atomic update - only update if task is in_progress
+      const result = this.db.prepare(`
         UPDATE tasks
         SET status = 'completed',
             updated_at = ?
-        WHERE id = ?
+        WHERE id = ? AND status = 'in_progress'
       `).run(now, taskId);
 
-      this.recordHistory(taskId, completedBy, 'completed', previousStatus, 'completed');
+      if (result.changes === 0) {
+        // Either task doesn't exist or status wasn't in_progress
+        const task = this.db.prepare('SELECT status FROM tasks WHERE id = ?').get(taskId) as { status: string } | undefined;
+        if (!task) {
+          throw new Error(`Task not found: ${taskId}`);
+        }
+        throw new Error(`Task ${taskId} is not in in_progress status (current: ${task.status})`);
+      }
+
+      this.recordHistory(taskId, completedBy, 'completed', 'in_progress', 'completed');
     });
 
     transaction();

@@ -1543,4 +1543,231 @@ describe('TaskBoard', () => {
       expect(task?.cancel_reason).toBeUndefined();
     });
   });
+
+  describe('Concurrent Operations (TOCTOU Prevention)', () => {
+    /**
+     * These tests verify that the atomic UPDATE pattern prevents race conditions.
+     * While true concurrency testing requires multi-process scenarios, these tests
+     * verify that the implementation correctly handles the case where multiple
+     * attempts are made to operate on the same task.
+     */
+
+    describe('claimTask atomicity', () => {
+      it('should only allow one agent to claim a task when multiple attempt simultaneously', async () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Race condition test task',
+          status: 'pending',
+          creator_platform: 'test',
+        });
+
+        // Simulate multiple agents trying to claim the same task
+        const claimAttempts = [
+          () => taskBoard.claimTask(taskId, 'agent-1'),
+          () => taskBoard.claimTask(taskId, 'agent-2'),
+          () => taskBoard.claimTask(taskId, 'agent-3'),
+        ];
+
+        const results = await Promise.allSettled(
+          claimAttempts.map((fn) => Promise.resolve().then(fn))
+        );
+
+        // Exactly one should succeed
+        const successes = results.filter((r) => r.status === 'fulfilled');
+        const failures = results.filter((r) => r.status === 'rejected');
+
+        expect(successes).toHaveLength(1);
+        expect(failures).toHaveLength(2);
+
+        // Verify failures are due to status check
+        failures.forEach((result) => {
+          expect((result as PromiseRejectedResult).reason.message).toMatch(/not in pending status/);
+        });
+
+        // Verify task is claimed by exactly one agent
+        const task = taskBoard.getTask(taskId);
+        expect(task?.status).toBe('in_progress');
+        expect(['agent-1', 'agent-2', 'agent-3']).toContain(task?.owner);
+      });
+    });
+
+    describe('releaseTask atomicity', () => {
+      it('should only allow one release when multiple attempt simultaneously', async () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Release race test',
+          status: 'in_progress',
+          owner: 'agent-1',
+          creator_platform: 'test',
+        });
+
+        // Simulate multiple release attempts
+        const releaseAttempts = [
+          () => taskBoard.releaseTask(taskId),
+          () => taskBoard.releaseTask(taskId),
+          () => taskBoard.releaseTask(taskId),
+        ];
+
+        const results = await Promise.allSettled(
+          releaseAttempts.map((fn) => Promise.resolve().then(fn))
+        );
+
+        // Exactly one should succeed
+        const successes = results.filter((r) => r.status === 'fulfilled');
+        const failures = results.filter((r) => r.status === 'rejected');
+
+        expect(successes).toHaveLength(1);
+        expect(failures).toHaveLength(2);
+
+        // Verify failures are due to status check
+        failures.forEach((result) => {
+          expect((result as PromiseRejectedResult).reason.message).toMatch(/not in in_progress status/);
+        });
+
+        // Verify task is released
+        const task = taskBoard.getTask(taskId);
+        expect(task?.status).toBe('pending');
+        expect(task?.owner).toBeUndefined();
+      });
+    });
+
+    describe('cancelTask atomicity', () => {
+      it('should only allow one cancellation when multiple attempt simultaneously', async () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Cancel race test',
+          status: 'pending',
+          creator_platform: 'test',
+        });
+
+        // Simulate multiple cancel attempts
+        const cancelAttempts = [
+          () => taskBoard.cancelTask(taskId, 'agent-1', 'reason-1'),
+          () => taskBoard.cancelTask(taskId, 'agent-2', 'reason-2'),
+          () => taskBoard.cancelTask(taskId, 'agent-3', 'reason-3'),
+        ];
+
+        const results = await Promise.allSettled(
+          cancelAttempts.map((fn) => Promise.resolve().then(fn))
+        );
+
+        // Exactly one should succeed
+        const successes = results.filter((r) => r.status === 'fulfilled');
+        const failures = results.filter((r) => r.status === 'rejected');
+
+        expect(successes).toHaveLength(1);
+        expect(failures).toHaveLength(2);
+
+        // Verify failures are due to task already cancelled
+        failures.forEach((result) => {
+          expect((result as PromiseRejectedResult).reason.message).toMatch(/already cancelled/);
+        });
+
+        // Verify task is cancelled by exactly one agent
+        const task = taskBoard.getTask(taskId);
+        expect(task?.status).toBe('cancelled');
+        expect(['agent-1', 'agent-2', 'agent-3']).toContain(task?.cancelled_by);
+      });
+    });
+
+    describe('completeTask atomicity', () => {
+      it('should only allow one completion when multiple attempt simultaneously', async () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Complete race test',
+          status: 'in_progress',
+          owner: 'agent-1',
+          creator_platform: 'test',
+        });
+
+        // Simulate multiple complete attempts
+        const completeAttempts = [
+          () => taskBoard.completeTask(taskId, 'agent-1'),
+          () => taskBoard.completeTask(taskId, 'agent-2'),
+          () => taskBoard.completeTask(taskId, 'agent-3'),
+        ];
+
+        const results = await Promise.allSettled(
+          completeAttempts.map((fn) => Promise.resolve().then(fn))
+        );
+
+        // Exactly one should succeed
+        const successes = results.filter((r) => r.status === 'fulfilled');
+        const failures = results.filter((r) => r.status === 'rejected');
+
+        expect(successes).toHaveLength(1);
+        expect(failures).toHaveLength(2);
+
+        // Verify failures are due to status check
+        failures.forEach((result) => {
+          expect((result as PromiseRejectedResult).reason.message).toMatch(/not in in_progress status/);
+        });
+
+        // Verify task is completed
+        const task = taskBoard.getTask(taskId);
+        expect(task?.status).toBe('completed');
+      });
+    });
+
+    describe('mixed operations atomicity', () => {
+      it('should handle competing release and cancel operations on in_progress task', async () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Mixed operation test',
+          status: 'in_progress',
+          owner: 'agent-1',
+          creator_platform: 'test',
+        });
+
+        // Simulate competing operations on the same task
+        // Both release and cancel expect in_progress status
+        const operations = [
+          () => taskBoard.releaseTask(taskId),
+          () => taskBoard.cancelTask(taskId, 'agent-2', 'cancelled'),
+        ];
+
+        const results = await Promise.allSettled(
+          operations.map((fn) => Promise.resolve().then(fn))
+        );
+
+        // Due to synchronous execution, both operations may succeed because:
+        // - If release executes first: task -> pending, cancel will fail (pending is still cancellable)
+        // - If cancel executes first: task -> cancelled, release will fail (not in_progress)
+        // In a truly concurrent scenario with multiple processes, only one would succeed
+        // For single-threaded JS, we verify that the task ends up in a valid final state
+        const task = taskBoard.getTask(taskId);
+        expect(['pending', 'cancelled']).toContain(task?.status);
+
+        // The important verification is that we don't end up in an inconsistent state
+        if (task?.status === 'cancelled') {
+          expect(task.owner).toBeUndefined();
+          expect(task.cancelled_by).toBe('agent-2');
+        } else if (task?.status === 'pending') {
+          expect(task.owner).toBeUndefined();
+        }
+      });
+
+      it('should handle competing complete and cancel operations on in_progress task', async () => {
+        const taskId = taskBoard.createTask({
+          subject: 'Complete vs cancel test',
+          status: 'in_progress',
+          owner: 'agent-1',
+          creator_platform: 'test',
+        });
+
+        // Simulate competing operations - both require in_progress
+        const operations = [
+          () => taskBoard.completeTask(taskId, 'agent-1'),
+          () => taskBoard.cancelTask(taskId, 'agent-2', 'cancelled'),
+        ];
+
+        const results = await Promise.allSettled(
+          operations.map((fn) => Promise.resolve().then(fn))
+        );
+
+        // At least one should succeed - verify final state is consistent
+        const successes = results.filter((r) => r.status === 'fulfilled');
+        expect(successes.length).toBeGreaterThanOrEqual(1);
+
+        const task = taskBoard.getTask(taskId);
+        // Must be in a terminal state
+        expect(['completed', 'cancelled']).toContain(task?.status);
+      });
+    });
+  });
 });

@@ -20,6 +20,25 @@ import { logger } from '../../utils/logger.js';
 import { TaskStateConstants } from '../storage/inputValidation.js';
 import type { MCPTaskDelegator } from '../delegator/MCPTaskDelegator.js';
 
+// UUID v4 format validation pattern
+const TASK_ID_PATTERN = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
+
+// Valid task states for status filter validation
+const VALID_TASK_STATES: TaskState[] = [
+  'SUBMITTED',
+  'WORKING',
+  'INPUT_REQUIRED',
+  'COMPLETED',
+  'FAILED',
+  'CANCELED',
+  'REJECTED',
+  'TIMEOUT',
+];
+
+// Pagination bounds
+const MAX_LIMIT = 1000;
+const MAX_OFFSET = 100000;
+
 export class A2ARoutes {
   private delegator: MCPTaskDelegator | null = null;
 
@@ -107,10 +126,10 @@ export class A2ARoutes {
     try {
       const { taskId } = req.params;
 
-      if (!taskId) {
+      if (!taskId || !TASK_ID_PATTERN.test(taskId)) {
         const error: ServiceError = {
           code: 'INVALID_REQUEST',
-          message: 'Missing required parameter: taskId',
+          message: !taskId ? 'Missing required parameter: taskId' : 'Invalid task ID format',
         };
         res.status(400).json({ success: false, error });
         return;
@@ -148,20 +167,41 @@ export class A2ARoutes {
 
       const filter: TaskFilter = {};
 
+      // Validate status filter against allowed task states
       if (status) {
+        if (!VALID_TASK_STATES.includes(status as TaskState)) {
+          const error: ServiceError = {
+            code: 'INVALID_REQUEST',
+            message: `Invalid status filter: ${status}. Valid values: ${VALID_TASK_STATES.join(', ')}`,
+          };
+          res.status(400).json({ success: false, error });
+          return;
+        }
         filter.state = status as TaskState;
       }
 
+      // Parse and validate limit with upper bound
       if (limit) {
-        const parsedLimit = parseInt(limit as string, 10);
+        let parsedLimit = parseInt(limit as string, 10);
         if (!isNaN(parsedLimit) && parsedLimit > 0) {
+          // Cap limit to MAX_LIMIT
+          parsedLimit = Math.min(parsedLimit, MAX_LIMIT);
           filter.limit = parsedLimit;
         }
       }
 
+      // Parse and validate offset with upper bound
       if (offset) {
         const parsedOffset = parseInt(offset as string, 10);
         if (!isNaN(parsedOffset) && parsedOffset >= 0) {
+          if (parsedOffset > MAX_OFFSET) {
+            const error: ServiceError = {
+              code: 'INVALID_REQUEST',
+              message: `Offset exceeds maximum allowed value of ${MAX_OFFSET}`,
+            };
+            res.status(400).json({ success: false, error });
+            return;
+          }
           filter.offset = parsedOffset;
         }
       }
@@ -204,10 +244,10 @@ export class A2ARoutes {
     try {
       const { taskId } = req.params;
 
-      if (!taskId) {
+      if (!taskId || !TASK_ID_PATTERN.test(taskId)) {
         const error: ServiceError = {
           code: 'INVALID_REQUEST',
-          message: 'Missing required parameter: taskId',
+          message: !taskId ? 'Missing required parameter: taskId' : 'Invalid task ID format',
         };
         res.status(400).json({ success: false, error });
         return;
@@ -228,8 +268,16 @@ export class A2ARoutes {
 
       // Also remove from delegator pending queue to prevent execution
       if (this.delegator) {
-        await this.delegator.removeTask(taskId);
-        logger.info('[A2ARoutes] Task removed from delegator queue on cancel', { taskId });
+        try {
+          await this.delegator.removeTask(taskId);
+          logger.info('[A2ARoutes] Task removed from delegator queue on cancel', { taskId });
+        } catch (removeErr) {
+          // Task already marked CANCELED, log but don't fail the request
+          logger.warn('[A2ARoutes] Failed to remove task from delegator queue', {
+            taskId,
+            error: removeErr instanceof Error ? removeErr.message : String(removeErr),
+          });
+        }
       }
 
       const result: ServiceResponse<{ taskId: string; status: TaskState }> = {

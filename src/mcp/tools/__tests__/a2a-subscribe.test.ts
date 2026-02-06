@@ -180,5 +180,25 @@ describe('a2a-subscribe MCP Tool', () => {
       expect(text).toContain('skills');
       expect(text).toContain('types');
     });
+
+    it('should URL encode skills with special characters', () => {
+      const result = handleA2ASubscribe({
+        skills: ['c++', 'node.js', 'c#'],
+      });
+      const text = result.content[0].text;
+
+      // Special characters should be URL encoded
+      expect(text).toContain('skills=c%2B%2B,node.js,c%23');
+    });
+
+    it('should URL encode platform with special characters', () => {
+      const result = handleA2ASubscribe({
+        platform: 'my platform & more',
+      });
+      const text = result.content[0].text;
+
+      // Spaces and ampersands should be URL encoded
+      expect(text).toContain('platform=my%20platform%20%26%20more');
+    });
   });
 });

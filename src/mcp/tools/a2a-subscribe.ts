@@ -42,11 +42,13 @@ export function handleA2ASubscribe(input: A2ASubscribeInput): CallToolResult {
   if (input.platform) {
     params.push(`platform=${encodeURIComponent(input.platform)}`);
   }
+  // Skills - URL encode each value (MAJOR-6)
   if (input.skills && input.skills.length > 0) {
-    params.push(`skills=${input.skills.join(',')}`);
+    params.push(`skills=${input.skills.map((s) => encodeURIComponent(s)).join(',')}`);
   }
+  // Types - URL encode each value (MAJOR-6)
   if (input.types && input.types.length > 0) {
-    params.push(`types=${input.types.join(',')}`);
+    params.push(`types=${input.types.map((t) => encodeURIComponent(t)).join(',')}`);
   }
 
   const queryString = params.join('&');

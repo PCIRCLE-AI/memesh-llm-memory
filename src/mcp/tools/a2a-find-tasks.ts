@@ -8,7 +8,7 @@
 import { z } from 'zod';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { TaskBoard, Task, TaskStatus } from '../../a2a/storage/TaskBoard.js';
-import { formatShortId, getErrorMessage } from './a2a-utils.js';
+import { formatShortId, createErrorResult, getErrorMessage } from './a2a-utils.js';
 
 /**
  * Valid task status values for filtering
@@ -109,9 +109,7 @@ export function handleA2AFindTasks(
     return { content: [{ type: 'text', text: output }] };
 
   } catch (error) {
-    return {
-      content: [{ type: 'text', text: `Error finding tasks: ${getErrorMessage(error)}` }],
-    };
+    return createErrorResult('Error finding tasks', getErrorMessage(error));
   } finally {
     taskBoard.close();
   }

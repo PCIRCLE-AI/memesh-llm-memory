@@ -10,6 +10,7 @@ import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { TaskBoard } from '../../a2a/storage/TaskBoard.js';
 import { generateAgentId } from '../../a2a/utils/agentId.js';
 import { detectPlatform } from '../../a2a/utils/platformDetection.js';
+import { createErrorResult } from './a2a-utils.js';
 import * as os from 'os';
 
 /**
@@ -29,6 +30,7 @@ export const A2ASetSkillsInputSchema = z.object({
           message: 'Skill cannot be whitespace only',
         })
     )
+    .max(100, 'Cannot set more than 100 skills')
     .describe('Array of skill strings for task matching'),
 });
 
@@ -87,13 +89,8 @@ export function handleA2ASetSkills(
       content: [{ type: 'text', text: output }],
     };
   } catch (error) {
-    // Format error response
     const errorMessage = error instanceof Error ? error.message : String(error);
-    const output = formatErrorResponse(errorMessage);
-
-    return {
-      content: [{ type: 'text', text: output }],
-    };
+    return createErrorResult('Error setting skills', errorMessage);
   } finally {
     if (taskBoard) {
       taskBoard.close();
@@ -125,19 +122,6 @@ function formatSuccessResponse(
 }
 
 /**
- * Format an error response
- *
- * @param errorMessage - The error message
- * @returns Formatted error message
- */
-function formatErrorResponse(errorMessage: string): string {
-  let output = `❌ Error setting skills\n\n`;
-  output += `Reason: ${errorMessage}\n`;
-
-  return output;
-}
-
-/**
  * Tool definition for MCP registration
  */
 export const a2aSetSkillsToolDefinition = {
@@ -155,6 +139,7 @@ export const a2aSetSkillsToolDefinition = {
           minLength: 1,
           maxLength: 100,
         },
+        maxItems: 100,
         description: 'Array of skill strings (e.g., ["typescript", "testing", "code-review"])',
       },
     },

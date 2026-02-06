@@ -8,14 +8,19 @@
 import { z } from 'zod';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { TaskBoard, TaskFilter, Task, TaskStatus } from '../../a2a/storage/TaskBoard.js';
-import { formatShortId } from './a2a-utils.js';
+import { formatShortId, createErrorResult, getErrorMessage } from './a2a-utils.js';
+
+/**
+ * Valid status values for filtering (aligned with TaskStatus, excluding 'cancelled')
+ */
+const VALID_BOARD_STATUSES = ['pending', 'in_progress', 'completed', 'deleted'] as const;
 
 /**
  * Input schema validation for a2a-board tool
  */
 export const A2ABoardInputSchema = z.object({
   status: z
-    .enum(['pending', 'in_progress', 'completed', 'cancelled', 'deleted'])
+    .enum(VALID_BOARD_STATUSES)
     .optional()
     .describe('Filter by task status'),
   platform: z
@@ -37,7 +42,6 @@ interface GroupedTasks {
   pending: Task[];
   in_progress: Task[];
   completed: Task[];
-  cancelled: Task[];
   deleted: Task[];
 }
 
@@ -54,9 +58,11 @@ export function handleA2ABoard(
   input: A2ABoardInput = {},
   dbPath?: string
 ): CallToolResult {
-  const taskBoard = new TaskBoard(dbPath);
+  let taskBoard: TaskBoard | null = null;
 
   try {
+    taskBoard = new TaskBoard(dbPath);
+
     // Build filter from input
     const filter: TaskFilter = {};
     if (input.status) filter.status = input.status;
@@ -73,8 +79,12 @@ export function handleA2ABoard(
     return {
       content: [{ type: 'text', text: output }],
     };
+  } catch (error) {
+    return createErrorResult('Error loading task board', getErrorMessage(error));
   } finally {
-    taskBoard.close();
+    if (taskBoard) {
+      taskBoard.close();
+    }
   }
 }
 
@@ -89,15 +99,18 @@ function formatTaskBoard(tasks: Task[], filter: A2ABoardInput): string {
   // Group tasks by status using reduce for single-pass grouping
   const grouped = tasks.reduce<GroupedTasks>(
     (acc, task) => {
-      acc[task.status].push(task);
+      // Only group known statuses, skip unknown ones
+      if (task.status in acc) {
+        acc[task.status as keyof GroupedTasks].push(task);
+      }
       return acc;
     },
-    { pending: [], in_progress: [], completed: [], cancelled: [], deleted: [] }
+    { pending: [], in_progress: [], completed: [], deleted: [] }
   );
 
   // Build summary
   const total = tasks.length;
-  const statuses = ['pending', 'in_progress', 'completed', 'cancelled', 'deleted'] as const;
+  const statuses = VALID_BOARD_STATUSES;
   const summaryParts = statuses
     .filter((status) => grouped[status].length > 0)
     .map((status) => `${grouped[status].length} ${status}`);
@@ -173,7 +186,7 @@ export const a2aBoardToolDefinition = {
     properties: {
       status: {
         type: 'string',
-        enum: ['pending', 'in_progress', 'completed', 'deleted'],
+        enum: VALID_BOARD_STATUSES as unknown as string[],
         description: 'Filter by task status',
       },
       platform: {

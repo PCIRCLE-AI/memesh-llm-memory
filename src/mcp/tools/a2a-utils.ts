@@ -15,9 +15,12 @@ export const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-
  * Extract short ID (first 8 characters) from a UUID
  *
  * @param uuid - Full UUID string
- * @returns First 8 characters of the UUID
+ * @returns First 8 characters of the UUID, or the full string if shorter
  */
 export function formatShortId(uuid: string): string {
+  if (!uuid || uuid.length < 8) {
+    return uuid || '';
+  }
   return uuid.substring(0, 8);
 }
 
@@ -26,11 +29,11 @@ export function formatShortId(uuid: string): string {
  *
  * @param prefix - Error message prefix (e.g., "Error claiming task")
  * @param reason - The error reason/message
- * @returns CallToolResult with error message
+ * @returns CallToolResult with error message including error indicator
  */
 export function createErrorResult(prefix: string, reason: string): CallToolResult {
   return {
-    content: [{ type: 'text', text: `${prefix}\n\nReason: ${reason}\n` }],
+    content: [{ type: 'text', text: `❌ ${prefix}\n\nReason: ${reason}\n` }],
   };
 }
 

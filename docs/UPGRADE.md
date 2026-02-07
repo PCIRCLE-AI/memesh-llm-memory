@@ -4,7 +4,128 @@
 
 ---
 
-## 📊 Quick Summary
+## 🆕 v2.8.0 Migration Guide (2026-02-08)
+
+### Breaking Changes: MCP Tool Naming Unification
+
+MeMesh v2.8.0 introduces a unified naming scheme for better MCP tool discoverability. All non-core tools now use the `memesh-*` prefix.
+
+### What Changed?
+
+**8 tools have been renamed**:
+
+| Old Name (Deprecated) | New Name (v2.8.0+) | Status |
+|----------------------|-------------------|--------|
+| `buddy-record-mistake` | `memesh-record-mistake` | ⚠️ Deprecated |
+| `create-entities` | `memesh-create-entities` | ⚠️ Deprecated |
+| `buddy-secret-store` | `memesh-secret-store` | ⚠️ Deprecated |
+| `buddy-secret-get` | `memesh-secret-get` | ⚠️ Deprecated |
+| `buddy-secret-list` | `memesh-secret-list` | ⚠️ Deprecated |
+| `buddy-secret-delete` | `memesh-secret-delete` | ⚠️ Deprecated |
+| `hook-tool-use` | `memesh-hook-tool-use` | ⚠️ Deprecated |
+| `generate-tests` | `memesh-generate-tests` | ⚠️ Deprecated |
+
+**Core tools preserved** (no changes):
+- ✅ `buddy-do` - Smart task execution
+- ✅ `buddy-remember` - Memory recall (now with semantic search!)
+- ✅ `buddy-help` - Help and documentation
+
+### Migration Path
+
+**Good News**: You don't need to change anything immediately!
+
+1. **Old names still work** - All deprecated names continue to function via aliases
+2. **Deprecation warnings** - You'll see friendly migration notices when using old names
+3. **Removal timeline** - Aliases will be removed in v3.0.0 (estimated Q3 2026)
+
+### How to Update Your Code
+
+**Option A: Update immediately (recommended)**
+
+```bash
+# Before (v2.7.0)
+buddy-secret-store "my_key" "value" api_key
+
+# After (v2.8.0+)
+memesh-secret-store "my_key" "value" api_key
+```
+
+**Option B: Update gradually**
+
+The old names will continue working until v3.0.0. You can update at your own pace:
+
+1. See deprecation warning when using old tool
+2. Note the suggested new name
+3. Update when convenient
+
+### Example Migration
+
+**Before (v2.7.0)**:
+```markdown
+# Store API credentials
+buddy-secret-store "openai_key" "sk-..." api_key
+buddy-secret-list
+
+# Create knowledge entities
+create-entities {
+  "entities": [...]
+}
+
+# Record mistakes for learning
+buddy-record-mistake {
+  "context": "Authentication failed",
+  "error": "Invalid JWT token"
+}
+```
+
+**After (v2.8.0)**:
+```markdown
+# Store API credentials
+memesh-secret-store "openai_key" "sk-..." api_key
+memesh-secret-list
+
+# Create knowledge entities
+memesh-create-entities {
+  "entities": [...]
+}
+
+# Record mistakes for learning
+memesh-record-mistake {
+  "context": "Authentication failed",
+  "error": "Invalid JWT token"
+}
+```
+
+### Tool Count Changes
+
+- **v2.7.0**: 18 tools (3 core + 2 workflow + 13 feature tools)
+- **v2.8.0**: 12 tools (3 core + 8 memesh + 1 cloud sync)
+  - **Removed**: A2A local collaboration (5 tools)
+  - **Reason**: Local-first architecture simplification
+
+### What Was Removed?
+
+**A2A Local Collaboration Tools** (no longer available):
+- ❌ `a2a-send-task` - Agent task delegation
+- ❌ `a2a-get-task` - Task status retrieval
+- ❌ `a2a-list-tasks` - Task listing
+- ❌ `a2a-list-agents` - Agent discovery
+- ❌ `a2a-report-result` - Result reporting
+
+**Why removed?**
+- Local-first architecture is simpler and more maintainable
+- Aligns with MCP specification
+- Cloud-based collaboration coming in future releases
+
+### Need Help?
+
+- 📖 **Full Changelog**: [CHANGELOG.md](../CHANGELOG.md#280---2026-02-08)
+- 💬 **Questions?**: [GitHub Discussions](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
+- 🐛 **Issues?**: [Report a bug](https://github.com/PCIRCLE-AI/claude-code-buddy/issues)
+
+---
+
+## 📊 Quick Summary (CCB → MeMesh Package Upgrade)
 
 | Aspect | Change |
 |--------|--------|

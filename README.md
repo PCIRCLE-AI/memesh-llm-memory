@@ -448,9 +448,9 @@ Securely store API keys and credentials:
 </details>
 
 <details>
-<summary><strong>18+ MCP Standard Tools</strong></summary>
+<summary><strong>12 MCP Standard Tools</strong></summary>
 
-Full integration with Model Context Protocol for seamless Claude Code experience.
+Full integration with Model Context Protocol for seamless Claude Code experience. See [QUICK_INSTALL.md](docs/QUICK_INSTALL.md#-what-you-get) for the complete tool list.
 
 Use `buddy-help` to see all available commands.
 

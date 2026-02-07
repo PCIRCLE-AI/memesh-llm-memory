@@ -351,7 +351,7 @@ export class ToolRouter {
       console.warn(
         `⚠️  DEPRECATION WARNING: Tool '${toolName}' is deprecated and will be removed in v3.0.0.\n` +
         `   Please use '${canonicalName}' instead.\n` +
-        `   Migration guide: https://github.com/PCIRCLE-AI/claude-code-buddy#migration-v3`
+        `   Migration guide: https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/UPGRADE.md#v280-migration-guide-2026-02-08`
       );
       return canonicalName;
     }

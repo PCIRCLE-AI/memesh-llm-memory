@@ -142,17 +142,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 100% backward compatibility maintained
 - No breaking changes
 
-
-## [2.8.0] - 2026-02-01
-
-### Changed
-- Simplified Evolution System for MCP architecture compliance
-- Delegated intelligence logic to external LLMs
-
-### Removed
-- Intelligence components (adaption, learning engines)
-- Auto-tagging and semantic search features
-
 ## [2.7.0] - 2026-01-31
 
 ### Changed

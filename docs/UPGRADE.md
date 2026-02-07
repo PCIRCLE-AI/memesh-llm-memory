@@ -117,6 +117,30 @@ memesh-record-mistake {
 - Aligns with MCP specification
 - Cloud-based collaboration coming in future releases
 
+### 🆕 New Feature: Semantic Search (Non-Breaking)
+
+v2.8.0 introduces vector-based semantic search for `buddy-remember`.
+
+**What's New:**
+- `buddy-remember` now supports `mode` parameter: `semantic`, `keyword`, `hybrid` (default)
+- Find memories by meaning, not just keywords
+- Uses all-MiniLM-L6-v2 ONNX model (384 dimensions, runs 100% locally)
+- Example: `buddy-remember "authentication" mode=semantic`
+
+**Do I need to do anything?**
+- **New users**: Semantic search works automatically
+- **Existing users with knowledge graph data**: Run `npm run backfill-embeddings` to generate embeddings for existing memories
+  ```bash
+  cd /path/to/claude-code-buddy
+  npm run backfill-embeddings
+  ```
+  This is a one-time operation. New memories automatically get embeddings.
+
+**When to use each mode:**
+- `semantic`: Find conceptually similar memories (e.g., "auth" finds JWT, OAuth, sessions)
+- `keyword`: Exact keyword matching (fast, precise)
+- `hybrid` (default): Best of both worlds - combines semantic similarity with keyword matching
+
 ### Need Help?
 
 - 📖 **Full Changelog**: [CHANGELOG.md](../CHANGELOG.md#280---2026-02-08)

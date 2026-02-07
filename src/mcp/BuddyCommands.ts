@@ -137,8 +137,7 @@ ${chalk.dim('→')} Searches knowledge graph, shows past decisions
 
 ${chalk.bold('Additional Features')}
 
-${chalk.dim('Secrets:')}                   memesh-secret-store, memesh-secret-get
-${chalk.dim('Knowledge:')}                 memesh-memesh-create-entities
+${chalk.dim('Knowledge:')}                 memesh-create-entities
 ${chalk.dim('Error Recording:')}           memesh-record-mistake
 
 ${chalk.yellow('💡 New to MeMesh?')}
@@ -173,15 +172,6 @@ ${chalk.bold.yellow('📋 Core Commands')}
     ${chalk.dim('do:')} help-with, execute, run, task
     ${chalk.dim('remember:')} recall, retrieve, search, find
 
-${chalk.bold.yellow('🔐 Secrets Management')}
-  ${chalk.cyan('memesh-secret-store')}       Securely store API keys/tokens
-  ${chalk.cyan('memesh-secret-get')}         Retrieve stored secret
-  ${chalk.cyan('memesh-secret-list')}        List all stored secrets (names only)
-  ${chalk.cyan('memesh-secret-delete')}      Delete a stored secret
-
-  ${chalk.dim('Encryption:')} AES-256-GCM, stored locally only
-  ${chalk.dim('Auto-expiry:')} Default 30 days, configurable
-
 ${chalk.bold.yellow('🧠 Knowledge Graph')}
   ${chalk.cyan('memesh-memesh-create-entities')}    Record decisions, features, lessons learned
 
@@ -192,10 +182,6 @@ ${chalk.bold.yellow('📖 Examples')}
   ${chalk.green('# Task Execution')}
   ${chalk.green('❯')} buddy-do "setup authentication"
   ${chalk.green('❯')} buddy-remember "why JWT over sessions"
-
-  ${chalk.green('# Secrets')}
-  ${chalk.green('❯')} memesh-secret-store name="openai_key" value="sk-..." type="api_key"
-  ${chalk.green('❯')} memesh-secret-get name="openai_key"
 
   ${chalk.green('# Knowledge')}
   ${chalk.green('❯')} memesh-create-entities entities=[{name:"JWT Auth",type:"decision",...}]
@@ -228,8 +214,6 @@ ${chalk.dim('📖 Docs:')} https://memesh.pcircle.ai
       help: () => this.getHelpCommandHelp(),
 
       // Category helps
-      secrets: () => this.getSecretsHelp(),
-      secret: () => this.getSecretsHelp(),
       knowledge: () => this.getKnowledgeHelp(),
       health: () => this.getHealthHelp(),
     };
@@ -374,99 +358,6 @@ ${chalk.bold('Documentation:')}
   📖 User Guide:    https://memesh.pcircle.ai/guide
   🚀 Quick Start:   https://memesh.pcircle.ai/quick-start
   💬 Discussions:   github.com/PCIRCLE-AI/claude-code-buddy
-`;
-
-    return boxen(content, {
-      padding: 1,
-      borderColor: 'cyan',
-      borderStyle: 'round',
-    });
-  }
-
-  /**
-   * Detailed help for Secrets Management
-   */
-  private static getSecretsHelp(): string {
-    const content = `
-${chalk.bold.cyan('Secrets Management')} - Secure Credential Storage
-
-${chalk.dim('Description:')}
-Securely store and retrieve API keys, tokens, and passwords.
-Uses AES-256-GCM encryption, stored locally only (never transmitted).
-
-${chalk.bold('📋 Available Tools:')}
-
-${chalk.cyan('memesh-secret-store')} name value type [description] [expiresIn]
-  Store a secret securely
-  ${chalk.dim('Types:')} api_key | token | password | other
-  ${chalk.dim('ExpiresIn:')} "30d" (days), "24h" (hours), "60m" (minutes)
-
-${chalk.cyan('memesh-secret-get')} name
-  Retrieve a stored secret (returns decrypted value)
-
-${chalk.cyan('memesh-secret-list')}
-  List all secrets (names, types, expiry - NOT values)
-
-${chalk.cyan('memesh-secret-delete')} name
-  Permanently delete a secret
-
-${chalk.bold('📝 Examples:')}
-
-${chalk.green('# Store API key')}
-${chalk.green('❯')} memesh-secret-store \\
-  name="openai_api_key" \\
-  value="sk-proj-..." \\
-  type="api_key" \\
-  description="Production OpenAI key for GPT-4"
-${chalk.dim('→')} ✅ Secret stored securely (expires in 30 days)
-
-${chalk.green('# Retrieve secret')}
-${chalk.green('❯')} memesh-secret-get name="openai_api_key"
-${chalk.dim('→')} sk-proj-xxx... (decrypted value)
-
-${chalk.green('# List all secrets')}
-${chalk.green('❯')} memesh-secret-list
-${chalk.dim('→')} Shows:
-    openai_api_key    | api_key  | Expires: 2026-03-05
-    github_token      | token    | Expires: 2026-02-20
-    db_password       | password | Expires: 2026-03-01
-
-${chalk.green('# Delete secret')}
-${chalk.green('❯')} memesh-secret-delete name="old_api_key"
-${chalk.dim('→')} ✅ Secret deleted permanently
-
-${chalk.green('# Store with custom expiry')}
-${chalk.green('❯')} memesh-secret-store \\
-  name="temp_token" \\
-  value="token_abc123" \\
-  type="token" \\
-  expiresIn="24h"
-${chalk.dim('→')} Auto-deletes after 24 hours
-
-${chalk.bold('💡 Best Practices:')}
-• Use descriptive names (e.g., "prod_openai_key" not "key1")
-• Set appropriate expiry times for temporary credentials
-• Rotate keys regularly (delete old, store new)
-• Never hardcode secrets in code - always use this system
-• Check memesh-secret-list before storing to avoid duplicates
-
-${chalk.bold('🔒 Security:')}
-• Encryption: AES-256-GCM (industry standard)
-• Storage: Local filesystem only (${chalk.dim('~/.memesh/secrets/')})
-• Never transmitted: Secrets stay on your machine
-• Auto-cleanup: Expired secrets are automatically deleted
-
-${chalk.bold('🔧 Common Workflows:')}
-
-${chalk.yellow('Key Rotation:')}
-  ${chalk.cyan('1.')} memesh-secret-store name="openai_key_new" value="sk-..."
-  ${chalk.cyan('2.')} Test with new key
-  ${chalk.cyan('3.')} memesh-secret-delete name="openai_key_old"
-
-${chalk.yellow('First-time Setup:')}
-  ${chalk.cyan('1.')} memesh-secret-store name="openai_key" value="sk-..." type="api_key"
-  ${chalk.cyan('2.')} memesh-secret-store name="github_token" value="ghp_..." type="token"
-  ${chalk.cyan('3.')} memesh-secret-list  ${chalk.dim('# Verify stored')}
 `;
 
     return boxen(content, {

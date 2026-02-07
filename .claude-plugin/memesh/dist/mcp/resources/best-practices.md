@@ -42,20 +42,6 @@ Use memory before large refactors or architectural changes:
 buddy-remember "why we chose SQLite"
 ```
 
-## ✅ Use Workflow Guidance
-
-When you finish a phase, ask for next steps:
-```
-get-workflow-guidance {"phase":"test-complete"}
-```
-
-## ✅ Keep Sessions Healthy
-
-Long sessions can degrade quality. Check health periodically:
-```
-get-session-health
-```
-
 ## ✅ Prefer Smaller, Testable Chunks
 
 - Aim for 2-5 minute tasks

@@ -1,6 +1,6 @@
 # MeMesh - Complete Tool Guide
 
-**For LLMs**: This guide helps you actively use MeMesh's 12 tools. Use tools proactively based on triggers, not just when explicitly requested.
+**For LLMs**: This guide helps you actively use MeMesh's tools. Use tools proactively based on triggers, not just when explicitly requested.
 
 ## Quick Reference: When to Use Each Tool
 
@@ -12,9 +12,6 @@
 | "do this task..." | `buddy-do` | Execute with smart routing |
 | "implement X..." | `buddy-do` | Task execution |
 | "generate tests..." | `generate-tests` | Create test cases |
-| "save this API key..." | `memesh-secret-store` | Store secrets securely |
-| "get my token..." | `memesh-secret-get` | Retrieve secrets |
-| "what's my progress..." | `get-session-health` | Check token usage |
 
 ---
 
@@ -121,42 +118,6 @@ memesh-create-entities({
 
 ---
 
-## Workflow Tools (Automatic Guidance)
-
-### get-workflow-guidance: Next Steps
-**Triggers**: Automatically triggered after Write/Edit/Bash (via hooks)
-
-**Manual use cases**:
-- User asks "what should I do next?"
-- Starting new phase (idle → code-written → test → commit)
-- Unsure about workflow rules
-
-**Phases**:
-- `idle`: Starting fresh work
-- `code-written`: Just finished coding
-- `test-complete`: Tests just ran
-- `commit-ready`: About to commit
-- `committed`: Just committed
-
-**Note**: Usually auto-triggered by `hook-tool-use`, rarely called manually.
-
----
-
-### get-session-health: Token Monitoring
-**Triggers**: Long session, complex task, user asks about progress
-
-**When to use**:
-- Session feels slow or degraded
-- User asks "how much context left?"
-- Before starting memory-intensive work
-- When considering session cleanup
-
-**Example**:
-```typescript
-get-session-health()
-// Returns: { tokenUsage, contextQuality, recommendations }
-```
-
 ---
 
 ## Learning Tools (Improvement)
@@ -188,38 +149,6 @@ memesh-record-mistake({
 - Record IMMEDIATELY when corrected (don't wait)
 - Be specific about what you did wrong
 - Include concrete prevention method
-
----
-
-## Secret Management (Security)
-
-### memesh-secret-store/get/list/delete
-**Triggers**: API key, token, password, credential, secret
-
-**When to use**:
-- User provides API key/token (offer to store securely)
-- Need API key for integration (retrieve from storage)
-- User asks "what secrets do I have?" (list)
-- Rotating credentials (delete old, store new)
-
-**Examples**:
-```typescript
-// User shares: "Here's the OpenAI API key: sk-..."
-memesh-secret-store({
-  name: "openai-api-key",
-  value: "sk-...",
-  type: "api_key",
-  description: "OpenAI API key for GPT-4 integration"
-})
-
-// Later, when needed:
-const key = memesh-secret-get({ name: "openai-api-key" })
-```
-
-**Best practices**:
-- ALWAYS offer to store when user shares secret
-- Use descriptive names (not "key1", "key2")
-- Never log secret values (use masked output)
 
 ---
 
@@ -277,17 +206,6 @@ generate-tests({
    → Record root cause and solution
 ```
 
-### Workflow 3: Secret Management
-```
-1. User shares API key
-2. memesh-secret-store({ name: "...", value: "...", ... })
-   → Store securely
-3. Later: memesh-secret-get({ name: "..." })
-   → Retrieve when needed
-4. Eventually: memesh-secret-delete({ name: "..." })
-   → Remove when rotating
-```
-
 ---
 
 ## Proactive Tool Usage Rules
@@ -296,15 +214,9 @@ generate-tests({
 - `buddy-remember` - Before implementing similar features
 - `memesh-create-entities` - After completing significant work
 - `memesh-record-mistake` - When user corrects you
-- `memesh-secret-store` - When user shares credentials (ask first)
 
 **SOMETIMES use proactively**:
 - `generate-tests` - After implementing untested code (offer)
-- `get-session-health` - Long sessions or complex work
-**NEVER use without explicit request**:
-- `memesh-secret-get` - Only when actually needed
-- `memesh-secret-list/delete` - Only when user asks
-
 ---
 
 ## Anti-Patterns (What NOT to Do)
@@ -314,14 +226,12 @@ generate-tests({
 - Call `buddy-do` for trivial tasks (use direct tools)
 - Skip `memesh-create-entities` after major work
 - Ignore `memesh-record-mistake` when corrected
-- Store secrets without user consent
 
 ✅ **Do**:
 - Use specific queries ("OAuth2 scope design decision")
 - Let `buddy-do` handle complex multi-step tasks
 - Proactively store knowledge after completion
 - Immediately record mistakes for learning
-- Offer to store secrets securely
 
 ---
 

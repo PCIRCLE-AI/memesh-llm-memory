@@ -18,7 +18,6 @@ export declare class BuddyCommands {
     private static getDoCommandHelp;
     private static getRememberCommandHelp;
     private static getHelpCommandHelp;
-    private static getSecretsHelp;
     private static getKnowledgeHelp;
     private static getHealthHelp;
 }

@@ -14,13 +14,11 @@ import { SessionMemoryPipeline } from '../integrations/session-memory/index.js';
 import { RateLimiter } from '../utils/RateLimiter.js';
 import { ToolHandlers, BuddyHandlers } from './handlers/index.js';
 import { SamplingClient } from './SamplingClient.js';
-import { SecretManager } from '../memory/SecretManager.js';
 import { logger } from '../utils/logger.js';
 import { logError } from '../utils/errorHandler.js';
 export class ServerInitializer {
     static async initialize() {
         let knowledgeGraph;
-        let secretManager;
         try {
             const formatter = new ResponseFormatter();
             const agentRegistry = new AgentRegistry();
@@ -59,7 +57,6 @@ export class ServerInitializer {
             const samplingClient = new SamplingClient(async (_request) => {
                 throw new Error('Sampling not yet connected. This will be wired when MCP SDK sampling is available.');
             });
-            secretManager = await SecretManager.create();
             const toolHandlers = new ToolHandlers(agentRegistry, skillManager, uninstallManager, checkpointDetector, hookIntegration, projectMemoryManager, knowledgeGraph, ui, samplingClient, unifiedMemoryStore);
             const buddyHandlers = new BuddyHandlers(formatter, projectMemoryManager, projectAutoTracker);
             return {
@@ -78,22 +75,12 @@ export class ServerInitializer {
                 sessionMemoryPipeline,
                 rateLimiter,
                 samplingClient,
-                secretManager,
                 toolHandlers,
                 buddyHandlers,
             };
         }
         catch (error) {
             logger.error('Initialization failed, cleaning up resources...');
-            if (secretManager) {
-                try {
-                    secretManager.close();
-                    logger.info('SecretManager cleaned up');
-                }
-                catch (cleanupError) {
-                    logger.error('Failed to clean up SecretManager:', cleanupError);
-                }
-            }
             if (knowledgeGraph) {
                 try {
                     await knowledgeGraph.close();

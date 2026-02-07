@@ -613,16 +613,6 @@ describe('PathResolver', () => {
   });
 
   describe('Real-world usage patterns', () => {
-    it('should support SecretManager use case', () => {
-      mockHomedir(testDir);
-      createDir(testNewDir);
-
-      const secretsPath = getDataPath('secrets.db');
-
-      expect(secretsPath).toBe(path.join(testNewDir, 'secrets.db'));
-      expect(path.dirname(secretsPath)).toBe(testNewDir);
-    });
-
     it('should support KnowledgeGraph use case', () => {
       mockHomedir(testDir);
       createDir(testNewDir);
@@ -646,7 +636,6 @@ describe('PathResolver', () => {
       createDir(testNewDir);
 
       const files = [
-        'secrets.db',
         'knowledge-graph.db',
         'task-queue.db',
         'evolution.db',

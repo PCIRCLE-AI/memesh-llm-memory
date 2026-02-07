@@ -12,16 +12,12 @@ MeMesh v2.8.0 introduces a unified naming scheme for better MCP tool discoverabi
 
 ### What Changed?
 
-**8 tools have been renamed**:
+**4 tools have been renamed**:
 
 | Old Name (Deprecated) | New Name (v2.8.0+) | Status |
 |----------------------|-------------------|--------|
 | `buddy-record-mistake` | `memesh-record-mistake` | ⚠️ Deprecated |
 | `create-entities` | `memesh-create-entities` | ⚠️ Deprecated |
-| `buddy-secret-store` | `memesh-secret-store` | ⚠️ Deprecated |
-| `buddy-secret-get` | `memesh-secret-get` | ⚠️ Deprecated |
-| `buddy-secret-list` | `memesh-secret-list` | ⚠️ Deprecated |
-| `buddy-secret-delete` | `memesh-secret-delete` | ⚠️ Deprecated |
 | `hook-tool-use` | `memesh-hook-tool-use` | ⚠️ Deprecated |
 | `generate-tests` | `memesh-generate-tests` | ⚠️ Deprecated |
 
@@ -42,13 +38,7 @@ MeMesh v2.8.0 introduces a unified naming scheme for better MCP tool discoverabi
 
 **Option A: Update immediately (recommended)**
 
-```bash
-# Before (v2.7.0)
-buddy-secret-store "my_key" "value" api_key
-
-# After (v2.8.0+)
-memesh-secret-store "my_key" "value" api_key
-```
+Update your tool calls to use the new `memesh-*` prefix names.
 
 **Option B: Update gradually**
 
@@ -62,10 +52,6 @@ The old names will continue working until v3.0.0. You can update at your own pac
 
 **Before (v2.7.0)**:
 ```markdown
-# Store API credentials
-buddy-secret-store "openai_key" "sk-..." api_key
-buddy-secret-list
-
 # Create knowledge entities
 create-entities {
   "entities": [...]
@@ -80,10 +66,6 @@ buddy-record-mistake {
 
 **After (v2.8.0)**:
 ```markdown
-# Store API credentials
-memesh-secret-store "openai_key" "sk-..." api_key
-memesh-secret-list
-
 # Create knowledge entities
 memesh-create-entities {
   "entities": [...]
@@ -99,8 +81,8 @@ memesh-record-mistake {
 ### Tool Count Changes
 
 - **v2.7.0**: 18 tools (3 core + 2 workflow + 13 feature tools)
-- **v2.8.0**: 12 tools (3 core + 8 memesh + 1 cloud sync)
-  - **Removed**: A2A local collaboration (5 tools)
+- **v2.8.0**: 8 tools (3 core + 4 memesh + 1 cloud sync)
+  - **Removed**: A2A local collaboration (5 tools), Secret management (4 tools)
   - **Reason**: Local-first architecture simplification
 
 ### What Was Removed?
@@ -206,7 +188,6 @@ Before you start, ensure:
    # You should see files like:
    # - knowledge-graph.db
    # - database.db
-   # - secrets.db (if you stored secrets)
    ```
 
 3. ✅ **Check disk space** (at least 2x your data size)
@@ -335,7 +316,7 @@ npm root -g
 # You should see tools like:
 # - buddy-do
 # - buddy-remember
-# - create-entities
+# - memesh-create-entities
 # etc.
 ```
 
@@ -346,14 +327,10 @@ npm root -g
 After upgrade, verify everything works:
 
 - [ ] **MCP Server Connected**: Check Claude Code shows MeMesh as connected
-- [ ] **Tools Available**: All 17 MeMesh tools are listed
+- [ ] **Tools Available**: All 8 MeMesh tools are listed
 - [ ] **Data Accessible**: Your knowledge graph is intact
   ```
   Use `buddy-remember "test"` to check if past data is accessible
-  ```
-- [ ] **Secrets Work**: If you stored secrets, they should still be accessible
-  ```
-  Use `buddy-secret-list` to verify
   ```
 
 ---
@@ -464,7 +441,7 @@ cp -r ~/.claude-code-buddy-backup-YYYYMMDD ~/.claude-code-buddy
 
 After upgrading, you'll get:
 
-- ✅ **17 MCP Standard Tools** (formerly 15)
+- ✅ **8 MCP Standard Tools**
 - ✅ **Improved backward compatibility** (automatic fallback to legacy paths)
 - ✅ **Better error messages** with actionable guidance
 - ✅ **Performance improvements** (query caching, connection pooling)

@@ -122,15 +122,11 @@ Available Commands:
   buddy-remember <query> - Recall project decisions and patterns
   buddy-help            - Show this help
 
-  get-session-health    - Check token usage and session state
-  get-workflow-guidance - Get recommendations for current phase
   generate-tests <file> - Auto-generate comprehensive tests
 
-  memesh-secret-store   - Store credentials securely
-  memesh-secret-get     - Retrieve stored secrets
-  ... (12 tools total)
+  ... (8 tools total)
 
-Status: ✅ Connected (12 tools available)
+Status: ✅ Connected (8 tools available)
 ```
 
 ### 2. Test Memory Storage
@@ -310,7 +306,7 @@ buddy-do "summarize the key technical decisions in this project"
 buddy-remember "testing framework"
 ```
 
-**Result**: Your decisions are preserved forever. New team members can query them months later.
+**Result**: Your decisions are preserved across sessions (30/90 days). New team members can query them months later.
 
 ---
 
@@ -347,7 +343,7 @@ Now that MeMesh is running, explore more:
 - **[Migration Guide](MEMORY_MIGRATION_GUIDE.md)** - Switching from Claude Code Buddy (old name) to MeMesh
 
 ### Advanced Topics
-- Workflow guidance and session health monitoring
+- Workflow guidance and smart task routing
 - Smart planning for complex features
 - Custom capability routing
 - Knowledge graph queries
@@ -361,10 +357,6 @@ Now that MeMesh is running, explore more:
 buddy-help                     # Show available commands
 buddy-do "<task>"             # Execute any development task
 buddy-remember "<query>"      # Query project memory
-
-# Workflow
-get-session-health            # Check token usage
-get-workflow-guidance         # Get next-step recommendations
 
 # Testing
 generate-tests "<file>"       # Auto-generate tests for a file

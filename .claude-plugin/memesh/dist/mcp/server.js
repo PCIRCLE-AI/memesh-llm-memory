@@ -59,7 +59,6 @@ class ClaudeCodeBuddyMCPServer {
             rateLimiter: this.components.rateLimiter,
             toolHandlers: this.components.toolHandlers,
             buddyHandlers: this.components.buddyHandlers,
-            secretManager: this.components.secretManager,
             knowledgeGraph: this.components.knowledgeGraph,
         });
         this.components.toolInterface.attachToolDispatcher(this.toolRouter);
@@ -287,20 +286,6 @@ class ClaudeCodeBuddyMCPServer {
                 operation: 'closing knowledge graph',
             });
             logger.error('Failed to close knowledge graph cleanly:', error);
-        }
-        try {
-            logger.info('Closing secret manager database...');
-            if (this.components.secretManager) {
-                this.components.secretManager.close();
-            }
-        }
-        catch (error) {
-            logError(error, {
-                component: 'ClaudeCodeBuddyMCPServer',
-                method: 'shutdown',
-                operation: 'closing secret manager',
-            });
-            logger.error('Failed to close secret manager cleanly:', error);
         }
         try {
             logger.info('Stopping rate limiter...');

@@ -14,7 +14,6 @@ import { SessionMemoryPipeline } from '../integrations/session-memory/index.js';
 import { RateLimiter } from '../utils/RateLimiter.js';
 import { ToolHandlers, BuddyHandlers } from './handlers/index.js';
 import { SamplingClient } from './SamplingClient.js';
-import { SecretManager } from '../memory/SecretManager.js';
 export interface ServerComponents {
     formatter: ResponseFormatter;
     agentRegistry: AgentRegistry;
@@ -31,7 +30,6 @@ export interface ServerComponents {
     sessionMemoryPipeline: SessionMemoryPipeline;
     rateLimiter: RateLimiter;
     samplingClient: SamplingClient;
-    secretManager: SecretManager;
     toolHandlers: ToolHandlers;
     buddyHandlers: BuddyHandlers;
 }

@@ -2,7 +2,7 @@
  * Distributed Tracing Module
  *
  * Provides distributed tracing capabilities for MCP tool operations.
- * Enables request correlation across task execution, memory operations, and secret management.
+ * Enables request correlation across task execution and memory operations.
  *
  * @module utils/tracing
  */

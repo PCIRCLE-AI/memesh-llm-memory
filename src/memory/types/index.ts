@@ -30,18 +30,6 @@ export {
   createScopeFilter,
 } from './memory-scope.js';
 
-// Secret types for SecretManager
-export type {
-  SecretType,
-  DetectedSecret,
-  StoredSecret,
-  SecretStoreOptions,
-  SecretConfirmationRequest,
-  SecretPattern,
-} from './secret-types.js';
-
-export { DEFAULT_SECRET_PATTERNS } from './secret-types.js';
-
 // Preference types for UserPreferenceEngine
 export type {
   PreferenceCategory,

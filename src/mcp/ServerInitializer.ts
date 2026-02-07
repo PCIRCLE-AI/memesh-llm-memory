@@ -24,7 +24,6 @@ import { SessionMemoryPipeline } from '../integrations/session-memory/index.js';
 import { RateLimiter } from '../utils/RateLimiter.js';
 import { ToolHandlers, BuddyHandlers } from './handlers/index.js';
 import { SamplingClient } from './SamplingClient.js';
-import { SecretManager } from '../memory/SecretManager.js';
 import { logger } from '../utils/logger.js';
 import { logError } from '../utils/errorHandler.js';
 
@@ -59,9 +58,6 @@ export interface ServerComponents {
   // Sampling
   samplingClient: SamplingClient;
 
-  // Security
-  secretManager: SecretManager;
-
   // Handler modules
   toolHandlers: ToolHandlers;
   buddyHandlers: BuddyHandlers;
@@ -88,7 +84,6 @@ export class ServerInitializer {
   static async initialize(): Promise<ServerComponents> {
     // Track resources that need cleanup on error
     let knowledgeGraph: KnowledgeGraph | undefined;
-    let secretManager: SecretManager | undefined;
 
     try {
       // Core components
@@ -151,9 +146,6 @@ export class ServerInitializer {
         throw new Error('Sampling not yet connected. This will be wired when MCP SDK sampling is available.');
       });
 
-      // Initialize Security
-      secretManager = await SecretManager.create();
-
       // Initialize handler modules
       const toolHandlers = new ToolHandlers(
         agentRegistry,
@@ -191,22 +183,12 @@ export class ServerInitializer {
         sessionMemoryPipeline,
         rateLimiter,
         samplingClient,
-        secretManager,
         toolHandlers,
         buddyHandlers,
       };
     } catch (error) {
       // Clean up resources on initialization failure
       logger.error('Initialization failed, cleaning up resources...');
-
-      if (secretManager) {
-        try {
-          secretManager.close();
-          logger.info('SecretManager cleaned up');
-        } catch (cleanupError) {
-          logger.error('Failed to clean up SecretManager:', cleanupError);
-        }
-      }
 
       if (knowledgeGraph) {
         try {

@@ -21,22 +21,6 @@ export const ja: LocaleMessages = {
   'ccb.preference.dislikes': 'ユーザーの嫌いなもの',
   'ccb.preference.rules': '行動ルール',
 
-  // Secret management
-  'ccb.secret.confirmation':
-    '**MeMesh シークレット保存** - シークレット「${secretName}」(${maskedValue})を保存しますか？${expiresIn} 後に期限切れになります。',
-  'ccb.secret.privacyNotice':
-    '**MeMesh プライバシー通知** - このシークレットはAES-256-GCM暗号化を使用してローカルに保存されます。ネットワーク経由で転送されることはありません。',
-  'ccb.secret.stored':
-    '**MeMesh シークレット保存** - シークレット「${secretName}」は安全に保存されました。${expiresIn} 後に期限切れになります。',
-  'ccb.secret.detected':
-    '**MeMesh シークレット検出** - コンテンツ内に ${count} 件の潜在的なシークレットが検出されました。安全に保存しますか？',
-  'ccb.secret.deleted':
-    '**MeMesh シークレット保存** - シークレット「${secretName}」が削除されました。',
-  'ccb.secret.notFound':
-    '**MeMesh シークレット保存** - シークレット「${secretName}」が見つかりませんでした。',
-  'ccb.secret.expired':
-    '**MeMesh シークレット保存** - シークレット「${secretName}」は期限切れとなり、削除されました。',
-
   // Rule reminders
   'ccb.rule.readBeforeEdit':
     '⛔ **MeMesh 防止機能** - 読み込まずに編集することはできません。変更を加える前にファイルを読む必要があります。',

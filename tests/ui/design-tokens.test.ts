@@ -32,7 +32,7 @@ describe('Design Tokens', () => {
   describe('getOperationDisplayName', () => {
     it('should return display name for known operations', () => {
       expect(getOperationDisplayName('memesh-remember')).toBe('Memory Search');
-      expect(getOperationDisplayName('memesh-secret-store')).toBe('Secret Storage');
+      expect(getOperationDisplayName('memesh-do')).toBe('Task Router');
     });
 
     it('should format unknown operations', () => {

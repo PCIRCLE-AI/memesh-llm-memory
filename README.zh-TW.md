@@ -58,7 +58,7 @@ MeMesh: 📚 "JWT 身份驗證實作於 2024-01-15
      ↳ Refresh tokens: 7 天
      ↳ 金鑰輪替: 每月"
 
-# Session 3（任何時候，永遠）
+# Session 3（任何時候，跨 session）
 你: buddy-do "新增 OAuth"
 MeMesh: 🧠 "我看到你有 JWT。讓我們
      把 OAuth 整合進去..."
@@ -180,17 +180,6 @@ buddy-help                       # 需要幫助時
 ```
 
 **三個命令。無限可能。**
-
-### 4. 🔐 **安全憑證儲存**
-
-```bash
-memesh-secret-store "openai_key" "sk-..." api_key  # 加密儲存
-memesh-secret-get "openai_key"                      # 取得憑證
-memesh-secret-list                                  # 查看已儲存
-memesh-secret-delete "old_key"                      # 清理舊金鑰
-```
-
-**AES-256-GCM 加密。本地儲存。**
 
 ---
 
@@ -415,17 +404,7 @@ buddy-remember "auth"  # 回傳 project-B 的 auth 決策
 </details>
 
 <details>
-<summary><strong>SecretManager 密鑰管理</strong></summary>
-
-安全存儲 API 金鑰和憑證：
-- 🔐 AES-256-GCM 加密
-- 💾 本地 SQLite 存儲（永不傳輸）
-- 🔑 使用 `memesh-secret-store` 和 `memesh-secret-get`
-
-</details>
-
-<details>
-<summary><strong>12 個 MCP 標準工具</strong></summary>
+<summary><strong>8 個 MCP 標準工具</strong></summary>
 
 完整整合 Model Context Protocol，提供無縫的 Claude Code 體驗。See [QUICK_INSTALL.md](docs/QUICK_INSTALL.md#-what-you-get) for the complete tool list.
 

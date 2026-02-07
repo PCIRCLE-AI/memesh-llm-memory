@@ -129,10 +129,9 @@ claude mcp list
 **Expected output:**
 ```
 Connected MCP Servers:
-✅ memesh (12 tools available)
+✅ memesh (8 tools available)
    Core: buddy-do, buddy-remember, buddy-help
    MeMesh: memesh-record-mistake, memesh-create-entities,
-           memesh-secret-store, memesh-secret-get, memesh-secret-list, memesh-secret-delete,
            memesh-hook-tool-use, memesh-generate-tests
    Cloud: memesh-cloud-sync
 ```
@@ -150,27 +149,19 @@ Verify MeMesh is working by checking available capabilities:
 
 **Expected response:**
 ```
-MeMesh provides 12 tools:
+MeMesh provides 8 tools:
 
 Core Commands (3):
   1. buddy-do - Smart task routing and execution
   2. buddy-remember - Project memory recall
   3. buddy-help - Command documentation
 
-Workflow Tools (2):
-  4. get-session-health - Session health monitoring
-  5. get-workflow-guidance - Next-step recommendations
-
-Secret Management (4):
-  6. memesh-secret-store - Store credentials securely
-  7. memesh-secret-get - Retrieve stored secrets
-  8. memesh-secret-list - List all secrets
-  9. memesh-secret-delete - Delete secrets
-
-Other Tools (3):
-  10. memesh-create-entities - Create knowledge entities
-  11. memesh-record-mistake - Error recording
-  12. generate-tests - Test generation
+Other Tools (5):
+  4. memesh-create-entities - Create knowledge entities
+  5. memesh-record-mistake - Error recording
+  6. memesh-hook-tool-use - Tool usage tracking
+  7. generate-tests - Test generation
+  8. memesh-cloud-sync - Cloud synchronization
 ```
 
 ---

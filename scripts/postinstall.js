@@ -147,7 +147,7 @@ const message = `
 ${chalk.bold.green('✅ MeMesh Installed Successfully!')}
 
 ${chalk.bold('What You Got:')}
-  ${chalk.cyan('•')} 12 MCP tools (persistent memory, semantic search, task routing, secrets management)
+  ${chalk.cyan('•')} 8 MCP tools (persistent memory, semantic search, task routing, cloud sync)
   ${chalk.cyan('•')} Vector semantic search with ONNX embeddings (runs 100% locally)
   ${chalk.cyan('•')} Auto-memory with smart knowledge graph
   ${chalk.cyan('•')} Local-first architecture (all data stored locally)

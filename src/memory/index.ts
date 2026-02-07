@@ -20,9 +20,6 @@ export { MistakePatternEngine } from './MistakePatternEngine.js';
 export { EnhancedRetrieval } from './EnhancedRetrieval.js';
 export type { EnhancedSearchOptions, EnhancedSearchResult, MatchType } from './EnhancedRetrieval.js';
 
-// Secret manager for secure storage
-export { SecretManager } from './SecretManager.js';
-
 // User preference engine for learning from mistakes
 export { UserPreferenceEngine } from './UserPreferenceEngine.js';
 
@@ -38,18 +35,6 @@ export {
   MEMORY_TYPE_TO_ENTITY_TYPE,
   ENTITY_TYPE_TO_MEMORY_TYPE,
 } from './types/index.js';
-
-// Secret types
-export type {
-  SecretType,
-  DetectedSecret,
-  StoredSecret,
-  SecretStoreOptions,
-  SecretConfirmationRequest,
-  SecretPattern,
-} from './types/index.js';
-
-export { DEFAULT_SECRET_PATTERNS } from './types/index.js';
 
 // Preference types
 export type {

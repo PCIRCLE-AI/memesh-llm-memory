@@ -56,6 +56,12 @@ export interface MCPToolDefinition {
     idempotentHint?: boolean;
     openWorldHint?: boolean;
   };
+  /**
+   * Tool name aliases for backward compatibility
+   * Deprecated names that still work but show warnings
+   * @since v2.8.0 - Tool naming unification
+   */
+  aliases?: string[];
 }
 
 /**
@@ -146,7 +152,8 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
   // ========================================
 
   const buddyRecordMistakeTool: MCPToolDefinition = {
-    name: 'buddy-record-mistake',
+    name: 'memesh-record-mistake',
+    aliases: ['buddy-record-mistake'],  // Deprecated, will be removed in v3.0.0
     description: `📝 MeMesh: Record AI mistakes for learning and prevention - enable systematic improvement from user feedback.
 
 **When to Record:**
@@ -255,7 +262,8 @@ Record:
   // ========================================
 
   const hookToolUseTool: MCPToolDefinition = {
-    name: 'hook-tool-use',
+    name: 'memesh-hook-tool-use',
+    aliases: ['hook-tool-use'],  // Deprecated, will be removed in v3.0.0
     description: 'Process tool execution events from Claude Code CLI for workflow automation (auto-triggered, do not call manually)',
     inputSchema: {
       type: 'object' as const,
@@ -302,7 +310,8 @@ Record:
   // ========================================
 
   const createEntitiesTool: MCPToolDefinition = {
-    name: 'create-entities',
+    name: 'memesh-create-entities',
+    aliases: ['create-entities'],  // Deprecated, will be removed in v3.0.0
     description: `✨ MeMesh: Create entities in Knowledge Graph - record decisions, features, bug fixes, and lessons learned.
 
 **What to Record:**
@@ -453,7 +462,8 @@ Requires MEMESH_API_KEY to be configured. Without it, all actions return a setup
   // ========================================
 
   const generateTestsTool: MCPToolDefinition = {
-    name: 'generate-tests',
+    name: 'memesh-generate-tests',
+    aliases: ['generate-tests'],  // Deprecated, will be removed in v3.0.0
     description: 'Automatically generate test cases from specifications or code using AI. Provide either specification or code (at least one required).',
     inputSchema: {
       type: 'object',
@@ -483,7 +493,8 @@ Requires MEMESH_API_KEY to be configured. Without it, all actions return a setup
   // ========================================
 
   const buddySecretStoreTool: MCPToolDefinition = {
-    name: 'buddy-secret-store',
+    name: 'memesh-secret-store',
+    aliases: ['buddy-secret-store'],  // Deprecated, will be removed in v3.0.0
     description:
       '🔐 Securely store API keys, tokens, or passwords. USE THIS when user shares sensitive credentials. ' +
       'Encrypted with AES-256-GCM, stored locally only (never transmitted). ' +
@@ -527,7 +538,8 @@ Requires MEMESH_API_KEY to be configured. Without it, all actions return a setup
   };
 
   const buddySecretGetTool: MCPToolDefinition = {
-    name: 'buddy-secret-get',
+    name: 'memesh-secret-get',
+    aliases: ['buddy-secret-get'],  // Deprecated, will be removed in v3.0.0
     description:
       '🔓 Retrieve a stored secret to use in API calls or configurations. USE THIS when you need a credential for an operation. ' +
       'Returns the decrypted value directly. Example workflow: User asks "call OpenAI API" → ' +
@@ -553,7 +565,8 @@ Requires MEMESH_API_KEY to be configured. Without it, all actions return a setup
   };
 
   const buddySecretListTool: MCPToolDefinition = {
-    name: 'buddy-secret-list',
+    name: 'memesh-secret-list',
+    aliases: ['buddy-secret-list'],  // Deprecated, will be removed in v3.0.0
     description:
       '📋 List all stored secrets (names, types, expiry dates - NOT the actual values). USE THIS to discover what credentials are available ' +
       'before calling buddy-secret-get. Shows: name, type (api_key/token/password), creation date, expiry. ' +
@@ -572,7 +585,8 @@ Requires MEMESH_API_KEY to be configured. Without it, all actions return a setup
   };
 
   const buddySecretDeleteTool: MCPToolDefinition = {
-    name: 'buddy-secret-delete',
+    name: 'memesh-secret-delete',
+    aliases: ['buddy-secret-delete'],  // Deprecated, will be removed in v3.0.0
     description:
       '🗑️ Permanently delete a stored secret. USE THIS for: (1) Key rotation - delete old key after storing new one, ' +
       '(2) Cleanup - remove unused credentials, (3) Security - remove compromised keys immediately. ' +

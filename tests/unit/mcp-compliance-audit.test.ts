@@ -20,9 +20,9 @@ describe('MCP Compliance Audit', () => {
   // Load tools once for all tests
   tools = getAllToolDefinitions();
 
-  it('should have exactly 15 tools defined', () => {
-    // 3 buddy commands + 1 learning + 1 knowledge graph + 4 secrets + 1 cloud sync + 3 task board + 1 hook + 1 test gen
-    expect(tools).toHaveLength(15);
+  it('should have exactly 12 tools defined', () => {
+    // 3 buddy commands + 1 learning + 1 knowledge graph + 4 secrets + 1 cloud sync + 1 hook + 1 test gen
+    expect(tools).toHaveLength(12);
   });
 
   it('should have all tools with outputSchema defined (MCP Spec 2025-11-25)', () => {

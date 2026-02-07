@@ -448,112 +448,6 @@ Requires MEMESH_API_KEY to be configured. Without it, all actions return a setup
   // Task Board Tools (Local Task Management)
   // ========================================
 
-  const a2aBoardTool: MCPToolDefinition = {
-    name: 'a2a-board',
-    description: `📋 View all tasks in the unified task board with optional filtering (Kanban style).
-
-Displays tasks grouped by status (pending, in_progress, completed) with summary statistics.
-Supports filtering by status, platform, and owner.
-
-**Usage:**
-• No params: Show all tasks in Kanban view
-• {status: "pending"}: Show only pending tasks
-• {platform: "claude-code"}: Show tasks from specific platform
-• {owner: "agent-id"}: Show tasks assigned to specific agent`,
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        status: {
-          type: 'string',
-          enum: ['pending', 'in_progress', 'completed', 'deleted'],
-          description: 'Filter by task status',
-        },
-        platform: {
-          type: 'string',
-          description: 'Filter by creator platform (e.g., claude-code, chatgpt, cursor)',
-        },
-        owner: {
-          type: 'string',
-          description: 'Filter by owner agent ID',
-        },
-      },
-    },
-    annotations: {
-      title: 'Task Board',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  };
-
-  const a2aClaimTaskTool: MCPToolDefinition = {
-    name: 'a2a-claim-task',
-    description: `🙋 Claim a pending task from the task board for the current agent.
-
-**Workflow:**
-1. View available tasks with a2a-board (filter by status: "pending")
-2. Claim a task with a2a-claim-task
-3. Complete work on the task`,
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        taskId: {
-          type: 'string',
-          description: 'UUID of the task to claim',
-        },
-      },
-      required: ['taskId'],
-    },
-    annotations: {
-      title: 'Task Claim',
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: false,
-    },
-  };
-
-  const a2aFindTasksTool: MCPToolDefinition = {
-    name: 'a2a-find-tasks',
-    description: `🔍 Find tasks matching specified skills or criteria from the task board.
-
-**Usage:**
-• Find tasks by skills: {skills: ["typescript", "testing"]}
-• Filter by status: {status: "pending"} (default)
-• Limit results: {limit: 5} (default: 10, max: 50)`,
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        skills: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Array of skill strings to match against task metadata or subject',
-        },
-        status: {
-          type: 'string',
-          enum: ['pending', 'in_progress', 'completed', 'deleted'],
-          description: 'Task status filter (default: pending)',
-          default: 'pending',
-        },
-        limit: {
-          type: 'number',
-          description: 'Maximum number of results (default: 10, max: 50)',
-          minimum: 1,
-          maximum: 50,
-          default: 10,
-        },
-      },
-    },
-    annotations: {
-      title: 'Task Finder',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  };
-
   // ========================================
   // Test Generation Tools
   // ========================================
@@ -727,11 +621,6 @@ Supports filtering by status, platform, and owner.
 
     // Cloud Sync
     cloudSyncTool,
-
-    // Task Board Tools
-    a2aBoardTool,
-    a2aClaimTaskTool,
-    a2aFindTasksTool,
 
     // Hook Integration
     hookToolUseTool,

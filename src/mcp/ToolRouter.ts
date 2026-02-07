@@ -22,9 +22,6 @@ import {
 } from './handlers/index.js';
 import type { SecretManager } from '../memory/SecretManager.js';
 import type { KnowledgeGraph } from '../knowledge-graph/index.js';
-import { handleA2ABoard, A2ABoardInputSchema } from './tools/a2a-board.js';
-import { handleA2AClaimTask, A2AClaimTaskInputSchema } from './tools/a2a-claim-task.js';
-import { handleA2AFindTasks, A2AFindTasksInputSchema } from './tools/a2a-find-tasks.js';
 import { handleCloudSync, CloudSyncInputSchema } from './tools/memesh-cloud-sync.js';
 
 /**
@@ -445,39 +442,6 @@ export class ToolRouter {
       return handleCloudSync(validationResult.data, this.knowledgeGraph);
     }
 
-    // Task Board tools (local task management)
-    if (toolName === 'a2a-board') {
-      const validationResult = A2ABoardInputSchema.safeParse(args);
-      if (!validationResult.success) {
-        throw new ValidationError(
-          `Invalid input for ${toolName}: ${validationResult.error.message}`,
-          { component: 'ToolRouter', method: 'dispatch', toolName, zodError: validationResult.error }
-        );
-      }
-      return handleA2ABoard(validationResult.data);
-    }
-
-    if (toolName === 'a2a-claim-task') {
-      const validationResult = A2AClaimTaskInputSchema.safeParse(args);
-      if (!validationResult.success) {
-        throw new ValidationError(
-          `Invalid input for ${toolName}: ${validationResult.error.message}`,
-          { component: 'ToolRouter', method: 'dispatch', toolName, zodError: validationResult.error }
-        );
-      }
-      return handleA2AClaimTask(validationResult.data);
-    }
-
-    if (toolName === 'a2a-find-tasks') {
-      const validationResult = A2AFindTasksInputSchema.safeParse(args);
-      if (!validationResult.success) {
-        throw new ValidationError(
-          `Invalid input for ${toolName}: ${validationResult.error.message}`,
-          { component: 'ToolRouter', method: 'dispatch', toolName, zodError: validationResult.error }
-        );
-      }
-      return handleA2AFindTasks(validationResult.data);
-    }
 
     // Sanitize toolName in error message
     const safeName = sanitizeToolNameForError(toolName);

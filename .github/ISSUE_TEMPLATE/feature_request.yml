@@ -16,7 +16,6 @@ body:
       description: Which component would this feature affect?
       options:
         - MCP Tools
-        - A2A Protocol
         - Memory System
         - Knowledge Graph
         - Agents

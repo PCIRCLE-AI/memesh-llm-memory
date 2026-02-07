@@ -17,11 +17,11 @@ describe('Error Messages - User-First', () => {
   });
 
   describe('Configuration Errors', () => {
-    it('should format missing environment variable error with clear guidance', () => {
-      const error = new Error('MEMESH_A2A_TOKEN environment variable is not configured');
+    it('should format missing configuration error with clear guidance', () => {
+      const error = new Error('MCP server configuration is missing or invalid');
       const response: AgentResponse = {
-        agentType: 'a2a-send-task',
-        taskDescription: 'Send task to agent',
+        agentType: 'buddy-do',
+        taskDescription: 'Execute development task',
         status: 'error',
         error,
       };
@@ -44,25 +44,22 @@ describe('Error Messages - User-First', () => {
       expect(formatted).not.toContain('at Module');
     });
 
-    it('should provide specific guidance for A2A token configuration', () => {
-      const error = new Error('MEMESH_A2A_TOKEN is required for A2A operations');
+    it('should provide specific guidance for MCP server issues', () => {
+      const error = new Error('MCP server not found or not running');
       const response: AgentResponse = {
-        agentType: 'a2a-send-task',
-        taskDescription: 'Send task',
+        agentType: 'buddy-do',
+        taskDescription: 'Execute task',
         status: 'error',
         error,
       };
 
       const formatted = formatter.format(response);
 
-      // Should mention where to get token
-      expect(formatted).toMatch(/memesh\.dev|token|settings/i);
+      // Should indicate service/integration issue
+      expect(formatted).toMatch(/service|integration|connect/i);
 
-      // Should mention .env file
-      expect(formatted).toMatch(/\.env/i);
-
-      // Should mention restart
-      expect(formatted).toMatch(/restart/i);
+      // Should provide troubleshooting steps
+      expect(formatted).toMatch(/fix steps?:/i);
     });
   });
 
@@ -70,7 +67,7 @@ describe('Error Messages - User-First', () => {
     it('should format validation error with clear fix steps', () => {
       const error = new Error('Invalid input: taskDescription is required');
       const response: AgentResponse = {
-        agentType: 'a2a-send-task',
+        agentType: 'buddy-do',
         taskDescription: '',
         status: 'error',
         error,
@@ -93,7 +90,7 @@ describe('Error Messages - User-First', () => {
     it('should explain why validation failed', () => {
       const error = new Error('Invalid task priority: must be one of low, normal, high, urgent');
       const response: AgentResponse = {
-        agentType: 'a2a-send-task',
+        agentType: 'buddy-do',
         taskDescription: 'Test',
         status: 'error',
         error,
@@ -114,7 +111,7 @@ describe('Error Messages - User-First', () => {
     it('should format connection error with retry guidance', () => {
       const error = new Error('Failed to connect to MeMesh server: ECONNREFUSED');
       const response: AgentResponse = {
-        agentType: 'a2a-send-task',
+        agentType: 'buddy-do',
         taskDescription: 'Send task',
         status: 'error',
         error,
@@ -135,7 +132,7 @@ describe('Error Messages - User-First', () => {
     it('should format timeout error with clear explanation', () => {
       const error = new Error('Request timeout: Operation took too long');
       const response: AgentResponse = {
-        agentType: 'a2a-get-task',
+        agentType: 'buddy-remember',
         taskDescription: 'Get task status',
         status: 'error',
         error,
@@ -155,22 +152,19 @@ describe('Error Messages - User-First', () => {
   });
 
   describe('Authorization Errors', () => {
-    it('should format invalid token error with clear fix steps', () => {
-      const error = new Error('Invalid or expired A2A token');
+    it('should format permission error with clear fix steps', () => {
+      const error = new Error('Permission denied: insufficient privileges');
       const response: AgentResponse = {
-        agentType: 'a2a-send-task',
-        taskDescription: 'Send task',
+        agentType: 'buddy-do',
+        taskDescription: 'Execute task',
         status: 'error',
         error,
       };
 
       const formatted = formatter.format(response);
 
-      // Should indicate permission/authorization issue
-      expect(formatted).toMatch(/permission|unauthorized|token/i);
-
-      // Should guide to get new token
-      expect(formatted).toMatch(/memesh\.dev|token|settings/i);
+      // Should indicate permission issue
+      expect(formatted).toMatch(/permission|denied|unauthorized/i);
 
       // Should provide fix steps
       expect(formatted).toMatch(/fix steps?:/i);
@@ -180,7 +174,7 @@ describe('Error Messages - User-First', () => {
   describe('Edge Cases', () => {
     it('should handle undefined error gracefully', () => {
       const response: AgentResponse = {
-        agentType: 'a2a-send-task',
+        agentType: 'buddy-do',
         taskDescription: 'Test',
         status: 'error',
         error: undefined as unknown as Error,
@@ -201,7 +195,7 @@ describe('Error Messages - User-First', () => {
     it('should handle error with empty message', () => {
       const error = new Error('');
       const response: AgentResponse = {
-        agentType: 'a2a-send-task',
+        agentType: 'buddy-do',
         taskDescription: 'Test',
         status: 'error',
         error,
@@ -219,7 +213,7 @@ describe('Error Messages - User-First', () => {
     it('should NOT show stack trace in normal mode', () => {
       const error = new Error('Test error with stack');
       const response: AgentResponse = {
-        agentType: 'a2a-send-task',
+        agentType: 'buddy-do',
         taskDescription: 'Test',
         status: 'error',
         error,
@@ -241,7 +235,7 @@ describe('Error Messages - User-First', () => {
     it('should show stack trace in debug mode', () => {
       const error = new Error('Test error with stack');
       const response: AgentResponse = {
-        agentType: 'a2a-send-task',
+        agentType: 'buddy-do',
         taskDescription: 'Test',
         status: 'error',
         error,
@@ -320,9 +314,9 @@ describe('Error Messages - User-First', () => {
     });
 
     it('should include relevant documentation links', () => {
-      const error = new Error('A2A token configuration error');
+      const error = new Error('Configuration error: MCP server misconfigured');
       const response: AgentResponse = {
-        agentType: 'a2a-send-task',
+        agentType: 'buddy-do',
         taskDescription: 'Test',
         status: 'error',
         error,

@@ -137,16 +137,15 @@ ${chalk.dim('→')} Searches knowledge graph, shows past decisions
 
 ${chalk.bold('Additional Features')}
 
-${chalk.dim('A2A (Agent-to-Agent):')}     a2a-board, a2a-claim-task, a2a-find-tasks
-${chalk.dim('Secrets:')}                   buddy-secret-store, buddy-secret-get
-${chalk.dim('Knowledge:')}                 create-entities
+${chalk.dim('Secrets:')}                   memesh-secret-store, memesh-secret-get
+${chalk.dim('Knowledge:')}                 memesh-memesh-create-entities
+${chalk.dim('Error Recording:')}           memesh-record-mistake
 
 ${chalk.yellow('💡 New to MeMesh?')}
 Run: ${chalk.cyan('memesh tutorial')} (5 min guided intro)
 
 ${chalk.dim('📖 Full reference:')} buddy-help --all
 ${chalk.dim('   Specific command:')} buddy-help do
-${chalk.dim('   Category help:')} buddy-help a2a
 `;
 
     return boxen(content, {
@@ -174,24 +173,17 @@ ${chalk.bold.yellow('📋 Core Commands')}
     ${chalk.dim('do:')} help-with, execute, run, task
     ${chalk.dim('remember:')} recall, retrieve, search, find
 
-${chalk.bold.yellow('🤝 A2A (Agent-to-Agent) Collaboration')}
-  ${chalk.cyan('a2a-board')}                 View local task board
-  ${chalk.cyan('a2a-claim-task')}            Claim a task from board
-  ${chalk.cyan('a2a-find-tasks')}            Find tasks matching criteria
-
-  ${chalk.dim('Note:')} Tasks are managed on local task board
-
 ${chalk.bold.yellow('🔐 Secrets Management')}
-  ${chalk.cyan('buddy-secret-store')}        Securely store API keys/tokens
-  ${chalk.cyan('buddy-secret-get')}          Retrieve stored secret
-  ${chalk.cyan('buddy-secret-list')}         List all stored secrets (names only)
-  ${chalk.cyan('buddy-secret-delete')}       Delete a stored secret
+  ${chalk.cyan('memesh-secret-store')}       Securely store API keys/tokens
+  ${chalk.cyan('memesh-secret-get')}         Retrieve stored secret
+  ${chalk.cyan('memesh-secret-list')}        List all stored secrets (names only)
+  ${chalk.cyan('memesh-secret-delete')}      Delete a stored secret
 
   ${chalk.dim('Encryption:')} AES-256-GCM, stored locally only
   ${chalk.dim('Auto-expiry:')} Default 30 days, configurable
 
 ${chalk.bold.yellow('🧠 Knowledge Graph')}
-  ${chalk.cyan('create-entities')}           Record decisions, features, lessons learned
+  ${chalk.cyan('memesh-memesh-create-entities')}    Record decisions, features, lessons learned
 
   ${chalk.dim('Entity types:')} decision, feature, bug_fix, lesson_learned
   ${chalk.dim('Auto-tags:')} scope:project:*, tech:* added automatically
@@ -201,17 +193,12 @@ ${chalk.bold.yellow('📖 Examples')}
   ${chalk.green('❯')} buddy-do "setup authentication"
   ${chalk.green('❯')} buddy-remember "why JWT over sessions"
 
-  ${chalk.green('# A2A Collaboration')}
-  ${chalk.green('❯')} a2a-board
-  ${chalk.green('❯')} a2a-find-tasks status="PENDING"
-  ${chalk.green('❯')} a2a-claim-task taskId="task-123"
-
   ${chalk.green('# Secrets')}
-  ${chalk.green('❯')} buddy-secret-store name="openai_key" value="sk-..." type="api_key"
-  ${chalk.green('❯')} buddy-secret-get name="openai_key"
+  ${chalk.green('❯')} memesh-secret-store name="openai_key" value="sk-..." type="api_key"
+  ${chalk.green('❯')} memesh-secret-get name="openai_key"
 
   ${chalk.green('# Knowledge')}
-  ${chalk.green('❯')} create-entities entities=[{name:"JWT Auth",type:"decision",...}]
+  ${chalk.green('❯')} memesh-create-entities entities=[{name:"JWT Auth",type:"decision",...}]
 
 ${chalk.bold.yellow('🛠️  Configuration')}
   ${chalk.cyan('memesh setup')}              Interactive configuration wizard
@@ -241,7 +228,6 @@ ${chalk.dim('📖 Docs:')} https://memesh.pcircle.ai
       help: () => this.getHelpCommandHelp(),
 
       // Category helps
-      a2a: () => this.getA2AHelp(),
       secrets: () => this.getSecretsHelp(),
       secret: () => this.getSecretsHelp(),
       knowledge: () => this.getKnowledgeHelp(),
@@ -398,80 +384,6 @@ ${chalk.bold('Documentation:')}
   }
 
   /**
-   * Detailed help for A2A (Agent-to-Agent) features
-   */
-  private static getA2AHelp(): string {
-    const content = `
-${chalk.bold.cyan('A2A (Agent-to-Agent)')} - Local Task Board
-
-${chalk.dim('Description:')}
-Manage tasks on a local task board. Create, find, and claim tasks
-for collaborative agent workflows.
-
-${chalk.bold('🔑 Key Concepts:')}
-
-${chalk.yellow('Task Board:')} Local storage for tasks
-  Tasks persist in local storage and can be claimed by agents
-
-${chalk.yellow('Task Lifecycle:')} PENDING → CLAIMED → IN_PROGRESS → COMPLETED
-  Each task moves through states as work progresses
-
-${chalk.bold('📋 Available Tools:')}
-
-${chalk.cyan('a2a-board')}
-  Display all tasks on the local task board
-  Shows task ID, title, status, assignee
-
-${chalk.cyan('a2a-find-tasks')} [status] [limit]
-  Find tasks matching criteria
-  ${chalk.dim('Status:')} PENDING | CLAIMED | IN_PROGRESS | COMPLETED | FAILED
-
-${chalk.cyan('a2a-claim-task')} taskId [assignee]
-  Claim a task from the board
-  Marks task as claimed and assigns to agent
-
-${chalk.bold('📝 Examples:')}
-
-${chalk.green('# View task board')}
-${chalk.green('❯')} a2a-board
-${chalk.dim('→')} Shows all tasks with status and details
-
-${chalk.green('# Find pending tasks')}
-${chalk.green('❯')} a2a-find-tasks status="PENDING" limit=5
-${chalk.dim('→')} Returns up to 5 pending tasks
-
-${chalk.green('# Claim a task')}
-${chalk.green('❯')} a2a-claim-task taskId="task-123" assignee="agent-alpha"
-${chalk.dim('→')} Marks task as claimed by agent-alpha
-
-${chalk.bold('💡 Best Practices:')}
-• Check board regularly with a2a-board
-• Use a2a-find-tasks to filter by status
-• Claim tasks before starting work
-• Update task status as work progresses
-
-${chalk.bold('🔧 Common Workflows:')}
-
-${chalk.yellow('Finding Work:')}
-  ${chalk.cyan('1.')} a2a-find-tasks status="PENDING"
-  ${chalk.cyan('2.')} a2a-claim-task taskId="task-123"
-  ${chalk.cyan('3.')} Complete the work
-  ${chalk.cyan('4.')} Update task status to COMPLETED
-
-${chalk.yellow('Monitoring Progress:')}
-  ${chalk.cyan('1.')} a2a-board
-  ${chalk.cyan('2.')} Review task statuses
-  ${chalk.cyan('3.')} Identify blockers
-`;
-
-    return boxen(content, {
-      padding: 1,
-      borderColor: 'cyan',
-      borderStyle: 'round',
-    });
-  }
-
-  /**
    * Detailed help for Secrets Management
    */
   private static getSecretsHelp(): string {
@@ -484,24 +396,24 @@ Uses AES-256-GCM encryption, stored locally only (never transmitted).
 
 ${chalk.bold('📋 Available Tools:')}
 
-${chalk.cyan('buddy-secret-store')} name value type [description] [expiresIn]
+${chalk.cyan('memesh-secret-store')} name value type [description] [expiresIn]
   Store a secret securely
   ${chalk.dim('Types:')} api_key | token | password | other
   ${chalk.dim('ExpiresIn:')} "30d" (days), "24h" (hours), "60m" (minutes)
 
-${chalk.cyan('buddy-secret-get')} name
+${chalk.cyan('memesh-secret-get')} name
   Retrieve a stored secret (returns decrypted value)
 
-${chalk.cyan('buddy-secret-list')}
+${chalk.cyan('memesh-secret-list')}
   List all secrets (names, types, expiry - NOT values)
 
-${chalk.cyan('buddy-secret-delete')} name
+${chalk.cyan('memesh-secret-delete')} name
   Permanently delete a secret
 
 ${chalk.bold('📝 Examples:')}
 
 ${chalk.green('# Store API key')}
-${chalk.green('❯')} buddy-secret-store \\
+${chalk.green('❯')} memesh-secret-store \\
   name="openai_api_key" \\
   value="sk-proj-..." \\
   type="api_key" \\
@@ -509,22 +421,22 @@ ${chalk.green('❯')} buddy-secret-store \\
 ${chalk.dim('→')} ✅ Secret stored securely (expires in 30 days)
 
 ${chalk.green('# Retrieve secret')}
-${chalk.green('❯')} buddy-secret-get name="openai_api_key"
+${chalk.green('❯')} memesh-secret-get name="openai_api_key"
 ${chalk.dim('→')} sk-proj-xxx... (decrypted value)
 
 ${chalk.green('# List all secrets')}
-${chalk.green('❯')} buddy-secret-list
+${chalk.green('❯')} memesh-secret-list
 ${chalk.dim('→')} Shows:
     openai_api_key    | api_key  | Expires: 2026-03-05
     github_token      | token    | Expires: 2026-02-20
     db_password       | password | Expires: 2026-03-01
 
 ${chalk.green('# Delete secret')}
-${chalk.green('❯')} buddy-secret-delete name="old_api_key"
+${chalk.green('❯')} memesh-secret-delete name="old_api_key"
 ${chalk.dim('→')} ✅ Secret deleted permanently
 
 ${chalk.green('# Store with custom expiry')}
-${chalk.green('❯')} buddy-secret-store \\
+${chalk.green('❯')} memesh-secret-store \\
   name="temp_token" \\
   value="token_abc123" \\
   type="token" \\
@@ -536,7 +448,7 @@ ${chalk.bold('💡 Best Practices:')}
 • Set appropriate expiry times for temporary credentials
 • Rotate keys regularly (delete old, store new)
 • Never hardcode secrets in code - always use this system
-• Check buddy-secret-list before storing to avoid duplicates
+• Check memesh-secret-list before storing to avoid duplicates
 
 ${chalk.bold('🔒 Security:')}
 • Encryption: AES-256-GCM (industry standard)
@@ -547,14 +459,14 @@ ${chalk.bold('🔒 Security:')}
 ${chalk.bold('🔧 Common Workflows:')}
 
 ${chalk.yellow('Key Rotation:')}
-  ${chalk.cyan('1.')} buddy-secret-store name="openai_key_new" value="sk-..."
+  ${chalk.cyan('1.')} memesh-secret-store name="openai_key_new" value="sk-..."
   ${chalk.cyan('2.')} Test with new key
-  ${chalk.cyan('3.')} buddy-secret-delete name="openai_key_old"
+  ${chalk.cyan('3.')} memesh-secret-delete name="openai_key_old"
 
 ${chalk.yellow('First-time Setup:')}
-  ${chalk.cyan('1.')} buddy-secret-store name="openai_key" value="sk-..." type="api_key"
-  ${chalk.cyan('2.')} buddy-secret-store name="github_token" value="ghp_..." type="token"
-  ${chalk.cyan('3.')} buddy-secret-list  ${chalk.dim('# Verify stored')}
+  ${chalk.cyan('1.')} memesh-secret-store name="openai_key" value="sk-..." type="api_key"
+  ${chalk.cyan('2.')} memesh-secret-store name="github_token" value="ghp_..." type="token"
+  ${chalk.cyan('3.')} memesh-secret-list  ${chalk.dim('# Verify stored')}
 `;
 
     return boxen(content, {
@@ -578,7 +490,7 @@ provides powerful search capabilities.
 
 ${chalk.bold('📋 Available Tools:')}
 
-${chalk.cyan('create-entities')} entities
+${chalk.cyan('memesh-create-entities')} entities
   Create one or more entities in the knowledge graph
 
 ${chalk.cyan('buddy-remember')} query [limit]
@@ -604,7 +516,7 @@ ${chalk.yellow('tags:')} Array of tags (3-7 recommended)
 ${chalk.bold('📝 Examples:')}
 
 ${chalk.green('# Record a technical decision')}
-${chalk.green('❯')} create-entities entities='[{
+${chalk.green('❯')} memesh-create-entities entities='[{
   "name": "Use JWT for API authentication",
   "entityType": "decision",
   "observations": [
@@ -617,7 +529,7 @@ ${chalk.green('❯')} create-entities entities='[{
 }]'
 
 ${chalk.green('# Record a lesson learned')}
-${chalk.green('❯')} create-entities entities='[{
+${chalk.green('❯')} memesh-create-entities entities='[{
   "name": "Always validate user input before DB queries",
   "entityType": "lesson_learned",
   "observations": [
@@ -630,7 +542,7 @@ ${chalk.green('❯')} create-entities entities='[{
 }]'
 
 ${chalk.green('# Record a feature implementation')}
-${chalk.green('❯')} create-entities entities='[{
+${chalk.green('❯')} memesh-create-entities entities='[{
   "name": "Dark mode implementation",
   "entityType": "feature",
   "observations": [

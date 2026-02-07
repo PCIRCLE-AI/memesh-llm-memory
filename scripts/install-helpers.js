@@ -50,23 +50,15 @@ function _resolveConfigPath(_preferredPath) {
 /**
  * Create MCP server configuration object (reserved for future use)
  * @param {string} _serverPath - Path to server bootstrap file (unused)
- * @param {string} [_a2aToken] - A2A token (unused)
  */
-function _createServerConfig(_serverPath, _a2aToken = null) {
-  const config = {
+function _createServerConfig(_serverPath) {
+  return {
     command: 'node',
     args: [_serverPath],
     env: {
       NODE_ENV: 'production'
     }
   };
-
-  // Add A2A token if provided
-  if (_a2aToken) {
-    config.env.MEMESH_A2A_TOKEN = _a2aToken;
-  }
-
-  return config;
 }
 
 // addToMcpConfig removed - replaced by configureMcpSettings function
@@ -77,14 +69,12 @@ function _createServerConfig(_serverPath, _a2aToken = null) {
  *
  * @param {Object} options
  * @param {string} options.serverPath - Path to server-bootstrap.js
- * @param {string} options.a2aToken - A2A authentication token
  * @param {boolean} options.silent - Suppress console output
  * @returns {Object} - { success: boolean, configPath: string, error?: string }
  */
 export function configureMcpSettings(options = {}) {
   const {
     serverPath,
-    a2aToken = null,
     silent = false
   } = options;
 
@@ -129,10 +119,6 @@ export function configureMcpSettings(options = {}) {
     }
   };
 
-  if (a2aToken) {
-    serverConfig.env.MEMESH_A2A_TOKEN = a2aToken;
-  }
-
   // Update or add memesh entry
   config.mcpServers.memesh = serverConfig;
 
@@ -153,10 +139,6 @@ export function configureMcpSettings(options = {}) {
     if (!silent) {
       console.log(`   ✅ MCP settings configured at: ${configPath}`);
       console.log(`   ✅ Server path: ${serverPath}`);
-      if (a2aToken) {
-        const tokenPreview = `${a2aToken.substring(0, 8)}...${a2aToken.substring(a2aToken.length - 8)}`;
-        console.log(`   🔑 A2A token: ${tokenPreview}`);
-      }
     }
 
     return { success: true, configPath };
@@ -185,8 +167,7 @@ export function checkMcpConfiguration() {
     if (memeshConfig) {
       return {
         configured: true,
-        serverPath: memeshConfig.args?.[0],
-        hasToken: !!memeshConfig.env?.MEMESH_A2A_TOKEN
+        serverPath: memeshConfig.args?.[0]
       };
     }
 
@@ -220,25 +201,6 @@ export function verifyInstallation(basePath = process.cwd()) {
 }
 
 /**
- * Read A2A token from .env file
- * @param {string} envPath - Path to .env file
- * @returns {string|null} - Token or null if not found
- */
-export function readA2AToken(envPath) {
-  if (!fs.existsSync(envPath)) {
-    return null;
-  }
-
-  try {
-    const content = fs.readFileSync(envPath, 'utf8');
-    const match = content.match(/^MEMESH_A2A_TOKEN=(.+)$/m);
-    return match ? match[1].trim() : null;
-  } catch (_err) {
-    return null;
-  }
-}
-
-/**
  * Get the MCP settings file path
  * @returns {string}
  */
@@ -256,15 +218,14 @@ const arg2 = process.argv[4];
 switch (command) {
   case 'add-to-mcp':
   case 'configure': {
-    // Usage: node install-helpers.js configure <server-path> [a2a-token]
+    // Usage: node install-helpers.js configure <server-path>
     if (!arg) {
       console.error('❌ Server path required');
-      console.error('Usage: node install-helpers.js configure <server-path> [a2a-token]');
+      console.error('Usage: node install-helpers.js configure <server-path>');
       process.exit(1);
     }
     const result = configureMcpSettings({
-      serverPath: arg,
-      a2aToken: arg2 || null
+      serverPath: arg
     });
     process.exit(result.success ? 0 : 1);
     break;
@@ -290,7 +251,6 @@ switch (command) {
     if (status.configured) {
       console.log('✅ MeMesh is configured in MCP settings');
       console.log(`   Server path: ${status.serverPath || 'unknown'}`);
-      console.log(`   Has A2A token: ${status.hasToken ? 'yes' : 'no'}`);
       process.exit(0);
     } else {
       console.log('❌ MeMesh is NOT configured in MCP settings');
@@ -307,14 +267,13 @@ switch (command) {
     console.log('Usage: node install-helpers.js <command> [args]');
     console.log('');
     console.log('Commands:');
-    console.log('  configure <path> [token]  - Configure MeMesh in ~/.claude/mcp_settings.json');
+    console.log('  configure <path>          - Configure MeMesh in ~/.claude/mcp_settings.json');
     console.log('  verify [base-path]        - Verify installation files exist');
     console.log('  check                     - Check if MeMesh is configured');
     console.log('  help                      - Show this help');
     console.log('');
     console.log('Examples:');
     console.log('  node install-helpers.js configure /path/to/server-bootstrap.js');
-    console.log('  node install-helpers.js configure /path/to/server.js "my-a2a-token"');
     console.log('  node install-helpers.js check');
     break;
 }

@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'src/a2a/**'
       - 'src/mcp/**'
       - 'tests/e2e/**'
       - 'tests/integration/**'

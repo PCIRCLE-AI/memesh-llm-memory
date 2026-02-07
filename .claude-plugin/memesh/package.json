@@ -49,9 +49,6 @@
     "processes:orphaned": "./scripts/manage-mcp-processes.sh orphaned",
     "processes:config": "./scripts/manage-mcp-processes.sh config",
     "verify:migration": "tsx scripts/verify-migration.ts",
-    "a2a:generate-token": "bash scripts/generate-a2a-token.sh",
-    "a2a:regenerate-token": "bash scripts/generate-a2a-token.sh --force",
-    "a2a:show-token": "grep '^MEMESH_A2A_TOKEN=' .env | cut -d'=' -f2 || echo 'Token not found in .env'",
     "backfill-embeddings": "tsx scripts/backfill-embeddings.ts"
   },
   "keywords": [

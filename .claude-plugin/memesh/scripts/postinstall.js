@@ -2,13 +2,10 @@
 /**
  * Post-install script for MeMesh
  *
- * 1. Generates A2A token automatically
- * 2. Creates .env file with token
- * 3. Configures ~/.claude/mcp_settings.json (auto-registers MCP server)
- * 4. Displays installation guide
+ * 1. Configures ~/.claude/mcp_settings.json (auto-registers MCP server)
+ * 2. Displays installation guide
  */
 
-import { randomBytes } from 'crypto';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -19,48 +16,9 @@ import boxen from 'boxen';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const projectRoot = process.cwd(); // npm install 時的目錄
-const envFile = join(projectRoot, '.env');
 
 // ============================================================================
-// Step 1: Generate or Read A2A Token
-// ============================================================================
-let a2aToken = null;
-let tokenSource = 'generated';
-
-// Read existing .env content (handles file not existing)
-// Using atomic read-check-write pattern to avoid TOCTOU race condition
-let envContent = '';
-try {
-  envContent = readFileSync(envFile, 'utf-8');
-} catch (e) {
-  // File doesn't exist, that's OK - we'll create it
-}
-
-// Check for existing token in the content we just read
-const tokenMatch = envContent.match(/^MEMESH_A2A_TOKEN=(.+)$/m);
-if (tokenMatch && tokenMatch[1]) {
-  a2aToken = tokenMatch[1].trim();
-  tokenSource = 'existing';
-}
-
-// Generate new token if not found and write atomically
-if (!a2aToken) {
-  a2aToken = randomBytes(32).toString('hex');
-
-  try {
-    // Atomic write - write entire content at once to avoid TOCTOU race condition
-    // This ensures we don't have a gap between checking and writing
-    const newLine = envContent.endsWith('\n') || envContent === '' ? '' : '\n';
-    const newContent = envContent + newLine + `MEMESH_A2A_TOKEN=${a2aToken}\n`;
-    writeFileSync(envFile, newContent, 'utf-8');
-  } catch (error) {
-    // If we can't write .env, continue anyway (user can set token manually)
-    console.warn(chalk.yellow(`⚠️  Could not write .env file: ${error.message}`));
-  }
-}
-
-// ============================================================================
-// Step 2: Configure ~/.claude/mcp_settings.json
+// Step 1: Configure ~/.claude/mcp_settings.json
 // ============================================================================
 let mcpConfigured = false;
 let mcpConfigPath = '';
@@ -109,8 +67,7 @@ try {
       command: 'npx',
       args: ['-y', '@pcircle/memesh'],
       env: {
-        NODE_ENV: 'production',
-        MEMESH_A2A_TOKEN: a2aToken
+        NODE_ENV: 'production'
       }
     };
   } else {
@@ -119,8 +76,7 @@ try {
       command: 'node',
       args: [serverPath],
       env: {
-        NODE_ENV: 'production',
-        MEMESH_A2A_TOKEN: a2aToken
+        NODE_ENV: 'production'
       }
     };
   }
@@ -140,13 +96,8 @@ try {
 }
 
 // ============================================================================
-// Step 3: Display Installation Message
+// Step 2: Display Installation Message
 // ============================================================================
-const tokenDisplay = `${a2aToken.substring(0, 8)}...${a2aToken.substring(a2aToken.length - 8)}`;
-const tokenStatusIcon = tokenSource === 'generated' ? '🔑' : '✓';
-const tokenStatusText = tokenSource === 'generated'
-  ? chalk.green('Generated new A2A token')
-  : chalk.cyan('Using existing A2A token');
 const mcpStatusIcon = mcpConfigured ? '✅' : '⚠️';
 const mcpStatusText = mcpConfigured
   ? chalk.green(`Auto-configured at ${mcpConfigPath}`)
@@ -187,10 +138,7 @@ ${chalk.dim('Add to ~/.claude/mcp_settings.json:')}
     ${chalk.cyan('"mcpServers"')}: {
       ${chalk.cyan('"memesh"')}: {
         ${chalk.cyan('"command"')}: ${chalk.green('"npx"')},
-        ${chalk.cyan('"args"')}: [${chalk.green('"-y"')}, ${chalk.green('"@pcircle/memesh"')}],
-        ${chalk.cyan('"env"')}: {
-          ${chalk.cyan('"MEMESH_A2A_TOKEN"')}: ${chalk.green(`"${a2aToken}"`)}
-        }
+        ${chalk.cyan('"args"')}: [${chalk.green('"-y"')}, ${chalk.green('"@pcircle/memesh"')}]
       }
     }
   }`;

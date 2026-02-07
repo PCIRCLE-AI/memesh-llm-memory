@@ -73,24 +73,6 @@ if [ ! -f "$PROJECT_DIR/.env" ]; then
     fi
 fi
 
-# Generate A2A token if not exists
-if ! grep -q "^MEMESH_A2A_TOKEN=.\+$" "$PROJECT_DIR/.env" 2>/dev/null; then
-    if [ -f "$PROJECT_DIR/scripts/generate-a2a-token.sh" ]; then
-        echo "🔐 Generating A2A authentication token..."
-        if bash "$PROJECT_DIR/scripts/generate-a2a-token.sh" > /dev/null 2>&1; then
-            echo "✅ A2A token generated successfully"
-        else
-            echo "⚠️  Failed to generate A2A token (run manually: bash scripts/generate-a2a-token.sh)"
-        fi
-    else
-        echo "⚠️  A2A token generator not found (run: bash scripts/generate-a2a-token.sh)"
-    fi
-else
-    echo "✅ A2A token already configured"
-fi
-
-echo ""
-
 # Note: prepare-plugin.js (called via npm run build:plugin) already configures
 # ~/.claude/mcp_settings.json automatically. The following is just for verification.
 
@@ -155,7 +137,7 @@ echo "   claude --plugin-dir \"$PROJECT_DIR/.claude-plugin/memesh\""
 echo ""
 echo "📚 Documentation:"
 echo "   - Setup guide: docs/DEV_SETUP_GUIDE.md"
-echo "   - A2A features: docs/A2A_SETUP_GUIDE.md"
+echo "   - Commands: docs/COMMANDS.md"
 echo "   - User guide: docs/USER_GUIDE.md"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""

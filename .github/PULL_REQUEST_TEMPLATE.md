@@ -20,7 +20,6 @@
 <!-- Mark all that apply -->
 
 - [ ] MCP Server (`src/mcp/`)
-- [ ] A2A Protocol (`src/a2a/`)
 - [ ] Memory System (`src/memory/`, `src/knowledge-graph/`)
 - [ ] Agents (`src/agents/`)
 - [ ] Orchestrator (`src/orchestrator/`)
@@ -39,7 +38,7 @@
 ### Testing
 - [ ] All existing tests pass (`npm test`)
 - [ ] New tests added for new functionality
-- [ ] E2E tests pass if A2A/MCP components changed (`npm run test:e2e:safe`)
+- [ ] E2E tests pass if MCP components changed (`npm run test:e2e:safe`)
 
 ### npm Package Specific
 - [ ] Installation test passes (`npm run test:install`)

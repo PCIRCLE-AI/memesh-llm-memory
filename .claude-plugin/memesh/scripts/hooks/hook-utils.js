@@ -30,9 +30,6 @@ export const STATE_DIR = path.join(HOME_DIR, '.claude', 'state');
 /** MeMesh knowledge graph database path */
 export const MEMESH_DB_PATH = path.join(HOME_DIR, '.claude-code-buddy', 'knowledge-graph.db');
 
-/** A2A collaboration database path */
-export const A2A_DB_PATH = path.join(HOME_DIR, '.claude-code-buddy', 'a2a-collaboration.db');
-
 /** Hook error log file */
 export const ERROR_LOG_PATH = path.join(STATE_DIR, 'hook-errors.log');
 
@@ -63,8 +60,6 @@ export const THRESHOLDS = {
   QUOTA_WARNING: 0.8,
   /** Heartbeat validity duration (ms) */
   HEARTBEAT_VALIDITY: 5 * 60 * 1000,
-  /** A2A session timeout (ms) */
-  A2A_SESSION_TIMEOUT: 60 * 60 * 1000,
   /** Maximum number of archived sessions to keep */
   MAX_ARCHIVED_SESSIONS: 30,
 };

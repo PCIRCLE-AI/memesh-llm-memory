@@ -644,7 +644,7 @@ describe('ResponseFormatter', () => {
           { agentType: 'memesh-do', expected: 'Task Router' },
           { agentType: 'memesh-help', expected: 'Help Center' },
           { agentType: 'create-entities', expected: 'Knowledge Storage' },
-          { agentType: 'a2a-board', expected: 'Task Board' },
+          { agentType: 'memesh-secret-store', expected: 'Secret Storage' },
         ];
 
         testCases.forEach(({ agentType, expected }) => {
@@ -668,9 +668,9 @@ describe('ResponseFormatter', () => {
             expected: 'Found 2 memories',
           },
           {
-            agentType: 'a2a-board',
-            results: { tasks: [{}, {}, {}] },
-            expected: 'Task Board',
+            agentType: 'memesh-secret-list',
+            results: { secrets: [{}, {}, {}] },
+            expected: 'Secret Listing',
           },
           {
             agentType: 'create-entities',

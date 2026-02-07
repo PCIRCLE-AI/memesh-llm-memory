@@ -14,7 +14,6 @@
  * - Initializes current session state
  */
 
-import { initA2ACollaboration } from './a2a-collaboration-hook.js';
 import {
   HOME_DIR,
   STATE_DIR,
@@ -119,7 +118,7 @@ function displayCCBStatus(ccbStatus) {
     console.log('  Available MeMesh tools when connected:');
     console.log('    • buddy-remember: Query past knowledge');
     console.log('    • buddy-do: Execute common operations');
-    console.log('    • create-entities: Store new knowledge to graph');
+    console.log('    • memesh-create-entities: Store new knowledge to graph');
     console.log('    • get-session-health: Check memory status');
     console.log('');
   } else if (!ccbStatus.running) {
@@ -133,8 +132,8 @@ function displayCCBStatus(ccbStatus) {
     console.log('    buddy-remember "relevant topic" - Query past experiences');
     console.log('');
     console.log('  After completing work:');
-    console.log('    create-entities - Store new learnings');
-    console.log('    buddy-record-mistake - Record errors for future reference');
+    console.log('    memesh-create-entities - Store new learnings');
+    console.log('    memesh-record-mistake - Record errors for future reference');
     console.log('');
     console.log('  💡 If MeMesh tools fail, check MCP server status.');
     console.log('');
@@ -148,8 +147,8 @@ function displayCCBStatus(ccbStatus) {
     console.log('    ☐ get-session-health - Check memory status');
     console.log('');
     console.log('  📋 Session End Checklist:');
-    console.log('    ☐ create-entities - Store new learnings');
-    console.log('    ☐ buddy-record-mistake - Record any errors');
+    console.log('    ☐ memesh-create-entities - Store new learnings');
+    console.log('    ☐ memesh-record-mistake - Record any errors');
     console.log('');
   }
 
@@ -307,9 +306,6 @@ function displayRecalledMemory(recalledData) {
 
 function sessionStart() {
   console.log('\n🚀 Smart-Agents Session Started\n');
-
-  // Initialize A2A Collaboration
-  initA2ACollaboration();
 
   // Check MeMesh availability
   const ccbStatus = checkCCBAvailability();

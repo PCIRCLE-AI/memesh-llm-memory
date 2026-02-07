@@ -67,58 +67,6 @@ export type ValidatedRecallMemoryInput = z.infer<typeof RecallMemoryInputSchema>
 export type ValidatedCreateEntitiesInput = z.infer<typeof CreateEntitiesInputSchema>;
 export type ValidatedAddObservationsInput = z.infer<typeof AddObservationsInputSchema>;
 export type ValidatedCreateRelationsInput = z.infer<typeof CreateRelationsInputSchema>;
-export declare const A2ASendTaskInputSchema: z.ZodObject<{
-    targetAgentId: z.ZodString;
-    taskDescription: z.ZodString;
-    priority: z.ZodOptional<z.ZodEnum<{
-        normal: "normal";
-        high: "high";
-        low: "low";
-        urgent: "urgent";
-    }>>;
-    sessionId: z.ZodOptional<z.ZodString>;
-    metadata: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
-}, z.core.$strip>;
-export declare const A2AGetTaskInputSchema: z.ZodObject<{
-    targetAgentId: z.ZodString;
-    taskId: z.ZodString;
-}, z.core.$strip>;
-export declare const A2AGetResultInputSchema: z.ZodObject<{
-    targetAgentId: z.ZodString;
-    taskId: z.ZodString;
-}, z.core.$strip>;
-export declare const A2AListTasksInputSchema: z.ZodObject<{
-    state: z.ZodOptional<z.ZodEnum<{
-        SUBMITTED: "SUBMITTED";
-        WORKING: "WORKING";
-        INPUT_REQUIRED: "INPUT_REQUIRED";
-        COMPLETED: "COMPLETED";
-        FAILED: "FAILED";
-        CANCELED: "CANCELED";
-        REJECTED: "REJECTED";
-    }>>;
-    limit: z.ZodOptional<z.ZodNumber>;
-    offset: z.ZodOptional<z.ZodNumber>;
-}, z.core.$strip>;
-export declare const A2AListAgentsInputSchema: z.ZodObject<{
-    status: z.ZodOptional<z.ZodEnum<{
-        all: "all";
-        active: "active";
-        inactive: "inactive";
-    }>>;
-}, z.core.$strip>;
-export declare const A2AReportResultInputSchema: z.ZodObject<{
-    taskId: z.ZodString;
-    success: z.ZodBoolean;
-    result: z.ZodOptional<z.ZodUnknown>;
-    error: z.ZodOptional<z.ZodString>;
-}, z.core.$strip>;
-export type ValidatedA2ASendTaskInput = z.infer<typeof A2ASendTaskInputSchema>;
-export type ValidatedA2AGetTaskInput = z.infer<typeof A2AGetTaskInputSchema>;
-export type ValidatedA2AGetResultInput = z.infer<typeof A2AGetResultInputSchema>;
-export type ValidatedA2AListTasksInput = z.infer<typeof A2AListTasksInputSchema>;
-export type ValidatedA2AListAgentsInput = z.infer<typeof A2AListAgentsInputSchema>;
-export type ValidatedA2AReportResultInput = z.infer<typeof A2AReportResultInputSchema>;
 export declare const GenerateTestsInputSchema: z.ZodObject<{
     specification: z.ZodOptional<z.ZodString>;
     code: z.ZodOptional<z.ZodString>;

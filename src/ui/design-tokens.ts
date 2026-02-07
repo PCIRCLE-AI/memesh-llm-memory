@@ -10,21 +10,22 @@
  * Maps internal operation names to user-friendly display names
  */
 export const operationDisplayNames: Record<string, string> = {
-  // MeMesh core operations
+  // MeMesh primary operations (v2.8.0+)
   'memesh-remember': 'Memory Search',
   'memesh-do': 'Task Router',
   'memesh-help': 'Help Center',
+  'memesh-record-mistake': 'Error Recording',
+  'memesh-create-entities': 'Knowledge Storage',
+  'memesh-secret-store': 'Secret Storage',
+  'memesh-secret-get': 'Secret Retrieval',
+  'memesh-secret-list': 'Secret Listing',
+  'memesh-secret-delete': 'Secret Deletion',
 
   // Knowledge operations
   'create-entities': 'Knowledge Storage',
   'update-entities': 'Knowledge Update',
   'delete-entities': 'Knowledge Deletion',
   'search-nodes': 'Knowledge Search',
-
-  // Agent-to-Agent operations
-  'a2a-board': 'Task Board',
-  'a2a-claim-task': 'Claim Task',
-  'a2a-find-tasks': 'Find Tasks',
 
   // Legacy buddy-* aliases (deprecated)
   'buddy-remember': 'Memory Search',

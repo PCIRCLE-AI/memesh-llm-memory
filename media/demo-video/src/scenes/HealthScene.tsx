@@ -61,7 +61,7 @@ export const HealthScene: React.FC = () => {
       >
         {[
           { label: 'MCP Server', status: 'Healthy', color: '#34d399' },
-          { label: 'A2A Registry', status: 'Active', color: '#34d399' },
+          { label: 'Memory Store', status: 'Active', color: '#34d399' },
           { label: 'Knowledge Graph', status: 'Synced', color: '#34d399' },
           { label: 'Secret Store', status: 'Secured', color: '#34d399' },
         ].map((metric, i) => (

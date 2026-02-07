@@ -67,7 +67,7 @@ export interface ToolRouterConfig {
  * - Minimum length of 1 character
  *
  * This aligns with the MCP protocol convention where tool names like
- * 'buddy-do', 'memesh-remember', 'a2a-board' are used.
+ * 'buddy-do', 'memesh-remember', 'memesh-secret-store' are used.
  */
 const TOOL_NAME_REGEX = /^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$/;
 const TOOL_NAME_MAX_LENGTH = 64;
@@ -141,7 +141,7 @@ function validateToolName(toolName: string): void {
         method: 'validateToolName',
         providedName: safeName,
         pattern: TOOL_NAME_REGEX.source,
-        hint: 'Example valid names: buddy-do, memesh-remember, a2a-board',
+        hint: 'Example valid names: buddy-do, memesh-remember, memesh-secret-store',
       }
     );
   }
@@ -155,9 +155,10 @@ function validateToolName(toolName: string): void {
  *
  * The router supports main categories of tools:
  * - **Buddy Tools**: buddy-do, buddy-remember, buddy-help
- * - **MeMesh Tools**: memesh-do, memesh-remember, memesh-help
- * - **A2A Tools**: a2a-board, a2a-claim-task, a2a-find-tasks
- * - **Hook Tools**: hook-tool-use
+ * - **MeMesh Tools**: memesh-create-entities, memesh-record-mistake, memesh-generate-tests
+ * - **Secret Management Tools**: memesh-secret-store, memesh-secret-get, memesh-secret-list, memesh-secret-delete
+ * - **Hook Tools**: memesh-hook-tool-use
+ * - **Cloud Sync Tools**: memesh-cloud-sync
  *
  * Architecture:
  * - Rate limiting prevents DoS attacks (30 requests/minute default)

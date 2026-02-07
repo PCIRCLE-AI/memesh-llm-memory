@@ -120,51 +120,6 @@ try {
   process.exit(1);
 }
 
-// Step 5.6: Inject A2A token from .env into .mcp.json
-console.log('\n5.6️⃣ Configuring A2A token in .mcp.json...');
-try {
-  // Read .env file
-  const envPath = join(projectRoot, '.env');
-  let a2aToken = null;
-
-  if (existsSync(envPath)) {
-    const envContent = readFileSync(envPath, 'utf-8');
-    const tokenMatch = envContent.match(/^MEMESH_A2A_TOKEN=(.+)$/m);
-
-    if (tokenMatch && tokenMatch[1]) {
-      a2aToken = tokenMatch[1].trim();
-    }
-  }
-
-  if (a2aToken) {
-    // Read .mcp.json
-    const mcpJsonContent = readFileSync(targetMcpJson, 'utf-8');
-    const mcpConfig = JSON.parse(mcpJsonContent);
-
-    // Inject token into env section
-    if (mcpConfig.memesh) {
-      if (!mcpConfig.memesh.env) {
-        mcpConfig.memesh.env = {};
-      }
-
-      mcpConfig.memesh.env.MEMESH_A2A_TOKEN = a2aToken;
-
-      // Write back to .mcp.json
-      writeFileSync(targetMcpJson, JSON.stringify(mcpConfig, null, 2), 'utf-8');
-      console.log('   ✅ A2A token configured in .mcp.json');
-      console.log(`   🔑 Token: ${a2aToken.substring(0, 8)}...${a2aToken.substring(a2aToken.length - 8)}`);
-    } else {
-      console.log('   ⚠️  Could not find memesh configuration in .mcp.json');
-    }
-  } else {
-    console.log('   ⚠️  MEMESH_A2A_TOKEN not found in .env file');
-    console.log('   💡 Run: bash scripts/generate-a2a-token.sh');
-  }
-} catch (error) {
-  console.log('   ⚠️  Could not inject A2A token:', error.message);
-  console.log('   You may need to manually add MEMESH_A2A_TOKEN to .mcp.json');
-}
-
 // Step 6: Install production dependencies
 console.log('\n6️⃣ Installing production dependencies in plugin directory...');
 console.log('   (This may take a minute...)');
@@ -214,17 +169,6 @@ const mcpServerName = 'memesh';
 const mcpSettingsPath = join(homedir(), '.claude', 'mcp_settings.json');
 let mcpSettingsConfigured = false;
 
-// Read A2A token
-let a2aToken = null;
-const envPath = join(projectRoot, '.env');
-if (existsSync(envPath)) {
-  const envContent = readFileSync(envPath, 'utf-8');
-  const tokenMatch = envContent.match(/^MEMESH_A2A_TOKEN=(.+)$/m);
-  if (tokenMatch && tokenMatch[1]) {
-    a2aToken = tokenMatch[1].trim();
-  }
-}
-
 try {
   // Ensure ~/.claude directory exists (recursive: true handles existing directory safely, avoids TOCTOU race condition)
   const claudeDir = join(homedir(), '.claude');
@@ -249,20 +193,13 @@ try {
   }
 
   // Configure memesh entry with absolute path (for local dev)
-  const serverConfig = {
+  mcpConfig.mcpServers.memesh = {
     command: 'node',
     args: [mcpServerPath],
     env: {
       NODE_ENV: 'production'
     }
   };
-
-  // Add A2A token if available
-  if (a2aToken) {
-    serverConfig.env.MEMESH_A2A_TOKEN = a2aToken;
-  }
-
-  mcpConfig.mcpServers.memesh = serverConfig;
 
   // Remove legacy entry if exists
   if (mcpConfig.mcpServers['claude-code-buddy']) {
@@ -275,9 +212,6 @@ try {
   mcpSettingsConfigured = true;
   console.log(`   ✅ MCP settings configured at: ${mcpSettingsPath}`);
   console.log(`   ✅ Server path: ${mcpServerPath}`);
-  if (a2aToken) {
-    console.log(`   🔑 A2A token: ${a2aToken.substring(0, 8)}...${a2aToken.substring(a2aToken.length - 8)}`);
-  }
 } catch (error) {
   console.log(`   ⚠️  Could not configure MCP settings: ${error.message}`);
   console.log('   You may need to manually configure ~/.claude/mcp_settings.json');

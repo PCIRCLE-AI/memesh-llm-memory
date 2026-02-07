@@ -1,6 +1,6 @@
 # MeMesh Complete Usage Guide
 
-**Version: 2.7.0
+**Version: 2.8.0
 **Last Updated**: 2026-02-04
 
 ## 📖 Overview

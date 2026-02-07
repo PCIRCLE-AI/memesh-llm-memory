@@ -42,7 +42,7 @@ function validateToolName(toolName) {
             method: 'validateToolName',
             providedName: safeName,
             pattern: TOOL_NAME_REGEX.source,
-            hint: 'Example valid names: buddy-do, memesh-remember, a2a-board',
+            hint: 'Example valid names: buddy-do, memesh-remember, memesh-secret-store',
         });
     }
 }

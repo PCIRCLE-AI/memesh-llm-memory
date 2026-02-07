@@ -18,7 +18,6 @@ npm install -g @pcircle/memesh
 
 **What happens automatically:**
 - ✅ Installs MeMesh globally
-- ✅ Generates A2A authentication token
 - ✅ Auto-configures `~/.claude/mcp_settings.json`
 - ✅ Ready to use immediately
 
@@ -50,7 +49,6 @@ cd claude-code-buddy
 - ✅ Checks prerequisites (Node.js 20+)
 - ✅ Installs dependencies
 - ✅ Builds the project
-- ✅ Generates A2A token
 - ✅ Auto-configures `~/.claude/mcp_settings.json`
 
 **Next step:**
@@ -163,8 +161,7 @@ You can customize MeMesh behavior via environment variables in your MCP config:
       "args": ["-y", "@pcircle/memesh"],
       "env": {
         "CCB_LOG_LEVEL": "debug",
-        "CCB_KNOWLEDGE_DB_PATH": "/custom/path/knowledge.db",
-        "MEMESH_A2A_TOKEN": "your-token-here"
+        "CCB_KNOWLEDGE_DB_PATH": "/custom/path/knowledge.db"
       }
     }
   }
@@ -174,7 +171,6 @@ You can customize MeMesh behavior via environment variables in your MCP config:
 **Available Variables:**
 - `CCB_LOG_LEVEL`: Logging level (`debug`, `info`, `warn`, `error`)
 - `CCB_KNOWLEDGE_DB_PATH`: Custom knowledge database location
-- `MEMESH_A2A_TOKEN`: A2A authentication token (required for agent collaboration)
 - `MCP_SERVER_MODE`: Force MCP server mode (`true` / `false`)
 
 ### Local Development Configuration
@@ -189,8 +185,7 @@ If you're developing MeMesh locally, configure to use your local build:
       "command": "node",
       "args": ["/absolute/path/to/claude-code-buddy/dist/mcp/server-bootstrap.js"],
       "env": {
-        "NODE_ENV": "development",
-        "MEMESH_A2A_TOKEN": "your-token"
+        "NODE_ENV": "development"
       }
     }
   }
@@ -246,29 +241,6 @@ sudo apt install nodejs npm
 **Solution**: Restart your editor
 - **Claude Code**: Quit completely and reopen (not just reload)
 - **Cursor**: Quit completely and reopen
-
----
-
-### "MEMESH_A2A_TOKEN not found"
-
-**Cause**: A2A token not configured (only affects A2A features)
-
-**Solution**: Generate and configure token
-```bash
-# Generate token
-openssl rand -hex 32
-
-# Add to ~/.claude/mcp_settings.json:
-{
-  "mcpServers": {
-    "memesh": {
-      "env": {
-        "MEMESH_A2A_TOKEN": "<your-token-here>"
-      }
-    }
-  }
-}
-```
 
 ---
 
@@ -345,7 +317,6 @@ After installation:
 2. **User Guide**: [Complete User Guide](USER_GUIDE.md)
 3. **Commands Reference**: [All Commands](COMMANDS.md)
 4. **API Documentation**: [API Reference](api/API_REFERENCE.md)
-5. **A2A Setup**: [Agent Collaboration Guide](A2A_SETUP_GUIDE.md)
 
 ---
 

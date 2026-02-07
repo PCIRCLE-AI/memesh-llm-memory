@@ -1,6 +1,6 @@
 import { AbsoluteFill, Sequence } from 'remotion';
 import { TitleScene } from './scenes/TitleScene';
-import { A2AScene } from './scenes/A2AScene';
+import { A2AScene as SmartRoutingScene } from './scenes/A2AScene';
 import { MemoryScene } from './scenes/MemoryScene';
 import { SecretsScene } from './scenes/SecretsScene';
 import { HealthScene } from './scenes/HealthScene';
@@ -17,9 +17,9 @@ export const Video: React.FC = () => {
         <TitleScene />
       </Sequence>
 
-      {/* A2A Scene: 5-11s (180 frames) */}
+      {/* Smart Routing Scene: 5-11s (180 frames) */}
       <Sequence from={150} durationInFrames={180}>
-        <A2AScene />
+        <SmartRoutingScene />
       </Sequence>
 
       {/* Memory Scene: 11-17s (180 frames) */}

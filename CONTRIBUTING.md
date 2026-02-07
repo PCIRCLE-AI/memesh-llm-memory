@@ -119,7 +119,6 @@ npm run typecheck
 ```
 src/
 ├── mcp/           # MCP server and tools
-├── a2a/           # A2A protocol implementation
 ├── memory/        # Memory system
 ├── knowledge-graph/ # Knowledge graph
 ├── agents/        # Expert agents
@@ -141,7 +140,6 @@ When adding new MCP tools:
 ### Tool Naming Convention
 
 - Use `buddy-` prefix for user-facing tools
-- Use `a2a-` prefix for A2A protocol tools
 
 ## Release Process
 

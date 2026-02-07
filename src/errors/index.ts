@@ -106,8 +106,8 @@ export class ValidationError extends BaseError {
   }
 
   /**
-   * Alias for context to maintain backward compatibility with A2A module
-   * A2A code expects `error.details` instead of `error.context`
+   * Alias for context to maintain backward compatibility
+   * Some consumers expect `error.details` instead of `error.context`
    */
   get details(): Record<string, unknown> | undefined {
     return this.context;

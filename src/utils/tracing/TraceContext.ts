@@ -2,7 +2,7 @@
  * Distributed Tracing - Trace Context Management
  *
  * Provides trace context propagation using AsyncLocalStorage for correlating
- * requests across distributed A2A agent communication.
+ * requests across MCP tool operations and memory management workflows.
  *
  * Features:
  * - Unique trace ID generation for each request

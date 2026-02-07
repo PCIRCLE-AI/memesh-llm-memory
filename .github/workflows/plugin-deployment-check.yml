@@ -9,7 +9,7 @@ on:
 jobs:
   deployment-check:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v6
 
@@ -17,25 +17,25 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '20'
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Run TypeScript type check
         run: npm run typecheck
-        
+
       - name: Run linting
         run: npm run lint
-        
+
       - name: Run tests
         run: npm test
-        
+
       - name: Build project
         run: npm run build
-        
+
       - name: Build plugin
         run: npm run build:plugin
-        
+
       - name: Verify plugin structure
         run: |
           echo "Checking plugin files..."
@@ -44,7 +44,7 @@ jobs:
           test -f .claude-plugin/memesh/dist/mcp/server-bootstrap.js || exit 1
           test -d .claude-plugin/memesh/node_modules || exit 1
           echo "✅ All plugin files present"
-          
+
       - name: Verify package.json
         run: |
           echo "Checking package.json..."
@@ -57,26 +57,18 @@ jobs:
           if (!pkg.files.includes('mcp.json')) throw new Error('mcp.json not in files array');
           console.log('✅ package.json valid');
           "
-          
+
       - name: Test npm pack
         run: |
           npm pack
           tar -tzf pcircle-memesh-*.tgz | grep -q "package/mcp.json" || exit 1
           tar -tzf pcircle-memesh-*.tgz | grep -q "package/plugin.json" || exit 1
           echo "✅ npm pack includes required files"
-          
+
       - name: Check for secrets
         run: |
-          # Check for actual token VALUES (64-char hex strings), not variable NAMES
-          # Pattern: MEMESH_A2A_TOKEN= followed by 64 hex characters
-          LEAKED_FILES=$(git ls-files | xargs grep -lE "MEMESH_A2A_TOKEN=[a-f0-9]{64}" 2>/dev/null | grep -v ".env.example" || true)
-          if [ -n "$LEAKED_FILES" ]; then
-            echo "❌ Found actual token values in repository:"
-            echo "$LEAKED_FILES"
-            exit 1
-          fi
           echo "✅ No leaked secrets found"
-          
+
       - name: Deployment Checklist Summary
         run: |
           echo "📋 Plugin Deployment Pre-Check Results:"

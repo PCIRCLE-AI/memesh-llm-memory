@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Vector Semantic Search** - Find memories by meaning, not just keywords
+  - `buddy-remember` now supports `mode` parameter: `semantic`, `keyword`, `hybrid` (default)
+  - `minSimilarity` parameter to filter low-quality matches (0-1 threshold)
+  - Uses all-MiniLM-L6-v2 ONNX model (384 dimensions, runs 100% locally)
+  - Automatic embedding generation when creating entities
+  - Backfill script for existing entities: `npm run backfill-embeddings`
+
+### Technical
+- New `src/embeddings/` module with ModelManager, EmbeddingService, VectorExtension
+- Added sqlite-vec for vector KNN search
+- Added onnxruntime-node for ONNX inference
+- Added @xenova/transformers for tokenization
+- Integration tests for full semantic search flow
+
 ### Documentation
 - **Major documentation update**: Corrected all outdated installation guides
   - Fixed QUICK_INSTALL.md: Completely rewritten with correct installation priority (npm global install first)

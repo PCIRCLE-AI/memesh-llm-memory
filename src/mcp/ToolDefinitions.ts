@@ -98,19 +98,37 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
 
   const buddyRememberTool: MCPToolDefinition = {
     name: 'buddy-remember',
-    description: 'Search project memory for past decisions, bugs, patterns, and architecture choices',
+    description: `Search project memory using semantic similarity or keyword matching.
+
+Examples:
+- buddy-remember "how do we handle authentication" -> finds JWT, OAuth, session memories
+- buddy-remember "database" mode=keyword -> exact keyword match only
+- buddy-remember "user login" mode=semantic minSimilarity=0.5 -> high-quality semantic matches only
+
+The default 'hybrid' mode combines semantic understanding with keyword matching for best results.`,
     inputSchema: {
       type: 'object' as const,
       properties: {
         query: {
           type: 'string',
-          description: 'What to remember/recall (e.g., "api design decisions", "authentication approach")',
+          description: 'Search query (natural language supported for semantic search)',
+        },
+        mode: {
+          type: 'string',
+          enum: ['semantic', 'keyword', 'hybrid'],
+          description: 'Search mode: semantic (AI similarity), keyword (exact match), hybrid (both combined). Default: hybrid',
         },
         limit: {
           type: 'number',
-          description: 'Maximum number of memories to retrieve (1-50, default: 5)',
+          description: 'Maximum number of results to return (1-50, default: 10)',
           minimum: 1,
           maximum: 50,
+        },
+        minSimilarity: {
+          type: 'number',
+          description: 'Minimum similarity score (0-1) for semantic/hybrid search. Default: 0.3',
+          minimum: 0,
+          maximum: 1,
         },
       },
       required: ['query'],

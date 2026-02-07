@@ -96,10 +96,8 @@ New CLI tools for managing MCP server processes:
 - `add-observations` - Add observations to memory
 - `health-check` - Check system health
 
-### Workflow Commands
-- `get-workflow-guidance` - Get phase-aware recommendations
+### Other Commands
 - `generate-tests` - Generate implementation plan
-- `get-session-health` - Check session token usage
 
 ## Technical Architecture
 

@@ -6,7 +6,6 @@ export declare const operationIcons: {
     readonly agent: "🤖";
     readonly help: "💡";
     readonly knowledge: "✨";
-    readonly secret: "🔐";
     readonly health: "💊";
     readonly create: "✨";
     readonly update: "🔄";

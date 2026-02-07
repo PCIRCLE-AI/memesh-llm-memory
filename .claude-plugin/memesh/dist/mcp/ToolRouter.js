@@ -1,5 +1,4 @@
 import { ValidationError, NotFoundError, OperationError } from '../errors/index.js';
-import { handleBuddySecretStore, handleBuddySecretGet, handleBuddySecretList, handleBuddySecretDelete, } from './handlers/index.js';
 import { handleCloudSync, CloudSyncInputSchema } from './tools/memesh-cloud-sync.js';
 const TOOL_NAME_REGEX = /^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$/;
 const TOOL_NAME_MAX_LENGTH = 64;
@@ -42,7 +41,7 @@ function validateToolName(toolName) {
             method: 'validateToolName',
             providedName: safeName,
             pattern: TOOL_NAME_REGEX.source,
-            hint: 'Example valid names: buddy-do, memesh-remember, memesh-secret-store',
+            hint: 'Example valid names: buddy-do, memesh-remember, memesh-create-entities',
         });
     }
 }
@@ -50,7 +49,6 @@ export class ToolRouter {
     rateLimiter;
     toolHandlers;
     buddyHandlers;
-    secretManager;
     knowledgeGraph;
     allowedOrigins;
     transportMode;
@@ -58,7 +56,6 @@ export class ToolRouter {
         this.rateLimiter = config.rateLimiter;
         this.toolHandlers = config.toolHandlers;
         this.buddyHandlers = config.buddyHandlers;
-        this.secretManager = config.secretManager;
         this.knowledgeGraph = config.knowledgeGraph;
         this.allowedOrigins = config.allowedOrigins;
         this.transportMode = config.transportMode || 'stdio';
@@ -129,10 +126,6 @@ export class ToolRouter {
     static TOOL_ALIASES = {
         'buddy-record-mistake': 'memesh-record-mistake',
         'create-entities': 'memesh-create-entities',
-        'buddy-secret-store': 'memesh-secret-store',
-        'buddy-secret-get': 'memesh-secret-get',
-        'buddy-secret-list': 'memesh-secret-list',
-        'buddy-secret-delete': 'memesh-secret-delete',
         'hook-tool-use': 'memesh-hook-tool-use',
         'generate-tests': 'memesh-generate-tests',
     };
@@ -168,46 +161,6 @@ export class ToolRouter {
         }
         if (resolvedToolName === 'memesh-generate-tests') {
             return await this.toolHandlers.handleGenerateTests(args);
-        }
-        if (resolvedToolName === 'memesh-secret-store') {
-            if (!this.secretManager) {
-                throw new OperationError('Secret management is not configured', {
-                    component: 'ToolRouter',
-                    method: 'dispatch',
-                    toolName,
-                });
-            }
-            return await handleBuddySecretStore(args, this.secretManager);
-        }
-        if (resolvedToolName === 'memesh-secret-get') {
-            if (!this.secretManager) {
-                throw new OperationError('Secret management is not configured', {
-                    component: 'ToolRouter',
-                    method: 'dispatch',
-                    toolName: resolvedToolName,
-                });
-            }
-            return await handleBuddySecretGet(args, this.secretManager);
-        }
-        if (resolvedToolName === 'memesh-secret-list') {
-            if (!this.secretManager) {
-                throw new OperationError('Secret management is not configured', {
-                    component: 'ToolRouter',
-                    method: 'dispatch',
-                    toolName: resolvedToolName,
-                });
-            }
-            return await handleBuddySecretList(args, this.secretManager);
-        }
-        if (resolvedToolName === 'memesh-secret-delete') {
-            if (!this.secretManager) {
-                throw new OperationError('Secret management is not configured', {
-                    component: 'ToolRouter',
-                    method: 'dispatch',
-                    toolName: resolvedToolName,
-                });
-            }
-            return await handleBuddySecretDelete(args, this.secretManager);
         }
         if (resolvedToolName === 'memesh-cloud-sync') {
             const validationResult = CloudSyncInputSchema.safeParse(args);

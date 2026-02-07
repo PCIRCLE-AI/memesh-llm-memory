@@ -1,13 +1,11 @@
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { RateLimiter } from '../utils/RateLimiter.js';
 import { ToolHandlers, BuddyHandlers } from './handlers/index.js';
-import type { SecretManager } from '../memory/SecretManager.js';
 import type { KnowledgeGraph } from '../knowledge-graph/index.js';
 export interface ToolRouterConfig {
     rateLimiter: RateLimiter;
     toolHandlers: ToolHandlers;
     buddyHandlers: BuddyHandlers;
-    secretManager?: SecretManager;
     knowledgeGraph?: KnowledgeGraph;
     allowedOrigins?: string[];
     transportMode?: 'stdio' | 'http';
@@ -16,7 +14,6 @@ export declare class ToolRouter {
     private rateLimiter;
     private toolHandlers;
     private buddyHandlers;
-    private secretManager?;
     private knowledgeGraph?;
     private readonly allowedOrigins?;
     private readonly transportMode;

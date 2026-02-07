@@ -69,32 +69,27 @@ cd claude-code-buddy
 
 When you install MeMesh, you get access to:
 
-### 12 MCP Tools
+### 8 MCP Tools
 
 **Core Commands (3 tools):**
 1. **buddy-do** - Smart task routing and execution
 2. **buddy-remember** - Project memory recall with semantic search
 3. **buddy-help** - Command documentation and help
 
-**MeMesh Tools (8 tools):**
+**MeMesh Tools (4 tools):**
 4. **memesh-record-mistake** - Error recording for continuous learning (⚠️ `buddy-record-mistake` deprecated)
 5. **memesh-create-entities** - Create and store knowledge entities (⚠️ `create-entities` deprecated)
-6. **memesh-secret-store** - Securely store API keys and credentials (⚠️ `buddy-secret-store` deprecated)
-7. **memesh-secret-get** - Retrieve stored secrets (⚠️ `buddy-secret-get` deprecated)
-8. **memesh-secret-list** - List all stored secrets (⚠️ `buddy-secret-list` deprecated)
-9. **memesh-secret-delete** - Delete secrets (⚠️ `buddy-secret-delete` deprecated)
-10. **memesh-hook-tool-use** - Hook event processing (⚠️ `hook-tool-use` deprecated)
-11. **memesh-generate-tests** - Automatic test generation (⚠️ `generate-tests` deprecated)
+6. **memesh-hook-tool-use** - Hook event processing (⚠️ `hook-tool-use` deprecated)
+7. **memesh-generate-tests** - Automatic test generation (⚠️ `generate-tests` deprecated)
 
 **Cloud Sync (1 tool):**
-12. **memesh-cloud-sync** - Sync memories to MeMesh Cloud (optional)
+8. **memesh-cloud-sync** - Sync memories to MeMesh Cloud (optional)
 
 ### Core Features
 
 - ✅ **Persistent Memory**: Knowledge graph storage across sessions
 - ✅ **Semantic Search**: Find memories by meaning with vector embeddings
 - ✅ **Smart Routing**: Automatic task complexity analysis
-- ✅ **Secret Management**: AES-256-GCM encrypted credential storage
 - ✅ **Auto-Memory**: Automatic session summaries and recall
 - ✅ **Local-first**: All data stored locally for privacy
 - ✅ **MCP 2025-11-25 Compliant**: Full MCP spec compliance
@@ -114,7 +109,7 @@ When you install MeMesh, you get access to:
 **Expected output:**
 ```
 Connected MCP Servers:
-✅ memesh (12 tools available)
+✅ memesh (8 tools available)
 ```
 
 **2. Test a command:**
@@ -131,9 +126,8 @@ Available Commands:
   buddy-do              - Execute tasks with smart routing
   buddy-remember        - Recall project memory (with semantic search!)
   buddy-help            - Show this help
-  memesh-secret-store   - Store credentials securely (⚠️ buddy-secret-store deprecated)
   ...
-  (12 tools total)
+  (8 tools total)
 ```
 
 **3. Test memory:**
@@ -334,15 +328,6 @@ buddy-remember "frontend framework"
 
 # Execute a task
 buddy-do "explain the difference between JWT and sessions"
-
-# Check session health
-get-session-health
-
-# Store an API key (encrypted)
-memesh-secret-store "openai_key" "sk-..." api_key  # ⚠️ buddy-secret-store deprecated
-
-# Get it back when needed
-memesh-secret-get "openai_key"  # ⚠️ buddy-secret-get deprecated
 ```
 
 ---

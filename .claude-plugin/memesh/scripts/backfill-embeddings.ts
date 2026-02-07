@@ -12,7 +12,7 @@
  *   npx tsx scripts/backfill-embeddings.ts --verbose
  */
 
-import { KnowledgeGraphSQLite } from '../src/agents/knowledge/KnowledgeGraphSQLite.js';
+import { KnowledgeGraphSQLite } from '../src/knowledge-graph/index.js';
 import { LazyEmbeddingService } from '../src/embeddings/index.js';
 
 interface BackfillOptions {

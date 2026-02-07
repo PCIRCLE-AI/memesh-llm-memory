@@ -8,8 +8,6 @@
 buddy-do "<task description>"         # Smart routing (recommended)
 buddy-remember "<query>"             # Recall project memory
 buddy-help                             # Command help
-get-session-health                     # Session health snapshot
-get-workflow-guidance '{"phase":"code-written"}'
 generate-tests '{"featureDescription":"..."}'
 ```
 

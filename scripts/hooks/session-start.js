@@ -119,7 +119,6 @@ function displayCCBStatus(ccbStatus) {
     console.log('    • buddy-remember: Query past knowledge');
     console.log('    • buddy-do: Execute common operations');
     console.log('    • memesh-create-entities: Store new knowledge to graph');
-    console.log('    • get-session-health: Check memory status');
     console.log('');
   } else if (!ccbStatus.running) {
     console.log('');
@@ -144,7 +143,6 @@ function displayCCBStatus(ccbStatus) {
     console.log('');
     console.log('  📋 Session Start Checklist:');
     console.log('    ☐ buddy-remember - Query relevant past knowledge');
-    console.log('    ☐ get-session-health - Check memory status');
     console.log('');
     console.log('  📋 Session End Checklist:');
     console.log('    ☐ memesh-create-entities - Store new learnings');

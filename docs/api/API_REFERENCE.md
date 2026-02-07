@@ -109,7 +109,7 @@ MeMesh operates as an MCP server and requires configuration in Claude Code's set
 
 ## Tool Catalog
 
-MeMesh provides 9 MCP tools organized into three categories:
+MeMesh provides 8 MCP tools organized into three categories:
 
 ### Core Tools (User-Facing)
 

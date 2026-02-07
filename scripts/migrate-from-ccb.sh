@@ -168,7 +168,6 @@ ITEMS_TO_MIGRATE=(
     "evolution-store.db"
     "evolution-store.db-shm"
     "evolution-store.db-wal"
-    ".secret-key"
     "logs/"
     "cache/"
 )

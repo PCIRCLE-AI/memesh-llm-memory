@@ -123,11 +123,11 @@ describe('i18n Module', () => {
       });
 
       it('should handle string parameters', () => {
-        const result = t('ccb.secret.confirmation', {
-          secretName: 'API_KEY',
-          expiresIn: '30 days',
+        const result = t('ccb.reminder.mistakes', {
+          count: '5',
+          days: '7',
         });
-        expect(result).toContain('API_KEY');
+        expect(result).toContain('5');
       });
     });
 
@@ -171,7 +171,6 @@ describe('i18n Module', () => {
         'ccb.reminder.mistakes',
         'ccb.reminder.memories',
         'ccb.reminder.preferences',
-        'ccb.secret.confirmation',
         'ccb.rule.readBeforeEdit',
         'ccb.rule.verifyBeforeClaim',
         'ccb.preference.violation',
@@ -179,7 +178,7 @@ describe('i18n Module', () => {
 
       for (const key of ccbKeys) {
         it(`should include MeMesh branding in ${key}`, () => {
-          const result = t(key, { count: 1, days: 1, secretName: 'test', expiresIn: '1d' });
+          const result = t(key, { count: 1, days: 1, content: 'test' });
           expect(result).toContain('MeMesh');
         });
       }
@@ -207,9 +206,8 @@ describe('i18n Module', () => {
     });
 
     it('should handle special characters in params', () => {
-      const result = t('ccb.secret.confirmation', {
-        secretName: '<script>alert("xss")</script>',
-        expiresIn: '30 days',
+      const result = t('ccb.reminder.operationWarning', {
+        content: '<script>alert("xss")</script>',
       });
       expect(result).toContain('<script>');
     });

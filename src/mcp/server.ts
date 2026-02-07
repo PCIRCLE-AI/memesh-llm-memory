@@ -79,7 +79,6 @@ export class ToolCallTimeoutError extends Error {
  * Features:
  * - Knowledge graph for project memory
  * - Hook integration for workflow automation
- * - Secret management
  * - Test generation
  *
  * @example
@@ -160,7 +159,6 @@ class ClaudeCodeBuddyMCPServer {
       rateLimiter: this.components.rateLimiter,
       toolHandlers: this.components.toolHandlers,
       buddyHandlers: this.components.buddyHandlers,
-      secretManager: this.components.secretManager,
       knowledgeGraph: this.components.knowledgeGraph,
     });
     this.components.toolInterface.attachToolDispatcher(this.toolRouter);
@@ -510,23 +508,7 @@ class ClaudeCodeBuddyMCPServer {
       logger.error('Failed to close knowledge graph cleanly:', error);
     }
 
-    // 2. Close SecretManager database (Phase 0.7.0)
-    try {
-      logger.info('Closing secret manager database...');
-      if (this.components.secretManager) {
-        this.components.secretManager.close();
-      }
-    } catch (error) {
-      logError(error, {
-        component: 'ClaudeCodeBuddyMCPServer',
-        method: 'shutdown',
-        operation: 'closing secret manager',
-      });
-      logger.error('Failed to close secret manager cleanly:', error);
-    }
-
-
-    // 3. Stop rate limiter (cleanup intervals)
+    // 2. Stop rate limiter (cleanup intervals)
     try {
       logger.info('Stopping rate limiter...');
       if (this.components.rateLimiter) {
@@ -541,7 +523,7 @@ class ClaudeCodeBuddyMCPServer {
       logger.error('Failed to stop rate limiter cleanly:', error);
     }
 
-    // 4. Finally, close MCP transport
+    // 3. Finally, close MCP transport
     try {
       logger.info('Closing MCP server transport...');
       await this.server.close();

@@ -44,13 +44,4 @@ buddy-remember "why we chose SQLite for local storage"
 
 **Result**: A concise summary of the decision and its tradeoffs.
 
----
 
-## Example 5: Workflow Guidance
-
-**Request**:
-```
-get-workflow-guidance {"phase":"test-complete"}
-```
-
-**Result**: Next-step recommendations for code review and commit readiness.

@@ -4,10 +4,6 @@ export const operationDisplayNames = {
     'memesh-help': 'Help Center',
     'memesh-record-mistake': 'Error Recording',
     'memesh-create-entities': 'Knowledge Storage',
-    'memesh-secret-store': 'Secret Storage',
-    'memesh-secret-get': 'Secret Retrieval',
-    'memesh-secret-list': 'Secret Listing',
-    'memesh-secret-delete': 'Secret Deletion',
     'create-entities': 'Knowledge Storage',
     'update-entities': 'Knowledge Update',
     'delete-entities': 'Knowledge Deletion',
@@ -16,8 +12,6 @@ export const operationDisplayNames = {
     'buddy-do': 'Task Router',
     'buddy-help': 'Help Center',
     'buddy-record-mistake': 'Error Recording',
-    'buddy-secret-store': 'Secret Storage',
-    'buddy-secret-get': 'Secret Retrieval',
 };
 export const operationIcons = {
     search: '🔍',
@@ -26,7 +20,6 @@ export const operationIcons = {
     agent: '🤖',
     help: '💡',
     knowledge: '✨',
-    secret: '🔐',
     health: '💊',
     create: '✨',
     update: '🔄',
@@ -89,9 +82,6 @@ export function getOperationIcon(operationName) {
     }
     if (operationName.includes('send')) {
         return operationIcons.send;
-    }
-    if (operationName.includes('secret')) {
-        return operationIcons.secret;
     }
     if (operationName.includes('health')) {
         return operationIcons.health;

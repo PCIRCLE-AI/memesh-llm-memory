@@ -21,22 +21,6 @@ export const zhTW: LocaleMessages = {
   'ccb.preference.dislikes': '使用者不喜歡',
   'ccb.preference.rules': '行為規則',
 
-  // Secret management
-  'ccb.secret.confirmation':
-    '**MeMesh 秘密儲存** - 儲存秘密「${secretName}」(${maskedValue})？將於 ${expiresIn} 後過期。',
-  'ccb.secret.privacyNotice':
-    '**MeMesh 隱私聲明** - 此秘密使用 AES-256-GCM 加密儲存於本機。絕不會透過網路傳輸。',
-  'ccb.secret.stored':
-    '**MeMesh 秘密儲存** - 秘密「${secretName}」已安全儲存，${expiresIn} 後過期。',
-  'ccb.secret.detected':
-    '**MeMesh 秘密偵測** - 在內容中偵測到 ${count} 個潛在秘密。是否要安全儲存？',
-  'ccb.secret.deleted':
-    '**MeMesh 秘密儲存** - 秘密「${secretName}」已刪除。',
-  'ccb.secret.notFound':
-    '**MeMesh 秘密儲存** - 找不到秘密「${secretName}」。',
-  'ccb.secret.expired':
-    '**MeMesh 秘密儲存** - 秘密「${secretName}」已過期並被移除。',
-
   // Rule reminders
   'ccb.rule.readBeforeEdit':
     '⛔ **MeMesh 預防機制** - 編輯前必須先讀取檔案。您必須先閱讀檔案內容才能進行修改。',

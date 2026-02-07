@@ -8,7 +8,6 @@
 
 import { vi } from 'vitest';
 import type { AgentRegistry } from '../../src/core/AgentRegistry.js';
-import type { SecretManager } from '../../src/memory/SecretManager.js';
 
 /**
  * Create a complete mock AgentRegistry with all methods stubbed
@@ -46,43 +45,3 @@ export function createMockAgentRegistry(
   } as unknown as AgentRegistry;
 }
 
-/**
- * Create a complete mock SecretManager with all methods stubbed
- *
- * All methods default to vi.fn() stubs. Provide overrides to customize
- * specific methods for your test scenarios.
- *
- * @param overrides - Partial overrides for specific methods
- * @returns Complete SecretManager mock
- *
- * @example
- * ```typescript
- * const mockSecretManager = createMockSecretManager({
- *   store: vi.fn().mockResolvedValue('secret-uuid-123'),
- *   getByName: vi.fn().mockResolvedValue('my-secret-value'),
- * });
- * ```
- */
-export function createMockSecretManager(
-  overrides: Partial<SecretManager> = {}
-): SecretManager {
-  return {
-    detectSecrets: vi.fn(),
-    maskValue: vi.fn(),
-    store: vi.fn(),
-    get: vi.fn(),
-    getByName: vi.fn(),
-    getStoredData: vi.fn(),
-    update: vi.fn(),
-    updateMetadata: vi.fn(),
-    delete: vi.fn(),
-    deleteByName: vi.fn(),
-    list: vi.fn(),
-    requestConfirmation: vi.fn(),
-    addSecretPatterns: vi.fn(),
-    cleanupExpired: vi.fn(),
-    countExpired: vi.fn(),
-    close: vi.fn(),
-    ...overrides,
-  } as unknown as SecretManager;
-}

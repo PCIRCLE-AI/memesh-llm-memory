@@ -15,12 +15,7 @@ import { RateLimiter } from '../utils/RateLimiter.js';
 import {
   ToolHandlers,
   BuddyHandlers,
-  handleBuddySecretStore,
-  handleBuddySecretGet,
-  handleBuddySecretList,
-  handleBuddySecretDelete,
 } from './handlers/index.js';
-import type { SecretManager } from '../memory/SecretManager.js';
 import type { KnowledgeGraph } from '../knowledge-graph/index.js';
 import { handleCloudSync, CloudSyncInputSchema } from './tools/memesh-cloud-sync.js';
 
@@ -31,11 +26,6 @@ export interface ToolRouterConfig {
   rateLimiter: RateLimiter;
   toolHandlers: ToolHandlers;
   buddyHandlers: BuddyHandlers;
-
-  /**
-   * Secret Manager for secure secret storage (Phase 0.7.0)
-   */
-  secretManager?: SecretManager;
 
   /**
    * Knowledge Graph for cloud sync operations
@@ -67,7 +57,7 @@ export interface ToolRouterConfig {
  * - Minimum length of 1 character
  *
  * This aligns with the MCP protocol convention where tool names like
- * 'buddy-do', 'memesh-remember', 'memesh-secret-store' are used.
+ * 'buddy-do', 'memesh-remember', 'memesh-create-entities' are used.
  */
 const TOOL_NAME_REGEX = /^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$/;
 const TOOL_NAME_MAX_LENGTH = 64;
@@ -141,7 +131,7 @@ function validateToolName(toolName: string): void {
         method: 'validateToolName',
         providedName: safeName,
         pattern: TOOL_NAME_REGEX.source,
-        hint: 'Example valid names: buddy-do, memesh-remember, memesh-secret-store',
+        hint: 'Example valid names: buddy-do, memesh-remember, memesh-create-entities',
       }
     );
   }
@@ -156,7 +146,6 @@ function validateToolName(toolName: string): void {
  * The router supports main categories of tools:
  * - **Buddy Tools**: buddy-do, buddy-remember, buddy-help
  * - **MeMesh Tools**: memesh-create-entities, memesh-record-mistake, memesh-generate-tests
- * - **Secret Management Tools**: memesh-secret-store, memesh-secret-get, memesh-secret-list, memesh-secret-delete
  * - **Hook Tools**: memesh-hook-tool-use
  * - **Cloud Sync Tools**: memesh-cloud-sync
  *
@@ -184,7 +173,6 @@ export class ToolRouter {
   private rateLimiter: RateLimiter;
   private toolHandlers: ToolHandlers;
   private buddyHandlers: BuddyHandlers;
-  private secretManager?: SecretManager;
   private knowledgeGraph?: KnowledgeGraph;
 
   private readonly allowedOrigins?: string[];
@@ -199,7 +187,6 @@ export class ToolRouter {
     this.rateLimiter = config.rateLimiter;
     this.toolHandlers = config.toolHandlers;
     this.buddyHandlers = config.buddyHandlers;
-    this.secretManager = config.secretManager;
     this.knowledgeGraph = config.knowledgeGraph;
     this.allowedOrigins = config.allowedOrigins;
     this.transportMode = config.transportMode || 'stdio';
@@ -330,10 +317,6 @@ export class ToolRouter {
   private static readonly TOOL_ALIASES: Record<string, string> = {
     'buddy-record-mistake': 'memesh-record-mistake',
     'create-entities': 'memesh-create-entities',
-    'buddy-secret-store': 'memesh-secret-store',
-    'buddy-secret-get': 'memesh-secret-get',
-    'buddy-secret-list': 'memesh-secret-list',
-    'buddy-secret-delete': 'memesh-secret-delete',
     'hook-tool-use': 'memesh-hook-tool-use',
     'generate-tests': 'memesh-generate-tests',
   };
@@ -413,63 +396,6 @@ export class ToolRouter {
     // Test Generation tools (v2.8.0: renamed to memesh-*)
     if (resolvedToolName === 'memesh-generate-tests') {
       return await this.toolHandlers.handleGenerateTests(args);
-    }
-
-    // Secret Management tools (v2.8.0: renamed to memesh-*)
-    if (resolvedToolName === 'memesh-secret-store') {
-      if (!this.secretManager) {
-        throw new OperationError(
-          'Secret management is not configured',
-          {
-            component: 'ToolRouter',
-            method: 'dispatch',
-            toolName,
-          }
-        );
-      }
-      return await handleBuddySecretStore(args, this.secretManager);
-    }
-
-    if (resolvedToolName === 'memesh-secret-get') {
-      if (!this.secretManager) {
-        throw new OperationError(
-          'Secret management is not configured',
-          {
-            component: 'ToolRouter',
-            method: 'dispatch',
-            toolName: resolvedToolName,
-          }
-        );
-      }
-      return await handleBuddySecretGet(args, this.secretManager);
-    }
-
-    if (resolvedToolName === 'memesh-secret-list') {
-      if (!this.secretManager) {
-        throw new OperationError(
-          'Secret management is not configured',
-          {
-            component: 'ToolRouter',
-            method: 'dispatch',
-            toolName: resolvedToolName,
-          }
-        );
-      }
-      return await handleBuddySecretList(args, this.secretManager);
-    }
-
-    if (resolvedToolName === 'memesh-secret-delete') {
-      if (!this.secretManager) {
-        throw new OperationError(
-          'Secret management is not configured',
-          {
-            component: 'ToolRouter',
-            method: 'dispatch',
-            toolName: resolvedToolName,
-          }
-        );
-      }
-      return await handleBuddySecretDelete(args, this.secretManager);
     }
 
     // Cloud Sync tools (v2.8.0: already using memesh-* naming)

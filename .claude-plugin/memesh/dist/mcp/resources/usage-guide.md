@@ -35,8 +35,6 @@ generate-tests "add email-based login"
 - **buddy-do**: Execute tasks with smart routing
 - **buddy-remember**: Recall project memory and decisions
 - **buddy-help**: Command help and usage
-- **get-session-health**: Check session health
-- **get-workflow-guidance**: Next-step recommendations by phase
 - **generate-tests**: Implementation plan generation
 
 Note: `hook-tool-use` is internal and used by Claude Code hooks.
@@ -55,21 +53,6 @@ Use natural language and include intent, constraints, and file names when possib
 "Draft README updates for new onboarding flow"
 ```
 
-## 🔄 Workflow Guidance
-
-MeMesh recognizes five phases:
-- idle
-- code-written
-- test-complete
-- commit-ready
-- committed
-
-Example usage:
-```
-get-workflow-guidance {"phase":"code-written"}
-get-session-health
-```
-
 ## 🧠 Project Memory
 
 Project memory is updated automatically at key milestones and commit events. Use it to recall prior decisions and patterns:
@@ -83,7 +66,6 @@ buddy-remember "error handling strategy"
 - Be specific: mention files, constraints, and expected behavior
 - Use `buddy-remember` before large changes
 - Ask for a plan before large features
-- Check `get-session-health` on long sessions
 
 ## 📚 Additional Resources
 

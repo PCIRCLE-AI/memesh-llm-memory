@@ -14,10 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MCP Tool Naming Unification** - All non-core tools now use `memesh-*` prefix for better discoverability
   - `buddy-record-mistake` → `memesh-record-mistake`
   - `create-entities` → `memesh-create-entities`
-  - `buddy-secret-store` → `memesh-secret-store`
-  - `buddy-secret-get` → `memesh-secret-get`
-  - `buddy-secret-list` → `memesh-secret-list`
-  - `buddy-secret-delete` → `memesh-secret-delete`
   - `hook-tool-use` → `memesh-hook-tool-use`
   - `generate-tests` → `memesh-generate-tests`
 
@@ -47,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Tool Count**: 18 → **12 tools** (3 buddy commands + 8 memesh tools + 1 cloud sync)
+- **Tool Count**: 18 → **8 tools** (3 buddy commands + 4 memesh tools + 1 cloud sync)
   - Core tools preserved: `buddy-do`, `buddy-remember`, `buddy-help`
   - Feature tools unified under `memesh-*` namespace
 
@@ -66,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Major documentation update**: Corrected all outdated installation guides
   - Fixed QUICK_INSTALL.md: Completely rewritten with correct installation priority (npm global install first)
-  - Updated tool count: 18 tools → **12 tools** (accurate count with complete list)
+  - Updated tool count: 18 tools → **8 tools** (accurate count with complete list)
   - Added deprecation notices for renamed tools in all documentation
   - Updated troubleshooting guide with common issues and solutions (PR #52)
   - Removed misleading Plugin Installation instructions (--plugin-dir flag)

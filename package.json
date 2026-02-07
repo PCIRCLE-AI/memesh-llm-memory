@@ -1,6 +1,6 @@
 {
   "name": "@pcircle/memesh",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "description": "MeMesh - Your AI memory mesh for Claude Code. Smart routing, persistent memory, and intelligent task management.",
   "main": "dist/index.js",
   "type": "module",
@@ -20,7 +20,7 @@
     "postinstall": "node scripts/postinstall.js",
     "dev": "tsx watch src/index.ts",
     "build": "tsc && npm run copy:resources",
-    "copy:resources": "mkdir -p dist/mcp/resources && cp -r src/mcp/resources/*.md dist/mcp/resources/",
+    "copy:resources": "mkdir -p dist/mcp/resources && cp -r src/mcp/resources/*.md dist/mcp/resources/ && mkdir -p dist/a2a/storage && cp src/a2a/storage/*.sql dist/a2a/storage/",
     "build:plugin": "npm run build && npm run prepare:plugin",
     "prepare:plugin": "node scripts/prepare-plugin.js",
     "start": "node dist/index.js",
@@ -33,7 +33,9 @@
     "format": "prettier --write 'src/**/*.ts'",
     "typecheck": "tsc --noEmit",
     "cred": "tsx src/cli/index.ts cred",
+    "orchestrator": "tsx src/orchestrator/index.ts",
     "dashboard": "tsx src/dashboard/server.ts",
+    "demo:architecture": "tsx src/agents/architecture/demo.ts",
     "demo:dashboard": "tsx examples/dashboard-demo.ts",
     "mcp": "node dist/mcp/server-bootstrap.js",
     "docs": "typedoc",
@@ -49,7 +51,8 @@
     "verify:migration": "tsx scripts/verify-migration.ts",
     "a2a:generate-token": "bash scripts/generate-a2a-token.sh",
     "a2a:regenerate-token": "bash scripts/generate-a2a-token.sh --force",
-    "a2a:show-token": "grep '^MEMESH_A2A_TOKEN=' .env | cut -d'=' -f2 || echo 'Token not found in .env'"
+    "a2a:show-token": "grep '^MEMESH_A2A_TOKEN=' .env | cut -d'=' -f2 || echo 'Token not found in .env'",
+    "backfill-embeddings": "tsx scripts/backfill-embeddings.ts"
   },
   "keywords": [
     "claude",
@@ -77,6 +80,7 @@
     "@types/fs-extra": "^11.0.4",
     "@types/inquirer": "^9.0.9",
     "@types/multer": "^2.0.0",
+    "@xenova/transformers": "^2.17.2",
     "asciichart": "^1.5.25",
     "axios": "^1.13.2",
     "better-sqlite3": "^12.6.2",
@@ -98,8 +102,10 @@
     "log-update": "^7.0.2",
     "minimatch": "^10.1.1",
     "multer": "^2.0.2",
+    "onnxruntime-node": "^1.23.2",
     "ora": "^9.0.0",
     "sqlite": "^5.1.1",
+    "sqlite-vec": "^0.1.7-alpha.2",
     "uuid": "^13.0.0",
     "winston": "^3.19.0",
     "zod": "^4.3.5"

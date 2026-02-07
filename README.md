@@ -186,10 +186,14 @@ buddy-help                          # When stuck
 ### 4. 🔐 **Secure Credential Storage**
 
 ```bash
-buddy-secret-store "openai_key" "sk-..." api_key  # Store encrypted
-buddy-secret-get "openai_key"                      # Retrieve for API calls
-buddy-secret-list                                  # See what's stored
-buddy-secret-delete "old_key"                      # Cleanup
+# ✅ NEW (v2.8.0+)
+memesh-secret-store "openai_key" "sk-..." api_key  # Store encrypted
+memesh-secret-get "openai_key"                      # Retrieve for API calls
+memesh-secret-list                                  # See what's stored
+memesh-secret-delete "old_key"                      # Cleanup
+
+# ⚠️ DEPRECATED (still works, will be removed in v3.0.0)
+buddy-secret-store "openai_key" "sk-..." api_key   # Use memesh-secret-store instead
 ```
 
 **AES-256-GCM encryption. Local only. Never transmitted.**

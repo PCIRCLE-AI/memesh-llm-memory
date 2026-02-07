@@ -516,7 +516,8 @@ export function multiply(a: number, b: number): number {
       const handler = (server as any).server._requestHandlers.get('tools/list');
       const result = await handler({ method: 'tools/list', params: {} });
 
-      const generateTestsTool = result.tools.find((t: any) => t.name === 'generate-tests');
+      // v2.8.0: Tool renamed to memesh-generate-tests
+      const generateTestsTool = result.tools.find((t: any) => t.name === 'memesh-generate-tests');
 
       expect(generateTestsTool).toBeDefined();
       expect(generateTestsTool.description).toContain('test');

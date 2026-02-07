@@ -22,9 +22,6 @@ import {
 } from './handlers/index.js';
 import type { SecretManager } from '../memory/SecretManager.js';
 import type { KnowledgeGraph } from '../knowledge-graph/index.js';
-import { handleA2ABoard, A2ABoardInputSchema } from './tools/a2a-board.js';
-import { handleA2AClaimTask, A2AClaimTaskInputSchema } from './tools/a2a-claim-task.js';
-import { handleA2AFindTasks, A2AFindTasksInputSchema } from './tools/a2a-find-tasks.js';
 import { handleCloudSync, CloudSyncInputSchema } from './tools/memesh-cloud-sync.js';
 
 /**
@@ -325,13 +322,51 @@ export class ToolRouter {
   }
 
   /**
+   * Tool name aliases for backward compatibility (v2.8.0)
+   * Maps deprecated names to new names
+   * Will be removed in v3.0.0
+   */
+  private static readonly TOOL_ALIASES: Record<string, string> = {
+    'buddy-record-mistake': 'memesh-record-mistake',
+    'create-entities': 'memesh-create-entities',
+    'buddy-secret-store': 'memesh-secret-store',
+    'buddy-secret-get': 'memesh-secret-get',
+    'buddy-secret-list': 'memesh-secret-list',
+    'buddy-secret-delete': 'memesh-secret-delete',
+    'hook-tool-use': 'memesh-hook-tool-use',
+    'generate-tests': 'memesh-generate-tests',
+  };
+
+  /**
+   * Resolve tool alias to canonical name and log deprecation warning
+   *
+   * @param toolName - Original tool name (may be alias)
+   * @returns Canonical tool name
+   * @private
+   */
+  private resolveAlias(toolName: string): string {
+    const canonicalName = ToolRouter.TOOL_ALIASES[toolName];
+    if (canonicalName) {
+      // Log deprecation warning (will appear in MCP server logs)
+      console.warn(
+        `⚠️  DEPRECATION WARNING: Tool '${toolName}' is deprecated and will be removed in v3.0.0.\n` +
+        `   Please use '${canonicalName}' instead.\n` +
+        `   Migration guide: https://github.com/PCIRCLE-AI/claude-code-buddy#migration-v3`
+      );
+      return canonicalName;
+    }
+    return toolName;
+  }
+
+  /**
    * Dispatch tool call to appropriate handler
    *
    * Internal routing logic that maps tool names to handler methods. Supports:
    * - Buddy tools (buddy-do, buddy-remember, buddy-help)
-   * - Task board tools (a2a-board, a2a-claim-task, a2a-find-tasks)
+   * - MeMesh tools (memesh-record-mistake, memesh-create-entities, etc.)
+   * - Backward compatibility via aliases (deprecated tool names)
    *
-   * @param toolName - Name of the tool to execute
+   * @param toolName - Name of the tool to execute (may be alias)
    * @param args - Tool arguments (validated by individual handlers)
    * @returns Promise resolving to MCP CallToolResult
    *
@@ -343,41 +378,44 @@ export class ToolRouter {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- each handler validates via Zod schemas
   private async dispatch(toolName: string, args: any): Promise<CallToolResult> {
-    // Buddy Commands
-    if (toolName === 'buddy-do') {
+    // Resolve aliases to canonical names (with deprecation warning)
+    const resolvedToolName = this.resolveAlias(toolName);
+
+    // Buddy Commands (core brand - names preserved)
+    if (resolvedToolName === 'buddy-do') {
       return await this.buddyHandlers.handleBuddyDo(args);
     }
 
-    if (toolName === 'buddy-remember') {
+    if (resolvedToolName === 'buddy-remember') {
       return await this.buddyHandlers.handleBuddyRemember(args);
     }
 
-    if (toolName === 'buddy-help') {
+    if (resolvedToolName === 'buddy-help') {
       return await this.buddyHandlers.handleBuddyHelp(args);
     }
 
-    // Hook integration tools
-    if (toolName === 'hook-tool-use') {
+    // Hook integration tools (v2.8.0: renamed to memesh-*)
+    if (resolvedToolName === 'memesh-hook-tool-use') {
       return await this.toolHandlers.handleHookToolUse(args);
     }
 
-    // Learning tools
-    if (toolName === 'buddy-record-mistake') {
+    // Learning tools (v2.8.0: renamed to memesh-*)
+    if (resolvedToolName === 'memesh-record-mistake') {
       return await this.toolHandlers.handleBuddyRecordMistake(args);
     }
 
-    // Knowledge Graph tools
-    if (toolName === 'create-entities') {
+    // Knowledge Graph tools (v2.8.0: renamed to memesh-*)
+    if (resolvedToolName === 'memesh-create-entities') {
       return await this.toolHandlers.handleCreateEntities(args);
     }
 
-    // Test Generation tools
-    if (toolName === 'generate-tests') {
+    // Test Generation tools (v2.8.0: renamed to memesh-*)
+    if (resolvedToolName === 'memesh-generate-tests') {
       return await this.toolHandlers.handleGenerateTests(args);
     }
 
-    // Secret Management tools (Phase 0.7.0)
-    if (toolName === 'buddy-secret-store') {
+    // Secret Management tools (v2.8.0: renamed to memesh-*)
+    if (resolvedToolName === 'memesh-secret-store') {
       if (!this.secretManager) {
         throw new OperationError(
           'Secret management is not configured',
@@ -391,96 +429,63 @@ export class ToolRouter {
       return await handleBuddySecretStore(args, this.secretManager);
     }
 
-    if (toolName === 'buddy-secret-get') {
+    if (resolvedToolName === 'memesh-secret-get') {
       if (!this.secretManager) {
         throw new OperationError(
           'Secret management is not configured',
           {
             component: 'ToolRouter',
             method: 'dispatch',
-            toolName,
+            toolName: resolvedToolName,
           }
         );
       }
       return await handleBuddySecretGet(args, this.secretManager);
     }
 
-    if (toolName === 'buddy-secret-list') {
+    if (resolvedToolName === 'memesh-secret-list') {
       if (!this.secretManager) {
         throw new OperationError(
           'Secret management is not configured',
           {
             component: 'ToolRouter',
             method: 'dispatch',
-            toolName,
+            toolName: resolvedToolName,
           }
         );
       }
       return await handleBuddySecretList(args, this.secretManager);
     }
 
-    if (toolName === 'buddy-secret-delete') {
+    if (resolvedToolName === 'memesh-secret-delete') {
       if (!this.secretManager) {
         throw new OperationError(
           'Secret management is not configured',
           {
             component: 'ToolRouter',
             method: 'dispatch',
-            toolName,
+            toolName: resolvedToolName,
           }
         );
       }
       return await handleBuddySecretDelete(args, this.secretManager);
     }
 
-    // Cloud Sync tools
-    if (toolName === 'memesh-cloud-sync') {
+    // Cloud Sync tools (v2.8.0: already using memesh-* naming)
+    if (resolvedToolName === 'memesh-cloud-sync') {
       const validationResult = CloudSyncInputSchema.safeParse(args);
       if (!validationResult.success) {
         throw new ValidationError(
-          `Invalid input for ${toolName}: ${validationResult.error.message}`,
-          { component: 'ToolRouter', method: 'dispatch', toolName, zodError: validationResult.error }
+          `Invalid input for ${resolvedToolName}: ${validationResult.error.message}`,
+          { component: 'ToolRouter', method: 'dispatch', toolName: resolvedToolName, zodError: validationResult.error }
         );
       }
       return handleCloudSync(validationResult.data, this.knowledgeGraph);
     }
 
-    // Task Board tools (local task management)
-    if (toolName === 'a2a-board') {
-      const validationResult = A2ABoardInputSchema.safeParse(args);
-      if (!validationResult.success) {
-        throw new ValidationError(
-          `Invalid input for ${toolName}: ${validationResult.error.message}`,
-          { component: 'ToolRouter', method: 'dispatch', toolName, zodError: validationResult.error }
-        );
-      }
-      return handleA2ABoard(validationResult.data);
-    }
-
-    if (toolName === 'a2a-claim-task') {
-      const validationResult = A2AClaimTaskInputSchema.safeParse(args);
-      if (!validationResult.success) {
-        throw new ValidationError(
-          `Invalid input for ${toolName}: ${validationResult.error.message}`,
-          { component: 'ToolRouter', method: 'dispatch', toolName, zodError: validationResult.error }
-        );
-      }
-      return handleA2AClaimTask(validationResult.data);
-    }
-
-    if (toolName === 'a2a-find-tasks') {
-      const validationResult = A2AFindTasksInputSchema.safeParse(args);
-      if (!validationResult.success) {
-        throw new ValidationError(
-          `Invalid input for ${toolName}: ${validationResult.error.message}`,
-          { component: 'ToolRouter', method: 'dispatch', toolName, zodError: validationResult.error }
-        );
-      }
-      return handleA2AFindTasks(validationResult.data);
-    }
 
     // Sanitize toolName in error message
-    const safeName = sanitizeToolNameForError(toolName);
+    const safeName = sanitizeToolNameForError(resolvedToolName);
     throw new NotFoundError(
       `Unknown tool: ${safeName}`,
       'tool',

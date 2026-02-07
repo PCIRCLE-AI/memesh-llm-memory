@@ -56,6 +56,12 @@ export interface MCPToolDefinition {
     idempotentHint?: boolean;
     openWorldHint?: boolean;
   };
+  /**
+   * Tool name aliases for backward compatibility
+   * Deprecated names that still work but show warnings
+   * @since v2.8.0 - Tool naming unification
+   */
+  aliases?: string[];
 }
 
 /**
@@ -92,19 +98,37 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
 
   const buddyRememberTool: MCPToolDefinition = {
     name: 'buddy-remember',
-    description: 'Search project memory for past decisions, bugs, patterns, and architecture choices',
+    description: `Search project memory using semantic similarity or keyword matching.
+
+Examples:
+- buddy-remember "how do we handle authentication" -> finds JWT, OAuth, session memories
+- buddy-remember "database" mode=keyword -> exact keyword match only
+- buddy-remember "user login" mode=semantic minSimilarity=0.5 -> high-quality semantic matches only
+
+The default 'hybrid' mode combines semantic understanding with keyword matching for best results.`,
     inputSchema: {
       type: 'object' as const,
       properties: {
         query: {
           type: 'string',
-          description: 'What to remember/recall (e.g., "api design decisions", "authentication approach")',
+          description: 'Search query (natural language supported for semantic search)',
+        },
+        mode: {
+          type: 'string',
+          enum: ['semantic', 'keyword', 'hybrid'],
+          description: 'Search mode: semantic (AI similarity), keyword (exact match), hybrid (both combined). Default: hybrid',
         },
         limit: {
           type: 'number',
-          description: 'Maximum number of memories to retrieve (1-50, default: 5)',
+          description: 'Maximum number of results to return (1-50, default: 10)',
           minimum: 1,
           maximum: 50,
+        },
+        minSimilarity: {
+          type: 'number',
+          description: 'Minimum similarity score (0-1) for semantic/hybrid search. Default: 0.3',
+          minimum: 0,
+          maximum: 1,
         },
       },
       required: ['query'],
@@ -146,7 +170,8 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
   // ========================================
 
   const buddyRecordMistakeTool: MCPToolDefinition = {
-    name: 'buddy-record-mistake',
+    name: 'memesh-record-mistake',
+    aliases: ['buddy-record-mistake'],  // Deprecated, will be removed in v3.0.0
     description: `📝 MeMesh: Record AI mistakes for learning and prevention - enable systematic improvement from user feedback.
 
 **When to Record:**
@@ -255,7 +280,8 @@ Record:
   // ========================================
 
   const hookToolUseTool: MCPToolDefinition = {
-    name: 'hook-tool-use',
+    name: 'memesh-hook-tool-use',
+    aliases: ['hook-tool-use'],  // Deprecated, will be removed in v3.0.0
     description: 'Process tool execution events from Claude Code CLI for workflow automation (auto-triggered, do not call manually)',
     inputSchema: {
       type: 'object' as const,
@@ -302,7 +328,8 @@ Record:
   // ========================================
 
   const createEntitiesTool: MCPToolDefinition = {
-    name: 'create-entities',
+    name: 'memesh-create-entities',
+    aliases: ['create-entities'],  // Deprecated, will be removed in v3.0.0
     description: `✨ MeMesh: Create entities in Knowledge Graph - record decisions, features, bug fixes, and lessons learned.
 
 **What to Record:**
@@ -448,118 +475,13 @@ Requires MEMESH_API_KEY to be configured. Without it, all actions return a setup
   // Task Board Tools (Local Task Management)
   // ========================================
 
-  const a2aBoardTool: MCPToolDefinition = {
-    name: 'a2a-board',
-    description: `📋 View all tasks in the unified task board with optional filtering (Kanban style).
-
-Displays tasks grouped by status (pending, in_progress, completed) with summary statistics.
-Supports filtering by status, platform, and owner.
-
-**Usage:**
-• No params: Show all tasks in Kanban view
-• {status: "pending"}: Show only pending tasks
-• {platform: "claude-code"}: Show tasks from specific platform
-• {owner: "agent-id"}: Show tasks assigned to specific agent`,
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        status: {
-          type: 'string',
-          enum: ['pending', 'in_progress', 'completed', 'deleted'],
-          description: 'Filter by task status',
-        },
-        platform: {
-          type: 'string',
-          description: 'Filter by creator platform (e.g., claude-code, chatgpt, cursor)',
-        },
-        owner: {
-          type: 'string',
-          description: 'Filter by owner agent ID',
-        },
-      },
-    },
-    annotations: {
-      title: 'Task Board',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  };
-
-  const a2aClaimTaskTool: MCPToolDefinition = {
-    name: 'a2a-claim-task',
-    description: `🙋 Claim a pending task from the task board for the current agent.
-
-**Workflow:**
-1. View available tasks with a2a-board (filter by status: "pending")
-2. Claim a task with a2a-claim-task
-3. Complete work on the task`,
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        taskId: {
-          type: 'string',
-          description: 'UUID of the task to claim',
-        },
-      },
-      required: ['taskId'],
-    },
-    annotations: {
-      title: 'Task Claim',
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: false,
-    },
-  };
-
-  const a2aFindTasksTool: MCPToolDefinition = {
-    name: 'a2a-find-tasks',
-    description: `🔍 Find tasks matching specified skills or criteria from the task board.
-
-**Usage:**
-• Find tasks by skills: {skills: ["typescript", "testing"]}
-• Filter by status: {status: "pending"} (default)
-• Limit results: {limit: 5} (default: 10, max: 50)`,
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        skills: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Array of skill strings to match against task metadata or subject',
-        },
-        status: {
-          type: 'string',
-          enum: ['pending', 'in_progress', 'completed', 'deleted'],
-          description: 'Task status filter (default: pending)',
-          default: 'pending',
-        },
-        limit: {
-          type: 'number',
-          description: 'Maximum number of results (default: 10, max: 50)',
-          minimum: 1,
-          maximum: 50,
-          default: 10,
-        },
-      },
-    },
-    annotations: {
-      title: 'Task Finder',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  };
-
   // ========================================
   // Test Generation Tools
   // ========================================
 
   const generateTestsTool: MCPToolDefinition = {
-    name: 'generate-tests',
+    name: 'memesh-generate-tests',
+    aliases: ['generate-tests'],  // Deprecated, will be removed in v3.0.0
     description: 'Automatically generate test cases from specifications or code using AI. Provide either specification or code (at least one required).',
     inputSchema: {
       type: 'object',
@@ -589,7 +511,8 @@ Supports filtering by status, platform, and owner.
   // ========================================
 
   const buddySecretStoreTool: MCPToolDefinition = {
-    name: 'buddy-secret-store',
+    name: 'memesh-secret-store',
+    aliases: ['buddy-secret-store'],  // Deprecated, will be removed in v3.0.0
     description:
       '🔐 Securely store API keys, tokens, or passwords. USE THIS when user shares sensitive credentials. ' +
       'Encrypted with AES-256-GCM, stored locally only (never transmitted). ' +
@@ -633,7 +556,8 @@ Supports filtering by status, platform, and owner.
   };
 
   const buddySecretGetTool: MCPToolDefinition = {
-    name: 'buddy-secret-get',
+    name: 'memesh-secret-get',
+    aliases: ['buddy-secret-get'],  // Deprecated, will be removed in v3.0.0
     description:
       '🔓 Retrieve a stored secret to use in API calls or configurations. USE THIS when you need a credential for an operation. ' +
       'Returns the decrypted value directly. Example workflow: User asks "call OpenAI API" → ' +
@@ -659,7 +583,8 @@ Supports filtering by status, platform, and owner.
   };
 
   const buddySecretListTool: MCPToolDefinition = {
-    name: 'buddy-secret-list',
+    name: 'memesh-secret-list',
+    aliases: ['buddy-secret-list'],  // Deprecated, will be removed in v3.0.0
     description:
       '📋 List all stored secrets (names, types, expiry dates - NOT the actual values). USE THIS to discover what credentials are available ' +
       'before calling buddy-secret-get. Shows: name, type (api_key/token/password), creation date, expiry. ' +
@@ -678,7 +603,8 @@ Supports filtering by status, platform, and owner.
   };
 
   const buddySecretDeleteTool: MCPToolDefinition = {
-    name: 'buddy-secret-delete',
+    name: 'memesh-secret-delete',
+    aliases: ['buddy-secret-delete'],  // Deprecated, will be removed in v3.0.0
     description:
       '🗑️ Permanently delete a stored secret. USE THIS for: (1) Key rotation - delete old key after storing new one, ' +
       '(2) Cleanup - remove unused credentials, (3) Security - remove compromised keys immediately. ' +
@@ -727,11 +653,6 @@ Supports filtering by status, platform, and owner.
 
     // Cloud Sync
     cloudSyncTool,
-
-    // Task Board Tools
-    a2aBoardTool,
-    a2aClaimTaskTool,
-    a2aFindTasksTool,
 
     // Hook Integration
     hookToolUseTool,

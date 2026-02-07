@@ -19,7 +19,7 @@
 
 ---
 
-### 🎥 **See It In Action** (Interactive Demo)
+### 🎥 **See It In Action**
 
 <table>
 <tr>
@@ -159,7 +159,7 @@ MeMesh: "Based on your decision from 2024-01-15: PostgreSQL was
       chosen for JSONB support and advanced query capabilities..."
 ```
 
-**Claude remembers. Forever.**
+**Claude remembers across sessions.** *(Session memories: 30 days, project memories: 90 days)*
 
 ### 2. 🎯 **Smart Task Routing (Autopilot Mode)**
 
@@ -217,9 +217,9 @@ cd claude-code-buddy
 ./scripts/quick-install.sh
 ```
 
-### 🏆 Claude Code Marketplace (Coming Soon)
+### 🏆 Claude Code Plugin
 ```bash
-/plugin install memesh@claude-plugins-official
+claude --plugin-dir /path/to/claude-code-buddy/.claude-plugin/memesh
 ```
 
 ---
@@ -278,22 +278,22 @@ buddy-do "explain MeMesh features"
 
 ## 💡 Real-World Usage
 
-### Scenario 1: **Building a New Feature**
+### Scenario 1: **Smart Task Execution**
 
 ```bash
-You: buddy-do "create a real-time chat with WebSocket"
+You: buddy-do "review the authentication module"
 
-MeMesh analyzes your project...
-🔍 Detected: React + Node.js + Express
-🧠 Recalled: Your preference for TypeScript strict mode
-📝 Applying: Error boundaries pattern from LoginPage.tsx
+MeMesh routes your task...
+🔍 Detected task type: Code Review
+🧠 Recalled: Your auth decisions from previous sessions
+📋 Providing: Structured analysis with context
 
-✅ Generated:
-   ├─ server/chat.ts (WebSocket server)
-   ├─ components/ChatWindow.tsx (React component)
-   └─ hooks/useWebSocket.ts (Custom hook)
+✅ Result:
+   • Analyzed auth module against stored best practices
+   • Referenced your JWT decision from last month
+   • Suggested improvements based on project patterns
 
-💾 Saved to memory: "WebSocket chat architecture - 2024-01-20"
+💾 Saved to memory: "Auth review findings - 2024-01-20"
 ```
 
 ### Scenario 2: **"Wait, Why Did We Do That?"**
@@ -467,7 +467,7 @@ Use `buddy-help` to see all available commands.
 ### Requirements
 - Node.js 20+
 - Claude Code
-- 5 minutes of your time
+- 2 minutes of your time
 
 </td>
 <td width="50%">
@@ -483,8 +483,8 @@ Use `buddy-help` to see all available commands.
 
 ### 🔒 Security First
 
-- ✅ **100% Local Processing** - Your data never leaves your machine
-- ✅ **No External API Calls** - Uses your Claude Code subscription
+- ✅ **Local-First Processing** - All data stored locally by default
+- ✅ **Optional Cloud Sync** - `memesh-cloud-sync` available for cross-device memory (opt-in only)
 - ✅ **npm audit: 0 vulnerabilities**
 - ✅ **Open Source** - Audit the code yourself
 
@@ -524,7 +524,7 @@ We'd love your help making MeMesh better!
 <details>
 <summary><strong>Q: Is my data safe?</strong></summary>
 
-**A:** Yes. Everything processed locally. Zero external API calls. Zero data upload.
+**A:** Yes. All data stored and processed locally by default. Cloud sync (`memesh-cloud-sync`) is available but opt-in only — nothing is uploaded without your explicit action.
 
 </details>
 
@@ -551,7 +551,7 @@ Want deeper customization? Check our [Contributing Guide](docs/CONTRIBUTING.md) 
 <details>
 <summary><strong>Q: Does it work with Cursor?</strong></summary>
 
-**A:** Yes! Cursor has native MCP support. One-click install.
+**A:** Yes! Cursor has native MCP support. Configure the MCP server path in Cursor's settings.
 
 </details>
 

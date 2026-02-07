@@ -129,12 +129,12 @@ claude mcp list
 **Expected output:**
 ```
 Connected MCP Servers:
-✅ memesh (18 tools available)
+✅ memesh (12 tools available)
    Core: buddy-do, buddy-remember, buddy-help
-   Workflow: get-session-health, get-workflow-guidance
-   Secrets: buddy-secret-store, buddy-secret-get, buddy-secret-list, buddy-secret-delete
-   A2A: a2a-send-task, a2a-get-task, a2a-list-tasks, a2a-list-agents, a2a-report-result
-   Other: create-entities, buddy-record-mistake, generate-tests, hook-tool-use
+   MeMesh: memesh-record-mistake, memesh-create-entities,
+           memesh-secret-store, memesh-secret-get, memesh-secret-list, memesh-secret-delete,
+           memesh-hook-tool-use, memesh-generate-tests
+   Cloud: memesh-cloud-sync
 ```
 
 ---
@@ -150,7 +150,7 @@ Verify MeMesh is working by checking available capabilities:
 
 **Expected response:**
 ```
-MeMesh provides 18 tools:
+MeMesh provides 12 tools:
 
 Core Commands (3):
   1. buddy-do - Smart task routing and execution

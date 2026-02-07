@@ -17,7 +17,7 @@
 
 ---
 
-### 🎥 **實際效果展示**（互動示範）
+### 🎥 **實際效果展示**
 
 <table>
 <tr>
@@ -157,7 +157,7 @@ MeMesh: "根據你在 2024-01-15 的決策：選擇 PostgreSQL 是因為
       JSONB 支援和進階查詢能力..."
 ```
 
-**Claude 記住了。永遠。**
+**Claude 跨 session 記住了。** *（Session 記憶：30 天，專案記憶：90 天）*
 
 ### 2. 🎯 **智能任務路由（自動駕駛模式）**
 
@@ -190,7 +190,7 @@ memesh-secret-list                                  # 查看已儲存
 memesh-secret-delete "old_key"                      # 清理舊金鑰
 ```
 
-**AES-256-GCM 加密。僅存本地。永不傳輸。**
+**AES-256-GCM 加密。本地儲存。**
 
 ---
 
@@ -220,9 +220,9 @@ cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/memesh&config=eyJjb
 
 **完整設定**：請參閱下方 [Cursor 完整設定](#cursor-完整設定)。
 
-### 🏆 Claude Code Marketplace（即將推出）
+### 🏆 Claude Code Plugin
 ```bash
-/plugin install memesh@claude-plugins-official
+claude --plugin-dir /path/to/claude-code-buddy/.claude-plugin/memesh
 ```
 
 ---
@@ -306,16 +306,22 @@ buddy-do "解釋 MeMesh 功能"
 
 ## 💡 實際使用場景
 
-### 場景 1：**開發新功能**
+### 場景 1：**智能任務執行**
 
 ```bash
-你: buddy-do "建立 WebSocket 即時聊天"
+你: buddy-do "review 身份驗證模組"
 
-MeMesh 會：
-✅ 記住你的技術棧（React, Node.js 等）
-✅ 套用你過去的程式碼模式
-✅ 生成符合你風格的程式碼
-✅ 自動記錄這次設計決策供未來使用
+MeMesh 路由你的任務...
+🔍 偵測到任務類型：程式碼審查
+🧠 回想：你過去 session 的身份驗證決策
+📋 提供：帶上下文的結構化分析
+
+✅ 結果：
+   • 根據已儲存的最佳實踐分析了 auth 模組
+   • 引用了上個月的 JWT 決策
+   • 基於專案模式提出改善建議
+
+💾 儲存到記憶："Auth review 發現 - 2024-01-20"
 ```
 
 ### 場景 2：**「等等，我們為什麼這樣做？」**
@@ -438,7 +444,7 @@ buddy-remember "auth"  # 回傳 project-B 的 auth 決策
 ### 需求
 - Node.js 20+
 - Claude Code 或 Cursor IDE
-- 5 分鐘時間
+- 2 分鐘時間
 
 </td>
 <td width="50%">
@@ -454,8 +460,8 @@ buddy-remember "auth"  # 回傳 project-B 的 auth 決策
 
 ### 🔒 安全優先
 
-- ✅ **100% 本地處理** - 資料永不離開你的機器
-- ✅ **零外部 API 呼叫** - 使用你的 Claude Code 訂閱
+- ✅ **本地優先處理** - 所有資料預設儲存在本地
+- ✅ **可選雲端同步** - `memesh-cloud-sync` 可用於跨裝置記憶（僅在主動啟用時）
 - ✅ **npm audit：0 個漏洞**
 - ✅ **開源** - 自己審查程式碼
 
@@ -523,7 +529,7 @@ buddy-remember "auth"  # 回傳 project-B 的 auth 決策
 <details>
 <summary><strong>Q：我的資料安全嗎？</strong></summary>
 
-**A：** 是的。所有資料都在本地處理。零外部 API 呼叫。零資料上傳。
+**A：** 是的。所有資料預設在本地處理和儲存。雲端同步（`memesh-cloud-sync`）可用但需主動啟用 — 未經你明確操作不會上傳任何資料。
 
 </details>
 
@@ -550,7 +556,7 @@ buddy-remember "auth"  # 回傳 project-B 的 auth 決策
 <details>
 <summary><strong>Q：支援 Cursor 嗎？</strong></summary>
 
-**A：** 支援！Cursor 原生支援 MCP。快速安裝。
+**A：** 支援！Cursor 原生支援 MCP。在 Cursor 設定中配置 MCP server 路徑即可。
 
 </details>
 

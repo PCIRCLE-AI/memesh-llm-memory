@@ -1,5 +1,4 @@
-import { AgentType } from '../orchestrator/types.js';
-import { AgentClassification } from '../types/AgentClassification.js';
+import { AgentType, AgentClassification } from '../types/AgentClassification.js';
 export interface AgentMetadata {
     name: AgentType;
     description: string;

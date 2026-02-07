@@ -6,6 +6,7 @@
 
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { ProjectMemoryManager } from '../memory/ProjectMemoryManager.js';
+import type { SessionMemoryPipeline } from '../integrations/session-memory/index.js';
 import { logger } from '../utils/logger.js';
 
 const DEFAULT_MEMORY_LIMIT = 3;
@@ -15,7 +16,8 @@ export class SessionBootstrapper {
 
   constructor(
     private projectMemoryManager: ProjectMemoryManager,
-    private memoryLimit: number = DEFAULT_MEMORY_LIMIT
+    private memoryLimit: number = DEFAULT_MEMORY_LIMIT,
+    private sessionMemoryPipeline?: SessionMemoryPipeline,
   ) {}
 
   async maybePrepend(result: CallToolResult): Promise<CallToolResult> {
@@ -44,41 +46,53 @@ export class SessionBootstrapper {
   }
 
   private async buildStartupMessage(): Promise<string | null> {
+    let text = '';
+
+    // 1. Collect recent project memories
     try {
       const memories = await this.projectMemoryManager.recallRecentWork({
         limit: this.memoryLimit,
       });
 
-      if (memories.length === 0) {
-        return null;
-      }
+      if (memories.length > 0) {
+        text += '📌 Recent Project Memories\n';
+        text += '━'.repeat(60) + '\n\n';
 
-      let text = '📌 Recent Project Memories\n';
-      text += '━'.repeat(60) + '\n\n';
-
-      memories.forEach((memory, index) => {
-        text += `${index + 1}. ${memory.entityType}\n`;
-        if (memory.createdAt) {
-          text += `   Timestamp: ${memory.createdAt.toISOString()}\n`;
-        }
-        if (memory.observations?.length) {
-          const preview = memory.observations.slice(0, 2);
-          preview.forEach(obs => {
-            text += `   - ${obs}\n`;
-          });
-          if (memory.observations.length > preview.length) {
-            text += `   - ...\n`;
+        memories.forEach((memory, index) => {
+          text += `${index + 1}. ${memory.entityType}\n`;
+          if (memory.createdAt) {
+            text += `   Timestamp: ${memory.createdAt.toISOString()}\n`;
           }
-        }
-        text += '\n';
-      });
+          if (memory.observations?.length) {
+            const preview = memory.observations.slice(0, 2);
+            preview.forEach(obs => {
+              text += `   - ${obs}\n`;
+            });
+            if (memory.observations.length > preview.length) {
+              text += `   - ...\n`;
+            }
+          }
+          text += '\n';
+        });
 
-      text += '━'.repeat(60) + '\n';
-
-      return text;
+        text += '━'.repeat(60) + '\n';
+      }
     } catch (error) {
-      logger.warn('Failed to preload project memories:', error);
-      return null;
+      logger.error('Failed to preload project memories:', error);
     }
+
+    // 2. Append session memory context from Knowledge Graph (if pipeline available)
+    if (this.sessionMemoryPipeline) {
+      try {
+        const sessionContext = this.sessionMemoryPipeline.generateContext();
+        if (sessionContext) {
+          text += (text ? '\n' : '') + sessionContext + '\n';
+        }
+      } catch (error) {
+        logger.warn('Failed to generate session memory context:', error);
+      }
+    }
+
+    return text || null;
   }
 }

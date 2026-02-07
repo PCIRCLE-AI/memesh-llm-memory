@@ -9,7 +9,7 @@
  * MCP Server Mode (Daemon Architecture):
  * - First instance becomes the daemon (singleton)
  * - Subsequent instances connect as proxy clients
- * - Daemon manages shared state (knowledge graph, A2A, etc.)
+ * - Daemon manages shared state (knowledge graph, memory, etc.)
  *
  * CLI Mode:
  * - Detects command-line arguments
@@ -102,7 +102,7 @@ if (hasCliArgs) {
     const { runCLI } = await import('../cli/index.js');
     await runCLI();
   })().catch((error) => {
-    console.error('CLI error:', error);
+    process.stderr.write(`CLI error: ${error}\n`);
     process.exit(1);
   });
 } else {
@@ -199,90 +199,17 @@ ${chalk.default.bold('Documentation:')}
   ${chalk.default.underline('https://github.com/PCIRCLE-AI/claude-code-buddy#installation')}
 `;
 
-      console.log(
+      process.stderr.write(
         boxen(message, {
           padding: 1,
           margin: 1,
           borderStyle: 'round',
           borderColor: 'yellow',
-        })
+        }) + '\n'
       );
       process.exit(0);
     }
   }, watchdogTimeoutMs);
-}
-
-/**
- * Start A2A Protocol server for agent-to-agent communication
- */
-async function startA2AServer(): Promise<any> {
-  try {
-    // Dynamic imports to avoid loading before env var is set
-    const { A2AServer } = await import('../a2a/server/A2AServer.js');
-
-    // Generate agent ID from env or create meaningful default
-    const os = await import('os');
-    const hostname = os.hostname().split('.')[0].toLowerCase();
-    const timestamp = Date.now().toString(36);
-    const defaultId = `${hostname}-${timestamp}`;
-    const agentId = process.env.A2A_AGENT_ID || defaultId;
-
-    // Create agent card
-    const agentCard = {
-      id: agentId,
-      name: 'MeMesh (MCP)',
-      description: 'AI development assistant via MCP protocol',
-      version: '2.7.0',
-      capabilities: {
-        skills: [
-          {
-            name: 'buddy-do',
-            description: 'Execute tasks with MeMesh',
-          },
-          {
-            name: 'buddy-remember',
-            description: 'Store and retrieve knowledge',
-          },
-        ],
-        supportedFormats: ['text/plain', 'application/json'],
-        maxMessageSize: 10 * 1024 * 1024, // 10MB
-        streaming: false,
-        pushNotifications: false,
-      },
-      endpoints: {
-        baseUrl: 'http://localhost:3000', // Will be updated with actual port
-      },
-    };
-
-    // Create and start A2A server
-    const server = new A2AServer({
-      agentId,
-      agentCard,
-      portRange: { min: 3000, max: 3999 },
-      heartbeatInterval: 60000, // 1 minute
-    });
-
-    const port = await server.start();
-
-    // Log success to file (not stdout to avoid polluting MCP protocol)
-    const { logger } = await import('../utils/logger.js');
-    logger.info('[A2A] Server started successfully', {
-      port,
-      agentId,
-      baseUrl: `http://localhost:${port}`,
-    });
-
-    return server;
-  } catch (error) {
-    // A2A server failed to start - log to file and continue MCP operation
-    const { logger } = await import('../utils/logger.js');
-    logger.error('[A2A] Failed to start A2A server', {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-    // MCP continues without A2A functionality
-    return null;
-  }
 }
 
 // ============================================================================
@@ -352,7 +279,7 @@ async function bootstrapWithDaemon() {
     }
   } catch (error) {
     // If daemon bootstrap fails, fall back to standalone mode
-    console.error('[Bootstrap] Daemon bootstrap failed, falling back to standalone:', error);
+    process.stderr.write(`[Bootstrap] Daemon bootstrap failed, falling back to standalone: ${error}\n`);
     startMCPServer();
   }
 }
@@ -430,9 +357,6 @@ async function startAsDaemon(bootstrapper: DaemonBootstrap, version: string) {
   // Also start the MCP server for direct stdio communication (first client)
   await mcpServer.start();
 
-  // Start A2A server
-  const a2aServer = await startA2AServer();
-
   // Cleanup function for socket and lock
   const cleanupDaemon = async (reason: string): Promise<void> => {
     logger.info('[Daemon] Cleanup started', { reason });
@@ -444,17 +368,6 @@ async function startAsDaemon(bootstrapper: DaemonBootstrap, version: string) {
       logger.warn('[Daemon] Error stopping socket server', {
         error: error instanceof Error ? error.message : String(error),
       });
-    }
-
-    // Stop A2A server
-    if (a2aServer) {
-      try {
-        await a2aServer.stop();
-      } catch (error) {
-        logger.warn('[Daemon] Error stopping A2A server', {
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
     }
 
     // Release lock
@@ -559,26 +472,9 @@ async function startAsProxy(bootstrapper: DaemonBootstrap) {
 
   logger.info('[Proxy] Proxy started, forwarding stdio to daemon');
 
-  // Start A2A server for this proxy session (multi-agent collaboration)
-  // Each Claude Code session needs its own A2A identity per Google A2A best practices
-  const a2aServer = await startA2AServer();
-
-  // Graceful shutdown - must also stop A2A server
+  // Graceful shutdown
   setupSignalHandlers(async (signal: string) => {
     logger.info('[Proxy] Shutdown requested', { signal });
-
-    // Stop A2A server first
-    if (a2aServer) {
-      try {
-        await a2aServer.stop();
-        logger.info('[Proxy] A2A server stopped');
-      } catch (error) {
-        logger.warn('[Proxy] Error stopping A2A server', {
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    }
-
     await proxyClient.stop();
     process.exit(0);
   });
@@ -594,9 +490,6 @@ async function startAsProxy(bootstrapper: DaemonBootstrap) {
 function startMCPServer() {
   // Set MCP_SERVER_MODE before ANY imports
   process.env.MCP_SERVER_MODE = 'true';
-
-  // Global reference to A2A server for shutdown
-  let a2aServerRef: any = null;
 
   async function bootstrap() {
     try {
@@ -615,13 +508,9 @@ function startMCPServer() {
 
       await mcpServer.start();
 
-      // Start A2A server
-      a2aServerRef = await startA2AServer();
-
       // server.connect() keeps the process alive - no need for infinite promise
     } catch (error) {
-      // Use console.error for stdio safety (writes to stderr, not stdout)
-      console.error('Fatal error in MCP server bootstrap:', error);
+      process.stderr.write(`Fatal error in MCP server bootstrap: ${error}\n`);
       process.exit(1);
     }
   }
@@ -631,16 +520,11 @@ function startMCPServer() {
    * Note: No console output in MCP stdio mode to avoid polluting the protocol channel
    */
   async function shutdown(signal: string): Promise<void> {
-    // Set shutdown timeout to prevent hung processes
     const shutdownTimeout = setTimeout(() => {
       process.exit(1);
     }, 5000);
 
     try {
-      if (a2aServerRef) {
-        await a2aServerRef.stop();
-      }
-
       clearTimeout(shutdownTimeout);
       process.exit(0);
     } catch {

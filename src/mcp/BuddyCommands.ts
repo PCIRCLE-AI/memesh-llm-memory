@@ -137,17 +137,15 @@ ${chalk.dim('→')} Searches knowledge graph, shows past decisions
 
 ${chalk.bold('Additional Features')}
 
-${chalk.dim('A2A (Agent-to-Agent):')}     a2a-list-agents, a2a-send-task
-${chalk.dim('Secrets:')}                   buddy-secret-store, buddy-secret-get
-${chalk.dim('Knowledge:')}                 create-entities
-${chalk.dim('Health:')}                    get-session-health
+${chalk.dim('Secrets:')}                   memesh-secret-store, memesh-secret-get
+${chalk.dim('Knowledge:')}                 memesh-memesh-create-entities
+${chalk.dim('Error Recording:')}           memesh-record-mistake
 
 ${chalk.yellow('💡 New to MeMesh?')}
 Run: ${chalk.cyan('memesh tutorial')} (5 min guided intro)
 
 ${chalk.dim('📖 Full reference:')} buddy-help --all
 ${chalk.dim('   Specific command:')} buddy-help do
-${chalk.dim('   Category help:')} buddy-help a2a
 `;
 
     return boxen(content, {
@@ -175,50 +173,32 @@ ${chalk.bold.yellow('📋 Core Commands')}
     ${chalk.dim('do:')} help-with, execute, run, task
     ${chalk.dim('remember:')} recall, retrieve, search, find
 
-${chalk.bold.yellow('🤝 A2A (Agent-to-Agent) Collaboration')}
-  ${chalk.cyan('a2a-list-agents')}           List all available A2A agents
-  ${chalk.cyan('a2a-send-task')}             Send task to another agent
-  ${chalk.cyan('a2a-get-task')}              Get task status and details
-  ${chalk.cyan('a2a-list-tasks')}            List tasks assigned to you
-  ${chalk.cyan('a2a-report-result')}         Report task execution result
-
-  ${chalk.dim('Note:')} Your agent ID format: ${chalk.dim('${hostname}-${timestamp}')}
-  ${chalk.dim('Find your ID:')} curl -s http://localhost:3000/a2a/agent-card | grep id
-
 ${chalk.bold.yellow('🔐 Secrets Management')}
-  ${chalk.cyan('buddy-secret-store')}        Securely store API keys/tokens
-  ${chalk.cyan('buddy-secret-get')}          Retrieve stored secret
-  ${chalk.cyan('buddy-secret-list')}         List all stored secrets (names only)
-  ${chalk.cyan('buddy-secret-delete')}       Delete a stored secret
+  ${chalk.cyan('memesh-secret-store')}       Securely store API keys/tokens
+  ${chalk.cyan('memesh-secret-get')}         Retrieve stored secret
+  ${chalk.cyan('memesh-secret-list')}        List all stored secrets (names only)
+  ${chalk.cyan('memesh-secret-delete')}      Delete a stored secret
 
   ${chalk.dim('Encryption:')} AES-256-GCM, stored locally only
   ${chalk.dim('Auto-expiry:')} Default 30 days, configurable
 
 ${chalk.bold.yellow('🧠 Knowledge Graph')}
-  ${chalk.cyan('create-entities')}           Record decisions, features, lessons learned
+  ${chalk.cyan('memesh-memesh-create-entities')}    Record decisions, features, lessons learned
 
   ${chalk.dim('Entity types:')} decision, feature, bug_fix, lesson_learned
   ${chalk.dim('Auto-tags:')} scope:project:*, tech:* added automatically
-
-${chalk.bold.yellow('💊 Workflow & Health')}
-  ${chalk.cyan('get-session-health')}        Check token usage & quality metrics
-  ${chalk.cyan('get-workflow-guidance')}     Get context-aware workflow suggestions
 
 ${chalk.bold.yellow('📖 Examples')}
   ${chalk.green('# Task Execution')}
   ${chalk.green('❯')} buddy-do "setup authentication"
   ${chalk.green('❯')} buddy-remember "why JWT over sessions"
 
-  ${chalk.green('# A2A Collaboration')}
-  ${chalk.green('❯')} a2a-list-agents
-  ${chalk.green('❯')} a2a-send-task targetAgentId="kts-macbook-abc123" task="analyze logs"
-
   ${chalk.green('# Secrets')}
-  ${chalk.green('❯')} buddy-secret-store name="openai_key" value="sk-..." type="api_key"
-  ${chalk.green('❯')} buddy-secret-get name="openai_key"
+  ${chalk.green('❯')} memesh-secret-store name="openai_key" value="sk-..." type="api_key"
+  ${chalk.green('❯')} memesh-secret-get name="openai_key"
 
   ${chalk.green('# Knowledge')}
-  ${chalk.green('❯')} create-entities entities=[{name:"JWT Auth",type:"decision",...}]
+  ${chalk.green('❯')} memesh-create-entities entities=[{name:"JWT Auth",type:"decision",...}]
 
 ${chalk.bold.yellow('🛠️  Configuration')}
   ${chalk.cyan('memesh setup')}              Interactive configuration wizard
@@ -248,7 +228,6 @@ ${chalk.dim('📖 Docs:')} https://memesh.pcircle.ai
       help: () => this.getHelpCommandHelp(),
 
       // Category helps
-      a2a: () => this.getA2AHelp(),
       secrets: () => this.getSecretsHelp(),
       secret: () => this.getSecretsHelp(),
       knowledge: () => this.getKnowledgeHelp(),
@@ -405,99 +384,6 @@ ${chalk.bold('Documentation:')}
   }
 
   /**
-   * Detailed help for A2A (Agent-to-Agent) features
-   */
-  private static getA2AHelp(): string {
-    const content = `
-${chalk.bold.cyan('A2A (Agent-to-Agent)')} - Multi-Agent Collaboration
-
-${chalk.dim('Description:')}
-Enable multiple Claude Code sessions to collaborate and delegate
-tasks to each other. Each session runs an independent A2A agent.
-
-${chalk.bold('🔑 Key Concepts:')}
-
-${chalk.yellow('Agent ID Format:')} ${chalk.dim('\${hostname}-\${timestamp}')}
-  Example: kts-macbook-ml8cy34o
-
-${chalk.yellow('Check-in Name:')} Display name (e.g., "Lambda")
-  ${chalk.dim('Note:')} This is NOT your agent ID!
-
-${chalk.yellow('Find Your Agent ID:')}
-  ${chalk.cyan('curl -s http://localhost:3000/a2a/agent-card | grep id')}
-
-${chalk.bold('📋 Available Tools:')}
-
-${chalk.cyan('a2a-list-agents')} [status]
-  List all A2A agents in the registry
-  ${chalk.dim('Status:')} active | inactive | all
-
-${chalk.cyan('a2a-send-task')} targetAgentId taskDescription [priority]
-  Send a task to another agent
-  ${chalk.dim('Priority:')} low | normal | high | urgent
-
-${chalk.cyan('a2a-get-task')} targetAgentId taskId
-  Get status and details of a specific task
-
-${chalk.cyan('a2a-list-tasks')} [state] [limit]
-  List tasks assigned to you
-  ${chalk.dim('State:')} SUBMITTED | WORKING | COMPLETED | FAILED
-
-${chalk.cyan('a2a-report-result')} taskId result success
-  Report task execution result
-
-${chalk.bold('📝 Examples:')}
-
-${chalk.green('# Discover agents')}
-${chalk.green('❯')} a2a-list-agents status="active"
-${chalk.dim('→')} Shows all active agents with IDs, ports, heartbeat
-
-${chalk.green('# Send task')}
-${chalk.green('❯')} a2a-send-task \\
-  targetAgentId="kts-macbook-xyz789" \\
-  taskDescription="analyze error logs" \\
-  priority="high"
-${chalk.dim('→')} Returns task ID for tracking
-
-${chalk.green('# Check task')}
-${chalk.green('❯')} a2a-get-task \\
-  targetAgentId="kts-macbook-xyz789" \\
-  taskId="task_123abc"
-${chalk.dim('→')} Shows: WORKING, 60% complete
-
-${chalk.green('# List your tasks')}
-${chalk.green('❯')} a2a-list-tasks state="WORKING" limit=10
-${chalk.dim('→')} Shows all tasks assigned to you
-
-${chalk.bold('💡 Best Practices:')}
-• Always check agent list before sending tasks
-• Use meaningful task descriptions
-• Set appropriate priority levels
-• Monitor task progress with a2a-get-task
-• Report results when completed
-
-${chalk.bold('🔧 Troubleshooting:')}
-
-${chalk.yellow('Q:')} Why don't I see my agent in the list?
-${chalk.green('A:')} Your agent ID is different from check-in name.
-   Run: curl -s http://localhost:3000/a2a/agent-card
-
-${chalk.yellow('Q:')} How do I test A2A locally?
-${chalk.green('A:')} Open multiple Claude Code sessions. Each creates
-   an independent agent that can collaborate.
-
-${chalk.yellow('Q:')} Agent shows "stale" status?
-${chalk.green('A:')} No heartbeat for 5+ minutes. Restart the session.
-`;
-
-    return boxen(content, {
-      padding: 1,
-      borderColor: 'cyan',
-      borderStyle: 'round',
-    });
-  }
-
-  /**
    * Detailed help for Secrets Management
    */
   private static getSecretsHelp(): string {
@@ -510,24 +396,24 @@ Uses AES-256-GCM encryption, stored locally only (never transmitted).
 
 ${chalk.bold('📋 Available Tools:')}
 
-${chalk.cyan('buddy-secret-store')} name value type [description] [expiresIn]
+${chalk.cyan('memesh-secret-store')} name value type [description] [expiresIn]
   Store a secret securely
   ${chalk.dim('Types:')} api_key | token | password | other
   ${chalk.dim('ExpiresIn:')} "30d" (days), "24h" (hours), "60m" (minutes)
 
-${chalk.cyan('buddy-secret-get')} name
+${chalk.cyan('memesh-secret-get')} name
   Retrieve a stored secret (returns decrypted value)
 
-${chalk.cyan('buddy-secret-list')}
+${chalk.cyan('memesh-secret-list')}
   List all secrets (names, types, expiry - NOT values)
 
-${chalk.cyan('buddy-secret-delete')} name
+${chalk.cyan('memesh-secret-delete')} name
   Permanently delete a secret
 
 ${chalk.bold('📝 Examples:')}
 
 ${chalk.green('# Store API key')}
-${chalk.green('❯')} buddy-secret-store \\
+${chalk.green('❯')} memesh-secret-store \\
   name="openai_api_key" \\
   value="sk-proj-..." \\
   type="api_key" \\
@@ -535,22 +421,22 @@ ${chalk.green('❯')} buddy-secret-store \\
 ${chalk.dim('→')} ✅ Secret stored securely (expires in 30 days)
 
 ${chalk.green('# Retrieve secret')}
-${chalk.green('❯')} buddy-secret-get name="openai_api_key"
+${chalk.green('❯')} memesh-secret-get name="openai_api_key"
 ${chalk.dim('→')} sk-proj-xxx... (decrypted value)
 
 ${chalk.green('# List all secrets')}
-${chalk.green('❯')} buddy-secret-list
+${chalk.green('❯')} memesh-secret-list
 ${chalk.dim('→')} Shows:
     openai_api_key    | api_key  | Expires: 2026-03-05
     github_token      | token    | Expires: 2026-02-20
     db_password       | password | Expires: 2026-03-01
 
 ${chalk.green('# Delete secret')}
-${chalk.green('❯')} buddy-secret-delete name="old_api_key"
+${chalk.green('❯')} memesh-secret-delete name="old_api_key"
 ${chalk.dim('→')} ✅ Secret deleted permanently
 
 ${chalk.green('# Store with custom expiry')}
-${chalk.green('❯')} buddy-secret-store \\
+${chalk.green('❯')} memesh-secret-store \\
   name="temp_token" \\
   value="token_abc123" \\
   type="token" \\
@@ -562,7 +448,7 @@ ${chalk.bold('💡 Best Practices:')}
 • Set appropriate expiry times for temporary credentials
 • Rotate keys regularly (delete old, store new)
 • Never hardcode secrets in code - always use this system
-• Check buddy-secret-list before storing to avoid duplicates
+• Check memesh-secret-list before storing to avoid duplicates
 
 ${chalk.bold('🔒 Security:')}
 • Encryption: AES-256-GCM (industry standard)
@@ -573,14 +459,14 @@ ${chalk.bold('🔒 Security:')}
 ${chalk.bold('🔧 Common Workflows:')}
 
 ${chalk.yellow('Key Rotation:')}
-  ${chalk.cyan('1.')} buddy-secret-store name="openai_key_new" value="sk-..."
+  ${chalk.cyan('1.')} memesh-secret-store name="openai_key_new" value="sk-..."
   ${chalk.cyan('2.')} Test with new key
-  ${chalk.cyan('3.')} buddy-secret-delete name="openai_key_old"
+  ${chalk.cyan('3.')} memesh-secret-delete name="openai_key_old"
 
 ${chalk.yellow('First-time Setup:')}
-  ${chalk.cyan('1.')} buddy-secret-store name="openai_key" value="sk-..." type="api_key"
-  ${chalk.cyan('2.')} buddy-secret-store name="github_token" value="ghp_..." type="token"
-  ${chalk.cyan('3.')} buddy-secret-list  ${chalk.dim('# Verify stored')}
+  ${chalk.cyan('1.')} memesh-secret-store name="openai_key" value="sk-..." type="api_key"
+  ${chalk.cyan('2.')} memesh-secret-store name="github_token" value="ghp_..." type="token"
+  ${chalk.cyan('3.')} memesh-secret-list  ${chalk.dim('# Verify stored')}
 `;
 
     return boxen(content, {
@@ -604,7 +490,7 @@ provides powerful search capabilities.
 
 ${chalk.bold('📋 Available Tools:')}
 
-${chalk.cyan('create-entities')} entities
+${chalk.cyan('memesh-create-entities')} entities
   Create one or more entities in the knowledge graph
 
 ${chalk.cyan('buddy-remember')} query [limit]
@@ -630,7 +516,7 @@ ${chalk.yellow('tags:')} Array of tags (3-7 recommended)
 ${chalk.bold('📝 Examples:')}
 
 ${chalk.green('# Record a technical decision')}
-${chalk.green('❯')} create-entities entities='[{
+${chalk.green('❯')} memesh-create-entities entities='[{
   "name": "Use JWT for API authentication",
   "entityType": "decision",
   "observations": [
@@ -643,7 +529,7 @@ ${chalk.green('❯')} create-entities entities='[{
 }]'
 
 ${chalk.green('# Record a lesson learned')}
-${chalk.green('❯')} create-entities entities='[{
+${chalk.green('❯')} memesh-create-entities entities='[{
   "name": "Always validate user input before DB queries",
   "entityType": "lesson_learned",
   "observations": [
@@ -656,7 +542,7 @@ ${chalk.green('❯')} create-entities entities='[{
 }]'
 
 ${chalk.green('# Record a feature implementation')}
-${chalk.green('❯')} create-entities entities='[{
+${chalk.green('❯')} memesh-create-entities entities='[{
   "name": "Dark mode implementation",
   "entityType": "feature",
   "observations": [
@@ -710,88 +596,31 @@ ${chalk.bold('🔍 Search Tips:')}
    */
   private static getHealthHelp(): string {
     const content = `
-${chalk.bold.cyan('Workflow & Health')} - Session Monitoring
+${chalk.bold.cyan('Health Monitoring')} - Coming Soon
 
 ${chalk.dim('Description:')}
-Monitor session health, track quality metrics, and get
-workflow guidance for optimal development practices.
+Health monitoring will be available through MeMesh Cloud integration.
 
-${chalk.bold('📋 Available Tools:')}
+${chalk.bold('📋 Planned Features:')}
 
-${chalk.cyan('get-session-health')}
-  Check current session health and metrics
+• Session health tracking
+• Token usage monitoring
+• Quality metrics dashboard
+• Workflow guidance
+• Error rate analysis
 
-${chalk.cyan('get-workflow-guidance')}
-  Get context-aware workflow suggestions
+${chalk.bold('💡 Current Status:')}
 
-${chalk.bold('📝 Examples:')}
+Health monitoring features are planned for future MeMesh Cloud integration.
+For now, monitor your development progress through:
+• Console logs
+• Task completion status
+• Test results
+• Code review feedback
 
-${chalk.green('# Check session health')}
-${chalk.green('❯')} get-session-health
-${chalk.dim('→')} Session Health Report:
+${chalk.bold('📖 Learn More:')}
 
-    Token Usage:     45,231 / 200,000 (23%)
-    Quality Score:   87 / 100 (Good)
-    Tool Calls:      142
-    Errors:          3 (2.1% error rate)
-
-    Recommendations:
-    • Continue current approach
-    • Consider saving checkpoint at 50% tokens
-
-${chalk.green('# Get workflow guidance')}
-${chalk.green('❯')} get-workflow-guidance
-${chalk.dim('→')} Workflow Guidance:
-
-    Current Phase: Implementation
-    Suggested Next: Code Review
-
-    Best Practices:
-    ✓ Read files before editing
-    ✓ Test after implementation
-    ✓ Record decisions in knowledge graph
-
-${chalk.bold('📊 Health Metrics:')}
-
-${chalk.yellow('Token Usage:')} Track API usage and budget
-  ${chalk.green('Green:')} < 50% - Plenty of room
-  ${chalk.yellow('Yellow:')} 50-80% - Monitor usage
-  ${chalk.red('Red:')} > 80% - Consider checkpoint
-
-${chalk.yellow('Quality Score:')} Code quality indicators
-  ${chalk.dim('Factors:')} Test coverage, error handling, documentation
-  ${chalk.green('Good:')} 80-100
-  ${chalk.yellow('Fair:')} 60-79
-  ${chalk.red('Poor:')} < 60
-
-${chalk.yellow('Error Rate:')} Tool call success rate
-  ${chalk.green('Excellent:')} < 5%
-  ${chalk.yellow('Normal:')} 5-15%
-  ${chalk.red('High:')} > 15% (investigate)
-
-${chalk.bold('💡 Best Practices:')}
-• Check health every 30-60 minutes
-• Save checkpoint before major changes
-• Address quality issues proactively
-• Use workflow guidance for complex tasks
-• Monitor error trends
-
-${chalk.bold('🔧 Common Workflows:')}
-
-${chalk.yellow('Before Major Refactoring:')}
-  ${chalk.cyan('1.')} get-session-health  ${chalk.dim('# Check token budget')}
-  ${chalk.cyan('2.')} Save checkpoint if > 50% used
-  ${chalk.cyan('3.')} Proceed with refactoring
-
-${chalk.yellow('Quality Check:')}
-  ${chalk.cyan('1.')} get-session-health  ${chalk.dim('# Check quality score')}
-  ${chalk.cyan('2.')} If < 70, review recent changes
-  ${chalk.cyan('3.')} Address flagged issues
-
-${chalk.yellow('Error Troubleshooting:')}
-  ${chalk.cyan('1.')} get-session-health  ${chalk.dim('# Check error rate')}
-  ${chalk.cyan('2.')} If > 15%, review error types
-  ${chalk.cyan('3.')} Adjust approach based on errors
+Visit https://memesh.pcircle.ai for updates on Cloud features.
 `;
 
     return boxen(content, {

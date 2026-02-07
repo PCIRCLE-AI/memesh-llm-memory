@@ -60,31 +60,6 @@ See last session         MeMesh watches           Saves summary
 
 ---
 
-## A2A (Multi-Agent Feature)
-
-**What is it?** Run multiple Claude Code windows that can talk to each other.
-
-### How It Works
-
-1. Open first Claude Code → Gets name "Alpha"
-2. Open second Claude Code → Gets name "Beta"
-3. Alpha can send tasks to Beta and vice versa
-
-### What You'll See
-
-```
-🤖 MeMesh A2A Collaboration
-
-  You are: Alpha
-  Other agents online: Beta, Gamma
-
-  Commands:
-    a2a-send-task    - Send work to another agent
-    a2a-list-tasks   - See your tasks
-```
-
----
-
 ## Troubleshooting
 
 ### "Hooks not working"
@@ -104,15 +79,6 @@ cp scripts/hooks/*.js ~/.claude/hooks/
 ls ~/.claude-code-buddy/knowledge-graph.db
 ```
 
-### "A2A not connecting"
-
-```bash
-# Reset agent identity
-rm ~/.claude/state/agent-identity.json
-```
-
----
-
 ## Limitations
 
 | What | Details |
@@ -130,7 +96,6 @@ rm ~/.claude/state/agent-identity.json
 ├── session-start.js    ← Runs when you open Claude Code
 ├── post-tool-use.js    ← Runs after each tool (quietly)
 ├── stop.js             ← Runs when you close Claude Code
-├── a2a-collaboration-hook.js  ← Multi-agent stuff
 └── hook-utils.js       ← Shared helper code
 ```
 

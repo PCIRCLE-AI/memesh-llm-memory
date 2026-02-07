@@ -10,17 +10,11 @@ import { createRelationsTool } from '../tools/create-relations.js';
 import { generateTestsTool } from '../tools/generate-tests.js';
 import { handleBuddyRecordMistake } from './BuddyRecordMistake.js';
 import { handleError, logError } from '../../utils/errorHandler.js';
-import { ListSkillsInputSchema, UninstallInputSchema, WorkflowGuidanceInputSchema, RecordTokenUsageInputSchema, HookToolUseInputSchema, RecallMemoryInputSchema, CreateEntitiesInputSchema, AddObservationsInputSchema, CreateRelationsInputSchema, GenerateTestsInputSchema, formatValidationError, } from '../validation.js';
+import { ListSkillsInputSchema, UninstallInputSchema, HookToolUseInputSchema, RecallMemoryInputSchema, CreateEntitiesInputSchema, AddObservationsInputSchema, CreateRelationsInputSchema, GenerateTestsInputSchema, formatValidationError, } from '../validation.js';
 export class ToolHandlers {
-    router;
     agentRegistry;
-    feedbackCollector;
-    performanceTracker;
-    learningManager;
-    evolutionMonitor;
     skillManager;
     uninstallManager;
-    developmentButler;
     checkpointDetector;
     hookIntegration;
     projectMemoryManager;
@@ -31,16 +25,10 @@ export class ToolHandlers {
     unifiedMemoryStore;
     mistakePatternEngine;
     userPreferenceEngine;
-    constructor(router, agentRegistry, feedbackCollector, performanceTracker, learningManager, evolutionMonitor, skillManager, uninstallManager, developmentButler, checkpointDetector, hookIntegration, projectMemoryManager, knowledgeGraph, ui, samplingClient, unifiedMemoryStore) {
-        this.router = router;
+    constructor(agentRegistry, skillManager, uninstallManager, checkpointDetector, hookIntegration, projectMemoryManager, knowledgeGraph, ui, samplingClient, unifiedMemoryStore) {
         this.agentRegistry = agentRegistry;
-        this.feedbackCollector = feedbackCollector;
-        this.performanceTracker = performanceTracker;
-        this.learningManager = learningManager;
-        this.evolutionMonitor = evolutionMonitor;
         this.skillManager = skillManager;
         this.uninstallManager = uninstallManager;
-        this.developmentButler = developmentButler;
         this.checkpointDetector = checkpointDetector;
         this.hookIntegration = hookIntegration;
         this.projectMemoryManager = projectMemoryManager;
@@ -75,26 +63,26 @@ export class ToolHandlers {
             switch (filter) {
                 case 'claude-code-buddy':
                     skills = await this.skillManager.listSmartAgentsSkills();
-                    title = '🎓 MeMesh Skills (sa: prefix)';
+                    title = 'MeMesh Skills (sa: prefix)';
                     break;
                 case 'user':
                     skills = await this.skillManager.listUserSkills();
-                    title = '👤 User Skills';
+                    title = 'User Skills';
                     break;
                 case 'all':
                 default:
                     const allSkillsMetadata = await this.skillManager.listAllSkills();
                     skills = allSkillsMetadata.map(s => s.name);
-                    title = '🎓 All Skills';
+                    title = 'All Skills';
                     break;
             }
             let output = `${title}\n`;
-            output += '━'.repeat(60) + '\n\n';
+            output += '='.repeat(60) + '\n\n';
             if (skills.length === 0) {
                 output += '  No skills found.\n\n';
                 if (filter === 'claude-code-buddy') {
-                    output += '💡 MeMesh can generate skills automatically.\n';
-                    output += '   Skills will appear here once generated.\n';
+                    output += 'MeMesh can generate skills automatically.\n';
+                    output += 'Skills will appear here once generated.\n';
                 }
             }
             else {
@@ -103,37 +91,37 @@ export class ToolHandlers {
                 const userSkills = skills.filter(s => !s.startsWith('sa:'));
                 if (filter === 'all') {
                     if (saSkills.length > 0) {
-                        output += '🎓 MeMesh Skills:\n';
-                        output += '─'.repeat(60) + '\n';
+                        output += 'MeMesh Skills:\n';
+                        output += '-'.repeat(60) + '\n';
                         saSkills.forEach(skill => {
-                            output += `  • ${skill}\n`;
+                            output += `  - ${skill}\n`;
                         });
                         output += '\n';
                     }
                     if (userSkills.length > 0) {
-                        output += '👤 User Skills:\n';
-                        output += '─'.repeat(60) + '\n';
+                        output += 'User Skills:\n';
+                        output += '-'.repeat(60) + '\n';
                         userSkills.forEach(skill => {
-                            output += `  • ${skill}\n`;
+                            output += `  - ${skill}\n`;
                         });
                         output += '\n';
                     }
                 }
                 else {
                     skills.forEach(skill => {
-                        output += `  • ${skill}\n`;
+                        output += `  - ${skill}\n`;
                     });
                     output += '\n';
                 }
             }
-            output += '━'.repeat(60) + '\n';
-            output += '\n💡 Usage:\n';
-            output += '  • buddy_skills - List all skills\n';
-            output += '  • buddy_skills --filter claude-code-buddy - List only sa: skills\n';
-            output += '  • buddy_skills --filter user - List only user skills\n';
-            output += '\n📚 Skill Naming Convention:\n';
-            output += '  • sa:<name> - MeMesh generated skills\n';
-            output += '  • <name> - User-installed skills\n';
+            output += '='.repeat(60) + '\n';
+            output += '\nUsage:\n';
+            output += '  - buddy_skills - List all skills\n';
+            output += '  - buddy_skills --filter claude-code-buddy - List only sa: skills\n';
+            output += '  - buddy_skills --filter user - List only user skills\n';
+            output += '\nSkill Naming Convention:\n';
+            output += '  - sa:<name> - MeMesh generated skills\n';
+            output += '  - <name> - User-installed skills\n';
             return {
                 content: [
                     {
@@ -158,7 +146,7 @@ export class ToolHandlers {
                 content: [
                     {
                         type: 'text',
-                        text: `❌ List skills failed: ${handled.message}`,
+                        text: `List skills failed: ${handled.message}`,
                     },
                 ],
             };
@@ -207,184 +195,7 @@ export class ToolHandlers {
                 content: [
                     {
                         type: 'text',
-                        text: `❌ Uninstall failed: ${handled.message}`,
-                    },
-                ],
-            };
-        }
-    }
-    async handleGetWorkflowGuidance(args) {
-        try {
-            let validatedInput;
-            try {
-                validatedInput = WorkflowGuidanceInputSchema.parse(args);
-            }
-            catch (error) {
-                if (error instanceof z.ZodError) {
-                    throw new ValidationError(formatValidationError(error), {
-                        component: 'ToolHandlers',
-                        method: 'handleGetWorkflowGuidance',
-                        schema: 'WorkflowGuidanceInputSchema',
-                        providedArgs: args,
-                    });
-                }
-                throw error;
-            }
-            const normalizedPhase = this.normalizeWorkflowPhase(validatedInput.phase);
-            if (!normalizedPhase) {
-                throw new ValidationError(`Invalid workflow phase: ${validatedInput.phase}`, {
-                    component: 'ToolHandlers',
-                    method: 'handleGetWorkflowGuidance',
-                    validPhases: ['idle', 'code-written', 'test-complete', 'commit-ready', 'committed'],
-                    providedPhase: validatedInput.phase,
-                });
-            }
-            const result = await this.developmentButler.processCheckpoint(normalizedPhase, {
-                ...validatedInput,
-                phase: normalizedPhase,
-            });
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: result.formattedRequest,
-                    },
-                ],
-            };
-        }
-        catch (error) {
-            logError(error, {
-                component: 'ToolHandlers',
-                method: 'handleGetWorkflowGuidance',
-                operation: 'processing workflow checkpoint',
-                data: { phase: args?.phase },
-            });
-            const handled = handleError(error, {
-                component: 'ToolHandlers',
-                method: 'handleGetWorkflowGuidance',
-            });
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: `❌ Workflow guidance failed: ${handled.message}`,
-                    },
-                ],
-            };
-        }
-    }
-    async handleGetSessionHealth() {
-        try {
-            const health = this.developmentButler.getContextMonitor().checkSessionHealth();
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: JSON.stringify(health, null, 2),
-                    },
-                ],
-            };
-        }
-        catch (error) {
-            logError(error, {
-                component: 'ToolHandlers',
-                method: 'handleGetSessionHealth',
-                operation: 'checking session health',
-            });
-            const handled = handleError(error, {
-                component: 'ToolHandlers',
-                method: 'handleGetSessionHealth',
-            });
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: `❌ Session health check failed: ${handled.message}`,
-                    },
-                ],
-            };
-        }
-    }
-    async handleReloadContext(input) {
-        try {
-            const requestId = `manual_${Date.now()}`;
-            const result = await this.developmentButler.executeContextReload(requestId);
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: JSON.stringify(result, null, 2),
-                    },
-                ],
-            };
-        }
-        catch (error) {
-            logError(error, {
-                component: 'ToolHandlers',
-                method: 'handleReloadContext',
-                operation: 'reloading context',
-                data: { reason: input.reason },
-            });
-            const handled = handleError(error, {
-                component: 'ToolHandlers',
-                method: 'handleReloadContext',
-            });
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: `❌ Context reload failed: ${handled.message}`,
-                    },
-                ],
-            };
-        }
-    }
-    async handleRecordTokenUsage(args) {
-        try {
-            let validatedInput;
-            try {
-                validatedInput = RecordTokenUsageInputSchema.parse(args);
-            }
-            catch (error) {
-                if (error instanceof z.ZodError) {
-                    throw new ValidationError(formatValidationError(error), {
-                        component: 'ToolHandlers',
-                        method: 'handleRecordTokenUsage',
-                        schema: 'RecordTokenUsageInputSchema',
-                        providedArgs: args,
-                    });
-                }
-                throw error;
-            }
-            this.developmentButler.getTokenTracker().recordUsage({
-                inputTokens: validatedInput.inputTokens,
-                outputTokens: validatedInput.outputTokens,
-            });
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: JSON.stringify({ success: true }, null, 2),
-                    },
-                ],
-            };
-        }
-        catch (error) {
-            logError(error, {
-                component: 'ToolHandlers',
-                method: 'handleRecordTokenUsage',
-                operation: 'recording token usage',
-                data: { inputTokens: args?.inputTokens, outputTokens: args?.outputTokens },
-            });
-            const handled = handleError(error, {
-                component: 'ToolHandlers',
-                method: 'handleRecordTokenUsage',
-            });
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: `❌ Token usage recording failed: ${handled.message}`,
+                        text: `Uninstall failed: ${handled.message}`,
                     },
                 ],
             };
@@ -439,7 +250,7 @@ export class ToolHandlers {
                 content: [
                     {
                         type: 'text',
-                        text: `❌ Hook processing failed: ${handled.message}`,
+                        text: `Hook processing failed: ${handled.message}`,
                     },
                 ],
             };
@@ -470,11 +281,11 @@ export class ToolHandlers {
                 throw error;
             }
             const result = await recallMemoryTool.handler(validatedInput, this.projectMemoryManager);
-            let text = '📚 Project Memory Recall\n';
-            text += '━'.repeat(60) + '\n\n';
+            let text = 'Project Memory Recall\n';
+            text += '='.repeat(60) + '\n\n';
             if (result.memories.length === 0) {
                 text += 'No memories found.\n\n';
-                text += '💡 Memories will be created as you work on the project.\n';
+                text += 'Memories will be created as you work on the project.\n';
             }
             else {
                 text += `Found ${result.memories.length} recent memories:\n\n`;
@@ -492,7 +303,7 @@ export class ToolHandlers {
                     text += '\n';
                 });
             }
-            text += '━'.repeat(60) + '\n';
+            text += '='.repeat(60) + '\n';
             return {
                 content: [
                     {
@@ -517,18 +328,11 @@ export class ToolHandlers {
                 content: [
                     {
                         type: 'text',
-                        text: `❌ Failed to recall memory: ${handled.message}`,
+                        text: `Failed to recall memory: ${handled.message}`,
                     },
                 ],
             };
         }
-    }
-    describeCapabilities(agentName) {
-        const agent = this.agentRegistry.getAgent(agentName);
-        if (!agent || !agent.capabilities || agent.capabilities.length === 0) {
-            return undefined;
-        }
-        return agent.capabilities.slice(0, 3).join(', ');
     }
     async handleCreateEntities(args) {
         if (!this.memoryRateLimiter.consume()) {
@@ -555,30 +359,30 @@ export class ToolHandlers {
                 throw error;
             }
             const result = await createEntitiesTool.handler(validatedInput, this.knowledgeGraph);
-            let text = '✨ Knowledge Graph Entity Creation\n';
-            text += '━'.repeat(60) + '\n\n';
+            let text = 'Knowledge Graph Entity Creation\n';
+            text += '='.repeat(60) + '\n\n';
             if (result.count === 0) {
-                text += '⚠️ No entities were created.\n\n';
+                text += 'No entities were created.\n\n';
                 if (result.errors && result.errors.length > 0) {
                     text += 'Errors encountered:\n';
                     result.errors.forEach(error => {
-                        text += `  ❌ ${error.name}: ${error.error}\n`;
+                        text += `  - ${error.name}: ${error.error}\n`;
                     });
                 }
             }
             else {
-                text += `✅ Successfully created ${result.count} ${result.count === 1 ? 'entity' : 'entities'}:\n\n`;
+                text += `Successfully created ${result.count} ${result.count === 1 ? 'entity' : 'entities'}:\n\n`;
                 result.created.forEach((name, index) => {
                     text += `${index + 1}. ${name}\n`;
                 });
                 if (result.errors && result.errors.length > 0) {
-                    text += '\n⚠️ Some entities failed:\n';
+                    text += '\nSome entities failed:\n';
                     result.errors.forEach(error => {
-                        text += `  ❌ ${error.name}: ${error.error}\n`;
+                        text += `  - ${error.name}: ${error.error}\n`;
                     });
                 }
             }
-            text += '\n' + '━'.repeat(60) + '\n';
+            text += '\n' + '='.repeat(60) + '\n';
             return {
                 content: [
                     {
@@ -603,7 +407,7 @@ export class ToolHandlers {
                 content: [
                     {
                         type: 'text',
-                        text: `❌ Failed to create entities: ${handled.message}`,
+                        text: `Failed to create entities: ${handled.message}`,
                     },
                 ],
             };
@@ -662,42 +466,42 @@ export class ToolHandlers {
                 throw error;
             }
             const result = await addObservationsTool.handler(validatedInput, this.knowledgeGraph);
-            let text = '📝 Knowledge Graph Observation Update\n';
-            text += '━'.repeat(60) + '\n\n';
+            let text = 'Knowledge Graph Observation Update\n';
+            text += '='.repeat(60) + '\n\n';
             if (result.count === 0) {
-                text += '⚠️ No observations were added.\n\n';
+                text += 'No observations were added.\n\n';
                 if (result.notFound && result.notFound.length > 0) {
                     text += 'Entities not found:\n';
                     result.notFound.forEach(name => {
-                        text += `  ❌ ${name}\n`;
+                        text += `  - ${name}\n`;
                     });
                 }
                 if (result.errors && result.errors.length > 0) {
                     text += '\nErrors encountered:\n';
                     result.errors.forEach(error => {
-                        text += `  ❌ ${error.entityName}: ${error.error}\n`;
+                        text += `  - ${error.entityName}: ${error.error}\n`;
                     });
                 }
             }
             else {
-                text += `✅ Successfully updated ${result.count} ${result.count === 1 ? 'entity' : 'entities'}:\n\n`;
+                text += `Successfully updated ${result.count} ${result.count === 1 ? 'entity' : 'entities'}:\n\n`;
                 result.updated.forEach((name, index) => {
                     text += `${index + 1}. ${name}\n`;
                 });
                 if (result.notFound && result.notFound.length > 0) {
-                    text += '\n⚠️ Some entities were not found:\n';
+                    text += '\nSome entities were not found:\n';
                     result.notFound.forEach(name => {
-                        text += `  ❌ ${name}\n`;
+                        text += `  - ${name}\n`;
                     });
                 }
                 if (result.errors && result.errors.length > 0) {
-                    text += '\n⚠️ Some updates failed:\n';
+                    text += '\nSome updates failed:\n';
                     result.errors.forEach(error => {
-                        text += `  ❌ ${error.entityName}: ${error.error}\n`;
+                        text += `  - ${error.entityName}: ${error.error}\n`;
                     });
                 }
             }
-            text += '\n' + '━'.repeat(60) + '\n';
+            text += '\n' + '='.repeat(60) + '\n';
             return {
                 content: [
                     {
@@ -722,7 +526,7 @@ export class ToolHandlers {
                 content: [
                     {
                         type: 'text',
-                        text: `❌ Failed to add observations: ${handled.message}`,
+                        text: `Failed to add observations: ${handled.message}`,
                     },
                 ],
             };
@@ -753,42 +557,42 @@ export class ToolHandlers {
                 throw error;
             }
             const result = await createRelationsTool.handler(validatedInput, this.knowledgeGraph);
-            let text = '🔗 Knowledge Graph Relation Creation\n';
-            text += '━'.repeat(60) + '\n\n';
+            let text = 'Knowledge Graph Relation Creation\n';
+            text += '='.repeat(60) + '\n\n';
             if (result.count === 0) {
-                text += '⚠️ No relations were created.\n\n';
+                text += 'No relations were created.\n\n';
                 if (result.missingEntities && result.missingEntities.length > 0) {
                     text += 'Entities not found:\n';
                     result.missingEntities.forEach(name => {
-                        text += `  ❌ ${name}\n`;
+                        text += `  - ${name}\n`;
                     });
                 }
                 if (result.errors && result.errors.length > 0) {
                     text += '\nErrors encountered:\n';
                     result.errors.forEach(error => {
-                        text += `  ❌ ${error.from} → ${error.to}: ${error.error}\n`;
+                        text += `  - ${error.from} -> ${error.to}: ${error.error}\n`;
                     });
                 }
             }
             else {
-                text += `✅ Successfully created ${result.count} ${result.count === 1 ? 'relation' : 'relations'}:\n\n`;
+                text += `Successfully created ${result.count} ${result.count === 1 ? 'relation' : 'relations'}:\n\n`;
                 result.created.forEach((rel, index) => {
                     text += `${index + 1}. ${rel.from} --[${rel.type}]--> ${rel.to}\n`;
                 });
                 if (result.missingEntities && result.missingEntities.length > 0) {
-                    text += '\n⚠️ Some entities were not found:\n';
+                    text += '\nSome entities were not found:\n';
                     result.missingEntities.forEach(name => {
-                        text += `  ❌ ${name}\n`;
+                        text += `  - ${name}\n`;
                     });
                 }
                 if (result.errors && result.errors.length > 0) {
-                    text += '\n⚠️ Some relations failed:\n';
+                    text += '\nSome relations failed:\n';
                     result.errors.forEach(error => {
-                        text += `  ❌ ${error.from} → ${error.to}: ${error.error}\n`;
+                        text += `  - ${error.from} -> ${error.to}: ${error.error}\n`;
                     });
                 }
             }
-            text += '\n' + '━'.repeat(60) + '\n';
+            text += '\n' + '='.repeat(60) + '\n';
             return {
                 content: [
                     {
@@ -813,7 +617,7 @@ export class ToolHandlers {
                 content: [
                     {
                         type: 'text',
-                        text: `❌ Failed to create relations: ${handled.message}`,
+                        text: `Failed to create relations: ${handled.message}`,
                     },
                 ],
             };
@@ -824,18 +628,18 @@ export class ToolHandlers {
             const validatedInput = GenerateTestsInputSchema.parse(args);
             const input = validatedInput;
             const result = await generateTestsTool(input, this.samplingClient);
-            let text = '🧪 Test Generation Result\n';
-            text += '━'.repeat(60) + '\n\n';
+            let text = 'Test Generation Result\n';
+            text += '='.repeat(60) + '\n\n';
             text += `${result.message}\n\n`;
             text += '```typescript\n';
             text += result.testCode;
             text += '\n```\n\n';
-            text += '━'.repeat(60) + '\n';
-            text += '\n💡 Next Steps:\n';
-            text += '  • Review the generated tests for accuracy\n';
-            text += '  • Adjust test cases as needed\n';
-            text += '  • Add edge cases if necessary\n';
-            text += '  • Run tests to verify they pass\n';
+            text += '='.repeat(60) + '\n';
+            text += '\nNext Steps:\n';
+            text += '  - Review the generated tests for accuracy\n';
+            text += '  - Adjust test cases as needed\n';
+            text += '  - Add edge cases if necessary\n';
+            text += '  - Run tests to verify they pass\n';
             return {
                 content: [
                     {
@@ -860,44 +664,11 @@ export class ToolHandlers {
                 content: [
                     {
                         type: 'text',
-                        text: `❌ Failed to generate tests: ${handled.message}`,
+                        text: `Failed to generate tests: ${handled.message}`,
                     },
                 ],
             };
         }
-    }
-    normalizeWorkflowPhase(phase) {
-        const normalized = phase.trim().toLowerCase();
-        if (!normalized) {
-            return null;
-        }
-        const cleaned = normalized.replace(/[_\s]+/g, '-');
-        const direct = new Set(['idle', 'code-written', 'test-complete', 'commit-ready', 'committed']);
-        if (direct.has(cleaned)) {
-            return cleaned;
-        }
-        const aliases = {
-            planning: 'idle',
-            analysis: 'idle',
-            start: 'idle',
-            'code-analysis': 'code-written',
-            implementation: 'code-written',
-            coding: 'code-written',
-            code: 'code-written',
-            'test-analysis': 'test-complete',
-            testing: 'test-complete',
-            tests: 'test-complete',
-            test: 'test-complete',
-            'tests-complete': 'test-complete',
-            'ready-to-commit': 'commit-ready',
-            commit: 'commit-ready',
-            'pre-commit': 'commit-ready',
-            done: 'committed',
-            merged: 'committed',
-            shipped: 'committed',
-            released: 'committed',
-        };
-        return aliases[cleaned] || null;
     }
 }
 //# sourceMappingURL=ToolHandlers.js.map

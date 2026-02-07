@@ -1,4 +1,4 @@
-import { AgentType } from '../../orchestrator/types.js';
+import type { AgentType } from '../../types/AgentClassification.js';
 export declare const AGENT_PERSONAS: Record<AgentType, string>;
 export declare const AGENT_TOOLS: Record<AgentType, string[]>;
 export interface ModelSuggestion {

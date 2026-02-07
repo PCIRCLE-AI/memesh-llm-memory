@@ -135,23 +135,6 @@ export const UninstallInputSchema = z.object({
 });
 
 /**
- * Workflow guidance input schema for get-workflow-guidance
- */
-export const WorkflowGuidanceInputSchema = z.object({
-  phase: z.string().min(1, 'Phase cannot be empty'),
-  filesChanged: z.array(z.string().min(1)).optional(),
-  testsPassing: z.boolean().optional(),
-});
-
-/**
- * Record token usage input schema for record-token-usage
- */
-export const RecordTokenUsageInputSchema = z.object({
-  inputTokens: z.number().int().nonnegative('Input tokens must be non-negative'),
-  outputTokens: z.number().int().nonnegative('Output tokens must be non-negative'),
-});
-
-/**
  * Hook tool use input schema for hook-tool-use
  */
 export const HookToolUseInputSchema = z.object({
@@ -161,18 +144,6 @@ export const HookToolUseInputSchema = z.object({
   duration: z.number().int().nonnegative('Duration must be non-negative').optional(),
   tokensUsed: z.number().int().nonnegative('Tokens used must be non-negative').optional(),
   output: z.string().optional(),
-});
-
-/**
- * Generate smart plan input schema for generate-smart-plan
- */
-export const GenerateSmartPlanInputSchema = z.object({
-  featureDescription: z
-    .string()
-    .min(1, 'Feature description cannot be empty')
-    .max(MAX_TASK_DESCRIPTION_LENGTH, `Feature description too long (max ${MAX_TASK_DESCRIPTION_LENGTH} characters)`),
-  requirements: z.array(z.string()).optional(),
-  constraints: z.array(z.string()).optional(),
 });
 
 /**
@@ -231,106 +202,11 @@ export type ValidatedDashboardInput = z.infer<typeof DashboardInputSchema>;
 export type ValidatedListAgentsInput = z.infer<typeof ListAgentsInputSchema>;
 export type ValidatedListSkillsInput = z.infer<typeof ListSkillsInputSchema>;
 export type ValidatedUninstallInput = z.infer<typeof UninstallInputSchema>;
-export type ValidatedWorkflowGuidanceInput = z.infer<typeof WorkflowGuidanceInputSchema>;
-export type ValidatedRecordTokenUsageInput = z.infer<typeof RecordTokenUsageInputSchema>;
 export type ValidatedHookToolUseInput = z.infer<typeof HookToolUseInputSchema>;
-export type ValidatedGenerateSmartPlanInput = z.infer<typeof GenerateSmartPlanInputSchema>;
 export type ValidatedRecallMemoryInput = z.infer<typeof RecallMemoryInputSchema>;
 export type ValidatedCreateEntitiesInput = z.infer<typeof CreateEntitiesInputSchema>;
 export type ValidatedAddObservationsInput = z.infer<typeof AddObservationsInputSchema>;
 export type ValidatedCreateRelationsInput = z.infer<typeof CreateRelationsInputSchema>;
-
-/**
- * A2A send task input schema
- */
-export const A2ASendTaskInputSchema = z.object({
-  targetAgentId: z.string().min(1, 'Target agent ID cannot be empty'),
-  taskDescription: z
-    .string()
-    .min(1, 'Task description cannot be empty')
-    .max(MAX_TASK_DESCRIPTION_LENGTH, `Task description too long (max ${MAX_TASK_DESCRIPTION_LENGTH} characters)`),
-  priority: z.enum(['low', 'normal', 'high', 'urgent']).optional(),
-  sessionId: z.string().optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
-});
-
-/**
- * A2A get task input schema
- */
-export const A2AGetTaskInputSchema = z.object({
-  targetAgentId: z.string().min(1, 'Target agent ID cannot be empty'),
-  // ✅ FIX ISSUE-7: Add whitespace validation for taskId
-  taskId: z
-    .string()
-    .min(1, 'Task ID cannot be empty')
-    .refine((val) => val.trim().length > 0, {
-      message: 'Task ID cannot be only whitespace',
-    }),
-});
-
-/**
- * Schema for a2a-get-result tool input
- */
-export const A2AGetResultInputSchema = z.object({
-  targetAgentId: z.string().min(1, 'targetAgentId is required'),
-  // ✅ FIX ISSUE-7: Add whitespace validation for taskId
-  taskId: z
-    .string()
-    .min(1, 'taskId is required')
-    .refine((val) => val.trim().length > 0, {
-      message: 'Task ID cannot be only whitespace',
-    }),
-});
-
-/**
- * A2A list tasks input schema
- */
-export const A2AListTasksInputSchema = z.object({
-  state: z.enum([
-    'SUBMITTED',
-    'WORKING',
-    'INPUT_REQUIRED',
-    'COMPLETED',
-    'FAILED',
-    'CANCELED',
-    'REJECTED',
-  ]).optional(),
-  limit: z.number().int().min(1).max(100, 'Limit too large (max 100)').optional(),
-  offset: z.number().int().min(0).optional(),
-});
-
-/**
- * A2A list agents input schema
- */
-export const A2AListAgentsInputSchema = z.object({
-  status: z.enum(['active', 'inactive', 'all']).optional(),
-});
-
-/**
- * A2A report result input schema
- */
-export const A2AReportResultInputSchema = z.object({
-  // ✅ FIX ISSUE-7: Add whitespace validation for taskId
-  taskId: z
-    .string()
-    .min(1, 'Task ID cannot be empty')
-    .refine((val) => val.trim().length > 0, {
-      message: 'Task ID cannot be only whitespace',
-    }),
-  success: z.boolean().describe('Whether execution succeeded (true) or failed (false)'),
-  result: z.unknown().optional().describe('Execution result if success=true'),
-  error: z.string().optional().describe('Error message if success=false'),
-});
-
-/**
- * Type exports for A2A validated inputs
- */
-export type ValidatedA2ASendTaskInput = z.infer<typeof A2ASendTaskInputSchema>;
-export type ValidatedA2AGetTaskInput = z.infer<typeof A2AGetTaskInputSchema>;
-export type ValidatedA2AGetResultInput = z.infer<typeof A2AGetResultInputSchema>;
-export type ValidatedA2AListTasksInput = z.infer<typeof A2AListTasksInputSchema>;
-export type ValidatedA2AListAgentsInput = z.infer<typeof A2AListAgentsInputSchema>;
-export type ValidatedA2AReportResultInput = z.infer<typeof A2AReportResultInputSchema>;
 
 /**
  * Generate tests input schema for generate-tests tool

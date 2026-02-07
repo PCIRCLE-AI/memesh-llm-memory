@@ -43,6 +43,12 @@ const envSchema = z.object({
   // Orchestrator Configuration
   ORCHESTRATOR_MODE: z.enum(['local', 'distributed']).default('local'),
   ORCHESTRATOR_MAX_MEMORY_MB: z.string().default('6144'), // Updated to 6GB (2025-12-31: conservative)
+
+  // MeMesh Cloud (optional - enables cloud sync when set)
+  MEMESH_API_KEY: z.string().optional(),
+  MEMESH_BASE_URL: z.string().default('https://api.memesh.ai'),
+  MEMESH_TIMEOUT_MS: z.string().default('10000'),
+  MEMESH_PLATFORM: z.string().optional(),
 });
 
 /**
@@ -154,6 +160,14 @@ export const appConfig = {
   orchestrator: {
     mode: env.ORCHESTRATOR_MODE,
     maxMemoryMB: safeParseInt(env.ORCHESTRATOR_MAX_MEMORY_MB, 6144, 512, 32768),
+  },
+
+  // MeMesh Cloud (API key read directly from env by MeMeshCloudClient — never stored in config)
+  cloud: {
+    baseUrl: env.MEMESH_BASE_URL,
+    timeoutMs: safeParseInt(env.MEMESH_TIMEOUT_MS, 10000, 1000, 60000),
+    enabled: !!env.MEMESH_API_KEY,
+    platform: env.MEMESH_PLATFORM,
   },
 } as const;
 

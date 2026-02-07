@@ -54,7 +54,7 @@ export const A2AScene: React.FC = () => {
             fontWeight: 'bold',
           }}
         >
-          A2A Collaboration
+          Smart Routing
         </h2>
         <p
           style={{
@@ -64,11 +64,11 @@ export const A2AScene: React.FC = () => {
             fontFamily: 'monospace',
           }}
         >
-          Agent-to-Agent Protocol
+          Intelligent Task Detection
         </p>
       </div>
 
-      {/* Agent Cards */}
+      {/* Task Type Cards */}
       <div
         style={{
           position: 'absolute',
@@ -81,7 +81,7 @@ export const A2AScene: React.FC = () => {
           opacity: agentOpacity,
         }}
       >
-        {/* Agent 1 */}
+        {/* Task Type 1 */}
         <div
           style={{
             background: 'rgba(74, 222, 128, 0.1)',
@@ -99,7 +99,7 @@ export const A2AScene: React.FC = () => {
               marginBottom: 15,
             }}
           >
-            Agent: Lambda
+            Code Review
           </div>
           <div
             style={{
@@ -108,11 +108,11 @@ export const A2AScene: React.FC = () => {
               fontFamily: 'monospace',
             }}
           >
-            ID: kts-macbook-ml8gahn2
+            Auto-detected from context
           </div>
         </div>
 
-        {/* Connection Line */}
+        {/* Arrow */}
         <div
           style={{
             alignSelf: 'center',
@@ -124,7 +124,7 @@ export const A2AScene: React.FC = () => {
           ⟷
         </div>
 
-        {/* Agent 2 */}
+        {/* Task Type 2 */}
         <div
           style={{
             background: 'rgba(59, 130, 246, 0.1)',
@@ -142,7 +142,7 @@ export const A2AScene: React.FC = () => {
               marginBottom: 15,
             }}
           >
-            Agent: Sigma
+            Implementation
           </div>
           <div
             style={{
@@ -151,7 +151,7 @@ export const A2AScene: React.FC = () => {
               fontFamily: 'monospace',
             }}
           >
-            ID: kts-macbook-ml7hd0by
+            Best practices applied
           </div>
         </div>
       </div>
@@ -172,10 +172,10 @@ export const A2AScene: React.FC = () => {
         }}
       >
         <div style={{ fontSize: 28, color: '#4ade80', marginBottom: 15 }}>
-          $ a2a-list-agents
+          $ buddy-do "review this code"
         </div>
         <div style={{ fontSize: 24, color: '#9ca3af' }}>
-          $ a2a-send-task targetAgentId="..." taskDescription="..."
+          $ buddy-do "implement authentication with JWT"
         </div>
       </div>
     </AbsoluteFill>

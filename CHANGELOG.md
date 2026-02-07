@@ -7,7 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-02-08
+
+### ⚠️ Breaking Changes
+
+- **MCP Tool Naming Unification** - All non-core tools now use `memesh-*` prefix for better discoverability
+  - `buddy-record-mistake` → `memesh-record-mistake`
+  - `create-entities` → `memesh-create-entities`
+  - `buddy-secret-store` → `memesh-secret-store`
+  - `buddy-secret-get` → `memesh-secret-get`
+  - `buddy-secret-list` → `memesh-secret-list`
+  - `buddy-secret-delete` → `memesh-secret-delete`
+  - `hook-tool-use` → `memesh-hook-tool-use`
+  - `generate-tests` → `memesh-generate-tests`
+
+  **Migration**: Old names still work via aliases with deprecation warnings. Aliases will be removed in v3.0.0. See [UPGRADE.md](docs/UPGRADE.md#v280) for migration guide.
+
 ### Added
+
 - **Vector Semantic Search** - Find memories by meaning, not just keywords
   - `buddy-remember` now supports `mode` parameter: `semantic`, `keyword`, `hybrid` (default)
   - `minSimilarity` parameter to filter low-quality matches (0-1 threshold)
@@ -15,21 +32,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automatic embedding generation when creating entities
   - Backfill script for existing entities: `npm run backfill-embeddings`
 
+- **Alias System** - Backward compatibility for renamed tools
+  - Deprecated tool names show migration warnings
+  - Smooth transition path to v3.0.0
+
+### Removed
+
+- **A2A Local Collaboration Features** - Simplified to Local-first architecture
+  - Removed 35 A2A-related files and modules
+  - Removed agent-to-agent communication (daemon, socket server, distributed task queue)
+  - Removed A2A inbox, session coordination, and multi-agent orchestration
+  - Focus on single-agent local memory management
+  - **Reason**: Local-first architecture simplifies codebase and aligns with MCP specification
+
+### Changed
+
+- **Tool Count**: 18 → **12 tools** (3 buddy commands + 8 memesh tools + 1 cloud sync)
+  - Core tools preserved: `buddy-do`, `buddy-remember`, `buddy-help`
+  - Feature tools unified under `memesh-*` namespace
+
 ### Technical
+
 - New `src/embeddings/` module with ModelManager, EmbeddingService, VectorExtension
 - Added sqlite-vec for vector KNN search
 - Added onnxruntime-node for ONNX inference
 - Added @xenova/transformers for tokenization
+- Added chokidar for file watching
 - Integration tests for full semantic search flow
+- Enhanced MCPToolDefinition interface with aliases field
+- ToolRouter with alias resolution and deprecation warnings
 
 ### Documentation
+
 - **Major documentation update**: Corrected all outdated installation guides
   - Fixed QUICK_INSTALL.md: Completely rewritten with correct installation priority (npm global install first)
-  - Fixed tool count: 7 tools → **18 tools** (accurate count with complete list)
+  - Updated tool count: 18 tools → **12 tools** (accurate count with complete list)
+  - Added deprecation notices for renamed tools in all documentation
+  - Updated troubleshooting guide with common issues and solutions (PR #52)
   - Removed misleading Plugin Installation instructions (--plugin-dir flag)
   - Removed Cursor and VS Code installation instructions (not officially supported)
   - Updated README.md, GETTING_STARTED.md, and guides/QUICK_START.md for consistency
   - Corrected installation method: MCP Server mode (auto-configures mcp_settings.json), not Plugin mode
+  - Added v2.8.0 migration guide in UPGRADE.md
 
 ## [2.7.0] - 2026-02-04
 
@@ -97,17 +141,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 0 critical issues, 0 major issues, 3 minor issues
 - 100% backward compatibility maintained
 - No breaking changes
-
-
-## [2.8.0] - 2026-02-01
-
-### Changed
-- Simplified Evolution System for MCP architecture compliance
-- Delegated intelligence logic to external LLMs
-
-### Removed
-- Intelligence components (adaption, learning engines)
-- Auto-tagging and semantic search features
 
 ## [2.7.0] - 2026-01-31
 

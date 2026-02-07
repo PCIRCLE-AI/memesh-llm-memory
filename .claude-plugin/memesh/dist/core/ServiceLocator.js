@@ -1,8 +1,9 @@
+import { logger } from '../utils/logger.js';
 export class ServiceLocator {
     static services = new Map();
     static register(key, service) {
         if (this.services.has(key)) {
-            console.warn(`ServiceLocator: Overwriting existing service '${key}'`);
+            logger.warn(`ServiceLocator: Overwriting existing service '${key}'`);
         }
         this.services.set(key, service);
     }

@@ -1,25 +1,25 @@
-import { ProjectAutoTracker } from '../memory/ProjectAutoTracker.js';
 import { logger } from '../utils/logger.js';
 import { TestOutputParser } from './TestOutputParser.js';
 export class HookIntegration {
     detector;
-    butler;
     triggerCallbacks = [];
     projectMemory;
     lastCheckpoint;
     testParser;
     projectAutoTracker;
-    constructor(checkpointDetector, developmentButler, projectAutoTracker) {
+    constructor(checkpointDetector, projectAutoTracker) {
         this.detector = checkpointDetector;
-        this.butler = developmentButler;
         this.testParser = new TestOutputParser();
         this.projectAutoTracker = projectAutoTracker;
+        if (projectAutoTracker) {
+            this.projectMemory = projectAutoTracker;
+        }
     }
-    initializeProjectMemory(mcp) {
+    setProjectMemory(tracker) {
         if (this.projectMemory) {
             return;
         }
-        this.projectMemory = new ProjectAutoTracker(mcp);
+        this.projectMemory = tracker;
     }
     async detectCheckpointFromToolUse(toolData) {
         if (!toolData.success) {
@@ -206,14 +206,12 @@ export class HookIntegration {
         return details;
     }
     ensureProjectMemoryInitialized() {
-        if (this.projectMemory) {
+        if (this.projectMemory && this.projectAutoTracker) {
             return;
         }
-        const mcp = this.butler.getToolInterface();
-        if (!mcp.supportsMemory()) {
-            return;
+        if (this.projectAutoTracker && !this.projectMemory) {
+            this.projectMemory = this.projectAutoTracker;
         }
-        this.initializeProjectMemory(mcp);
     }
     onButlerTrigger(callback) {
         this.triggerCallbacks.push(callback);

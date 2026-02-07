@@ -1,6 +1,6 @@
 # MeMesh Best Practices
 
-**Version: 2.7.0
+**Version: 2.8.0
 
 ## ✅ Write Precise Requests
 

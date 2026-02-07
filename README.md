@@ -186,10 +186,14 @@ buddy-help                          # When stuck
 ### 4. 🔐 **Secure Credential Storage**
 
 ```bash
-buddy-secret-store "openai_key" "sk-..." api_key  # Store encrypted
-buddy-secret-get "openai_key"                      # Retrieve for API calls
-buddy-secret-list                                  # See what's stored
-buddy-secret-delete "old_key"                      # Cleanup
+# ✅ NEW (v2.8.0+)
+memesh-secret-store "openai_key" "sk-..." api_key  # Store encrypted
+memesh-secret-get "openai_key"                      # Retrieve for API calls
+memesh-secret-list                                  # See what's stored
+memesh-secret-delete "old_key"                      # Cleanup
+
+# ⚠️ DEPRECATED (still works, will be removed in v3.0.0)
+buddy-secret-store "openai_key" "sk-..." api_key   # Use memesh-secret-store instead
 ```
 
 **AES-256-GCM encryption. Local only. Never transmitted.**
@@ -424,12 +428,12 @@ Context-aware memory retrieval with intelligent ranking:
 </details>
 
 <details>
-<summary><strong>Multi-Session Support (Daemon Mode)</strong></summary>
+<summary><strong>Persistent Memory</strong></summary>
 
-Run multiple Claude Code sessions sharing the same memory:
-- 🔄 First instance becomes the daemon
-- 🔗 Subsequent instances connect as proxies
-- 📡 Shared knowledge graph across all sessions
+Local-first architecture with persistent knowledge graph:
+- 💾 SQLite-based storage with semantic search
+- 🔍 Vector embeddings for intelligent recall
+- 📡 Knowledge persists across all sessions
 
 </details>
 
@@ -439,14 +443,14 @@ Run multiple Claude Code sessions sharing the same memory:
 Securely store API keys and credentials:
 - 🔐 AES-256-GCM encryption
 - 💾 Local SQLite storage (never transmitted)
-- 🔑 Use `buddy-secret-store` and `buddy-secret-get`
+- 🔑 Use `memesh-secret-store` and `memesh-secret-get`
 
 </details>
 
 <details>
-<summary><strong>18+ MCP Standard Tools</strong></summary>
+<summary><strong>12 MCP Standard Tools</strong></summary>
 
-Full integration with Model Context Protocol for seamless Claude Code experience.
+Full integration with Model Context Protocol for seamless Claude Code experience. See [QUICK_INSTALL.md](docs/QUICK_INSTALL.md#-what-you-get) for the complete tool list.
 
 Use `buddy-help` to see all available commands.
 

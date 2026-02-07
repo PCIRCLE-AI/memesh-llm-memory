@@ -14,7 +14,6 @@ declare class ClaudeCodeBuddyMCPServer {
     private shutdownPromise;
     get toolHandlers(): import("./handlers/ToolHandlers.js").ToolHandlers;
     get buddyHandlers(): import("./handlers/BuddyHandlers.js").BuddyHandlers;
-    get developmentButler(): import("../index.js").DevelopmentButler;
     private constructor();
     static create(): Promise<ClaudeCodeBuddyMCPServer>;
     private setupHandlers;

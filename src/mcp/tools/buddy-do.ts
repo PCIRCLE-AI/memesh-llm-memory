@@ -1,32 +1,24 @@
 import { z } from 'zod';
-import type { Router } from '../../orchestrator/router.js';
 import type { ResponseFormatter } from '../../ui/ResponseFormatter.js';
 import type { ProjectAutoTracker } from '../../memory/ProjectAutoTracker.js';
 import { logger } from '../../utils/logger.js';
 
 export const BuddyDoInputSchema = z.object({
-  task: z.string().trim().min(1).describe('Task description for MeMesh to execute with smart routing'),
+  task: z.string().trim().min(1).describe('Task description for MeMesh to process'),
 });
 
 export type ValidatedBuddyDoInput = z.infer<typeof BuddyDoInputSchema>;
 
 /**
  * Extract goal, reason, and expected outcome from task description
- * Phase 0.6: Enhanced Auto-Memory - task metadata extraction
- * Uses simple heuristics and patterns
  */
 function extractTaskMetadata(task: string): {
   goal: string;
   reason?: string;
   expectedOutcome?: string;
 } {
-  // Extract goal: First sentence or "to X" pattern
   const goalMatch = task.match(/^([^.!?]+)[.!?]/) || task.match(/to ([^,]+)/);
-
-  // Extract reason: "because X", "so that X" patterns
   const reasonMatch = task.match(/because ([^,\.]+)/) || task.match(/so that ([^,\.]+)/);
-
-  // Extract expected outcome: "should X", "will X" patterns
   const expectedMatch = task.match(/should ([^,\.]+)/) || task.match(/will ([^,\.]+)/);
 
   return {
@@ -37,10 +29,11 @@ function extractTaskMetadata(task: string): {
 }
 
 /**
- * buddy_do tool - Execute tasks with smart routing
+ * buddy_do tool - Record task and provide guidance
  *
- * User-friendly wrapper for task execution. Analyzes complexity and routes
- * to the best capability with prompt enhancement.
+ * Records the task to project memory and returns guidance.
+ * Task routing to specialized agents has been removed in favor of
+ * direct Claude Code capabilities.
  *
  * Examples:
  *   task: "setup authentication"
@@ -49,7 +42,6 @@ function extractTaskMetadata(task: string): {
  */
 export async function executeBuddyDo(
   input: ValidatedBuddyDoInput,
-  router: Router,
   formatter: ResponseFormatter,
   autoTracker?: ProjectAutoTracker
 ): Promise<{ content: Array<{ type: 'text'; text: string }> }> {
@@ -57,7 +49,7 @@ export async function executeBuddyDo(
   const taskId = `buddy-do-${startTime}`;
 
   try {
-    // Phase 0.6: Auto-record task start with metadata
+    // Record task start with metadata
     if (autoTracker) {
       const taskMeta = extractTaskMetadata(input.task);
 
@@ -76,55 +68,29 @@ export async function executeBuddyDo(
       });
     }
 
-    // Route task through smart routing system
-    const result = await router.routeTask({
-      id: taskId,
-      description: input.task,
-      requiredCapabilities: [],
-    });
-
     const durationMs = Date.now() - startTime;
 
-    const selectedAgent = result.routing.selectedAgent || 'general-agent';
-
-    logger.debug('buddy_do task completed', {
+    logger.debug('buddy_do task recorded', {
       taskId,
-      agent: selectedAgent,
-      complexity: result.analysis.complexity,
       durationMs,
     });
-
-    const capabilityFocus = result.analysis.requiredCapabilities.length > 0
-      ? result.analysis.requiredCapabilities
-      : ['general'];
 
     const formattedResponse = formatter.format({
       agentType: 'buddy-do',
       taskDescription: input.task,
       status: 'success',
-      enhancedPrompt: result.routing.enhancedPrompt,
       results: {
-        routing: {
-          approved: result.approved,
-          message: result.approved
-            ? `Task routed for capabilities: ${capabilityFocus.join(', ')}`
-            : result.message,
-          capabilityFocus,
-          complexity: result.analysis.complexity,
-          estimatedTokens: result.analysis.estimatedTokens,
-          estimatedCost: result.routing.estimatedCost,
-        },
+        message: 'Task recorded. Proceed with execution using Claude Code capabilities.',
         stats: {
           durationMs,
-          estimatedTokens: result.analysis.estimatedTokens,
         },
       },
     });
 
-    // MeMesh memory reminder - prompts AI to save implementation details after completion
+    // MeMesh memory reminder
     const memeshReminder = [
       '',
-      '🧠 MeMesh Auto-Memory Reminder:',
+      'MeMesh Auto-Memory Reminder:',
       'After completing this task, save key implementation details:',
       '  create-entities with observations like:',
       '  - What was implemented (specific configs, values, patterns)',

@@ -38,6 +38,7 @@ export interface MCPToolDefinition {
         idempotentHint?: boolean;
         openWorldHint?: boolean;
     };
+    aliases?: string[];
 }
 export declare function getAllToolDefinitions(): MCPToolDefinition[];
 //# sourceMappingURL=ToolDefinitions.d.ts.map

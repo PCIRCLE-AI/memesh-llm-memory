@@ -147,8 +147,8 @@ export class UIEventBus {
                                 this.emit(UIEventType.ERROR, errorEvent);
                             }
                             catch (emitError) {
-                                console.error('UIEventBus: Failed to emit error event for async handler:', emitError);
-                                console.error('Original async handler error:', error);
+                                logger.error('UIEventBus: Failed to emit error event for async handler:', emitError);
+                                logger.error('Original async handler error:', error);
                             }
                         }
                     });

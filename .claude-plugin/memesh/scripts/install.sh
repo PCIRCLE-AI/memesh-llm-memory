@@ -129,35 +129,6 @@ else
     echo ""
 fi
 
-# Step 5.5: Generate A2A token (if not exists)
-print_step "Step 5.5/9: Configuring A2A Protocol..."
-
-# Check if A2A token already exists
-if grep -q "^MEMESH_A2A_TOKEN=.\+$" .env 2>/dev/null; then
-    print_success "A2A token already configured"
-else
-    # Check if token generator exists
-    if [ -f "scripts/generate-a2a-token.sh" ]; then
-        echo ""
-        print_info "Generating secure A2A authentication token..."
-
-        # Run token generator (suppress detailed output)
-        if bash scripts/generate-a2a-token.sh > /dev/null 2>&1; then
-            print_success "A2A token generated successfully"
-        else
-            print_warning "Failed to generate A2A token automatically"
-            echo ""
-            echo "Manual setup: run 'bash scripts/generate-a2a-token.sh'"
-        fi
-    else
-        print_warning "A2A token generator not found"
-        echo ""
-        echo "Manual setup: Create MEMESH_A2A_TOKEN in .env with a secure random value"
-    fi
-fi
-
-echo ""
-
 # Step 6: Configure MCP
 print_step "Step 6/9: Configuring MCP integration..."
 

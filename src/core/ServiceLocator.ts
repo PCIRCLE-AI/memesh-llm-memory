@@ -32,6 +32,8 @@
  * @deprecated Use constructor-based dependency injection instead
  * @see ServerInitializer for proper dependency injection examples
  */
+import { logger } from '../utils/logger.js';
+
 export class ServiceLocator {
   private static services = new Map<string, any>();
 
@@ -52,7 +54,7 @@ export class ServiceLocator {
    */
   static register<T>(key: string, service: T): void {
     if (this.services.has(key)) {
-      console.warn(`ServiceLocator: Overwriting existing service '${key}'`);
+      logger.warn(`ServiceLocator: Overwriting existing service '${key}'`);
     }
     this.services.set(key, service);
   }

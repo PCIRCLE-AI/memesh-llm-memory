@@ -6,11 +6,6 @@
   - changed-files:
       - any-glob-to-any-file: 'src/mcp/**'
 
-# A2A Protocol
-"area: a2a":
-  - changed-files:
-      - any-glob-to-any-file: 'src/a2a/**'
-
 # Memory system
 "area: memory":
   - changed-files:

@@ -1,13 +1,10 @@
 {
   "memesh": {
     "command": "node",
-    "args": [
-      "${CLAUDE_PLUGIN_ROOT}/dist/mcp/server-bootstrap.js"
-    ],
+    "args": ["${CLAUDE_PLUGIN_ROOT}/dist/mcp/server-bootstrap.js"],
     "env": {
       "NODE_ENV": "production",
-      "MEMESH_DISABLE_DAEMON": "1",
-      "MEMESH_A2A_TOKEN": "23a74a1be2320dc507dd3b2a0695d76885a8f15f8066465eeca3cf2dd10ac8a5"
+      "MEMESH_DISABLE_DAEMON": "1"
     }
   }
 }

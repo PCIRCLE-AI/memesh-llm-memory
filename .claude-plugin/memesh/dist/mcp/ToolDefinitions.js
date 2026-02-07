@@ -52,19 +52,37 @@ export function getAllToolDefinitions() {
     };
     const buddyRememberTool = {
         name: 'buddy-remember',
-        description: 'Search project memory for past decisions, bugs, patterns, and architecture choices',
+        description: `Search project memory using semantic similarity or keyword matching.
+
+Examples:
+- buddy-remember "how do we handle authentication" -> finds JWT, OAuth, session memories
+- buddy-remember "database" mode=keyword -> exact keyword match only
+- buddy-remember "user login" mode=semantic minSimilarity=0.5 -> high-quality semantic matches only
+
+The default 'hybrid' mode combines semantic understanding with keyword matching for best results.`,
         inputSchema: {
             type: 'object',
             properties: {
                 query: {
                     type: 'string',
-                    description: 'What to remember/recall (e.g., "api design decisions", "authentication approach")',
+                    description: 'Search query (natural language supported for semantic search)',
+                },
+                mode: {
+                    type: 'string',
+                    enum: ['semantic', 'keyword', 'hybrid'],
+                    description: 'Search mode: semantic (AI similarity), keyword (exact match), hybrid (both combined). Default: hybrid',
                 },
                 limit: {
                     type: 'number',
-                    description: 'Maximum number of memories to retrieve (1-50, default: 5)',
+                    description: 'Maximum number of results to return (1-50, default: 10)',
                     minimum: 1,
                     maximum: 50,
+                },
+                minSimilarity: {
+                    type: 'number',
+                    description: 'Minimum similarity score (0-1) for semantic/hybrid search. Default: 0.3',
+                    minimum: 0,
+                    maximum: 1,
                 },
             },
             required: ['query'],
@@ -99,57 +117,9 @@ export function getAllToolDefinitions() {
             openWorldHint: false,
         },
     };
-    const getWorkflowGuidanceTool = {
-        name: 'get-workflow-guidance',
-        description: 'Get next steps and recommendations for current development phase (code-written, test-complete, commit-ready)',
-        inputSchema: {
-            type: 'object',
-            properties: {
-                phase: {
-                    type: 'string',
-                    enum: ['idle', 'code-written', 'test-complete', 'commit-ready', 'committed'],
-                    description: 'Current workflow phase',
-                },
-                filesChanged: {
-                    type: 'array',
-                    items: { type: 'string' },
-                    description: 'List of files that were changed',
-                },
-                testsPassing: {
-                    type: 'boolean',
-                    description: 'Whether tests are passing',
-                },
-            },
-            required: ['phase'],
-        },
-        outputSchema: OutputSchemas.getWorkflowGuidance,
-        annotations: {
-            title: 'Workflow Recommendations',
-            readOnlyHint: true,
-            destructiveHint: false,
-            idempotentHint: false,
-            openWorldHint: false,
-        },
-    };
-    const getSessionHealthTool = {
-        name: 'get-session-health',
-        description: '💊 MeMesh: Check session health including token usage and quality metrics',
-        inputSchema: {
-            type: 'object',
-            properties: {},
-            additionalProperties: false,
-        },
-        outputSchema: OutputSchemas.getSessionHealth,
-        annotations: {
-            title: 'Session Health Check',
-            readOnlyHint: true,
-            destructiveHint: false,
-            idempotentHint: false,
-            openWorldHint: false,
-        },
-    };
     const buddyRecordMistakeTool = {
-        name: 'buddy-record-mistake',
+        name: 'memesh-record-mistake',
+        aliases: ['buddy-record-mistake'],
         description: `📝 MeMesh: Record AI mistakes for learning and prevention - enable systematic improvement from user feedback.
 
 **When to Record:**
@@ -253,7 +223,8 @@ Record:
         },
     };
     const hookToolUseTool = {
-        name: 'hook-tool-use',
+        name: 'memesh-hook-tool-use',
+        aliases: ['hook-tool-use'],
         description: 'Process tool execution events from Claude Code CLI for workflow automation (auto-triggered, do not call manually)',
         inputSchema: {
             type: 'object',
@@ -295,7 +266,8 @@ Record:
         },
     };
     const createEntitiesTool = {
-        name: 'create-entities',
+        name: 'memesh-create-entities',
+        aliases: ['create-entities'],
         description: `✨ MeMesh: Create entities in Knowledge Graph - record decisions, features, bug fixes, and lessons learned.
 
 **What to Record:**
@@ -379,233 +351,61 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
             openWorldHint: false,
         },
     };
-    const a2aSendTaskTool = {
-        name: 'a2a-send-task',
-        description: `🤝 MeMesh A2A: Send a task to another A2A agent for execution.
+    const cloudSyncTool = {
+        name: 'memesh-cloud-sync',
+        description: `☁️ Sync local Knowledge Graph memories with MeMesh Cloud.
 
-**Workflow:**
-1. List agents with a2a-list-agents to get targetAgentId
-2. Send task with clear, specific description
-3. Track with returned taskId via a2a-get-task
-4. Receive result when complete
+**Actions:**
+• {action: "status"}: Compare local vs cloud memory counts
+• {action: "push"}: Push local memories to cloud
+• {action: "pull"}: Pull cloud memories to local
+• {action: "push", dryRun: true}: Preview what would be synced
 
-**Example:**
-targetAgentId: "kts-macbook-xyz789"
-taskDescription: "Analyze error logs from last 24h and summarize top 3 issues"
-priority: "high"
-
-**Priority Levels:**
-• low: Background tasks
-• normal: Default priority
-• high: Important, time-sensitive
-• urgent: Critical, immediate attention`,
+Requires MEMESH_API_KEY to be configured. Without it, all actions return a setup guide.`,
         inputSchema: {
             type: 'object',
             properties: {
-                targetAgentId: {
+                action: {
                     type: 'string',
-                    description: 'ID of the target agent (format: ${hostname}-${timestamp}). Get from a2a-list-agents',
+                    enum: ['push', 'pull', 'status'],
+                    description: 'Sync action: push (local→cloud), pull (cloud→local), status (compare)',
                 },
-                taskDescription: {
+                query: {
                     type: 'string',
-                    description: 'Clear, specific task description. Be detailed about expected output and constraints.',
+                    description: 'Optional search query to filter which memories to sync',
                 },
-                priority: {
+                space: {
                     type: 'string',
-                    enum: ['low', 'normal', 'high', 'urgent'],
-                    description: 'Task priority (optional, default: normal)',
+                    description: 'Cloud memory space to sync with (default: "default")',
+                    default: 'default',
                 },
-                sessionId: {
-                    type: 'string',
-                    description: 'Session ID for task tracking (optional)',
+                limit: {
+                    type: 'number',
+                    description: 'Max memories per batch (default: 100, max: 500)',
+                    minimum: 1,
+                    maximum: 500,
+                    default: 100,
                 },
-                metadata: {
-                    type: 'object',
-                    description: 'Additional task metadata (optional)',
+                dryRun: {
+                    type: 'boolean',
+                    description: 'Preview sync without executing (default: false)',
+                    default: false,
                 },
             },
-            required: ['targetAgentId', 'taskDescription'],
+            required: ['action'],
         },
-        outputSchema: OutputSchemas.a2aSendTask,
+        outputSchema: OutputSchemas.cloudSync,
         annotations: {
-            title: 'A2A Task Sender',
+            title: 'Cloud Sync',
             readOnlyHint: false,
             destructiveHint: false,
             idempotentHint: false,
             openWorldHint: true,
         },
     };
-    const a2aGetTaskTool = {
-        name: 'a2a-get-task',
-        description: '🔍 MeMesh A2A: Get task status and details from another A2A agent.',
-        inputSchema: {
-            type: 'object',
-            properties: {
-                targetAgentId: {
-                    type: 'string',
-                    description: 'ID of the agent that owns the task',
-                },
-                taskId: {
-                    type: 'string',
-                    description: 'ID of the task to retrieve',
-                },
-            },
-            required: ['targetAgentId', 'taskId'],
-        },
-        outputSchema: OutputSchemas.a2aGetTask,
-        annotations: {
-            title: 'A2A Task Retriever',
-            readOnlyHint: true,
-            destructiveHint: false,
-            idempotentHint: true,
-            openWorldHint: false,
-        },
-    };
-    const a2aGetResultTool = {
-        name: 'a2a-get-result',
-        description: '🎁 MeMesh A2A: Get task execution result from target agent.',
-        inputSchema: {
-            type: 'object',
-            properties: {
-                targetAgentId: {
-                    type: 'string',
-                    description: 'ID of the agent that executed the task',
-                },
-                taskId: {
-                    type: 'string',
-                    description: 'ID of the task to get result for',
-                },
-            },
-            required: ['targetAgentId', 'taskId'],
-        },
-        annotations: {
-            title: 'A2A Task Result Retriever',
-            readOnlyHint: true,
-            destructiveHint: false,
-            idempotentHint: true,
-            openWorldHint: false,
-        },
-    };
-    const a2aListTasksTool = {
-        name: 'a2a-list-tasks',
-        description: `📋 MeMesh A2A: List tasks assigned to you or another agent.
-
-**Task States:**
-• SUBMITTED: Received, not started
-• WORKING: Currently being processed
-• INPUT_REQUIRED: Waiting for additional input
-• COMPLETED: Successfully finished
-• FAILED: Execution failed
-• CANCELED: Canceled by sender
-• REJECTED: Rejected by agent
-
-**Default:** Lists YOUR tasks (agentId: "self")
-**Custom:** Specify agentId to list another agent's tasks`,
-        inputSchema: {
-            type: 'object',
-            properties: {
-                agentId: {
-                    type: 'string',
-                    description: 'Agent ID to list tasks for. Use "self" for your tasks',
-                    default: 'self',
-                },
-                state: {
-                    type: 'string',
-                    enum: ['SUBMITTED', 'WORKING', 'INPUT_REQUIRED', 'COMPLETED', 'FAILED', 'CANCELED', 'REJECTED'],
-                    description: 'Filter by task state (optional)',
-                },
-                limit: {
-                    type: 'number',
-                    description: 'Maximum number of tasks to return (1-100, default: 10)',
-                    minimum: 1,
-                    maximum: 100,
-                },
-                offset: {
-                    type: 'number',
-                    description: 'Number of tasks to skip for pagination (optional, default: 0)',
-                    minimum: 0,
-                },
-            },
-        },
-        outputSchema: OutputSchemas.a2aListTasks,
-        annotations: {
-            title: 'A2A Task Lister',
-            readOnlyHint: true,
-            destructiveHint: false,
-            idempotentHint: true,
-            openWorldHint: false,
-        },
-    };
-    const a2aListAgentsTool = {
-        name: 'a2a-list-agents',
-        description: `🤖 MeMesh A2A: List available A2A agents in the registry.
-
-Returns agents with format: {agentId, url, port, status, lastHeartbeat}
-
-**Agent ID Format:** \${hostname}-\${timestamp} (e.g., "kts-macbook-ml8cy34o")
-**Note:** Check-in name (e.g., "Lambda") ≠ Agent ID
-
-**Find Your Agent ID:** curl -s http://localhost:3000/a2a/agent-card | grep id
-
-**Status Types:**
-• active: Currently running (heartbeat < 5min ago)
-• inactive: Not running (no recent heartbeat)
-• stale: No heartbeat for 5+ minutes`,
-        inputSchema: {
-            type: 'object',
-            properties: {
-                status: {
-                    type: 'string',
-                    enum: ['active', 'inactive', 'all'],
-                    description: 'Filter by agent status (optional, default: active)',
-                },
-            },
-        },
-        outputSchema: OutputSchemas.a2aListAgents,
-        annotations: {
-            title: 'A2A Agent Registry',
-            readOnlyHint: true,
-            destructiveHint: false,
-            idempotentHint: true,
-            openWorldHint: false,
-        },
-    };
-    const a2aReportResultTool = {
-        name: 'a2a-report-result',
-        description: '✅ MeMesh A2A: Report task execution result back to MeMesh Server (used by MCP Clients).',
-        inputSchema: {
-            type: 'object',
-            properties: {
-                taskId: {
-                    type: 'string',
-                    description: 'Task ID to report result for',
-                },
-                result: {
-                    type: 'string',
-                    description: 'Execution output or result',
-                },
-                success: {
-                    type: 'boolean',
-                    description: 'Whether execution succeeded (true) or failed (false)',
-                },
-                error: {
-                    type: 'string',
-                    description: 'Error message if success=false (optional)',
-                },
-            },
-            required: ['taskId', 'result', 'success'],
-        },
-        outputSchema: OutputSchemas.a2aReportResult,
-        annotations: {
-            title: 'A2A Result Reporter',
-            readOnlyHint: false,
-            destructiveHint: false,
-            idempotentHint: true,
-            openWorldHint: false,
-        },
-    };
     const generateTestsTool = {
-        name: 'generate-tests',
+        name: 'memesh-generate-tests',
+        aliases: ['generate-tests'],
         description: 'Automatically generate test cases from specifications or code using AI. Provide either specification or code (at least one required).',
         inputSchema: {
             type: 'object',
@@ -630,7 +430,8 @@ Returns agents with format: {agentId, url, port, status, lastHeartbeat}
         },
     };
     const buddySecretStoreTool = {
-        name: 'buddy-secret-store',
+        name: 'memesh-secret-store',
+        aliases: ['buddy-secret-store'],
         description: '🔐 Securely store API keys, tokens, or passwords. USE THIS when user shares sensitive credentials. ' +
             'Encrypted with AES-256-GCM, stored locally only (never transmitted). ' +
             'Example: User says "save my OpenAI key sk-xxx" → call with name="openai_api_key", value="sk-xxx", type="api_key". ' +
@@ -671,7 +472,8 @@ Returns agents with format: {agentId, url, port, status, lastHeartbeat}
         },
     };
     const buddySecretGetTool = {
-        name: 'buddy-secret-get',
+        name: 'memesh-secret-get',
+        aliases: ['buddy-secret-get'],
         description: '🔓 Retrieve a stored secret to use in API calls or configurations. USE THIS when you need a credential for an operation. ' +
             'Returns the decrypted value directly. Example workflow: User asks "call OpenAI API" → ' +
             'buddy-secret-get name="openai_api_key" → use returned value in API request header. ' +
@@ -695,7 +497,8 @@ Returns agents with format: {agentId, url, port, status, lastHeartbeat}
         },
     };
     const buddySecretListTool = {
-        name: 'buddy-secret-list',
+        name: 'memesh-secret-list',
+        aliases: ['buddy-secret-list'],
         description: '📋 List all stored secrets (names, types, expiry dates - NOT the actual values). USE THIS to discover what credentials are available ' +
             'before calling buddy-secret-get. Shows: name, type (api_key/token/password), creation date, expiry. ' +
             'Example: User asks "do I have an API key stored?" → call this to check. No parameters needed.',
@@ -712,7 +515,8 @@ Returns agents with format: {agentId, url, port, status, lastHeartbeat}
         },
     };
     const buddySecretDeleteTool = {
-        name: 'buddy-secret-delete',
+        name: 'memesh-secret-delete',
+        aliases: ['buddy-secret-delete'],
         description: '🗑️ Permanently delete a stored secret. USE THIS for: (1) Key rotation - delete old key after storing new one, ' +
             '(2) Cleanup - remove unused credentials, (3) Security - remove compromised keys immediately. ' +
             'CAUTION: Irreversible. Verify the name with buddy-secret-list first if unsure. ' +
@@ -739,20 +543,13 @@ Returns agents with format: {agentId, url, port, status, lastHeartbeat}
         buddyDoTool,
         buddyRememberTool,
         buddyHelpTool,
-        getSessionHealthTool,
-        getWorkflowGuidanceTool,
         buddyRecordMistakeTool,
         createEntitiesTool,
         buddySecretStoreTool,
         buddySecretGetTool,
         buddySecretListTool,
         buddySecretDeleteTool,
-        a2aSendTaskTool,
-        a2aGetTaskTool,
-        a2aGetResultTool,
-        a2aListTasksTool,
-        a2aListAgentsTool,
-        a2aReportResultTool,
+        cloudSyncTool,
         hookToolUseTool,
         generateTestsTool,
     ];

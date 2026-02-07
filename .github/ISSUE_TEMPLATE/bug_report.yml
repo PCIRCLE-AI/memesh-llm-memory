@@ -17,7 +17,6 @@ body:
       options:
         - MCP Server
         - MCP Tools (buddy-do, buddy-remember, etc.)
-        - A2A Protocol
         - Memory System
         - Knowledge Graph
         - Agents

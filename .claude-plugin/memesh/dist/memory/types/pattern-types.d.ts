@@ -1,4 +1,4 @@
-import type { AIMistake } from '../../evolution/types.js';
+import type { AIMistake } from '../../types/AgentClassification.js';
 export type PreventionRuleCategory = 'read-before-edit' | 'scope-creep' | 'assumption' | 'verification' | 'other';
 export type RuleSeverity = 'critical' | 'high' | 'medium' | 'low';
 export type ConfidenceLevel = 'low' | 'medium' | 'high';

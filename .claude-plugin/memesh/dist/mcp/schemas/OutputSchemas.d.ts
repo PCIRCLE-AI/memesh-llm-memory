@@ -129,134 +129,6 @@ export declare const OutputSchemas: {
         };
         required: string[];
     };
-    getSessionHealth: {
-        type: "object";
-        properties: {
-            status: {
-                type: string;
-                enum: string[];
-            };
-            tokenUsagePercentage: {
-                type: string;
-            };
-            warnings: {
-                type: string;
-                items: {
-                    type: string;
-                };
-            };
-            recommendations: {
-                type: string;
-                items: {
-                    type: string;
-                };
-            };
-            timestamp: {
-                type: string;
-            };
-        };
-        required: string[];
-    };
-    getWorkflowGuidance: {
-        type: "object";
-        properties: {
-            currentPhase: {
-                type: string;
-            };
-            recommendations: {
-                type: string;
-                items: {
-                    type: string;
-                    properties: {
-                        action: {
-                            type: string;
-                        };
-                        priority: {
-                            type: string;
-                            enum: string[];
-                        };
-                        confidence: {
-                            type: string;
-                        };
-                        suggestedAgent: {
-                            type: string;
-                        };
-                        reasoning: {
-                            type: string;
-                        };
-                    };
-                    required: string[];
-                };
-            };
-            nextSteps: {
-                type: string;
-                items: {
-                    type: string;
-                };
-            };
-        };
-        required: string[];
-    };
-    generateSmartPlan: {
-        type: "object";
-        properties: {
-            planId: {
-                type: string;
-            };
-            featureDescription: {
-                type: string;
-            };
-            tasks: {
-                type: string;
-                items: {
-                    type: string;
-                    properties: {
-                        id: {
-                            type: string;
-                        };
-                        title: {
-                            type: string;
-                        };
-                        description: {
-                            type: string;
-                        };
-                        estimatedDuration: {
-                            type: string;
-                        };
-                        requiredCapabilities: {
-                            type: string;
-                            items: {
-                                type: string;
-                            };
-                        };
-                        dependencies: {
-                            type: string;
-                            items: {
-                                type: string;
-                            };
-                        };
-                        testCriteria: {
-                            type: string;
-                            items: {
-                                type: string;
-                            };
-                        };
-                    };
-                    required: string[];
-                };
-            };
-            totalEstimatedDuration: {
-                type: string;
-            };
-            risks: {
-                type: string;
-                items: {
-                    type: string;
-                };
-            };
-        };
-        required: string[];
-    };
     hookToolUse: {
         type: "object";
         properties: {
@@ -356,188 +228,6 @@ export declare const OutputSchemas: {
         };
         required: string[];
     };
-    a2aSendTask: {
-        type: "object";
-        properties: {
-            success: {
-                type: string;
-            };
-            targetAgentId: {
-                type: string;
-            };
-            task: {
-                type: string;
-                properties: {
-                    id: {
-                        type: string;
-                    };
-                    state: {
-                        type: string;
-                        enum: string[];
-                    };
-                    name: {
-                        type: string;
-                    };
-                    priority: {
-                        type: string;
-                        enum: string[];
-                    };
-                    createdAt: {
-                        type: string;
-                    };
-                    updatedAt: {
-                        type: string;
-                    };
-                };
-                required: string[];
-            };
-        };
-        required: string[];
-    };
-    a2aGetTask: {
-        type: "object";
-        properties: {
-            task: {
-                type: string;
-                properties: {
-                    id: {
-                        type: string;
-                    };
-                    state: {
-                        type: string;
-                        enum: string[];
-                    };
-                    name: {
-                        type: string;
-                    };
-                    description: {
-                        type: string;
-                    };
-                    priority: {
-                        type: string;
-                        enum: string[];
-                    };
-                    createdAt: {
-                        type: string;
-                    };
-                    updatedAt: {
-                        type: string;
-                    };
-                    sessionId: {
-                        type: string;
-                    };
-                    messageCount: {
-                        type: string;
-                    };
-                    artifactCount: {
-                        type: string;
-                    };
-                };
-                required: string[];
-            };
-        };
-        required: string[];
-    };
-    a2aListTasks: {
-        type: "object";
-        properties: {
-            tasks: {
-                type: string;
-                items: {
-                    type: string;
-                    properties: {
-                        id: {
-                            type: string;
-                        };
-                        state: {
-                            type: string;
-                            enum: string[];
-                        };
-                        name: {
-                            type: string;
-                        };
-                        priority: {
-                            type: string;
-                            enum: string[];
-                        };
-                        createdAt: {
-                            type: string;
-                        };
-                        updatedAt: {
-                            type: string;
-                        };
-                        messageCount: {
-                            type: string;
-                        };
-                        artifactCount: {
-                            type: string;
-                        };
-                    };
-                    required: string[];
-                };
-            };
-            count: {
-                type: string;
-            };
-        };
-        required: string[];
-    };
-    a2aListAgents: {
-        type: "object";
-        properties: {
-            agents: {
-                type: string;
-                items: {
-                    type: string;
-                    properties: {
-                        agentId: {
-                            type: string;
-                        };
-                        baseUrl: {
-                            type: string;
-                        };
-                        port: {
-                            type: string;
-                        };
-                        status: {
-                            type: string;
-                            enum: string[];
-                        };
-                        lastHeartbeat: {
-                            type: string;
-                        };
-                        capabilities: {
-                            type: string;
-                        };
-                        metadata: {
-                            type: string;
-                        };
-                    };
-                    required: string[];
-                };
-            };
-            count: {
-                type: string;
-            };
-        };
-        required: string[];
-    };
-    a2aReportResult: {
-        type: "object";
-        properties: {
-            success: {
-                type: string;
-            };
-            taskId: {
-                type: string;
-            };
-            status: {
-                type: string;
-                enum: string[];
-            };
-        };
-        required: string[];
-    };
     generateTests: {
         type: "object";
         properties: {
@@ -545,6 +235,62 @@ export declare const OutputSchemas: {
                 type: string;
             };
             message: {
+                type: string;
+            };
+        };
+        required: string[];
+    };
+    cloudSync: {
+        type: "object";
+        properties: {
+            success: {
+                type: string;
+            };
+            action: {
+                type: string;
+                enum: string[];
+            };
+            message: {
+                type: string;
+            };
+            pushed: {
+                type: string;
+            };
+            pulled: {
+                type: string;
+            };
+            errors: {
+                type: string;
+            };
+            dryRun: {
+                type: string;
+            };
+            connected: {
+                type: string;
+            };
+            local: {
+                type: string;
+                properties: {
+                    count: {
+                        type: string;
+                    };
+                };
+            };
+            cloud: {
+                type: string;
+                properties: {
+                    count: {
+                        type: string;
+                    };
+                };
+            };
+            delta: {
+                type: string;
+            };
+            hasMore: {
+                type: string;
+            };
+            hint: {
                 type: string;
             };
         };
@@ -590,39 +336,6 @@ export type BuddyHelpOutput = {
         examples?: string[];
     }>;
 };
-export type SessionHealthOutput = {
-    status: 'healthy' | 'degraded' | 'unhealthy';
-    tokenUsagePercentage: number;
-    timestamp: string;
-    warnings?: string[];
-    recommendations?: string[];
-};
-export type WorkflowGuidanceOutput = {
-    currentPhase: string;
-    recommendations: Array<{
-        action: string;
-        priority: 'low' | 'medium' | 'high' | 'critical';
-        confidence?: number;
-        suggestedAgent?: string;
-        reasoning?: string;
-    }>;
-    nextSteps?: string[];
-};
-export type SmartPlanOutput = {
-    planId: string;
-    featureDescription: string;
-    tasks: Array<{
-        id: string;
-        title: string;
-        description: string;
-        estimatedDuration?: string;
-        requiredCapabilities?: string[];
-        dependencies?: string[];
-        testCriteria?: string[];
-    }>;
-    totalEstimatedDuration?: string;
-    risks?: string[];
-};
 export type HookToolUseOutput = {
     success: boolean;
     message: string;
@@ -653,57 +366,6 @@ export type CreateEntitiesOutput = {
         name: string;
         error: string;
     }>;
-};
-export type A2ASendTaskOutput = {
-    success: boolean;
-    targetAgentId: string;
-    task: {
-        id: string;
-        state: 'SUBMITTED' | 'WORKING' | 'INPUT_REQUIRED' | 'COMPLETED' | 'FAILED' | 'CANCELED' | 'REJECTED';
-        createdAt: string;
-        updatedAt: string;
-        name?: string;
-        priority?: 'low' | 'normal' | 'high' | 'urgent';
-    };
-};
-export type A2AGetTaskOutput = {
-    task: {
-        id: string;
-        state: 'SUBMITTED' | 'WORKING' | 'INPUT_REQUIRED' | 'COMPLETED' | 'FAILED' | 'CANCELED' | 'REJECTED';
-        createdAt: string;
-        updatedAt: string;
-        name?: string;
-        description?: string;
-        priority?: 'low' | 'normal' | 'high' | 'urgent';
-        sessionId?: string;
-        messageCount?: number;
-        artifactCount?: number;
-    };
-};
-export type A2AListTasksOutput = {
-    tasks: Array<{
-        id: string;
-        state: 'SUBMITTED' | 'WORKING' | 'INPUT_REQUIRED' | 'COMPLETED' | 'FAILED' | 'CANCELED' | 'REJECTED';
-        createdAt: string;
-        updatedAt: string;
-        messageCount: number;
-        artifactCount: number;
-        name?: string;
-        priority?: 'low' | 'normal' | 'high' | 'urgent';
-    }>;
-    count: number;
-};
-export type A2AListAgentsOutput = {
-    agents: Array<{
-        agentId: string;
-        baseUrl: string;
-        port: number;
-        status: 'active' | 'inactive' | 'stale';
-        lastHeartbeat: string;
-        capabilities?: Record<string, unknown>;
-        metadata?: Record<string, unknown>;
-    }>;
-    count: number;
 };
 export type GenerateTestsOutput = {
     testCode: string;

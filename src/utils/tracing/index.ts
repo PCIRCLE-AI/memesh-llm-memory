@@ -1,8 +1,8 @@
 /**
  * Distributed Tracing Module
  *
- * Provides distributed tracing capabilities for A2A agent communication.
- * Enables request correlation across HTTP calls, task execution, and MCP operations.
+ * Provides distributed tracing capabilities for MCP tool operations.
+ * Enables request correlation across task execution, memory operations, and secret management.
  *
  * @module utils/tracing
  */

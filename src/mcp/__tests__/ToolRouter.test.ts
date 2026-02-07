@@ -14,7 +14,6 @@ import { ToolRouter, type ToolRouterConfig } from '../ToolRouter.js';
 import type { RateLimiter } from '../../utils/RateLimiter.js';
 import type { ToolHandlers } from '../handlers/ToolHandlers.js';
 import type { BuddyHandlers } from '../handlers/BuddyHandlers.js';
-import type { A2AToolHandlers } from '../handlers/A2AToolHandlers.js';
 import { ValidationError, NotFoundError, OperationError } from '../../errors/index.js';
 
 describe('ToolRouter', () => {
@@ -34,17 +33,17 @@ describe('ToolRouter', () => {
     } as unknown as RateLimiter;
 
     mockToolHandlers = {
-      handleGetWorkflowGuidance: vi.fn().mockResolvedValue({
-        content: [{ type: 'text', text: 'Workflow guidance' }],
-      }),
-      handleGetSessionHealth: vi.fn().mockResolvedValue({
-        content: [{ type: 'text', text: 'Session health' }],
-      }),
-      handleGenerateSmartPlan: vi.fn().mockResolvedValue({
-        content: [{ type: 'text', text: 'Plan generated' }],
-      }),
       handleHookToolUse: vi.fn().mockResolvedValue({
         content: [{ type: 'text', text: 'Hook recorded' }],
+      }),
+      handleBuddyRecordMistake: vi.fn().mockResolvedValue({
+        content: [{ type: 'text', text: 'Mistake recorded' }],
+      }),
+      handleCreateEntities: vi.fn().mockResolvedValue({
+        content: [{ type: 'text', text: 'Entities created' }],
+      }),
+      handleGenerateTests: vi.fn().mockResolvedValue({
+        content: [{ type: 'text', text: 'Tests generated' }],
       }),
     } as unknown as ToolHandlers;
 
@@ -68,27 +67,10 @@ describe('ToolRouter', () => {
       }),
     } as unknown as BuddyHandlers;
 
-    // ✅ FIX MAJOR-17: Add A2A handlers to test config
-    const mockA2AHandlers = {
-      handleA2ASendTask: vi.fn().mockResolvedValue({
-        content: [{ type: 'text', text: 'Task sent successfully' }],
-      }),
-      handleA2AGetTask: vi.fn().mockResolvedValue({
-        content: [{ type: 'text', text: 'Task details' }],
-      }),
-      handleA2AListTasks: vi.fn().mockResolvedValue({
-        content: [{ type: 'text', text: 'Tasks list' }],
-      }),
-      handleA2AListAgents: vi.fn().mockResolvedValue({
-        content: [{ type: 'text', text: 'Agents list' }],
-      }),
-    } as unknown as A2AToolHandlers;
-
     const config: ToolRouterConfig = {
       rateLimiter: mockRateLimiter,
       toolHandlers: mockToolHandlers,
       buddyHandlers: mockBuddyHandlers,
-      a2aHandlers: mockA2AHandlers,
     };
 
     toolRouter = new ToolRouter(config);
@@ -167,29 +149,6 @@ describe('ToolRouter', () => {
     });
   });
 
-  describe('Workflow Tools', () => {
-    it('should route get-workflow-guidance', async () => {
-      await toolRouter.routeToolCall({
-        name: 'get-workflow-guidance',
-        arguments: { phase: 'idle' },
-      });
-
-      expect(mockToolHandlers.handleGetWorkflowGuidance).toHaveBeenCalled();
-    });
-
-    it('should route get-session-health', async () => {
-      await toolRouter.routeToolCall({
-        name: 'get-session-health',
-        arguments: {},
-      });
-
-      expect(mockToolHandlers.handleGetSessionHealth).toHaveBeenCalled();
-    });
-  });
-
-  // Planning Tools tests removed - generate-smart-plan tool deleted per MCP compliance
-  // Planning delegated to Claude's built-in capabilities
-
   describe('Hook Tools', () => {
     it('should route hook-tool-use', async () => {
       await toolRouter.routeToolCall({
@@ -203,14 +162,14 @@ describe('ToolRouter', () => {
 
   describe('Error Handling', () => {
     it('should propagate handler exceptions', async () => {
-      vi.mocked(mockToolHandlers.handleGetSessionHealth).mockRejectedValue(
+      vi.mocked(mockToolHandlers.handleHookToolUse).mockRejectedValue(
         new Error('Handler error')
       );
 
       await expect(async () => {
         await toolRouter.routeToolCall({
-          name: 'get-session-health',
-          arguments: {},
+          name: 'hook-tool-use',
+          arguments: { toolName: 'Write', success: true },
         });
       }).rejects.toThrow('Handler error');
     });

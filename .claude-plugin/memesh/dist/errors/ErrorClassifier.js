@@ -170,33 +170,6 @@ export class ErrorClassifier {
     }
     getConfigurationErrorDetails(error, context) {
         const message = error.message.toLowerCase();
-        if (message.includes('memesh_a2a_token') || message.includes('a2a token')) {
-            return {
-                code: 'A2A_TOKEN_MISSING',
-                severity: ErrorSeverity.CRITICAL,
-                title: 'Configuration Missing',
-                description: 'MEMESH_A2A_TOKEN environment variable is not configured.',
-                rootCause: 'A2A operations require a valid MeMesh token for agent communication.',
-                recoveryStrategy: RecoveryStrategy.MANUAL,
-                fixSteps: [
-                    'Get your token from memesh.dev/settings',
-                    'Add to .env file: MEMESH_A2A_TOKEN=your_token_here',
-                    'Restart the MCP server',
-                    'Try the command again',
-                ],
-                autoFixAvailable: false,
-                relatedDocs: [
-                    { title: 'A2A Setup Guide', url: 'docs/A2A_SETUP_GUIDE.md' },
-                    { title: 'MeMesh Settings', url: 'https://memesh.dev/settings' },
-                ],
-                relatedCommands: ['buddy-help a2a'],
-                troubleshootingTips: [
-                    'Verify token is valid and not expired',
-                    'Check .env file exists in project root',
-                    'Ensure no trailing spaces in token value',
-                ],
-            };
-        }
         return {
             code: 'CONFIG_ERROR',
             severity: ErrorSeverity.CRITICAL,

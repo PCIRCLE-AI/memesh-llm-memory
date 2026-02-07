@@ -607,7 +607,7 @@ export class MCPToolInterface {
   /**
    * Invoke a MeMesh tool directly via in-process dispatcher
    *
-   * @param toolName - MCP tool name (e.g., "buddy-do", "get-session-health")
+   * @param toolName - MCP tool name (e.g., "buddy-do", "memesh-remember")
    * @param args - Tool arguments
    * @returns ToolInvocationResult with MCP CallToolResult payload
    */

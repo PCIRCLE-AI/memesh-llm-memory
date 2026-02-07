@@ -15,17 +15,14 @@ import { RateLimiter } from '../utils/RateLimiter.js';
 import {
   ToolHandlers,
   BuddyHandlers,
-  A2AToolHandlers,
   handleBuddySecretStore,
   handleBuddySecretGet,
   handleBuddySecretList,
   handleBuddySecretDelete,
 } from './handlers/index.js';
 import type { SecretManager } from '../memory/SecretManager.js';
-import type { TaskQueue } from '../a2a/storage/TaskQueue.js';
-import type { MCPTaskDelegator } from '../a2a/delegator/MCPTaskDelegator.js';
-import { a2aListTasks, A2AListTasksInputSchema } from './tools/a2a-list-tasks.js';
-import { a2aReportResult, A2AReportResultInputSchema } from './tools/a2a-report-result.js';
+import type { KnowledgeGraph } from '../knowledge-graph/index.js';
+import { handleCloudSync, CloudSyncInputSchema } from './tools/memesh-cloud-sync.js';
 
 /**
  * Tool Router Configuration
@@ -34,7 +31,6 @@ export interface ToolRouterConfig {
   rateLimiter: RateLimiter;
   toolHandlers: ToolHandlers;
   buddyHandlers: BuddyHandlers;
-  a2aHandlers: A2AToolHandlers;
 
   /**
    * Secret Manager for secure secret storage (Phase 0.7.0)
@@ -42,24 +38,19 @@ export interface ToolRouterConfig {
   secretManager?: SecretManager;
 
   /**
-   * Task Queue for A2A task management
+   * Knowledge Graph for cloud sync operations
    */
-  taskQueue?: TaskQueue;
+  knowledgeGraph?: KnowledgeGraph;
 
   /**
-   * MCP Task Delegator for A2A task delegation
-   */
-  mcpTaskDelegator?: MCPTaskDelegator;
-
-  /**
-   * ✅ FIX HIGH-5: CSRF protection for future HTTP transport
+   * CSRF protection for future HTTP transport
    * Allowed request origins (for HTTP mode only, stdio doesn't need this)
    * @default undefined (stdio mode, no origin validation)
    */
   allowedOrigins?: string[];
 
   /**
-   * ✅ FIX HIGH-5: Transport mode
+   * Transport mode
    * @default 'stdio' (current implementation)
    */
   transportMode?: 'stdio' | 'http';
@@ -76,7 +67,7 @@ export interface ToolRouterConfig {
  * - Minimum length of 1 character
  *
  * This aligns with the MCP protocol convention where tool names like
- * 'buddy-do', 'get-workflow-guidance', 'a2a-send-task' are used.
+ * 'buddy-do', 'memesh-remember', 'memesh-secret-store' are used.
  */
 const TOOL_NAME_REGEX = /^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$/;
 const TOOL_NAME_MAX_LENGTH = 64;
@@ -150,7 +141,7 @@ function validateToolName(toolName: string): void {
         method: 'validateToolName',
         providedName: safeName,
         pattern: TOOL_NAME_REGEX.source,
-        hint: 'Example valid names: buddy-do, get-workflow-guidance, a2a-send-task',
+        hint: 'Example valid names: buddy-do, memesh-remember, memesh-secret-store',
       }
     );
   }
@@ -164,9 +155,10 @@ function validateToolName(toolName: string): void {
  *
  * The router supports main categories of tools:
  * - **Buddy Tools**: buddy-do, buddy-remember, buddy-help
- * - **Workflow Guidance Tools**: get-workflow-guidance, get-session-health
- * - **Planning Tools**: generate-smart-plan
- * - **Hook Tools**: hook-tool-use
+ * - **MeMesh Tools**: memesh-create-entities, memesh-record-mistake, memesh-generate-tests
+ * - **Secret Management Tools**: memesh-secret-store, memesh-secret-get, memesh-secret-list, memesh-secret-delete
+ * - **Hook Tools**: memesh-hook-tool-use
+ * - **Cloud Sync Tools**: memesh-cloud-sync
  *
  * Architecture:
  * - Rate limiting prevents DoS attacks (30 requests/minute default)
@@ -192,14 +184,9 @@ export class ToolRouter {
   private rateLimiter: RateLimiter;
   private toolHandlers: ToolHandlers;
   private buddyHandlers: BuddyHandlers;
-  private a2aHandlers: A2AToolHandlers;
   private secretManager?: SecretManager;
-  private taskQueue?: TaskQueue;
-  private mcpTaskDelegator?: MCPTaskDelegator;
+  private knowledgeGraph?: KnowledgeGraph;
 
-  /**
-   * ✅ FIX HIGH-5: CSRF protection configuration
-   */
   private readonly allowedOrigins?: string[];
   private readonly transportMode: 'stdio' | 'http';
 
@@ -212,12 +199,8 @@ export class ToolRouter {
     this.rateLimiter = config.rateLimiter;
     this.toolHandlers = config.toolHandlers;
     this.buddyHandlers = config.buddyHandlers;
-    this.a2aHandlers = config.a2aHandlers;
     this.secretManager = config.secretManager;
-    this.taskQueue = config.taskQueue;
-    this.mcpTaskDelegator = config.mcpTaskDelegator;
-
-    // ✅ FIX HIGH-5: Initialize CSRF protection config
+    this.knowledgeGraph = config.knowledgeGraph;
     this.allowedOrigins = config.allowedOrigins;
     this.transportMode = config.transportMode || 'stdio';
   }
@@ -335,17 +318,56 @@ export class ToolRouter {
     const args = params.arguments;
 
     // Route to appropriate handler based on tool name
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- handlers validate args via Zod
     return await this.dispatch(toolName, args as any);
+  }
+
+  /**
+   * Tool name aliases for backward compatibility (v2.8.0)
+   * Maps deprecated names to new names
+   * Will be removed in v3.0.0
+   */
+  private static readonly TOOL_ALIASES: Record<string, string> = {
+    'buddy-record-mistake': 'memesh-record-mistake',
+    'create-entities': 'memesh-create-entities',
+    'buddy-secret-store': 'memesh-secret-store',
+    'buddy-secret-get': 'memesh-secret-get',
+    'buddy-secret-list': 'memesh-secret-list',
+    'buddy-secret-delete': 'memesh-secret-delete',
+    'hook-tool-use': 'memesh-hook-tool-use',
+    'generate-tests': 'memesh-generate-tests',
+  };
+
+  /**
+   * Resolve tool alias to canonical name and log deprecation warning
+   *
+   * @param toolName - Original tool name (may be alias)
+   * @returns Canonical tool name
+   * @private
+   */
+  private resolveAlias(toolName: string): string {
+    const canonicalName = ToolRouter.TOOL_ALIASES[toolName];
+    if (canonicalName) {
+      // Log deprecation warning (will appear in MCP server logs)
+      console.warn(
+        `⚠️  DEPRECATION WARNING: Tool '${toolName}' is deprecated and will be removed in v3.0.0.\n` +
+        `   Please use '${canonicalName}' instead.\n` +
+        `   Migration guide: https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/UPGRADE.md#v280-migration-guide-2026-02-08`
+      );
+      return canonicalName;
+    }
+    return toolName;
   }
 
   /**
    * Dispatch tool call to appropriate handler
    *
    * Internal routing logic that maps tool names to handler methods. Supports:
-   * - Buddy tools (buddy_*)
-   * - Workflow guidance tools (get-workflow-guidance, etc.)
+   * - Buddy tools (buddy-do, buddy-remember, buddy-help)
+   * - MeMesh tools (memesh-record-mistake, memesh-create-entities, etc.)
+   * - Backward compatibility via aliases (deprecated tool names)
    *
-   * @param toolName - Name of the tool to execute
+   * @param toolName - Name of the tool to execute (may be alias)
    * @param args - Tool arguments (validated by individual handlers)
    * @returns Promise resolving to MCP CallToolResult
    *
@@ -355,53 +377,46 @@ export class ToolRouter {
    *
    * @private
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- each handler validates via Zod schemas
   private async dispatch(toolName: string, args: any): Promise<CallToolResult> {
-    // Buddy Commands
-    if (toolName === 'buddy-do') {
+    // Resolve aliases to canonical names (with deprecation warning)
+    const resolvedToolName = this.resolveAlias(toolName);
+
+    // Buddy Commands (core brand - names preserved)
+    if (resolvedToolName === 'buddy-do') {
       return await this.buddyHandlers.handleBuddyDo(args);
     }
 
-    if (toolName === 'buddy-remember') {
+    if (resolvedToolName === 'buddy-remember') {
       return await this.buddyHandlers.handleBuddyRemember(args);
     }
 
-    if (toolName === 'buddy-help') {
+    if (resolvedToolName === 'buddy-help') {
       return await this.buddyHandlers.handleBuddyHelp(args);
     }
 
-    // Workflow Guidance tools
-    if (toolName === 'get-workflow-guidance') {
-      return await this.toolHandlers.handleGetWorkflowGuidance(args);
-    }
-
-    if (toolName === 'get-session-health') {
-      return await this.toolHandlers.handleGetSessionHealth();
-    }
-
-    // Planning tools removed - planning delegated to LLM's built-in capabilities
-
-    // Hook integration tools
-    if (toolName === 'hook-tool-use') {
+    // Hook integration tools (v2.8.0: renamed to memesh-*)
+    if (resolvedToolName === 'memesh-hook-tool-use') {
       return await this.toolHandlers.handleHookToolUse(args);
     }
 
-    // Learning tools
-    if (toolName === 'buddy-record-mistake') {
+    // Learning tools (v2.8.0: renamed to memesh-*)
+    if (resolvedToolName === 'memesh-record-mistake') {
       return await this.toolHandlers.handleBuddyRecordMistake(args);
     }
 
-    // Knowledge Graph tools
-    if (toolName === 'create-entities') {
+    // Knowledge Graph tools (v2.8.0: renamed to memesh-*)
+    if (resolvedToolName === 'memesh-create-entities') {
       return await this.toolHandlers.handleCreateEntities(args);
     }
 
-    // Test Generation tools
-    if (toolName === 'generate-tests') {
+    // Test Generation tools (v2.8.0: renamed to memesh-*)
+    if (resolvedToolName === 'memesh-generate-tests') {
       return await this.toolHandlers.handleGenerateTests(args);
     }
 
-    // Secret Management tools (Phase 0.7.0)
-    if (toolName === 'buddy-secret-store') {
+    // Secret Management tools (v2.8.0: renamed to memesh-*)
+    if (resolvedToolName === 'memesh-secret-store') {
       if (!this.secretManager) {
         throw new OperationError(
           'Secret management is not configured',
@@ -415,123 +430,63 @@ export class ToolRouter {
       return await handleBuddySecretStore(args, this.secretManager);
     }
 
-    if (toolName === 'buddy-secret-get') {
+    if (resolvedToolName === 'memesh-secret-get') {
       if (!this.secretManager) {
         throw new OperationError(
           'Secret management is not configured',
           {
             component: 'ToolRouter',
             method: 'dispatch',
-            toolName,
+            toolName: resolvedToolName,
           }
         );
       }
       return await handleBuddySecretGet(args, this.secretManager);
     }
 
-    if (toolName === 'buddy-secret-list') {
+    if (resolvedToolName === 'memesh-secret-list') {
       if (!this.secretManager) {
         throw new OperationError(
           'Secret management is not configured',
           {
             component: 'ToolRouter',
             method: 'dispatch',
-            toolName,
+            toolName: resolvedToolName,
           }
         );
       }
       return await handleBuddySecretList(args, this.secretManager);
     }
 
-    if (toolName === 'buddy-secret-delete') {
+    if (resolvedToolName === 'memesh-secret-delete') {
       if (!this.secretManager) {
         throw new OperationError(
           'Secret management is not configured',
           {
             component: 'ToolRouter',
             method: 'dispatch',
-            toolName,
+            toolName: resolvedToolName,
           }
         );
       }
       return await handleBuddySecretDelete(args, this.secretManager);
     }
 
-    // A2A Protocol tools
-    if (toolName === 'a2a-send-task') {
-      return await this.a2aHandlers.handleA2ASendTask(args);
-    }
-
-    if (toolName === 'a2a-get-task') {
-      return await this.a2aHandlers.handleA2AGetTask(args);
-    }
-
-    if (toolName === 'a2a-get-result') {
-      return await this.a2aHandlers.handleA2AGetResult(args);
-    }
-
-    if (toolName === 'a2a-list-tasks') {
-      // MCP Client polling interface - queries MCPTaskDelegator's in-memory queue
-      if (!this.mcpTaskDelegator) {
-        throw new OperationError(
-          'MCPTaskDelegator is not configured',
-          {
-            component: 'ToolRouter',
-            method: 'dispatch',
-            toolName,
-          }
-        );
-      }
-      // Validate input using Zod schema
-      const validationResult = A2AListTasksInputSchema.safeParse(args);
+    // Cloud Sync tools (v2.8.0: already using memesh-* naming)
+    if (resolvedToolName === 'memesh-cloud-sync') {
+      const validationResult = CloudSyncInputSchema.safeParse(args);
       if (!validationResult.success) {
         throw new ValidationError(
-          `Invalid input for ${toolName}: ${validationResult.error.message}`,
-          {
-            component: 'ToolRouter',
-            method: 'dispatch',
-            toolName,
-            zodError: validationResult.error,
-          }
+          `Invalid input for ${resolvedToolName}: ${validationResult.error.message}`,
+          { component: 'ToolRouter', method: 'dispatch', toolName: resolvedToolName, zodError: validationResult.error }
         );
       }
-      return await a2aListTasks(validationResult.data, this.mcpTaskDelegator);
+      return handleCloudSync(validationResult.data, this.knowledgeGraph);
     }
 
-    if (toolName === 'a2a-list-agents') {
-      return await this.a2aHandlers.handleA2AListAgents(args);
-    }
 
-    if (toolName === 'a2a-report-result') {
-      // MCP Client reports task result back to MeMesh Server
-      if (!this.taskQueue || !this.mcpTaskDelegator) {
-        throw new OperationError(
-          'TaskQueue or MCPTaskDelegator is not configured',
-          {
-            component: 'ToolRouter',
-            method: 'dispatch',
-            toolName,
-          }
-        );
-      }
-      // Validate input using Zod schema
-      const validationResult = A2AReportResultInputSchema.safeParse(args);
-      if (!validationResult.success) {
-        throw new ValidationError(
-          `Invalid input for ${toolName}: ${validationResult.error.message}`,
-          {
-            component: 'ToolRouter',
-            method: 'dispatch',
-            toolName,
-            zodError: validationResult.error,
-          }
-        );
-      }
-      return await a2aReportResult(validationResult.data, this.taskQueue, this.mcpTaskDelegator);
-    }
-
-    // ✅ FIX MINOR (Round 1): Sanitize toolName in error message
-    const safeName = sanitizeToolNameForError(toolName);
+    // Sanitize toolName in error message
+    const safeName = sanitizeToolNameForError(resolvedToolName);
     throw new NotFoundError(
       `Unknown tool: ${safeName}`,
       'tool',

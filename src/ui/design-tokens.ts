@@ -10,23 +10,22 @@
  * Maps internal operation names to user-friendly display names
  */
 export const operationDisplayNames: Record<string, string> = {
-  // MeMesh core operations
+  // MeMesh primary operations (v2.8.0+)
   'memesh-remember': 'Memory Search',
   'memesh-do': 'Task Router',
   'memesh-help': 'Help Center',
+  'memesh-record-mistake': 'Error Recording',
+  'memesh-create-entities': 'Knowledge Storage',
+  'memesh-secret-store': 'Secret Storage',
+  'memesh-secret-get': 'Secret Retrieval',
+  'memesh-secret-list': 'Secret Listing',
+  'memesh-secret-delete': 'Secret Deletion',
 
   // Knowledge operations
   'create-entities': 'Knowledge Storage',
   'update-entities': 'Knowledge Update',
   'delete-entities': 'Knowledge Deletion',
   'search-nodes': 'Knowledge Search',
-
-  // Agent-to-Agent operations
-  'a2a-send-task': 'Agent Communication',
-  'a2a-discover-agents': 'Agent Discovery',
-  'a2a-query-status': 'Status Check',
-  'a2a-list-tasks': 'Task List',
-  'a2a-list-agents': 'Agent Registry',
 
   // Legacy buddy-* aliases (deprecated)
   'buddy-remember': 'Memory Search',
@@ -35,10 +34,6 @@ export const operationDisplayNames: Record<string, string> = {
   'buddy-record-mistake': 'Error Recording',
   'buddy-secret-store': 'Secret Storage',
   'buddy-secret-get': 'Secret Retrieval',
-
-  // System operations
-  'get-session-health': 'Health Check',
-  'get-workflow-guidance': 'Workflow Guide',
 };
 
 /**

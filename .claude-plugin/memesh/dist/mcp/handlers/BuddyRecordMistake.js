@@ -1,4 +1,4 @@
-import { AIErrorType } from '../../evolution/types.js';
+import { AIErrorType } from '../../types/AgentClassification.js';
 import { t } from '../../i18n/index.js';
 import { logger } from '../../utils/logger.js';
 function calculateImportance(errorType, context) {

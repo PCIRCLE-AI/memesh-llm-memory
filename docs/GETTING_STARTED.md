@@ -14,7 +14,7 @@ Every project you work on, every decision you make, every bug you fix—Claude r
 
 ✅ **Remembers Everything**: Architecture decisions, design patterns, bugs fixed, conventions used
 ✅ **Smart Task Routing**: Automatically detects what kind of work you need and applies the right expertise
-✅ **Multi-Session Support**: Share memory across multiple Claude Code windows via singleton daemon
+✅ **Persistent Memory**: Knowledge graph persists across all sessions (stored locally)
 ✅ **Zero Configuration**: Works out of the box with sensible defaults
 ✅ **100% Local**: Your code and decisions never leave your machine
 
@@ -126,11 +126,11 @@ Available Commands:
   get-workflow-guidance - Get recommendations for current phase
   generate-tests <file> - Auto-generate comprehensive tests
 
-  buddy-secret-store    - Store credentials securely
-  buddy-secret-get      - Retrieve stored secrets
-  ... (18 tools total)
+  memesh-secret-store   - Store credentials securely
+  memesh-secret-get     - Retrieve stored secrets
+  ... (12 tools total)
 
-Status: ✅ Connected (18 tools available)
+Status: ✅ Connected (12 tools available)
 ```
 
 ### 2. Test Memory Storage
@@ -412,6 +412,6 @@ Install MeMesh, run `buddy-help`, and never explain your architecture twice agai
 
 ---
 
-**Version**: 2.7.0
-**Last Updated**: 2026-02-04
+**Version**: 2.8.0
+**Last Updated**: 2026-02-08
 **Not affiliated with Anthropic PBC** • Independent open-source project

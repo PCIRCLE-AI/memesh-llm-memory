@@ -16,7 +16,7 @@ describe('TaskLogsHandler', () => {
     expect(result.mimeType).toBe('text/plain');
     expect(result.text).toContain('Task Logs - Feature Not Yet Available');
     expect(result.text).toContain('Task ID: task-123');
-    expect(result.text).toContain('Planned for future release');
+    expect(result.text).toContain('Planned for MeMesh Cloud integration');
   });
 
   it('should explain missing infrastructure for non-existent task', async () => {

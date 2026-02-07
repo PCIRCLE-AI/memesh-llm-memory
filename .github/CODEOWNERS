@@ -7,9 +7,6 @@
 # Core MCP functionality
 /src/mcp/ @kevintseng
 
-# A2A Protocol
-/src/a2a/ @kevintseng
-
 # Memory and Knowledge Graph
 /src/memory/ @kevintseng
 /src/knowledge-graph/ @kevintseng

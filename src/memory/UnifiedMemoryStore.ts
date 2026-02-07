@@ -1000,7 +1000,7 @@ export class UnifiedMemoryStore {
           // Validate size before parsing to prevent DoS attacks (max 1MB)
           const sizeInBytes = Buffer.byteLength(metadataStr, 'utf8');
           if (sizeInBytes > MAX_METADATA_SIZE) {
-            console.warn(
+            logger.warn(
               `Metadata too large on retrieval: ${sizeInBytes} bytes (max: ${MAX_METADATA_SIZE})`
             );
             // Skip parsing oversized metadata

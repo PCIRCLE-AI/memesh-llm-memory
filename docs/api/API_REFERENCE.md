@@ -1,7 +1,7 @@
 # MeMesh MCP Server - API Reference
 
-**Version**: 2.7.0
-**Last Updated**: 2026-02-04
+**Version**: 2.8.0
+**Last Updated**: 2026-02-08
 **Protocol**: Model Context Protocol (MCP)
 
 ---
@@ -16,7 +16,7 @@
    - [buddy-remember](#buddy-remember)
    - [buddy-help](#buddy-help)
 5. [Knowledge Graph Tools](#knowledge-graph-tools)
-   - [create-entities](#create-entities)
+   - [memesh-create-entities](#memesh-create-entities)
    - [recall-memory](#recall-memory)
    - [add-observations](#add-observations)
    - [create-relations](#create-relations)
@@ -123,7 +123,7 @@ MeMesh provides 9 MCP tools organized into three categories:
 
 | Tool | Purpose | Complexity |
 |------|---------|-----------|
-| `create-entities` | Create knowledge entities with relationships | Advanced |
+| `memesh-create-entities` | Create knowledge entities with relationships | Advanced |
 | `recall-memory` | Low-level memory search with filters | Advanced |
 | `add-observations` | Add observations to existing entities | Advanced |
 | `create-relations` | Link entities with typed relationships | Advanced |
@@ -748,7 +748,7 @@ Response: (Shows detailed help for buddy-do command)
 
 ## Knowledge Graph Tools
 
-### create-entities
+### memesh-create-entities
 
 **Purpose**: Create knowledge entities with explicit structure and relationships.
 
@@ -1325,7 +1325,7 @@ Response:
 
 ❌ **Don't**:
 - Add duplicate observations
-- Use for creating new entities (use create-entities)
+- Use for creating new entities (use memesh-create-entities)
 - Expect full ACID transactions across multiple entities
 
 #### Error Responses
@@ -2439,7 +2439,7 @@ await createRelations({
 | `buddy-do` | 100-2000ms | Depends on task complexity |
 | `buddy-remember` (store) | 50-200ms | Simple database insert |
 | `buddy-remember` (search) | 100-500ms | Depends on graph size |
-| `create-entities` | 50-200ms per entity | Batch operations faster |
+| `memesh-create-entities` | 50-200ms per entity | Batch operations faster |
 | `recall-memory` | 100-300ms | Direct database query |
 | `add-observations` | 100-300ms | Get-then-update pattern |
 | `create-relations` | 150-400ms | Validates both entities first |
@@ -2480,7 +2480,7 @@ await createRelations({
 ### Optimization Tips
 
 ✅ **Optimize Performance**:
-- Batch create-entities operations
+- Batch memesh-create-entities operations
 - Use appropriate limit parameters
 - Avoid unnecessary health-checks
 - Cache buddy-remember searches

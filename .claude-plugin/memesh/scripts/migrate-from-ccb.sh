@@ -173,15 +173,6 @@ ITEMS_TO_MIGRATE=(
     "cache/"
 )
 
-# Find A2A database files
-if [ -d "$OLD_DIR" ]; then
-    while IFS= read -r -d '' a2a_db; do
-        ITEMS_TO_MIGRATE+=("$(basename "$a2a_db")")
-        [ -f "${a2a_db}-shm" ] && ITEMS_TO_MIGRATE+=("$(basename "$a2a_db")-shm")
-        [ -f "${a2a_db}-wal" ] && ITEMS_TO_MIGRATE+=("$(basename "$a2a_db")-wal")
-    done < <(find "$OLD_DIR" -maxdepth 1 -name "a2a-*.db" -print0 2>/dev/null)
-fi
-
 MIGRATED_COUNT=0
 FAILED_COUNT=0
 TOTAL_ITEMS=0

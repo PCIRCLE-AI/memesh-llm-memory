@@ -129,12 +129,12 @@ claude mcp list
 **Expected output:**
 ```
 Connected MCP Servers:
-✅ memesh (18 tools available)
+✅ memesh (12 tools available)
    Core: buddy-do, buddy-remember, buddy-help
-   Workflow: get-session-health, get-workflow-guidance
-   Secrets: buddy-secret-store, buddy-secret-get, buddy-secret-list, buddy-secret-delete
-   A2A: a2a-send-task, a2a-get-task, a2a-list-tasks, a2a-list-agents, a2a-report-result
-   Other: create-entities, buddy-record-mistake, generate-tests, hook-tool-use
+   MeMesh: memesh-record-mistake, memesh-create-entities,
+           memesh-secret-store, memesh-secret-get, memesh-secret-list, memesh-secret-delete,
+           memesh-hook-tool-use, memesh-generate-tests
+   Cloud: memesh-cloud-sync
 ```
 
 ---
@@ -150,7 +150,7 @@ Verify MeMesh is working by checking available capabilities:
 
 **Expected response:**
 ```
-MeMesh provides 18 tools:
+MeMesh provides 12 tools:
 
 Core Commands (3):
   1. buddy-do - Smart task routing and execution
@@ -162,23 +162,15 @@ Workflow Tools (2):
   5. get-workflow-guidance - Next-step recommendations
 
 Secret Management (4):
-  6. buddy-secret-store - Store credentials securely
-  7. buddy-secret-get - Retrieve stored secrets
-  8. buddy-secret-list - List all secrets
-  9. buddy-secret-delete - Delete secrets
+  6. memesh-secret-store - Store credentials securely
+  7. memesh-secret-get - Retrieve stored secrets
+  8. memesh-secret-list - List all secrets
+  9. memesh-secret-delete - Delete secrets
 
-A2A Protocol (5):
-  10. a2a-send-task - Send tasks to agents
-  11. a2a-get-task - Get task status
-  12. a2a-list-tasks - List own tasks
-  13. a2a-list-agents - List available agents
-  14. a2a-report-result - Report results
-
-Other Tools (4):
-  15. create-entities - Create knowledge entities
-  16. buddy-record-mistake - Error recording
-  17. generate-tests - Test generation
-  18. hook-tool-use - Hook processing (auto)
+Other Tools (3):
+  10. memesh-create-entities - Create knowledge entities
+  11. memesh-record-mistake - Error recording
+  12. generate-tests - Test generation
 ```
 
 ---

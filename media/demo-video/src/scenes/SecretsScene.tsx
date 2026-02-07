@@ -150,7 +150,7 @@ export const SecretsScene: React.FC = () => {
           opacity: featureOpacity,
         }}
       >
-        $ buddy-secret-store / buddy-secret-get / buddy-secret-delete
+        $ memesh-secret-store / memesh-secret-get / memesh-secret-delete
       </div>
     </AbsoluteFill>
   );

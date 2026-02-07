@@ -58,15 +58,6 @@ export const UninstallInputSchema = z.object({
     keepConfig: z.boolean().optional().default(false),
     dryRun: z.boolean().optional().default(false),
 });
-export const WorkflowGuidanceInputSchema = z.object({
-    phase: z.string().min(1, 'Phase cannot be empty'),
-    filesChanged: z.array(z.string().min(1)).optional(),
-    testsPassing: z.boolean().optional(),
-});
-export const RecordTokenUsageInputSchema = z.object({
-    inputTokens: z.number().int().nonnegative('Input tokens must be non-negative'),
-    outputTokens: z.number().int().nonnegative('Output tokens must be non-negative'),
-});
 export const HookToolUseInputSchema = z.object({
     toolName: z.string().min(1, 'Tool name cannot be empty'),
     arguments: z.unknown().optional(),
@@ -74,14 +65,6 @@ export const HookToolUseInputSchema = z.object({
     duration: z.number().int().nonnegative('Duration must be non-negative').optional(),
     tokensUsed: z.number().int().nonnegative('Tokens used must be non-negative').optional(),
     output: z.string().optional(),
-});
-export const GenerateSmartPlanInputSchema = z.object({
-    featureDescription: z
-        .string()
-        .min(1, 'Feature description cannot be empty')
-        .max(MAX_TASK_DESCRIPTION_LENGTH, `Feature description too long (max ${MAX_TASK_DESCRIPTION_LENGTH} characters)`),
-    requirements: z.array(z.string()).optional(),
-    constraints: z.array(z.string()).optional(),
 });
 export const RecallMemoryInputSchema = z.object({
     limit: z.number().int().positive('Limit must be positive').max(100, 'Limit too large (max 100)').optional().default(10),
@@ -108,61 +91,6 @@ export const CreateRelationsInputSchema = z.object({
         relationType: z.string().min(1, 'Relation type cannot be empty'),
         metadata: z.record(z.string(), z.unknown()).optional(),
     })).min(1, 'At least one relation is required'),
-});
-export const A2ASendTaskInputSchema = z.object({
-    targetAgentId: z.string().min(1, 'Target agent ID cannot be empty'),
-    taskDescription: z
-        .string()
-        .min(1, 'Task description cannot be empty')
-        .max(MAX_TASK_DESCRIPTION_LENGTH, `Task description too long (max ${MAX_TASK_DESCRIPTION_LENGTH} characters)`),
-    priority: z.enum(['low', 'normal', 'high', 'urgent']).optional(),
-    sessionId: z.string().optional(),
-    metadata: z.record(z.string(), z.unknown()).optional(),
-});
-export const A2AGetTaskInputSchema = z.object({
-    targetAgentId: z.string().min(1, 'Target agent ID cannot be empty'),
-    taskId: z
-        .string()
-        .min(1, 'Task ID cannot be empty')
-        .refine((val) => val.trim().length > 0, {
-        message: 'Task ID cannot be only whitespace',
-    }),
-});
-export const A2AGetResultInputSchema = z.object({
-    targetAgentId: z.string().min(1, 'targetAgentId is required'),
-    taskId: z
-        .string()
-        .min(1, 'taskId is required')
-        .refine((val) => val.trim().length > 0, {
-        message: 'Task ID cannot be only whitespace',
-    }),
-});
-export const A2AListTasksInputSchema = z.object({
-    state: z.enum([
-        'SUBMITTED',
-        'WORKING',
-        'INPUT_REQUIRED',
-        'COMPLETED',
-        'FAILED',
-        'CANCELED',
-        'REJECTED',
-    ]).optional(),
-    limit: z.number().int().min(1).max(100, 'Limit too large (max 100)').optional(),
-    offset: z.number().int().min(0).optional(),
-});
-export const A2AListAgentsInputSchema = z.object({
-    status: z.enum(['active', 'inactive', 'all']).optional(),
-});
-export const A2AReportResultInputSchema = z.object({
-    taskId: z
-        .string()
-        .min(1, 'Task ID cannot be empty')
-        .refine((val) => val.trim().length > 0, {
-        message: 'Task ID cannot be only whitespace',
-    }),
-    success: z.boolean().describe('Whether execution succeeded (true) or failed (false)'),
-    result: z.unknown().optional().describe('Execution result if success=true'),
-    error: z.string().optional().describe('Error message if success=false'),
 });
 export const GenerateTestsInputSchema = z.object({
     specification: z.string().max(10000, 'Specification too long (max 10,000 characters)').optional(),

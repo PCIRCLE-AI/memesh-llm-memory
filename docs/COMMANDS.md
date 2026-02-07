@@ -4,136 +4,10 @@ Complete reference for all MeMesh commands and tools.
 
 ## Table of Contents
 
-- [Daemon Commands](#daemon-commands) (Process Management)
 - [Buddy Commands](#buddy-commands) (User-Friendly Layer)
 - [MCP Tools](#mcp-tools) (Direct Tool Access)
 - [Command Aliases](#command-aliases)
 - [Usage Examples](#usage-examples)
-
----
-
-## Daemon Commands
-
-MeMesh uses a singleton daemon architecture to efficiently share resources across multiple Claude Code sessions.
-
-### `memesh daemon status`
-
-Check daemon status and information.
-
-**What it shows:**
-- Running state (daemon/proxy/standalone)
-- PID and uptime
-- Connected clients count
-- Socket path
-- Version information
-
-**Example:**
-```bash
-memesh daemon status
-```
-
-**Output:**
-```
-Daemon Status: running
-Mode: daemon
-PID: 12345
-Uptime: 2h 15m
-Clients: 3
-Socket: /Users/user/.memesh/daemon.sock
-Version: 2.7.0
-```
-
----
-
-### `memesh daemon logs`
-
-View daemon logs.
-
-**Options:**
-- `-f, --follow` - Follow logs in real-time
-- `-n, --lines <number>` - Number of lines to show (default: 50)
-
-**Examples:**
-```bash
-# Show recent logs
-memesh daemon logs
-
-# Follow logs in real-time
-memesh daemon logs -f
-
-# Show last 100 lines
-memesh daemon logs -n 100
-```
-
----
-
-### `memesh daemon stop`
-
-Stop the daemon process.
-
-**Options:**
-- `--force` - Force immediate termination (skip graceful shutdown)
-
-**Examples:**
-```bash
-# Graceful stop (waits for clients)
-memesh daemon stop
-
-# Force stop
-memesh daemon stop --force
-```
-
-**Note:** Graceful stop waits for connected clients to disconnect and in-flight requests to complete.
-
----
-
-### `memesh daemon restart`
-
-Restart the daemon process.
-
-**What it does:**
-1. Signals existing daemon to prepare for shutdown
-2. Waits for in-flight requests to complete
-3. Starts new daemon instance
-4. Clients automatically reconnect
-
-**Example:**
-```bash
-memesh daemon restart
-```
-
----
-
-### `memesh daemon upgrade`
-
-Request daemon upgrade when a newer version is available.
-
-**What it does:**
-1. New instance requests upgrade from running daemon
-2. Daemon enters drain mode (no new requests)
-3. Existing requests complete
-4. Lock is released
-5. New instance takes over
-
-**Example:**
-```bash
-memesh daemon upgrade
-```
-
----
-
-### Daemon Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `MEMESH_DISABLE_DAEMON` | Disable daemon mode (`1` or `true`) | `false` |
-| `MEMESH_DAEMON_IDLE_TIMEOUT` | Idle timeout before auto-shutdown (ms) | `300000` |
-| `MEMESH_DAEMON_LOG_LEVEL` | Log level (debug/info/warn/error) | `info` |
-
-**Disable daemon mode:**
-```bash
-export MEMESH_DISABLE_DAEMON=1
-```
 
 ---
 
@@ -362,7 +236,7 @@ Internal hook event ingestion for workflow automation and memory tracking.
 
 ---
 
-### `buddy-record-mistake`
+### `memesh-record-mistake`
 
 Record errors and mistakes for learning and prevention.
 
@@ -388,7 +262,7 @@ Record errors and mistakes for learning and prevention.
 
 ---
 
-### `create-entities`
+### `memesh-create-entities`
 
 Create knowledge entities with explicit relationships for fine-grained control over the knowledge graph.
 
@@ -422,7 +296,7 @@ Create knowledge entities with explicit relationships for fine-grained control o
 
 ---
 
-### `buddy-secret-store`
+### `memesh-secret-store`
 
 Securely store sensitive information (API keys, tokens, passwords) using AES-256-GCM encryption.
 
@@ -456,7 +330,7 @@ Securely store sensitive information (API keys, tokens, passwords) using AES-256
 
 ---
 
-### `buddy-secret-get`
+### `memesh-secret-get`
 
 Retrieve a previously stored secret.
 
@@ -481,7 +355,7 @@ Retrieve a previously stored secret.
 
 ---
 
-### `buddy-secret-list`
+### `memesh-secret-list`
 
 List all stored secrets (names only, not values).
 
@@ -498,7 +372,7 @@ List all stored secrets (names only, not values).
 
 ---
 
-### `buddy-secret-delete`
+### `memesh-secret-delete`
 
 Permanently delete a stored secret.
 
@@ -515,232 +389,6 @@ Permanently delete a stored secret.
   "name": "old-api-key"
 }
 ```
-
----
-
-### `a2a-send-task`
-
-Send a task to another agent for execution (Agent-to-Agent Protocol - Phase 1.0).
-
-**What it does:**
-- Delegates task to MCP Client via HTTP POST
-- MCP Client polls tasks every 5 seconds via `a2a-list-tasks`
-- Requires Bearer token authentication (`MEMESH_A2A_TOKEN`)
-- Returns task ID for status tracking
-
-**Input Schema:**
-```json
-{
-  "targetAgentId": "string (required) - ID of the target agent to send the task to",
-  "taskDescription": "string (required) - Description of the task to execute",
-  "priority": "enum (optional) - low | normal | high | urgent (default: normal)",
-  "sessionId": "string (optional) - Session ID for task tracking",
-  "metadata": "object (optional) - Additional task metadata"
-}
-```
-
-**Example:**
-```json
-{
-  "targetAgentId": "code-reviewer",
-  "taskDescription": "Review src/auth.ts for security issues",
-  "priority": "high"
-}
-```
-
-**Authentication:**
-- Requires `Authorization: Bearer <token>` header
-- Token must match `MEMESH_A2A_TOKEN` environment variable
-- See [A2A_SETUP_GUIDE.md](./A2A_SETUP_GUIDE.md) for token configuration
-
-**Current Status:** Phase 1.0 - MCP Client Delegation (localhost-only)
-
----
-
-### `a2a-get-task`
-
-Query status and results of a sent task.
-
-**Input Schema:**
-```json
-{
-  "targetAgentId": "string (required) - ID of the agent that owns the task",
-  "taskId": "string (required) - ID of the task to retrieve"
-}
-```
-
-**Returns:**
-- Task status (SUBMITTED/WORKING/INPUT_REQUIRED/COMPLETED/FAILED/CANCELED/REJECTED)
-- Task results (if completed)
-- Error information (if failed)
-
----
-
-### `a2a-list-tasks`
-
-List all tasks assigned to this agent (Phase 1.0: MCP Client Polling).
-
-**What it does:**
-- MCP Client polls this tool every 5 seconds
-- Returns pending tasks from task queue
-- Tasks transition to IN_PROGRESS when retrieved
-- Used for MCP Client Delegation workflow
-
-**Input Schema:**
-```json
-{
-  "state": "enum (optional) - Filter by task state: SUBMITTED | WORKING | INPUT_REQUIRED | COMPLETED | FAILED | CANCELED | REJECTED",
-  "limit": "number (optional) - Maximum tasks to return (1-100)",
-  "offset": "number (optional) - Number of tasks to skip for pagination"
-}
-```
-
-**Example:**
-```json
-{
-  "state": "SUBMITTED",
-  "limit": 10
-}
-```
-
-**Returns:**
-- Array of task objects
-- Task status and metadata
-- Priority and timing information
-
-**MCP Client Workflow:**
-1. Poll `a2a-list-tasks` every 5 seconds
-2. Retrieve pending tasks
-3. Execute tasks using `buddy-do` or other MCP tools
-4. Report results via `a2a-report-result`
-
-**Polling Configuration:**
-- Interval: 5 seconds (configurable via `MEMESH_A2A_POLL_INTERVAL`)
-- Timeout: 30 seconds per task (configurable via `MEMESH_A2A_TASK_TIMEOUT`)
-
----
-
-### `a2a-get-result` ✨ NEW in Phase 1.0
-
-Query the execution result of a completed task.
-
-**What it does:**
-- Retrieves detailed execution result including success status, output, duration, and executor
-- Works only for tasks in COMPLETED or FAILED state
-- Returns TaskResult object with comprehensive execution metadata
-- Uses secure validation (response size limit, schema validation, input validation)
-
-**Input Schema:**
-```json
-{
-  "targetAgentId": "string (required) - ID of the agent that executed the task",
-  "taskId": "string (required) - ID of the task to query result for"
-}
-```
-
-**Example:**
-```json
-{
-  "targetAgentId": "agent-2",
-  "taskId": "task-abc123"
-}
-```
-
-**Returns:**
-```json
-{
-  "taskId": "task-abc123",
-  "state": "COMPLETED",
-  "success": true,
-  "result": {
-    "answer": 579,
-    "calculation": "123 + 456 = 579"
-  },
-  "executedAt": "2026-02-05T10:00:00.000Z",
-  "executedBy": "agent-2",
-  "durationMs": 150
-}
-```
-
-**When to Use:**
-- After task reaches COMPLETED or FAILED state
-- To retrieve detailed execution results and metadata
-- To verify task execution success and performance
-
-**Security Features (Phase 1.0):**
-- Response size limit (10MB) prevents DoS attacks
-- Input validation blocks path traversal attempts
-- Schema validation prevents type confusion
-
----
-
-### `a2a-report-result`
-
-Report task execution result (Phase 1.0: Automatic State Transition).
-
-**What it does:**
-- MCP Client reports task execution result
-- **Automatically** updates task state to COMPLETED (success=true) or FAILED (success=false)
-- Stores result/error in task data
-- Triggers state transition validation (WORKING → COMPLETED/FAILED)
-- Updates task `updated_at` timestamp
-
-**Input Schema:**
-```json
-{
-  "taskId": "string (required) - Task ID to report result for",
-  "result": "string (required) - Execution output or result",
-  "success": "boolean (required) - Whether execution succeeded",
-  "error": "string (optional) - Error message if success=false"
-}
-```
-
-**Example (Success):**
-```json
-{
-  "taskId": "task-abc123",
-  "result": "Code review completed. Found 2 security issues in auth.ts",
-  "success": true
-}
-```
-→ **Automatic state transition**: WORKING → COMPLETED
-
-**Example (Failure):**
-```json
-{
-  "taskId": "task-abc123",
-  "result": "",
-  "success": false,
-  "error": "File src/auth.ts not found"
-}
-```
-→ **Automatic state transition**: WORKING → FAILED
-
-**When to Use:**
-- After MCP Client completes task execution
-- To report result and automatically update task state
-- Required for proper task lifecycle management
-
-**Phase 1.0 Behavior:**
-- ✅ Validates state transitions (must be in WORKING or SUBMITTED state)
-- ✅ Automatically updates state based on success flag
-- ✅ Stores execution metadata (timestamp, result/error)
-
----
-
-### `a2a-list-agents`
-
-Discover available agents for task delegation.
-
-**Input Schema:**
-```json
-{}
-```
-
-**Returns:**
-- Array of agent identifiers
-- Agent capabilities
-- Agent status (online/offline)
 
 ---
 

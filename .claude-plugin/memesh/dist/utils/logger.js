@@ -82,7 +82,7 @@ function buildFileTransports() {
         }
     }
     catch (error) {
-        console.warn('Logger: failed to create logs directory, using console-only logging');
+        process.stderr.write('Logger: failed to create logs directory, using console-only logging\n');
         return [];
     }
     return [

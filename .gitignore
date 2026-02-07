@@ -304,8 +304,12 @@ start-session-*.sh
 # Root-level internal documentation (UPPERCASE variants)
 *FIX*.md
 *IMPLEMENTATION*.md
+*INTEGRATION*.md
 *MIGRATION*.md
+*PLAN*.md
+*ROADMAP*.md
 *SECURITY_FIXES*.md
+*STRATEGY*.md
 *TEST_COVERAGE*.md
 *VALIDATION*.md
 *AUDIT*.md

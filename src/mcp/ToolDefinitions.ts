@@ -56,6 +56,12 @@ export interface MCPToolDefinition {
     idempotentHint?: boolean;
     openWorldHint?: boolean;
   };
+  /**
+   * Tool name aliases for backward compatibility
+   * Deprecated names that still work but show warnings
+   * @since v2.8.0 - Tool naming unification
+   */
+  aliases?: string[];
 }
 
 /**
@@ -160,68 +166,12 @@ The default 'hybrid' mode combines semantic understanding with keyword matching 
   };
 
   // ========================================
-  // Workflow Guidance Tools
-  // ========================================
-
-  const getWorkflowGuidanceTool: MCPToolDefinition = {
-    name: 'get-workflow-guidance',
-    description: 'Get next steps and recommendations for current development phase (code-written, test-complete, commit-ready)',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        phase: {
-          type: 'string',
-          enum: ['idle', 'code-written', 'test-complete', 'commit-ready', 'committed'],
-          description: 'Current workflow phase',
-        },
-        filesChanged: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'List of files that were changed',
-        },
-        testsPassing: {
-          type: 'boolean',
-          description: 'Whether tests are passing',
-        },
-      },
-      required: ['phase'],
-    },
-    outputSchema: OutputSchemas.getWorkflowGuidance,
-    annotations: {
-      title: 'Workflow Recommendations',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: false,    // Results depend on current state
-      openWorldHint: false,
-    },
-  };
-
-  const getSessionHealthTool: MCPToolDefinition = {
-    name: 'get-session-health',
-    description: '💊 MeMesh: Check session health including token usage and quality metrics',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {},
-      additionalProperties: false,  // No parameters accepted
-    },
-    outputSchema: OutputSchemas.getSessionHealth,
-    annotations: {
-      title: 'Session Health Check',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: false,    // Results change over time
-      openWorldHint: false,
-    },
-  };
-
-  // generate-smart-plan tool removed - planning delegated to Claude's built-in capabilities
-
-  // ========================================
   // Learning Tools (Feedback & Improvement)
   // ========================================
 
   const buddyRecordMistakeTool: MCPToolDefinition = {
-    name: 'buddy-record-mistake',
+    name: 'memesh-record-mistake',
+    aliases: ['buddy-record-mistake'],  // Deprecated, will be removed in v3.0.0
     description: `📝 MeMesh: Record AI mistakes for learning and prevention - enable systematic improvement from user feedback.
 
 **When to Record:**
@@ -330,7 +280,8 @@ Record:
   // ========================================
 
   const hookToolUseTool: MCPToolDefinition = {
-    name: 'hook-tool-use',
+    name: 'memesh-hook-tool-use',
+    aliases: ['hook-tool-use'],  // Deprecated, will be removed in v3.0.0
     description: 'Process tool execution events from Claude Code CLI for workflow automation (auto-triggered, do not call manually)',
     inputSchema: {
       type: 'object' as const,
@@ -377,7 +328,8 @@ Record:
   // ========================================
 
   const createEntitiesTool: MCPToolDefinition = {
-    name: 'create-entities',
+    name: 'memesh-create-entities',
+    aliases: ['create-entities'],  // Deprecated, will be removed in v3.0.0
     description: `✨ MeMesh: Create entities in Knowledge Graph - record decisions, features, bug fixes, and lessons learned.
 
 **What to Record:**
@@ -463,246 +415,73 @@ tags: ["tech:jwt", "tech:nodejs", "domain:authentication", "security"]`,
   };
 
   // ========================================
-  // A2A Protocol Tools (Agent-to-Agent)
+  // Cloud Sync Tools
   // ========================================
 
-  const a2aSendTaskTool: MCPToolDefinition = {
-    name: 'a2a-send-task',
-    description: `🤝 MeMesh A2A: Send a task to another A2A agent for execution.
+  const cloudSyncTool: MCPToolDefinition = {
+    name: 'memesh-cloud-sync',
+    description: `☁️ Sync local Knowledge Graph memories with MeMesh Cloud.
 
-**Workflow:**
-1. List agents with a2a-list-agents to get targetAgentId
-2. Send task with clear, specific description
-3. Track with returned taskId via a2a-get-task
-4. Receive result when complete
+**Actions:**
+• {action: "status"}: Compare local vs cloud memory counts
+• {action: "push"}: Push local memories to cloud
+• {action: "pull"}: Pull cloud memories to local
+• {action: "push", dryRun: true}: Preview what would be synced
 
-**Example:**
-targetAgentId: "kts-macbook-xyz789"
-taskDescription: "Analyze error logs from last 24h and summarize top 3 issues"
-priority: "high"
-
-**Priority Levels:**
-• low: Background tasks
-• normal: Default priority
-• high: Important, time-sensitive
-• urgent: Critical, immediate attention`,
+Requires MEMESH_API_KEY to be configured. Without it, all actions return a setup guide.`,
     inputSchema: {
       type: 'object' as const,
       properties: {
-        targetAgentId: {
+        action: {
           type: 'string',
-          description: 'ID of the target agent (format: ${hostname}-${timestamp}). Get from a2a-list-agents',
+          enum: ['push', 'pull', 'status'],
+          description: 'Sync action: push (local→cloud), pull (cloud→local), status (compare)',
         },
-        taskDescription: {
+        query: {
           type: 'string',
-          description: 'Clear, specific task description. Be detailed about expected output and constraints.',
+          description: 'Optional search query to filter which memories to sync',
         },
-        priority: {
+        space: {
           type: 'string',
-          enum: ['low', 'normal', 'high', 'urgent'],
-          description: 'Task priority (optional, default: normal)',
-        },
-        sessionId: {
-          type: 'string',
-          description: 'Session ID for task tracking (optional)',
-        },
-        metadata: {
-          type: 'object',
-          description: 'Additional task metadata (optional)',
-        },
-      },
-      required: ['targetAgentId', 'taskDescription'],
-    },
-    outputSchema: OutputSchemas.a2aSendTask,
-    annotations: {
-      title: 'A2A Task Sender',
-      readOnlyHint: false,      // Creates tasks
-      destructiveHint: false,   // Non-destructive
-      idempotentHint: false,    // Each call creates new task
-      openWorldHint: true,      // Can handle various task types
-    },
-  };
-
-  const a2aGetTaskTool: MCPToolDefinition = {
-    name: 'a2a-get-task',
-    description: '🔍 MeMesh A2A: Get task status and details from another A2A agent.',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        targetAgentId: {
-          type: 'string',
-          description: 'ID of the agent that owns the task',
-        },
-        taskId: {
-          type: 'string',
-          description: 'ID of the task to retrieve',
-        },
-      },
-      required: ['targetAgentId', 'taskId'],
-    },
-    outputSchema: OutputSchemas.a2aGetTask,
-    annotations: {
-      title: 'A2A Task Retriever',
-      readOnlyHint: true,       // Read-only operation
-      destructiveHint: false,
-      idempotentHint: true,     // Same query returns same result
-      openWorldHint: false,     // Requires specific task ID
-    },
-  };
-
-  const a2aGetResultTool: MCPToolDefinition = {
-    name: 'a2a-get-result',
-    description: '🎁 MeMesh A2A: Get task execution result from target agent.',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        targetAgentId: {
-          type: 'string',
-          description: 'ID of the agent that executed the task',
-        },
-        taskId: {
-          type: 'string',
-          description: 'ID of the task to get result for',
-        },
-      },
-      required: ['targetAgentId', 'taskId'],
-    },
-    annotations: {
-      title: 'A2A Task Result Retriever',
-      readOnlyHint: true,       // Read-only operation
-      destructiveHint: false,
-      idempotentHint: true,     // Same query returns same result
-      openWorldHint: false,     // Requires specific task ID
-    },
-  };
-
-  const a2aListTasksTool: MCPToolDefinition = {
-    name: 'a2a-list-tasks',
-    description: `📋 MeMesh A2A: List tasks assigned to you or another agent.
-
-**Task States:**
-• SUBMITTED: Received, not started
-• WORKING: Currently being processed
-• INPUT_REQUIRED: Waiting for additional input
-• COMPLETED: Successfully finished
-• FAILED: Execution failed
-• CANCELED: Canceled by sender
-• REJECTED: Rejected by agent
-
-**Default:** Lists YOUR tasks (agentId: "self")
-**Custom:** Specify agentId to list another agent's tasks`,
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        agentId: {
-          type: 'string',
-          description: 'Agent ID to list tasks for. Use "self" for your tasks',
-          default: 'self',
-        },
-        state: {
-          type: 'string',
-          enum: ['SUBMITTED', 'WORKING', 'INPUT_REQUIRED', 'COMPLETED', 'FAILED', 'CANCELED', 'REJECTED'],
-          description: 'Filter by task state (optional)',
+          description: 'Cloud memory space to sync with (default: "default")',
+          default: 'default',
         },
         limit: {
           type: 'number',
-          description: 'Maximum number of tasks to return (1-100, default: 10)',
+          description: 'Max memories per batch (default: 100, max: 500)',
           minimum: 1,
-          maximum: 100,
+          maximum: 500,
+          default: 100,
         },
-        offset: {
-          type: 'number',
-          description: 'Number of tasks to skip for pagination (optional, default: 0)',
-          minimum: 0,
-        },
-      },
-    },
-    outputSchema: OutputSchemas.a2aListTasks,
-    annotations: {
-      title: 'A2A Task Lister',
-      readOnlyHint: true,       // Read-only operation
-      destructiveHint: false,
-      idempotentHint: true,     // Same query returns same result
-      openWorldHint: false,     // Limited to tasks
-    },
-  };
-
-  const a2aListAgentsTool: MCPToolDefinition = {
-    name: 'a2a-list-agents',
-    description: `🤖 MeMesh A2A: List available A2A agents in the registry.
-
-Returns agents with format: {agentId, url, port, status, lastHeartbeat}
-
-**Agent ID Format:** \${hostname}-\${timestamp} (e.g., "kts-macbook-ml8cy34o")
-**Note:** Check-in name (e.g., "Lambda") ≠ Agent ID
-
-**Find Your Agent ID:** curl -s http://localhost:3000/a2a/agent-card | grep id
-
-**Status Types:**
-• active: Currently running (heartbeat < 5min ago)
-• inactive: Not running (no recent heartbeat)
-• stale: No heartbeat for 5+ minutes`,
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        status: {
-          type: 'string',
-          enum: ['active', 'inactive', 'all'],
-          description: 'Filter by agent status (optional, default: active)',
-        },
-      },
-    },
-    outputSchema: OutputSchemas.a2aListAgents,
-    annotations: {
-      title: 'A2A Agent Registry',
-      readOnlyHint: true,       // Read-only operation
-      destructiveHint: false,
-      idempotentHint: true,     // Same query returns same result
-      openWorldHint: false,     // Limited to registry
-    },
-  };
-
-  const a2aReportResultTool: MCPToolDefinition = {
-    name: 'a2a-report-result',
-    description: '✅ MeMesh A2A: Report task execution result back to MeMesh Server (used by MCP Clients).',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        taskId: {
-          type: 'string',
-          description: 'Task ID to report result for',
-        },
-        result: {
-          type: 'string',
-          description: 'Execution output or result',
-        },
-        success: {
+        dryRun: {
           type: 'boolean',
-          description: 'Whether execution succeeded (true) or failed (false)',
-        },
-        error: {
-          type: 'string',
-          description: 'Error message if success=false (optional)',
+          description: 'Preview sync without executing (default: false)',
+          default: false,
         },
       },
-      required: ['taskId', 'result', 'success'],
+      required: ['action'],
     },
-    outputSchema: OutputSchemas.a2aReportResult,
+    outputSchema: OutputSchemas.cloudSync,
     annotations: {
-      title: 'A2A Result Reporter',
-      readOnlyHint: false,      // Updates task status
+      title: 'Cloud Sync',
+      readOnlyHint: false,
       destructiveHint: false,
-      idempotentHint: true,     // Reporting same result multiple times is safe
-      openWorldHint: false,     // Requires specific task ID
+      idempotentHint: false,
+      openWorldHint: true,
     },
   };
+
+  // ========================================
+  // Task Board Tools (Local Task Management)
+  // ========================================
 
   // ========================================
   // Test Generation Tools
   // ========================================
 
   const generateTestsTool: MCPToolDefinition = {
-    name: 'generate-tests',
+    name: 'memesh-generate-tests',
+    aliases: ['generate-tests'],  // Deprecated, will be removed in v3.0.0
     description: 'Automatically generate test cases from specifications or code using AI. Provide either specification or code (at least one required).',
     inputSchema: {
       type: 'object',
@@ -732,7 +511,8 @@ Returns agents with format: {agentId, url, port, status, lastHeartbeat}
   // ========================================
 
   const buddySecretStoreTool: MCPToolDefinition = {
-    name: 'buddy-secret-store',
+    name: 'memesh-secret-store',
+    aliases: ['buddy-secret-store'],  // Deprecated, will be removed in v3.0.0
     description:
       '🔐 Securely store API keys, tokens, or passwords. USE THIS when user shares sensitive credentials. ' +
       'Encrypted with AES-256-GCM, stored locally only (never transmitted). ' +
@@ -776,7 +556,8 @@ Returns agents with format: {agentId, url, port, status, lastHeartbeat}
   };
 
   const buddySecretGetTool: MCPToolDefinition = {
-    name: 'buddy-secret-get',
+    name: 'memesh-secret-get',
+    aliases: ['buddy-secret-get'],  // Deprecated, will be removed in v3.0.0
     description:
       '🔓 Retrieve a stored secret to use in API calls or configurations. USE THIS when you need a credential for an operation. ' +
       'Returns the decrypted value directly. Example workflow: User asks "call OpenAI API" → ' +
@@ -802,7 +583,8 @@ Returns agents with format: {agentId, url, port, status, lastHeartbeat}
   };
 
   const buddySecretListTool: MCPToolDefinition = {
-    name: 'buddy-secret-list',
+    name: 'memesh-secret-list',
+    aliases: ['buddy-secret-list'],  // Deprecated, will be removed in v3.0.0
     description:
       '📋 List all stored secrets (names, types, expiry dates - NOT the actual values). USE THIS to discover what credentials are available ' +
       'before calling buddy-secret-get. Shows: name, type (api_key/token/password), creation date, expiry. ' +
@@ -821,7 +603,8 @@ Returns agents with format: {agentId, url, port, status, lastHeartbeat}
   };
 
   const buddySecretDeleteTool: MCPToolDefinition = {
-    name: 'buddy-secret-delete',
+    name: 'memesh-secret-delete',
+    aliases: ['buddy-secret-delete'],  // Deprecated, will be removed in v3.0.0
     description:
       '🗑️ Permanently delete a stored secret. USE THIS for: (1) Key rotation - delete old key after storing new one, ' +
       '(2) Cleanup - remove unused credentials, (3) Security - remove compromised keys immediately. ' +
@@ -855,8 +638,6 @@ Returns agents with format: {agentId, url, port, status, lastHeartbeat}
     buddyDoTool,
     buddyRememberTool,
     buddyHelpTool,
-    getSessionHealthTool,
-    getWorkflowGuidanceTool,
 
     // Learning Tools
     buddyRecordMistakeTool,
@@ -870,13 +651,8 @@ Returns agents with format: {agentId, url, port, status, lastHeartbeat}
     buddySecretListTool,
     buddySecretDeleteTool,
 
-    // A2A Protocol Tools
-    a2aSendTaskTool,
-    a2aGetTaskTool,
-    a2aGetResultTool,
-    a2aListTasksTool,
-    a2aListAgentsTool,
-    a2aReportResultTool,
+    // Cloud Sync
+    cloudSyncTool,
 
     // Hook Integration
     hookToolUseTool,

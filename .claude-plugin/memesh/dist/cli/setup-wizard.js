@@ -69,7 +69,6 @@ export class SetupWizard {
         const projectRoot = process.cwd();
         const envPath = path.join(projectRoot, '.env');
         const envExamplePath = path.join(projectRoot, '.env.example');
-        const tokenScriptPath = path.join(projectRoot, 'scripts/generate-a2a-token.sh');
         const hasEnv = await fs.pathExists(envPath);
         if (!hasEnv) {
             const { shouldCreateEnv } = await inquirer.prompt([
@@ -93,46 +92,6 @@ export class SetupWizard {
         }
         else {
             console.log(chalk.green('  ✓ .env file already exists'));
-        }
-        let hasToken = false;
-        if (await fs.pathExists(envPath)) {
-            const envContent = await fs.readFile(envPath, 'utf-8');
-            hasToken = /^MEMESH_A2A_TOKEN=.+$/m.test(envContent);
-        }
-        if (!hasToken) {
-            const { shouldGenerateToken } = await inquirer.prompt([
-                {
-                    type: 'confirm',
-                    name: 'shouldGenerateToken',
-                    message: 'Generate A2A authentication token?',
-                    default: true,
-                },
-            ]);
-            if (shouldGenerateToken) {
-                if (await fs.pathExists(tokenScriptPath)) {
-                    const spinner = ProgressIndicator.simple('Generating A2A token...');
-                    try {
-                        const { execFile } = await import('child_process');
-                        const { promisify } = await import('util');
-                        const execFileAsync = promisify(execFile);
-                        await execFileAsync('bash', [tokenScriptPath], {
-                            cwd: projectRoot,
-                        });
-                        spinner.succeed(chalk.green('A2A token generated successfully'));
-                    }
-                    catch (error) {
-                        spinner.fail(chalk.yellow('Failed to generate token automatically'));
-                        console.log(chalk.dim('  Run manually: bash scripts/generate-a2a-token.sh'));
-                    }
-                }
-                else {
-                    console.log(chalk.yellow('  ⚠ Token generator not found (scripts/generate-a2a-token.sh)'));
-                    console.log(chalk.dim('  Manually add MEMESH_A2A_TOKEN to .env with a secure random value'));
-                }
-            }
-        }
-        else {
-            console.log(chalk.green('  ✓ A2A token already configured'));
         }
         console.log('');
     }

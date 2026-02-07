@@ -58,15 +58,6 @@ export const UninstallInputSchema = z.object({
     keepConfig: z.boolean().optional().default(false),
     dryRun: z.boolean().optional().default(false),
 });
-export const WorkflowGuidanceInputSchema = z.object({
-    phase: z.string().min(1, 'Phase cannot be empty'),
-    filesChanged: z.array(z.string().min(1)).optional(),
-    testsPassing: z.boolean().optional(),
-});
-export const RecordTokenUsageInputSchema = z.object({
-    inputTokens: z.number().int().nonnegative('Input tokens must be non-negative'),
-    outputTokens: z.number().int().nonnegative('Output tokens must be non-negative'),
-});
 export const HookToolUseInputSchema = z.object({
     toolName: z.string().min(1, 'Tool name cannot be empty'),
     arguments: z.unknown().optional(),
@@ -74,14 +65,6 @@ export const HookToolUseInputSchema = z.object({
     duration: z.number().int().nonnegative('Duration must be non-negative').optional(),
     tokensUsed: z.number().int().nonnegative('Tokens used must be non-negative').optional(),
     output: z.string().optional(),
-});
-export const GenerateSmartPlanInputSchema = z.object({
-    featureDescription: z
-        .string()
-        .min(1, 'Feature description cannot be empty')
-        .max(MAX_TASK_DESCRIPTION_LENGTH, `Feature description too long (max ${MAX_TASK_DESCRIPTION_LENGTH} characters)`),
-    requirements: z.array(z.string()).optional(),
-    constraints: z.array(z.string()).optional(),
 });
 export const RecallMemoryInputSchema = z.object({
     limit: z.number().int().positive('Limit must be positive').max(100, 'Limit too large (max 100)').optional().default(10),

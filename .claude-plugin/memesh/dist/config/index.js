@@ -17,6 +17,10 @@ const envSchema = z.object({
     PORT: z.string().default('3000'),
     ORCHESTRATOR_MODE: z.enum(['local', 'distributed']).default('local'),
     ORCHESTRATOR_MAX_MEMORY_MB: z.string().default('6144'),
+    MEMESH_API_KEY: z.string().optional(),
+    MEMESH_BASE_URL: z.string().default('https://api.memesh.ai'),
+    MEMESH_TIMEOUT_MS: z.string().default('10000'),
+    MEMESH_PLATFORM: z.string().optional(),
 });
 export const env = envSchema.parse(process.env);
 if (!env.MCP_SERVER_MODE) {
@@ -89,6 +93,12 @@ export const appConfig = {
     orchestrator: {
         mode: env.ORCHESTRATOR_MODE,
         maxMemoryMB: safeParseInt(env.ORCHESTRATOR_MAX_MEMORY_MB, 6144, 512, 32768),
+    },
+    cloud: {
+        baseUrl: env.MEMESH_BASE_URL,
+        timeoutMs: safeParseInt(env.MEMESH_TIMEOUT_MS, 10000, 1000, 60000),
+        enabled: !!env.MEMESH_API_KEY,
+        platform: env.MEMESH_PLATFORM,
     },
 };
 export default appConfig;

@@ -5,12 +5,10 @@ import { executeBuddyDo, BuddyDoInputSchema, } from '../tools/buddy-do.js';
 import { executeBuddyRemember, BuddyRememberInputSchema, } from '../tools/buddy-remember.js';
 import { executeBuddyHelp, BuddyHelpInputSchema, } from '../tools/buddy-help.js';
 export class BuddyHandlers {
-    router;
     formatter;
     projectMemoryManager;
     autoTracker;
-    constructor(router, formatter, projectMemoryManager, autoTracker) {
-        this.router = router;
+    constructor(formatter, projectMemoryManager, autoTracker) {
         this.formatter = formatter;
         this.projectMemoryManager = projectMemoryManager;
         this.autoTracker = autoTracker;
@@ -48,7 +46,7 @@ export class BuddyHandlers {
             throw error;
         }
         try {
-            return await executeBuddyDo(validatedInput, this.router, this.formatter, this.autoTracker);
+            return await executeBuddyDo(validatedInput, this.formatter, this.autoTracker);
         }
         catch (error) {
             logError(error, {

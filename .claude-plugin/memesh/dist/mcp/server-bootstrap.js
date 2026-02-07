@@ -35,7 +35,7 @@ if (hasCliArgs) {
         const { runCLI } = await import('../cli/index.js');
         await runCLI();
     })().catch((error) => {
-        console.error('CLI error:', error);
+        process.stderr.write(`CLI error: ${error}\n`);
         process.exit(1);
     });
 }
@@ -102,72 +102,15 @@ ${chalk.default.bold('For Developers:')}
 ${chalk.default.bold('Documentation:')}
   ${chalk.default.underline('https://github.com/PCIRCLE-AI/claude-code-buddy#installation')}
 `;
-            console.log(boxen(message, {
+            process.stderr.write(boxen(message, {
                 padding: 1,
                 margin: 1,
                 borderStyle: 'round',
                 borderColor: 'yellow',
-            }));
+            }) + '\n');
             process.exit(0);
         }
     }, watchdogTimeoutMs);
-}
-async function startA2AServer() {
-    try {
-        const { A2AServer } = await import('../a2a/server/A2AServer.js');
-        const os = await import('os');
-        const hostname = os.hostname().split('.')[0].toLowerCase();
-        const timestamp = Date.now().toString(36);
-        const defaultId = `${hostname}-${timestamp}`;
-        const agentId = process.env.A2A_AGENT_ID || defaultId;
-        const agentCard = {
-            id: agentId,
-            name: 'MeMesh (MCP)',
-            description: 'AI development assistant via MCP protocol',
-            version: '2.7.0',
-            capabilities: {
-                skills: [
-                    {
-                        name: 'buddy-do',
-                        description: 'Execute tasks with MeMesh',
-                    },
-                    {
-                        name: 'buddy-remember',
-                        description: 'Store and retrieve knowledge',
-                    },
-                ],
-                supportedFormats: ['text/plain', 'application/json'],
-                maxMessageSize: 10 * 1024 * 1024,
-                streaming: false,
-                pushNotifications: false,
-            },
-            endpoints: {
-                baseUrl: 'http://localhost:3000',
-            },
-        };
-        const server = new A2AServer({
-            agentId,
-            agentCard,
-            portRange: { min: 3000, max: 3999 },
-            heartbeatInterval: 60000,
-        });
-        const port = await server.start();
-        const { logger } = await import('../utils/logger.js');
-        logger.info('[A2A] Server started successfully', {
-            port,
-            agentId,
-            baseUrl: `http://localhost:${port}`,
-        });
-        return server;
-    }
-    catch (error) {
-        const { logger } = await import('../utils/logger.js');
-        logger.error('[A2A] Failed to start A2A server', {
-            error: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined,
-        });
-        return null;
-    }
 }
 async function bootstrapWithDaemon() {
     process.env.MCP_SERVER_MODE = 'true';
@@ -205,7 +148,7 @@ async function bootstrapWithDaemon() {
         }
     }
     catch (error) {
-        console.error('[Bootstrap] Daemon bootstrap failed, falling back to standalone:', error);
+        process.stderr.write(`[Bootstrap] Daemon bootstrap failed, falling back to standalone: ${error}\n`);
         startMCPServer();
     }
 }
@@ -246,7 +189,6 @@ async function startAsDaemon(bootstrapper, version) {
     logger.info('[Daemon] Socket server started', { path: transport.getPath() });
     stopStdinBufferingAndReplay();
     await mcpServer.start();
-    const a2aServer = await startA2AServer();
     const cleanupDaemon = async (reason) => {
         logger.info('[Daemon] Cleanup started', { reason });
         try {
@@ -256,16 +198,6 @@ async function startAsDaemon(bootstrapper, version) {
             logger.warn('[Daemon] Error stopping socket server', {
                 error: error instanceof Error ? error.message : String(error),
             });
-        }
-        if (a2aServer) {
-            try {
-                await a2aServer.stop();
-            }
-            catch (error) {
-                logger.warn('[Daemon] Error stopping A2A server', {
-                    error: error instanceof Error ? error.message : String(error),
-                });
-            }
         }
         try {
             await DaemonLockManager.releaseLock();
@@ -338,27 +270,14 @@ async function startAsProxy(bootstrapper) {
     stopStdinBufferingAndReplay();
     await proxyClient.start();
     logger.info('[Proxy] Proxy started, forwarding stdio to daemon');
-    const a2aServer = await startA2AServer();
     setupSignalHandlers(async (signal) => {
         logger.info('[Proxy] Shutdown requested', { signal });
-        if (a2aServer) {
-            try {
-                await a2aServer.stop();
-                logger.info('[Proxy] A2A server stopped');
-            }
-            catch (error) {
-                logger.warn('[Proxy] Error stopping A2A server', {
-                    error: error instanceof Error ? error.message : String(error),
-                });
-            }
-        }
         await proxyClient.stop();
         process.exit(0);
     });
 }
 function startMCPServer() {
     process.env.MCP_SERVER_MODE = 'true';
-    let a2aServerRef = null;
     async function bootstrap() {
         try {
             startMCPClientWatchdog();
@@ -366,10 +285,9 @@ function startMCPServer() {
             const mcpServer = await ClaudeCodeBuddyMCPServer.create();
             stopStdinBufferingAndReplay();
             await mcpServer.start();
-            a2aServerRef = await startA2AServer();
         }
         catch (error) {
-            console.error('Fatal error in MCP server bootstrap:', error);
+            process.stderr.write(`Fatal error in MCP server bootstrap: ${error}\n`);
             process.exit(1);
         }
     }
@@ -378,9 +296,6 @@ function startMCPServer() {
             process.exit(1);
         }, 5000);
         try {
-            if (a2aServerRef) {
-                await a2aServerRef.stop();
-            }
             clearTimeout(shutdownTimeout);
             process.exit(0);
         }

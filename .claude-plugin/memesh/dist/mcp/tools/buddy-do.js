@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { logger } from '../../utils/logger.js';
 export const BuddyDoInputSchema = z.object({
-    task: z.string().trim().min(1).describe('Task description for MeMesh to execute with smart routing'),
+    task: z.string().trim().min(1).describe('Task description for MeMesh to process'),
 });
 function extractTaskMetadata(task) {
     const goalMatch = task.match(/^([^.!?]+)[.!?]/) || task.match(/to ([^,]+)/);
@@ -13,7 +13,7 @@ function extractTaskMetadata(task) {
         expectedOutcome: expectedMatch?.[1]?.trim(),
     };
 }
-export async function executeBuddyDo(input, router, formatter, autoTracker) {
+export async function executeBuddyDo(input, formatter, autoTracker) {
     const startTime = Date.now();
     const taskId = `buddy-do-${startTime}`;
     try {
@@ -32,47 +32,25 @@ export async function executeBuddyDo(input, router, formatter, autoTracker) {
                 hasExpectedOutcome: !!taskMeta.expectedOutcome,
             });
         }
-        const result = await router.routeTask({
-            id: taskId,
-            description: input.task,
-            requiredCapabilities: [],
-        });
         const durationMs = Date.now() - startTime;
-        const selectedAgent = result.routing.selectedAgent || 'general-agent';
-        logger.debug('buddy_do task completed', {
+        logger.debug('buddy_do task recorded', {
             taskId,
-            agent: selectedAgent,
-            complexity: result.analysis.complexity,
             durationMs,
         });
-        const capabilityFocus = result.analysis.requiredCapabilities.length > 0
-            ? result.analysis.requiredCapabilities
-            : ['general'];
         const formattedResponse = formatter.format({
             agentType: 'buddy-do',
             taskDescription: input.task,
             status: 'success',
-            enhancedPrompt: result.routing.enhancedPrompt,
             results: {
-                routing: {
-                    approved: result.approved,
-                    message: result.approved
-                        ? `Task routed for capabilities: ${capabilityFocus.join(', ')}`
-                        : result.message,
-                    capabilityFocus,
-                    complexity: result.analysis.complexity,
-                    estimatedTokens: result.analysis.estimatedTokens,
-                    estimatedCost: result.routing.estimatedCost,
-                },
+                message: 'Task recorded. Proceed with execution using Claude Code capabilities.',
                 stats: {
                     durationMs,
-                    estimatedTokens: result.analysis.estimatedTokens,
                 },
             },
         });
         const memeshReminder = [
             '',
-            '🧠 MeMesh Auto-Memory Reminder:',
+            'MeMesh Auto-Memory Reminder:',
             'After completing this task, save key implementation details:',
             '  create-entities with observations like:',
             '  - What was implemented (specific configs, values, patterns)',

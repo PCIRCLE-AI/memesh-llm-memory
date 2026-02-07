@@ -1,4 +1,4 @@
-import { AgentType } from '../orchestrator/types.js';
+import type { AgentType } from '../types/AgentClassification.js';
 export interface AgentAlternative {
     agent: AgentType;
     confidence: number;

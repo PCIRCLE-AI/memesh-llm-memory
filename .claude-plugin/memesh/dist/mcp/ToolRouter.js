@@ -1,7 +1,6 @@
 import { ValidationError, NotFoundError, OperationError } from '../errors/index.js';
 import { handleBuddySecretStore, handleBuddySecretGet, handleBuddySecretList, handleBuddySecretDelete, } from './handlers/index.js';
-import { a2aListTasks, A2AListTasksInputSchema } from './tools/a2a-list-tasks.js';
-import { a2aReportResult, A2AReportResultInputSchema } from './tools/a2a-report-result.js';
+import { handleCloudSync, CloudSyncInputSchema } from './tools/memesh-cloud-sync.js';
 const TOOL_NAME_REGEX = /^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$/;
 const TOOL_NAME_MAX_LENGTH = 64;
 function sanitizeToolNameForError(toolName) {
@@ -43,7 +42,7 @@ function validateToolName(toolName) {
             method: 'validateToolName',
             providedName: safeName,
             pattern: TOOL_NAME_REGEX.source,
-            hint: 'Example valid names: buddy-do, get-workflow-guidance, a2a-send-task',
+            hint: 'Example valid names: buddy-do, memesh-remember, a2a-board',
         });
     }
 }
@@ -51,20 +50,16 @@ export class ToolRouter {
     rateLimiter;
     toolHandlers;
     buddyHandlers;
-    a2aHandlers;
     secretManager;
-    taskQueue;
-    mcpTaskDelegator;
+    knowledgeGraph;
     allowedOrigins;
     transportMode;
     constructor(config) {
         this.rateLimiter = config.rateLimiter;
         this.toolHandlers = config.toolHandlers;
         this.buddyHandlers = config.buddyHandlers;
-        this.a2aHandlers = config.a2aHandlers;
         this.secretManager = config.secretManager;
-        this.taskQueue = config.taskQueue;
-        this.mcpTaskDelegator = config.mcpTaskDelegator;
+        this.knowledgeGraph = config.knowledgeGraph;
         this.allowedOrigins = config.allowedOrigins;
         this.transportMode = config.transportMode || 'stdio';
     }
@@ -131,35 +126,50 @@ export class ToolRouter {
         const args = params.arguments;
         return await this.dispatch(toolName, args);
     }
+    static TOOL_ALIASES = {
+        'buddy-record-mistake': 'memesh-record-mistake',
+        'create-entities': 'memesh-create-entities',
+        'buddy-secret-store': 'memesh-secret-store',
+        'buddy-secret-get': 'memesh-secret-get',
+        'buddy-secret-list': 'memesh-secret-list',
+        'buddy-secret-delete': 'memesh-secret-delete',
+        'hook-tool-use': 'memesh-hook-tool-use',
+        'generate-tests': 'memesh-generate-tests',
+    };
+    resolveAlias(toolName) {
+        const canonicalName = ToolRouter.TOOL_ALIASES[toolName];
+        if (canonicalName) {
+            console.warn(`⚠️  DEPRECATION WARNING: Tool '${toolName}' is deprecated and will be removed in v3.0.0.\n` +
+                `   Please use '${canonicalName}' instead.\n` +
+                `   Migration guide: https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/UPGRADE.md#v280-migration-guide-2026-02-08`);
+            return canonicalName;
+        }
+        return toolName;
+    }
     async dispatch(toolName, args) {
-        if (toolName === 'buddy-do') {
+        const resolvedToolName = this.resolveAlias(toolName);
+        if (resolvedToolName === 'buddy-do') {
             return await this.buddyHandlers.handleBuddyDo(args);
         }
-        if (toolName === 'buddy-remember') {
+        if (resolvedToolName === 'buddy-remember') {
             return await this.buddyHandlers.handleBuddyRemember(args);
         }
-        if (toolName === 'buddy-help') {
+        if (resolvedToolName === 'buddy-help') {
             return await this.buddyHandlers.handleBuddyHelp(args);
         }
-        if (toolName === 'get-workflow-guidance') {
-            return await this.toolHandlers.handleGetWorkflowGuidance(args);
-        }
-        if (toolName === 'get-session-health') {
-            return await this.toolHandlers.handleGetSessionHealth();
-        }
-        if (toolName === 'hook-tool-use') {
+        if (resolvedToolName === 'memesh-hook-tool-use') {
             return await this.toolHandlers.handleHookToolUse(args);
         }
-        if (toolName === 'buddy-record-mistake') {
+        if (resolvedToolName === 'memesh-record-mistake') {
             return await this.toolHandlers.handleBuddyRecordMistake(args);
         }
-        if (toolName === 'create-entities') {
+        if (resolvedToolName === 'memesh-create-entities') {
             return await this.toolHandlers.handleCreateEntities(args);
         }
-        if (toolName === 'generate-tests') {
+        if (resolvedToolName === 'memesh-generate-tests') {
             return await this.toolHandlers.handleGenerateTests(args);
         }
-        if (toolName === 'buddy-secret-store') {
+        if (resolvedToolName === 'memesh-secret-store') {
             if (!this.secretManager) {
                 throw new OperationError('Secret management is not configured', {
                     component: 'ToolRouter',
@@ -169,87 +179,44 @@ export class ToolRouter {
             }
             return await handleBuddySecretStore(args, this.secretManager);
         }
-        if (toolName === 'buddy-secret-get') {
+        if (resolvedToolName === 'memesh-secret-get') {
             if (!this.secretManager) {
                 throw new OperationError('Secret management is not configured', {
                     component: 'ToolRouter',
                     method: 'dispatch',
-                    toolName,
+                    toolName: resolvedToolName,
                 });
             }
             return await handleBuddySecretGet(args, this.secretManager);
         }
-        if (toolName === 'buddy-secret-list') {
+        if (resolvedToolName === 'memesh-secret-list') {
             if (!this.secretManager) {
                 throw new OperationError('Secret management is not configured', {
                     component: 'ToolRouter',
                     method: 'dispatch',
-                    toolName,
+                    toolName: resolvedToolName,
                 });
             }
             return await handleBuddySecretList(args, this.secretManager);
         }
-        if (toolName === 'buddy-secret-delete') {
+        if (resolvedToolName === 'memesh-secret-delete') {
             if (!this.secretManager) {
                 throw new OperationError('Secret management is not configured', {
                     component: 'ToolRouter',
                     method: 'dispatch',
-                    toolName,
+                    toolName: resolvedToolName,
                 });
             }
             return await handleBuddySecretDelete(args, this.secretManager);
         }
-        if (toolName === 'a2a-send-task') {
-            return await this.a2aHandlers.handleA2ASendTask(args);
-        }
-        if (toolName === 'a2a-get-task') {
-            return await this.a2aHandlers.handleA2AGetTask(args);
-        }
-        if (toolName === 'a2a-get-result') {
-            return await this.a2aHandlers.handleA2AGetResult(args);
-        }
-        if (toolName === 'a2a-list-tasks') {
-            if (!this.mcpTaskDelegator) {
-                throw new OperationError('MCPTaskDelegator is not configured', {
-                    component: 'ToolRouter',
-                    method: 'dispatch',
-                    toolName,
-                });
-            }
-            const validationResult = A2AListTasksInputSchema.safeParse(args);
+        if (resolvedToolName === 'memesh-cloud-sync') {
+            const validationResult = CloudSyncInputSchema.safeParse(args);
             if (!validationResult.success) {
-                throw new ValidationError(`Invalid input for ${toolName}: ${validationResult.error.message}`, {
-                    component: 'ToolRouter',
-                    method: 'dispatch',
-                    toolName,
-                    zodError: validationResult.error,
-                });
+                throw new ValidationError(`Invalid input for ${resolvedToolName}: ${validationResult.error.message}`, { component: 'ToolRouter', method: 'dispatch', toolName: resolvedToolName, zodError: validationResult.error });
             }
-            return await a2aListTasks(validationResult.data, this.mcpTaskDelegator);
+            return handleCloudSync(validationResult.data, this.knowledgeGraph);
         }
-        if (toolName === 'a2a-list-agents') {
-            return await this.a2aHandlers.handleA2AListAgents(args);
-        }
-        if (toolName === 'a2a-report-result') {
-            if (!this.taskQueue || !this.mcpTaskDelegator) {
-                throw new OperationError('TaskQueue or MCPTaskDelegator is not configured', {
-                    component: 'ToolRouter',
-                    method: 'dispatch',
-                    toolName,
-                });
-            }
-            const validationResult = A2AReportResultInputSchema.safeParse(args);
-            if (!validationResult.success) {
-                throw new ValidationError(`Invalid input for ${toolName}: ${validationResult.error.message}`, {
-                    component: 'ToolRouter',
-                    method: 'dispatch',
-                    toolName,
-                    zodError: validationResult.error,
-                });
-            }
-            return await a2aReportResult(validationResult.data, this.taskQueue, this.mcpTaskDelegator);
-        }
-        const safeName = sanitizeToolNameForError(toolName);
+        const safeName = sanitizeToolNameForError(resolvedToolName);
         throw new NotFoundError(`Unknown tool: ${safeName}`, 'tool', safeName);
     }
 }

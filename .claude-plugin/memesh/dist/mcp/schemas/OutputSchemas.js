@@ -85,92 +85,6 @@ export const OutputSchemas = {
         },
         required: ['commands'],
     },
-    getSessionHealth: {
-        type: 'object',
-        properties: {
-            status: {
-                type: 'string',
-                enum: ['healthy', 'degraded', 'unhealthy'],
-            },
-            tokenUsagePercentage: { type: 'number' },
-            warnings: {
-                type: 'array',
-                items: { type: 'string' },
-            },
-            recommendations: {
-                type: 'array',
-                items: { type: 'string' },
-            },
-            timestamp: { type: 'string' },
-        },
-        required: ['status', 'tokenUsagePercentage', 'timestamp'],
-    },
-    getWorkflowGuidance: {
-        type: 'object',
-        properties: {
-            currentPhase: { type: 'string' },
-            recommendations: {
-                type: 'array',
-                items: {
-                    type: 'object',
-                    properties: {
-                        action: { type: 'string' },
-                        priority: {
-                            type: 'string',
-                            enum: ['low', 'medium', 'high', 'critical'],
-                        },
-                        confidence: { type: 'number' },
-                        suggestedAgent: { type: 'string' },
-                        reasoning: { type: 'string' },
-                    },
-                    required: ['action', 'priority'],
-                },
-            },
-            nextSteps: {
-                type: 'array',
-                items: { type: 'string' },
-            },
-        },
-        required: ['currentPhase', 'recommendations'],
-    },
-    generateSmartPlan: {
-        type: 'object',
-        properties: {
-            planId: { type: 'string' },
-            featureDescription: { type: 'string' },
-            tasks: {
-                type: 'array',
-                items: {
-                    type: 'object',
-                    properties: {
-                        id: { type: 'string' },
-                        title: { type: 'string' },
-                        description: { type: 'string' },
-                        estimatedDuration: { type: 'string' },
-                        requiredCapabilities: {
-                            type: 'array',
-                            items: { type: 'string' },
-                        },
-                        dependencies: {
-                            type: 'array',
-                            items: { type: 'string' },
-                        },
-                        testCriteria: {
-                            type: 'array',
-                            items: { type: 'string' },
-                        },
-                    },
-                    required: ['id', 'title', 'description'],
-                },
-            },
-            totalEstimatedDuration: { type: 'string' },
-            risks: {
-                type: 'array',
-                items: { type: 'string' },
-            },
-        },
-        required: ['planId', 'featureDescription', 'tasks'],
-    },
     hookToolUse: {
         type: 'object',
         properties: {
@@ -232,128 +146,6 @@ export const OutputSchemas = {
         },
         required: ['created', 'count'],
     },
-    a2aSendTask: {
-        type: 'object',
-        properties: {
-            success: { type: 'boolean' },
-            targetAgentId: { type: 'string' },
-            task: {
-                type: 'object',
-                properties: {
-                    id: { type: 'string' },
-                    state: {
-                        type: 'string',
-                        enum: ['SUBMITTED', 'WORKING', 'INPUT_REQUIRED', 'COMPLETED', 'FAILED', 'CANCELED', 'REJECTED'],
-                    },
-                    name: { type: 'string' },
-                    priority: {
-                        type: 'string',
-                        enum: ['low', 'normal', 'high', 'urgent'],
-                    },
-                    createdAt: { type: 'string' },
-                    updatedAt: { type: 'string' },
-                },
-                required: ['id', 'state', 'createdAt', 'updatedAt'],
-            },
-        },
-        required: ['success', 'targetAgentId', 'task'],
-    },
-    a2aGetTask: {
-        type: 'object',
-        properties: {
-            task: {
-                type: 'object',
-                properties: {
-                    id: { type: 'string' },
-                    state: {
-                        type: 'string',
-                        enum: ['SUBMITTED', 'WORKING', 'INPUT_REQUIRED', 'COMPLETED', 'FAILED', 'CANCELED', 'REJECTED'],
-                    },
-                    name: { type: 'string' },
-                    description: { type: 'string' },
-                    priority: {
-                        type: 'string',
-                        enum: ['low', 'normal', 'high', 'urgent'],
-                    },
-                    createdAt: { type: 'string' },
-                    updatedAt: { type: 'string' },
-                    sessionId: { type: 'string' },
-                    messageCount: { type: 'number' },
-                    artifactCount: { type: 'number' },
-                },
-                required: ['id', 'state', 'createdAt', 'updatedAt'],
-            },
-        },
-        required: ['task'],
-    },
-    a2aListTasks: {
-        type: 'object',
-        properties: {
-            tasks: {
-                type: 'array',
-                items: {
-                    type: 'object',
-                    properties: {
-                        id: { type: 'string' },
-                        state: {
-                            type: 'string',
-                            enum: ['SUBMITTED', 'WORKING', 'INPUT_REQUIRED', 'COMPLETED', 'FAILED', 'CANCELED', 'REJECTED'],
-                        },
-                        name: { type: 'string' },
-                        priority: {
-                            type: 'string',
-                            enum: ['low', 'normal', 'high', 'urgent'],
-                        },
-                        createdAt: { type: 'string' },
-                        updatedAt: { type: 'string' },
-                        messageCount: { type: 'number' },
-                        artifactCount: { type: 'number' },
-                    },
-                    required: ['id', 'state', 'createdAt', 'updatedAt', 'messageCount', 'artifactCount'],
-                },
-            },
-            count: { type: 'number' },
-        },
-        required: ['tasks', 'count'],
-    },
-    a2aListAgents: {
-        type: 'object',
-        properties: {
-            agents: {
-                type: 'array',
-                items: {
-                    type: 'object',
-                    properties: {
-                        agentId: { type: 'string' },
-                        baseUrl: { type: 'string' },
-                        port: { type: 'number' },
-                        status: {
-                            type: 'string',
-                            enum: ['active', 'inactive', 'stale'],
-                        },
-                        lastHeartbeat: { type: 'string' },
-                        capabilities: { type: 'object' },
-                        metadata: { type: 'object' },
-                    },
-                    required: ['agentId', 'baseUrl', 'port', 'status', 'lastHeartbeat'],
-                },
-            },
-            count: { type: 'number' },
-        },
-        required: ['agents', 'count'],
-    },
-    a2aReportResult: {
-        type: 'object',
-        properties: {
-            success: { type: 'boolean' },
-            taskId: { type: 'string' },
-            status: {
-                type: 'string',
-                enum: ['COMPLETED', 'FAILED'],
-            },
-        },
-        required: ['success', 'taskId', 'status'],
-    },
     generateTests: {
         type: 'object',
         properties: {
@@ -361,6 +153,25 @@ export const OutputSchemas = {
             message: { type: 'string' },
         },
         required: ['testCode', 'message'],
+    },
+    cloudSync: {
+        type: 'object',
+        properties: {
+            success: { type: 'boolean' },
+            action: { type: 'string', enum: ['push', 'pull', 'status'] },
+            message: { type: 'string' },
+            pushed: { type: 'number' },
+            pulled: { type: 'number' },
+            errors: { type: 'number' },
+            dryRun: { type: 'boolean' },
+            connected: { type: 'boolean' },
+            local: { type: 'object', properties: { count: { type: 'number' } } },
+            cloud: { type: 'object', properties: { count: { type: 'number' } } },
+            delta: { type: 'number' },
+            hasMore: { type: 'boolean' },
+            hint: { type: 'string' },
+        },
+        required: ['success'],
     },
 };
 //# sourceMappingURL=OutputSchemas.js.map

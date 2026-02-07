@@ -552,7 +552,7 @@ export class UnifiedMemoryStore {
                     const metadataStr = obs.substring('metadata: '.length);
                     const sizeInBytes = Buffer.byteLength(metadataStr, 'utf8');
                     if (sizeInBytes > MAX_METADATA_SIZE) {
-                        console.warn(`Metadata too large on retrieval: ${sizeInBytes} bytes (max: ${MAX_METADATA_SIZE})`);
+                        logger.warn(`Metadata too large on retrieval: ${sizeInBytes} bytes (max: ${MAX_METADATA_SIZE})`);
                         continue;
                     }
                     metadata = JSON.parse(metadataStr);

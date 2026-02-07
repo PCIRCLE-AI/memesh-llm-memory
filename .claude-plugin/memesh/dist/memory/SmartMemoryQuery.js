@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger.js';
 export class SmartMemoryQuery {
     search(query, memories, options) {
         if (!query || query.trim() === '') {
@@ -20,11 +21,11 @@ export class SmartMemoryQuery {
             importance = 0.5;
         }
         if (!Number.isFinite(importance)) {
-            console.warn(`[SmartMemoryQuery] Invalid importance value: ${importance}, using 0.5`);
+            logger.warn(`[SmartMemoryQuery] Invalid importance value: ${importance}, using 0.5`);
             importance = 0.5;
         }
         if (importance < 0 || importance > 1) {
-            console.warn(`[SmartMemoryQuery] Importance out of range [0,1]: ${importance}, clamping`);
+            logger.warn(`[SmartMemoryQuery] Importance out of range [0,1]: ${importance}, clamping`);
             importance = Math.max(0, Math.min(1, importance));
         }
         importance = Math.max(importance, 0.01);

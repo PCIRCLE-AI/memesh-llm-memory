@@ -1,10 +1,12 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { ProjectMemoryManager } from '../memory/ProjectMemoryManager.js';
+import type { SessionMemoryPipeline } from '../integrations/session-memory/index.js';
 export declare class SessionBootstrapper {
     private projectMemoryManager;
     private memoryLimit;
+    private sessionMemoryPipeline?;
     private hasInjected;
-    constructor(projectMemoryManager: ProjectMemoryManager, memoryLimit?: number);
+    constructor(projectMemoryManager: ProjectMemoryManager, memoryLimit?: number, sessionMemoryPipeline?: SessionMemoryPipeline | undefined);
     maybePrepend(result: CallToolResult): Promise<CallToolResult>;
     private buildStartupMessage;
 }

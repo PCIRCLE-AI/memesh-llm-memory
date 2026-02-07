@@ -1,7 +1,5 @@
 import { CheckpointDetector } from './CheckpointDetector.js';
-import { DevelopmentButler } from '../agents/DevelopmentButler.js';
 import { ProjectAutoTracker } from '../memory/ProjectAutoTracker.js';
-import type { MCPToolInterface } from './MCPToolInterface.js';
 export interface ToolUseData {
     toolName: string;
     arguments?: unknown;
@@ -21,14 +19,13 @@ export interface CheckpointContext {
 }
 export declare class HookIntegration {
     private detector;
-    private butler;
     private triggerCallbacks;
     private projectMemory?;
     private lastCheckpoint?;
     private testParser;
     private projectAutoTracker?;
-    constructor(checkpointDetector: CheckpointDetector, developmentButler: DevelopmentButler, projectAutoTracker?: ProjectAutoTracker);
-    initializeProjectMemory(mcp: MCPToolInterface): void;
+    constructor(checkpointDetector: CheckpointDetector, projectAutoTracker?: ProjectAutoTracker);
+    setProjectMemory(tracker: ProjectAutoTracker): void;
     detectCheckpointFromToolUse(toolData: ToolUseData): Promise<Checkpoint | null>;
     processToolUse(toolData: ToolUseData): Promise<void>;
     private recordToProjectMemory;

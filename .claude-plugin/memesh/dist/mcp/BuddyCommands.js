@@ -74,10 +74,9 @@ ${chalk.dim('→')} Searches knowledge graph, shows past decisions
 
 ${chalk.bold('Additional Features')}
 
-${chalk.dim('A2A (Agent-to-Agent):')}     a2a-list-agents, a2a-send-task
+${chalk.dim('A2A (Agent-to-Agent):')}     a2a-board, a2a-claim-task, a2a-find-tasks
 ${chalk.dim('Secrets:')}                   buddy-secret-store, buddy-secret-get
 ${chalk.dim('Knowledge:')}                 create-entities
-${chalk.dim('Health:')}                    get-session-health
 
 ${chalk.yellow('💡 New to MeMesh?')}
 Run: ${chalk.cyan('memesh tutorial')} (5 min guided intro)
@@ -108,14 +107,11 @@ ${chalk.bold.yellow('📋 Core Commands')}
     ${chalk.dim('remember:')} recall, retrieve, search, find
 
 ${chalk.bold.yellow('🤝 A2A (Agent-to-Agent) Collaboration')}
-  ${chalk.cyan('a2a-list-agents')}           List all available A2A agents
-  ${chalk.cyan('a2a-send-task')}             Send task to another agent
-  ${chalk.cyan('a2a-get-task')}              Get task status and details
-  ${chalk.cyan('a2a-list-tasks')}            List tasks assigned to you
-  ${chalk.cyan('a2a-report-result')}         Report task execution result
+  ${chalk.cyan('a2a-board')}                 View local task board
+  ${chalk.cyan('a2a-claim-task')}            Claim a task from board
+  ${chalk.cyan('a2a-find-tasks')}            Find tasks matching criteria
 
-  ${chalk.dim('Note:')} Your agent ID format: ${chalk.dim('${hostname}-${timestamp}')}
-  ${chalk.dim('Find your ID:')} curl -s http://localhost:3000/a2a/agent-card | grep id
+  ${chalk.dim('Note:')} Tasks are managed on local task board
 
 ${chalk.bold.yellow('🔐 Secrets Management')}
   ${chalk.cyan('buddy-secret-store')}        Securely store API keys/tokens
@@ -132,18 +128,15 @@ ${chalk.bold.yellow('🧠 Knowledge Graph')}
   ${chalk.dim('Entity types:')} decision, feature, bug_fix, lesson_learned
   ${chalk.dim('Auto-tags:')} scope:project:*, tech:* added automatically
 
-${chalk.bold.yellow('💊 Workflow & Health')}
-  ${chalk.cyan('get-session-health')}        Check token usage & quality metrics
-  ${chalk.cyan('get-workflow-guidance')}     Get context-aware workflow suggestions
-
 ${chalk.bold.yellow('📖 Examples')}
   ${chalk.green('# Task Execution')}
   ${chalk.green('❯')} buddy-do "setup authentication"
   ${chalk.green('❯')} buddy-remember "why JWT over sessions"
 
   ${chalk.green('# A2A Collaboration')}
-  ${chalk.green('❯')} a2a-list-agents
-  ${chalk.green('❯')} a2a-send-task targetAgentId="kts-macbook-abc123" task="analyze logs"
+  ${chalk.green('❯')} a2a-board
+  ${chalk.green('❯')} a2a-find-tasks status="PENDING"
+  ${chalk.green('❯')} a2a-claim-task taskId="task-123"
 
   ${chalk.green('# Secrets')}
   ${chalk.green('❯')} buddy-secret-store name="openai_key" value="sk-..." type="api_key"
@@ -314,85 +307,66 @@ ${chalk.bold('Documentation:')}
     }
     static getA2AHelp() {
         const content = `
-${chalk.bold.cyan('A2A (Agent-to-Agent)')} - Multi-Agent Collaboration
+${chalk.bold.cyan('A2A (Agent-to-Agent)')} - Local Task Board
 
 ${chalk.dim('Description:')}
-Enable multiple Claude Code sessions to collaborate and delegate
-tasks to each other. Each session runs an independent A2A agent.
+Manage tasks on a local task board. Create, find, and claim tasks
+for collaborative agent workflows.
 
 ${chalk.bold('🔑 Key Concepts:')}
 
-${chalk.yellow('Agent ID Format:')} ${chalk.dim('\${hostname}-\${timestamp}')}
-  Example: kts-macbook-ml8cy34o
+${chalk.yellow('Task Board:')} Local storage for tasks
+  Tasks persist in local storage and can be claimed by agents
 
-${chalk.yellow('Check-in Name:')} Display name (e.g., "Lambda")
-  ${chalk.dim('Note:')} This is NOT your agent ID!
-
-${chalk.yellow('Find Your Agent ID:')}
-  ${chalk.cyan('curl -s http://localhost:3000/a2a/agent-card | grep id')}
+${chalk.yellow('Task Lifecycle:')} PENDING → CLAIMED → IN_PROGRESS → COMPLETED
+  Each task moves through states as work progresses
 
 ${chalk.bold('📋 Available Tools:')}
 
-${chalk.cyan('a2a-list-agents')} [status]
-  List all A2A agents in the registry
-  ${chalk.dim('Status:')} active | inactive | all
+${chalk.cyan('a2a-board')}
+  Display all tasks on the local task board
+  Shows task ID, title, status, assignee
 
-${chalk.cyan('a2a-send-task')} targetAgentId taskDescription [priority]
-  Send a task to another agent
-  ${chalk.dim('Priority:')} low | normal | high | urgent
+${chalk.cyan('a2a-find-tasks')} [status] [limit]
+  Find tasks matching criteria
+  ${chalk.dim('Status:')} PENDING | CLAIMED | IN_PROGRESS | COMPLETED | FAILED
 
-${chalk.cyan('a2a-get-task')} targetAgentId taskId
-  Get status and details of a specific task
-
-${chalk.cyan('a2a-list-tasks')} [state] [limit]
-  List tasks assigned to you
-  ${chalk.dim('State:')} SUBMITTED | WORKING | COMPLETED | FAILED
-
-${chalk.cyan('a2a-report-result')} taskId result success
-  Report task execution result
+${chalk.cyan('a2a-claim-task')} taskId [assignee]
+  Claim a task from the board
+  Marks task as claimed and assigns to agent
 
 ${chalk.bold('📝 Examples:')}
 
-${chalk.green('# Discover agents')}
-${chalk.green('❯')} a2a-list-agents status="active"
-${chalk.dim('→')} Shows all active agents with IDs, ports, heartbeat
+${chalk.green('# View task board')}
+${chalk.green('❯')} a2a-board
+${chalk.dim('→')} Shows all tasks with status and details
 
-${chalk.green('# Send task')}
-${chalk.green('❯')} a2a-send-task \\
-  targetAgentId="kts-macbook-xyz789" \\
-  taskDescription="analyze error logs" \\
-  priority="high"
-${chalk.dim('→')} Returns task ID for tracking
+${chalk.green('# Find pending tasks')}
+${chalk.green('❯')} a2a-find-tasks status="PENDING" limit=5
+${chalk.dim('→')} Returns up to 5 pending tasks
 
-${chalk.green('# Check task')}
-${chalk.green('❯')} a2a-get-task \\
-  targetAgentId="kts-macbook-xyz789" \\
-  taskId="task_123abc"
-${chalk.dim('→')} Shows: WORKING, 60% complete
-
-${chalk.green('# List your tasks')}
-${chalk.green('❯')} a2a-list-tasks state="WORKING" limit=10
-${chalk.dim('→')} Shows all tasks assigned to you
+${chalk.green('# Claim a task')}
+${chalk.green('❯')} a2a-claim-task taskId="task-123" assignee="agent-alpha"
+${chalk.dim('→')} Marks task as claimed by agent-alpha
 
 ${chalk.bold('💡 Best Practices:')}
-• Always check agent list before sending tasks
-• Use meaningful task descriptions
-• Set appropriate priority levels
-• Monitor task progress with a2a-get-task
-• Report results when completed
+• Check board regularly with a2a-board
+• Use a2a-find-tasks to filter by status
+• Claim tasks before starting work
+• Update task status as work progresses
 
-${chalk.bold('🔧 Troubleshooting:')}
+${chalk.bold('🔧 Common Workflows:')}
 
-${chalk.yellow('Q:')} Why don't I see my agent in the list?
-${chalk.green('A:')} Your agent ID is different from check-in name.
-   Run: curl -s http://localhost:3000/a2a/agent-card
+${chalk.yellow('Finding Work:')}
+  ${chalk.cyan('1.')} a2a-find-tasks status="PENDING"
+  ${chalk.cyan('2.')} a2a-claim-task taskId="task-123"
+  ${chalk.cyan('3.')} Complete the work
+  ${chalk.cyan('4.')} Update task status to COMPLETED
 
-${chalk.yellow('Q:')} How do I test A2A locally?
-${chalk.green('A:')} Open multiple Claude Code sessions. Each creates
-   an independent agent that can collaborate.
-
-${chalk.yellow('Q:')} Agent shows "stale" status?
-${chalk.green('A:')} No heartbeat for 5+ minutes. Restart the session.
+${chalk.yellow('Monitoring Progress:')}
+  ${chalk.cyan('1.')} a2a-board
+  ${chalk.cyan('2.')} Review task statuses
+  ${chalk.cyan('3.')} Identify blockers
 `;
         return boxen(content, {
             padding: 1,
@@ -600,88 +574,31 @@ ${chalk.bold('🔍 Search Tips:')}
     }
     static getHealthHelp() {
         const content = `
-${chalk.bold.cyan('Workflow & Health')} - Session Monitoring
+${chalk.bold.cyan('Health Monitoring')} - Coming Soon
 
 ${chalk.dim('Description:')}
-Monitor session health, track quality metrics, and get
-workflow guidance for optimal development practices.
+Health monitoring will be available through MeMesh Cloud integration.
 
-${chalk.bold('📋 Available Tools:')}
+${chalk.bold('📋 Planned Features:')}
 
-${chalk.cyan('get-session-health')}
-  Check current session health and metrics
+• Session health tracking
+• Token usage monitoring
+• Quality metrics dashboard
+• Workflow guidance
+• Error rate analysis
 
-${chalk.cyan('get-workflow-guidance')}
-  Get context-aware workflow suggestions
+${chalk.bold('💡 Current Status:')}
 
-${chalk.bold('📝 Examples:')}
+Health monitoring features are planned for future MeMesh Cloud integration.
+For now, monitor your development progress through:
+• Console logs
+• Task completion status
+• Test results
+• Code review feedback
 
-${chalk.green('# Check session health')}
-${chalk.green('❯')} get-session-health
-${chalk.dim('→')} Session Health Report:
+${chalk.bold('📖 Learn More:')}
 
-    Token Usage:     45,231 / 200,000 (23%)
-    Quality Score:   87 / 100 (Good)
-    Tool Calls:      142
-    Errors:          3 (2.1% error rate)
-
-    Recommendations:
-    • Continue current approach
-    • Consider saving checkpoint at 50% tokens
-
-${chalk.green('# Get workflow guidance')}
-${chalk.green('❯')} get-workflow-guidance
-${chalk.dim('→')} Workflow Guidance:
-
-    Current Phase: Implementation
-    Suggested Next: Code Review
-
-    Best Practices:
-    ✓ Read files before editing
-    ✓ Test after implementation
-    ✓ Record decisions in knowledge graph
-
-${chalk.bold('📊 Health Metrics:')}
-
-${chalk.yellow('Token Usage:')} Track API usage and budget
-  ${chalk.green('Green:')} < 50% - Plenty of room
-  ${chalk.yellow('Yellow:')} 50-80% - Monitor usage
-  ${chalk.red('Red:')} > 80% - Consider checkpoint
-
-${chalk.yellow('Quality Score:')} Code quality indicators
-  ${chalk.dim('Factors:')} Test coverage, error handling, documentation
-  ${chalk.green('Good:')} 80-100
-  ${chalk.yellow('Fair:')} 60-79
-  ${chalk.red('Poor:')} < 60
-
-${chalk.yellow('Error Rate:')} Tool call success rate
-  ${chalk.green('Excellent:')} < 5%
-  ${chalk.yellow('Normal:')} 5-15%
-  ${chalk.red('High:')} > 15% (investigate)
-
-${chalk.bold('💡 Best Practices:')}
-• Check health every 30-60 minutes
-• Save checkpoint before major changes
-• Address quality issues proactively
-• Use workflow guidance for complex tasks
-• Monitor error trends
-
-${chalk.bold('🔧 Common Workflows:')}
-
-${chalk.yellow('Before Major Refactoring:')}
-  ${chalk.cyan('1.')} get-session-health  ${chalk.dim('# Check token budget')}
-  ${chalk.cyan('2.')} Save checkpoint if > 50% used
-  ${chalk.cyan('3.')} Proceed with refactoring
-
-${chalk.yellow('Quality Check:')}
-  ${chalk.cyan('1.')} get-session-health  ${chalk.dim('# Check quality score')}
-  ${chalk.cyan('2.')} If < 70, review recent changes
-  ${chalk.cyan('3.')} Address flagged issues
-
-${chalk.yellow('Error Troubleshooting:')}
-  ${chalk.cyan('1.')} get-session-health  ${chalk.dim('# Check error rate')}
-  ${chalk.cyan('2.')} If > 15%, review error types
-  ${chalk.cyan('3.')} Adjust approach based on errors
+Visit https://memesh.pcircle.ai for updates on Cloud features.
 `;
         return boxen(content, {
             padding: 1,

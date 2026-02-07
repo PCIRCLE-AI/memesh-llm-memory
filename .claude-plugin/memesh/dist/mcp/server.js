@@ -41,9 +41,6 @@ class ClaudeCodeBuddyMCPServer {
     get buddyHandlers() {
         return this.components.buddyHandlers;
     }
-    get developmentButler() {
-        return this.components.developmentButler;
-    }
     constructor(components) {
         this.server = new Server({
             name: 'memesh',
@@ -62,13 +59,14 @@ class ClaudeCodeBuddyMCPServer {
             rateLimiter: this.components.rateLimiter,
             toolHandlers: this.components.toolHandlers,
             buddyHandlers: this.components.buddyHandlers,
-            a2aHandlers: this.components.a2aHandlers,
             secretManager: this.components.secretManager,
-            taskQueue: this.components.taskQueue,
-            mcpTaskDelegator: this.components.mcpTaskDelegator,
+            knowledgeGraph: this.components.knowledgeGraph,
         });
         this.components.toolInterface.attachToolDispatcher(this.toolRouter);
-        this.sessionBootstrapper = new SessionBootstrapper(this.components.projectMemoryManager);
+        this.sessionBootstrapper = new SessionBootstrapper(this.components.projectMemoryManager, undefined, this.components.sessionMemoryPipeline);
+        void this.components.sessionMemoryPipeline.start().catch(err => {
+            logger.warn('SessionMemoryPipeline failed to start:', err);
+        });
         this.setupHandlers();
         setupResourceHandlers(this.server);
         this.setupSignalHandlers();
@@ -263,6 +261,20 @@ class ClaudeCodeBuddyMCPServer {
     async performShutdown(reason) {
         logger.warn(`Shutting down MCP server (${reason})...`);
         try {
+            logger.info('Stopping session memory pipeline...');
+            if (this.components.sessionMemoryPipeline) {
+                await this.components.sessionMemoryPipeline.stop();
+            }
+        }
+        catch (error) {
+            logError(error, {
+                component: 'ClaudeCodeBuddyMCPServer',
+                method: 'shutdown',
+                operation: 'stopping session memory pipeline',
+            });
+            logger.error('Failed to stop session memory pipeline cleanly:', error);
+        }
+        try {
             logger.info('Closing knowledge graph database...');
             if (this.components.knowledgeGraph) {
                 await this.components.knowledgeGraph.close();
@@ -277,17 +289,6 @@ class ClaudeCodeBuddyMCPServer {
             logger.error('Failed to close knowledge graph cleanly:', error);
         }
         try {
-            logger.info('Evolution monitor ready for shutdown...');
-        }
-        catch (error) {
-            logError(error, {
-                component: 'ClaudeCodeBuddyMCPServer',
-                method: 'shutdown',
-                operation: 'closing evolution monitor',
-            });
-            logger.error('Failed to close evolution monitor cleanly:', error);
-        }
-        try {
             logger.info('Closing secret manager database...');
             if (this.components.secretManager) {
                 this.components.secretManager.close();
@@ -300,20 +301,6 @@ class ClaudeCodeBuddyMCPServer {
                 operation: 'closing secret manager',
             });
             logger.error('Failed to close secret manager cleanly:', error);
-        }
-        try {
-            logger.info('Closing task queue database...');
-            if (this.components.taskQueue) {
-                this.components.taskQueue.close();
-            }
-        }
-        catch (error) {
-            logError(error, {
-                component: 'ClaudeCodeBuddyMCPServer',
-                method: 'shutdown',
-                operation: 'closing task queue',
-            });
-            logger.error('Failed to close task queue cleanly:', error);
         }
         try {
             logger.info('Stopping rate limiter...');

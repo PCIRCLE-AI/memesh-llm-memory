@@ -6,14 +6,18 @@ export declare const env: {
     CLAUDE_MONTHLY_LIMIT: string;
     MONTHLY_BUDGET_USD: string;
     COST_ALERT_THRESHOLD: string;
-    LOG_LEVEL: "debug" | "error" | "warn" | "info";
+    LOG_LEVEL: "error" | "warn" | "info" | "debug";
     ENABLE_METRICS: string;
     METRICS_PORT: string;
     NODE_ENV: string;
     PORT: string;
     ORCHESTRATOR_MODE: "local" | "distributed";
     ORCHESTRATOR_MAX_MEMORY_MB: string;
+    MEMESH_BASE_URL: string;
+    MEMESH_TIMEOUT_MS: string;
     ANTHROPIC_API_KEY?: string | undefined;
+    MEMESH_API_KEY?: string | undefined;
+    MEMESH_PLATFORM?: string | undefined;
 };
 export declare const appConfig: {
     readonly claude: {
@@ -34,7 +38,7 @@ export declare const appConfig: {
         readonly alertThreshold: number;
     };
     readonly logging: {
-        readonly level: "debug" | "error" | "warn" | "info";
+        readonly level: "error" | "warn" | "info" | "debug";
         readonly enableMetrics: boolean;
         readonly metricsPort: number;
     };
@@ -45,6 +49,12 @@ export declare const appConfig: {
     readonly orchestrator: {
         readonly mode: "local" | "distributed";
         readonly maxMemoryMB: number;
+    };
+    readonly cloud: {
+        readonly baseUrl: string;
+        readonly timeoutMs: number;
+        readonly enabled: boolean;
+        readonly platform: string | undefined;
     };
 };
 export default appConfig;

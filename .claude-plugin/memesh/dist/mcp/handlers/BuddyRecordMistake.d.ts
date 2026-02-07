@@ -2,7 +2,7 @@ import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { UnifiedMemoryStore } from '../../memory/UnifiedMemoryStore.js';
 import { MistakePatternEngine } from '../../memory/MistakePatternEngine.js';
 import { UserPreferenceEngine } from '../../memory/UserPreferenceEngine.js';
-import { AIErrorType } from '../../evolution/types.js';
+import { AIErrorType } from '../../types/AgentClassification.js';
 export interface BuddyRecordMistakeInput {
     action: string;
     errorType: AIErrorType;

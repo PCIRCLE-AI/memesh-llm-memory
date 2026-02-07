@@ -20,16 +20,15 @@ Task ID: ${taskId}
 Detailed task execution logs are not yet available in this version.
 
 This feature requires:
-- Log capture in BackgroundExecutor
-- Log storage in EvolutionStore
+- Log capture in task storage
+- Log storage in Cloud storage
 - Integration with task lifecycle tracking
 
 Current workaround:
-- Check task status via BackgroundExecutor.getProgress()
 - Monitor console logs during task execution
 - Use UIEventBus for progress events
 
-Status: Planned for future release
+Status: Planned for MeMesh Cloud integration
 `;
     }
 }

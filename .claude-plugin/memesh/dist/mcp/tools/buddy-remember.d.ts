@@ -1,12 +1,25 @@
 import { z } from 'zod';
 import type { ProjectMemoryManager } from '../../memory/ProjectMemoryManager.js';
 import type { ResponseFormatter } from '../../ui/ResponseFormatter.js';
+import type { KnowledgeGraph } from '../../knowledge-graph/index.js';
+import type { Entity } from '../../knowledge-graph/types.js';
+export type SearchMode = 'semantic' | 'keyword' | 'hybrid';
+export interface SemanticSearchResult {
+    entity: Entity;
+    similarity: number;
+}
 export declare const BuddyRememberInputSchema: z.ZodObject<{
     query: z.ZodString;
+    mode: z.ZodDefault<z.ZodOptional<z.ZodEnum<{
+        semantic: "semantic";
+        keyword: "keyword";
+        hybrid: "hybrid";
+    }>>>;
     limit: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
+    minSimilarity: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
 }, z.core.$strip>;
 export type ValidatedBuddyRememberInput = z.infer<typeof BuddyRememberInputSchema>;
-export declare function executeBuddyRemember(input: ValidatedBuddyRememberInput, projectMemory: ProjectMemoryManager, formatter: ResponseFormatter): Promise<{
+export declare function executeBuddyRemember(input: ValidatedBuddyRememberInput, projectMemory: ProjectMemoryManager, formatter: ResponseFormatter, knowledgeGraph?: KnowledgeGraph): Promise<{
     content: Array<{
         type: 'text';
         text: string;

@@ -199,15 +199,10 @@ const message = `
 ${chalk.bold.green('✅ MeMesh Installed Successfully!')}
 
 ${chalk.bold('What You Got:')}
-  ${chalk.cyan('•')} 18 MCP tools (persistent memory, task routing, secrets management, A2A protocol)
-  ${chalk.cyan('•')} A2A Protocol for agent-to-agent collaboration
+  ${chalk.cyan('•')} 12 MCP tools (persistent memory, semantic search, task routing, secrets management)
+  ${chalk.cyan('•')} Vector semantic search with ONNX embeddings (runs 100% locally)
   ${chalk.cyan('•')} Auto-memory with smart knowledge graph
-  ${chalk.cyan('•')} Self-reminder system with heartbeat monitoring
-
-${chalk.bold('A2A Token:')}
-  ${tokenStatusIcon} ${tokenStatusText}
-  ${chalk.dim('Token:')} ${chalk.yellow(tokenDisplay)}
-  ${chalk.dim('Full token saved to:')} ${chalk.cyan('.env')}
+  ${chalk.cyan('•')} Local-first architecture (all data stored locally)
 
 ${configSection}
 

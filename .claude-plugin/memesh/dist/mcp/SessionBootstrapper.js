@@ -3,10 +3,12 @@ const DEFAULT_MEMORY_LIMIT = 3;
 export class SessionBootstrapper {
     projectMemoryManager;
     memoryLimit;
+    sessionMemoryPipeline;
     hasInjected = false;
-    constructor(projectMemoryManager, memoryLimit = DEFAULT_MEMORY_LIMIT) {
+    constructor(projectMemoryManager, memoryLimit = DEFAULT_MEMORY_LIMIT, sessionMemoryPipeline) {
         this.projectMemoryManager = projectMemoryManager;
         this.memoryLimit = memoryLimit;
+        this.sessionMemoryPipeline = sessionMemoryPipeline;
     }
     async maybePrepend(result) {
         if (this.hasInjected) {
@@ -30,38 +32,48 @@ export class SessionBootstrapper {
         };
     }
     async buildStartupMessage() {
+        let text = '';
         try {
             const memories = await this.projectMemoryManager.recallRecentWork({
                 limit: this.memoryLimit,
             });
-            if (memories.length === 0) {
-                return null;
-            }
-            let text = '📌 Recent Project Memories\n';
-            text += '━'.repeat(60) + '\n\n';
-            memories.forEach((memory, index) => {
-                text += `${index + 1}. ${memory.entityType}\n`;
-                if (memory.createdAt) {
-                    text += `   Timestamp: ${memory.createdAt.toISOString()}\n`;
-                }
-                if (memory.observations?.length) {
-                    const preview = memory.observations.slice(0, 2);
-                    preview.forEach(obs => {
-                        text += `   - ${obs}\n`;
-                    });
-                    if (memory.observations.length > preview.length) {
-                        text += `   - ...\n`;
+            if (memories.length > 0) {
+                text += '📌 Recent Project Memories\n';
+                text += '━'.repeat(60) + '\n\n';
+                memories.forEach((memory, index) => {
+                    text += `${index + 1}. ${memory.entityType}\n`;
+                    if (memory.createdAt) {
+                        text += `   Timestamp: ${memory.createdAt.toISOString()}\n`;
                     }
-                }
-                text += '\n';
-            });
-            text += '━'.repeat(60) + '\n';
-            return text;
+                    if (memory.observations?.length) {
+                        const preview = memory.observations.slice(0, 2);
+                        preview.forEach(obs => {
+                            text += `   - ${obs}\n`;
+                        });
+                        if (memory.observations.length > preview.length) {
+                            text += `   - ...\n`;
+                        }
+                    }
+                    text += '\n';
+                });
+                text += '━'.repeat(60) + '\n';
+            }
         }
         catch (error) {
-            logger.warn('Failed to preload project memories:', error);
-            return null;
+            logger.error('Failed to preload project memories:', error);
         }
+        if (this.sessionMemoryPipeline) {
+            try {
+                const sessionContext = this.sessionMemoryPipeline.generateContext();
+                if (sessionContext) {
+                    text += (text ? '\n' : '') + sessionContext + '\n';
+                }
+            }
+            catch (error) {
+                logger.warn('Failed to generate session memory context:', error);
+            }
+        }
+        return text || null;
     }
 }
 //# sourceMappingURL=SessionBootstrapper.js.map

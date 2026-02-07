@@ -12,15 +12,13 @@ Welcome to the complete MeMesh User Guide! This guide provides detailed informat
 3. [MCP Tools](#mcp-tools)
    - [Advanced MCP Tools](#advanced-mcp-tools)
    - [Secret Management](#secret-management)
-   - [A2A Protocol](#a2a-protocol-agent-to-agent-communication)
    - [Learning & Error Tracking](#learning--error-tracking)
 4. [CLI Commands](#cli-commands)
-5. [Daemon Commands](#daemon-commands)
-6. [Memory System](#memory-system)
-7. [Smart Routing](#smart-routing)
-8. [Configuration](#configuration)
-9. [Advanced Usage](#advanced-usage)
-10. [Troubleshooting](#troubleshooting)
+5. [Memory System](#memory-system)
+6. [Smart Routing](#smart-routing)
+7. [Configuration](#configuration)
+8. [Advanced Usage](#advanced-usage)
+9. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -37,34 +35,24 @@ MeMesh is your AI memory mesh for Claude Code - a persistent memory and smart ro
 
 ### Architecture Overview
 
-MeMesh uses a singleton daemon architecture for multi-session support:
+MeMesh runs as a local-first MCP server:
 
 ```
-Claude Code #1 ──stdio proxy──►┐
-Claude Code #2 ──stdio proxy──►├─► MeMesh Daemon (single process)
-Claude Code #3 ──stdio proxy──►┘         │
-                                         ▼
-                            ┌─────────────────────────┐
-                            │  MeMesh MCP Server       │
-                            ├─────────────────────────┤
-                            │  • buddy-do (routing)    │
-                            │  • buddy-remember        │
-                            │  • A2A Server (shared)   │
-                            └────────────┬────────────┘
-                                         │
-                    ┌────────────────────┼────────────────────┐
-                    ▼                    ▼                    ▼
-              ┌─────────┐         ┌───────────┐        ┌──────────┐
-              │ Router  │         │ Knowledge │        │  A2A     │
-              │         │         │   Graph   │        │  State   │
-              └─────────┘         └───────────┘        └──────────┘
+Claude Code ──stdio──► MeMesh MCP Server
+                              │
+                    ┌─────────┼─────────┐
+                    ▼         ▼         ▼
+              ┌─────────┐ ┌────────┐ ┌──────────┐
+              │ Router  │ │ Memory │ │ Semantic  │
+              │         │ │ Graph  │ │ Search    │
+              └─────────┘ └────────┘ └──────────┘
 ```
 
 **Benefits:**
-- Resource efficiency: Single process serves all Claude Code sessions
-- Shared state: Memory and A2A state shared across sessions
-- No port conflicts: Single A2A server instance
-- Graceful upgrades: New versions can replace running daemon
+- Local-first: All data stored locally, never transmitted
+- Zero configuration: Works out of the box
+- Vector semantic search: ONNX embeddings for intelligent recall
+- Persistent memory: Knowledge graph persists across sessions
 
 ---
 
@@ -403,7 +391,7 @@ Run: memesh tutorial
 
 These tools provide lower-level access to MeMesh capabilities. For complete API documentation with detailed schemas, examples, and error handling, see **[API_REFERENCE.md](./api/API_REFERENCE.md)**.
 
-#### create-entities
+#### memesh-create-entities
 
 **Purpose**: Create knowledge entities with explicit relationships
 
@@ -431,7 +419,7 @@ These tools provide lower-level access to MeMesh capabilities. For complete API 
 - Migrating external knowledge
 - Integrating with other systems
 
-📖 **Full Documentation**: [API_REFERENCE.md - create-entities](./api/API_REFERENCE.md#create-entities)
+📖 **Full Documentation**: [API_REFERENCE.md - memesh-create-entities](./api/API_REFERENCE.md#memesh-create-entities)
 
 #### recall-memory
 
@@ -521,14 +509,15 @@ These tools provide lower-level access to MeMesh capabilities. For complete API 
 
 MeMesh provides secure local storage for API keys, tokens, passwords, and other sensitive data using AES-256-GCM encryption.
 
-#### buddy-secret-store
+#### memesh-secret-store
 
 **Purpose**: Securely store sensitive information (API keys, tokens, passwords)
 
 **Parameters**:
 - `name`: Unique identifier for the secret
 - `value`: The secret value to store
-- `ttl`: Optional time-to-live in seconds (auto-delete after expiry)
+- `type`: Secret type (api_key, token, password, other)
+- `description`: Optional description
 
 **Security Features**:
 - AES-256-GCM encryption
@@ -541,7 +530,7 @@ MeMesh provides secure local storage for API keys, tokens, passwords, and other 
 {
   "name": "openai-api-key",
   "value": "sk-proj-...",
-  "ttl": 2592000
+  "type": "api_key"
 }
 ```
 
@@ -551,11 +540,11 @@ MeMesh provides secure local storage for API keys, tokens, passwords, and other 
 - Securing database credentials
 - Temporary access tokens
 
-📖 **Full Documentation**: [API_REFERENCE.md - buddy-secret-store](./api/API_REFERENCE.md#buddy-secret-store)
+📖 **Full Documentation**: [API_REFERENCE.md - memesh-secret-store](./api/API_REFERENCE.md#memesh-secret-store)
 
 ---
 
-#### buddy-secret-get
+#### memesh-secret-get
 
 **Purpose**: Retrieve a previously stored secret
 
@@ -565,7 +554,7 @@ MeMesh provides secure local storage for API keys, tokens, passwords, and other 
 **Returns**:
 - The decrypted secret value
 - Creation timestamp
-- Expiry information (if TTL was set)
+- Expiry information (if set)
 
 **Quick Example**:
 ```json
@@ -574,11 +563,11 @@ MeMesh provides secure local storage for API keys, tokens, passwords, and other 
 }
 ```
 
-📖 **Full Documentation**: [API_REFERENCE.md - buddy-secret-get](./api/API_REFERENCE.md#buddy-secret-get)
+📖 **Full Documentation**: [API_REFERENCE.md - memesh-secret-get](./api/API_REFERENCE.md#memesh-secret-get)
 
 ---
 
-#### buddy-secret-list
+#### memesh-secret-list
 
 **Purpose**: List all stored secrets (names only, not values)
 
@@ -598,11 +587,11 @@ MeMesh provides secure local storage for API keys, tokens, passwords, and other 
 - Checking what credentials are available
 - Managing secret lifecycle
 
-📖 **Full Documentation**: [API_REFERENCE.md - buddy-secret-list](./api/API_REFERENCE.md#buddy-secret-list)
+📖 **Full Documentation**: [API_REFERENCE.md - memesh-secret-list](./api/API_REFERENCE.md#memesh-secret-list)
 
 ---
 
-#### buddy-secret-delete
+#### memesh-secret-delete
 
 **Purpose**: Permanently delete a stored secret
 
@@ -621,213 +610,13 @@ MeMesh provides secure local storage for API keys, tokens, passwords, and other 
 - Removing expired access
 - Cleaning up test secrets
 
-📖 **Full Documentation**: [API_REFERENCE.md - buddy-secret-delete](./api/API_REFERENCE.md#buddy-secret-delete)
-
----
-
-### A2A Protocol (Agent-to-Agent Communication)
-
-MeMesh includes an Agent-to-Agent (A2A) Protocol for multi-agent collaboration, enabling Claude instances to delegate tasks to each other.
-
-**Current Status**: Phase 1.0 - MCP Client Delegation (localhost HTTP server)
-
----
-
-#### Phase 1.0: MCP Client Delegation
-
-**What's New in Phase 1.0:**
-- ✅ HTTP-based task delegation (localhost only)
-- ✅ Bearer token authentication for security
-- ✅ MCP Client polling mechanism (every 5 seconds)
-- ✅ Complete task lifecycle management (PENDING → IN_PROGRESS → COMPLETED/FAILED)
-- ✅ Task timeout configuration
-
-**Architecture:**
-
-```
-┌─────────────────────────────────────────────────┐
-│          Agent A (Task Sender)                   │
-│  a2a-send-task → HTTP POST to localhost:3000    │
-└──────────────────┬──────────────────────────────┘
-                   │
-                   │ Authorization: Bearer <token>
-                   ▼
-┌─────────────────────────────────────────────────┐
-│          A2A HTTP Server (MeMesh)                │
-│  TaskQueue: PENDING → IN_PROGRESS → COMPLETED   │
-└──────────────────┬──────────────────────────────┘
-                   │
-                   │ Poll every 5s
-                   ▼
-┌─────────────────────────────────────────────────┐
-│          MCP Client (Agent B)                    │
-│  1. a2a-list-tasks → Get pending tasks          │
-│  2. buddy-do → Execute task                     │
-│  3. a2a-report-result → Report completion       │
-└─────────────────────────────────────────────────┘
-```
-
-**Workflow Example:**
-
-```typescript
-// Agent A: Send task to Agent B
-const result = await mcpTool('a2a-send-task', {
-  agentId: 'code-reviewer',
-  task: 'Review src/auth.ts for security issues',
-  priority: 'high'
-});
-// → Returns: { taskId: 'task-abc123', status: 'PENDING' }
-
-// Agent B (MCP Client): Poll for tasks (automatically every 5s)
-const tasks = await mcpTool('a2a-list-tasks', {});
-// → Returns: [{ taskId: 'task-abc123', task: '...', priority: 'high' }]
-
-// Agent B: Execute task
-const executionResult = await mcpTool('buddy-do', {
-  task: tasks[0].task
-});
-
-// Agent B: Report result
-await mcpTool('a2a-report-result', {
-  taskId: 'task-abc123',
-  result: JSON.stringify(executionResult),
-  success: true
-});
-
-// Agent A: Check task status
-const status = await mcpTool('a2a-get-task', {
-  taskId: 'task-abc123',
-  agentId: 'code-reviewer'
-});
-// → Returns: { status: 'COMPLETED', result: '...' }
-```
-
-**Setup Guide:**
-
-For complete setup instructions including token generation and configuration, see **[A2A_SETUP_GUIDE.md](./A2A_SETUP_GUIDE.md)**.
-
-**Quick Start:**
-
-```bash
-# 1. Generate authentication token
-bash scripts/generate-a2a-token.sh
-
-# 2. Start MeMesh MCP Server
-npm run mcp
-
-# 3. Use A2A tools in Claude Code
-a2a-send-task { "agentId": "test", "task": "Test task" }
-a2a-list-tasks {}
-a2a-report-result { "taskId": "...", "result": "...", "success": true }
-```
-
-**Phase 1.0 Limitations:**
-- 🔒 Localhost-only (no remote agents)
-- 🔒 Single task per agent (no concurrent execution)
-- 🔒 No cross-machine communication
-- 🔒 Manual agent configuration (no discovery)
-
-#### a2a-send-task
-
-**Purpose**: Send a task to another agent for execution
-
-**Parameters**:
-- `agentId`: Target agent identifier
-- `task`: Task description or command
-- `priority`: Optional priority level (high/medium/low)
-
-**Quick Example**:
-```json
-{
-  "agentId": "code-reviewer",
-  "task": "Review src/auth.ts for security issues",
-  "priority": "high"
-}
-```
-
-**When to Use**:
-- Delegating specialized tasks
-- Parallel execution workflows
-- Multi-agent collaboration
-
-📖 **Full Documentation**: [API_REFERENCE.md - a2a-send-task](./api/API_REFERENCE.md#a2a-send-task)
-
----
-
-#### a2a-get-task
-
-**Purpose**: Query status and results of a sent task
-
-**Parameters**:
-- `taskId`: Task identifier from a2a-send-task
-- `agentId`: Target agent identifier
-
-**Returns**:
-- Task status (pending/in_progress/completed/failed)
-- Task results (if completed)
-- Error information (if failed)
-
-**Quick Example**:
-```json
-{
-  "taskId": "task-abc123",
-  "agentId": "code-reviewer"
-}
-```
-
-📖 **Full Documentation**: [API_REFERENCE.md - a2a-get-task](./api/API_REFERENCE.md#a2a-get-task)
-
----
-
-#### a2a-list-tasks
-
-**Purpose**: List all tasks assigned to this agent
-
-**Returns**:
-- Array of task objects
-- Task status and metadata
-- Priority and timing information
-
-**Quick Example**:
-```json
-{}
-```
-
-**When to Use**:
-- Monitoring agent workload
-- Task queue management
-- Debugging multi-agent workflows
-
-📖 **Full Documentation**: [API_REFERENCE.md - a2a-list-tasks](./api/API_REFERENCE.md#a2a-list-tasks)
-
----
-
-#### a2a-list-agents
-
-**Purpose**: Discover available agents for task delegation
-
-**Returns**:
-- Array of agent identifiers
-- Agent capabilities
-- Agent status (online/offline)
-
-**Quick Example**:
-```json
-{}
-```
-
-**When to Use**:
-- Finding specialized agents
-- Multi-agent system discovery
-- Capability-based routing
-
-📖 **Full Documentation**: [API_REFERENCE.md - a2a-list-agents](./api/API_REFERENCE.md#a2a-list-agents)
+📖 **Full Documentation**: [API_REFERENCE.md - memesh-secret-delete](./api/API_REFERENCE.md#memesh-secret-delete)
 
 ---
 
 ### Learning & Error Tracking
 
-#### buddy-record-mistake
+#### memesh-record-mistake
 
 **Purpose**: Record errors and mistakes for learning and prevention
 
@@ -859,7 +648,7 @@ a2a-report-result { "taskId": "...", "result": "...", "success": true }
 - Helps prevent repeating errors
 - Builds institutional knowledge
 
-📖 **Full Documentation**: [API_REFERENCE.md - buddy-record-mistake](./api/API_REFERENCE.md#buddy-record-mistake)
+📖 **Full Documentation**: [API_REFERENCE.md - memesh-record-mistake](./api/API_REFERENCE.md#memesh-record-mistake)
 
 ---
 
@@ -1015,99 +804,6 @@ memesh report-issue
 - Provides GitHub issues link
 - Collects system information (future)
 - Suggests troubleshooting steps
-
----
-
-## Daemon Commands
-
-MeMesh uses a singleton daemon architecture to efficiently share resources across multiple Claude Code sessions. When you open multiple Claude Code windows, they all connect to the same MeMesh daemon, sharing memory, A2A state, and databases.
-
-### memesh daemon status
-
-**Purpose**: Check daemon status and information
-
-**Usage**:
-```bash
-memesh daemon status
-```
-
-**Shows**:
-- Running state (daemon/proxy/standalone)
-- PID and uptime
-- Connected clients count
-- Socket path
-- Version information
-
----
-
-### memesh daemon logs
-
-**Purpose**: View daemon logs
-
-**Usage**:
-```bash
-# Show recent logs
-memesh daemon logs
-
-# Follow logs in real-time
-memesh daemon logs -f
-
-# Show last N lines
-memesh daemon logs -n 100
-```
-
----
-
-### memesh daemon stop
-
-**Purpose**: Stop the daemon process
-
-**Usage**:
-```bash
-# Graceful stop (waits for clients)
-memesh daemon stop
-
-# Force stop (immediate)
-memesh daemon stop --force
-```
-
----
-
-### memesh daemon restart
-
-**Purpose**: Restart the daemon process
-
-**Usage**:
-```bash
-memesh daemon restart
-```
-
-Performs graceful restart with automatic client reconnection.
-
----
-
-### memesh daemon upgrade
-
-**Purpose**: Upgrade daemon to new version
-
-**Usage**:
-```bash
-memesh daemon upgrade
-```
-
-Use when you've installed a new MeMesh version and want the running daemon to upgrade.
-
----
-
-### Disabling Daemon Mode
-
-To run in standalone mode (original behavior):
-
-```bash
-export MEMESH_DISABLE_DAEMON=1
-```
-
-See [DAEMON_ARCHITECTURE.md](./DAEMON_ARCHITECTURE.md) for complete documentation.
 
 ---
 
@@ -1513,7 +1209,8 @@ Check logs:
 
 ### Version History
 
-- **v2.7.0**: Daemon socket cleanup fix, Memory retention periods updated (30/90 days), Auto-memory hooks improvements, Documentation updates
+- **v2.8.0**: Tool naming unification (memesh-* prefix), A2A removal (local-first architecture), Vector semantic search with ONNX embeddings
+- **v2.7.0**: Memory retention periods updated (30/90 days), Auto-memory hooks improvements, Documentation updates
 - **v2.6.6**: ErrorClassifier integration, Enhanced error handling
 - **v2.6.5**: Interactive tutorial, Improved QUICK_START
 - **v2.6.4**: Response formatting improvements, Visual hierarchy

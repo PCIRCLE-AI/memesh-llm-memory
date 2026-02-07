@@ -1,6 +1,6 @@
 # MeMesh - Complete Tool Guide
 
-**For LLMs**: This guide helps you actively use MeMesh's 17 tools. Use tools proactively based on triggers, not just when explicitly requested.
+**For LLMs**: This guide helps you actively use MeMesh's 12 tools. Use tools proactively based on triggers, not just when explicitly requested.
 
 ## Quick Reference: When to Use Each Tool
 
@@ -12,9 +12,8 @@
 | "do this task..." | `buddy-do` | Execute with smart routing |
 | "implement X..." | `buddy-do` | Task execution |
 | "generate tests..." | `generate-tests` | Create test cases |
-| "save this API key..." | `buddy-secret-store` | Store secrets securely |
-| "get my token..." | `buddy-secret-get` | Retrieve secrets |
-| "another session should..." | `a2a-send-task` | Multi-session collaboration |
+| "save this API key..." | `memesh-secret-store` | Store secrets securely |
+| "get my token..." | `memesh-secret-get` | Retrieve secrets |
 | "what's my progress..." | `get-session-health` | Check token usage |
 
 ---
@@ -75,7 +74,7 @@ buddy-do({
 
 ---
 
-### create-entities: Store Knowledge
+### memesh-create-entities: Store Knowledge
 **Triggers**: Completed major work, made important decision, learned lesson, fixed bug
 
 **When to use** (PROACTIVE):
@@ -87,7 +86,7 @@ buddy-do({
 **Examples**:
 ```typescript
 // After implementing OAuth
-create-entities({
+memesh-create-entities({
   entities: [{
     name: "OAuth2 Implementation Decision",
     entityType: "decision",
@@ -101,7 +100,7 @@ create-entities({
 })
 
 // After fixing bug
-create-entities({
+memesh-create-entities({
   entities: [{
     name: "Login Timeout Bug Fix",
     entityType: "bug_fix",
@@ -162,7 +161,7 @@ get-session-health()
 
 ## Learning Tools (Improvement)
 
-### buddy-record-mistake: Error Learning
+### memesh-record-mistake: Error Learning
 **Triggers**: User corrects you, says "you should have...", "why didn't you..."
 
 **When to use** (IMMEDIATE):
@@ -175,7 +174,7 @@ get-session-health()
 **Examples**:
 ```typescript
 // User: "Why did you edit the file without reading it first?"
-buddy-record-mistake({
+memesh-record-mistake({
   action: "Edited config.ts without reading first",
   errorType: "procedure-violation",
   userCorrection: "Must read file before editing",
@@ -194,7 +193,7 @@ buddy-record-mistake({
 
 ## Secret Management (Security)
 
-### buddy-secret-store/get/list/delete
+### memesh-secret-store/get/list/delete
 **Triggers**: API key, token, password, credential, secret
 
 **When to use**:
@@ -206,7 +205,7 @@ buddy-record-mistake({
 **Examples**:
 ```typescript
 // User shares: "Here's the OpenAI API key: sk-..."
-buddy-secret-store({
+memesh-secret-store({
   name: "openai-api-key",
   value: "sk-...",
   type: "api_key",
@@ -214,7 +213,7 @@ buddy-secret-store({
 })
 
 // Later, when needed:
-const key = buddy-secret-get({ name: "openai-api-key" })
+const key = memesh-secret-get({ name: "openai-api-key" })
 ```
 
 **Best practices**:
@@ -254,37 +253,6 @@ generate-tests({
 
 ---
 
-## Multi-Session Collaboration (A2A Protocol)
-
-### a2a-send-task: Delegate to Other Session
-**Triggers**: "another session", "parallel", "split work", "specialized session"
-
-**When to use**:
-- User mentions working with multiple sessions
-- Task can be parallelized across sessions
-- Need specialized session (frontend/backend/testing)
-
-**Example**:
-```typescript
-// User: "Have another session work on the frontend while I do backend"
-a2a-send-task({
-  targetAgentId: "frontend-session-123",
-  taskDescription: "Implement React components for user dashboard with charts and tables",
-  priority: "normal"
-})
-```
-
----
-
-### a2a-get-task / list-tasks / list-agents
-**Use together**:
-1. `a2a-list-agents()` - Find available sessions
-2. `a2a-send-task()` - Send work to session
-3. `a2a-get-task()` - Check progress
-4. `a2a-list-tasks()` - See incoming work
-
----
-
 ## Common Workflows
 
 ### Workflow 1: Starting New Feature
@@ -295,7 +263,7 @@ a2a-send-task({
    → Execute with metadata capture
 3. generate-tests({ code: "..." })
    → Create tests
-4. create-entities({ ... })
+4. memesh-create-entities({ ... })
    → Store implementation decisions
 ```
 
@@ -305,29 +273,18 @@ a2a-send-task({
    → Check if bug seen before
 2. buddy-do({ task: "Debug X" })
    → Investigate and fix
-3. create-entities({ entityType: "bug_fix", ... })
+3. memesh-create-entities({ entityType: "bug_fix", ... })
    → Record root cause and solution
 ```
 
-### Workflow 3: Multi-Session Collaboration
-```
-1. a2a-list-agents()
-   → Find available sessions
-2. a2a-send-task({ targetAgentId: "...", ... })
-   → Delegate work
-3. Continue with your work
-4. a2a-get-task({ taskId: "..." })
-   → Check progress later
-```
-
-### Workflow 4: Secret Management
+### Workflow 3: Secret Management
 ```
 1. User shares API key
-2. buddy-secret-store({ name: "...", value: "...", ... })
+2. memesh-secret-store({ name: "...", value: "...", ... })
    → Store securely
-3. Later: buddy-secret-get({ name: "..." })
+3. Later: memesh-secret-get({ name: "..." })
    → Retrieve when needed
-4. Eventually: buddy-secret-delete({ name: "..." })
+4. Eventually: memesh-secret-delete({ name: "..." })
    → Remove when rotating
 ```
 
@@ -337,18 +294,16 @@ a2a-send-task({
 
 **ALWAYS use without asking**:
 - `buddy-remember` - Before implementing similar features
-- `create-entities` - After completing significant work
-- `buddy-record-mistake` - When user corrects you
-- `buddy-secret-store` - When user shares credentials (ask first)
+- `memesh-create-entities` - After completing significant work
+- `memesh-record-mistake` - When user corrects you
+- `memesh-secret-store` - When user shares credentials (ask first)
 
 **SOMETIMES use proactively**:
 - `generate-tests` - After implementing untested code (offer)
 - `get-session-health` - Long sessions or complex work
-- `a2a-send-task` - When user mentions parallelization
-
 **NEVER use without explicit request**:
-- `buddy-secret-get` - Only when actually needed
-- `buddy-secret-list/delete` - Only when user asks
+- `memesh-secret-get` - Only when actually needed
+- `memesh-secret-list/delete` - Only when user asks
 
 ---
 
@@ -357,8 +312,8 @@ a2a-send-task({
 ❌ **Don't**:
 - Use `buddy-remember` with generic queries ("authentication")
 - Call `buddy-do` for trivial tasks (use direct tools)
-- Skip `create-entities` after major work
-- Ignore `buddy-record-mistake` when corrected
+- Skip `memesh-create-entities` after major work
+- Ignore `memesh-record-mistake` when corrected
 - Store secrets without user consent
 
 ✅ **Do**:
@@ -377,6 +332,6 @@ a2a-send-task({
 2. Use tools proactively (don't wait for explicit requests)
 3. Combine tools in workflows (see Common Workflows)
 4. Store knowledge after work (future you will thank you)
-5. Learn from mistakes (use buddy-record-mistake)
+5. Learn from mistakes (use memesh-record-mistake)
 
 **Remember**: MeMesh tools are meant to be ACTIVELY used, not passively available. When you see trigger keywords or situations, use the appropriate tool to provide better service to users.

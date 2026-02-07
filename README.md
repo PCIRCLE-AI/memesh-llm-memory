@@ -428,12 +428,12 @@ Context-aware memory retrieval with intelligent ranking:
 </details>
 
 <details>
-<summary><strong>Multi-Session Support (Daemon Mode)</strong></summary>
+<summary><strong>Persistent Memory</strong></summary>
 
-Run multiple Claude Code sessions sharing the same memory:
-- 🔄 First instance becomes the daemon
-- 🔗 Subsequent instances connect as proxies
-- 📡 Shared knowledge graph across all sessions
+Local-first architecture with persistent knowledge graph:
+- 💾 SQLite-based storage with semantic search
+- 🔍 Vector embeddings for intelligent recall
+- 📡 Knowledge persists across all sessions
 
 </details>
 
@@ -443,7 +443,7 @@ Run multiple Claude Code sessions sharing the same memory:
 Securely store API keys and credentials:
 - 🔐 AES-256-GCM encryption
 - 💾 Local SQLite storage (never transmitted)
-- 🔑 Use `buddy-secret-store` and `buddy-secret-get`
+- 🔑 Use `memesh-secret-store` and `memesh-secret-get`
 
 </details>
 

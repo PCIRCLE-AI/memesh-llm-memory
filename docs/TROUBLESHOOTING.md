@@ -1,14 +1,14 @@
-# ⚠️ Troubleshooting Guide
+# Troubleshooting Guide
 
-## 💡 TL;DR
+## TL;DR
 If you're in a hurry:
 1. Run `memesh setup` to fix installation and path issues.
-2. Run `memesh daemon restart` if commands are slow or stuck.
+2. Restart Claude Code completely.
 3. Verify your Node.js version is **>= v20.0.0**.
 
 ---
 
-## 🔧 Quick Diagnostic Commands
+## Quick Diagnostic Commands
 
 Before troubleshooting, run these commands to gather information:
 
@@ -29,16 +29,15 @@ npx @pcircle/memesh --help
 
 ---
 
-## 📍 Issue Categories
+## Issue Categories
 
 - [Most Common Issues](#most-common-issues)
-- [Daemon Issues](#daemon-issues)
 - [Performance & Persistence](#performance--persistence)
 - [Getting Help](#getting-help)
 
 ---
 
-## ✅ Most Common Issues
+## Most Common Issues
 
 ### 1. "buddy-help" command not found
 **Symptoms**: Shell returns "command not found" after installation.
@@ -54,7 +53,7 @@ memesh setup  # Run interactive setup to fix PATH
 **Quick Fix:**
 ```bash
 # Restart Claude Code completely
-# Wait 10 seconds for daemon to initialize
+# Wait a few seconds for the MCP server to initialize
 # Try the command again
 ```
 
@@ -66,65 +65,35 @@ memesh setup  # Run interactive setup to fix PATH
 
 ---
 
-## 🔧 Daemon Issues
+## Performance & Persistence
 
-MeMesh uses a singleton daemon architecture. Here are common daemon-related issues:
-
-### 4. "Failed to acquire daemon lock"
-**Cause:** Another daemon is running or a stale lock file exists.
+### 4. Commands are slow or hanging
+**Symptoms**: MeMesh takes too long to respond or hangs indefinitely.
 **Quick Fix:**
-```bash
-# Check daemon status
-memesh daemon status
-
-# If stale, clean up manually
-rm ~/.memesh/daemon.lock
-rm ~/.memesh/daemon.sock
-
-# Restart
-memesh daemon restart
-```
-
-### 5. "ECONNREFUSED" when connecting to daemon
-**Cause:** Daemon is not running or socket file is missing.
-**Quick Fix:**
-- Check status: `memesh daemon status`
-- Restart daemon: `memesh daemon restart`
-- Verify socket exists: `ls -la ~/.memesh/daemon.sock`
-
-### 6. "Protocol version mismatch"
-**Cause:** Client and daemon are running incompatible versions.
-**Quick Fix:**
-- Upgrade daemon: `memesh daemon upgrade`
-- Or force restart: `memesh daemon stop --force`
-
----
-
-## 🧠 Performance & Persistence
-
-### 7. Commands are slow or hanging
-**Symptoms**: CCB takes too long to respond or hangs indefinitely.
-**Quick Fix:**
-- **Pkill**: `pkill -f memesh` then `memesh daemon start`.
+- **Kill processes**: `pkill -f memesh` then restart Claude Code.
 - **Simplify**: Break complex tasks into smaller sub-tasks.
-- **Network**: Verify your internet connection to the LLM provider.
+- **Check orphans**: `npm run processes:orphaned` to find orphaned processes.
 
-### 8. Memory not persisting
+### 5. Memory not persisting
 **Symptoms**: Information or context from previous sessions is lost.
 **Quick Fix:**
-- Check permissions for `~/.memesh/memory.json`.
-- Verify `MEMESH_STORAGE_PATH` in your `.env` if you are using a custom location.
+- Check permissions for `~/.claude-code-buddy/` directory.
+- Verify the knowledge graph database exists: `ls ~/.claude-code-buddy/knowledge-graph.db`
 - Run `memesh config validate` to ensure storage is correctly configured.
 
-### 9. Disable daemon mode
-If daemon mode causes consistent issues, you can run in standalone mode:
-- **Temporary**: `export MEMESH_DISABLE_DAEMON=1`
-- **Permanent**: Add `export MEMESH_DISABLE_DAEMON=1` to your `~/.zshrc` or `~/.bashrc`.
-- **Cleanup**: `rm ~/.memesh/daemon.lock ~/.memesh/daemon.sock && pkill -f "memesh.*daemon"`
+### 6. Multiple MCP server processes
+**Symptoms**: High CPU or memory usage from duplicate MeMesh processes.
+**Quick Fix:**
+```bash
+npm run processes:list      # List all processes
+npm run processes:orphaned  # Find orphaned processes
+npm run processes:kill      # Kill all MeMesh processes
+```
+Then restart Claude Code.
 
 ---
 
-## 🆘 Getting Help
+## Getting Help
 
 1. **Quick Start:** [docs/QUICK_START.md](./QUICK_START.md)
 2. **Report Issue:** `memesh report-issue`
@@ -133,5 +102,5 @@ If daemon mode causes consistent issues, you can run in standalone mode:
 
 ---
 
-**Version**: 2.7.1
-**Last Updated**: 2026-02-05
+**Version**: 2.8.0
+**Last Updated**: 2026-02-08

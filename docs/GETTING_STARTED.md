@@ -126,8 +126,8 @@ Available Commands:
   get-workflow-guidance - Get recommendations for current phase
   generate-tests <file> - Auto-generate comprehensive tests
 
-  buddy-secret-store    - Store credentials securely
-  buddy-secret-get      - Retrieve stored secrets
+  memesh-secret-store   - Store credentials securely
+  memesh-secret-get     - Retrieve stored secrets
   ... (12 tools total)
 
 Status: ✅ Connected (12 tools available)
@@ -412,6 +412,6 @@ Install MeMesh, run `buddy-help`, and never explain your architecture twice agai
 
 ---
 
-**Version**: 2.7.0
-**Last Updated**: 2026-02-04
+**Version**: 2.8.0
+**Last Updated**: 2026-02-08
 **Not affiliated with Anthropic PBC** • Independent open-source project

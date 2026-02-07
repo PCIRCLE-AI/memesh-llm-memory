@@ -17,8 +17,7 @@ This directory contains all user-facing documentation and website pages.
 
 ### 📖 Core Reference
 - **[User Guide](./USER_GUIDE.md)** - End-to-end usage
-- **[Commands Reference](./COMMANDS.md)** - Buddy commands + MCP tools + Daemon commands
-- **[Daemon Architecture](./DAEMON_ARCHITECTURE.md)** - Singleton daemon for multi-session support
+- **[Commands Reference](./COMMANDS.md)** - Buddy commands + MCP tools
 - **[Troubleshooting](./TROUBLESHOOTING.md)** - Common issues and fixes
 - **[Contributing](./CONTRIBUTING.md)** - Development workflow
 
@@ -57,6 +56,6 @@ This directory contains all user-facing documentation and website pages.
 
 ---
 
-**Documentation Version**: 2.7.0
-**Last Updated**: 2026-02-04
+**Documentation Version**: 2.8.0
+**Last Updated**: 2026-02-08
 **Status**: Active

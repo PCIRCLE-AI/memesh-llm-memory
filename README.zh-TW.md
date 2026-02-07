@@ -184,10 +184,10 @@ buddy-help                       # 需要幫助時
 ### 4. 🔐 **安全憑證儲存**
 
 ```bash
-buddy-secret-store "openai_key" "sk-..." api_key  # 加密儲存
-buddy-secret-get "openai_key"                      # 取得憑證
-buddy-secret-list                                  # 查看已儲存
-buddy-secret-delete "old_key"                      # 清理舊金鑰
+memesh-secret-store "openai_key" "sk-..." api_key  # 加密儲存
+memesh-secret-get "openai_key"                      # 取得憑證
+memesh-secret-list                                  # 查看已儲存
+memesh-secret-delete "old_key"                      # 清理舊金鑰
 ```
 
 **AES-256-GCM 加密。僅存本地。永不傳輸。**
@@ -218,7 +218,7 @@ cd claude-code-buddy
 cursor://anysphere.cursor-deeplink/mcp/install?name=@pcircle/memesh&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwY2lyY2xlL21lbWVzaCJdfQ==
 ```
 
-**完整設定**（支援 A2A）：請參閱下方 [Cursor 完整設定](#cursor-完整設定)。
+**完整設定**：請參閱下方 [Cursor 完整設定](#cursor-完整設定)。
 
 ### 🏆 Claude Code Marketplace（即將推出）
 ```bash
@@ -265,33 +265,23 @@ claude --plugin-dir /path/to/claude-code-buddy
 <details>
 <summary><strong>🎯 Cursor 使用者</strong>（點擊展開）</summary>
 
-<h4 id="cursor-完整設定">Cursor 完整設定（支援 A2A）</h4>
+<h4 id="cursor-完整設定">Cursor 完整設定</h4>
 
-Deep link 提供基本功能。如需**完整 A2A（Agent-to-Agent）支援**，請手動設定：
+Deep link 提供基本功能。如需**完整手動設定**：
 
-1. **生成 token**：
-   ```bash
-   openssl rand -hex 32
-   ```
-
-2. **編輯 Cursor MCP 設定**（`~/.cursor/mcp.json` 或透過 Cursor 設定）：
+1. **編輯 Cursor MCP 設定**（`~/.cursor/mcp.json` 或透過 Cursor 設定）：
    ```json
    {
      "mcpServers": {
        "memesh": {
          "command": "npx",
-         "args": ["-y", "@pcircle/memesh"],
-         "env": {
-           "MEMESH_A2A_TOKEN": "<你的-64-字元-hex-token>"
-         }
+         "args": ["-y", "@pcircle/memesh"]
        }
      }
    }
    ```
 
-3. **重啟 Cursor** 就完成了。
-
-> **注意**：所有 session 需使用相同的 token 才能讓 A2A 正常運作。
+2. **重啟 Cursor** 就完成了。
 
 </details>
 
@@ -409,12 +399,12 @@ buddy-remember "auth"  # 回傳 project-B 的 auth 決策
 </details>
 
 <details>
-<summary><strong>多 Session 支援（Daemon 模式）</strong></summary>
+<summary><strong>持久記憶</strong></summary>
 
-多個 Claude Code session 共享同一記憶：
-- 🔄 第一個實例成為 daemon
-- 🔗 後續實例作為 proxy 連接
-- 📡 所有 session 共享知識圖譜
+本地優先架構，搭配持久知識圖譜：
+- 💾 基於 SQLite 的儲存，支援語意搜尋
+- 🔍 向量嵌入實現智慧回憶
+- 📡 知識在所有 session 間持久化
 
 </details>
 
@@ -424,14 +414,14 @@ buddy-remember "auth"  # 回傳 project-B 的 auth 決策
 安全存儲 API 金鑰和憑證：
 - 🔐 AES-256-GCM 加密
 - 💾 本地 SQLite 存儲（永不傳輸）
-- 🔑 使用 `buddy-secret-store` 和 `buddy-secret-get`
+- 🔑 使用 `memesh-secret-store` 和 `memesh-secret-get`
 
 </details>
 
 <details>
-<summary><strong>18+ 個 MCP 標準工具</strong></summary>
+<summary><strong>12 個 MCP 標準工具</strong></summary>
 
-完整整合 Model Context Protocol，提供無縫的 Claude Code 體驗。
+完整整合 Model Context Protocol，提供無縫的 Claude Code 體驗。See [QUICK_INSTALL.md](docs/QUICK_INSTALL.md#-what-you-get) for the complete tool list.
 
 使用 `buddy-help` 查看所有可用指令。
 

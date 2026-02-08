@@ -176,9 +176,11 @@ MCP tool version of `buddy help` command.
 
 ---
 
-### `generate-tests`
+### `memesh-generate-tests`
 
 Automatically generate comprehensive test cases from specifications or source code using AI.
+
+**Aliases:** `generate-tests` (deprecated, will be removed in v3.0.0)
 
 **Input Schema:**
 ```json
@@ -192,9 +194,11 @@ Automatically generate comprehensive test cases from specifications or source co
 
 ---
 
-### `hook-tool-use`
+### `memesh-hook-tool-use`
 
-Internal hook event ingestion for workflow automation and memory tracking.
+Internal hook event ingestion for workflow automation and memory tracking (auto-triggered by Claude Code hooks, do not call manually).
+
+**Aliases:** `hook-tool-use` (deprecated, will be removed in v3.0.0)
 
 **Input Schema:**
 ```json
@@ -267,6 +271,43 @@ Create knowledge entities with explicit relationships for fine-grained control o
   ]
 }
 ```
+
+---
+
+### `memesh-cloud-sync`
+
+Synchronize local knowledge graph memories with MeMesh Cloud.
+
+**Input Schema:**
+```json
+{
+  "action": "string (required) - Action to perform: status | push | pull | auto-sync"
+}
+```
+
+**Actions:**
+- `status` - Compare local vs cloud memory counts
+- `push` - Push local memories to cloud (requires authentication)
+- `pull` - Pull cloud memories to local (requires authentication)
+- `auto-sync` - Enable automatic bidirectional sync (requires authentication)
+
+**Examples:**
+
+**Check sync status:**
+```json
+{
+  "action": "status"
+}
+```
+
+**Push local memories to cloud:**
+```json
+{
+  "action": "push"
+}
+```
+
+**Note:** Cloud sync requires MeMesh Cloud authentication. Visit https://memesh.cloud for setup.
 
 ---
 

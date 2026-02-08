@@ -115,7 +115,7 @@ buddy-help  # Shows all available commands
 ## 📚 Learn More
 
 - **[User Guide](docs/USER_GUIDE.md)** - Complete usage guide
-- **[Commands Reference](docs/COMMANDS.md)** - All buddy-* commands
+- **[Commands Reference](docs/COMMANDS.md)** - All available commands and tools
 - **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues
 
 ---

@@ -115,7 +115,7 @@ buddy-help  # 顯示所有可用指令
 ## 📚 了解更多
 
 - **[使用指南](docs/USER_GUIDE.md)** - 完整使用教學
-- **[指令參考](docs/COMMANDS.md)** - 所有 buddy-* 指令
+- **[指令參考](docs/COMMANDS.md)** - 所有可用指令與工具
 - **[疑難排解](docs/TROUBLESHOOTING.md)** - 常見問題
 
 ---

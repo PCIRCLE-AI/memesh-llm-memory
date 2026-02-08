@@ -168,15 +168,27 @@ echo ""
 test_step "Step 5: Testing JSON-RPC communication"
 
 JSONRPC_TEST=$(mktemp)
+STDIN_FILE=$(mktemp)
 INIT_REQUEST='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}'
 
-# Send initialize request
-(
-    echo "$INIT_REQUEST" | DISABLE_MCP_WATCHDOG=1 node dist/mcp/server-bootstrap.js > "$JSONRPC_TEST" 2>&1 &
-    RPC_PID=$!
-    sleep 2
-    kill $RPC_PID 2>/dev/null || true
-)
+# Write request to stdin file
+echo "$INIT_REQUEST" > "$STDIN_FILE"
+
+# Start server with stdin from file
+# MEMESH_DISABLE_DAEMON=1: Force standalone mode (avoid daemon bootstrap complexity)
+# DISABLE_MCP_WATCHDOG=1: Disable manual startup detection
+MEMESH_DISABLE_DAEMON=1 DISABLE_MCP_WATCHDOG=1 node dist/mcp/server-bootstrap.js < "$STDIN_FILE" > "$JSONRPC_TEST" 2>&1 &
+RPC_PID=$!
+
+# Wait for server to process request
+sleep 2
+
+# Kill server
+kill $RPC_PID 2>/dev/null || true
+wait $RPC_PID 2>/dev/null || true
+
+# Cleanup stdin file
+rm -f "$STDIN_FILE"
 
 # Check response
 if grep -q "jsonrpc" "$JSONRPC_TEST"; then

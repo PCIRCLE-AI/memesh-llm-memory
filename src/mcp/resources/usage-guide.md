@@ -27,7 +27,7 @@ buddy-remember "authentication decisions"
 
 ### 3) Generate a plan
 ```
-generate-tests "add email-based login"
+memesh-generate-tests "add email-based login"
 ```
 
 ## 🧰 Tool Overview
@@ -35,7 +35,7 @@ generate-tests "add email-based login"
 - **buddy-do**: Execute tasks with smart routing
 - **buddy-remember**: Recall project memory and decisions
 - **buddy-help**: Command help and usage
-- **generate-tests**: Implementation plan generation
+- **memesh-generate-tests**: Implementation plan generation
 
 Note: `hook-tool-use` is internal and used by Claude Code hooks.
 

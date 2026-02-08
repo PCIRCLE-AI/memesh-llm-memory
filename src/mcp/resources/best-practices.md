@@ -28,9 +28,9 @@ buddy-do "review src/api/auth.ts for security issues"
 
 ## ✅ Break Down Large Features
 
-Use `generate-tests` before large changes:
+Use `memesh-generate-tests` before large changes:
 ```
-generate-tests "add email-based login with rate limiting"
+memesh-generate-tests "add email-based login with rate limiting"
 ```
 
 Then execute tasks one by one.

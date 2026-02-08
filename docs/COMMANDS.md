@@ -281,15 +281,18 @@ Synchronize local knowledge graph memories with MeMesh Cloud.
 **Input Schema:**
 ```json
 {
-  "action": "string (required) - Action to perform: status | push | pull | auto-sync"
+  "action": "string (required) - Sync action: status | push | pull",
+  "query": "string (optional) - Filter which memories to sync",
+  "space": "string (optional) - Cloud memory space (default: 'default')",
+  "limit": "number (optional) - Max memories per batch (1-500, default: 100)",
+  "dryRun": "boolean (optional) - Preview without executing (default: false)"
 }
 ```
 
 **Actions:**
 - `status` - Compare local vs cloud memory counts
-- `push` - Push local memories to cloud (requires authentication)
-- `pull` - Pull cloud memories to local (requires authentication)
-- `auto-sync` - Enable automatic bidirectional sync (requires authentication)
+- `push` - Push local KG entities to cloud
+- `pull` - Pull cloud memories to local
 
 **Examples:**
 
@@ -303,11 +306,22 @@ Synchronize local knowledge graph memories with MeMesh Cloud.
 **Push local memories to cloud:**
 ```json
 {
-  "action": "push"
+  "action": "push",
+  "space": "work",
+  "dryRun": true
 }
 ```
 
-**Note:** Cloud sync requires MeMesh Cloud authentication. Visit https://memesh.cloud for setup.
+**Pull cloud memories:**
+```json
+{
+  "action": "pull",
+  "query": "authentication",
+  "limit": 50
+}
+```
+
+**Note:** Requires `MEMESH_API_KEY` environment variable. Get your key at https://memesh.ai/settings
 
 ---
 

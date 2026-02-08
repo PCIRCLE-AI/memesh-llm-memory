@@ -509,16 +509,21 @@ These tools provide lower-level access to MeMesh capabilities. For complete API 
 **Purpose**: Synchronize local knowledge graph with MeMesh Cloud
 
 **Parameters**:
-- `action`: Action to perform
+- `action` (required): Sync action
   - `status` - Compare local vs cloud memory counts
-  - `push` - Push local memories to cloud (requires auth)
-  - `pull` - Pull cloud memories to local (requires auth)
-  - `auto-sync` - Enable automatic bidirectional sync (requires auth)
+  - `push` - Push local KG entities to cloud
+  - `pull` - Pull cloud memories to local
+- `query` (optional): Filter which memories to sync
+- `space` (optional): Cloud memory space (default: "default")
+- `limit` (optional): Max memories per batch (1-500, default: 100)
+- `dryRun` (optional): Preview without executing (default: false)
 
 **Quick Example**:
 ```json
 {
-  "action": "status"
+  "action": "push",
+  "space": "work",
+  "dryRun": true
 }
 ```
 
@@ -526,15 +531,8 @@ These tools provide lower-level access to MeMesh capabilities. For complete API 
 - Backup memories to cloud
 - Sync across multiple machines
 - Share project knowledge with team
-- Enable automatic cloud backup
 
-**Benefits**:
-- Cloud backup for disaster recovery
-- Multi-device synchronization
-- Team knowledge sharing (future feature)
-- Automatic backup on changes
-
-**Note**: Cloud sync requires MeMesh Cloud authentication. Visit https://memesh.cloud for setup.
+**Note**: Requires `MEMESH_API_KEY` environment variable. Get your key at https://memesh.ai/settings
 
 📖 **Full Documentation**: [API_REFERENCE.md - memesh-cloud-sync](./api/API_REFERENCE.md#memesh-cloud-sync)
 

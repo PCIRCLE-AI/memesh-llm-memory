@@ -22,7 +22,7 @@
    - [create-relations](#create-relations)
 6. [System Tools](#system-tools)
    - [health-check](#health-check)
-   - [generate-tests](#generate-tests)
+   - [memesh-generate-tests](#memesh-generate-tests)
 7. [Data Models](#data-models)
 8. [Error Reference](#error-reference)
 9. [Integration Examples](#integration-examples)
@@ -133,7 +133,7 @@ MeMesh provides 8 MCP tools organized into three categories:
 | Tool | Purpose | Complexity |
 |------|---------|-----------|
 | `health-check` | Monitor system health | Simple |
-| `generate-tests` | Generate test cases | Medium |
+| `memesh-generate-tests` | Generate test cases | Medium |
 
 ---
 
@@ -1821,7 +1821,7 @@ Duration: 5002ms
 
 ---
 
-### generate-tests
+### memesh-generate-tests
 
 **Purpose**: Generate automated test cases from specifications or code.
 
@@ -2444,7 +2444,7 @@ await createRelations({
 | `add-observations` | 100-300ms | Get-then-update pattern |
 | `create-relations` | 150-400ms | Validates both entities first |
 | `health-check` | 10-100ms | All checks in parallel |
-| `generate-tests` | 1000-5000ms | Uses LLM sampling |
+| `memesh-generate-tests` | 1000-5000ms | Uses LLM sampling |
 
 ### Rate Limits
 
@@ -2464,7 +2464,7 @@ await createRelations({
 **Memory**:
 - Base server: ~50-100MB
 - Knowledge graph: Grows with data (~1-10MB typical)
-- Peak usage during generate-tests: ~200-300MB
+- Peak usage during memesh-generate-tests: ~200-300MB
 
 **Storage**:
 - Database file: `~/.memesh/knowledge.db`
@@ -2474,7 +2474,7 @@ await createRelations({
 
 **CPU**:
 - Most operations: Low CPU usage
-- generate-tests: Medium CPU (LLM sampling)
+- memesh-generate-tests: Medium CPU (LLM sampling)
 - health-check: Minimal CPU
 
 ### Optimization Tips

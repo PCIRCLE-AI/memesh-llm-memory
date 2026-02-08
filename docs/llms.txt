@@ -74,7 +74,7 @@ New CLI tools for managing MCP server processes:
 - `npm run processes:config` - Check configuration
 
 ### 4. Smart Planning
-- Generate implementation plans: `generate-tests`
+- Generate implementation plans: `memesh-generate-tests`
 - Break down features into small tasks
 - TDD-friendly task ordering
 - Dependency analysis
@@ -97,7 +97,7 @@ New CLI tools for managing MCP server processes:
 - `health-check` - Check system health
 
 ### Other Commands
-- `generate-tests` - Generate implementation plan
+- `memesh-generate-tests` - Generate test cases
 
 ## Technical Architecture
 

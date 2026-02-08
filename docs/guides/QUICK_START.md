@@ -160,7 +160,7 @@ Other Tools (5):
   4. memesh-create-entities - Create knowledge entities
   5. memesh-record-mistake - Error recording
   6. memesh-hook-tool-use - Tool usage tracking
-  7. generate-tests - Test generation
+  7. memesh-generate-tests - Test generation
   8. memesh-cloud-sync - Cloud synchronization
 ```
 

@@ -28,6 +28,15 @@ import { getAllToolDefinitions } from './ToolDefinitions.js';
 import { setupResourceHandlers } from './handlers/index.js';
 import { SessionBootstrapper } from './SessionBootstrapper.js';
 import { logger } from '../utils/logger.js';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageJson = JSON.parse(
+  readFileSync(join(__dirname, '../../package.json'), 'utf-8')
+);
 import { logError, formatMCPError } from '../utils/errorHandler.js';
 import { generateRequestId } from '../utils/requestId.js'; // ✅ FIX HIGH-10: Request ID generation
 
@@ -138,7 +147,7 @@ class ClaudeCodeBuddyMCPServer {
     this.server = new Server(
       {
         name: 'memesh',
-        version: '2.6.6',
+        version: packageJson.version,
       },
       {
         capabilities: {

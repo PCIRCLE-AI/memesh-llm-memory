@@ -41,7 +41,7 @@ We pledge to make participation in our project a harassment-free experience for 
 
 ### Enforcement
 
-Project maintainers will remove, edit, or reject comments, commits, code, issues, and other contributions that violate this Code of Conduct. Report violations to: conduct@claude-code-buddy.dev
+Project maintainers will remove, edit, or reject comments, commits, code, issues, and other contributions that violate this Code of Conduct. Report violations to: 677465+kevintseng@users.noreply.github.com
 
 ---
 

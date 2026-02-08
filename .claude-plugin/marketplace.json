@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "Official PCIRCLE AI marketplace for Claude Code plugins - productivity tools, AI enhancements, and developer utilities",
-    "version": "2.6.3"
+    "version": "2.8.3"
   },
   "plugins": [
     {
       "name": "memesh",
       "description": "MeMesh - Your AI memory mesh for Claude Code. Persistent memory, smart routing, and intelligent task management that actually works.",
-      "version": "2.6.3",
+      "version": "2.8.3",
       "author": {
         "name": "PCIRCLE AI"
       },

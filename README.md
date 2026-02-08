@@ -10,7 +10,7 @@
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-1.25.3-purple.svg)](https://modelcontextprotocol.io)
 
-[🚀 Quick Install](#-quick-install) • [💬 Commands](#-3-commands-to-rule-them-all) • [📖 Docs](docs/)
+[🚀 Quick Install](#-quick-install) • [💬 Commands](#-3-commands-to-rule-them-all) • [📖 Docs](docs/) • [繁體中文](README.zh-TW.md)
 
 </div>
 

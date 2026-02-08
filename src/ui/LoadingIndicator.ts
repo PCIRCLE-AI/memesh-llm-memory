@@ -18,6 +18,11 @@
  */
 
 import chalk from 'chalk';
+import {
+  isScreenReaderEnabled,
+  emitScreenReaderEvent,
+  formatForScreenReader,
+} from './accessibility.js';
 
 // ============================================================================
 // Types
@@ -129,6 +134,13 @@ export class LoadingIndicator {
     process.on('SIGINT', this.cleanupBound);
     process.on('SIGTERM', this.cleanupBound);
 
+    // Emit screen reader event
+    emitScreenReaderEvent({
+      type: 'progress',
+      message: `Started: ${this.message}`,
+      timestamp: Date.now(),
+    });
+
     this.render();
     this.intervalId = setInterval(() => {
       this.frameIndex = (this.frameIndex + 1) % this.options.spinner.length;
@@ -163,6 +175,14 @@ export class LoadingIndicator {
    */
   update(message: string): this {
     this.message = message;
+
+    // Emit screen reader event
+    emitScreenReaderEvent({
+      type: 'progress',
+      message: `Update: ${message}`,
+      timestamp: Date.now(),
+    });
+
     if (this.isRunning) {
       this.render();
     }
@@ -183,6 +203,11 @@ export class LoadingIndicator {
    * Stop with success state
    */
   succeed(message?: string): void {
+    emitScreenReaderEvent({
+      type: 'success',
+      message: message || this.message,
+      timestamp: Date.now(),
+    });
     this.stop('✓', message || this.message, 'green');
   }
 
@@ -190,6 +215,11 @@ export class LoadingIndicator {
    * Stop with failure state
    */
   fail(message?: string): void {
+    emitScreenReaderEvent({
+      type: 'error',
+      message: message || this.message,
+      timestamp: Date.now(),
+    });
     this.stop('✗', message || this.message, 'red');
   }
 
@@ -197,6 +227,11 @@ export class LoadingIndicator {
    * Stop with warning state
    */
   warn(message?: string): void {
+    emitScreenReaderEvent({
+      type: 'error',
+      message: message || this.message,
+      timestamp: Date.now(),
+    });
     this.stop('⚠', message || this.message, 'yellow');
   }
 
@@ -204,6 +239,11 @@ export class LoadingIndicator {
    * Stop with info state
    */
   info(message?: string): void {
+    emitScreenReaderEvent({
+      type: 'info',
+      message: message || this.message,
+      timestamp: Date.now(),
+    });
     this.stop('ℹ', message || this.message, 'blue');
   }
 
@@ -254,6 +294,14 @@ export class LoadingIndicator {
   // ============================================================================
 
   private render(): void {
+    // Screen reader mode: output plain text only
+    if (isScreenReaderEnabled()) {
+      const elapsed = this.options.showElapsed ? ` (${this.formatElapsed()})` : '';
+      const plainText = `${this.message}${elapsed}\n`;
+      this.options.stream.write(plainText);
+      return;
+    }
+
     // Clear previous line
     this.clearLine();
 

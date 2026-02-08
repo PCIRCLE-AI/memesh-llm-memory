@@ -11,9 +11,11 @@
  * - Throttled rendering to avoid terminal flicker
  * - Configurable sections (metrics, attribution, spinner)
  * - Colorized output (if enabled)
+ * - Screen reader support with plain text mode
  */
 
 import { DashboardState, DashboardConfig, AgentStatus, MetricsSnapshot, AttributionEntry } from './types.js';
+import { isScreenReaderEnabled, emitScreenReaderEvent } from './accessibility.js';
 
 type GetStateCallback = () => DashboardState;
 
@@ -148,12 +150,27 @@ export class ProgressRenderer {
     const lines: string[] = ['Active Agents:'];
 
     agents.forEach((agent) => {
-      const progressBar = this.renderProgressBar(agent.progress);
       const percentage = Math.round(agent.progress * 100);
 
-      lines.push(
-        `  ${agent.agentType} - ${agent.currentTask || agent.status} ${progressBar} ${percentage}%`
-      );
+      // Screen reader mode: simple text only
+      if (isScreenReaderEnabled()) {
+        const line = `  ${agent.agentType} - ${agent.currentTask || agent.status} (${percentage}%)`;
+        lines.push(line);
+
+        emitScreenReaderEvent({
+          type: 'progress',
+          message: `${agent.agentType}: ${agent.currentTask || agent.status}`,
+          progress: percentage,
+          total: 100,
+          timestamp: Date.now(),
+        });
+      } else {
+        // Visual mode: progress bar
+        const progressBar = this.renderProgressBar(agent.progress);
+        lines.push(
+          `  ${agent.agentType} - ${agent.currentTask || agent.status} ${progressBar} ${percentage}%`
+        );
+      }
     });
 
     return lines.join('\n');
@@ -216,7 +233,17 @@ export class ProgressRenderer {
       const time = new Date(event.timestamp).toLocaleTimeString();
       const symbol = event.type === 'success' ? '✓' : '✗';
 
-      lines.push(`  ${symbol} ${time} - ${event.agentType}: ${event.taskDescription}`);
+      const line = `  ${symbol} ${time} - ${event.agentType}: ${event.taskDescription}`;
+      lines.push(line);
+
+      // Emit screen reader event for each activity
+      if (isScreenReaderEnabled()) {
+        emitScreenReaderEvent({
+          type: event.type === 'success' ? 'success' : 'error',
+          message: `${event.agentType}: ${event.taskDescription}`,
+          timestamp: event.timestamp,
+        });
+      }
     });
 
     return lines.join('\n');

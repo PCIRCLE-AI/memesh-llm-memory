@@ -16,12 +16,6 @@
 
 ---
 
-## 🎥 實際效果
-
-https://github.com/user-attachments/assets/a389bcd2-1563-4d91-b363-44cdba5f4e44
-
----
-
 ## 🤔 問題
 
 每次開新的 Claude Code session：

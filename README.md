@@ -16,12 +16,6 @@
 
 ---
 
-## 🎥 See It In Action
-
-https://github.com/user-attachments/assets/a389bcd2-1563-4d91-b363-44cdba5f4e44
-
----
-
 ## 🤔 The Problem
 
 Every new Claude Code session:

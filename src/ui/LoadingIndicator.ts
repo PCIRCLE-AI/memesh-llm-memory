@@ -21,7 +21,6 @@ import chalk from 'chalk';
 import {
   isScreenReaderEnabled,
   emitScreenReaderEvent,
-  formatForScreenReader,
 } from './accessibility.js';
 
 // ============================================================================

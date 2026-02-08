@@ -97,7 +97,7 @@ describe('LazyEmbeddingService', () => {
   it('should allow retry after dispose', async () => {
     const { LazyEmbeddingService } = await import('../EmbeddingService.js');
 
-    const instance1 = await LazyEmbeddingService.get();
+    await LazyEmbeddingService.get();
     await LazyEmbeddingService.dispose();
 
     const instance2 = await LazyEmbeddingService.get();

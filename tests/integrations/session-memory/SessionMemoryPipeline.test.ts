@@ -261,7 +261,8 @@ describe('SessionMemoryPipeline', () => {
 
   describe('handleMemoryUpdate (end-to-end pipeline)', () => {
     it('should parse event content and ingest the result', async () => {
-      const pipeline = new SessionMemoryPipeline(mockKG as any);
+      // Create pipeline to register callback (side effect)
+      new SessionMemoryPipeline(mockKG as any);
 
       const event = createEvent();
       const parsed = createParsedMemory();
@@ -300,7 +301,8 @@ describe('SessionMemoryPipeline', () => {
     });
 
     it('should handle updated change type correctly', async () => {
-      const pipeline = new SessionMemoryPipeline(mockKG as any);
+      // Create pipeline to register callback (side effect)
+      new SessionMemoryPipeline(mockKG as any);
 
       const event = createEvent({ changeType: 'updated' });
       const parsed = createParsedMemory();

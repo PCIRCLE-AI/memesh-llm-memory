@@ -7,8 +7,6 @@ import { WorkflowScene } from './scenes/WorkflowScene';
 import { OutroScene } from './scenes/OutroScene';
 
 export const Video: React.FC = () => {
-  const fps = 30;
-
   return (
     <AbsoluteFill style={{ backgroundColor: '#0a0a0a' }}>
       {/* Title Scene: 0-5s (150 frames) */}

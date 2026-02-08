@@ -403,7 +403,6 @@ describe('SessionMemoryIngester', () => {
 
       // First ingestion: createEntity returns name normally
       await ingester.ingest(parsed, event);
-      const firstCallCount = mockKG.createEntity.mock.calls.length;
 
       // Second ingestion: simulate KG returning existing entity name
       // (content_hash deduplication happens inside KG.createEntity)

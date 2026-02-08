@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ModelManager } from '../ModelManager.js';
 import fs from 'fs';
-import path from 'path';
 import os from 'os';
 
 describe('ModelManager', () => {

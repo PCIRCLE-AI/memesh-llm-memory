@@ -312,8 +312,6 @@ export class ErrorClassifier {
     error: Error,
     context: Record<string, unknown>
   ): Omit<ClassifiedError, 'category' | 'originalError' | 'context'> {
-    const message = error.message.toLowerCase();
-
     // Generic configuration error
     return {
       code: 'CONFIG_ERROR',

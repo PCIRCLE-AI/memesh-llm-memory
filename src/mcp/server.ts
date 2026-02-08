@@ -404,8 +404,6 @@ class ClaudeCodeBuddyMCPServer {
         error: { code: -32601, message: `Method not found: ${method}` },
       };
     } catch (error) {
-      const elapsed = Date.now();
-
       if (error instanceof ToolCallTimeoutError) {
         logger.error('[MCP] Daemon tool call timed out', {
           requestId,

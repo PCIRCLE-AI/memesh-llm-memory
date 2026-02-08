@@ -7,6 +7,7 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
+import * as readline from 'readline';
 import { saveCredentials, loadCredentials } from './credentials.js';
 import { logger } from '../utils/logger.js';
 
@@ -71,7 +72,7 @@ async function deviceFlowLogin(backendUrl: string): Promise<void> {
   const existing = loadCredentials();
   if (existing) {
     console.log(chalk.yellow('You are already logged in.'));
-    console.log(chalk.dim('Run `memesh logout` first to log out, or use --api-key to override.\n'));
+    console.log(chalk.dim('Run `memesh logout` first to log out, or use --manual to enter a new key.\n'));
     return;
   }
 
@@ -197,14 +198,78 @@ async function deviceFlowLogin(backendUrl: string): Promise<void> {
 }
 
 /**
- * Manual API key login
+ * Read API key from stdin securely (input is hidden).
+ * Uses readline with _writeToOutput override to mask input,
+ * preventing the key from appearing in process list (ps aux).
+ * Requires an interactive terminal (TTY).
  */
-async function manualKeyLogin(apiKey: string, backendUrl: string): Promise<void> {
-  console.log(chalk.bold('\nMeMesh Cloud Login (API Key)\n'));
+export function readApiKeyFromStdin(): Promise<string> {
+  // Require interactive terminal for secure input
+  if (!process.stdin.isTTY) {
+    console.error(chalk.red('Error: --manual requires an interactive terminal.'));
+    console.error(chalk.dim('Use `memesh login` for browser-based device flow instead.'));
+    process.exit(1);
+  }
 
-  // Validate key format
-  if (!apiKey.startsWith('sk_memmesh_')) {
-    console.error(chalk.red('Invalid API key format. Keys should start with "sk_memmesh_"'));
+  return new Promise((resolve, reject) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+      terminal: true,
+    });
+
+    // Handle Ctrl+C gracefully during input
+    const sigintHandler = () => {
+      rl.close();
+      console.log('\n\n  Login cancelled.\n');
+      process.exit(130);
+    };
+    process.on('SIGINT', sigintHandler);
+
+    // Override output to hide typed characters
+    const originalWrite = (rl as any)._writeToOutput;
+    (rl as any)._writeToOutput = function (stringToWrite: string) {
+      // Only show the prompt, mask everything else
+      if (stringToWrite.includes('Enter API key:')) {
+        originalWrite.call(rl, stringToWrite);
+      } else {
+        originalWrite.call(rl, '*');
+      }
+    };
+
+    rl.question('  Enter API key: ', (answer) => {
+      process.removeListener('SIGINT', sigintHandler);
+      rl.close();
+      console.log(''); // newline after hidden input
+      resolve(answer.trim());
+    });
+
+    rl.on('error', (err) => {
+      process.removeListener('SIGINT', sigintHandler);
+      rl.close();
+      reject(err);
+    });
+  });
+}
+
+/**
+ * Manual API key login via secure stdin input
+ */
+async function manualKeyLogin(backendUrl: string): Promise<void> {
+  console.log(chalk.bold('\nMeMesh Cloud Login (Manual API Key)\n'));
+  console.log(chalk.dim('  Your input will be hidden for security.\n'));
+
+  const apiKey = await readApiKeyFromStdin();
+
+  if (!apiKey) {
+    console.error(chalk.red('No API key entered.'));
+    process.exit(1);
+  }
+
+  // Validate key format: prefix + minimum length + alphanumeric/underscore only
+  const API_KEY_PATTERN = /^sk_memmesh_[a-zA-Z0-9_]{20,}$/;
+  if (!API_KEY_PATTERN.test(apiKey)) {
+    console.error(chalk.red('Invalid API key format. Expected: sk_memmesh_<key> (alphanumeric, min 20 chars after prefix)'));
     process.exit(1);
   }
 
@@ -242,12 +307,12 @@ export function registerLoginCommand(program: Command): void {
   program
     .command('login')
     .description('Authenticate with MeMesh Cloud')
-    .option('--api-key <key>', 'Use existing API key (note: visible in process list, prefer device flow)')
+    .option('--manual', 'Enter API key manually (secure stdin input)')
     .option('--backend-url <url>', 'Backend URL', DEFAULT_BACKEND_URL)
-    .action(async (options: { apiKey?: string; backendUrl: string }) => {
+    .action(async (options: { manual?: boolean; backendUrl: string }) => {
       try {
-        if (options.apiKey) {
-          await manualKeyLogin(options.apiKey, options.backendUrl);
+        if (options.manual) {
+          await manualKeyLogin(options.backendUrl);
         } else {
           await deviceFlowLogin(options.backendUrl);
         }

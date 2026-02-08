@@ -82,13 +82,46 @@ describe('login module', () => {
     });
   });
 
-  describe('manualKeyLogin validation', () => {
+  describe('manualKeyLogin via secure stdin', () => {
     it('should validate key format prefix', () => {
       const validKey = 'sk_memmesh_abc123def456';
       expect(validKey.startsWith('sk_memmesh_')).toBe(true);
 
       const invalidKey = 'sk_live_abc123';
       expect(invalidKey.startsWith('sk_memmesh_')).toBe(false);
+    });
+
+    it('should export readApiKeyFromStdin function that returns a promise', async () => {
+      const { readApiKeyFromStdin } = await import('../login.js');
+      expect(readApiKeyFromStdin).toBeDefined();
+      expect(typeof readApiKeyFromStdin).toBe('function');
+      // The function should return a Promise (thenable)
+      // We don't call it here since it requires interactive stdin
+    });
+
+    it('should not have --api-key option (security: prevents ps aux exposure)', async () => {
+      const { Command } = await import('commander');
+      const { registerLoginCommand } = await import('../login.js');
+      const testProgram = new Command();
+      registerLoginCommand(testProgram);
+      const loginCmd = testProgram.commands.find(c => c.name() === 'login');
+      expect(loginCmd).toBeDefined();
+      // Verify --api-key option does NOT exist
+      const apiKeyOpt = loginCmd!.options.find(o => o.long === '--api-key');
+      expect(apiKeyOpt).toBeUndefined();
+    });
+
+    it('should have --manual flag option for secure stdin input', async () => {
+      const { Command } = await import('commander');
+      const { registerLoginCommand } = await import('../login.js');
+      const testProgram = new Command();
+      registerLoginCommand(testProgram);
+      const loginCmd = testProgram.commands.find(c => c.name() === 'login');
+      expect(loginCmd).toBeDefined();
+      // Verify --manual option exists and is a boolean flag (no argument)
+      const manualOpt = loginCmd!.options.find(o => o.long === '--manual');
+      expect(manualOpt).toBeDefined();
+      expect(manualOpt!.required).toBeFalsy();
     });
   });
 

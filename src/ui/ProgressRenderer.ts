@@ -241,7 +241,7 @@ export class ProgressRenderer {
         emitScreenReaderEvent({
           type: event.type === 'success' ? 'success' : 'error',
           message: `${event.agentType}: ${event.taskDescription}`,
-          timestamp: event.timestamp,
+          timestamp: event.timestamp.getTime(),
         });
       }
     });

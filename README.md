@@ -2,9 +2,9 @@
 
 # 🧠 MeMesh
 
-### **The Only MCP Server That Remembers**
+### **Persistent Memory for Claude Code**
 
-**Claude Code that actually remembers your project. Build faster. Vibe harder.**
+**Give Claude long-term memory. Remember decisions, context, and code. Build faster.**
 
 [![npm version](https://img.shields.io/npm/v/@pcircle/memesh)](https://www.npmjs.com/package/@pcircle/memesh)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)

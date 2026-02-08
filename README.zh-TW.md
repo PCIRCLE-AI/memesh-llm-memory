@@ -2,9 +2,9 @@
 
 # 🧠 MeMesh
 
-### **唯一會記憶的 MCP 伺服器**
+### **為 Claude Code 添加持久記憶**
 
-**讓 Claude Code 真正記住你的專案。開發更快。Vibe 更爽。**
+**讓 Claude 記住決策、脈絡、代碼。長期記憶，開發更快。**
 
 [![npm version](https://img.shields.io/npm/v/@pcircle/memesh)](https://www.npmjs.com/package/@pcircle/memesh)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)

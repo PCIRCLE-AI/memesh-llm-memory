@@ -169,7 +169,19 @@ test_step "Step 5: Testing JSON-RPC communication"
 
 JSONRPC_TEST=$(mktemp)
 STDIN_FILE=$(mktemp)
+WATCHDOG_PID=""
+RPC_PID=""
 INIT_REQUEST='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}'
+
+# Setup cleanup handler to ensure temp files are removed even on script error/exit
+cleanup_step5() {
+    # Kill processes if still running
+    [ -n "$RPC_PID" ] && kill "$RPC_PID" 2>/dev/null || true
+    [ -n "$WATCHDOG_PID" ] && kill "$WATCHDOG_PID" 2>/dev/null || true
+    # Remove temp files
+    rm -f "$STDIN_FILE" "$JSONRPC_TEST" 2>/dev/null || true
+}
+trap cleanup_step5 EXIT ERR
 
 # Write request to stdin file
 echo "$INIT_REQUEST" > "$STDIN_FILE"
@@ -180,15 +192,21 @@ echo "$INIT_REQUEST" > "$STDIN_FILE"
 MEMESH_DISABLE_DAEMON=1 DISABLE_MCP_WATCHDOG=1 node dist/mcp/server-bootstrap.js < "$STDIN_FILE" > "$JSONRPC_TEST" 2>&1 &
 RPC_PID=$!
 
+# Start timeout watchdog (kills server after 5 seconds if it hangs)
+(sleep 5; kill "$RPC_PID" 2>/dev/null || true) &
+WATCHDOG_PID=$!
+
 # Wait for server to process request
 sleep 2
 
-# Kill server
+# Kill server and watchdog
 kill $RPC_PID 2>/dev/null || true
 wait $RPC_PID 2>/dev/null || true
+kill $WATCHDOG_PID 2>/dev/null || true
+wait $WATCHDOG_PID 2>/dev/null || true
 
-# Cleanup stdin file
-rm -f "$STDIN_FILE"
+# Reset trap (cleanup will still happen at script exit, but we've already cleaned up processes)
+trap - EXIT ERR
 
 # Check response
 if grep -q "jsonrpc" "$JSONRPC_TEST"; then

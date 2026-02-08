@@ -230,8 +230,9 @@ export class SessionMemoryParser {
 
       // Try plain path: path/to/file.ext - description
       // Match file paths that contain at least one / or end with a file extension
+      // Fixed: Avoid ReDoS by using character class instead of nested quantifiers
       const plainMatch = content.match(
-        /^(\S+(?:\/\S+)*\.\w+)\s*[-–—]\s*(.+)$/
+        /^([^\s-–—]+\.\w+)\s*[-–—]\s*(.+)$/
       );
       if (plainMatch) {
         results.push({

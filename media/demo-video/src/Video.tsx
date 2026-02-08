@@ -2,7 +2,6 @@ import { AbsoluteFill, Sequence } from 'remotion';
 import { TitleScene } from './scenes/TitleScene';
 import { A2AScene as SmartRoutingScene } from './scenes/A2AScene';
 import { MemoryScene } from './scenes/MemoryScene';
-import { SecretsScene } from './scenes/SecretsScene';
 import { HealthScene } from './scenes/HealthScene';
 import { WorkflowScene } from './scenes/WorkflowScene';
 import { OutroScene } from './scenes/OutroScene';
@@ -27,23 +26,18 @@ export const Video: React.FC = () => {
         <MemoryScene />
       </Sequence>
 
-      {/* Secrets Scene: 17-23s (180 frames) */}
+      {/* Health Scene: 17-23s (180 frames) */}
       <Sequence from={510} durationInFrames={180}>
-        <SecretsScene />
-      </Sequence>
-
-      {/* Health Scene: 23-29s (180 frames) */}
-      <Sequence from={690} durationInFrames={180}>
         <HealthScene />
       </Sequence>
 
-      {/* Workflow Scene: 29-33s (120 frames) */}
-      <Sequence from={870} durationInFrames={120}>
+      {/* Workflow Scene: 23-27s (120 frames) */}
+      <Sequence from={690} durationInFrames={120}>
         <WorkflowScene />
       </Sequence>
 
-      {/* Outro Scene: 33-38s (150 frames) */}
-      <Sequence from={990} durationInFrames={150}>
+      {/* Outro Scene: 27-32s (150 frames) */}
+      <Sequence from={810} durationInFrames={150}>
         <OutroScene />
       </Sequence>
     </AbsoluteFill>

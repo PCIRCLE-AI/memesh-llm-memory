@@ -45,7 +45,7 @@ This Code of Conduct applies within all community spaces, including:
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the project maintainer at kt.wildmind@gmail.com.
+reported to the project maintainer at 677465+kevintseng@users.noreply.github.com.
 
 All complaints will be reviewed and investigated promptly and fairly.
 

@@ -15,7 +15,7 @@ We take security seriously. If you discover a security vulnerability in MeMesh, 
 ### How to Report
 
 1. **DO NOT** create a public GitHub issue for security vulnerabilities
-2. Email security concerns to: kt.wildmind@gmail.com
+2. Report security vulnerabilities via [GitHub Security Advisories](https://github.com/PCIRCLE-AI/claude-code-buddy/security/advisories/new)
 3. Include:
    - Description of the vulnerability
    - Steps to reproduce

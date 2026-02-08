@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.8.1] - 2026-02-08
+
+### Fixed
+
+- **Build Artifacts Cleanup** - Removed legacy secret-types files from build output
+  - Cleaned up `dist/memory/types/secret-types.*` files that were deprecated in v2.8.0
+  - No functional changes - purely build artifact cleanup
+  - Package size remains ~2.1MB (661 files)
+
 ## [2.8.0] - 2026-02-08
 
 ### ⚠️ Breaking Changes

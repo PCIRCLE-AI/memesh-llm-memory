@@ -230,6 +230,8 @@ describe('Accessibility Utilities', () => {
 
       expect(result.passes).toBe(true);
       expect(result.ratio).toBeGreaterThanOrEqual(4.5);
+      // ✅ IMPROVED: Verify actual value is in expected range
+      expect(result.ratio).toBeCloseTo(16.98, 1); // Allow ±0.5 margin
     });
 
     it('should verify secondary text on primary background meets WCAG AA', () => {
@@ -237,6 +239,8 @@ describe('Accessibility Utilities', () => {
 
       expect(result.passes).toBe(true);
       expect(result.ratio).toBeGreaterThanOrEqual(4.5);
+      // ✅ IMPROVED: Verify actual value
+      expect(result.ratio).toBeCloseTo(12.04, 1);
     });
 
     it('should verify success color on primary background meets WCAG AA', () => {
@@ -244,6 +248,8 @@ describe('Accessibility Utilities', () => {
 
       expect(result.passes).toBe(true);
       expect(result.ratio).toBeGreaterThanOrEqual(4.5);
+      // ✅ IMPROVED: Verify actual value
+      expect(result.ratio).toBeCloseTo(6.99, 1);
     });
 
     it('should verify error color on primary background meets WCAG AA', () => {
@@ -251,6 +257,8 @@ describe('Accessibility Utilities', () => {
 
       expect(result.passes).toBe(true);
       expect(result.ratio).toBeGreaterThanOrEqual(4.5);
+      // ✅ IMPROVED: Verify actual value
+      expect(result.ratio).toBeCloseTo(4.71, 0.5);
     });
 
     it('should verify warning color on primary background meets WCAG AA', () => {
@@ -258,6 +266,8 @@ describe('Accessibility Utilities', () => {
 
       expect(result.passes).toBe(true);
       expect(result.ratio).toBeGreaterThanOrEqual(4.5);
+      // ✅ IMPROVED: Verify actual value
+      expect(result.ratio).toBeCloseTo(8.26, 1);
     });
 
     it('should verify info color on primary background meets WCAG AA', () => {
@@ -265,6 +275,69 @@ describe('Accessibility Utilities', () => {
 
       expect(result.passes).toBe(true);
       expect(result.ratio).toBeGreaterThanOrEqual(4.5);
+      // ✅ IMPROVED: Verify actual value
+      expect(result.ratio).toBeCloseTo(4.82, 0.5);
+    });
+  });
+
+  describe('Edge Cases and Error Handling', () => {
+    it('should throw error on invalid hex color (too short)', () => {
+      expect(() => parseHexColor('#fff')).toThrow('Invalid hex color');
+      expect(() => parseHexColor('fff')).toThrow('Invalid hex color');
+    });
+
+    it('should throw error on invalid hex color (too long)', () => {
+      expect(() => parseHexColor('#fffffff')).toThrow('Invalid hex color');
+    });
+
+    it('should throw error on invalid hex color (non-hex characters)', () => {
+      expect(() => parseHexColor('#gggggg')).toThrow('Invalid hex color');
+      expect(() => parseHexColor('#zzzzzz')).toThrow('Invalid hex color');
+    });
+
+    it('should handle near-identical colors (minimum contrast)', () => {
+      const result = getContrastRatio('#ffffff', '#fefefe');
+      expect(result).toBeCloseTo(1, 1); // Should be very close to 1:1
+    });
+
+    it('should handle extreme contrasts correctly', () => {
+      const whiteOnBlack = getContrastRatio('#ffffff', '#000000');
+      const blackOnWhite = getContrastRatio('#000000', '#ffffff');
+
+      // Both should give the same ratio (contrast is symmetric)
+      expect(whiteOnBlack).toBeCloseTo(blackOnWhite, 2);
+      expect(whiteOnBlack).toBeCloseTo(21, 0);
+    });
+
+    it('should handle screen reader events with valid JSON structure', () => {
+      process.env.MEMESH_SCREEN_READER = '1';
+
+      let captured = '';
+      const originalWrite = process.stderr.write;
+      process.stderr.write = ((str: string) => {
+        captured += str;
+        return true;
+      }) as any;
+
+      try {
+        emitScreenReaderEvent({
+          type: 'success',
+          message: 'Test completed',
+          timestamp: 1234567890,
+        });
+
+        // ✅ IMPROVED: Verify JSON is actually valid
+        const jsonStr = captured.replace('[SR] ', '').trim();
+        const parsed = JSON.parse(jsonStr);
+
+        expect(parsed.screenReader).toBe(true);
+        expect(parsed.type).toBe('success');
+        expect(parsed.message).toBe('Test completed');
+        expect(parsed.timestamp).toBe(1234567890);
+      } finally {
+        process.stderr.write = originalWrite;
+        delete process.env.MEMESH_SCREEN_READER;
+      }
     });
   });
 });

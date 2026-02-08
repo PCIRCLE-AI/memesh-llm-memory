@@ -209,22 +209,36 @@ wait $WATCHDOG_PID 2>/dev/null || true
 trap - EXIT ERR
 
 # Check response
-if grep -q "jsonrpc" "$JSONRPC_TEST"; then
-    test_pass "Valid JSON-RPC response received"
-
-    # Check for pollution
-    if grep -q "dotenv" "$JSONRPC_TEST"; then
-        test_fail "dotenv pollution in JSON-RPC output"
-    elif head -1 "$JSONRPC_TEST" | grep -q "^{"; then
-        test_pass "Clean JSON-RPC output (no pollution)"
+# ✅ IMPROVED: Validate actual JSON structure, not just grep for "jsonrpc"
+if command -v jq >/dev/null 2>&1; then
+    # Use jq for strict JSON validation
+    if jq -e '.jsonrpc == "2.0" and .result != null' "$JSONRPC_TEST" > /dev/null 2>&1; then
+        test_pass "Valid JSON-RPC response received (validated with jq)"
     else
-        test_warn "JSON-RPC output may have pollution:"
-        head -3 "$JSONRPC_TEST"
+        test_fail "Invalid JSON-RPC structure"
+        echo "Expected: {\"jsonrpc\":\"2.0\",\"result\":{...}}"
+        echo "Got:"
+        cat "$JSONRPC_TEST"
     fi
 else
-    test_fail "No valid JSON-RPC response"
-    echo "Output:"
-    cat "$JSONRPC_TEST"
+    # Fallback to basic check if jq not available
+    if grep -q "jsonrpc" "$JSONRPC_TEST"; then
+        test_pass "Valid JSON-RPC response received"
+    else
+        test_fail "No valid JSON-RPC response"
+        echo "Output:"
+        cat "$JSONRPC_TEST"
+    fi
+fi
+
+# Check for pollution
+if grep -q "dotenv" "$JSONRPC_TEST"; then
+    test_fail "dotenv pollution in JSON-RPC output"
+elif head -1 "$JSONRPC_TEST" | grep -q "^{"; then
+    test_pass "Clean JSON-RPC output (no pollution)"
+else
+    test_warn "JSON-RPC output may have pollution:"
+    head -3 "$JSONRPC_TEST"
 fi
 
 rm -f "$JSONRPC_TEST"

@@ -84,6 +84,11 @@ export function parseHexColor(hex: string): [number, number, number] {
     throw new Error(`Invalid hex color: ${hex}`);
   }
 
+  // Validate hex characters
+  if (!/^[0-9a-fA-F]{6}$/.test(cleanHex)) {
+    throw new Error(`Invalid hex color: ${hex}`);
+  }
+
   const r = parseInt(cleanHex.substring(0, 2), 16);
   const g = parseInt(cleanHex.substring(2, 4), 16);
   const b = parseInt(cleanHex.substring(4, 6), 16);

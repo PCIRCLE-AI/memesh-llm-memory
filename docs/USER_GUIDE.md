@@ -490,9 +490,11 @@ These tools provide lower-level access to MeMesh capabilities. For complete API 
 
 📖 **Full Documentation**: [API_REFERENCE.md - health-check](./api/API_REFERENCE.md#health-check)
 
-#### generate-tests
+#### memesh-generate-tests
 
-**Purpose**: Generate automated test cases
+**Purpose**: Generate automated test cases using AI
+
+**Aliases**: `generate-tests` (deprecated, will be removed in v3.0.0)
 
 **Parameters**:
 - `specification`: Feature spec (optional)
@@ -500,7 +502,41 @@ These tools provide lower-level access to MeMesh capabilities. For complete API 
 
 **Note**: Provide either specification or code.
 
-📖 **Full Documentation**: [API_REFERENCE.md - generate-tests](./api/API_REFERENCE.md#generate-tests)
+📖 **Full Documentation**: [API_REFERENCE.md - memesh-generate-tests](./api/API_REFERENCE.md#memesh-generate-tests)
+
+#### memesh-cloud-sync
+
+**Purpose**: Synchronize local knowledge graph with MeMesh Cloud
+
+**Parameters**:
+- `action`: Action to perform
+  - `status` - Compare local vs cloud memory counts
+  - `push` - Push local memories to cloud (requires auth)
+  - `pull` - Pull cloud memories to local (requires auth)
+  - `auto-sync` - Enable automatic bidirectional sync (requires auth)
+
+**Quick Example**:
+```json
+{
+  "action": "status"
+}
+```
+
+**When to Use**:
+- Backup memories to cloud
+- Sync across multiple machines
+- Share project knowledge with team
+- Enable automatic cloud backup
+
+**Benefits**:
+- Cloud backup for disaster recovery
+- Multi-device synchronization
+- Team knowledge sharing (future feature)
+- Automatic backup on changes
+
+**Note**: Cloud sync requires MeMesh Cloud authentication. Visit https://memesh.cloud for setup.
+
+📖 **Full Documentation**: [API_REFERENCE.md - memesh-cloud-sync](./api/API_REFERENCE.md#memesh-cloud-sync)
 
 ---
 

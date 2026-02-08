@@ -114,9 +114,16 @@ buddy-help  # Shows all available commands
 
 ## 📚 Learn More
 
+**Core Documentation**:
 - **[User Guide](docs/USER_GUIDE.md)** - Complete usage guide
 - **[Commands Reference](docs/COMMANDS.md)** - All available commands and tools
+- **[Getting Started](docs/GETTING_STARTED.md)** - Installation guide
 - **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues
+
+**Advanced Documentation**:
+- **[Architecture](docs/ARCHITECTURE.md)** - System architecture and design
+- **[Best Practices](docs/BEST_PRACTICES.md)** - Usage tips and recommendations
+- **[API Reference](docs/api/API_REFERENCE.md)** - Complete API documentation
 
 ---
 

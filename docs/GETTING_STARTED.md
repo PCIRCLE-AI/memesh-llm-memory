@@ -122,7 +122,7 @@ Available Commands:
   buddy-remember <query> - Recall project decisions and patterns
   buddy-help            - Show this help
 
-  generate-tests <file> - Auto-generate comprehensive tests
+  memesh-generate-tests <file> - Auto-generate comprehensive tests
 
   ... (8 tools total)
 
@@ -260,7 +260,7 @@ buddy-do "review src/auth.ts for security"
 
 **Generate tests:**
 ```bash
-generate-tests "src/utils/validation.ts"
+memesh-generate-tests "src/utils/validation.ts"
 ```
 
 **Refactor code:**
@@ -359,7 +359,7 @@ buddy-do "<task>"             # Execute any development task
 buddy-remember "<query>"      # Query project memory
 
 # Testing
-generate-tests "<file>"       # Auto-generate tests for a file
+memesh-generate-tests "<file>"       # Auto-generate tests for a file
 
 # Status
 "Show MeMesh status"          # Connection and capability status

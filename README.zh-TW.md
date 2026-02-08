@@ -114,9 +114,18 @@ buddy-help  # 顯示所有可用指令
 
 ## 📚 了解更多
 
+> **注意**：詳細文檔目前僅提供英文版本
+
+**核心文檔**：
 - **[使用指南](docs/USER_GUIDE.md)** - 完整使用教學
 - **[指令參考](docs/COMMANDS.md)** - 所有可用指令與工具
+- **[快速開始](docs/GETTING_STARTED.md)** - 新手安裝指南
 - **[疑難排解](docs/TROUBLESHOOTING.md)** - 常見問題
+
+**進階文檔**：
+- **[架構說明](docs/ARCHITECTURE.md)** - 系統架構與設計
+- **[最佳實踐](docs/BEST_PRACTICES.md)** - 使用建議與技巧
+- **[API 參考](docs/api/API_REFERENCE.md)** - 完整 API 文檔
 
 ---
 

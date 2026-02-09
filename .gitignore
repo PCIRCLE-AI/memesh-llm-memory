@@ -358,3 +358,6 @@ ERROR_HANDLING_CHECKLIST.md
 # MeMesh runtime data
 .memesh/
 A2A_MULTI_AGENT_TEST.md
+
+# Archive directory (internal reference only)
+.archive/

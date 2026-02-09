@@ -39,12 +39,32 @@ else
 fi
 echo ""
 
-# 2. Bump version
+# 2. Bump version (all 4 locations)
 echo "📦 Step 2/6: Bumping version ($VERSION_TYPE)..."
-npm version $VERSION_TYPE
+npm version $VERSION_TYPE --no-git-tag-version
 
 NEW_VERSION=$(node -p "require('./package.json').version")
-echo "✅ New version: v$NEW_VERSION"
+echo "  package.json → v$NEW_VERSION"
+
+# Sync plugin.json version
+node -e "
+const fs = require('fs');
+const p = JSON.parse(fs.readFileSync('plugin.json', 'utf8'));
+p.version = '$NEW_VERSION';
+fs.writeFileSync('plugin.json', JSON.stringify(p, null, 2) + '\n');
+"
+echo "  plugin.json → v$NEW_VERSION"
+
+# Run build (includes prepare:plugin which syncs .claude-plugin/ versions + dist)
+npm run build > /dev/null 2>&1
+echo "  .claude-plugin/memesh/ → synced via prepare:plugin"
+
+# Commit all version changes + tag
+git add package.json plugin.json .claude-plugin/
+git commit -m "chore(release): v$NEW_VERSION"
+git tag "v$NEW_VERSION"
+
+echo "✅ All 4 version locations synced to v$NEW_VERSION"
 echo ""
 
 # 3. Push to GitHub

@@ -8,6 +8,12 @@ import { getAllToolDefinitions } from './ToolDefinitions.js';
 import { setupResourceHandlers } from './handlers/index.js';
 import { SessionBootstrapper } from './SessionBootstrapper.js';
 import { logger } from '../utils/logger.js';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageJson = JSON.parse(readFileSync(join(__dirname, '../../package.json'), 'utf-8'));
 import { logError, formatMCPError } from '../utils/errorHandler.js';
 import { generateRequestId } from '../utils/requestId.js';
 const DEFAULT_TOOL_TIMEOUT_MS = 60000;
@@ -44,7 +50,7 @@ class ClaudeCodeBuddyMCPServer {
     constructor(components) {
         this.server = new Server({
             name: 'memesh',
-            version: '2.6.6',
+            version: packageJson.version,
         }, {
             capabilities: {
                 tools: {},
@@ -207,7 +213,6 @@ class ClaudeCodeBuddyMCPServer {
             };
         }
         catch (error) {
-            const elapsed = Date.now();
             if (error instanceof ToolCallTimeoutError) {
                 logger.error('[MCP] Daemon tool call timed out', {
                     requestId,

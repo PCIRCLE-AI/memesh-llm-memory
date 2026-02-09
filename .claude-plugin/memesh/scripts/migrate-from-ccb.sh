@@ -157,6 +157,15 @@ echo -e "${YELLOW}▶ Step 4: Migrating data (atomic operation)${NC}"
 TEMP_DIR=$(mktemp -d)
 echo -e "${BLUE}  → Using temporary directory: $TEMP_DIR${NC}"
 
+# Setup cleanup handler to remove temp directory on error/exit
+cleanup_migration() {
+    if [ -d "$TEMP_DIR" ]; then
+        echo -e "${YELLOW}  → Cleaning up temporary directory${NC}"
+        rm -rf "$TEMP_DIR"
+    fi
+}
+trap cleanup_migration EXIT ERR
+
 # List of files/directories to migrate
 ITEMS_TO_MIGRATE=(
     "database.db"

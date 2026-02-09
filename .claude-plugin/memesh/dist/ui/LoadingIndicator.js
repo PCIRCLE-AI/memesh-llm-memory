@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { isScreenReaderEnabled, emitScreenReaderEvent, } from './accessibility.js';
 function getChalkColor(color) {
     const colors = {
         green: chalk.green,
@@ -49,6 +50,11 @@ export class LoadingIndicator {
         process.on('exit', this.cleanupBound);
         process.on('SIGINT', this.cleanupBound);
         process.on('SIGTERM', this.cleanupBound);
+        emitScreenReaderEvent({
+            type: 'progress',
+            message: `Started: ${this.message}`,
+            timestamp: Date.now(),
+        });
         this.render();
         this.intervalId = setInterval(() => {
             this.frameIndex = (this.frameIndex + 1) % this.options.spinner.length;
@@ -71,6 +77,11 @@ export class LoadingIndicator {
     }
     update(message) {
         this.message = message;
+        emitScreenReaderEvent({
+            type: 'progress',
+            message: `Update: ${message}`,
+            timestamp: Date.now(),
+        });
         if (this.isRunning) {
             this.render();
         }
@@ -83,15 +94,35 @@ export class LoadingIndicator {
         return this.update(stepText);
     }
     succeed(message) {
+        emitScreenReaderEvent({
+            type: 'success',
+            message: message || this.message,
+            timestamp: Date.now(),
+        });
         this.stop('✓', message || this.message, 'green');
     }
     fail(message) {
+        emitScreenReaderEvent({
+            type: 'error',
+            message: message || this.message,
+            timestamp: Date.now(),
+        });
         this.stop('✗', message || this.message, 'red');
     }
     warn(message) {
+        emitScreenReaderEvent({
+            type: 'error',
+            message: message || this.message,
+            timestamp: Date.now(),
+        });
         this.stop('⚠', message || this.message, 'yellow');
     }
     info(message) {
+        emitScreenReaderEvent({
+            type: 'info',
+            message: message || this.message,
+            timestamp: Date.now(),
+        });
         this.stop('ℹ', message || this.message, 'blue');
     }
     stop(symbol = '●', message, color) {
@@ -118,6 +149,12 @@ export class LoadingIndicator {
         return Math.floor((Date.now() - this.startTime) / 1000);
     }
     render() {
+        if (isScreenReaderEnabled()) {
+            const elapsed = this.options.showElapsed ? ` (${this.formatElapsed()})` : '';
+            const plainText = `${this.message}${elapsed}\n`;
+            this.options.stream.write(plainText);
+            return;
+        }
         this.clearLine();
         const frame = this.options.spinner[this.frameIndex];
         const elapsed = this.options.showElapsed ? ` ${chalk.gray(`(${this.formatElapsed()})`)}` : '';

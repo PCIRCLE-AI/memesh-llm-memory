@@ -108,7 +108,7 @@ export class SessionMemoryParser {
                 });
                 continue;
             }
-            const plainMatch = content.match(/^(\S+(?:\/\S+)*\.\w+)\s*[-–—]\s*(.+)$/);
+            const plainMatch = content.match(/^([^\s-–—]+\.\w+)\s*[-–—]\s*(.+)$/);
             if (plainMatch) {
                 results.push({
                     path: plainMatch[1].trim(),

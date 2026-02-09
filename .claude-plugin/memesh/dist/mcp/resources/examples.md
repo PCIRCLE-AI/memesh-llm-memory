@@ -17,7 +17,7 @@ buddy-do "review src/auth/login.ts for security issues and edge cases"
 
 **Request**:
 ```
-generate-tests "add email-based login with rate limiting"
+memesh-generate-tests "add email-based login with rate limiting"
 ```
 
 **Result**: A structured plan with TDD-friendly steps and estimated durations.

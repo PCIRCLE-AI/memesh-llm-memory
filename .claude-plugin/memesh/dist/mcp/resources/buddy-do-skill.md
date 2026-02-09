@@ -75,7 +75,7 @@ To maximize the effectiveness of automatic memory tracking, structure task descr
 
 `buddy-do` works seamlessly with:
 - **buddy-remember**: Query knowledge captured from previous tasks
-- **generate-tests**: Create implementation plans that reference past tasks
+- **memesh-generate-tests**: Create implementation plans that reference past tasks
 
 ## See Also
 

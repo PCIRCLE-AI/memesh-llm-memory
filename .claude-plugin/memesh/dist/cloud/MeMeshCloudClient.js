@@ -1,12 +1,31 @@
+import * as fs from 'fs';
 import { logger } from '../utils/logger.js';
 import { ExternalServiceError } from '../errors/index.js';
+import { getCredentialsPath } from '../cli/credentials.js';
 export class MeMeshCloudClient {
     baseUrl;
     apiKey;
     timeoutMs;
     constructor(apiKey, baseUrl, timeoutMs) {
         this.apiKey = apiKey ?? process.env.MEMESH_API_KEY ?? '';
-        this.baseUrl = (baseUrl ?? process.env.MEMESH_BASE_URL ?? 'https://memesh-backend.fly.dev').replace(/\/+$/, '');
+        let fileBaseUrl;
+        if (!this.apiKey) {
+            try {
+                const credPath = getCredentialsPath();
+                if (fs.existsSync(credPath)) {
+                    const content = JSON.parse(fs.readFileSync(credPath, 'utf-8'));
+                    if (content?.apiKey) {
+                        this.apiKey = content.apiKey;
+                    }
+                    if (content?.baseUrl) {
+                        fileBaseUrl = content.baseUrl;
+                    }
+                }
+            }
+            catch {
+            }
+        }
+        this.baseUrl = (baseUrl ?? process.env.MEMESH_BASE_URL ?? fileBaseUrl ?? 'https://memesh-backend.fly.dev').replace(/\/+$/, '');
         this.timeoutMs = timeoutMs ?? parseInt(process.env.MEMESH_TIMEOUT_MS ?? '10000', 10);
         if (!this.apiKey) {
             logger.debug('MeMeshCloudClient created without API key - cloud features disabled');
@@ -86,7 +105,6 @@ export class MeMeshCloudClient {
         try {
             const headers = {
                 'x-api-key': this.apiKey,
-                'Content-Type': 'application/json',
                 'User-Agent': 'memesh-local/1.0',
             };
             const options = {
@@ -95,6 +113,7 @@ export class MeMeshCloudClient {
                 signal: controller.signal,
             };
             if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+                headers['Content-Type'] = 'application/json';
                 options.body = JSON.stringify(body);
             }
             const response = await fetch(url, options);
@@ -117,7 +136,7 @@ export class MeMeshCloudClient {
             if (error instanceof ExternalServiceError)
                 throw error;
             const message = error instanceof Error ? error.message : String(error);
-            const isTimeout = message.includes('abort');
+            const isTimeout = error instanceof Error && error.name === 'AbortError';
             throw new ExternalServiceError(isTimeout
                 ? `MeMesh Cloud request timed out after ${this.timeoutMs}ms`
                 : `MeMesh Cloud request failed: ${message}`, {
@@ -139,7 +158,18 @@ export function getCloudClient() {
     return _instance;
 }
 export function isCloudEnabled() {
-    return !!process.env.MEMESH_API_KEY;
+    if (process.env.MEMESH_API_KEY)
+        return true;
+    try {
+        const credPath = getCredentialsPath();
+        if (fs.existsSync(credPath)) {
+            const content = JSON.parse(fs.readFileSync(credPath, 'utf-8'));
+            return !!content?.apiKey;
+        }
+    }
+    catch {
+    }
+    return false;
 }
 export function resetCloudClient() {
     _instance = null;

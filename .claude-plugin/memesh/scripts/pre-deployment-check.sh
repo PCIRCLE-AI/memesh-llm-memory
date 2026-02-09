@@ -81,6 +81,20 @@ test -f .claude-plugin/memesh/.mcp.json && check_pass ".mcp.json 存在" || chec
 test -d .claude-plugin/memesh/dist && check_pass "dist/ 存在" || check_fail "dist/ 不存在"
 test -d .claude-plugin/memesh/node_modules && check_pass "node_modules/ 存在" || check_fail "node_modules/ 不存在"
 
+run_check "檢查 plugin 版本一致性"
+node -e "
+const root = require('./package.json').version;
+const plugin = require('./.claude-plugin/memesh/package.json').version;
+const rootManifest = require('./plugin.json').version;
+const pluginManifest = require('./.claude-plugin/memesh/.claude-plugin/plugin.json').version;
+const versions = { root, plugin, rootManifest, pluginManifest };
+const unique = new Set(Object.values(versions));
+if (unique.size !== 1) {
+  console.error('Version mismatch:', JSON.stringify(versions));
+  process.exit(1);
+}
+" && check_pass "所有版本一致 (root, plugin, manifests)" || check_fail "版本不一致！執行 npm run build 同步"
+
 # Part 3: npm Package
 run_check "測試 npm pack"
 npm pack > /dev/null 2>&1 && check_pass "npm pack 成功" || check_fail "npm pack 失敗"

@@ -1,3 +1,4 @@
+import { WCAGLevel } from './accessibility.js';
 export declare const colors: {
     readonly primary: {
         readonly light: "#8b9dc3";
@@ -299,4 +300,14 @@ export declare const theme: {
     };
 };
 export type Theme = typeof theme;
+export declare function verifyThemeContrast(): Array<{
+    name: string;
+    foreground: string;
+    background: string;
+    ratio: number;
+    passes: boolean;
+    level: WCAGLevel;
+    recommendation?: string;
+}>;
+export declare function printContrastResults(): void;
 //# sourceMappingURL=theme.d.ts.map

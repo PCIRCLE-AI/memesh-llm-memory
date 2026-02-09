@@ -1,3 +1,4 @@
+import { verifyContrast, WCAGLevel } from './accessibility.js';
 export const colors = {
     primary: {
         light: '#8b9dc3',
@@ -155,4 +156,43 @@ export const theme = {
     borders,
     animation,
 };
+export function verifyThemeContrast() {
+    const results = [];
+    const combinations = [
+        { name: 'Primary text on primary background', fg: colors.text.primary, bg: colors.background.primary },
+        { name: 'Secondary text on primary background', fg: colors.text.secondary, bg: colors.background.primary },
+        { name: 'Muted text on primary background', fg: colors.text.muted, bg: colors.background.primary },
+        { name: 'Primary text on secondary background', fg: colors.text.primary, bg: colors.background.secondary },
+        { name: 'Secondary text on secondary background', fg: colors.text.secondary, bg: colors.background.secondary },
+        { name: 'Success color on primary background', fg: colors.success, bg: colors.background.primary },
+        { name: 'Error color on primary background', fg: colors.error, bg: colors.background.primary },
+        { name: 'Warning color on primary background', fg: colors.warning, bg: colors.background.primary },
+        { name: 'Info color on primary background', fg: colors.info, bg: colors.background.primary },
+    ];
+    for (const { name, fg, bg } of combinations) {
+        const result = verifyContrast(fg, bg, WCAGLevel.AA, false);
+        results.push({
+            name,
+            foreground: fg,
+            background: bg,
+            ...result,
+        });
+    }
+    return results;
+}
+export function printContrastResults() {
+    const results = verifyThemeContrast();
+    console.log('\n=== WCAG Contrast Ratio Verification ===\n');
+    results.forEach(result => {
+        const symbol = result.passes ? '✓' : '✗';
+        const status = result.passes ? 'PASS' : 'FAIL';
+        console.log(`${symbol} ${result.name}: ${result.ratio}:1 (${status})`);
+        if (result.recommendation) {
+            console.log(`  → ${result.recommendation}`);
+        }
+    });
+    const totalPassed = results.filter(r => r.passes).length;
+    const totalFailed = results.length - totalPassed;
+    console.log(`\nTotal: ${totalPassed} passed, ${totalFailed} failed\n`);
+}
 //# sourceMappingURL=theme.js.map

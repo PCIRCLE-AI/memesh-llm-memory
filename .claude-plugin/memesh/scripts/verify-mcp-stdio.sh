@@ -57,14 +57,27 @@ echo "🎯 Stdio Pollution Checks"
 
 # Create temporary file for output
 TEMP_OUTPUT=$(mktemp)
+POLLUTION_PID=""
+POLLUTION_WATCHDOG=""
+
+# Setup cleanup for pollution test
+cleanup_pollution() {
+    [ -n "$POLLUTION_PID" ] && kill "$POLLUTION_PID" 2>/dev/null || true
+    [ -n "$POLLUTION_WATCHDOG" ] && kill "$POLLUTION_WATCHDOG" 2>/dev/null || true
+    rm -f "$TEMP_OUTPUT" 2>/dev/null || true
+}
+trap cleanup_pollution EXIT ERR
 
 # Run server for 1 second and capture output
 echo "Starting MCP server in stdio mode (1 second test)..."
 (
-    node dist/mcp/server-bootstrap.js &
-    SERVER_PID=$!
+    MEMESH_DISABLE_DAEMON=1 DISABLE_MCP_WATCHDOG=1 node dist/mcp/server-bootstrap.js &
+    POLLUTION_PID=$!
+    (sleep 3; kill $POLLUTION_PID 2>/dev/null || true) &
+    POLLUTION_WATCHDOG=$!
     sleep 1
-    kill $SERVER_PID 2>/dev/null || true
+    kill $POLLUTION_PID 2>/dev/null || true
+    kill $POLLUTION_WATCHDOG 2>/dev/null || true
 ) > "$TEMP_OUTPUT" 2>&1 || true
 
 # Check for pollution
@@ -80,7 +93,9 @@ else
     PASSED=$((PASSED + 1))
 fi
 
-rm -f "$TEMP_OUTPUT"
+# Reset trap for pollution test
+trap - EXIT ERR
+cleanup_pollution
 echo ""
 
 # Check 4: JSON-RPC communication
@@ -90,10 +105,34 @@ echo "📡 JSON-RPC Communication Test"
 INIT_REQUEST='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}'
 
 JSONRPC_OUTPUT=$(mktemp)
-echo "$INIT_REQUEST" | node dist/mcp/server-bootstrap.js > "$JSONRPC_OUTPUT" 2>&1 &
+STDIN_FILE=$(mktemp)
+SERVER_PID=""
+WATCHDOG_PID=""
+
+# Setup cleanup for JSON-RPC test
+cleanup_jsonrpc() {
+    [ -n "$SERVER_PID" ] && kill "$SERVER_PID" 2>/dev/null || true
+    [ -n "$WATCHDOG_PID" ] && kill "$WATCHDOG_PID" 2>/dev/null || true
+    rm -f "$JSONRPC_OUTPUT" "$STDIN_FILE" 2>/dev/null || true
+}
+trap cleanup_jsonrpc EXIT ERR
+
+# Write request to stdin file
+echo "$INIT_REQUEST" > "$STDIN_FILE"
+
+# Run server with stdin from file
+MEMESH_DISABLE_DAEMON=1 DISABLE_MCP_WATCHDOG=1 node dist/mcp/server-bootstrap.js < "$STDIN_FILE" > "$JSONRPC_OUTPUT" 2>&1 &
 SERVER_PID=$!
+
+# Start timeout watchdog
+(sleep 5; kill $SERVER_PID 2>/dev/null || true) &
+WATCHDOG_PID=$!
+
 sleep 2
 kill $SERVER_PID 2>/dev/null || true
+wait $SERVER_PID 2>/dev/null || true
+kill $WATCHDOG_PID 2>/dev/null || true
+wait $WATCHDOG_PID 2>/dev/null || true
 
 # Check if output is valid JSON
 if grep -q "jsonrpc" "$JSONRPC_OUTPUT" && ! grep -q "dotenv" "$JSONRPC_OUTPUT"; then
@@ -108,7 +147,9 @@ else
     FAILED=$((FAILED + 1))
 fi
 
-rm -f "$JSONRPC_OUTPUT"
+# Reset trap for JSON-RPC test
+trap - EXIT ERR
+cleanup_jsonrpc
 echo ""
 
 # Summary

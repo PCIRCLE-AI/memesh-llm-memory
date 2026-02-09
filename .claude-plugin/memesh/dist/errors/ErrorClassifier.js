@@ -169,7 +169,6 @@ export class ErrorClassifier {
         }
     }
     getConfigurationErrorDetails(error, context) {
-        const message = error.message.toLowerCase();
         return {
             code: 'CONFIG_ERROR',
             severity: ErrorSeverity.CRITICAL,

@@ -213,7 +213,6 @@ export function getMcpSettingsPath() {
 // ============================================================================
 const command = process.argv[2];
 const arg = process.argv[3];
-const arg2 = process.argv[4];
 
 switch (command) {
   case 'add-to-mcp':

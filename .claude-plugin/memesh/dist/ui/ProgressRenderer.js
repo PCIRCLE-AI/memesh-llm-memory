@@ -1,3 +1,4 @@
+import { isScreenReaderEnabled, emitScreenReaderEvent } from './accessibility.js';
 export class ProgressRenderer {
     config;
     running = false;
@@ -62,9 +63,22 @@ export class ProgressRenderer {
     renderActiveAgents(agents) {
         const lines = ['Active Agents:'];
         agents.forEach((agent) => {
-            const progressBar = this.renderProgressBar(agent.progress);
             const percentage = Math.round(agent.progress * 100);
-            lines.push(`  ${agent.agentType} - ${agent.currentTask || agent.status} ${progressBar} ${percentage}%`);
+            if (isScreenReaderEnabled()) {
+                const line = `  ${agent.agentType} - ${agent.currentTask || agent.status} (${percentage}%)`;
+                lines.push(line);
+                emitScreenReaderEvent({
+                    type: 'progress',
+                    message: `${agent.agentType}: ${agent.currentTask || agent.status}`,
+                    progress: percentage,
+                    total: 100,
+                    timestamp: Date.now(),
+                });
+            }
+            else {
+                const progressBar = this.renderProgressBar(agent.progress);
+                lines.push(`  ${agent.agentType} - ${agent.currentTask || agent.status} ${progressBar} ${percentage}%`);
+            }
         });
         return lines.join('\n');
     }
@@ -99,7 +113,15 @@ export class ProgressRenderer {
         events.slice(0, this.config.maxRecentEvents).forEach((event) => {
             const time = new Date(event.timestamp).toLocaleTimeString();
             const symbol = event.type === 'success' ? '✓' : '✗';
-            lines.push(`  ${symbol} ${time} - ${event.agentType}: ${event.taskDescription}`);
+            const line = `  ${symbol} ${time} - ${event.agentType}: ${event.taskDescription}`;
+            lines.push(line);
+            if (isScreenReaderEnabled()) {
+                emitScreenReaderEvent({
+                    type: event.type === 'success' ? 'success' : 'error',
+                    message: `${event.agentType}: ${event.taskDescription}`,
+                    timestamp: event.timestamp.getTime(),
+                });
+            }
         });
         return lines.join('\n');
     }

@@ -11,7 +11,7 @@
 | "why did we choose..." | `buddy-remember` | Find architecture choices |
 | "do this task..." | `buddy-do` | Execute with smart routing |
 | "implement X..." | `buddy-do` | Task execution |
-| "generate tests..." | `generate-tests` | Create test cases |
+| "generate tests..." | `memesh-generate-tests` | Create test cases |
 
 ---
 
@@ -154,7 +154,7 @@ memesh-record-mistake({
 
 ## Test Generation
 
-### generate-tests: AI Test Creation
+### memesh-generate-tests: AI Test Creation
 **Triggers**: "write tests", "need tests", "generate tests", finished feature without tests
 
 **When to use**:
@@ -165,7 +165,7 @@ memesh-record-mistake({
 **Examples**:
 ```typescript
 // After implementing function
-generate-tests({
+memesh-generate-tests({
   code: `
     function validateEmail(email: string): boolean {
       const regex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
@@ -175,7 +175,7 @@ generate-tests({
 })
 
 // From specification
-generate-tests({
+memesh-generate-tests({
   specification: "Email validator should: accept valid emails, reject invalid formats, handle edge cases (empty, null, special chars)"
 })
 ```
@@ -190,7 +190,7 @@ generate-tests({
    → Check if similar work exists
 2. buddy-do({ task: "Implement X because Y so that Z" })
    → Execute with metadata capture
-3. generate-tests({ code: "..." })
+3. memesh-generate-tests({ code: "..." })
    → Create tests
 4. memesh-create-entities({ ... })
    → Store implementation decisions
@@ -216,7 +216,7 @@ generate-tests({
 - `memesh-record-mistake` - When user corrects you
 
 **SOMETIMES use proactively**:
-- `generate-tests` - After implementing untested code (offer)
+- `memesh-generate-tests` - After implementing untested code (offer)
 ---
 
 ## Anti-Patterns (What NOT to Do)

@@ -72,8 +72,8 @@ npm run build > /dev/null 2>&1 && check_pass "Build 成功" || check_fail "Build
 run_check "檢查 dist 目錄"
 test -f dist/mcp/server-bootstrap.js && check_pass "server-bootstrap.js 存在" || check_fail "server-bootstrap.js 不存在"
 
-run_check "執行 plugin build"
-npm run build:plugin > /dev/null 2>&1 && check_pass "Plugin build 成功" || check_fail "Plugin build 失敗"
+run_check "驗證 plugin sync"
+npm run prepare:plugin > /dev/null 2>&1 && check_pass "Plugin sync 成功" || check_fail "Plugin sync 失敗"
 
 run_check "檢查 plugin 結構"
 test -f .claude-plugin/memesh/.claude-plugin/plugin.json && check_pass ".claude-plugin/plugin.json 存在" || check_fail "plugin.json 不存在"
@@ -82,18 +82,77 @@ test -d .claude-plugin/memesh/dist && check_pass "dist/ 存在" || check_fail "d
 test -d .claude-plugin/memesh/node_modules && check_pass "node_modules/ 存在" || check_fail "node_modules/ 不存在"
 
 run_check "檢查 plugin 版本一致性"
+if [ ! -d ".claude-plugin/memesh" ]; then
+    check_fail "Plugin 目錄不存在！執行 npm run build 生成"
+else
+    PLUGIN_VERSION=$(node -e "
+    const root = require('./package.json').version;
+    const plugin = require('./.claude-plugin/memesh/package.json').version;
+    const rootManifest = require('./plugin.json').version;
+    const pluginManifest = require('./.claude-plugin/memesh/.claude-plugin/plugin.json').version;
+    const versions = { root, plugin, rootManifest, pluginManifest };
+    const unique = new Set(Object.values(versions));
+    if (unique.size !== 1) {
+      process.stderr.write('Version mismatch: ' + JSON.stringify(versions));
+      process.exit(1);
+    }
+    process.stdout.write(root);
+    " 2>/dev/null) && check_pass "所有版本一致: v${PLUGIN_VERSION}" || check_fail "版本不一致！執行 npm run build 同步"
+fi
+
+run_check "驗證 Claude Code Plugin 包裝（非一般 MCP server）"
 node -e "
-const root = require('./package.json').version;
-const plugin = require('./.claude-plugin/memesh/package.json').version;
-const rootManifest = require('./plugin.json').version;
-const pluginManifest = require('./.claude-plugin/memesh/.claude-plugin/plugin.json').version;
-const versions = { root, plugin, rootManifest, pluginManifest };
-const unique = new Set(Object.values(versions));
-if (unique.size !== 1) {
-  console.error('Version mismatch:', JSON.stringify(versions));
+const fs = require('fs');
+const crypto = require('crypto');
+const errors = [];
+
+// 1. Plugin must have nested .claude-plugin/plugin.json manifest
+const nestedManifest = '.claude-plugin/memesh/.claude-plugin/plugin.json';
+if (!fs.existsSync(nestedManifest)) {
+  errors.push('Missing nested plugin manifest: ' + nestedManifest);
+} else {
+  const manifest = JSON.parse(fs.readFileSync(nestedManifest, 'utf8'));
+  if (!manifest.name || !manifest.version) {
+    errors.push('Plugin manifest missing name or version');
+  }
+}
+
+// 3. Plugin .mcp.json must use CLAUDE_PLUGIN_ROOT variable (not absolute paths)
+const mcpJson = '.claude-plugin/memesh/.mcp.json';
+if (!fs.existsSync(mcpJson)) {
+  errors.push('Missing plugin .mcp.json');
+} else {
+  const content = fs.readFileSync(mcpJson, 'utf8');
+  if (!content.includes('CLAUDE_PLUGIN_ROOT')) {
+    errors.push('.mcp.json must use \${CLAUDE_PLUGIN_ROOT} — found absolute path instead');
+  }
+}
+
+// 4. Build script must include prepare:plugin to auto-sync plugin dir
+const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+if (!pkg.scripts || !pkg.scripts.build || !pkg.scripts.build.includes('prepare:plugin')) {
+  errors.push('Build script must include prepare:plugin for automatic plugin sync');
+}
+
+// 5. Plugin dist/ must mirror root dist/ (content hash check on server-bootstrap.js)
+const rootBoot = 'dist/mcp/server-bootstrap.js';
+const pluginBoot = '.claude-plugin/memesh/dist/mcp/server-bootstrap.js';
+if (fs.existsSync(rootBoot) && fs.existsSync(pluginBoot)) {
+  const rootHash = crypto.createHash('md5').update(fs.readFileSync(rootBoot)).digest('hex');
+  const pluginHash = crypto.createHash('md5').update(fs.readFileSync(pluginBoot)).digest('hex');
+  if (rootHash !== pluginHash) {
+    errors.push('Plugin dist/ out of sync with root dist/ (server-bootstrap.js content differs)');
+  }
+} else if (!fs.existsSync(pluginBoot)) {
+  errors.push('Plugin dist/mcp/server-bootstrap.js missing');
+}
+
+if (errors.length > 0) {
+  console.error('Plugin packaging errors:');
+  errors.forEach(e => console.error('  - ' + e));
   process.exit(1);
 }
-" && check_pass "所有版本一致 (root, plugin, manifests)" || check_fail "版本不一致！執行 npm run build 同步"
+" && check_pass "確認為 Claude Code Plugin 包裝（非一般 MCP）" || check_fail "Plugin 包裝驗證失敗！請檢查 .claude-plugin/ 結構"
 
 # Part 3: npm Package
 run_check "測試 npm pack"

@@ -18,6 +18,7 @@ import {
 } from './handlers/index.js';
 import type { KnowledgeGraph } from '../knowledge-graph/index.js';
 import { handleCloudSync, CloudSyncInputSchema } from './tools/memesh-cloud-sync.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Tool Router Configuration
@@ -331,12 +332,12 @@ export class ToolRouter {
   private resolveAlias(toolName: string): string {
     const canonicalName = ToolRouter.TOOL_ALIASES[toolName];
     if (canonicalName) {
-      // Log deprecation warning (will appear in MCP server logs)
-      console.warn(
-        `⚠️  DEPRECATION WARNING: Tool '${toolName}' is deprecated and will be removed in v3.0.0.\n` +
-        `   Please use '${canonicalName}' instead.\n` +
-        `   Migration guide: https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/UPGRADE.md#v280-migration-guide-2026-02-08`
-      );
+      // Log deprecation warning via logger (consistent with src/ logging convention)
+      logger.warn(`DEPRECATION WARNING: Tool '${toolName}' is deprecated and will be removed in v3.0.0`, {
+        deprecatedName: toolName,
+        canonicalName,
+        migrationGuide: 'https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/UPGRADE.md#v280-migration-guide-2026-02-08',
+      });
       return canonicalName;
     }
     return toolName;

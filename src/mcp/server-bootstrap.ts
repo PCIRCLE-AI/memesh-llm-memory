@@ -49,17 +49,37 @@ function startStdinBuffering(): void {
   if (stdinBufferingActive) return;
   stdinBufferingActive = true;
 
-  // Pause stdin to prevent data loss
-  process.stdin.pause();
+  // Check if stdin is readable before attempting to pause
+  if (!process.stdin.readable) {
+    stdinBufferingActive = false;
+    return;
+  }
+
+  try {
+    process.stdin.pause();
+  } catch (err) {
+    // stdin may already be in an unusable state
+    stdinBufferingActive = false;
+    return;
+  }
 
   // Buffer any data that arrives
   const bufferHandler = (chunk: Buffer) => {
     stdinBuffer.push(chunk);
   };
-  process.stdin.on('data', bufferHandler);
 
-  // Store handler reference for cleanup
+  const errorHandler = (err: Error) => {
+    // On stdin error, stop buffering and attempt replay of what we have
+    process.stderr.write(`[Bootstrap] stdin error during buffering: ${err.message}\n`);
+    stopStdinBufferingAndReplay();
+  };
+
+  process.stdin.on('data', bufferHandler);
+  process.stdin.once('error', errorHandler);
+
+  // Store handler references for cleanup
   (startStdinBuffering as any)._handler = bufferHandler;
+  (startStdinBuffering as any)._errorHandler = errorHandler;
 }
 
 /**
@@ -76,6 +96,12 @@ function stopStdinBufferingAndReplay(): void {
     process.stdin.removeListener('data', handler);
   }
 
+  // Remove error handler
+  const errorHandler = (startStdinBuffering as any)._errorHandler;
+  if (errorHandler) {
+    process.stdin.removeListener('error', errorHandler);
+  }
+
   // Replay buffered data by unshifting back to the stream
   // The MCP transport will receive this data when it starts reading
   if (stdinBuffer.length > 0) {
@@ -87,7 +113,11 @@ function stopStdinBufferingAndReplay(): void {
   }
 
   // Resume stdin for normal operation
-  process.stdin.resume();
+  try {
+    process.stdin.resume();
+  } catch {
+    // stdin may not be resumable (e.g., already destroyed)
+  }
 }
 
 // ============================================================================
@@ -134,17 +164,23 @@ function startMCPClientWatchdog(): void {
   const DEFAULT_WATCHDOG_TIMEOUT_MS = 15000;
   const watchdogTimeoutMs = parseInt(process.env.MCP_WATCHDOG_TIMEOUT_MS || '', 10) || DEFAULT_WATCHDOG_TIMEOUT_MS;
 
+  let watchdogTimer: ReturnType<typeof setTimeout> | null = null;
+
   // Listen for any data on stdin (MCP protocol communication)
   const stdinHandler = () => {
     mcpClientConnected = true;
-    // Don't remove the listener - let the MCP server handle stdin
+    // Cancel watchdog timer when client connects (prevents resource leak)
+    if (watchdogTimer !== null) {
+      clearTimeout(watchdogTimer);
+      watchdogTimer = null;
+    }
   };
 
   // Set once listener to detect first MCP message
   process.stdin.once('data', stdinHandler);
 
   // Check after timeout if any MCP client connected
-  setTimeout(async () => {
+  watchdogTimer = setTimeout(async () => {
     if (!mcpClientConnected) {
       // No MCP client connected - show installation status and guidance
       const chalk = await import('chalk');
@@ -209,7 +245,13 @@ ${chalk.default.bold('Documentation:')}
       );
       process.exit(0);
     }
+    watchdogTimer = null;
   }, watchdogTimeoutMs);
+
+  // Allow the timer to not prevent process exit
+  if (watchdogTimer && typeof watchdogTimer.unref === 'function') {
+    watchdogTimer.unref();
+  }
 }
 
 // ============================================================================
@@ -520,9 +562,10 @@ function startMCPServer() {
    * Note: No console output in MCP stdio mode to avoid polluting the protocol channel
    */
   async function shutdown(signal: string): Promise<void> {
+    const SHUTDOWN_TIMEOUT_MS = 5000;
     const shutdownTimeout = setTimeout(() => {
       process.exit(1);
-    }, 5000);
+    }, SHUTDOWN_TIMEOUT_MS);
 
     try {
       clearTimeout(shutdownTimeout);

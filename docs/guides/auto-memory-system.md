@@ -247,4 +247,3 @@ Phase 0.6 introduces automatic tracking. If upgrading from earlier versions:
 - [buddy-do Tool Reference](../../src/mcp/resources/buddy-do-skill.md)
 - [Complete Usage Guide](../../src/mcp/resources/usage-guide.md)
 - [Best Practices](../../src/mcp/resources/best-practices.md)
-- [Phase 0.6 Implementation Plan](../plans/2026-01-31-phase-0.6-enhanced-auto-memory.md)

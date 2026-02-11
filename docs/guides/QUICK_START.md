@@ -221,7 +221,7 @@ Now that you're up and running, explore more:
 
 - **📚 Capability Reference:** Learn about available capabilities - [USER_GUIDE.md](../USER_GUIDE.md)
 - **📚 Docs Index:** Documentation map - [README.md](../README.md)
-- **🧪 Testing Guide:** Write tests and validate core features - [TESTING.md](TESTING.md)
+- **🧪 Contributing Guide:** Testing and development - [CONTRIBUTING.md](../../CONTRIBUTING.md)
 - **🔧 MCP Integration:** Advanced configuration - [SETUP.md](./SETUP.md)
 
 ---

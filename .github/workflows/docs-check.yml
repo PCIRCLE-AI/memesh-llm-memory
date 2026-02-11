@@ -26,20 +26,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Check markdown links
-        uses: gaurav-nelson/github-action-markdown-link-check@v1
-        with:
-          use-quiet-mode: 'yes'
-          use-verbose-mode: 'no'
-          config-file: '.github/markdown-link-check-config.json'
-          check-modified-files-only: 'no'
+      - name: Check markdown links in source files
+        run: |
+          # Install markdown-link-check
+          npm install -g markdown-link-check
+
+          # Find and check markdown files, excluding build artifacts
+          find . -name "*.md" \
+            -not -path "./node_modules/*" \
+            -not -path "./.git/*" \
+            -not -path "./dist/*" \
+            -not -path "./.claude-plugin/*" \
+            -exec markdown-link-check '{}' --config .github/markdown-link-check-config.json -q \;
 
       - name: Check for broken internal links
         run: |
           echo "🔍 Checking internal file references..."
 
           # Find all markdown files (no user input, only repo files)
-          MD_FILES=$(find . -name "*.md" -not -path "./node_modules/*" -not -path "./.git/*")
+          # Exclude build artifacts: dist/, .claude-plugin/, node_modules/, .git/
+          MD_FILES=$(find . -name "*.md" -not -path "./node_modules/*" -not -path "./.git/*" -not -path "./dist/*" -not -path "./.claude-plugin/*")
 
           BROKEN_LINKS=0
 
@@ -57,12 +63,17 @@ jobs:
                 continue
               fi
 
+              # Skip directory links (ending with /)
+              if [[ "$FILE_PATH" == */ ]]; then
+                continue
+              fi
+
               # Resolve relative path
               DIR=$(dirname "$file")
               FULL_PATH="$DIR/$FILE_PATH"
 
-              # Check if file exists
-              if [ ! -f "$FULL_PATH" ]; then
+              # Check if file or directory exists
+              if [ ! -e "$FULL_PATH" ]; then
                 echo "❌ Broken link in $file: $link"
                 BROKEN_LINKS=$((BROKEN_LINKS + 1))
               fi

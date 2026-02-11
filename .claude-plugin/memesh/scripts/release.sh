@@ -69,8 +69,8 @@ echo ""
 
 # 3. Push to GitHub
 echo "⬆️  Step 3/6: Pushing to GitHub..."
-git push origin main --tags
-echo "✅ Pushed to GitHub with tags"
+git push origin main && git push origin "v$NEW_VERSION"
+echo "✅ Pushed to GitHub with tag v$NEW_VERSION"
 echo ""
 
 # 4. Create GitHub Release

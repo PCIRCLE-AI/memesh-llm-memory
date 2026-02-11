@@ -50,6 +50,13 @@ interface KGLike {
 
 // -- Handler ----------------------------------------------------------------
 
+/**
+ * Handle cloud sync operations between local KG and MeMesh Cloud.
+ *
+ * @param input - Validated cloud sync input parameters
+ * @param knowledgeGraph - Optional local Knowledge Graph instance for push/status operations
+ * @returns MCP CallToolResult with sync operation results
+ */
 export async function handleCloudSync(
   input: CloudSyncInput,
   knowledgeGraph?: KGLike
@@ -82,6 +89,9 @@ export async function handleCloudSync(
 
 // -- Action Handlers --------------------------------------------------------
 
+/**
+ * Get sync status comparing local and cloud memory counts.
+ */
 async function handleStatus(
   client: ReturnType<typeof getCloudClient>,
   input: CloudSyncInput,
@@ -108,6 +118,9 @@ async function handleStatus(
   };
 }
 
+/**
+ * Push local KG memories to MeMesh Cloud.
+ */
 async function handlePush(
   client: ReturnType<typeof getCloudClient>,
   input: CloudSyncInput,
@@ -197,6 +210,9 @@ async function handlePush(
   };
 }
 
+/**
+ * Pull memories from MeMesh Cloud to local format.
+ */
 async function handlePull(
   client: ReturnType<typeof getCloudClient>,
   input: CloudSyncInput

@@ -6,12 +6,28 @@ function startStdinBuffering() {
     if (stdinBufferingActive)
         return;
     stdinBufferingActive = true;
-    process.stdin.pause();
+    if (!process.stdin.readable) {
+        stdinBufferingActive = false;
+        return;
+    }
+    try {
+        process.stdin.pause();
+    }
+    catch (err) {
+        stdinBufferingActive = false;
+        return;
+    }
     const bufferHandler = (chunk) => {
         stdinBuffer.push(chunk);
     };
+    const errorHandler = (err) => {
+        process.stderr.write(`[Bootstrap] stdin error during buffering: ${err.message}\n`);
+        stopStdinBufferingAndReplay();
+    };
     process.stdin.on('data', bufferHandler);
+    process.stdin.once('error', errorHandler);
     startStdinBuffering._handler = bufferHandler;
+    startStdinBuffering._errorHandler = errorHandler;
 }
 function stopStdinBufferingAndReplay() {
     if (!stdinBufferingActive)
@@ -21,12 +37,20 @@ function stopStdinBufferingAndReplay() {
     if (handler) {
         process.stdin.removeListener('data', handler);
     }
+    const errorHandler = startStdinBuffering._errorHandler;
+    if (errorHandler) {
+        process.stdin.removeListener('error', errorHandler);
+    }
     if (stdinBuffer.length > 0) {
         const combined = Buffer.concat(stdinBuffer);
         stdinBuffer.length = 0;
         process.stdin.unshift(combined);
     }
-    process.stdin.resume();
+    try {
+        process.stdin.resume();
+    }
+    catch {
+    }
 }
 const args = process.argv.slice(2);
 const hasCliArgs = args.length > 0;
@@ -48,11 +72,16 @@ function startMCPClientWatchdog() {
     }
     const DEFAULT_WATCHDOG_TIMEOUT_MS = 15000;
     const watchdogTimeoutMs = parseInt(process.env.MCP_WATCHDOG_TIMEOUT_MS || '', 10) || DEFAULT_WATCHDOG_TIMEOUT_MS;
+    let watchdogTimer = null;
     const stdinHandler = () => {
         mcpClientConnected = true;
+        if (watchdogTimer !== null) {
+            clearTimeout(watchdogTimer);
+            watchdogTimer = null;
+        }
     };
     process.stdin.once('data', stdinHandler);
-    setTimeout(async () => {
+    watchdogTimer = setTimeout(async () => {
         if (!mcpClientConnected) {
             const chalk = await import('chalk');
             const { default: boxen } = await import('boxen');
@@ -110,7 +139,11 @@ ${chalk.default.bold('Documentation:')}
             }) + '\n');
             process.exit(0);
         }
+        watchdogTimer = null;
     }, watchdogTimeoutMs);
+    if (watchdogTimer && typeof watchdogTimer.unref === 'function') {
+        watchdogTimer.unref();
+    }
 }
 async function bootstrapWithDaemon() {
     process.env.MCP_SERVER_MODE = 'true';
@@ -292,9 +325,10 @@ function startMCPServer() {
         }
     }
     async function shutdown(signal) {
+        const SHUTDOWN_TIMEOUT_MS = 5000;
         const shutdownTimeout = setTimeout(() => {
             process.exit(1);
-        }, 5000);
+        }, SHUTDOWN_TIMEOUT_MS);
         try {
             clearTimeout(shutdownTimeout);
             process.exit(0);

@@ -13,15 +13,30 @@
  * └── scripts/
  */
 
-import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, writeFileSync, symlinkSync, unlinkSync, statSync } from 'fs';
 import { execSync } from 'child_process';
-import { join, dirname } from 'path';
+import { join, dirname, normalize, relative, isAbsolute } from 'path';
 import { fileURLToPath } from 'url';
 import { homedir } from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const projectRoot = join(__dirname, '..');
+
+/**
+ * Validate that a resolved path stays within an expected parent directory.
+ * Prevents path traversal attacks via ../ components.
+ */
+function validatePathWithinParent(targetPath, expectedParent) {
+  const normalizedTarget = normalize(targetPath);
+  const normalizedParent = normalize(expectedParent);
+  const rel = relative(normalizedParent, normalizedTarget);
+  if (rel.startsWith('..') || isAbsolute(rel)) {
+    console.error(`   ❌ Path traversal detected: ${targetPath} escapes ${expectedParent}`);
+    process.exit(1);
+  }
+  return normalizedTarget;
+}
 
 // Plugin directory structure (following superpowers pattern)
 const pluginRootDir = join(projectRoot, '.claude-plugin', 'memesh');
@@ -165,6 +180,7 @@ if (!allFilesExist) {
 console.log('\n8️⃣ Configuring ~/.claude/mcp_settings.json...');
 
 const mcpServerPath = join(pluginRootDir, 'dist', 'mcp', 'server-bootstrap.js');
+validatePathWithinParent(mcpServerPath, pluginRootDir);
 const mcpServerName = 'memesh';
 const mcpSettingsPath = join(homedir(), '.claude', 'mcp_settings.json');
 let mcpSettingsConfigured = false;
@@ -187,7 +203,16 @@ try {
         }
       }
     } catch (e) {
-      console.log('   ⚠️  Could not parse existing config, creating new one');
+      if (e.code === 'ENOENT') {
+        console.log('   ℹ️  No existing MCP config found, creating new one');
+      } else if (e instanceof SyntaxError) {
+        const backupPath = `${mcpSettingsPath}.backup-${Date.now()}`;
+        try { copyFileSync(mcpSettingsPath, backupPath); } catch {}
+        console.log(`   ⚠️  Corrupted MCP config backed up to: ${backupPath}`);
+      } else {
+        console.error(`   ❌ Unexpected error reading MCP config: ${e.code || e.message}`);
+        throw e;
+      }
       mcpConfig = { mcpServers: {} };
     }
   }
@@ -217,9 +242,138 @@ try {
   console.log('   You may need to manually configure ~/.claude/mcp_settings.json');
 }
 
+// Step 9: Register marketplace in known_marketplaces.json
+console.log('\n9️⃣ Registering marketplace in Claude Code...');
+
+const pluginsDir = join(homedir(), '.claude', 'plugins');
+const marketplacesDir = join(pluginsDir, 'marketplaces');
+const knownMarketplacesPath = join(pluginsDir, 'known_marketplaces.json');
+const marketplaceSymlink = join(marketplacesDir, 'pcircle-ai');
+const claudePluginRoot = join(projectRoot, '.claude-plugin');
+
+try {
+  // Ensure marketplaces directory exists
+  mkdirSync(marketplacesDir, { recursive: true });
+  console.log(`   ✅ Ensured: ${marketplacesDir}`);
+
+  // Validate symlink target exists and is a directory
+  if (!existsSync(claudePluginRoot)) {
+    throw new Error(`Plugin source directory does not exist: ${claudePluginRoot}`);
+  }
+  const targetStats = statSync(claudePluginRoot);
+  if (!targetStats.isDirectory()) {
+    throw new Error(`Plugin source must be a directory: ${claudePluginRoot}`);
+  }
+
+  // Create symlink to .claude-plugin directory (atomic try-create-first approach)
+  try {
+    symlinkSync(claudePluginRoot, marketplaceSymlink, 'dir');
+    console.log(`   ✅ Created symlink: pcircle-ai → ${claudePluginRoot}`);
+  } catch (err) {
+    if (err.code === 'EEXIST') {
+      // Symlink exists - remove and retry
+      try {
+        unlinkSync(marketplaceSymlink);
+        symlinkSync(claudePluginRoot, marketplaceSymlink, 'dir');
+        console.log(`   ✅ Updated existing symlink: pcircle-ai → ${claudePluginRoot}`);
+      } catch (retryErr) {
+        throw new Error(`Failed to update marketplace symlink: ${retryErr.code || retryErr.message}`);
+      }
+    } else {
+      throw err;
+    }
+  }
+
+  // Update known_marketplaces.json
+  let knownMarketplaces = {};
+  if (existsSync(knownMarketplacesPath)) {
+    try {
+      const content = readFileSync(knownMarketplacesPath, 'utf-8').trim();
+      if (content) {
+        knownMarketplaces = JSON.parse(content);
+      }
+    } catch (e) {
+      if (e.code === 'ENOENT') {
+        console.log('   ℹ️  No existing marketplace config, creating new');
+      } else if (e instanceof SyntaxError) {
+        const backupPath = `${knownMarketplacesPath}.backup-${Date.now()}`;
+        try { copyFileSync(knownMarketplacesPath, backupPath); } catch {}
+        console.log(`   ⚠️  Corrupted marketplace config backed up to: ${backupPath}`);
+      } else {
+        console.error(`   ❌ Unexpected error reading marketplace config: ${e.code || e.message}`);
+        throw e;
+      }
+    }
+  }
+
+  // Skip known_marketplaces.json registration for local dev
+  // The symlink alone is sufficient for Claude Code to discover the marketplace
+  // known_marketplaces.json is used for tracking remote marketplace sources
+  console.log(`   ℹ️  Local dev mode: Skipping known_marketplaces.json registration`);
+  console.log(`   ✅ Marketplace discoverable via symlink: ${marketplaceSymlink}`);
+} catch (error) {
+  if (error.code === 'EACCES') {
+    console.error(`   ❌ Permission denied. Try running with elevated privileges.`);
+  } else if (error.code === 'ENOENT') {
+    console.error(`   ❌ Required directory not found. Ensure project is built first.`);
+  } else {
+    console.error(`   ❌ Marketplace registration failed (${error.code || 'unknown'}). See error details above.`);
+  }
+  console.error(`   [Debug] ${error.message}`);
+  process.exit(1);
+}
+
+// Step 10: Enable plugin in settings.json
+console.log('\n🔟 Enabling plugin in Claude Code settings...');
+
+const settingsPath = join(homedir(), '.claude', 'settings.json');
+
+try {
+  let settings = { enabledPlugins: {} };
+
+  if (existsSync(settingsPath)) {
+    try {
+      const content = readFileSync(settingsPath, 'utf-8').trim();
+      if (content) {
+        settings = JSON.parse(content);
+        if (!settings.enabledPlugins) {
+          settings.enabledPlugins = {};
+        }
+      }
+    } catch (e) {
+      if (e.code === 'ENOENT') {
+        console.log('   ℹ️  No existing settings found, creating new');
+      } else if (e instanceof SyntaxError) {
+        const backupPath = `${settingsPath}.backup-${Date.now()}`;
+        try { copyFileSync(settingsPath, backupPath); } catch {}
+        console.log(`   ⚠️  Corrupted settings backed up to: ${backupPath}`);
+      } else {
+        console.error(`   ❌ Unexpected error reading settings: ${e.code || e.message}`);
+        throw e;
+      }
+    }
+  }
+
+  // Enable memesh plugin
+  settings.enabledPlugins['memesh@pcircle-ai'] = true;
+
+  writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n', 'utf-8');
+  console.log(`   ✅ Enabled plugin in: ${settingsPath}`);
+} catch (error) {
+  if (error.code === 'EACCES') {
+    console.error(`   ❌ Permission denied writing settings. Try running with elevated privileges.`);
+  } else if (error.code === 'ENOENT') {
+    console.error(`   ❌ Settings directory not found at: ${join(homedir(), '.claude')}`);
+  } else {
+    console.error(`   ❌ Plugin enablement failed (${error.code || 'unknown'}). See error details above.`);
+  }
+  console.error(`   [Debug] ${error.message}`);
+  process.exit(1);
+}
+
 // Final success message
 console.log('\n' + '═'.repeat(60));
-console.log('✅ Plugin directory prepared successfully!');
+console.log('✅ Plugin installation complete!');
 console.log('═'.repeat(60));
 
 console.log('\n📦 Plugin structure:');
@@ -232,10 +386,14 @@ console.log('   ├── node_modules/         ← Dependencies');
 console.log('   ├── package.json');
 console.log('   └── scripts/');
 
+console.log('\n🎯 Plugin Registration:');
+console.log('   ✅ Marketplace: pcircle-ai');
+console.log('   ✅ Symlink: ~/.claude/plugins/marketplaces/pcircle-ai');
+console.log('   ✅ Enabled: memesh@pcircle-ai');
+
 console.log('\n🔧 MCP Configuration:');
 if (mcpSettingsConfigured) {
   console.log(`   ✅ Auto-configured at: ${mcpSettingsPath}`);
-  console.log('   ✅ MeMesh is ready to use!');
 } else {
   console.log('   ⚠️  Manual configuration required');
   console.log(`   Add memesh entry to: ${mcpSettingsPath}`);
@@ -243,10 +401,14 @@ if (mcpSettingsConfigured) {
 
 console.log('\n🚀 Next Steps:');
 console.log('   1. Restart Claude Code completely (quit and reopen)');
-console.log('   2. Test: Ask "List available MeMesh tools"');
+console.log('   2. Verify: Check for memesh tools in available tools list');
+console.log('   3. Test: Run "buddy-help" command');
 
-console.log('\n🧪 Alternative: Test Plugin Locally:');
-console.log(`   claude --plugin-dir "${pluginRootDir}"`);
+console.log('\n💡 Troubleshooting:');
+console.log('   - If tools not showing: Check ~/.claude/plugins/known_marketplaces.json');
+console.log('   - If MCP not loading: Check ~/.claude/mcp_settings.json');
+console.log('   - If plugin disabled: Check ~/.claude/settings.json enabledPlugins');
 
-console.log('\n📝 For Production: Push to GitHub and install via marketplace');
+console.log('\n📝 Note: This is a local dev installation.');
+console.log('   For production, users should install via: npm install -g @pcircle/memesh');
 console.log('');

@@ -18,7 +18,7 @@ export default defineConfig({
 
     // Global setup
     globals: true,
-    globalSetup: './tests/setup/global-setup.ts',
+    // Note: globalSetup removed until proper E2E infrastructure is implemented
 
     // Coverage (optional)
     coverage: {

@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **MCP Connection Issue** - Fixed invalid marketplace source type preventing Claude Code from connecting to MCP server
+  - Changed marketplace source type from invalid `'local'` to correct `'directory'` in all installation scripts
+  - Affects: `scripts/prepare-plugin.js`, `scripts/postinstall-lib.js`, `scripts/postinstall-lib.ts`
+  - Updated TypeScript type definition to include all valid source types: `'directory' | 'github' | 'git' | 'url' | 'file'`
+  - This fix resolves the "configured but status unknown" MCP status issue
+  - Users need to restart Claude Code after this update for changes to take effect
+
+## [2.8.5] - 2026-02-12
+
+### Fixed
+
+- **Plugin Installation via npm install** - Complete installation flow with backward compatibility
+  - Fixed marketplace registration not happening during npm install (only happened during build)
+  - Users installing via `npm install -g @pcircle/memesh` now get a fully functional plugin
+  - Auto-detects install mode (global vs local dev)
+  - Auto-repairs legacy v2.8.4/v2.8.3 installations on first run
+  - Comprehensive plugin configuration:
+    - Registers marketplace in `~/.claude/plugins/known_marketplaces.json`
+    - Creates symlink to `~/.claude/plugins/marketplaces/pcircle-ai`
+    - Enables plugin in `~/.claude/settings.json`
+    - Configures MCP server in `~/.claude/mcp_settings.json`
+  - Fixed pre-deployment check treating plugin as standalone MCP server
+    - Now correctly validates plugin architecture (checks config files instead of runtime commands)
+    - `claude mcp list` doesn't show plugin-embedded MCP servers by design
+
+### Technical Details
+
+- Implemented TDD methodology with 20 tests (10 unit + 9 integration tests, 100% passing)
+- Created `scripts/postinstall-lib.ts` with core installation functions
+- Created `scripts/postinstall-new.js` orchestration script
+- Added test infrastructure in `tests/postinstall/`
+- Fixed ESM compatibility issues (replaced `__dirname` usage with proper ESM patterns)
+- Updated `package.json` to use new postinstall script
+
+### Upgrade Notes
+
+- **v2.8.4 users**: Plugin will auto-repair on first run after upgrade
+- **v2.8.3 users**: Plugin will auto-repair on first run after upgrade
+- **Fresh installs**: Complete installation flow works correctly from `npm install`
+- No manual intervention required - all fixes are automatic
+
 ## [2.8.1] - 2026-02-08
 
 ### Fixed

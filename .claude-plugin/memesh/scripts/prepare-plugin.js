@@ -310,7 +310,7 @@ try {
   // Previous assumption that "symlink alone is sufficient" was incorrect - Claude Code needs both
   knownMarketplaces['pcircle-ai'] = {
     source: {
-      source: 'local',
+      source: 'directory',
       path: claudePluginRoot
     },
     installLocation: marketplaceSymlink,

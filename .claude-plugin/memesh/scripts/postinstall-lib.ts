@@ -26,7 +26,7 @@ export type InstallMode = 'global' | 'local';
 
 export interface MarketplaceEntry {
   source: {
-    source: 'local' | 'github' | 'url';
+    source: 'directory' | 'github' | 'git' | 'url' | 'file';
     path?: string;
     repo?: string;
     url?: string;
@@ -171,7 +171,7 @@ export async function ensureMarketplaceRegistered(
   // Register or update pcircle-ai entry
   marketplaces['pcircle-ai'] = {
     source: {
-      source: 'local',
+      source: 'directory',
       path: installPath
     },
     installLocation: symlinkPath,

@@ -118,7 +118,7 @@ export async function ensureMarketplaceRegistered(installPath, claudeDir = join(
     // Register or update pcircle-ai entry
     marketplaces['pcircle-ai'] = {
         source: {
-            source: 'local',
+            source: 'directory',
             path: installPath
         },
         installLocation: symlinkPath,

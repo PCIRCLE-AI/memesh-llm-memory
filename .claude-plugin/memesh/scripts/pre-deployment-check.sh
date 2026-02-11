@@ -183,20 +183,20 @@ fi
 run_check "測試 MCP server 啟動"
 timeout 2 node ./.claude-plugin/memesh/dist/mcp/server-bootstrap.js --version > /dev/null 2>&1 && check_pass "MCP server 可啟動" || check_pass "MCP server timeout (正常，等待 stdio)"
 
-run_check "檢查 MCP 連接狀態"
-if command -v claude &> /dev/null; then
-    # MCP 連接檢查：Connected 或 註冊成功都算通過
-    MCP_STATUS=$(claude mcp list 2>&1 | grep memesh || echo "not found")
+run_check "檢查 MCP 配置（Plugin 模式）"
+# IMPORTANT: MeMesh 是 Claude Code PLUGIN，不是獨立 MCP server
+# Plugin 的 MCP server 透過 plugin 系統載入，不會出現在 `claude mcp list`
+# 正確驗證方式：檢查 mcp_settings.json 配置檔案
 
-    if echo "$MCP_STATUS" | grep -q "Connected"; then
-        check_pass "MCP server 已連接"
-    elif echo "$MCP_STATUS" | grep -q "memesh"; then
-        check_pass "MCP server 已註冊（可能需要重啟 Claude Code）"
+MCP_CONFIG="$HOME/.claude/mcp_settings.json"
+if [ -f "$MCP_CONFIG" ]; then
+    if grep -q '"memesh"' "$MCP_CONFIG"; then
+        check_pass "MCP 配置正確（Plugin 模式）"
     else
-        check_fail "MCP server 未註冊（執行 ./scripts/quick-install.sh 註冊）"
+        check_fail "mcp_settings.json 缺少 memesh 配置"
     fi
 else
-    check_pass "Claude CLI 不可用（跳過）"
+    check_fail "mcp_settings.json 不存在"
 fi
 
 # Part 6: Tests

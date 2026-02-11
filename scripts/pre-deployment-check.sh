@@ -186,7 +186,8 @@ timeout 2 node ./.claude-plugin/memesh/dist/mcp/server-bootstrap.js --version > 
 run_check "檢查 MCP 連接狀態"
 if command -v claude &> /dev/null; then
     # MCP 連接檢查：Connected 或 註冊成功都算通過
-    MCP_STATUS=$(claude mcp list 2>&1 | grep memesh || echo "not found")
+    # Add timeout to prevent hanging (claude mcp list can be slow)
+    MCP_STATUS=$(timeout 5 claude mcp list 2>&1 | grep memesh || echo "not found")
 
     if echo "$MCP_STATUS" | grep -q "Connected"; then
         check_pass "MCP server 已連接"

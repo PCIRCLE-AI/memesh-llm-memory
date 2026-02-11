@@ -306,11 +306,24 @@ try {
     }
   }
 
-  // Skip known_marketplaces.json registration for local dev
-  // The symlink alone is sufficient for Claude Code to discover the marketplace
-  // known_marketplaces.json is used for tracking remote marketplace sources
-  console.log(`   ℹ️  Local dev mode: Skipping known_marketplaces.json registration`);
-  console.log(`   ✅ Marketplace discoverable via symlink: ${marketplaceSymlink}`);
+  // Register in known_marketplaces.json (required for Claude Code to discover marketplace)
+  // Previous assumption that "symlink alone is sufficient" was incorrect - Claude Code needs both
+  knownMarketplaces['pcircle-ai'] = {
+    source: {
+      source: 'local',
+      path: claudePluginRoot
+    },
+    installLocation: marketplaceSymlink,
+    lastUpdated: new Date().toISOString()
+  };
+
+  try {
+    writeFileSync(knownMarketplacesPath, JSON.stringify(knownMarketplaces, null, 2) + '\n', 'utf-8');
+    console.log(`   ✅ Registered in known_marketplaces.json: pcircle-ai`);
+  } catch (writeError) {
+    console.error(`   ❌ Failed to write known_marketplaces.json: ${writeError.message}`);
+    throw writeError;
+  }
 } catch (error) {
   if (error.code === 'EACCES') {
     console.error(`   ❌ Permission denied. Try running with elevated privileges.`);

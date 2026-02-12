@@ -1,6 +1,6 @@
 # MeMesh Architecture
 
-**Version**: 2.8.8
+**Version**: 2.8.9
 **Last Updated**: 2026-02-12
 **Status**: Active
 

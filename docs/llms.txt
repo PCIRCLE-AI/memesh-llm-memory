@@ -14,7 +14,7 @@ MeMesh is a Claude Code plugin that provides persistent memory via MCP (Model Co
 **License**: AGPL-3.0
 **Language**: TypeScript
 **Platform**: Node.js 20+
-**Latest Version**: 2.8.8 (2026-02-12)
+**Latest Version**: 2.8.9 (2026-02-12)
 
 ## Quick Start
 

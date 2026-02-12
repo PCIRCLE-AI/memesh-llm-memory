@@ -12,8 +12,22 @@ NAME_POOL=(
   "Pi" "Rho" "Sigma" "Tau" "Upsilon"
 )
 
-KG_DB="$HOME/.claude-code-buddy/knowledge-graph.db"
-REGISTRY_DB="$HOME/.claude-code-buddy/a2a-registry.db"
+# Resolve DB path: prefer ~/.memesh, fall back to ~/.claude-code-buddy
+if [ -f "$HOME/.memesh/knowledge-graph.db" ]; then
+  KG_DB="$HOME/.memesh/knowledge-graph.db"
+elif [ -f "$HOME/.claude-code-buddy/knowledge-graph.db" ]; then
+  KG_DB="$HOME/.claude-code-buddy/knowledge-graph.db"
+else
+  KG_DB="$HOME/.memesh/knowledge-graph.db"
+fi
+
+if [ -f "$HOME/.memesh/a2a-registry.db" ]; then
+  REGISTRY_DB="$HOME/.memesh/a2a-registry.db"
+elif [ -f "$HOME/.claude-code-buddy/a2a-registry.db" ]; then
+  REGISTRY_DB="$HOME/.claude-code-buddy/a2a-registry.db"
+else
+  REGISTRY_DB="$HOME/.memesh/a2a-registry.db"
+fi
 
 # 查詢已使用的名字（只看 ONLINE 狀態的）
 get_used_names() {

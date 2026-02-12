@@ -75,8 +75,8 @@ cp scripts/hooks/*.js ~/.claude/hooks/
 ### "No memory showing"
 
 ```bash
-# Check if database exists
-ls ~/.claude-code-buddy/knowledge-graph.db
+# Check if database exists (primary path, falls back to ~/.claude-code-buddy/)
+ls ~/.memesh/knowledge-graph.db
 ```
 
 ## Limitations

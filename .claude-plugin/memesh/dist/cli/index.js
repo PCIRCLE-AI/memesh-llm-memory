@@ -171,8 +171,8 @@ program.on('--help', () => {
     console.log('  $ memesh daemon logs -f   # Follow daemon logs');
     console.log('');
     console.log(chalk.bold('Documentation:'));
-    console.log('  Quick Start: https://memesh.pcircle.ai/quick-start');
-    console.log('  User Guide:  https://memesh.pcircle.ai/guide');
+    console.log('  Quick Start: https://github.com/PCIRCLE-AI/claude-code-buddy#quick-start');
+    console.log('  User Guide:  https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/USER_GUIDE.md');
     console.log('');
     console.log(chalk.bold('Support:'));
     console.log('  Issues:      https://github.com/PCIRCLE-AI/claude-code-buddy/issues');

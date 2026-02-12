@@ -199,7 +199,7 @@ ${chalk.bold.yellow('📚 Learning Resources')}
 
 ${chalk.dim('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
 ${chalk.dim('🔗 Links:')} https://github.com/PCIRCLE-AI/claude-code-buddy
-${chalk.dim('📖 Docs:')} https://memesh.pcircle.ai
+${chalk.dim('📖 Docs:')} https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/USER_GUIDE.md
 `;
   }
 
@@ -355,8 +355,8 @@ ${chalk.bold('💡 Learning Resources:')}
   ${chalk.cyan('memesh stats')}       Your usage statistics
 
 ${chalk.bold('Documentation:')}
-  📖 User Guide:    https://memesh.pcircle.ai/guide
-  🚀 Quick Start:   https://memesh.pcircle.ai/quick-start
+  📖 User Guide:    https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/USER_GUIDE.md
+  🚀 Quick Start:   https://github.com/PCIRCLE-AI/claude-code-buddy#quick-start
   💬 Discussions:   github.com/PCIRCLE-AI/claude-code-buddy
 `;
 
@@ -511,7 +511,7 @@ For now, monitor your development progress through:
 
 ${chalk.bold('📖 Learn More:')}
 
-Visit https://memesh.pcircle.ai for updates on Cloud features.
+Visit https://github.com/PCIRCLE-AI/claude-code-buddy for updates.
 `;
 
     return boxen(content, {

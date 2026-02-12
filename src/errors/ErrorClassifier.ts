@@ -423,7 +423,7 @@ export class ErrorClassifier {
       ],
       autoFixAvailable: false,
       relatedDocs: [
-        { title: 'Permission Issues', url: 'https://memesh.pcircle.ai/troubleshoot/permissions' },
+        { title: 'Troubleshooting', url: 'https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/TROUBLESHOOTING.md' },
       ],
       relatedCommands: [],
       troubleshootingTips: [
@@ -456,7 +456,7 @@ export class ErrorClassifier {
       ],
       autoFixAvailable: false,
       relatedDocs: [
-        { title: 'Resource Limits', url: 'https://memesh.pcircle.ai/limits' },
+        { title: 'Troubleshooting', url: 'https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/TROUBLESHOOTING.md' },
       ],
       relatedCommands: [],
       troubleshootingTips: [
@@ -489,7 +489,7 @@ export class ErrorClassifier {
       ],
       autoFixAvailable: false,
       relatedDocs: [
-        { title: 'Command Reference', url: 'https://memesh.pcircle.ai/commands' },
+        { title: 'Command Reference', url: 'https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/COMMANDS.md' },
       ],
       relatedCommands: ['buddy-help', 'buddy-help --all'],
       troubleshootingTips: [
@@ -553,7 +553,7 @@ export class ErrorClassifier {
       ],
       autoFixAvailable: false,
       relatedDocs: [
-        { title: 'Troubleshooting', url: 'https://memesh.pcircle.ai/troubleshoot' },
+        { title: 'Troubleshooting', url: 'https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/TROUBLESHOOTING.md' },
       ],
       relatedCommands: ['memesh report-issue'],
       troubleshootingTips: [

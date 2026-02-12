@@ -278,7 +278,8 @@ debug-*.js
 temp-*.ts
 temp-*.js
 tmp-*.ts
-tmp-*.jspackage.json.backup
+tmp-*.js
+package.json.backup
 logs/*.log
 data/*.db
 data/*.db-shm
@@ -299,7 +300,10 @@ Library/
 # Temporary session scripts
 start-session-*.sh
 
-# === Additional Internal Docs Patterns (Added $(date +%Y-%m-%d)) ===
+# === Additional Internal Docs Patterns ===
+
+# Internal code review reports
+*CODE_REVIEW*.md
 
 # Root-level internal documentation (UPPERCASE variants)
 *FIX*.md

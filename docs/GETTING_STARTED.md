@@ -201,7 +201,7 @@ function login(user, pass) {
    alias claude-mem='claude --plugin-dir /path/to/claude-code-buddy'
    ```
 
-3. For team distribution, create a [Plugin Marketplace](https://code.claude.com/docs/en/plugin-marketplaces)
+3. For team distribution, see Claude Code plugin documentation
 
 </details>
 

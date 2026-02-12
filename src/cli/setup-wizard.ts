@@ -380,8 +380,8 @@ ${chalk.cyan('3.')} Try your first command
    ${chalk.dim('buddy-remember "project decisions"')}
 
 ${chalk.bold('📖 Documentation:')}
-   Quick Start: https://memesh.pcircle.ai/quick-start
-   User Guide:  https://memesh.pcircle.ai/guide
+   Quick Start: https://github.com/PCIRCLE-AI/claude-code-buddy#quick-start
+   User Guide:  https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/USER_GUIDE.md
    Tutorial:    ${chalk.cyan('memesh tutorial')}
 
 ${chalk.bold('🆘 Need Help?')}
@@ -418,7 +418,7 @@ ${chalk.cyan('1.')} Check permissions
    ${chalk.dim('Ensure you can write to the config directory')}
 
 ${chalk.cyan('2.')} Manual configuration
-   ${chalk.dim('See: https://memesh.pcircle.ai/manual-setup')}
+   ${chalk.dim('See: https://github.com/PCIRCLE-AI/claude-code-buddy/blob/main/docs/QUICK_INSTALL.md')}
 
 ${chalk.cyan('3.')} Get help
    ${chalk.dim('Report issue: memesh report-issue')}

@@ -7,14 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+
+- Fixed outdated version numbers across all docs (2.8.0/2.8.3 → 2.8.8)
+- Replaced remaining "smart routing" and "intelligent task routing" references with accurate descriptions
+- Fixed MCP config path in ARCHITECTURE.md (`~/.config/claude/` → `~/.claude/mcp_settings.json`)
+- Prioritized `npm install -g @pcircle/memesh` as recommended installation method in all guides
+- Updated repo metadata (GitHub description, topics, keywords)
+- Fixed outdated paths, dead links, and wrong package names across docs
+- Fixed `release.sh` `head -n -1` incompatibility on macOS
+
+## [2.8.8] - 2026-02-12
+
+### Documentation
+
+- Rewrote README with user-first design — reorganized around user journey (Install → Verify → Use → Troubleshoot)
+- Added prerequisites section, inline troubleshooting, removed jargon
+- Removed vibe coder branding, improved issue reporting links
+
 ### Fixed
 
-- **MCP Connection Issue** - Fixed invalid marketplace source type preventing Claude Code from connecting to MCP server
-  - Changed marketplace source type from invalid `'local'` to correct `'directory'` in all installation scripts
-  - Affects: `scripts/prepare-plugin.js`, `scripts/postinstall-lib.js`, `scripts/postinstall-lib.ts`
-  - Updated TypeScript type definition to include all valid source types: `'directory' | 'github' | 'git' | 'url' | 'file'`
-  - This fix resolves the "configured but status unknown" MCP status issue
-  - Users need to restart Claude Code after this update for changes to take effect
+- Resolved remaining GitHub code scanning alerts
+- Removed unused imports
+
+## [2.8.7] - 2026-02-12
+
+### Fixed
+
+- Resolved all 18 GitHub code scanning alerts (insecure temp files, TOCTOU races, unused code)
+- Removed unused `afterEach` import in login.test.ts
+
+### Repository
+
+- Dismissed 3 medium alerts as intentional (cloud sync, credential storage)
+- Resolved 2 secret scanning alerts (test dummy values in deleted files)
+- Cleaned up 3 stale branches (develop, feature/memesh-login, fix/device-auth-tier1-security)
+
+## [2.8.6] - 2026-02-12
+
+### Fixed
+
+- **Hooks DB Path** - Resolved hooks silently failing due to hardcoded legacy path
+  - Hooks now use PathResolver logic: checks `~/.memesh/` first, falls back to `~/.claude-code-buddy/`
+  - Session-start, post-tool-use, and stop hooks now correctly access the active knowledge graph
+- **MCP Connection** - Fixed invalid marketplace source type preventing Claude Code from connecting
+  - Changed source type from invalid `'local'` to correct `'directory'` in all installation scripts
+  - Updated TypeScript type definition to include all valid source types
+
+### Security
+
+- Resolved GitHub code scanning alerts (insecure temp files, TOCTOU race conditions, unused code)
 
 ## [2.8.5] - 2026-02-12
 
@@ -31,179 +73,116 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Enables plugin in `~/.claude/settings.json`
     - Configures MCP server in `~/.claude/mcp_settings.json`
   - Fixed pre-deployment check treating plugin as standalone MCP server
-    - Now correctly validates plugin architecture (checks config files instead of runtime commands)
-    - `claude mcp list` doesn't show plugin-embedded MCP servers by design
 
-### Technical Details
+### Technical
 
-- Implemented TDD methodology with 20 tests (10 unit + 9 integration tests, 100% passing)
+- Implemented TDD with 20 tests (10 unit + 9 integration, 100% passing)
 - Created `scripts/postinstall-lib.ts` with core installation functions
-- Created `scripts/postinstall-new.js` orchestration script
-- Added test infrastructure in `tests/postinstall/`
-- Fixed ESM compatibility issues (replaced `__dirname` usage with proper ESM patterns)
-- Updated `package.json` to use new postinstall script
+- Fixed ESM compatibility issues (replaced `__dirname` with proper ESM patterns)
 
-### Upgrade Notes
+## [2.8.4] - 2026-02-10
 
-- **v2.8.4 users**: Plugin will auto-repair on first run after upgrade
-- **v2.8.3 users**: Plugin will auto-repair on first run after upgrade
-- **Fresh installs**: Complete installation flow works correctly from `npm install`
-- No manual intervention required - all fixes are automatic
+### Added
+
+- **Device Auth Login** - `memesh login` / `memesh logout` CLI commands with device auth flow
+- Secure stdin input for manual API key entry
+
+## [2.8.3] - 2026-02-09
+
+### Fixed
+
+- **Version Reporting** - MCP server now correctly reports version from package.json instead of hardcoded "2.6.6"
+  - Replaced import assertion syntax with `fs.readFileSync` for cross-environment compatibility
+
+## [2.8.2] - 2026-02-08
+
+### Added
+
+- **WCAG AA Compliance** - Color contrast verification following WCAG 2.1 Level AA
+- **Screen Reader Support** - JSON event emission via `MEMESH_SCREEN_READER=1` environment variable
+- Accessibility documentation at `docs/ACCESSIBILITY.md`
+- Contrast verification script: `npm run verify:contrast`
 
 ## [2.8.1] - 2026-02-08
 
 ### Fixed
 
 - **Build Artifacts Cleanup** - Removed legacy secret-types files from build output
-  - Cleaned up `dist/memory/types/secret-types.*` files that were deprecated in v2.8.0
+  - Cleaned up `dist/memory/types/secret-types.*` files deprecated in v2.8.0
   - No functional changes - purely build artifact cleanup
-  - Package size remains ~2.1MB (661 files)
 
 ## [2.8.0] - 2026-02-08
 
 ### ⚠️ Breaking Changes
 
-- **MCP Tool Naming Unification** - All non-core tools now use `memesh-*` prefix for better discoverability
+- **MCP Tool Naming Unification** - All non-core tools now use `memesh-*` prefix
   - `buddy-record-mistake` → `memesh-record-mistake`
   - `create-entities` → `memesh-create-entities`
   - `hook-tool-use` → `memesh-hook-tool-use`
   - `generate-tests` → `memesh-generate-tests`
 
-  **Migration**: Old names still work via aliases with deprecation warnings. Aliases will be removed in v3.0.0. See [UPGRADE.md](docs/UPGRADE.md#v280) for migration guide.
+  **Migration**: Old names still work via aliases with deprecation warnings. Aliases will be removed in v3.0.0. See [UPGRADE.md](docs/UPGRADE.md) for details.
 
 ### Added
 
 - **Vector Semantic Search** - Find memories by meaning, not just keywords
-  - `buddy-remember` now supports `mode` parameter: `semantic`, `keyword`, `hybrid` (default)
-  - `minSimilarity` parameter to filter low-quality matches (0-1 threshold)
+  - `buddy-remember` supports `mode`: `semantic`, `keyword`, `hybrid` (default)
+  - `minSimilarity` parameter for quality filtering (0-1 threshold)
   - Uses all-MiniLM-L6-v2 ONNX model (384 dimensions, runs 100% locally)
-  - Automatic embedding generation when creating entities
   - Backfill script for existing entities: `npm run backfill-embeddings`
-
-- **Alias System** - Backward compatibility for renamed tools
-  - Deprecated tool names show migration warnings
-  - Smooth transition path to v3.0.0
+- **Alias System** - Backward compatibility for renamed tools with deprecation warnings
 
 ### Removed
 
-- **A2A Local Collaboration Features** - Simplified to Local-first architecture
-  - Removed 35 A2A-related files and modules
-  - Removed agent-to-agent communication (daemon, socket server, distributed task queue)
-  - Removed A2A inbox, session coordination, and multi-agent orchestration
+- **A2A Local Collaboration** - Simplified to local-first architecture
+  - Removed 35 A2A-related files (daemon, socket server, distributed task queue)
   - Focus on single-agent local memory management
-  - **Reason**: Local-first architecture simplifies codebase and aligns with MCP specification
 
 ### Changed
 
 - **Tool Count**: 18 → **8 tools** (3 buddy commands + 4 memesh tools + 1 cloud sync)
-  - Core tools preserved: `buddy-do`, `buddy-remember`, `buddy-help`
-  - Feature tools unified under `memesh-*` namespace
 
 ### Technical
 
 - New `src/embeddings/` module with ModelManager, EmbeddingService, VectorExtension
-- Added sqlite-vec for vector KNN search
-- Added onnxruntime-node for ONNX inference
-- Added @xenova/transformers for tokenization
-- Added chokidar for file watching
-- Integration tests for full semantic search flow
-- Enhanced MCPToolDefinition interface with aliases field
+- Added sqlite-vec, onnxruntime-node, @xenova/transformers dependencies
 - ToolRouter with alias resolution and deprecation warnings
-
-### Documentation
-
-- **Major documentation update**: Corrected all outdated installation guides
-  - Fixed QUICK_INSTALL.md: Completely rewritten with correct installation priority (npm global install first)
-  - Updated tool count: 18 tools → **8 tools** (accurate count with complete list)
-  - Added deprecation notices for renamed tools in all documentation
-  - Updated troubleshooting guide with common issues and solutions (PR #52)
-  - Removed misleading Plugin Installation instructions (--plugin-dir flag)
-  - Removed Cursor and VS Code installation instructions (not officially supported)
-  - Updated README.md, GETTING_STARTED.md, and guides/QUICK_START.md for consistency
-  - Corrected installation method: MCP Server mode (auto-configures mcp_settings.json), not Plugin mode
-  - Added v2.8.0 migration guide in UPGRADE.md
 
 ## [2.7.0] - 2026-02-04
 
 ### Added
-- Daemon socket cleanup on exit/crash - prevents stale socket issues in new sessions
+- Daemon socket cleanup on exit/crash - prevents stale socket issues
 - Exception handlers (uncaughtException, unhandledRejection) for graceful daemon shutdown
 
 ### Changed
-- **Memory retention periods updated**:
-  - Session memories: 7 days → **30 days**
-  - Project memories: 30 days → **90 days**
-- Auto-memory hooks improvements with updated documentation
+- **Memory retention periods**: Session 7→30 days, Project 30→90 days
+- Auto-memory hooks improvements
 
 ### Fixed
 - Stale daemon socket causing MCP connection failures in new sessions
-- Documentation accuracy - updated all outdated retention period references
-
-### Documentation
-- Updated README.md with correct memory retention information
-- Updated USER_GUIDE.md version history
-- Updated hooks README.md with correct retention periods
-- Updated TROUBLESHOOTING.md
 
 ## [2.6.6] - 2026-02-03
 
 ### Fixed
 - GitHub Actions npm publish workflow - replaced invalid GitHub API method with logging
-- Fixed workflow comment step that was causing publish failures
-
 
 ## [2.6.5] - 2026-02-03
 
 ### Added
-- Enhanced post-install messaging with comprehensive quick-start guide (53 lines, boxed output)
-- Unified getting-started guide (docs/GETTING_STARTED.md) - 400+ lines, single entry point for new users
-- Comprehensive PathResolver tests (47 tests, 100% statement coverage)
-- Professional error formatting with category badges and boxed suggestions
-- Smart response complexity detection (89% noise reduction for simple responses)
-- SQLite WAL checkpoint handling in migration script
-- Atomic migration pattern (temp → verify → commit)
-- [X/Y] progress indicators in migration script
-
-### Changed
-- Enhanced MCP watchdog startup message (5 → 65 lines) with helpful configuration guidance
-- Improved migration script (277 → 431 lines, +56%) with safety guarantees and actionable next steps
-- Updated errorHandler to return structured objects with category and example fields
-- ResponseFormatter now adaptively formats based on content complexity
+- Enhanced post-install messaging with quick-start guide
+- Unified getting-started guide (docs/GETTING_STARTED.md)
+- Comprehensive PathResolver tests (47 tests, 100% coverage)
+- Professional error formatting with category badges
 
 ### Fixed
-- **Critical**: Fixed 4 hardcoded ~/.claude-code-buddy/ paths to use PathResolver
-  - src/management/UninstallManager.ts
-  - src/utils/toonify-adapter.ts
-  - src/telemetry/TelemetryStore.ts
-  - src/ui/MetricsStore.ts
+- **Critical**: Fixed 4 hardcoded `~/.claude-code-buddy/` paths to use PathResolver
 - Fixed 14 failing errorHandler tests to match new API structure
-- All tests now passing (25/25 errorHandler, 47/47 PathResolver)
-
-### Documentation
-- Added comprehensive GETTING_STARTED.md guide
-- Updated docs/README.md with getting-started link
-- Created detailed release notes
-
-### Quality
-- Code review score: 95/100 (EXCELLENT)
-- 0 critical issues, 0 major issues, 3 minor issues
-- 100% backward compatibility maintained
-- No breaking changes
-
-## [2.7.0] - 2026-01-31
-
-### Changed
-- Enhanced memory system architecture
-- Improved query performance
 
 ## [2.6.0] - 2026-01-31
 
 ### Changed
 - Code quality improvements
 - Documentation updates
-
-### Fixed
-- Minor bug fixes
 
 ## [2.5.3] - 2026-01-31
 
@@ -228,7 +207,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Code comments converted to English
-- Enhanced pre-publish testing
 
 ## [2.4.2] - 2026-01-30
 
@@ -246,9 +224,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced testing system
 - Hook integration improvements
 
-### Changed
-- Improved error handling
-
 ## [2.3.1] - 2026-01-30
 
 ### Fixed
@@ -259,7 +234,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - NPM package support
-- Cursor IDE integration
 
 ### Changed
 - Installation improvements
@@ -274,18 +248,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Evidence-based guardrails
-- Quality gates for smart plans
+- Quality gates
 
 ### Changed
 - Improved E2E test reliability
-- Enhanced security measures
 
 ## [2.0.0] - 2026-01-01
 
 ### Added
 - Initial MCP server implementation
 - Core memory management
-- Agent routing system
+- Knowledge graph storage
 
 ---
 

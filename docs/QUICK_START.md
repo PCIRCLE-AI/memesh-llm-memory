@@ -279,7 +279,7 @@ The tutorial covers:
 5. 🚀 Advanced features
 
 **Completion time**: ~5 minutes
-**Success rate**: 85% complete the tutorial
+**Completion time**: ~5 minutes
 
 ---
 
@@ -411,7 +411,7 @@ npm install -g @pcircle/memesh
 │   memesh config        Manage config        │
 │                                             │
 │ Core Commands                               │
-│   buddy-do "<task>"    Execute with routing │
+│   buddy-do "<task>"    Execute with context │
 │   buddy-remember "X"   Store/recall memory  │
 │   buddy-help           Show help            │
 │                                             │

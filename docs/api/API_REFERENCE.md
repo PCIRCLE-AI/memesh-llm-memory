@@ -1,7 +1,7 @@
 # MeMesh MCP Server - API Reference
 
-**Version**: 2.8.0
-**Last Updated**: 2026-02-08
+**Version**: 2.8.8
+**Last Updated**: 2026-02-12
 **Protocol**: Model Context Protocol (MCP)
 
 ---
@@ -32,10 +32,10 @@
 
 ## Introduction
 
-MeMesh is an MCP (Model Context Protocol) server that provides intelligent task routing, persistent memory management, and knowledge graph capabilities for Claude Code. This API reference documents all available MCP tools, their parameters, responses, and usage patterns.
+MeMesh is an MCP (Model Context Protocol) server that provides persistent memory management, context-aware task execution, and knowledge graph capabilities for Claude Code. This API reference documents all available MCP tools, their parameters, responses, and usage patterns.
 
 **Key Features**:
-- Smart task routing with complexity analysis
+- Context-aware task execution with memory integration
 - Persistent knowledge graph storage
 - Automatic memory linking and tagging
 - Session health monitoring
@@ -2524,6 +2524,6 @@ await createRelations({
 
 ---
 
-**MeMesh MCP Server** - Intelligent task routing and persistent memory for Claude Code
+**MeMesh MCP Server** - Persistent memory and context-aware task execution for Claude Code
 
 *For questions or issues, please visit the GitHub repository or open an issue.*

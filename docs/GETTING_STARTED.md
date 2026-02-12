@@ -312,10 +312,9 @@ Now that MeMesh is running, explore more:
 - **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
 
 ### Advanced Topics
-- Workflow guidance and smart task routing
-- Smart planning for complex features
-- Custom capability routing
-- Knowledge graph queries
+- Knowledge graph queries and entity management
+- Memory best practices and organization
+- Cloud sync for cross-device memory
 
 ---
 
@@ -373,6 +372,6 @@ Install MeMesh, run `buddy-help`, and never explain your architecture twice agai
 
 ---
 
-**Version**: 2.8.0
-**Last Updated**: 2026-02-08
+**Version**: 2.8.8
+**Last Updated**: 2026-02-12
 **Not affiliated with Anthropic PBC** • Independent open-source project

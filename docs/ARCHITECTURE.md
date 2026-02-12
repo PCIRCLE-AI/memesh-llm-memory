@@ -1,14 +1,14 @@
 # MeMesh Architecture
 
-**Version**: 2.8.3
-**Last Updated**: 2026-02-08
+**Version**: 2.8.8
+**Last Updated**: 2026-02-12
 **Status**: Active
 
 ---
 
 ## Overview
 
-MeMesh is a Model Context Protocol (MCP) server that enhances Claude Code with persistent memory, intelligent task routing, and knowledge management capabilities. It follows a layered architecture designed for extensibility, performance, and reliability.
+MeMesh is a Model Context Protocol (MCP) server that enhances Claude Code with persistent memory, context-aware task execution, and knowledge management capabilities. It follows a layered architecture designed for extensibility, performance, and reliability.
 
 ## Architecture Diagram
 
@@ -329,7 +329,7 @@ npm install -g @pcircle/memesh
 
 **Binary**: `dist/mcp/server-bootstrap.js` (executable)
 
-**Claude Code Integration**: MCP configuration in `~/.config/claude/`
+**Claude Code Integration**: MCP configuration in `~/.claude/mcp_settings.json`
 
 ---
 

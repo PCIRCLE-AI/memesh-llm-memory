@@ -1,19 +1,15 @@
 {
   "$schema": "https://claude.ai/schemas/config.json",
   "mcpServers": {
-    "claude-code-buddy": {
+    "memesh": {
       "command": "node",
       "args": [
         "/absolute/path/to/claude-code-buddy/dist/mcp/server-bootstrap.js"
       ],
       "env": {
-        "ANTHROPIC_API_KEY": "your_anthropic_api_key_here",
-        "OPENAI_API_KEY": "your_openai_api_key_here_optional",
-        "LOG_LEVEL": "info",
-        "ENABLE_RAG": "false",
-        "ENABLE_EVOLUTION": "true"
+        "LOG_LEVEL": "info"
       },
-      "description": "Claude Code Buddy MCP server for intelligent task routing and development automation"
+      "description": "MeMesh MCP server for persistent memory and context-aware task execution"
     }
   }
 }

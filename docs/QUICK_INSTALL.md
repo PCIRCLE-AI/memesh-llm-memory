@@ -72,7 +72,7 @@ When you install MeMesh, you get access to:
 ### 8 MCP Tools
 
 **Core Commands (3 tools):**
-1. **buddy-do** - Smart task routing and execution
+1. **buddy-do** - Task execution with memory context
 2. **buddy-remember** - Project memory recall with semantic search
 3. **buddy-help** - Command documentation and help
 

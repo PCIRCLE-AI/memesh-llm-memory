@@ -22,7 +22,7 @@ MeMesh v2.8.0 introduces a unified naming scheme for better MCP tool discoverabi
 | `generate-tests` | `memesh-generate-tests` | ⚠️ Deprecated |
 
 **Core tools preserved** (no changes):
-- ✅ `buddy-do` - Smart task execution
+- ✅ `buddy-do` - Task execution with memory context
 - ✅ `buddy-remember` - Memory recall (now with semantic search!)
 - ✅ `buddy-help` - Help and documentation
 

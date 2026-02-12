@@ -61,4 +61,4 @@ After installation, customize **anything** by talking to Claude Code:
 
 ---
 
-**Version**: v2.8.0 | **Updated**: 2026-02-08
+**Version**: v2.8.8 | **Updated**: 2026-02-12

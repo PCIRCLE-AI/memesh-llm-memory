@@ -1,11 +1,11 @@
 # MeMesh Quick Reference
 
-**Version: 2.8.0
+**Version: 2.8.8
 
-## 🚀 Quick Commands
+## Quick Commands
 
 ```bash
-buddy-do "<task description>"         # Smart routing (recommended)
+buddy-do "<task description>"         # Execute with memory context (recommended)
 buddy-remember "<query>"             # Recall project memory
 buddy-help                             # Command help
 memesh-generate-tests '{"featureDescription":"..."}'
@@ -13,7 +13,7 @@ memesh-generate-tests '{"featureDescription":"..."}'
 
 Note: `hook-tool-use` is internal and used by Claude Code hooks.
 
-## 🧭 Capability Keywords
+## Capability Keywords
 
 | Capability | Keywords | Use For |
 |---|---|---|
@@ -27,7 +27,7 @@ Note: `hook-tool-use` is internal and used by Claude Code hooks.
 | Data/Database | database, query, schema | Query tuning, schema design |
 | Documentation | docs, guide, readme | Technical writing |
 
-## 🎯 Common Workflows
+## Common Workflows
 
 ### Feature Development
 ```
@@ -49,18 +49,18 @@ Note: `hook-tool-use` is internal and used by Claude Code hooks.
 2. buddy-do "optimize slow path in <area>"
 ```
 
-## 💡 Quick Tips
+## Quick Tips
 
-✅ **DO**:
+**DO**:
 - Use clear, specific task descriptions
 - Mention files, constraints, or target behaviors
 - Use `buddy-remember` before large changes
 
-❌ **DON'T**:
+**DON'T**:
 - Use vague descriptions ("fix bug")
 - Skip context when it matters
 
-## 📚 Full Documentation
+## Full Documentation
 
 - **Complete Guide**: `@claude-code-buddy://usage-guide`
 - **Examples**: `@claude-code-buddy://examples`
@@ -68,4 +68,4 @@ Note: `hook-tool-use` is internal and used by Claude Code hooks.
 
 ---
 
-**Remember**: The smart router learns from your patterns - the more you use it, the better it gets!
+**Tip**: Use `buddy-remember` to recall past decisions and patterns before starting new work.

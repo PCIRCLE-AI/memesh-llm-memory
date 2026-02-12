@@ -211,7 +211,7 @@ class ClaudeCodeBuddyMCPServer {
    * @private
    */
   private setupHandlers(): void {
-    // List available tools (smart router + core capabilities)
+    // List available tools (memory + core capabilities)
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       const tools = getAllToolDefinitions();
 

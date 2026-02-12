@@ -1108,7 +1108,7 @@ Check logs:
 │              MeMesh Command Reference               │
 ├─────────────────────────────────────────────────────┤
 │ MCP Tools (In Claude Code)                          │
-│   buddy-do "<task>"       Smart task execution      │
+│   buddy-do "<task>"       Execute with memory context│
 │   buddy-remember "<info>" Store/recall memory       │
 │   buddy-help              Quick help guide           │
 │                                                      │

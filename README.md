@@ -141,8 +141,8 @@ AGPL-3.0 - See [LICENSE](LICENSE)
 
 <div align="center">
 
-**Built by vibe coders, for vibe coders** 🚀
+Something not working? [Open an issue](https://github.com/PCIRCLE-AI/claude-code-buddy/issues/new) — we respond fast.
 
-[Report Bug](https://github.com/PCIRCLE-AI/claude-code-buddy/issues) • [Request Feature](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
+[Report Bug](https://github.com/PCIRCLE-AI/claude-code-buddy/issues/new?labels=bug&template=bug_report.md) • [Request Feature](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
 
 </div>

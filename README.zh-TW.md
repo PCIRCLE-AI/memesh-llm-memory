@@ -143,8 +143,8 @@ AGPL-3.0 - 詳見 [LICENSE](LICENSE)
 
 <div align="center">
 
-**由 vibe coders 打造，為 vibe coders 服務** 🚀
+遇到問題？[回報 Issue](https://github.com/PCIRCLE-AI/claude-code-buddy/issues/new) — 我們會快速回應。
 
-[回報 Bug](https://github.com/PCIRCLE-AI/claude-code-buddy/issues) • [功能請求](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
+[回報 Bug](https://github.com/PCIRCLE-AI/claude-code-buddy/issues/new?labels=bug&template=bug_report.md) • [功能請求](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
 
 </div>

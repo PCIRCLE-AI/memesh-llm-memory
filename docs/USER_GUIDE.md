@@ -532,7 +532,7 @@ These tools provide lower-level access to MeMesh capabilities. For complete API 
 - Sync across multiple machines
 - Share project knowledge with team
 
-**Note**: Requires `MEMESH_API_KEY` environment variable. Get your key at https://memesh.ai/settings
+**Note**: Requires `MEMESH_API_KEY` environment variable. Use `memesh login` to authenticate.
 
 📖 **Full Documentation**: [API_REFERENCE.md - memesh-cloud-sync](./api/API_REFERENCE.md#memesh-cloud-sync)
 

@@ -78,7 +78,7 @@ Add MeMesh as an MCP server to Claude Code:
 
 ```bash
 # Edit Claude Code config
-nano ~/.claude.json
+nano ~/.claude/mcp_settings.json
 ```
 
 #### Windows
@@ -236,7 +236,7 @@ Now that you're up and running, explore more:
 1. Verify `config.json` path is correct:
    ```bash
    # Check file exists
-   cat ~/.claude.json
+   cat ~/.claude/mcp_settings.json
    ```
 
 2. Ensure absolute path is used:

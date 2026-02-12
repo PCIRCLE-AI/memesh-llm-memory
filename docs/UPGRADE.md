@@ -412,15 +412,15 @@ If you encounter issues and want to rollback:
 # Uninstall new package
 npm uninstall -g @pcircle/memesh
 
-# Reinstall old package
-npm install -g claude-code-buddy@previous-version
+# Reinstall previous version
+npm install -g @pcircle/memesh@<previous-version>
 ```
 
 ### Step 2: Restore Old Config
 
 ```bash
-# Revert MCP config to old settings
-# Change "memesh" back to "claude-code-buddy" in config file
+# Revert MCP config if needed
+# Run: memesh setup
 ```
 
 ### Step 3: Verify Old Data

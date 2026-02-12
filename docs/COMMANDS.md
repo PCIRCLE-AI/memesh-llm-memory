@@ -321,7 +321,7 @@ Synchronize local knowledge graph memories with MeMesh Cloud.
 }
 ```
 
-**Note:** Requires `MEMESH_API_KEY` environment variable. Get your key at https://memesh.ai/settings
+**Note:** Requires `MEMESH_API_KEY` environment variable. Use `memesh login` to authenticate.
 
 ---
 
@@ -419,7 +419,7 @@ If buddy commands aren't recognized:
 1. **Verify MCP Integration:**
    ```bash
    # Check Claude Code config
-   cat ~/.claude.json
+   cat ~/.claude/mcp_settings.json
    ```
 
 2. **Restart Claude Code:**

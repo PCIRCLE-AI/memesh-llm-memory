@@ -57,12 +57,7 @@ cd claude-code-buddy
 ./scripts/quick-install.sh
 ```
 
-**Then start Claude Code:**
-```bash
-claude --plugin-dir /path/to/claude-code-buddy
-```
-
-**Done!** MeMesh is ready.
+Restart Claude Code. **Done!** MeMesh is ready.
 
 </td>
 <td valign="top">
@@ -76,13 +71,13 @@ npm install
 npm run build
 ```
 
-**Configure MCP** in `~/.claude.json`:
+**Configure MCP** in `~/.claude/mcp_settings.json`:
 ```json
 {
   "mcpServers": {
     "memesh": {
       "command": "node",
-      "args": ["/path/to/claude-code-buddy/dist/mcp/server-bootstrap.js"]
+      "args": ["/absolute/path/to/claude-code-buddy/dist/mcp/server-bootstrap.js"]
     }
   }
 }

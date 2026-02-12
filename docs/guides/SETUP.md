@@ -62,18 +62,14 @@ npm run build
 
 ### Step 4: Configure Claude Code MCP Server
 
-Edit `~/.claude.json` and add the claude-code-buddy MCP server:
+Edit `~/.claude/mcp_settings.json` and add the MeMesh MCP server:
 
 ```json
 {
   "mcpServers": {
-    "claude-code-buddy": {
-      "type": "stdio",
+    "memesh": {
       "command": "node",
-      "args": ["/path/to/claude-code-buddy/dist/mcp/server-bootstrap.js"],
-      "env": {
-        "NODE_ENV": "production"
-      }
+      "args": ["/path/to/claude-code-buddy/dist/mcp/server-bootstrap.js"]
     }
   }
 }
@@ -100,7 +96,7 @@ Please use claude-code-buddy to review this code...
 - [ ] Node.js >= 20 installed
 - [ ] Project dependencies installed (`npm install`)
 - [ ] TypeScript compiled (`npm run build`)
-- [ ] MCP server configured in `~/.claude.json`
+- [ ] MCP server configured in `~/.claude/mcp_settings.json`
 - [ ] Claude Code restarted
 
 ## Common Issues (V2.0)
@@ -108,7 +104,7 @@ Please use claude-code-buddy to review this code...
 ### Q: MCP server fails to start
 
 **Solutions**:
-1. Check if `~/.claude.json` path is correct
+1. Check if `~/.claude/mcp_settings.json` path is correct
 2. Confirm `npm run build` executed successfully
 3. Check Claude Code logs: `~/.claude/logs/`
 4. Try running manually: `npm run mcp`

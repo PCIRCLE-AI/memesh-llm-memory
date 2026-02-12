@@ -224,7 +224,6 @@ Process management guide: `docs/MCP_PROCESS_MANAGEMENT.md`
 - **GitHub**: https://github.com/PCIRCLE-AI/claude-code-buddy
 - **NPM**: https://www.npmjs.com/package/@pcircle/memesh
 - **Documentation**: https://github.com/PCIRCLE-AI/claude-code-buddy#readme
-- **Website**: https://memesh.pcircle.ai (ccb.pcircle.com redirects to GitHub repo)
 - **Issues**: https://github.com/PCIRCLE-AI/claude-code-buddy/issues
 - **Discussions**: https://github.com/PCIRCLE-AI/claude-code-buddy/discussions
 

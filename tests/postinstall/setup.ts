@@ -2,7 +2,7 @@
  * Test utilities and setup for postinstall tests
  */
 
-import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync, symlinkSync } from 'fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync, symlinkSync, readlinkSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -17,8 +17,8 @@ export class TestEnvironment {
   public installPath: string;
 
   constructor(name: string) {
-    // Create isolated test directory
-    this.testDir = join(tmpdir(), `memesh-test-${name}-${Date.now()}`);
+    // Create isolated test directory with unpredictable name (secure temp)
+    this.testDir = mkdtempSync(join(tmpdir(), `memesh-test-${name}-`));
     this.claudeDir = join(this.testDir, '.claude');
     this.pluginsDir = join(this.claudeDir, 'plugins');
     this.marketplacesDir = join(this.pluginsDir, 'marketplaces');
@@ -212,8 +212,9 @@ export const assert = {
       throw new Error(`Symlink does not exist: ${linkPath}`);
     }
 
-    const target = readFileSync(linkPath, 'utf-8');
-    // Note: This is simplified - real implementation would use readlink
-    // For now, we'll just check existence
+    const actual = readlinkSync(linkPath);
+    if (actual !== expectedTarget) {
+      throw new Error(`Expected symlink to point to ${expectedTarget}, got ${actual}`);
+    }
   }
 };

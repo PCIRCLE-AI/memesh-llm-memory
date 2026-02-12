@@ -55,15 +55,6 @@ function addIssue(path, severity, message, repairable = true) {
 }
 
 /**
- * Log info message
- */
-function logInfo(message) {
-  if (!silent && !json && verbose) {
-    console.log(`   ℹ️  ${message}`);
-  }
-}
-
-/**
  * Log success message
  */
 function logSuccess(message) {

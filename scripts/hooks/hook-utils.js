@@ -27,8 +27,21 @@ export const HOME_DIR = process.env.HOME || os.homedir();
 /** State directory for hook data */
 export const STATE_DIR = path.join(HOME_DIR, '.claude', 'state');
 
-/** MeMesh knowledge graph database path */
-export const MEMESH_DB_PATH = path.join(HOME_DIR, '.claude-code-buddy', 'knowledge-graph.db');
+/** MeMesh knowledge graph database path (mirrors PathResolver logic from src/utils/PathResolver.ts) */
+function resolveMemeshDbPath() {
+  const primaryDir = path.join(HOME_DIR, '.memesh');
+  const legacyDir = path.join(HOME_DIR, '.claude-code-buddy');
+
+  if (fs.existsSync(path.join(primaryDir, 'knowledge-graph.db'))) {
+    return path.join(primaryDir, 'knowledge-graph.db');
+  }
+  if (fs.existsSync(path.join(legacyDir, 'knowledge-graph.db'))) {
+    return path.join(legacyDir, 'knowledge-graph.db');
+  }
+  return path.join(primaryDir, 'knowledge-graph.db');
+}
+
+export const MEMESH_DB_PATH = resolveMemeshDbPath();
 
 /** Hook error log file */
 export const ERROR_LOG_PATH = path.join(STATE_DIR, 'hook-errors.log');

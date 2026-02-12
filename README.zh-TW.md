@@ -2,142 +2,139 @@
 
 # 🧠 MeMesh
 
-### **為 Claude Code 添加持久記憶**
+### Claude Code 的持久記憶
 
-**讓 Claude 記住決策、脈絡、代碼。長期記憶，開發更快。**
+Claude 每次開新 session 都會忘記一切。MeMesh 解決這個問題。
 
 [![npm version](https://img.shields.io/npm/v/@pcircle/memesh)](https://www.npmjs.com/package/@pcircle/memesh)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-1.25.3-purple.svg)](https://modelcontextprotocol.io)
 
-[🚀 快速安裝](#-快速安裝) • [💬 指令](#-三個指令統治一切) • [📖 文件](docs/) • [English](README.md)
+[安裝](#安裝) • [使用方式](#使用方式) • [疑難排解](#疑難排解) • [English](README.md)
 
 </div>
 
 ---
 
-## 🤔 問題
+## 問題
 
-每次開新的 Claude Code session：
+每次開新的 Claude Code session 都從零開始：
 
 ```
-你：「還記得我們的 auth 設定嗎？」
-Claude：「我沒有那個 context...」
-你：*第 47 次解釋* 😤
+你：「還記得我們昨天的 auth 設定嗎？」
+Claude：「我沒有之前 session 的 context...」
 ```
 
-**Claude 有失憶症。你的生產力崩潰。**
+你不斷重複解釋同樣的決策、架構和限制。
 
----
+## MeMesh 如何幫助
 
-## ✨ 解決方案
+MeMesh 讓 Claude 擁有跨 session 的持久記憶：
 
 ```bash
-# Session 1 (週一)
-你：buddy-do "設定 JWT 認證"
-MeMesh: ✅ 完成 + 已存入記憶
-
-# Session 50 (週五)
-你：buddy-remember "auth"
-MeMesh: 📚 1月15日的 JWT 認證
-     → Access tokens: 15分鐘
-     → Refresh tokens: 7天
+# 週一：你做了一個決策
+buddy-remember "auth"
+# → JWT 認證：access token 15分鐘，refresh token 7天
+# → 1月15日決定，永久儲存
 ```
 
-**MeMesh = 有記憶的 Claude。**
+專案決策、架構脈絡、除錯紀錄 — 全部自動記住。
 
 ---
 
-## 🚀 快速安裝
+## 安裝
+
+**前置需求**：[Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) 和 Node.js >= 20
 
 ```bash
 npm install -g @pcircle/memesh
 ```
 
-重啟 Claude Code。**搞定。**
+重啟 Claude Code，完成。
+
+**驗證安裝** — 在新的 Claude Code session 中輸入：
+
+```
+buddy-help
+```
+
+看到指令列表就代表 MeMesh 正在運作。
 
 <details>
-<summary>📦 替代方案：從原始碼安裝</summary>
+<summary>從原始碼安裝（給貢獻者）</summary>
 
 ```bash
 git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
 cd claude-code-buddy
 npm install && npm run build
-npm link  # 或使用 ./scripts/quick-install.sh
 ```
 
 </details>
 
 ---
 
-## 💬 三個指令統治一切
+## 使用方式
 
-```bash
-buddy-do "任何開發任務"          # 執行 + 記憶
-buddy-remember "主題"           # 即時回想
-buddy-help                      # 卡住時用
-```
+MeMesh 在 Claude Code 中提供 3 個核心指令：
+
+| 指令 | 功能 |
+|------|------|
+| `buddy-do "任務"` | 執行任務並記住學到的內容 |
+| `buddy-remember "主題"` | 回想過去的決策和脈絡 |
+| `buddy-help` | 顯示所有可用指令 |
 
 **範例：**
 
 ```bash
 buddy-do "解釋這個 codebase"
 buddy-do "加上使用者認證"
-buddy-do "修正 build error"
-
 buddy-remember "API 設計決策"
 buddy-remember "為什麼選 PostgreSQL"
-
-buddy-help  # 顯示所有可用指令
 ```
 
----
-
-## 🎯 核心功能
-
-### 🧠 **持久記憶**
-- 記住專案決策（90天）
-- 回想 session context（30天）
-- 語意搜尋所有記憶
-
-### 🔍 **知識圖譜**
-- 自動整理你的知識
-- 連結相關概念
-- FTS5 + 向量搜尋
-
-### ⚡ **零配置**
-- 自動追蹤專案變更
-- 自動標記記憶
-- 安裝即用
+記憶儲存在你的本機，跨 session 持續保存（決策 90 天，session 脈絡 30 天）。
 
 ---
 
-## 📚 了解更多
+## 疑難排解
 
-> **注意**：詳細文檔目前僅提供英文版本
+**MeMesh 沒有載入？**
 
-**核心文檔**：
-- **[使用指南](docs/USER_GUIDE.md)** - 完整使用教學
-- **[指令參考](docs/COMMANDS.md)** - 所有可用指令與工具
-- **[快速開始](docs/GETTING_STARTED.md)** - 新手安裝指南
-- **[疑難排解](docs/TROUBLESHOOTING.md)** - 常見問題
+```bash
+# 檢查安裝
+npm list -g @pcircle/memesh
 
-**進階文檔**：
-- **[架構說明](docs/ARCHITECTURE.md)** - 系統架構與設計
-- **[最佳實踐](docs/BEST_PRACTICES.md)** - 使用建議與技巧
-- **[API 參考](docs/api/API_REFERENCE.md)** - 完整 API 文檔
+# 檢查 Node.js 版本（需要 >= 20）
+node --version
 
----
+# 修復安裝
+memesh setup
+```
 
-## 🤝 貢獻
+然後完全重啟 Claude Code。
 
-歡迎貢獻！請參閱 [CONTRIBUTING.md](CONTRIBUTING.md)
+完整指南請參閱 [疑難排解文件](docs/TROUBLESHOOTING.md)。
 
 ---
 
-## 📄 授權
+## 文件
 
-AGPL-3.0 - 詳見 [LICENSE](LICENSE)
+> 詳細文件目前僅提供英文版
+
+- **[快速開始](docs/GETTING_STARTED.md)** — 首次安裝指引
+- **[使用指南](docs/USER_GUIDE.md)** — 完整使用教學
+- **[指令參考](docs/COMMANDS.md)** — 所有指令與工具
+- **[架構說明](docs/ARCHITECTURE.md)** — MeMesh 內部運作方式
+
+---
+
+## 貢獻
+
+歡迎貢獻！請參閱 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+## 授權
+
+AGPL-3.0 — 詳見 [LICENSE](LICENSE)
 
 ---
 

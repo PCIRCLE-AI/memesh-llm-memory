@@ -1,168 +1,48 @@
-# Quick Start Guide (15 Minutes)
+# Quick Start Guide (2 Minutes)
 
-Get started with MeMesh in 15 minutes - from zero to your first enhanced Claude Code query.
+Get MeMesh running in under 2 minutes.
 
-## 📋 Prerequisites
+## Prerequisites
 
-Before you begin, ensure you have:
-
-- **Node.js 20+** installed ([download here](https://nodejs.org/))
+- **Node.js 20+** ([download here](https://nodejs.org/))
 - **Claude Code CLI** installed and configured
-- **Anthropic API key** (optional if using MCP Server Mode) - [get one here](https://console.anthropic.com/)
 
-> **Note:** In MCP Server Mode (default), Claude Code manages API access directly. You only need an Anthropic API key for standalone orchestrator usage.
+No API keys needed — MeMesh uses your Claude Code subscription.
 
 ---
 
-## 🚀 Installation
-
-### Step 1: Clone and Setup (5 minutes)
-
-Clone the repository and run the interactive installer:
+## Installation
 
 ```bash
-# Clone repository
+npm install -g @pcircle/memesh
+```
+
+Restart Claude Code. That's it.
+
+<details>
+<summary><strong>Install from source (for contributors)</strong></summary>
+
+```bash
 git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
 cd claude-code-buddy
-
-# Run interactive installer
-./scripts/install.sh
+npm install && npm run build
 ```
 
-**The installer will:**
-- ✅ Check Node.js version (20+ required)
-- ✅ Install npm dependencies
-- ✅ Build the project
-- ✅ Create `.env` file from template
-- ✅ Configure MCP server integration
-- ✅ Run validation tests
+The build auto-configures MCP settings. Restart Claude Code after building.
 
-**Expected output:** Step-by-step confirmation for each phase (prerequisites, install, build, env, MCP config, tests).
+</details>
 
 ---
 
-### Step 2: Configure Environment (2 minutes)
+## Verify It Works
 
-Create a `.env` file from the template (or use the setup script to do this automatically), then review and customize if needed:
-
-```bash
-# Create from template (if missing)
-cp .env.example .env
-
-# View current configuration
-cat .env
-```
-
-**Default configuration:**
-```env
-# MCP Server Mode (Claude Code manages API access)
-MCP_SERVER_MODE=true
-
-# Environment
-NODE_ENV=development
-PORT=3000
-LOG_LEVEL=info
+In Claude Code, type:
 
 ```
-
-**When to add API keys:**
-- **Anthropic API Key** (optional): Only needed if you set `MCP_SERVER_MODE=false` for standalone usage
-
----
-
-### Step 3: Configure Claude Code (5 minutes)
-
-Add MeMesh as an MCP server to Claude Code:
-
-#### macOS / Linux
-
-```bash
-# Edit Claude Code config
-nano ~/.claude/mcp_settings.json
+buddy-help
 ```
 
-#### Windows
-
-```bash
-# Edit Claude Code config
-notepad %USERPROFILE%\.claude\mcp_settings.json
-```
-
-**Add this configuration:**
-
-```json
-{
-  "mcpServers": {
-    "claude-code-buddy": {
-      "command": "node",
-      "args": ["/absolute/path/to/claude-code-buddy/dist/mcp/server-bootstrap.js"],
-      "env": {
-        "NODE_ENV": "production"
-      }
-    }
-  }
-}
-```
-
-> **Important:** Replace `/absolute/path/to/claude-code-buddy/` with your actual installation path.
->
-> To find your path:
-> ```bash
-> # In the claude-code-buddy directory
-> pwd
-> # Use the output in your config.json
-> ```
-
-**Save the file and restart Claude Code.**
-
----
-
-### Step 4: Verify Connection (1 minute)
-
-Test that Claude Code can connect to MeMesh:
-
-```bash
-# In Claude Code, run:
-claude mcp list
-```
-
-**Expected output:**
-```
-Connected MCP Servers:
-✅ memesh (8 tools available)
-   Core: buddy-do, buddy-remember, buddy-help
-   MeMesh: memesh-record-mistake, memesh-create-entities,
-           memesh-hook-tool-use, memesh-generate-tests
-   Cloud: memesh-cloud-sync
-```
-
----
-
-### Step 5: Test Capability Integration (2 minutes)
-
-Verify MeMesh is working by checking available capabilities:
-
-```bash
-# In Claude Code
-"List available MeMesh capabilities"
-```
-
-**Expected response:**
-```
-MeMesh provides 8 tools:
-
-Core Commands (3):
-  1. buddy-do - Smart task routing and execution
-  2. buddy-remember - Project memory recall
-  3. buddy-help - Command documentation
-
-Other Tools (5):
-  4. memesh-create-entities - Create knowledge entities
-  5. memesh-record-mistake - Error recording
-  6. memesh-hook-tool-use - Tool usage tracking
-  7. memesh-generate-tests - Test generation
-  8. memesh-cloud-sync - Cloud synchronization
-```
+You should see a list of available commands including `buddy-do`, `buddy-remember`, and `buddy-help`.
 
 ---
 
@@ -389,36 +269,12 @@ If you're still stuck after trying the troubleshooting steps:
 
 ---
 
-## ⏱️ Time Breakdown
+## What's Next?
 
-- **Step 1:** Clone and Setup - 5 minutes
-- **Step 2:** Configure Environment - 2 minutes
-- **Step 3:** Configure Claude Code - 5 minutes
-- **Step 4:** Verify Connection - 1 minute
-- **Step 5:** Test Integration - 2 minutes
+You've successfully set up MeMesh! Try these next:
 
-**Total:** 15 minutes
+1. **Store a decision**: `"Remember: We chose PostgreSQL for JSONB support"`
+2. **Recall it later**: `buddy-remember "database choice"`
+3. **Execute a task**: `buddy-do "review this code for security issues"`
 
----
-
-## 🎉 What's Next?
-
-You've successfully set up MeMesh! Here are recommended next steps:
-
-1. **Try Different Capabilities:**
-   - Code review with security focus
-   - API design for RESTful endpoints
-   - Refactoring for performance
-   - Debugging systematic errors
-
-2. **Explore Advanced Features:**
-   - Evolution system for learning patterns
-   - Knowledge graph for relationship mapping
-   - Cost tracking and performance monitoring
-
-3. **Customize Configuration:**
-- Adjust capability routing rules
-   - Configure logging and metrics
-   - Set up custom routing rules
-
-**Happy coding with MeMesh! 🚀**
+For more, see the [User Guide](../USER_GUIDE.md) and [Commands Reference](../COMMANDS.md).

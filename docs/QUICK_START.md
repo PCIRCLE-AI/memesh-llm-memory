@@ -25,27 +25,21 @@ npm --version   # Should be v9.0.0 or higher
 
 ## Installation
 
-### Option 1: Interactive Setup (Recommended) 🚀
-
-The easiest way to get started:
+### Recommended: npm Install
 
 ```bash
-# Install MeMesh
 npm install -g @pcircle/memesh
+```
 
-# Run interactive setup wizard
+The postinstall script automatically configures Claude Code's MCP settings. Restart Claude Code and you're ready.
+
+If the auto-configuration didn't work, run the setup wizard:
+
+```bash
 memesh setup
 ```
 
-The setup wizard will:
-- ✅ Auto-detect Claude Code installation
-- ✅ Generate MCP configuration automatically
-- ✅ Validate setup
-- ✅ Guide you through next steps
-
-**Success Rate**: 95% first-time success with the wizard!
-
-### Option 2: Manual Setup
+### Alternative: Manual Setup
 
 If you prefer manual configuration:
 

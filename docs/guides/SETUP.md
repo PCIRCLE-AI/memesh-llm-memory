@@ -1,48 +1,30 @@
-# 🚀 MeMesh Setup Guide (v2.2 MCP Server Pattern)
+# MeMesh Setup Guide
 
 ## Quick Installation (Recommended)
 
-**The easiest way to install MeMesh is using the automated installer:**
+**One command, fully automatic:**
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
-cd claude-code-buddy
-
-# 2. Run the interactive installer
-./scripts/install.sh
+npm install -g @pcircle/memesh
 ```
 
-The installer will guide you through core setup and a basic usage demo:
+The postinstall script automatically configures Claude Code's MCP settings. Just restart Claude Code and you're ready to go.
 
-- ✓ Check prerequisites (Node.js 20+, npm, git)
-- ✓ Install dependencies
-- ✓ Build the project
-- ✓ Check system resources
-- ✓ Configure environment
-- ✓ Configure Claude Code MCP integration
-- ✓ Test installation
-- 📚 Basic usage demo
-
-**No API keys needed in MCP server mode** - uses your Claude Code subscription.
-
-**After installation**: Restart Claude Code and start using MeMesh!
+**No API keys needed** — uses your Claude Code subscription.
 
 ---
 
-## Advanced Manual Installation
+## Install from Source (For Contributors)
 
-If you prefer manual control over the installation process, follow these steps:
+If you want to modify the code or contribute:
 
-### Step 1: Install Dependencies
+### Step 1: Clone and Build
 
 ```bash
-# Clone repository
 git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
 cd claude-code-buddy
-
-# Install Node.js dependencies
 npm install
+npm run build
 ```
 
 ### Step 2: Configure Environment

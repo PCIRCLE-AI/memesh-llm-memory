@@ -39,39 +39,28 @@ MeMesh: "JWT auth from Jan 15: 15min access tokens, 7-day refresh..."
 
 ## Installation
 
-Choose your path:
+### Quick Install (Recommended)
 
-<table>
-<tr>
-<th width="50%">Quick Install (Recommended)</th>
-<th width="50%">Developer Install</th>
-</tr>
-<tr>
-<td valign="top">
+One command, fully automatic:
 
-**Best for**: Getting started fast
+```bash
+npm install -g @pcircle/memesh
+```
+
+Restart Claude Code. **Done!**
+
+No config files to edit. No API keys needed. The postinstall script auto-configures everything.
+
+<details>
+<summary><strong>Install from source (for contributors)</strong></summary>
 
 ```bash
 git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
 cd claude-code-buddy
-./scripts/quick-install.sh
+npm install && npm run build
 ```
 
-Restart Claude Code. **Done!** MeMesh is ready.
-
-</td>
-<td valign="top">
-
-**Best for**: Contributing or customizing
-
-```bash
-git clone https://github.com/PCIRCLE-AI/claude-code-buddy.git
-cd claude-code-buddy
-npm install
-npm run build
-```
-
-**Configure MCP** in `~/.claude/mcp_settings.json`:
+Then configure MCP in `~/.claude/mcp_settings.json`:
 ```json
 {
   "mcpServers": {
@@ -83,19 +72,7 @@ npm run build
 }
 ```
 
-</td>
-</tr>
-</table>
-
-### Automatic Setup
-
-The quick install script automatically:
-- ✅ Checks Node.js 20+ is installed
-- ✅ Installs dependencies
-- ✅ Builds the project
-- ✅ Shows activation command
-
-**No config files to edit. No API keys to find. Just install and go.**
+</details>
 
 ---
 

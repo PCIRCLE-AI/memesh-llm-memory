@@ -76,9 +76,11 @@ echo ""
 # 4. Create GitHub Release
 echo "🎉 Step 4/6: Creating GitHub Release..."
 
-# Extract changelog for this version
+# Extract changelog for this version (use sed to drop last line — macOS head lacks -n -1)
 RELEASE_NOTES=$(mktemp)
-sed -n "/^## \[$NEW_VERSION\]/,/^## \[/p" CHANGELOG.md | head -n -1 > "$RELEASE_NOTES"
+if [ -f CHANGELOG.md ]; then
+  sed -n "/^## \[$NEW_VERSION\]/,/^## \[/p" CHANGELOG.md | sed '$ d' > "$RELEASE_NOTES"
+fi
 
 if [ ! -s "$RELEASE_NOTES" ]; then
   echo "⚠️  No changelog entry found for v$NEW_VERSION"

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.8.9] - 2026-02-12
+
 ### Documentation
 
 - Fixed outdated version numbers across all docs (2.8.0/2.8.3 → 2.8.8)
@@ -15,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prioritized `npm install -g @pcircle/memesh` as recommended installation method in all guides
 - Updated repo metadata (GitHub description, topics, keywords)
 - Fixed outdated paths, dead links, and wrong package names across docs
+- Rebuilt CHANGELOG with complete v2.0.0–v2.8.8 history
+
+### Fixed
+
 - Fixed `release.sh` `head -n -1` incompatibility on macOS
 
 ## [2.8.8] - 2026-02-12

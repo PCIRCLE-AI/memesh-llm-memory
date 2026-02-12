@@ -15,7 +15,7 @@ You describe the outcome, and MeMesh selects the best internal capability automa
 
 ## 🚀 Quick Start
 
-### 1) Run a task with smart routing
+### 1) Run a task
 ```
 buddy-do "implement user authentication with JWT"
 ```
@@ -32,7 +32,7 @@ memesh-generate-tests "add email-based login"
 
 ## 🧰 Tool Overview
 
-- **buddy-do**: Execute tasks with smart routing
+- **buddy-do**: Execute tasks with memory context
 - **buddy-remember**: Recall project memory and decisions
 - **buddy-help**: Command help and usage
 - **memesh-generate-tests**: Implementation plan generation

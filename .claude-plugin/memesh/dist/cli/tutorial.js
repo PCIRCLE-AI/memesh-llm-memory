@@ -175,10 +175,10 @@ ${chalk.dim('  • "fix database connection bug"')}
             },
         ]);
         console.log(chalk.green(`
-✓ Great! You've learned how to use buddy-do for task routing.
+✓ Great! You've learned how to use buddy-do for task execution.
 
 ${chalk.bold('Key Takeaway:')}
-Use buddy-do whenever you have a complex task that needs smart routing.
+Use buddy-do whenever you have a development task that benefits from context-aware execution.
 `));
         await this.pressEnterToContinue();
         this.progress.completedSteps.push('first-buddy-do');

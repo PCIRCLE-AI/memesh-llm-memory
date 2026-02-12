@@ -95,7 +95,7 @@ ${chalk.bold.cyan('MeMesh Complete Command Reference')}
 ${chalk.dim('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
 
 ${chalk.bold.yellow('📋 Core Commands')}
-  ${chalk.cyan('buddy-do')} <task>           Execute tasks with smart routing
+  ${chalk.cyan('buddy-do')} <task>           Execute tasks with memory context
   ${chalk.cyan('buddy-remember')} <query>    Recall project memory & decisions
   ${chalk.cyan('buddy-help')} [command]      Show this help or command-specific help
   ${chalk.cyan('buddy-record-mistake')}      Record AI mistakes for learning

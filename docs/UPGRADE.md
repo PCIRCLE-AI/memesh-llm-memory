@@ -199,8 +199,8 @@ Before you start, ensure:
 4. ✅ **Note your current MCP configuration** (we'll update it later)
    ```bash
    # Find your config file
-   cat ~/.claude/config.json 2>/dev/null || \
-   cat ~/.config/claude/claude_desktop_config.json 2>/dev/null
+   cat ~/.claude/mcp_settings.json 2>/dev/null || \
+   cat ~/Library/Application\ Support/Claude/claude_desktop_config.json 2>/dev/null
    ```
 
 ---
@@ -261,7 +261,7 @@ npm run setup
 #### Option B: Manual Update
 
 1. Find your MCP config file:
-   - Claude Code CLI: `~/.claude/config.json`
+   - Claude Code CLI: `~/.claude/mcp_settings.json`
    - Claude Desktop: `~/.config/claude/claude_desktop_config.json`
 
 2. Open the file and update:
@@ -394,7 +394,7 @@ cp -r ~/.claude-code-buddy-backup-YYYYMMDD ~/.memesh
 **Fix**:
 ```bash
 # Edit config and remove old entry:
-nano ~/.claude/config.json
+nano ~/.claude/mcp_settings.json
 
 # Keep only "memesh" entry, delete "claude-code-buddy" entry
 # Restart Claude Code

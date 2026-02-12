@@ -1,21 +1,20 @@
 # MeMesh - AI Assistant Context
 
-> Free & Open Source Plugin that adds intelligence, memory, and task routing to Claude Code
-> Transform Claude Code into a project-aware AI teammate with persistent memory
-> Formerly known as "Claude Code Buddy (CCB)" - renamed to avoid trademark issues
+> Persistent memory plugin for Claude Code
+> Remembers your architecture decisions, coding patterns, and project context across sessions
 
 ## Project Overview
 
-MeMesh is an MCP (Model Context Protocol) server that extends Claude Code with:
+MeMesh is a Claude Code plugin that provides persistent memory via MCP (Model Context Protocol):
 - **Project Memory**: Knowledge graph remembering architecture decisions and coding patterns
-- **Smart Task Routing**: Automatic routing to specialized capabilities (code review, debugging, frontend, backend)
-- **Workflow Guidance**: Phase-aware recommendations and smart planning
-- **Session Health Monitoring**: Token tracking and intelligent context management
+- **Cross-Session Recall**: Query past decisions, patterns, and learnings anytime
+- **Auto-Tracking**: Automatic session summaries and context capture
+- **Local-First**: All data stored locally in SQLite for privacy
 
 **License**: AGPL-3.0
 **Language**: TypeScript
 **Platform**: Node.js 20+
-**Latest Version**: 2.8.0 (2026-02-08)
+**Latest Version**: 2.8.8 (2026-02-12)
 
 ## Quick Start
 
@@ -32,7 +31,7 @@ cd claude-code-buddy
 ```
 
 ### Configuration (Claude Code CLI)
-Add to `~/.claude/config.json`:
+Add to `~/.claude/mcp_settings.json`:
 ```json
 {
   "mcpServers": {
@@ -57,14 +56,11 @@ Add to `~/.claude/config.json`:
 - **Deduplication**: Smart duplicate detection
 - **Cross-Session**: Memory persists across sessions
 
-### 2. Capability Routing
-Automatic routing to specialized capabilities:
-- `code-review`: Security, quality, anti-patterns
-- `debugging`: Systematic debugging methodology
-- `frontend-design`: UI/UX, accessibility, responsive design
-- `backend-systems`: API design, database optimization
-- `test-automation`: Test strategy and implementation
-- `architecture-review`: System design validation
+### 2. Context-Aware Task Execution
+Tasks executed via `buddy-do` are enhanced with project context:
+- Analyzes task complexity and domain
+- Applies relevant memory from knowledge graph
+- Captures task metadata for future recall
 
 ### 3. Process Management (v2.5.0+)
 New CLI tools for managing MCP server processes:
@@ -88,7 +84,7 @@ New CLI tools for managing MCP server processes:
 ## Available Commands
 
 ### Buddy Commands (Direct Invocation)
-- `buddy-do "task description"` - Execute task with smart routing
+- `buddy-do "task description"` - Execute task with memory context
 - `buddy-remember "query"` - Search project memory
 - `buddy-help` - Show available commands
 - `memesh-create-entities` - Add entities to knowledge graph
@@ -227,19 +223,21 @@ Process management guide: `docs/MCP_PROCESS_MANAGEMENT.md`
 - **Issues**: https://github.com/PCIRCLE-AI/claude-code-buddy/issues
 - **Discussions**: https://github.com/PCIRCLE-AI/claude-code-buddy/discussions
 
-## Recent Updates (v2.6.4)
+## Recent Updates
 
-### New in v2.6.4 (2026-02-02)
-- 🏷️ **Rebrand**: Renamed to MeMesh to avoid trademark issues
-- 📦 **NPM Package**: Now available as @pcircle/memesh
-- 🔧 **Binary Fix**: Fixed execute permissions for memesh command
-- 📝 **Documentation**: Updated all references to new brand
-- 🌐 **Domain**: Removed website, ccb.pcircle.com redirects to GitHub
+### v2.8.8 (2026-02-12)
+- Documentation cleanup and accuracy fixes
+- Security alert resolutions
+- Release script macOS compatibility fix
+
+### v2.8.4 (2026-02-10)
+- Plugin packaging fixes (version sync across 4 locations)
+- Marketplace registration fix
+- Automated pre-deployment checks
 
 ### Previous Versions
+- v2.6.4: Rebrand to MeMesh, NPM as @pcircle/memesh
 - v2.5.0: Process management CLI tools
-- v2.4.2: Fixed config path fallback logic
-- v2.4.1: Corrected Claude Code CLI config path
 - v2.4.0: Enhanced test parsing and memory deduplication
 
 ## Contributing

@@ -75,7 +75,7 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
 
   const buddyDoTool: MCPToolDefinition = {
     name: 'buddy-do',
-    description: 'Execute development tasks with smart routing and complexity analysis',
+    description: 'Execute development tasks with context-aware analysis and memory integration',
     inputSchema: {
       type: 'object' as const,
       properties: {

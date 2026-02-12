@@ -40,7 +40,7 @@ export interface ConfirmationResponse {
 /**
  * Human-in-the-Loop UI Formatter
  *
- * Formats smart routing decisions as clear,
+ * Formats task execution decisions as clear,
  * human-readable confirmation prompts.
  */
 export class HumanInLoopUI {

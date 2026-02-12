@@ -364,7 +364,7 @@ memesh-generate-tests "<file>"       # Auto-generate tests for a file
 **MeMesh operates on three principles:**
 
 1. **Memory First**: Every significant action is recorded automatically
-2. **Smart Routing**: Tasks are routed to specialized capabilities
+2. **Context-Aware**: Tasks are enhanced with relevant project memory
 3. **Zero Friction**: No configuration, no API keys, no setup ceremony
 
 **The result**: Claude Code that remembers your project like a teammate, not a tool.

@@ -9,7 +9,7 @@
 | "remember when we..." | `buddy-remember` | Search project memory |
 | "what did we decide..." | `buddy-remember` | Recall past decisions |
 | "why did we choose..." | `buddy-remember` | Find architecture choices |
-| "do this task..." | `buddy-do` | Execute with smart routing |
+| "do this task..." | `buddy-do` | Execute with memory context |
 | "implement X..." | `buddy-do` | Task execution |
 | "generate tests..." | `memesh-generate-tests` | Create test cases |
 

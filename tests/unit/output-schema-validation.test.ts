@@ -201,7 +201,7 @@ describe('Output Schema Validation', () => {
         commands: [
           {
             name: 'buddy-do',
-            description: 'Execute a task with smart routing',
+            description: 'Execute a task with memory context',
             usage: 'buddy-do --task "setup authentication"',
             examples: ['buddy-do --task "fix login bug"'],
           },

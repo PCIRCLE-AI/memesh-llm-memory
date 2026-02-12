@@ -1,6 +1,6 @@
 {
   "name": "memesh",
-  "description": "MeMesh - Your AI memory mesh for Claude Code. Smart routing, persistent memory, and intelligent task management.",
+  "description": "MeMesh — Persistent memory plugin for Claude Code. Remembers architecture decisions, coding patterns, and project context across sessions.",
   "author": {
     "name": "PCIRCLE AI"
   },

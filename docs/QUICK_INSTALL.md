@@ -89,7 +89,7 @@ When you install MeMesh, you get access to:
 
 - ✅ **Persistent Memory**: Knowledge graph storage across sessions
 - ✅ **Semantic Search**: Find memories by meaning with vector embeddings
-- ✅ **Smart Routing**: Automatic task complexity analysis
+- ✅ **Context-Aware Tasks**: Memory-enhanced task execution
 - ✅ **Auto-Memory**: Automatic session summaries and recall
 - ✅ **Local-first**: All data stored locally for privacy
 - ✅ **MCP 2025-11-25 Compliant**: Full MCP spec compliance
@@ -123,7 +123,7 @@ buddy-help
 📖 MeMesh Command Reference
 
 Available Commands:
-  buddy-do              - Execute tasks with smart routing
+  buddy-do              - Execute tasks with memory context
   buddy-remember        - Recall project memory (with semantic search!)
   buddy-help            - Show this help
   ...

@@ -61,9 +61,10 @@ Router      Knowledge Graph
 MeMesh operates as an MCP server and requires configuration in Claude Code's settings.
 
 **Configuration File Location**:
-- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-- **Linux**: `~/.config/Claude/claude_desktop_config.json`
+- **Claude Code CLI**: `~/.claude/mcp_settings.json`
+- **Claude Desktop (macOS)**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Claude Desktop (Windows)**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **Claude Desktop (Linux)**: `~/.config/Claude/claude_desktop_config.json`
 
 **Basic Configuration**:
 ```json
@@ -115,7 +116,7 @@ MeMesh provides 8 MCP tools organized into three categories:
 
 | Tool | Purpose | Complexity |
 |------|---------|-----------|
-| `buddy-do` | Execute tasks with smart routing | Simple |
+| `buddy-do` | Execute tasks with memory context | Simple |
 | `buddy-remember` | Store and recall project memory | Simple |
 | `buddy-help` | Get help and command reference | Simple |
 
@@ -158,7 +159,7 @@ MeMesh provides 8 MCP tools organized into three categories:
   "properties": {
     "task": {
       "type": "string",
-      "description": "Task description for MeMesh to execute with smart routing",
+      "description": "Task description for MeMesh to execute with memory context",
       "minLength": 1
     }
   },

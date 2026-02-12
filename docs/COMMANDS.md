@@ -17,7 +17,7 @@ Buddy commands provide a natural, conversational interface to MeMesh's functiona
 
 ### `buddy do <task>`
 
-Execute any development task with smart routing.
+Execute any development task with memory-enhanced context.
 
 **What it does:**
 - Analyzes task complexity

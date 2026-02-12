@@ -9,7 +9,7 @@ This guide provides proven workflows and best practices for using MeMesh effecti
 
 1. [Core Principles](#core-principles)
 2. [Memory Management](#memory-management)
-3. [Task Routing Strategies](#task-routing-strategies)
+3. [Effective Task Descriptions](#effective-task-descriptions)
 4. [Workflow Patterns](#workflow-patterns)
 5. [Team Collaboration](#team-collaboration)
 6. [Performance Optimization](#performance-optimization)
@@ -195,7 +195,7 @@ buddy-remember "DEPRECATED: Old auth system used sessions. Now using JWT as of 2
 
 ---
 
-## Task Routing Strategies
+## Effective Task Descriptions
 
 ### Task Decomposition
 
@@ -671,7 +671,7 @@ buddy-remember "PROBLEM: Intermittent 500 errors. CAUSE: Connection pool exhaust
 │   ✓ Include context and reasoning              │
 │   ✓ Review and consolidate weekly              │
 │                                                 │
-│ Task Routing                                    │
+│ Task Descriptions                               │
 │   ✓ Break down complex tasks                   │
 │   ✓ Use specific, goal-oriented descriptions   │
 │   ✓ Provide constraints and context            │
@@ -701,4 +701,4 @@ For more information:
 - [Quick Start](./QUICK_START.md) - Getting started guide
 - [Troubleshooting](./TROUBLESHOOTING.md) - Common issues and solutions
 
-**MeMesh** - Your AI memory mesh for Claude Code
+**MeMesh** — Persistent memory for Claude Code

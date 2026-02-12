@@ -55,9 +55,9 @@ If you prefer manual configuration:
    ```
 
 2. **Locate Claude Code config**:
-   - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-   - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-   - Linux: `~/.config/Claude/claude_desktop_config.json`
+   - Claude Code CLI: `~/.claude/mcp_settings.json`
+   - Claude Desktop (macOS): `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - Claude Desktop (Windows): `%APPDATA%\Claude\claude_desktop_config.json`
 
 3. **Add MCP server configuration**:
    ```json

@@ -2,7 +2,7 @@
  * BuddyCommands - User-friendly command layer for MeMesh
  *
  * Provides natural language command interface:
- * - buddy do <task>         - Execute tasks with smart routing
+ * - buddy do <task>         - Execute tasks with context-aware analysis
  * - buddy remember <query>  - Recall project memory
  * - buddy help              - Show command help
  */
@@ -163,7 +163,7 @@ ${chalk.bold.cyan('MeMesh Complete Command Reference')}
 ${chalk.dim('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
 
 ${chalk.bold.yellow('📋 Core Commands')}
-  ${chalk.cyan('buddy-do')} <task>           Execute tasks with smart routing
+  ${chalk.cyan('buddy-do')} <task>           Execute tasks with memory context
   ${chalk.cyan('buddy-remember')} <query>    Recall project memory & decisions
   ${chalk.cyan('buddy-help')} [command]      Show this help or command-specific help
   ${chalk.cyan('buddy-record-mistake')}      Record AI mistakes for learning

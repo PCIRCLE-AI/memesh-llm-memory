@@ -30,7 +30,7 @@ export const CommonSchemas = {
 export function getAllToolDefinitions() {
     const buddyDoTool = {
         name: 'buddy-do',
-        description: 'Execute development tasks with smart routing and complexity analysis',
+        description: 'Execute development tasks with context-aware analysis and memory integration',
         inputSchema: {
             type: 'object',
             properties: {

@@ -85,7 +85,7 @@ nano ~/.claude/mcp_settings.json
 
 ```bash
 # Edit Claude Code config
-notepad %USERPROFILE%\.claude\config.json
+notepad %USERPROFILE%\.claude\mcp_settings.json
 ```
 
 **Add this configuration:**

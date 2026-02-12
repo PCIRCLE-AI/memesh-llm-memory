@@ -16,7 +16,7 @@ const packageJson = require('../../package.json');
 const program = new Command();
 program
     .name('memesh')
-    .description('MeMesh - Your AI memory mesh for Claude Code')
+    .description('MeMesh — Persistent memory plugin for Claude Code')
     .version(packageJson.version, '-v, --version', 'Show version number');
 program
     .command('setup')

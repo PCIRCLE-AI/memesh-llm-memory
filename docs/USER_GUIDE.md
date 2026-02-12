@@ -14,7 +14,7 @@ Welcome to the complete MeMesh User Guide! This guide provides detailed informat
    - [Learning & Error Tracking](#learning--error-tracking)
 4. [CLI Commands](#cli-commands)
 5. [Memory System](#memory-system)
-6. [Smart Routing](#smart-routing)
+6. [Task Execution](#task-execution)
 7. [Configuration](#configuration)
 8. [Advanced Usage](#advanced-usage)
 9. [Troubleshooting](#troubleshooting)
@@ -25,10 +25,10 @@ Welcome to the complete MeMesh User Guide! This guide provides detailed informat
 
 ### What is MeMesh?
 
-MeMesh is your AI memory mesh for Claude Code - a persistent memory and smart routing system that helps you:
+MeMesh is a persistent memory plugin for Claude Code that helps you:
 
-- **Execute tasks with intelligence**: Smart routing to specialized capabilities
 - **Remember across sessions**: Persistent knowledge graph storage
+- **Execute tasks with context**: Memory-enhanced task execution
 - **Learn from experience**: Auto-tracking and pattern recognition
 - **Work efficiently**: Context-aware assistance
 
@@ -59,7 +59,7 @@ Claude Code ──stdio──► MeMesh MCP Server
 
 ### buddy-do
 
-**Purpose**: Execute tasks with smart routing to specialized capabilities
+**Purpose**: Execute tasks with memory-enhanced context
 
 **Syntax**:
 ```
@@ -808,9 +808,9 @@ buddy-remember "Using bcrypt for password hashing"
 
 ---
 
-## Smart Routing
+## Task Execution
 
-### How Task Routing Works
+### How Task Execution Works
 
 **1. Task Analysis**:
 ```
@@ -900,9 +900,10 @@ Setup user authentication with JWT
 ### MCP Configuration File
 
 **Location**:
-- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-- **Linux**: `~/.config/Claude/claude_desktop_config.json`
+- **Claude Code CLI**: `~/.claude/mcp_settings.json`
+- **Claude Desktop (macOS)**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Claude Desktop (Windows)**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **Claude Desktop (Linux)**: `~/.config/Claude/claude_desktop_config.json`
 
 **Structure**:
 ```json
@@ -1154,4 +1155,4 @@ Check logs:
 
 ---
 
-**MeMesh** - Your AI memory mesh for Claude Code
+**MeMesh** — Persistent memory for Claude Code

@@ -1,7 +1,7 @@
 {
   "name": "@pcircle/memesh",
   "version": "2.8.8",
-  "description": "MeMesh - Your AI memory mesh for Claude Code. Smart routing, persistent memory, and intelligent task management.",
+  "description": "MeMesh — Persistent memory plugin for Claude Code. Remembers architecture decisions, coding patterns, and project context across sessions.",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
@@ -55,11 +55,11 @@
   "keywords": [
     "claude",
     "claude-code",
+    "claude-code-plugin",
     "mcp",
-    "ai-assistant",
-    "code-buddy",
-    "prompt-enhancement",
-    "smart-routing"
+    "ai-memory",
+    "knowledge-graph",
+    "persistent-memory"
   ],
   "author": "PCIRCLE-AI",
   "license": "AGPL-3.0",

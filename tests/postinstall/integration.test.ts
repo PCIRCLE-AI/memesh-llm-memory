@@ -6,7 +6,6 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { TestEnvironment } from './setup';
 import {
   detectInstallMode,
-  getPluginInstallPath,
   ensureMarketplaceRegistered,
   ensureSymlinkExists,
   ensurePluginEnabled,

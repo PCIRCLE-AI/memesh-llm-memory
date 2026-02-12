@@ -284,25 +284,23 @@ try {
     }
   }
 
-  // Update known_marketplaces.json
+  // Update known_marketplaces.json (read directly, no existsSync to avoid TOCTOU race)
   let knownMarketplaces = {};
-  if (existsSync(knownMarketplacesPath)) {
-    try {
-      const content = readFileSync(knownMarketplacesPath, 'utf-8').trim();
-      if (content) {
-        knownMarketplaces = JSON.parse(content);
-      }
-    } catch (e) {
-      if (e.code === 'ENOENT') {
-        console.log('   ℹ️  No existing marketplace config, creating new');
-      } else if (e instanceof SyntaxError) {
-        const backupPath = `${knownMarketplacesPath}.backup-${Date.now()}`;
-        try { copyFileSync(knownMarketplacesPath, backupPath); } catch {}
-        console.log(`   ⚠️  Corrupted marketplace config backed up to: ${backupPath}`);
-      } else {
-        console.error(`   ❌ Unexpected error reading marketplace config: ${e.code || e.message}`);
-        throw e;
-      }
+  try {
+    const content = readFileSync(knownMarketplacesPath, 'utf-8').trim();
+    if (content) {
+      knownMarketplaces = JSON.parse(content);
+    }
+  } catch (e) {
+    if (e.code === 'ENOENT') {
+      console.log('   ℹ️  No existing marketplace config, creating new');
+    } else if (e instanceof SyntaxError) {
+      const backupPath = `${knownMarketplacesPath}.backup-${Date.now()}`;
+      try { copyFileSync(knownMarketplacesPath, backupPath); } catch {}
+      console.log(`   ⚠️  Corrupted marketplace config backed up to: ${backupPath}`);
+    } else {
+      console.error(`   ❌ Unexpected error reading marketplace config: ${e.code || e.message}`);
+      throw e;
     }
   }
 
@@ -344,26 +342,25 @@ const settingsPath = join(homedir(), '.claude', 'settings.json');
 try {
   let settings = { enabledPlugins: {} };
 
-  if (existsSync(settingsPath)) {
-    try {
-      const content = readFileSync(settingsPath, 'utf-8').trim();
-      if (content) {
-        settings = JSON.parse(content);
-        if (!settings.enabledPlugins) {
-          settings.enabledPlugins = {};
-        }
+  // Read directly without existsSync to avoid TOCTOU race
+  try {
+    const content = readFileSync(settingsPath, 'utf-8').trim();
+    if (content) {
+      settings = JSON.parse(content);
+      if (!settings.enabledPlugins) {
+        settings.enabledPlugins = {};
       }
-    } catch (e) {
-      if (e.code === 'ENOENT') {
-        console.log('   ℹ️  No existing settings found, creating new');
-      } else if (e instanceof SyntaxError) {
-        const backupPath = `${settingsPath}.backup-${Date.now()}`;
-        try { copyFileSync(settingsPath, backupPath); } catch {}
-        console.log(`   ⚠️  Corrupted settings backed up to: ${backupPath}`);
-      } else {
-        console.error(`   ❌ Unexpected error reading settings: ${e.code || e.message}`);
-        throw e;
-      }
+    }
+  } catch (e) {
+    if (e.code === 'ENOENT') {
+      console.log('   ℹ️  No existing settings found, creating new');
+    } else if (e instanceof SyntaxError) {
+      const backupPath = `${settingsPath}.backup-${Date.now()}`;
+      try { copyFileSync(settingsPath, backupPath); } catch {}
+      console.log(`   ⚠️  Corrupted settings backed up to: ${backupPath}`);
+    } else {
+      console.error(`   ❌ Unexpected error reading settings: ${e.code || e.message}`);
+      throw e;
     }
   }
 

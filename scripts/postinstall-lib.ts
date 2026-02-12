@@ -132,7 +132,7 @@ export function backupFile(path: string): string | null {
     return null;
   }
 
-  const backupPath = `${path}.backup-${Date.now()}`;
+  const backupPath = `${path}.backup-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   try {
     copyFileSync(path, backupPath);
     return backupPath;

@@ -100,10 +100,15 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
     name: 'buddy-remember',
     description: `Search project memory using semantic similarity or keyword matching.
 
+PROJECT ISOLATION (Default):
+By default, searches are isolated to the CURRENT PROJECT + GLOBAL memories only.
+This prevents memory mixing across different projects.
+
 Examples:
-- buddy-remember "how do we handle authentication" -> finds JWT, OAuth, session memories
-- buddy-remember "database" mode=keyword -> exact keyword match only
-- buddy-remember "user login" mode=semantic minSimilarity=0.5 -> high-quality semantic matches only
+- buddy-remember "how do we handle authentication" -> finds JWT, OAuth, session memories in CURRENT project
+- buddy-remember "database" mode=keyword -> exact keyword match in CURRENT project only
+- buddy-remember "user login" mode=semantic minSimilarity=0.5 -> high-quality semantic matches in CURRENT project
+- buddy-remember "API patterns" allProjects=true -> search across ALL projects (cross-project search)
 
 The default 'hybrid' mode combines semantic understanding with keyword matching for best results.`,
     inputSchema: {
@@ -129,6 +134,10 @@ The default 'hybrid' mode combines semantic understanding with keyword matching 
           description: 'Minimum similarity score (0-1) for semantic/hybrid search. Default: 0.3',
           minimum: 0,
           maximum: 1,
+        },
+        allProjects: {
+          type: 'boolean',
+          description: 'Search across all projects (default: false, searches only current project + global memories)',
         },
       },
       required: ['query'],

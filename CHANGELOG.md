@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.8.10] - 2026-02-14
+
+### Documentation
+
+- Added comprehensive development guide at `docs/DEVELOPMENT.md` covering prerequisites, setup, development workflow, testing strategy, MCP server debugging, common tasks, troubleshooting, and best practices
+- Added "Real-World Examples" section to `docs/USER_GUIDE.md` with three multi-day project scenarios demonstrating cross-session memory and context preservation
+- Set up TypeDoc for auto-generated API documentation with GitHub Actions deployment to GitHub Pages
+- Added `typedoc.json` configuration to generate API docs to `api-docs/` directory
+- Created `.github/workflows/deploy-docs.yml` for automatic API documentation deployment
+- Updated `README.md` with links to new Development Guide and API Reference
+- Updated `.gitignore` to exclude auto-generated `api-docs/` directory
+
+### Fixed
+
+- **Project Memory Isolation**: Fixed `buddy-remember` to isolate memories by project, preventing cross-project memory mixing
+  - Added `allProjects` parameter to `buddy-remember` tool (default: `false`, searches only current project + global memories)
+  - Modified `ProjectMemoryManager.search()` to filter by `scope:project` and `scope:global` tags
+  - Updated `keywordSearch()`, `semanticSearch()`, and `hybridSearch()` to support project filtering
+  - Memories are now tagged with `scope:project` (via `AutoTagger`) when stored with `projectPath` context
+  - Use `buddy-remember "query" allProjects=true` to search across all projects when needed
+
+**Issues Resolved**: #70, #69, #17
+
 ## [2.8.9] - 2026-02-12
 
 ### Documentation

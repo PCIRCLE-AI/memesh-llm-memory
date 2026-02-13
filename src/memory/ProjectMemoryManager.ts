@@ -85,19 +85,77 @@ export class ProjectMemoryManager {
   }
 
   /**
-   * Search project memories by query string
+   * Search project memories by query string with project isolation
    *
    * @param query - Search query (matches entity names)
-   * @param limit - Maximum number of results (default: 10)
+   * @param options - Search options
+   * @param options.limit - Maximum number of results (default: 10)
+   * @param options.projectPath - Current project path (for filtering)
+   * @param options.allProjects - Search across all projects (default: false)
    * @returns Array of matching entities
    *
    * @example
    * ```typescript
-   * const results = await manager.search('authentication', 5);
-   * logger.info(`Found ${results.length} results`);
+   * // Search current project only
+   * const results = await manager.search('authentication', {
+   *   limit: 5,
+   *   projectPath: process.cwd()
+   * });
+   *
+   * // Search all projects
+   * const allResults = await manager.search('authentication', {
+   *   limit: 5,
+   *   allProjects: true
+   * });
    * ```
    */
-  async search(query: string, limit: number = 10): Promise<Entity[]> {
+  async search(
+    query: string,
+    options: {
+      limit?: number;
+      projectPath?: string;
+      allProjects?: boolean;
+    } = {}
+  ): Promise<Entity[]> {
+    const { limit = 10, projectPath, allProjects = false } = options;
+
+    // If allProjects is true, search without tag filtering
+    if (allProjects) {
+      return this.knowledgeGraph.searchEntities({
+        namePattern: query,
+        limit,
+      });
+    }
+
+    // If projectPath provided, filter by project scope + global scope
+    if (projectPath) {
+      // Search for project-scoped memories
+      const projectResults = this.knowledgeGraph.searchEntities({
+        namePattern: query,
+        tag: 'scope:project',
+        limit,
+      });
+
+      // Search for global-scoped memories
+      const globalResults = this.knowledgeGraph.searchEntities({
+        namePattern: query,
+        tag: 'scope:global',
+        limit,
+      });
+
+      // Merge and deduplicate by entity name
+      const merged = new Map<string, Entity>();
+      for (const entity of [...projectResults, ...globalResults]) {
+        if (!merged.has(entity.name)) {
+          merged.set(entity.name, entity);
+        }
+      }
+
+      // Return up to limit results
+      return Array.from(merged.values()).slice(0, limit);
+    }
+
+    // Fallback: no project filtering (legacy behavior)
     return this.knowledgeGraph.searchEntities({
       namePattern: query,
       limit,

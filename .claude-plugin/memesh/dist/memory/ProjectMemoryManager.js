@@ -26,7 +26,33 @@ export class ProjectMemoryManager {
             .slice(0, limit);
         return sorted;
     }
-    async search(query, limit = 10) {
+    async search(query, options = {}) {
+        const { limit = 10, projectPath, allProjects = false } = options;
+        if (allProjects) {
+            return this.knowledgeGraph.searchEntities({
+                namePattern: query,
+                limit,
+            });
+        }
+        if (projectPath) {
+            const projectResults = this.knowledgeGraph.searchEntities({
+                namePattern: query,
+                tag: 'scope:project',
+                limit,
+            });
+            const globalResults = this.knowledgeGraph.searchEntities({
+                namePattern: query,
+                tag: 'scope:global',
+                limit,
+            });
+            const merged = new Map();
+            for (const entity of [...projectResults, ...globalResults]) {
+                if (!merged.has(entity.name)) {
+                    merged.set(entity.name, entity);
+                }
+            }
+            return Array.from(merged.values()).slice(0, limit);
+        }
         return this.knowledgeGraph.searchEntities({
             namePattern: query,
             limit,

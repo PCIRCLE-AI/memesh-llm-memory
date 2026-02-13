@@ -10,6 +10,10 @@ export declare class ProjectMemoryManager {
     private knowledgeGraph;
     constructor(knowledgeGraph: KnowledgeGraph);
     recallRecentWork(options?: RecallOptions): Promise<Entity[]>;
-    search(query: string, limit?: number): Promise<Entity[]>;
+    search(query: string, options?: {
+        limit?: number;
+        projectPath?: string;
+        allProjects?: boolean;
+    }): Promise<Entity[]>;
 }
 //# sourceMappingURL=ProjectMemoryManager.d.ts.map

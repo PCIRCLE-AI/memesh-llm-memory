@@ -102,5 +102,5 @@ Then restart Claude Code.
 
 ---
 
-**Version**: 2.8.9
+**Version**: 2.8.10
 **Last Updated**: 2026-02-12

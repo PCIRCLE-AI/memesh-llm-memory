@@ -17,6 +17,7 @@ export declare const BuddyRememberInputSchema: z.ZodObject<{
     }>>>;
     limit: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
     minSimilarity: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
+    allProjects: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
 }, z.core.$strip>;
 export type ValidatedBuddyRememberInput = z.infer<typeof BuddyRememberInputSchema>;
 export declare function executeBuddyRemember(input: ValidatedBuddyRememberInput, projectMemory: ProjectMemoryManager, formatter: ResponseFormatter, knowledgeGraph?: KnowledgeGraph): Promise<{

@@ -56,6 +56,6 @@ This directory contains all user-facing documentation and website pages.
 
 ---
 
-**Documentation Version**: 2.8.9
+**Documentation Version**: 2.8.10
 **Last Updated**: 2026-02-12
 **Status**: Active

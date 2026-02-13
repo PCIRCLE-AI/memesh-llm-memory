@@ -384,6 +384,297 @@ Run: memesh tutorial
 
 ---
 
+## Real-World Examples
+
+Learn how MeMesh helps you build better software through real project scenarios. These examples demonstrate how MeMesh's persistent memory enhances your workflow across multiple sessions.
+
+### Example 1: Building a REST API (Multi-Day Workflow)
+
+This example shows how MeMesh remembers your architectural decisions and coding patterns across a week-long project.
+
+#### Day 1: Initial Setup
+
+**Your Task**: Start building a REST API for an e-commerce platform
+
+```bash
+You: buddy-do "create Express API with user authentication"
+```
+
+**What MeMesh Does**:
+- Analyzes requirements (Express, authentication, API)
+- Routes to backend-developer capability
+- Generates complete setup:
+  - Express server with middleware
+  - JWT authentication system
+  - User model and database schema
+  - Auth routes (/login, /register, /refresh)
+
+**MeMesh Automatically Remembers**:
+```
+✅ Tech stack: Express + MongoDB + JWT
+✅ Coding style: RESTful, async/await, error handling middleware
+✅ File structure: controllers/, models/, routes/, middleware/
+✅ Authentication: JWT with 15-min access tokens, 7-day refresh tokens
+```
+
+**Store Your Decision**:
+```bash
+You: buddy-remember "Using JWT for authentication because we need stateless auth for mobile app and easy horizontal scaling"
+```
+
+---
+
+#### Day 3: Adding New Features
+
+**Your Task**: Add password reset functionality
+
+```bash
+You: buddy-do "add password reset feature"
+```
+
+**MeMesh Recalls**:
+```
+✅ Your auth architecture from Day 1 (JWT tokens, user model)
+✅ Email service setup (from Day 2)
+✅ Token generation pattern (consistent with existing auth)
+```
+
+**Result**:
+- Password reset integrates seamlessly with existing auth system
+- Uses same JWT library and token patterns
+- Follows your established API conventions (/api/v1/auth/reset-password)
+- No need to re-explain architecture
+
+**Store the New Pattern**:
+```bash
+You: buddy-remember "Password reset uses time-limited JWT tokens (15 min expiry) sent via email. Tokens are single-use and invalidated after use."
+```
+
+---
+
+#### Day 7: Query Past Decisions
+
+**Your Task**: New team member asks about auth implementation
+
+```bash
+You: buddy-remember "why JWT over sessions?"
+```
+
+**MeMesh Returns**:
+```
+Found 3 relevant memories:
+
+1. [Day 1, 2026-01-15] Decision: JWT authentication
+   "Using JWT for authentication because we need stateless
+   auth for mobile app and easy horizontal scaling"
+   Tags: authentication, jwt, architecture, decision
+
+2. [Day 3, 2026-01-17] Pattern: Token expiration
+   "JWT tokens: 15-min access, 7-day refresh. Keeps security
+   tight while maintaining good UX"
+   Tags: jwt, security, tokens
+
+3. [Day 4, 2026-01-18] Lesson: Token refresh
+   "Implemented silent refresh. Frontend checks token expiry
+   and refreshes 5 minutes before expiration"
+   Tags: jwt, frontend, refresh-token
+```
+
+**Benefit**: Complete context retrieved in seconds, no digging through Git history or Slack messages.
+
+---
+
+#### Day 10: Bug Fix with Context
+
+**Your Task**: Login fails on mobile app
+
+```bash
+You: buddy-remember "mobile authentication"
+You: buddy-do "investigate mobile login failures"
+```
+
+**MeMesh Uses**:
+- Remembers mobile-specific requirements (from Day 1)
+- Recalls auth flow implementation (from Day 1-3)
+- Checks for related past bugs (searches memory graph)
+
+**Finds the Issue**: Cookie settings incompatible with mobile WebView
+
+**Store the Solution**:
+```bash
+You: buddy-remember "Mobile login bug: Cookie sameSite attribute must be 'none' for mobile WebView. Fixed by updating Express session config."
+```
+
+---
+
+### Example 2: Frontend Development with Design System
+
+**Day 1: Setting Up the Design System**
+
+```bash
+You: buddy-do "create design system with Tailwind and component library"
+```
+
+**MeMesh Generates**:
+- Tailwind configuration with custom colors
+- Base component library (Button, Input, Card)
+- Typography scale
+- Spacing system
+
+**Store Design Decisions**:
+```bash
+You: buddy-remember "Design system uses 8px spacing scale. Primary color: #3B82F6 (blue-500). Components follow atomic design: atoms → molecules → organisms"
+```
+
+---
+
+**Day 4: Building Feature Components**
+
+```bash
+You: buddy-do "create product card component with image, title, price, and add-to-cart button"
+```
+
+**MeMesh Recalls**:
+```
+✅ Design system spacing scale (8px grid)
+✅ Primary color (#3B82F6)
+✅ Existing Button component (reusable)
+✅ Component structure pattern (atomic design)
+```
+
+**Result**:
+- Product card follows established patterns
+- Uses existing Button component
+- Matches spacing and color scheme
+- No style inconsistencies
+
+---
+
+**Day 8: Responsive Design**
+
+```bash
+You: buddy-remember "responsive breakpoints"
+```
+
+**MeMesh Returns**:
+```
+Found 2 relevant memories:
+
+1. [Day 2] Configuration: Tailwind breakpoints
+   "Using default Tailwind breakpoints: sm (640px),
+   md (768px), lg (1024px), xl (1280px)"
+   Tags: tailwind, responsive, config
+
+2. [Day 5] Pattern: Mobile-first approach
+   "All components built mobile-first, then enhanced
+   for larger screens using md: and lg: prefixes"
+   Tags: responsive, mobile-first, pattern
+```
+
+**Apply Consistently**: Now you know exactly how to make the new component responsive.
+
+---
+
+### Example 3: DevOps and Infrastructure
+
+**Day 1: Setting Up CI/CD**
+
+```bash
+You: buddy-do "setup GitHub Actions CI/CD pipeline"
+```
+
+**Store Infrastructure Decisions**:
+```bash
+You: buddy-remember "Using GitHub Actions for CI/CD. Workflow: lint → test → build → deploy to Vercel. Runs on pull requests and main branch merges."
+```
+
+---
+
+**Day 5: Adding Environment Variables**
+
+```bash
+You: buddy-remember "deployment configuration"
+You: buddy-do "add database URL environment variable to deployment"
+```
+
+**MeMesh Recalls**:
+- CI/CD workflow structure
+- Vercel deployment setup
+- Existing environment variable pattern
+
+**Adds Variable Correctly**: Uses GitHub Secrets, updates Vercel config, follows naming convention.
+
+---
+
+**Week 2: Troubleshooting Deployment**
+
+```bash
+You: buddy-remember "CI/CD issues"
+```
+
+**MeMesh Returns**:
+```
+Found 1 relevant memory:
+
+[Day 8] Lesson: Build cache issue
+"GitHub Actions build was failing due to stale cache.
+Fixed by adding cache-dependency-path: package-lock.json
+to setup-node action"
+Tags: github-actions, ci-cd, cache, troubleshooting
+```
+
+**Benefit**: Quickly recall solutions to past problems, avoid repeating debugging sessions.
+
+---
+
+### Key Takeaways
+
+#### 1. **Cross-Session Context**
+MeMesh maintains context across days and weeks:
+- No need to re-explain architecture
+- Past decisions inform current work
+- Consistent patterns throughout project
+
+#### 2. **Collaborative Memory**
+Perfect for teams:
+- Onboard new members faster
+- Share tribal knowledge
+- Document decisions as you make them
+
+#### 3. **Learning from Experience**
+Build institutional knowledge:
+- Record bugs and solutions
+- Track what works and what doesn't
+- Prevent repeating mistakes
+
+#### 4. **Natural Workflow**
+No disruption to your process:
+- Store knowledge as you work
+- Recall when you need it
+- Automatic memory linking
+
+---
+
+### Next Steps
+
+**Try These Workflows**:
+1. **Start a new feature**: `buddy-do "plan [feature]"` → implement → store decisions
+2. **Debug an issue**: `buddy-remember "[error]"` → investigate → store solution
+3. **Review past work**: `buddy-remember "[topic]"` → understand context
+
+**Best Practices**:
+- ✅ Store decisions immediately (don't wait until later)
+- ✅ Be specific in memory descriptions (future you will thank you)
+- ✅ Query memory before starting new work (leverage past knowledge)
+- ✅ Record bugs and solutions (build your knowledge base)
+
+**Learn More**:
+- [BEST_PRACTICES.md](./BEST_PRACTICES.md) - Effective workflows and patterns
+- [Advanced Usage](#advanced-usage) - Complex scenarios and integrations
+- [Memory System](#memory-system) - How the knowledge graph works
+
+---
+
 ## MCP Tools
 
 ### Advanced MCP Tools

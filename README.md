@@ -120,7 +120,9 @@ See the full [Troubleshooting Guide](docs/TROUBLESHOOTING.md) for more.
 ## Documentation
 
 - **[Getting Started](docs/GETTING_STARTED.md)** — First-time setup walkthrough
-- **[User Guide](docs/USER_GUIDE.md)** — Complete usage guide
+- **[User Guide](docs/USER_GUIDE.md)** — Complete usage guide with real-world examples
+- **[Development Guide](docs/DEVELOPMENT.md)** — Contributor guide for local development
+- **[API Reference](https://pcircle-ai.github.io/claude-code-buddy/)** — Auto-generated API documentation
 - **[Commands Reference](docs/COMMANDS.md)** — All commands and tools
 - **[Architecture](docs/ARCHITECTURE.md)** — How MeMesh works internally
 

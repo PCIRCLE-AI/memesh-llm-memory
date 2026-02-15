@@ -48,9 +48,11 @@
  * ```
  */
 
-import Database from 'better-sqlite3';
+import type Database from 'better-sqlite3';
 import { logger } from '../utils/logger.js';
 import type { ILogger } from '../utils/ILogger.js';
+import type { IDatabaseAdapter } from './IDatabaseAdapter.js';
+import { BetterSqlite3Adapter, checkBetterSqlite3Availability } from './adapters/BetterSqlite3Adapter.js';
 
 /**
  * Connection Pool Configuration Options
@@ -177,8 +179,8 @@ export interface PoolStats {
  * @internal
  */
 interface ConnectionMetadata {
-  /** The actual database connection */
-  db: Database.Database;
+  /** The actual database connection (using adapter interface) */
+  db: IDatabaseAdapter;
 
   /** Timestamp when connection was last acquired */
   lastAcquired: number;
@@ -254,7 +256,7 @@ export class ConnectionPool {
   private readonly pool: ConnectionMetadata[] = [];
   private readonly available: ConnectionMetadata[] = [];
   private readonly waiting: Array<{
-    resolve: (db: Database.Database) => void;
+    resolve: (db: IDatabaseAdapter) => void;
     reject: (error: Error) => void;
     timeoutId: NodeJS.Timeout;
   }> = [];
@@ -269,10 +271,63 @@ export class ConnectionPool {
 
   private healthCheckTimer: NodeJS.Timeout | null = null;
   private isShuttingDown = false;
+  private isInitialized = false;
 
   // ✅ FIX P1-16: Track consecutive health check errors for escalation
   private healthCheckErrorCount: number = 0;
   private readonly MAX_CONSECUTIVE_HEALTH_CHECK_ERRORS = 5;
+
+  /**
+   * Create a new ConnectionPool with graceful degradation for native modules.
+   *
+   * This static factory method checks if better-sqlite3 is available and creates
+   * a connection pool using lazy-loaded adapters. If better-sqlite3 is unavailable,
+   * it provides helpful error messages with fallback suggestions.
+   *
+   * @param dbPath - Path to SQLite database file (or ':memory:')
+   * @param options - Pool configuration options
+   * @param verboseLogger - Optional logger for verbose SQLite output
+   * @returns Promise resolving to initialized ConnectionPool
+   * @throws Error with fallback suggestions if better-sqlite3 unavailable
+   *
+   * @example
+   * ```typescript
+   * try {
+   *   const pool = await ConnectionPool.create('/data/app.db');
+   *   // Use pool normally
+   * } catch (error) {
+   *   console.error('Failed to create pool:', error.message);
+   *   // Error message includes fallback suggestions (Cloud-only mode, sql.js, etc.)
+   * }
+   * ```
+   */
+  static async create(
+    dbPath: string,
+    options: Partial<ConnectionPoolOptions> = {},
+    verboseLogger?: ILogger
+  ): Promise<ConnectionPool> {
+    // Check if better-sqlite3 is available
+    const availability = await checkBetterSqlite3Availability();
+
+    if (!availability.available) {
+      const errorMsg =
+        `Cannot create ConnectionPool: better-sqlite3 is unavailable.\n` +
+        `Error: ${availability.error}\n` +
+        `Suggestion: ${availability.fallbackSuggestion || 'Use Cloud-only mode with MEMESH_API_KEY'}`;
+
+      logger.error('[ConnectionPool] Static factory failed', {
+        error: availability.error,
+        suggestion: availability.fallbackSuggestion,
+      });
+
+      throw new Error(errorMsg);
+    }
+
+    // Create and initialize pool
+    const pool = new ConnectionPool(dbPath, options, verboseLogger);
+    await pool.initialize();
+    return pool;
+  }
 
   /**
    * Create a new connection pool
@@ -307,6 +362,11 @@ export class ConnectionPool {
     options: Partial<ConnectionPoolOptions> = {},
     verboseLogger?: ILogger
   ) {
+    // Validate dbPath
+    if (!dbPath || dbPath.trim().length === 0) {
+      throw new Error('dbPath must be a non-empty string');
+    }
+
     this.dbPath = dbPath;
     this.verboseLogger = verboseLogger;
     this.options = {
@@ -405,32 +465,64 @@ export class ConnectionPool {
       this.options.healthCheckInterval = MAX_HEALTH_CHECK_INTERVAL_MS;
     }
 
-    logger.info('Initializing connection pool', {
+    logger.info('ConnectionPool constructor called', {
       dbPath: this.dbPath,
       maxConnections: this.options.maxConnections,
       connectionTimeout: this.options.connectionTimeout,
       idleTimeout: this.options.idleTimeout,
     });
 
-    // Pre-create connections
-    this.initializePool();
-
-    // Start health check timer
-    this.startHealthCheck();
+    // Note: Initialization is async and must be called separately via initialize()
+    // or use the static create() factory method
   }
 
   /**
-   * Initialize the connection pool
+   * Initialize the connection pool asynchronously.
    *
-   * Pre-creates all connections in the pool. Connections are created
-   * synchronously to ensure pool is ready before constructor returns.
+   * This method must be called after construction to set up connections.
+   * Prefer using the static `ConnectionPool.create()` factory method which
+   * handles this automatically.
+   *
+   * @throws Error if already initialized or initialization fails
+   *
+   * @example
+   * ```typescript
+   * const pool = new ConnectionPool('/data/app.db');
+   * await pool.initialize();
+   * ```
+   */
+  async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      throw new Error('ConnectionPool already initialized');
+    }
+
+    logger.info('Initializing connection pool', {
+      dbPath: this.dbPath,
+      maxConnections: this.options.maxConnections,
+    });
+
+    // Pre-create connections asynchronously
+    await this.initializePool();
+
+    // Start health check timer
+    this.startHealthCheck();
+
+    this.isInitialized = true;
+
+    logger.info(`Connection pool initialized with ${this.pool.length} connections`);
+  }
+
+  /**
+   * Initialize the connection pool asynchronously
+   *
+   * Pre-creates all connections in the pool using lazy-loaded adapters.
    *
    * @private
    */
-  private initializePool(): void {
+  private async initializePool(): Promise<void> {
     for (let i = 0; i < this.options.maxConnections; i++) {
       try {
-        const db = this.createConnection();
+        const db = await this.createConnection();
         const metadata: ConnectionMetadata = {
           db,
           lastAcquired: 0,
@@ -444,28 +536,32 @@ export class ConnectionPool {
         throw new Error(`Pool initialization failed: ${error}`);
       }
     }
-
-    logger.info(`Connection pool initialized with ${this.pool.length} connections`);
   }
 
   /**
-   * Create a new database connection
+   * Create a new database connection using adapter pattern
    *
-   * Internal method to create and configure SQLite connections.
-   * Applies optimizations similar to SimpleDatabaseFactory.
+   * Internal method to create and configure SQLite connections with lazy loading.
+   * Uses dynamic import of better-sqlite3 to enable graceful degradation.
    *
+   * ✅ FIX CRITICAL: Lazy loading via adapter pattern prevents module-level crashes
    * ✅ FIX HIGH-2: Removed retry logic to prevent event loop blocking
    * Retries are now handled by async callers (acquire, healthCheck, restorePoolSize)
    *
-   * @returns Configured Database instance
+   * @returns Configured IDatabaseAdapter instance
    * @throws Error if connection creation fails
    *
    * @private
    */
-  private createConnection(): Database.Database {
-    const db = new Database(this.dbPath, {
+  private async createConnection(): Promise<IDatabaseAdapter> {
+    // Create adapter with lazy loading
+    const adapter = await BetterSqlite3Adapter.create(this.dbPath, {
       verbose: this.verboseLogger ? ((msg: unknown) => this.verboseLogger!.debug('SQLite', { message: msg })) : undefined,
     });
+
+    // Access the underlying Database instance to configure pragmas
+    // We need to cast here because the adapter doesn't expose pragma method directly
+    const db = (adapter as any).db as Database.Database;
 
     // Set busy timeout (5 seconds)
     try {
@@ -501,10 +597,22 @@ export class ConnectionPool {
       }
     }
 
-    // Enable foreign key constraints (critical - throw if this fails)
-    db.pragma('foreign_keys = ON');
+    // Enable foreign key constraints (CRITICAL - database integrity depends on this)
+    try {
+      db.pragma('foreign_keys = ON');
+      const fkEnabled = db.pragma('foreign_keys', { simple: true }) as number;
+      if (fkEnabled !== 1) {
+        throw new Error('Failed to enable foreign_keys pragma - database integrity cannot be guaranteed');
+      }
+    } catch (error) {
+      logger.error('[ConnectionPool] CRITICAL: Failed to enable foreign key constraints', { error });
+      throw new Error(
+        `Cannot create connection: foreign key constraints failed to enable. ` +
+        `This is critical for database integrity. Error: ${error}`
+      );
+    }
 
-    return db;
+    return adapter;
   }
 
   /**
@@ -513,12 +621,12 @@ export class ConnectionPool {
    * ✅ FIX HIGH-2: Async retry logic with proper delays (no event loop blocking)
    *
    * @param context - Context string for logging
-   * @returns Configured Database instance
+   * @returns Configured IDatabaseAdapter instance
    * @throws Error if connection creation fails after all retries
    *
    * @private
    */
-  private async createConnectionWithRetry(context: string): Promise<Database.Database> {
+  private async createConnectionWithRetry(context: string): Promise<IDatabaseAdapter> {
     const MAX_RETRIES = 3;
     const RETRY_DELAYS = [100, 300, 1000]; // Exponential backoff in ms
 
@@ -526,7 +634,7 @@ export class ConnectionPool {
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
-        return this.createConnection();
+        return await this.createConnection();
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
 
@@ -563,16 +671,16 @@ export class ConnectionPool {
    *
    * Executes a simple query to verify the connection is responsive.
    *
-   * @param db - Database connection to validate
+   * @param db - Database adapter to validate
    * @returns true if connection is valid, false otherwise
    *
    * @private
    */
-  private isConnectionValid(db: Database.Database): boolean {
+  private isConnectionValid(db: IDatabaseAdapter): boolean {
     try {
       // Simple query to test connection is responsive
       db.prepare('SELECT 1').get();
-      return true;
+      return db.open;
     } catch {
       return false;
     }
@@ -599,8 +707,9 @@ export class ConnectionPool {
 
       try {
         metadata.db.close();
-      } catch {
-        // Ignore close errors for invalid connections
+      } catch (error) {
+        // Ignore close errors for invalid connections (already failed validation)
+        logger.debug('[ConnectionPool] Ignoring close error for invalid connection', { error });
       }
 
       // Create replacement connection
@@ -641,8 +750,8 @@ export class ConnectionPool {
    * **IMPORTANT**: Always release the connection back to the pool when done,
    * preferably in a try/finally block to ensure release even on errors.
    *
-   * @returns Promise that resolves to a Database connection
-   * @throws Error if connection timeout or pool is shutting down
+   * @returns Promise that resolves to a Database adapter
+   * @throws Error if connection timeout, pool not initialized, or pool is shutting down
    *
    * @example
    * ```typescript
@@ -655,7 +764,10 @@ export class ConnectionPool {
    * }
    * ```
    */
-  async acquire(): Promise<Database.Database> {
+  async acquire(): Promise<IDatabaseAdapter> {
+    if (!this.isInitialized) {
+      throw new Error('ConnectionPool not initialized. Call initialize() or use ConnectionPool.create()');
+    }
     // ✅ FIX MEDIUM-3: Wrap entire acquisition in timeout to prevent hangs
     let outerTimeoutId: NodeJS.Timeout | null = null;
 
@@ -693,7 +805,7 @@ export class ConnectionPool {
    * ✅ FIX MEDIUM-3: Internal acquisition logic (extracted for timeout wrapping)
    * @private
    */
-  private async _acquireInternal(): Promise<Database.Database> {
+  private async _acquireInternal(): Promise<IDatabaseAdapter> {
     if (this.isShuttingDown) {
       throw new Error('Pool is shutting down');
     }
@@ -718,7 +830,7 @@ export class ConnectionPool {
       waiting: this.waiting.length + 1,
     });
 
-    return new Promise<Database.Database>((resolve, reject) => {
+    return new Promise<IDatabaseAdapter>((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         // Remove from waiting queue
         const index = this.waiting.findIndex(w => w.timeoutId === timeoutId);
@@ -743,7 +855,7 @@ export class ConnectionPool {
    * **Important**: Only release connections that were acquired from this pool.
    * Releasing a foreign connection will cause undefined behavior.
    *
-   * @param db - Database connection to release
+   * @param db - Database adapter to release
    *
    * @example
    * ```typescript
@@ -755,7 +867,7 @@ export class ConnectionPool {
    * }
    * ```
    */
-  release(db: Database.Database): void {
+  release(db: IDatabaseAdapter): void {
     if (this.isShuttingDown) {
       logger.warn('Attempted to release connection during shutdown - ignoring');
       return;
@@ -852,6 +964,7 @@ export class ConnectionPool {
     // ✅ FIX BUG-5: Wrap performHealthCheck in try-catch to prevent timer breakage
     // ✅ FIX P1-16: Track consecutive errors and escalate on persistent failures
     // ✅ FIX HIGH-2: Handle async performHealthCheck
+    // ✅ FIX MINOR-2: Use .unref() to allow process exit when pool is only active timer
     this.healthCheckTimer = setInterval(() => {
       this.performHealthCheck()
         .then(() => {
@@ -892,6 +1005,9 @@ export class ConnectionPool {
           }
         });
     }, this.options.healthCheckInterval);
+
+    // Allow Node.js process to exit if this timer is the only active handle
+    this.healthCheckTimer.unref();
   }
 
   /**
@@ -954,7 +1070,7 @@ export class ConnectionPool {
         metadata.db.close();
       } catch (error) {
         // ✅ FIX MEDIUM-1: Implement proper error recovery for zombie connections
-        logger.error('Error closing stale connection:', error);
+        logger.error('[ConnectionPool] Error closing stale connection during health check', { error });
 
         // Force cleanup: remove zombie connection from pool to prevent accumulation
         if (poolIndex !== -1) {
@@ -1117,7 +1233,7 @@ export class ConnectionPool {
       try {
         metadata.db.close();
       } catch (error) {
-        logger.error('Error closing connection during shutdown:', error);
+        logger.error('[ConnectionPool] Error closing connection during shutdown', { error });
       }
     });
 

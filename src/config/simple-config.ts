@@ -424,6 +424,7 @@ export class SimpleConfig {
  * ```
  */
 import Database from 'better-sqlite3';
+import type { IDatabaseAdapter } from '../db/IDatabaseAdapter.js';
 import { ConnectionPool, type PoolStats } from '../db/ConnectionPool.js';
 
 export class SimpleDatabaseFactory {
@@ -446,6 +447,16 @@ export class SimpleDatabaseFactory {
    * @internal
    */
   private static pools: Map<string, ConnectionPool> = new Map();
+
+  /**
+   * Pending pool creation promises
+   *
+   * Maps database file paths to their pending pool creation promises.
+   * Ensures only one pool is created per path even with concurrent calls.
+   *
+   * @internal
+   */
+  private static pendingPools: Map<string, Promise<ConnectionPool>> = new Map();
 
   /**
    * Create database connection (internal use)
@@ -656,17 +667,20 @@ export class SimpleDatabaseFactory {
   }
 
   /**
-   * Get connection pool instance
+   * Get connection pool instance (async with concurrency safety)
    *
    * Returns or creates a connection pool for the specified database path.
    * Pool is configured using environment variables or defaults.
    *
+   * Thread-safe: Multiple concurrent calls for the same path will share
+   * a single pool creation promise, ensuring only one pool per path.
+   *
    * @param path - Optional database file path (defaults to SimpleConfig.DATABASE_PATH)
-   * @returns ConnectionPool instance
+   * @returns Promise resolving to ConnectionPool instance
    *
    * @example
    * ```typescript
-   * const pool = SimpleDatabaseFactory.getPool();
+   * const pool = await SimpleDatabaseFactory.getPool();
    * const db = await pool.acquire();
    * try {
    *   // ... use connection ...
@@ -675,35 +689,68 @@ export class SimpleDatabaseFactory {
    * }
    * ```
    */
-  static getPool(path?: string): ConnectionPool {
+  static async getPool(path?: string): Promise<ConnectionPool> {
     const dbPath = this.normalizeDbPath(path);
+
+    // Check if pool already exists
     let pool = this.pools.get(dbPath);
+    if (pool) {
+      return pool;
+    }
 
-    if (!pool) {
-      this.ensureDirectoryExists(dbPath);
+    // Check if pool creation is already in progress
+    const pending = this.pendingPools.get(dbPath);
+    if (pending) {
+      return pending;
+    }
 
-      // Read pool configuration from environment variables with fallback to defaults
-      const maxConnections = parseInt(process.env.DB_POOL_SIZE || '5', 10) || 5;
-      const connectionTimeout = parseInt(process.env.DB_POOL_TIMEOUT || '5000', 10) || 5000;
-      const idleTimeout = parseInt(process.env.DB_POOL_IDLE_TIMEOUT || '30000', 10) || 30000;
+    // Create new pool with synchronization
+    const poolPromise = this.createPoolInternal(dbPath);
+    this.pendingPools.set(dbPath, poolPromise);
 
-      pool = new ConnectionPool(
-        dbPath,
-        {
-          maxConnections,
-          connectionTimeout,
-          idleTimeout,
-        },
-        SimpleConfig.isDevelopment ? logger : undefined
-      );
-
+    try {
+      pool = await poolPromise;
       this.pools.set(dbPath, pool);
-      logger.info(`Created connection pool for ${dbPath}`, {
+      return pool;
+    } finally {
+      // Always clean up pending entry
+      this.pendingPools.delete(dbPath);
+    }
+  }
+
+  /**
+   * Internal pool creation logic
+   *
+   * Separated from getPool() to enable proper synchronization.
+   * Should not be called directly - use getPool() instead.
+   *
+   * @param dbPath - Normalized database file path
+   * @returns Promise resolving to new ConnectionPool instance
+   * @private
+   */
+  private static async createPoolInternal(dbPath: string): Promise<ConnectionPool> {
+    this.ensureDirectoryExists(dbPath);
+
+    // Read pool configuration from environment variables with fallback to defaults
+    const maxConnections = parseInt(process.env.DB_POOL_SIZE || '5', 10) || 5;
+    const connectionTimeout = parseInt(process.env.DB_POOL_TIMEOUT || '5000', 10) || 5000;
+    const idleTimeout = parseInt(process.env.DB_POOL_IDLE_TIMEOUT || '30000', 10) || 30000;
+
+    const pool = await ConnectionPool.create(
+      dbPath,
+      {
         maxConnections,
         connectionTimeout,
         idleTimeout,
-      });
-    }
+      },
+      SimpleConfig.isDevelopment ? logger : undefined
+    );
+
+    logger.info(`Created connection pool for ${dbPath}`, {
+      maxConnections,
+      connectionTimeout,
+      idleTimeout,
+    });
 
     return pool;
   }
@@ -727,8 +774,8 @@ export class SimpleDatabaseFactory {
    * }
    * ```
    */
-  static async getPooledConnection(path?: string): Promise<Database.Database> {
-    const pool = this.getPool(path);
+  static async getPooledConnection(path?: string): Promise<IDatabaseAdapter> {
+    const pool = await this.getPool(path);
     return pool.acquire();
   }
 
@@ -751,7 +798,7 @@ export class SimpleDatabaseFactory {
    * }
    * ```
    */
-  static releasePooledConnection(db: Database.Database, path?: string): void {
+  static releasePooledConnection(db: IDatabaseAdapter, path?: string): void {
     const dbPath = this.normalizeDbPath(path);
     const pool = this.pools.get(dbPath);
 

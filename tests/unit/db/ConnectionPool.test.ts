@@ -46,8 +46,8 @@ describe('ConnectionPool', () => {
   });
 
   describe('Pool Initialization', () => {
-    it('should create pool with default options', () => {
-      pool = new ConnectionPool(testDbPath);
+    it('should create pool with default options', async () => {
+      pool = await ConnectionPool.create(testDbPath);
       const stats = pool.getStats();
 
       expect(stats.total).toBe(5); // Default maxConnections
@@ -56,8 +56,8 @@ describe('ConnectionPool', () => {
       expect(stats.waiting).toBe(0);
     });
 
-    it('should create pool with custom options', () => {
-      pool = new ConnectionPool(testDbPath, {
+    it('should create pool with custom options', async () => {
+      pool = await ConnectionPool.create(testDbPath, {
         maxConnections: 3,
         connectionTimeout: 2000,
         idleTimeout: 15000,
@@ -78,23 +78,23 @@ describe('ConnectionPool', () => {
       }).toThrow('maxConnections must be at least 1');
     });
 
-    it('should create pool with in-memory database', () => {
-      pool = new ConnectionPool(':memory:', { maxConnections: 2, connectionTimeout: 5000, idleTimeout: 30000 });
+    it('should create pool with in-memory database', async () => {
+      pool = await ConnectionPool.create(':memory:', { maxConnections: 2, connectionTimeout: 5000, idleTimeout: 30000 });
       const stats = pool.getStats();
 
       expect(stats.total).toBe(2);
       expect(stats.idle).toBe(2);
     });
 
-    it('should report healthy status after initialization', () => {
-      pool = new ConnectionPool(testDbPath, { maxConnections: 3, connectionTimeout: 5000, idleTimeout: 30000 });
+    it('should report healthy status after initialization', async () => {
+      pool = await ConnectionPool.create(testDbPath, { maxConnections: 3, connectionTimeout: 5000, idleTimeout: 30000 });
       expect(pool.isHealthy()).toBe(true);
     });
   });
 
   describe('Connection Acquisition and Release', () => {
-    beforeEach(() => {
-      pool = new ConnectionPool(testDbPath, {
+    beforeEach(async () => {
+      pool = await ConnectionPool.create(testDbPath, {
         maxConnections: 3,
         connectionTimeout: 5000,
         idleTimeout: 30000,
@@ -178,8 +178,8 @@ describe('ConnectionPool', () => {
   });
 
   describe('Concurrent Access', () => {
-    beforeEach(() => {
-      pool = new ConnectionPool(testDbPath, {
+    beforeEach(async () => {
+      pool = await ConnectionPool.create(testDbPath, {
         maxConnections: 3,
         connectionTimeout: 5000,
         idleTimeout: 30000,
@@ -278,8 +278,8 @@ describe('ConnectionPool', () => {
   });
 
   describe('Connection Timeout', () => {
-    beforeEach(() => {
-      pool = new ConnectionPool(testDbPath, {
+    beforeEach(async () => {
+      pool = await ConnectionPool.create(testDbPath, {
         maxConnections: 2,
         connectionTimeout: 1000, // 1 second timeout
         idleTimeout: 30000,
@@ -330,7 +330,7 @@ describe('ConnectionPool', () => {
     it('should recycle idle connections', async () => {
       vi.useFakeTimers();
 
-      pool = new ConnectionPool(testDbPath, {
+      pool = await ConnectionPool.create(testDbPath, {
         maxConnections: 2,
         connectionTimeout: 5000,
         idleTimeout: 5000, // Minimum allowed idle timeout
@@ -358,7 +358,7 @@ describe('ConnectionPool', () => {
     it('should maintain pool size after recycling', async () => {
       vi.useFakeTimers();
 
-      pool = new ConnectionPool(testDbPath, {
+      pool = await ConnectionPool.create(testDbPath, {
         maxConnections: 3,
         connectionTimeout: 5000,
         idleTimeout: 5000, // Minimum allowed idle timeout
@@ -387,8 +387,8 @@ describe('ConnectionPool', () => {
   });
 
   describe('Graceful Shutdown', () => {
-    beforeEach(() => {
-      pool = new ConnectionPool(testDbPath, {
+    beforeEach(async () => {
+      pool = await ConnectionPool.create(testDbPath, {
         maxConnections: 3,
         connectionTimeout: 5000,
         idleTimeout: 30000,
@@ -447,8 +447,8 @@ describe('ConnectionPool', () => {
   });
 
   describe('Statistics Tracking', () => {
-    beforeEach(() => {
-      pool = new ConnectionPool(testDbPath, {
+    beforeEach(async () => {
+      pool = await ConnectionPool.create(testDbPath, {
         maxConnections: 3,
         connectionTimeout: 5000,
         idleTimeout: 30000,
@@ -504,7 +504,7 @@ describe('ConnectionPool', () => {
     });
 
     it('should track timeout errors', async () => {
-      pool = new ConnectionPool(testDbPath, {
+      pool = await ConnectionPool.create(testDbPath, {
         maxConnections: 1,
         connectionTimeout: 500,
         idleTimeout: 30000,
@@ -523,16 +523,16 @@ describe('ConnectionPool', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle database file errors', () => {
+    it('should handle database file errors', async () => {
       const invalidPath = '/invalid/path/to/db.sqlite';
 
-      expect(() => {
-        new ConnectionPool(invalidPath, { maxConnections: 2, connectionTimeout: 5000, idleTimeout: 30000 });
-      }).toThrow();
+      await expect(
+        ConnectionPool.create(invalidPath, { maxConnections: 2, connectionTimeout: 5000, idleTimeout: 30000 })
+      ).rejects.toThrow();
     });
 
     it('should handle connection close errors gracefully', async () => {
-      pool = new ConnectionPool(testDbPath, { maxConnections: 2, connectionTimeout: 5000, idleTimeout: 30000 });
+      pool = await ConnectionPool.create(testDbPath, { maxConnections: 2, connectionTimeout: 5000, idleTimeout: 30000 });
 
       const conn = await pool.acquire();
 
@@ -548,8 +548,8 @@ describe('ConnectionPool', () => {
   });
 
   describe('Connection Metadata', () => {
-    beforeEach(() => {
-      pool = new ConnectionPool(testDbPath, {
+    beforeEach(async () => {
+      pool = await ConnectionPool.create(testDbPath, {
         maxConnections: 2,
         connectionTimeout: 5000,
         idleTimeout: 30000,

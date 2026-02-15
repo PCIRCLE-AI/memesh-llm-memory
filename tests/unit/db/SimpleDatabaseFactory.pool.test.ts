@@ -44,58 +44,58 @@ describe('SimpleDatabaseFactory - Connection Pool Integration', () => {
   });
 
   describe('Pool Management', () => {
-    it('should create connection pool on first getPool() call', () => {
-      const pool = SimpleDatabaseFactory.getPool(testDbPath);
+    it('should create connection pool on first getPool() call', async () => {
+      const pool = await SimpleDatabaseFactory.getPool(testDbPath);
       expect(pool).toBeDefined();
 
       const stats = pool.getStats();
       expect(stats.total).toBe(5); // Default pool size
     });
 
-    it('should reuse existing pool', () => {
-      const pool1 = SimpleDatabaseFactory.getPool(testDbPath);
-      const pool2 = SimpleDatabaseFactory.getPool(testDbPath);
+    it('should reuse existing pool', async () => {
+      const pool1 = await SimpleDatabaseFactory.getPool(testDbPath);
+      const pool2 = await SimpleDatabaseFactory.getPool(testDbPath);
 
       expect(pool1).toBe(pool2); // Same instance
     });
 
-    it('should create separate pools for different paths', () => {
-      const pool1 = SimpleDatabaseFactory.getPool(testDbPath);
-      const pool2 = SimpleDatabaseFactory.getPool(':memory:');
+    it('should create separate pools for different paths', async () => {
+      const pool1 = await SimpleDatabaseFactory.getPool(testDbPath);
+      const pool2 = await SimpleDatabaseFactory.getPool(':memory:');
 
       expect(pool1).not.toBe(pool2);
     });
 
-    it('should respect DB_POOL_SIZE environment variable', () => {
+    it('should respect DB_POOL_SIZE environment variable', async () => {
       process.env.DB_POOL_SIZE = '10';
 
-      const pool = SimpleDatabaseFactory.getPool(testDbPath);
+      const pool = await SimpleDatabaseFactory.getPool(testDbPath);
       const stats = pool.getStats();
 
       expect(stats.total).toBe(10);
     });
 
-    it('should respect DB_POOL_TIMEOUT environment variable', () => {
+    it('should respect DB_POOL_TIMEOUT environment variable', async () => {
       process.env.DB_POOL_TIMEOUT = '3000';
 
-      const pool = SimpleDatabaseFactory.getPool(testDbPath);
+      const pool = await SimpleDatabaseFactory.getPool(testDbPath);
       expect(pool).toBeDefined();
       // Timeout is internal, validated indirectly through behavior
     });
 
-    it('should respect DB_POOL_IDLE_TIMEOUT environment variable', () => {
+    it('should respect DB_POOL_IDLE_TIMEOUT environment variable', async () => {
       process.env.DB_POOL_IDLE_TIMEOUT = '60000';
 
-      const pool = SimpleDatabaseFactory.getPool(testDbPath);
+      const pool = await SimpleDatabaseFactory.getPool(testDbPath);
       expect(pool).toBeDefined();
       // Idle timeout is internal, validated indirectly through behavior
     });
 
-    it('should use default values for invalid environment variables', () => {
+    it('should use default values for invalid environment variables', async () => {
       process.env.DB_POOL_SIZE = 'invalid';
       process.env.DB_POOL_TIMEOUT = 'abc';
 
-      const pool = SimpleDatabaseFactory.getPool(testDbPath);
+      const pool = await SimpleDatabaseFactory.getPool(testDbPath);
       const stats = pool.getStats();
 
       // Invalid values should fallback to defaults
@@ -287,10 +287,10 @@ describe('SimpleDatabaseFactory - Connection Pool Integration', () => {
     });
 
     it('should allow recreation after close()', async () => {
-      const pool1 = SimpleDatabaseFactory.getPool(testDbPath);
+      const pool1 = await SimpleDatabaseFactory.getPool(testDbPath);
       await SimpleDatabaseFactory.close(testDbPath);
 
-      const pool2 = SimpleDatabaseFactory.getPool(testDbPath);
+      const pool2 = await SimpleDatabaseFactory.getPool(testDbPath);
       expect(pool2).not.toBe(pool1); // New instance
       expect(pool2.getStats().total).toBe(5);
     });

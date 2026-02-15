@@ -152,8 +152,8 @@ describe('ConnectionPool Integration Tests', () => {
    * verbose logging.
    */
   describe('Pool Initialization', () => {
-    it('should create pool with correct number of connections', () => {
-      const pool = new ConnectionPool(testDbPath, { maxConnections: 5, connectionTimeout: 5000, idleTimeout: 30000 });
+    it('should create pool with correct number of connections', async () => {
+      const pool = await ConnectionPool.create(testDbPath, { maxConnections: 5, connectionTimeout: 5000, idleTimeout: 30000 });
 
       const stats = pool.getStats();
 
@@ -163,20 +163,20 @@ describe('ConnectionPool Integration Tests', () => {
       expect(stats.waiting).toBe(0);
 
       // Cleanup
-      pool.shutdown();
+      await pool.shutdown();
     });
 
     it('should configure each connection with WAL mode', async () => {
-      const pool = new ConnectionPool(testDbPath, { maxConnections: 3, connectionTimeout: 5000, idleTimeout: 30000 });
+      const pool = await ConnectionPool.create(testDbPath, { maxConnections: 3, connectionTimeout: 5000, idleTimeout: 30000 });
 
       // Acquire all connections and check WAL mode
-      const connections: Database.Database[] = [];
+      const connections: any[] = [];
       for (let i = 0; i < 3; i++) {
         const db = await pool.acquire();
         connections.push(db);
 
         // Check journal_mode is WAL
-        const result = db.pragma('journal_mode', { simple: true }) as string;
+        const result = (db as any).db.pragma('journal_mode', { simple: true }) as string;
         expect(['wal', 'delete']).toContain(result.toLowerCase());
       }
 
@@ -188,12 +188,12 @@ describe('ConnectionPool Integration Tests', () => {
     });
 
     it('should configure connections with foreign key constraints enabled', async () => {
-      const pool = new ConnectionPool(testDbPath, { maxConnections: 2, connectionTimeout: 5000, idleTimeout: 30000 });
+      const pool = await ConnectionPool.create(testDbPath, { maxConnections: 2, connectionTimeout: 5000, idleTimeout: 30000 });
 
       const db = await pool.acquire();
 
       // Check foreign_keys pragma
-      const result = db.pragma('foreign_keys', { simple: true }) as number;
+      const result = (db as any).db.pragma('foreign_keys', { simple: true }) as number;
       expect(result).toBe(1); // 1 means ON
 
       pool.release(db);
@@ -201,7 +201,7 @@ describe('ConnectionPool Integration Tests', () => {
     });
 
     it('should integrate with verbose logger when provided', async () => {
-      const pool = new ConnectionPool(
+      const pool = await ConnectionPool.create(
         testDbPath,
         { maxConnections: 2, connectionTimeout: 5000, idleTimeout: 30000 },
         mockLogger
@@ -222,23 +222,23 @@ describe('ConnectionPool Integration Tests', () => {
       await pool.shutdown();
     });
 
-    it('should initialize pool in under 100ms', () => {
+    it('should initialize pool in under 100ms', async () => {
       const startTime = Date.now();
 
-      const pool = new ConnectionPool(testDbPath, { maxConnections: 5, connectionTimeout: 5000, idleTimeout: 30000 });
+      const pool = await ConnectionPool.create(testDbPath, { maxConnections: 5, connectionTimeout: 5000, idleTimeout: 30000 });
 
       const initTime = Date.now() - startTime;
 
       expect(initTime).toBeLessThan(100);
       expect(pool.isHealthy()).toBe(true);
 
-      pool.shutdown();
+      await pool.shutdown();
     });
 
-    it('should throw error if maxConnections is less than 1', () => {
-      expect(() => {
-        new ConnectionPool(testDbPath, { maxConnections: 0, connectionTimeout: 5000, idleTimeout: 30000 });
-      }).toThrow('maxConnections must be at least 1');
+    it('should throw error if maxConnections is less than 1', async () => {
+      await expect(
+        ConnectionPool.create(testDbPath, { maxConnections: 0, connectionTimeout: 5000, idleTimeout: 30000 })
+      ).rejects.toThrow('maxConnections must be at least 1');
     });
   });
 
@@ -253,7 +253,7 @@ describe('ConnectionPool Integration Tests', () => {
    */
   describe('Concurrent Connection Acquisition', () => {
     it('should handle 50 concurrent acquire operations successfully', async () => {
-      const pool = new ConnectionPool(testDbPath, { maxConnections: 5, connectionTimeout: 5000, idleTimeout: 30000 });
+      const pool = await ConnectionPool.create(testDbPath, { maxConnections: 5, connectionTimeout: 5000, idleTimeout: 30000 });
 
       const acquireTasks = Array.from({ length: 50 }, async (_, i) => {
         const db = await pool.acquire();
@@ -285,10 +285,10 @@ describe('ConnectionPool Integration Tests', () => {
     });
 
     it('should ensure no connection is double-acquired', async () => {
-      const pool = new ConnectionPool(testDbPath, { maxConnections: 3, connectionTimeout: 5000, idleTimeout: 30000 });
+      const pool = await ConnectionPool.create(testDbPath, { maxConnections: 3, connectionTimeout: 5000, idleTimeout: 30000 });
 
-      const activeConnections = new Set<Database.Database>();
-      const connectionHistory: Database.Database[] = [];
+      const activeConnections = new Set<any>();
+      const connectionHistory: any[] = [];
       let doubleAcquire = false;
 
       const acquireTasks = Array.from({ length: 20 }, async () => {
@@ -323,7 +323,7 @@ describe('ConnectionPool Integration Tests', () => {
     });
 
     it('should achieve average acquisition time under 10ms', async () => {
-      const pool = new ConnectionPool(testDbPath, { maxConnections: 5, connectionTimeout: 5000, idleTimeout: 30000 });
+      const pool = await ConnectionPool.create(testDbPath, { maxConnections: 5, connectionTimeout: 5000, idleTimeout: 30000 });
 
       const acquisitionTimes: number[] = [];
 
@@ -351,7 +351,7 @@ describe('ConnectionPool Integration Tests', () => {
     });
 
     it('should handle pool exhaustion by queuing requests', async () => {
-      const pool = new ConnectionPool(testDbPath, { maxConnections: 2, connectionTimeout: 5000, idleTimeout: 30000 });
+      const pool = await ConnectionPool.create(testDbPath, { maxConnections: 2, connectionTimeout: 5000, idleTimeout: 30000 });
 
       // Acquire all connections
       const db1 = await pool.acquire();
@@ -397,7 +397,7 @@ describe('ConnectionPool Integration Tests', () => {
     it('should recycle idle connections after idleTimeout', async () => {
       vi.useFakeTimers();
 
-      const pool = new ConnectionPool(testDbPath, {
+      const pool = await ConnectionPool.create(testDbPath, {
         maxConnections: 2,
         connectionTimeout: 5000,
         idleTimeout: 5000, // Minimum allowed idle timeout
@@ -433,7 +433,7 @@ describe('ConnectionPool Integration Tests', () => {
     it('should maintain pool size during health checks', async () => {
       vi.useFakeTimers();
 
-      const pool = new ConnectionPool(testDbPath, {
+      const pool = await ConnectionPool.create(testDbPath, {
         maxConnections: 3,
         connectionTimeout: 5000,
         idleTimeout: 5000, // Minimum allowed idle timeout
@@ -457,7 +457,7 @@ describe('ConnectionPool Integration Tests', () => {
     it('should verify connections are functional after recycling', async () => {
       vi.useFakeTimers();
 
-      const pool = new ConnectionPool(testDbPath, {
+      const pool = await ConnectionPool.create(testDbPath, {
         maxConnections: 2,
         connectionTimeout: 5000,
         idleTimeout: 5000, // Minimum allowed idle timeout
@@ -493,7 +493,7 @@ describe('ConnectionPool Integration Tests', () => {
    */
   describe('Resource Management', () => {
     it('should properly release connections back to pool', async () => {
-      const pool = new ConnectionPool(testDbPath, { maxConnections: 3, connectionTimeout: 5000, idleTimeout: 30000 });
+      const pool = await ConnectionPool.create(testDbPath, { maxConnections: 3, connectionTimeout: 5000, idleTimeout: 30000 });
 
       // Acquire all connections
       const dbs = await Promise.all([pool.acquire(), pool.acquire(), pool.acquire()]);
@@ -513,7 +513,7 @@ describe('ConnectionPool Integration Tests', () => {
     });
 
     it('should handle 100 acquire/release cycles without leaks', async () => {
-      const pool = new ConnectionPool(testDbPath, { maxConnections: 3, connectionTimeout: 5000, idleTimeout: 30000 });
+      const pool = await ConnectionPool.create(testDbPath, { maxConnections: 3, connectionTimeout: 5000, idleTimeout: 30000 });
 
       const initialStats = pool.getStats();
 
@@ -539,7 +539,7 @@ describe('ConnectionPool Integration Tests', () => {
     });
 
     it('should gracefully shutdown and close all connections', async () => {
-      const pool = new ConnectionPool(testDbPath, { maxConnections: 4, connectionTimeout: 5000, idleTimeout: 30000 });
+      const pool = await ConnectionPool.create(testDbPath, { maxConnections: 4, connectionTimeout: 5000, idleTimeout: 30000 });
 
       // Acquire some connections
       const db1 = await pool.acquire();
@@ -567,7 +567,7 @@ describe('ConnectionPool Integration Tests', () => {
     });
 
     it('should reject waiting requests on shutdown', async () => {
-      const pool = new ConnectionPool(testDbPath, { maxConnections: 1, connectionTimeout: 5000, idleTimeout: 30000 });
+      const pool = await ConnectionPool.create(testDbPath, { maxConnections: 1, connectionTimeout: 5000, idleTimeout: 30000 });
 
       // Acquire the only connection
       const db = await pool.acquire();
@@ -591,7 +591,7 @@ describe('ConnectionPool Integration Tests', () => {
     });
 
     it('should track totalAcquired and totalReleased correctly', async () => {
-      const pool = new ConnectionPool(testDbPath, { maxConnections: 2, connectionTimeout: 5000, idleTimeout: 30000 });
+      const pool = await ConnectionPool.create(testDbPath, { maxConnections: 2, connectionTimeout: 5000, idleTimeout: 30000 });
 
       // Perform multiple acquire/release cycles
       for (let i = 0; i < 10; i++) {
@@ -615,7 +615,7 @@ describe('ConnectionPool Integration Tests', () => {
   describe('Error Handling', () => {
     it('should timeout when no connection available within timeout', async () => {
       const minTimeout = 1000; // Minimum allowed connectionTimeout after clamping
-      const pool = new ConnectionPool(testDbPath, {
+      const pool = await ConnectionPool.create(testDbPath, {
         maxConnections: 1,
         connectionTimeout: minTimeout,
         idleTimeout: 30000,
@@ -642,16 +642,16 @@ describe('ConnectionPool Integration Tests', () => {
       await pool.shutdown();
     });
 
-    it('should handle invalid database path gracefully', () => {
+    it('should handle invalid database path gracefully', async () => {
       const invalidPath = '/invalid/path/that/does/not/exist/test.db';
 
-      expect(() => {
-        new ConnectionPool(invalidPath, { maxConnections: 2, connectionTimeout: 5000, idleTimeout: 30000 });
-      }).toThrow(); // Should throw during initialization
+      await expect(
+        ConnectionPool.create(invalidPath, { maxConnections: 2, connectionTimeout: 5000, idleTimeout: 30000 })
+      ).rejects.toThrow(); // Should throw during initialization
     });
 
     it('should handle release of unknown connection gracefully', async () => {
-      const pool = new ConnectionPool(testDbPath, { maxConnections: 2, connectionTimeout: 5000, idleTimeout: 30000 });
+      const pool = await ConnectionPool.create(testDbPath, { maxConnections: 2, connectionTimeout: 5000, idleTimeout: 30000 });
 
       // Create a connection outside the pool
       const externalDb = new Database(testDbPath);
@@ -666,7 +666,7 @@ describe('ConnectionPool Integration Tests', () => {
     });
 
     it('should handle double release gracefully', async () => {
-      const pool = new ConnectionPool(testDbPath, { maxConnections: 2, connectionTimeout: 5000, idleTimeout: 30000 });
+      const pool = await ConnectionPool.create(testDbPath, { maxConnections: 2, connectionTimeout: 5000, idleTimeout: 30000 });
 
       const db = await pool.acquire();
 
@@ -690,7 +690,7 @@ describe('ConnectionPool Integration Tests', () => {
 
     it('should provide clear error messages for timeout scenarios', async () => {
       // Use minimum allowed connectionTimeout (values below 1000ms are clamped to 1000ms)
-      const pool = new ConnectionPool(testDbPath, { maxConnections: 1, connectionTimeout: 1000, idleTimeout: 30000 });
+      const pool = await ConnectionPool.create(testDbPath, { maxConnections: 1, connectionTimeout: 1000, idleTimeout: 30000 });
 
       const db = await pool.acquire();
 
@@ -714,8 +714,8 @@ describe('ConnectionPool Integration Tests', () => {
    * Tests integration between ConnectionPool and SimpleDatabaseFactory.
    */
   describe('SimpleDatabaseFactory Integration', () => {
-    it('should create connection pool via SimpleDatabaseFactory.getPool()', () => {
-      const pool = SimpleDatabaseFactory.getPool(testDbPath);
+    it('should create connection pool via SimpleDatabaseFactory.getPool()', async () => {
+      const pool = await SimpleDatabaseFactory.getPool(testDbPath);
 
       expect(pool).toBeDefined();
       expect(pool.isHealthy()).toBe(true);
@@ -741,19 +741,19 @@ describe('ConnectionPool Integration Tests', () => {
       expect(stats!.active).toBe(0);
     });
 
-    it('should return same pool instance for same path', () => {
-      const pool1 = SimpleDatabaseFactory.getPool(testDbPath);
-      const pool2 = SimpleDatabaseFactory.getPool(testDbPath);
+    it('should return same pool instance for same path', async () => {
+      const pool1 = await SimpleDatabaseFactory.getPool(testDbPath);
+      const pool2 = await SimpleDatabaseFactory.getPool(testDbPath);
 
       expect(pool1).toBe(pool2);
     });
 
     it('should close all pools when closeAll() is called', async () => {
       // Create multiple pools
-      const pool1 = SimpleDatabaseFactory.getPool(testDbPath);
+      const pool1 = await SimpleDatabaseFactory.getPool(testDbPath);
       const tempDb2 = join(tempDir, 'test2.db');
       new Database(tempDb2).close(); // Create empty db
-      const pool2 = SimpleDatabaseFactory.getPool(tempDb2);
+      const pool2 = await SimpleDatabaseFactory.getPool(tempDb2);
 
       expect(pool1.isHealthy()).toBe(true);
       expect(pool2.isHealthy()).toBe(true);
@@ -774,7 +774,7 @@ describe('ConnectionPool Integration Tests', () => {
    */
   describe('Performance Benchmarks', () => {
     it('should handle high-throughput sequential queries efficiently', async () => {
-      const pool = new ConnectionPool(testDbPath, { maxConnections: 5, connectionTimeout: 5000, idleTimeout: 30000 });
+      const pool = await ConnectionPool.create(testDbPath, { maxConnections: 5, connectionTimeout: 5000, idleTimeout: 30000 });
 
       const startTime = Date.now();
       const queryCount = 1000;
@@ -795,7 +795,7 @@ describe('ConnectionPool Integration Tests', () => {
     });
 
     it('should handle high-throughput parallel queries efficiently', async () => {
-      const pool = new ConnectionPool(testDbPath, { maxConnections: 5, connectionTimeout: 5000, idleTimeout: 30000 });
+      const pool = await ConnectionPool.create(testDbPath, { maxConnections: 5, connectionTimeout: 5000, idleTimeout: 30000 });
 
       const startTime = Date.now();
       const queryCount = 500;

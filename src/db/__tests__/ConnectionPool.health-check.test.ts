@@ -36,7 +36,7 @@ describe('ConnectionPool - BUG-5: Health Check Tests', () => {
     vi.useFakeTimers();
 
     // Create pool AFTER enabling fake timers so setInterval is intercepted
-    pool = new ConnectionPool(testDbPath, {
+    pool = await ConnectionPool.create(testDbPath, {
       maxConnections: 3,
       healthCheckInterval: 5000, // Minimum allowed interval
     });
@@ -71,7 +71,7 @@ describe('ConnectionPool - BUG-5: Health Check Tests', () => {
     vi.useFakeTimers();
 
     // Create pool AFTER enabling fake timers so setInterval is intercepted
-    pool = new ConnectionPool(testDbPath, {
+    pool = await ConnectionPool.create(testDbPath, {
       maxConnections: 3,
       healthCheckInterval: 5000, // Minimum allowed interval
     });
@@ -99,7 +99,7 @@ describe('ConnectionPool - BUG-5: Health Check Tests', () => {
     vi.useFakeTimers();
 
     // Create pool AFTER enabling fake timers so setInterval is intercepted
-    pool = new ConnectionPool(testDbPath, {
+    pool = await ConnectionPool.create(testDbPath, {
       maxConnections: 3,
       healthCheckInterval: 5000, // Minimum allowed interval
     });
@@ -129,7 +129,7 @@ describe('ConnectionPool - BUG-5: Health Check Tests', () => {
     vi.useFakeTimers();
 
     // Create pool AFTER enabling fake timers so setInterval is intercepted
-    pool = new ConnectionPool(testDbPath, {
+    pool = await ConnectionPool.create(testDbPath, {
       maxConnections: 3,
       healthCheckInterval: 5000, // Minimum allowed interval
     });
@@ -164,7 +164,7 @@ describe('ConnectionPool - BUG-5: Health Check Tests', () => {
     vi.useFakeTimers();
 
     // Create pool AFTER enabling fake timers so setInterval is intercepted
-    pool = new ConnectionPool(testDbPath, {
+    pool = await ConnectionPool.create(testDbPath, {
       maxConnections: 3,
       healthCheckInterval: 5000, // Minimum allowed interval
     });
@@ -195,7 +195,7 @@ describe('ConnectionPool - BUG-5: Health Check Tests', () => {
     vi.useFakeTimers();
 
     // Create pool with real connections
-    pool = new ConnectionPool(testDbPath, {
+    pool = await ConnectionPool.create(testDbPath, {
       maxConnections: 3,
       healthCheckInterval: 5000,
       idleTimeout: 1000, // Low idle timeout to trigger recycling
@@ -266,7 +266,7 @@ describe('ConnectionPool - BUG-5: Health Check Tests', () => {
   it('CRITICAL-2: health check should not lose connections when release happens mid-iteration', async () => {
     vi.useFakeTimers();
 
-    pool = new ConnectionPool(testDbPath, {
+    pool = await ConnectionPool.create(testDbPath, {
       maxConnections: 5,
       healthCheckInterval: 5000,
       idleTimeout: 1000,

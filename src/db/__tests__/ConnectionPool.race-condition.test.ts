@@ -16,10 +16,10 @@ describe('ConnectionPool - BUG-1: Race Condition Tests', () => {
   let pool: ConnectionPool;
   let tempDir: string;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     tempDir = mkdtempSync(join(tmpdir(), 'ccb-pool-race-'));
-    // ✅ FIX: Correct constructor signature (dbPath, options)
-    pool = new ConnectionPool(
+    // ✅ FIX: Correct factory method signature (dbPath, options)
+    pool = await ConnectionPool.create(
       join(tempDir, 'test.db'),  // dbPath as first argument
       {
         maxConnections: 5,  // Need 5 connections for some tests

@@ -42,12 +42,12 @@ import {
  */
 export class BuddyHandlers {
   private formatter: ResponseFormatter;
-  private projectMemoryManager: ProjectMemoryManager;
+  private projectMemoryManager: ProjectMemoryManager | undefined;
   private autoTracker?: ProjectAutoTracker;
 
   constructor(
     formatter: ResponseFormatter,
-    projectMemoryManager: ProjectMemoryManager,
+    projectMemoryManager: ProjectMemoryManager | undefined,
     autoTracker?: ProjectAutoTracker
   ) {
     this.formatter = formatter;
@@ -56,11 +56,46 @@ export class BuddyHandlers {
   }
 
   /**
+   * Check if local memory systems are available
+   * @returns true if running in cloud-only mode (local storage unavailable)
+   */
+  private isCloudOnlyMode(): boolean {
+    return this.projectMemoryManager === undefined;
+  }
+
+  /**
+   * Return cloud-only mode error message
+   * @param toolName - Name of the tool being called
+   */
+  private cloudOnlyModeError(toolName: string): CallToolResult {
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `❌ Tool '${toolName}' is not available in cloud-only mode.\n\n` +
+                `This MCP server is running without local SQLite storage (better-sqlite3 unavailable).\n\n` +
+                `To use local memory tools:\n` +
+                `1. Install better-sqlite3: npm install better-sqlite3\n` +
+                `2. Restart the MCP server\n\n` +
+                `OR use cloud sync tools instead:\n` +
+                `- memesh-cloud-sync: Sync with cloud storage (requires MEMESH_API_KEY)`,
+        },
+      ],
+      isError: true,
+    };
+  }
+
+  /**
    * Handle buddy_do command - Record task to knowledge graph
    */
   async handleBuddyDo(
     args: unknown
   ): Promise<CallToolResult> {
+    // Check for cloud-only mode
+    if (this.isCloudOnlyMode()) {
+      return this.cloudOnlyModeError('buddy-do');
+    }
+
     let validatedInput: ValidatedBuddyDoInput;
     try {
       validatedInput = BuddyDoInputSchema.parse(args);
@@ -117,6 +152,11 @@ export class BuddyHandlers {
   async handleBuddyRemember(
     args: unknown
   ): Promise<CallToolResult> {
+    // Check for cloud-only mode
+    if (this.isCloudOnlyMode()) {
+      return this.cloudOnlyModeError('buddy-remember');
+    }
+
     let validatedInput: ValidatedBuddyRememberInput;
     try {
       validatedInput = BuddyRememberInputSchema.parse(args);
@@ -155,7 +195,8 @@ export class BuddyHandlers {
     }
 
     try {
-      return await executeBuddyRemember(validatedInput, this.projectMemoryManager, this.formatter);
+      // Safe to use non-null assertion - cloud-only mode check at method start ensures non-null
+      return await executeBuddyRemember(validatedInput, this.projectMemoryManager!, this.formatter);
     } catch (error) {
       logError(error, {
         component: 'BuddyHandlers',

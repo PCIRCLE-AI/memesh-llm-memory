@@ -15,7 +15,7 @@ export class SessionBootstrapper {
   private hasInjected = false;
 
   constructor(
-    private projectMemoryManager: ProjectMemoryManager,
+    private projectMemoryManager: ProjectMemoryManager | undefined,
     private memoryLimit: number = DEFAULT_MEMORY_LIMIT,
     private sessionMemoryPipeline?: SessionMemoryPipeline,
   ) {}
@@ -46,6 +46,11 @@ export class SessionBootstrapper {
   }
 
   private async buildStartupMessage(): Promise<string | null> {
+    // Skip if running in cloud-only mode (no local memory systems)
+    if (!this.projectMemoryManager) {
+      return null;
+    }
+
     let text = '';
 
     // 1. Collect recent project memories

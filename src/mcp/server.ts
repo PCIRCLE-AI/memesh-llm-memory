@@ -178,9 +178,12 @@ class ClaudeCodeBuddyMCPServer {
     );
 
     // Start session memory pipeline (file watcher for native summary.md files)
-    void this.components.sessionMemoryPipeline.start().catch(err => {
-      logger.warn('SessionMemoryPipeline failed to start:', err);
-    });
+    // Skip in cloud-only mode
+    if (this.components.sessionMemoryPipeline) {
+      void this.components.sessionMemoryPipeline.start().catch(err => {
+        logger.warn('SessionMemoryPipeline failed to start:', err);
+      });
+    }
 
     // Setup MCP request handlers
     this.setupHandlers();

@@ -92,10 +92,29 @@ npm install && npm run build
 ### Claude Code Integration
 
 MeMesh works seamlessly with:
-- ✅ **Claude Code CLI** (terminal)
-- ✅ **Claude Code VS Code Extension**
-- ✅ **Cursor** (via MCP)
+- ✅ **Claude Code CLI** (terminal) - **Full functionality**
+- ✅ **Claude Code VS Code Extension** - **Full functionality**
+- ✅ **Cursor** (via MCP) - **Full functionality**
+- ⚠️  **Claude Desktop (Cowork)** - **Partial support** (see below)
 - ✅ **Other MCP-compatible editors**
+
+#### Claude Desktop Cowork Compatibility
+
+**Current Status**: Cloud-only mode with limited functionality
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| MCP Server | ✅ Works | Starts successfully in cloud-only mode |
+| Basic Commands | ✅ Works | buddy-help, list-skills, etc. |
+| Memory Tools | ❌ Disabled | recall-memory, create-entities, buddy-do, buddy-remember |
+| Cloud Sync | ✅ Works | When MEMESH_API_KEY is configured |
+| Local Knowledge Graph | ❌ Unavailable | better-sqlite3 cannot compile in Cowork sandbox |
+
+**Why Limited**: Cowork sandbox has read-only filesystem and blocks native module compilation (better-sqlite3, onnxruntime-node, sqlite-vec).
+
+**Future**: Full support planned through cloud-first memory architecture. See [docs/COWORK_SUPPORT.md](docs/COWORK_SUPPORT.md) for details.
+
+**Recommendation**: Use **CLI version** for full functionality until cloud-first memory is implemented.
 
 ### Known Limitations
 

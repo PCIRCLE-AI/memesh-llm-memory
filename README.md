@@ -73,6 +73,38 @@ npm install && npm run build
 
 ---
 
+## Compatibility
+
+### Supported Platforms
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| **macOS** | ✅ Fully tested | Primary development platform |
+| **Linux** | ✅ Fully tested | All distributions supported |
+| **Windows** | ✅ Compatible | WSL2 recommended for best experience |
+
+### Requirements
+
+- **Claude Code**: Latest version recommended ([install guide](https://docs.anthropic.com/en/docs/claude-code))
+- **Node.js**: >= 20.0.0 ([download](https://nodejs.org/))
+- **npm**: >= 9.0.0 (included with Node.js)
+
+### Claude Code Integration
+
+MeMesh works seamlessly with:
+- ✅ **Claude Code CLI** (terminal)
+- ✅ **Claude Code VS Code Extension**
+- ✅ **Cursor** (via MCP)
+- ✅ **Other MCP-compatible editors**
+
+### Known Limitations
+
+- Windows native terminal may have display issues (use WSL2)
+- Minimum 4GB RAM recommended for large knowledge graphs
+- Vector search requires ~100MB disk space for embedding models
+
+---
+
 ## Usage
 
 MeMesh provides 3 core commands inside Claude Code:

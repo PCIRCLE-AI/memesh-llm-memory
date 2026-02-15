@@ -489,7 +489,7 @@ After upgrading, you'll get:
 
 - 🐛 **Found a bug?** [Open an issue](https://github.com/PCIRCLE-AI/claude-code-buddy/issues/new)
 - 💬 **Have questions?** [Start a discussion](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
-- 📧 **Private concern?** Email: support@pcircle.ai
+- 📧 **Private concern?** Email: support@memesh.ai
 
 ---
 

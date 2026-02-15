@@ -1,5 +1,5 @@
 name: Question
-description: Ask a question about Claude Code Buddy
+description: Ask a question about MeMesh
 title: "[Question]: "
 labels: ["question"]
 body:

@@ -45,9 +45,14 @@ This Code of Conduct applies within all community spaces, including:
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the project maintainer at 677465+kevintseng@users.noreply.github.com.
+reported to the project maintainers at **support@memesh.ai** with subject "CODE OF CONDUCT VIOLATION".
 
-All complaints will be reviewed and investigated promptly and fairly.
+All complaints will be reviewed and investigated promptly and fairly within 7 business days.
+
+Community leaders have the right and responsibility to remove, edit, or reject
+comments, commits, code, issues, and other contributions that are not aligned
+with this Code of Conduct, and will communicate reasons for moderation decisions
+when appropriate.
 
 ## Attribution
 

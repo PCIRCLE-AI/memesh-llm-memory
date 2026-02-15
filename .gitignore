@@ -292,6 +292,7 @@ data/*.db-wal
 assets/
 *.html
 !docs/**/*.html
+!landing-page/**/*.html
 
 # System config backups
 Library/
@@ -341,8 +342,14 @@ test-*.json
 # Session management scripts
 start-session-*.sh
 
-# Marketplace submission (internal strategy)
+# Marketplace submission and promotion (internal strategy)
 MARKETPLACE_SUBMISSION.md
+MARKETPLACE_PROMOTION_PLAN.md
+SUBMISSION_FORM_GUIDE.md
+SUBMISSION_CHECKLIST.md
+SUBMISSION_PACKAGE_README.md
+TIMELINE_GANTT.md
+QUICK_ACTION_CHECKLIST.md
 
 # Internal development documents (code quality, checklists, improvements)
 *-code-quality-*.md

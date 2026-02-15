@@ -17,20 +17,41 @@ yarn-debug.log*
 yarn-error.log*
 
 # OS files
+# macOS
 .DS_Store
 .DS_Store?
 ._*
+.AppleDouble
+.LSOverride
 .Spotlight-V100
 .Trashes
-ehthumbs.db
+# Windows
 Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+# Linux
+*~
+.directory
+.fuse_hidden*
+.nfs*
 
-# IDE
+# IDE & Editors
+# VS Code
 .vscode/
+# JetBrains (IntelliJ, WebStorm, etc.)
 .idea/
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+# Vim
 *.swp
 *.swo
+# Emacs
 *~
+\#*\#
+.#*
 
 # Build outputs
 # Note: dist/ contains compiled TypeScript for npm package
@@ -51,13 +72,30 @@ chroma_db/
 *.db
 *.sqlite
 
+# Test databases
+*.test.db
+*.test.sqlite
+*.spec.db
+test.db*
+
 # Data directory (development databases and files)
 data/
 !data/.gitkeep
 
+# Benchmark outputs
+benchmarks/
+benchmark-results/
+benchmarks/results/
+*.benchmark
+
 # Test coverage
 coverage/
 .nyc_output/
+*.lcov
+*.coverage
+htmlcov/
+.coverage
+.coverage.*
 
 # Temporary files
 tmp/

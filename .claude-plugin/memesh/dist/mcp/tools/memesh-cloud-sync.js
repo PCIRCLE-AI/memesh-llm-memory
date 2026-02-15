@@ -106,10 +106,61 @@ async function handlePush(client, input, kg) {
         tags: [entity.entityType, ...(entity.tags || [])],
         source: 'memesh-local',
     }));
-    const result = await client.writeMemories(memories);
+    const BATCH_SIZE = 30;
+    const batches = [];
+    for (let i = 0; i < memories.length; i += BATCH_SIZE) {
+        batches.push(memories.slice(i, i + BATCH_SIZE));
+    }
+    let totalSucceeded = 0;
+    let totalFailed = 0;
+    const allFailures = [];
+    logger.info('Cloud sync push started', {
+        totalMemories: memories.length,
+        batches: batches.length,
+        batchSize: BATCH_SIZE,
+    });
+    for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+        const batchNum = i + 1;
+        try {
+            const result = await client.writeMemories(batch);
+            totalSucceeded += result.succeeded;
+            totalFailed += result.failed;
+            const batchOffset = i * BATCH_SIZE;
+            result.failures.forEach(f => {
+                allFailures.push({
+                    ...f,
+                    index: f.index + batchOffset,
+                });
+            });
+            logger.info(`Cloud sync batch ${batchNum}/${batches.length} completed`, {
+                batchSize: batch.length,
+                succeeded: result.succeeded,
+                failed: result.failed,
+            });
+        }
+        catch (error) {
+            const batchOffset = i * BATCH_SIZE;
+            totalFailed += batch.length;
+            batch.forEach((memory, idx) => {
+                allFailures.push({
+                    index: batchOffset + idx,
+                    content: memory.content.substring(0, 100),
+                    errorCode: 'BATCH_FAILURE',
+                    errorMessage: error instanceof Error ? error.message : String(error),
+                });
+            });
+            logger.error(`Cloud sync batch ${batchNum}/${batches.length} failed`, {
+                batchSize: batch.length,
+                error: String(error),
+            });
+        }
+    }
     logger.info('Cloud sync push completed', {
-        succeeded: result.succeeded,
-        failed: result.failed,
+        totalMemories: memories.length,
+        succeeded: totalSucceeded,
+        failed: totalFailed,
+        batches: batches.length,
     });
     return {
         content: [{
@@ -117,11 +168,13 @@ async function handlePush(client, input, kg) {
                 text: JSON.stringify({
                     success: true,
                     action: 'push',
-                    pushed: result.succeeded,
-                    failed: result.failed,
-                    total: result.total,
-                    errorDetails: result.failed > 0
-                        ? result.failures.slice(0, 5).map(f => f.errorMessage)
+                    pushed: totalSucceeded,
+                    failed: totalFailed,
+                    total: memories.length,
+                    batches: batches.length,
+                    batchSize: BATCH_SIZE,
+                    errorDetails: totalFailed > 0
+                        ? allFailures.slice(0, 5).map(f => f.errorMessage)
                         : undefined,
                 }, null, 2),
             }],

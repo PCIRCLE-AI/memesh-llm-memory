@@ -312,6 +312,11 @@ export class ToolHandlers {
    * Handle hook-tool-use tool
    */
   async handleHookToolUse(args: unknown): Promise<CallToolResult> {
+    // Check for cloud-only mode
+    if (this.isCloudOnlyMode()) {
+      return this.cloudOnlyModeError('hook-tool-use');
+    }
+
     try {
       let validatedInput: ValidatedHookToolUseInput;
       try {

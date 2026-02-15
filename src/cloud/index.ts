@@ -1,7 +1,7 @@
 /**
  * MeMesh Cloud Integration
  *
- * Bridge between local MCP server and MeMesh Cloud (memesh-backend.fly.dev).
+ * Bridge between local MCP server and MeMesh Cloud (api.memesh.ai).
  * All cloud features are optional and gated by MEMESH_API_KEY.
  */
 

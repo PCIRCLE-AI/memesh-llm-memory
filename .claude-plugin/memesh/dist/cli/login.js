@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import * as readline from 'readline';
 import { saveCredentials, loadCredentials } from './credentials.js';
 import { logger } from '../utils/logger.js';
-const DEFAULT_BACKEND_URL = 'https://memesh-backend.fly.dev';
+const DEFAULT_BACKEND_URL = 'https://api.memesh.ai';
 async function openBrowser(url) {
     try {
         const parsed = new URL(url);

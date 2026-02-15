@@ -10,7 +10,7 @@ describe('MeMeshCloudClient', () => {
   let client: MeMeshCloudClient;
 
   beforeEach(() => {
-    client = new MeMeshCloudClient('mk_test_key_123', 'https://test.memesh-backend.fly.dev', 5000);
+    client = new MeMeshCloudClient('mk_test_key_123', 'https://test.api.memesh.ai', 5000);
   });
 
   afterEach(() => {
@@ -103,7 +103,7 @@ describe('MeMeshCloudClient', () => {
 
       expect(id).toBe('mem-1');
       expect(fetchSpy).toHaveBeenCalledWith(
-        'https://test.memesh-backend.fly.dev/memory/write',
+        'https://test.api.memesh.ai/memory/write',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({

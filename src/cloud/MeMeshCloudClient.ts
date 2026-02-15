@@ -120,7 +120,7 @@ export class MeMeshCloudClient {
     }
 
     // Priority for baseUrl: constructor arg > env var > credentials file > default
-    this.baseUrl = (baseUrl ?? process.env.MEMESH_BASE_URL ?? fileBaseUrl ?? 'https://memesh-backend.fly.dev').replace(/\/+$/, '');
+    this.baseUrl = (baseUrl ?? process.env.MEMESH_BASE_URL ?? fileBaseUrl ?? 'https://api.memesh.ai').replace(/\/+$/, '');
     this.timeoutMs = timeoutMs ?? parseInt(process.env.MEMESH_TIMEOUT_MS ?? '10000', 10);
 
     if (!this.apiKey) {

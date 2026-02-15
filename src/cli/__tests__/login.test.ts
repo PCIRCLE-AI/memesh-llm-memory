@@ -170,8 +170,8 @@ describe('login module', () => {
   describe('credential saving on success', () => {
     it('should save credentials with default backend URL', () => {
       const tokenData = { api_key: 'sk_memmesh_newkey', token_type: 'api_key' };
-      const backendUrl = 'https://memesh-backend.fly.dev';
-      const DEFAULT_BACKEND_URL = 'https://memesh-backend.fly.dev';
+      const backendUrl = 'https://api.memesh.ai';
+      const DEFAULT_BACKEND_URL = 'https://api.memesh.ai';
 
       saveCredentials({
         apiKey: tokenData.api_key,
@@ -190,7 +190,7 @@ describe('login module', () => {
     it('should save credentials with custom backend URL', () => {
       const tokenData = { api_key: 'sk_memmesh_newkey', token_type: 'api_key' };
       const backendUrl = 'https://custom-backend.example.com';
-      const DEFAULT_BACKEND_URL = 'https://memesh-backend.fly.dev';
+      const DEFAULT_BACKEND_URL = 'https://api.memesh.ai';
 
       saveCredentials({
         apiKey: tokenData.api_key,

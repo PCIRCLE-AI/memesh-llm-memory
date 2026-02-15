@@ -306,7 +306,7 @@ export class ToolRouter {
     const args = params.arguments;
 
     // Route to appropriate handler based on tool name
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- handlers validate args via Zod
+     
     return await this.dispatch(toolName, args as any);
   }
 
@@ -361,7 +361,7 @@ export class ToolRouter {
    *
    * @private
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- each handler validates via Zod schemas
+   
   private async dispatch(toolName: string, args: any): Promise<CallToolResult> {
     // Resolve aliases to canonical names (with deprecation warning)
     const resolvedToolName = this.resolveAlias(toolName);

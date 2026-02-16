@@ -199,7 +199,7 @@ async function handlePush(
     return {
       content,
       space: input.space,
-      tags: [entity.entityType, ...(entity.tags || [])].slice(0, 20), // Limit tags
+      tags: [entity.entityType, ...(entity.tags || [])].slice(0, 10), // API limit: max 10 tags
       source: 'memesh-local',
     };
   });

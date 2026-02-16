@@ -2,7 +2,7 @@
 name: block-git-push-main
 enabled: true
 event: bash
-pattern: git\s+push\s+.*\b(main|master)\b
+pattern: git\s+push\s+(-u\s+)?(origin\s+)?(main|master)\b
 action: block
 ---
 

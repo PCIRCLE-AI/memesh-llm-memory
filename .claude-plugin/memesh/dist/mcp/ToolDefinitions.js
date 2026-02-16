@@ -422,11 +422,15 @@ Requires MEMESH_API_KEY to be configured. Without it, all actions return a setup
 • Message queue for inter-agent communication
 • Heartbeat monitoring and status tracking
 
-**Agent Types:**
-• "claude-code" - Claude Code CLI integration
-• "assistant" - General-purpose AI assistant
-• "analyzer" - Code analysis and review agent
-• "developer" - Development automation agent
+**Agent Types (API enum):**
+• "claude" - Claude / Claude Code
+• "chatgpt" - ChatGPT
+• "gemini" - Google Gemini
+• "grok" - xAI Grok
+• "deepseek" - DeepSeek
+• "codex" - OpenAI Codex
+• "cursor" - Cursor IDE
+• "custom" - Other / custom agents
 
 Requires MEMESH_API_KEY to be configured.`,
         inputSchema: {
@@ -434,11 +438,11 @@ Requires MEMESH_API_KEY to be configured.`,
             properties: {
                 agentType: {
                     type: 'string',
-                    description: 'Type of agent (e.g., "claude-code", "assistant", "analyzer")',
+                    description: 'Type of agent. Valid: "claude", "chatgpt", "gemini", "grok", "deepseek", "codex", "cursor", "custom"',
                 },
                 agentName: {
                     type: 'string',
-                    description: 'Optional human-readable name for the agent',
+                    description: 'Optional agent name (no spaces — use hyphens, e.g., "my-agent")',
                 },
                 agentVersion: {
                     type: 'string',

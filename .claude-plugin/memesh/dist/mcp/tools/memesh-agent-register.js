@@ -1,9 +1,10 @@
 import { z } from 'zod';
 import { getCloudClient, isCloudEnabled } from '../../cloud/index.js';
 import { logger } from '../../utils/logger.js';
+const VALID_AGENT_TYPES = ['chatgpt', 'claude', 'gemini', 'grok', 'deepseek', 'codex', 'cursor', 'custom'];
 export const AgentRegisterInputSchema = z.object({
-    agentType: z.string().describe('Type of agent (e.g., "claude-code", "assistant", "analyzer")'),
-    agentName: z.string().optional().describe('Optional human-readable name for the agent'),
+    agentType: z.enum(VALID_AGENT_TYPES).describe('Type of agent. Valid: "claude", "chatgpt", "gemini", "grok", "deepseek", "codex", "cursor", "custom"'),
+    agentName: z.string().optional().describe('Optional agent name (no spaces — use hyphens, e.g., "my-agent")'),
     agentVersion: z.string().optional().describe('Optional version string (e.g., "1.0.0")'),
     capabilities: z.record(z.string(), z.unknown()).optional().describe('Optional capabilities object describing what the agent can do'),
 });
@@ -22,9 +23,12 @@ export async function handleAgentRegister(input) {
     }
     const client = getCloudClient();
     try {
+        const sanitizedName = input.agentName
+            ? input.agentName.replace(/\s+/g, '-').toLowerCase()
+            : undefined;
         const agentInfo = await client.registerAgent({
             agentType: input.agentType,
-            agentName: input.agentName,
+            agentName: sanitizedName,
             agentVersion: input.agentVersion,
             capabilities: input.capabilities,
         });

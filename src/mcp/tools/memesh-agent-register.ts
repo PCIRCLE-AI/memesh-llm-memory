@@ -14,12 +14,15 @@ import { logger } from '../../utils/logger.js';
 
 // -- Input Schema -----------------------------------------------------------
 
+// Valid agentType values per MeMesh Cloud API (verified 2026-02-16)
+const VALID_AGENT_TYPES = ['chatgpt', 'claude', 'gemini', 'grok', 'deepseek', 'codex', 'cursor', 'custom'] as const;
+
 export const AgentRegisterInputSchema = z.object({
-  agentType: z.string().describe(
-    'Type of agent (e.g., "claude-code", "assistant", "analyzer")'
+  agentType: z.enum(VALID_AGENT_TYPES).describe(
+    'Type of agent. Valid: "claude", "chatgpt", "gemini", "grok", "deepseek", "codex", "cursor", "custom"'
   ),
   agentName: z.string().optional().describe(
-    'Optional human-readable name for the agent'
+    'Optional agent name (no spaces — use hyphens, e.g., "my-agent")'
   ),
   agentVersion: z.string().optional().describe(
     'Optional version string (e.g., "1.0.0")'
@@ -58,10 +61,15 @@ export async function handleAgentRegister(
   const client = getCloudClient();
 
   try {
+    // Sanitize agentName: strip spaces, lowercase (API rejects spaces with misleading 409)
+    const sanitizedName = input.agentName
+      ? input.agentName.replace(/\s+/g, '-').toLowerCase()
+      : undefined;
+
     // Register agent with Cloud API
     const agentInfo = await client.registerAgent({
       agentType: input.agentType,
-      agentName: input.agentName,
+      agentName: sanitizedName,
       agentVersion: input.agentVersion,
       capabilities: input.capabilities,
     });

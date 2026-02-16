@@ -113,7 +113,7 @@ async function handlePush(client, input, kg) {
         return {
             content,
             space: input.space,
-            tags: [entity.entityType, ...(entity.tags || [])].slice(0, 20),
+            tags: [entity.entityType, ...(entity.tags || [])].slice(0, 10),
             source: 'memesh-local',
         };
     });

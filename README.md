@@ -14,6 +14,14 @@ Claude forgets everything between sessions. MeMesh fixes that.
 
 </div>
 
+> **📦 Package Renamed**: `@pcircle/claude-code-buddy-mcp` is now `@pcircle/memesh`
+>
+> If you previously installed the old package, please migrate:
+> ```bash
+> npm uninstall -g @pcircle/claude-code-buddy-mcp && npm install -g @pcircle/memesh
+> ```
+> See [MIGRATION.md](MIGRATION.md) for details.
+
 ---
 
 ## The Problem

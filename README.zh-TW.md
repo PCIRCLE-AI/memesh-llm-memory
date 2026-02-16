@@ -14,6 +14,14 @@ Claude 每次開新 session 都會忘記一切。MeMesh 解決這個問題。
 
 </div>
 
+> **📦 套件更名通知**：`@pcircle/claude-code-buddy-mcp` 已更名為 `@pcircle/memesh`
+>
+> 如果你之前安裝過舊套件，請執行遷移：
+> ```bash
+> npm uninstall -g @pcircle/claude-code-buddy-mcp && npm install -g @pcircle/memesh
+> ```
+> 詳見 [MIGRATION.md](MIGRATION.md)。
+
 ---
 
 ## 問題

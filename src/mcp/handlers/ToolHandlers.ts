@@ -64,14 +64,14 @@ export class ToolHandlers {
   /** Rate limiter for memory operations (10 req/min) */
   private memoryRateLimiter: RateLimiter;
 
-  /** Unified memory store for all memory operations */
-  private unifiedMemoryStore: UnifiedMemoryStore;
+  /** Unified memory store for all memory operations (undefined in cloud-only mode) */
+  private unifiedMemoryStore: UnifiedMemoryStore | undefined;
 
-  /** Pattern engine for auto-extracting prevention rules */
-  private mistakePatternEngine: MistakePatternEngine;
+  /** Pattern engine for auto-extracting prevention rules (undefined in cloud-only mode) */
+  private mistakePatternEngine: MistakePatternEngine | undefined;
 
-  /** Preference engine for auto-learning user preferences */
-  private userPreferenceEngine: UserPreferenceEngine;
+  /** Preference engine for auto-learning user preferences (undefined in cloud-only mode) */
+  private userPreferenceEngine: UserPreferenceEngine | undefined;
 
   constructor(
     private agentRegistry: AgentRegistry,
@@ -79,16 +79,48 @@ export class ToolHandlers {
     private uninstallManager: UninstallManager,
     private checkpointDetector: CheckpointDetector,
     private hookIntegration: HookIntegration,
-    private projectMemoryManager: ProjectMemoryManager,
-    private knowledgeGraph: KnowledgeGraph,
+    private projectMemoryManager: ProjectMemoryManager | undefined,
+    private knowledgeGraph: KnowledgeGraph | undefined,
     private ui: HumanInLoopUI,
     private samplingClient: SamplingClient,
-    unifiedMemoryStore: UnifiedMemoryStore
+    unifiedMemoryStore: UnifiedMemoryStore | undefined
   ) {
     this.memoryRateLimiter = new RateLimiter({ requestsPerMinute: 10 });
     this.unifiedMemoryStore = unifiedMemoryStore;
-    this.mistakePatternEngine = new MistakePatternEngine(this.unifiedMemoryStore);
-    this.userPreferenceEngine = new UserPreferenceEngine(this.unifiedMemoryStore);
+
+    // Initialize memory engines only if unified store is available
+    this.mistakePatternEngine = unifiedMemoryStore ? new MistakePatternEngine(unifiedMemoryStore) : undefined;
+    this.userPreferenceEngine = unifiedMemoryStore ? new UserPreferenceEngine(unifiedMemoryStore) : undefined;
+  }
+
+  /**
+   * Check if local memory systems are available
+   * @returns true if running in cloud-only mode (local storage unavailable)
+   */
+  private isCloudOnlyMode(): boolean {
+    return this.knowledgeGraph === undefined || this.projectMemoryManager === undefined;
+  }
+
+  /**
+   * Return cloud-only mode error message
+   * @param toolName - Name of the tool being called
+   */
+  private cloudOnlyModeError(toolName: string): CallToolResult {
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `❌ Tool '${toolName}' is not available in cloud-only mode.\n\n` +
+                `This MCP server is running without local SQLite storage (better-sqlite3 unavailable).\n\n` +
+                `To use local memory tools:\n` +
+                `1. Install better-sqlite3: npm install better-sqlite3\n` +
+                `2. Restart the MCP server\n\n` +
+                `OR use cloud sync tools instead:\n` +
+                `- memesh-cloud-sync: Sync with cloud storage (requires MEMESH_API_KEY)`,
+        },
+      ],
+      isError: true,
+    };
   }
 
   /**
@@ -280,6 +312,11 @@ export class ToolHandlers {
    * Handle hook-tool-use tool
    */
   async handleHookToolUse(args: unknown): Promise<CallToolResult> {
+    // Check for cloud-only mode
+    if (this.isCloudOnlyMode()) {
+      return this.cloudOnlyModeError('hook-tool-use');
+    }
+
     try {
       let validatedInput: ValidatedHookToolUseInput;
       try {
@@ -344,6 +381,11 @@ export class ToolHandlers {
    * Handle recall-memory tool
    */
   async handleRecallMemory(args: unknown): Promise<CallToolResult> {
+    // Check for cloud-only mode
+    if (this.isCloudOnlyMode()) {
+      return this.cloudOnlyModeError('recall-memory');
+    }
+
     if (!this.memoryRateLimiter.consume()) {
       throw new OperationError(
         'Memory operation rate limit exceeded. Please try again later.',
@@ -374,9 +416,10 @@ export class ToolHandlers {
         throw error;
       }
 
+      // Safe to use non-null assertion - cloud-only mode check at method start ensures non-null
       const result = await recallMemoryTool.handler(
         validatedInput,
-        this.projectMemoryManager
+        this.projectMemoryManager!
       );
 
       let text = 'Project Memory Recall\n';
@@ -441,6 +484,11 @@ export class ToolHandlers {
    * Handle create-entities tool
    */
   async handleCreateEntities(args: unknown): Promise<CallToolResult> {
+    // Check for cloud-only mode
+    if (this.isCloudOnlyMode()) {
+      return this.cloudOnlyModeError('create-entities');
+    }
+
     if (!this.memoryRateLimiter.consume()) {
       throw new OperationError(
         'Memory operation rate limit exceeded. Please try again later.',
@@ -471,9 +519,10 @@ export class ToolHandlers {
         throw error;
       }
 
+      // Safe to use non-null assertion - cloud-only mode check at method start ensures non-null
       const result = await createEntitiesTool.handler(
         validatedInput,
-        this.knowledgeGraph
+        this.knowledgeGraph!
       );
 
       let text = 'Knowledge Graph Entity Creation\n';
@@ -539,6 +588,11 @@ export class ToolHandlers {
    * Handle buddy-record-mistake tool
    */
   async handleBuddyRecordMistake(args: unknown): Promise<CallToolResult> {
+    // Check for cloud-only mode
+    if (this.isCloudOnlyMode()) {
+      return this.cloudOnlyModeError('buddy-record-mistake');
+    }
+
     if (!this.memoryRateLimiter.consume()) {
       throw new OperationError(
         'Memory operation rate limit exceeded. Please try again later.',
@@ -571,11 +625,12 @@ export class ToolHandlers {
       }
     }
 
+    // Safe to use non-null assertions - cloud-only mode check at method start ensures non-null
     return handleBuddyRecordMistake(
       input,
-      this.unifiedMemoryStore,
-      this.mistakePatternEngine,
-      this.userPreferenceEngine
+      this.unifiedMemoryStore!,
+      this.mistakePatternEngine!,
+      this.userPreferenceEngine!
     );
   }
 
@@ -583,6 +638,11 @@ export class ToolHandlers {
    * Handle add-observations tool
    */
   async handleAddObservations(args: unknown): Promise<CallToolResult> {
+    // Check for cloud-only mode
+    if (this.isCloudOnlyMode()) {
+      return this.cloudOnlyModeError('add-observations');
+    }
+
     if (!this.memoryRateLimiter.consume()) {
       throw new OperationError(
         'Memory operation rate limit exceeded. Please try again later.',
@@ -613,9 +673,10 @@ export class ToolHandlers {
         throw error;
       }
 
+      // Safe to use non-null assertion - cloud-only mode check at method start ensures non-null
       const result = await addObservationsTool.handler(
         validatedInput,
-        this.knowledgeGraph
+        this.knowledgeGraph!
       );
 
       let text = 'Knowledge Graph Observation Update\n';
@@ -694,6 +755,11 @@ export class ToolHandlers {
    * Handle create-relations tool
    */
   async handleCreateRelations(args: unknown): Promise<CallToolResult> {
+    // Check for cloud-only mode
+    if (this.isCloudOnlyMode()) {
+      return this.cloudOnlyModeError('create-relations');
+    }
+
     if (!this.memoryRateLimiter.consume()) {
       throw new OperationError(
         'Memory operation rate limit exceeded. Please try again later.',
@@ -724,9 +790,10 @@ export class ToolHandlers {
         throw error;
       }
 
+      // Safe to use non-null assertion - cloud-only mode check at method start ensures non-null
       const result = await createRelationsTool.handler(
         validatedInput,
-        this.knowledgeGraph
+        this.knowledgeGraph!
       );
 
       let text = 'Knowledge Graph Relation Creation\n';

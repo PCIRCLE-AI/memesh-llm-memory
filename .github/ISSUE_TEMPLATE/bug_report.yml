@@ -75,6 +75,7 @@ body:
       description: Which client are you using?
       options:
         - Claude Code CLI
+        - Claude Desktop (Cowork)
         - Cursor
         - VS Code
         - Other

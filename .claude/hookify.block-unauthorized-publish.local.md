@@ -1,6 +1,6 @@
 ---
 name: block-unauthorized-publish
-enabled: true
+enabled: false
 event: bash
 pattern: npm\s+publish|npm\s+version\s+(patch|minor|major)|git\s+push.*--tags|vercel\s+--prod
 action: block

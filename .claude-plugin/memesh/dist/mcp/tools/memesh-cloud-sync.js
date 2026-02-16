@@ -100,12 +100,23 @@ async function handlePush(client, input, kg) {
                 }],
         };
     }
-    const memories = entities.map(entity => ({
-        content: `[${entity.entityType}] ${entity.name}: ${entity.observations.join(' | ')}`,
-        space: input.space,
-        tags: [entity.entityType, ...(entity.tags || [])],
-        source: 'memesh-local',
-    }));
+    const MAX_CONTENT_LENGTH = 10000;
+    const MAX_OBSERVATION_LENGTH = 1000;
+    const memories = entities.map(entity => {
+        const truncatedObservations = entity.observations.map(obs => obs.length > MAX_OBSERVATION_LENGTH
+            ? obs.substring(0, MAX_OBSERVATION_LENGTH) + '... [truncated]'
+            : obs);
+        const fullContent = `[${entity.entityType}] ${entity.name}: ${truncatedObservations.join(' | ')}`;
+        const content = fullContent.length > MAX_CONTENT_LENGTH
+            ? fullContent.substring(0, MAX_CONTENT_LENGTH) + '... [truncated]'
+            : fullContent;
+        return {
+            content,
+            space: input.space,
+            tags: [entity.entityType, ...(entity.tags || [])].slice(0, 20),
+            source: 'memesh-local',
+        };
+    });
     const BATCH_SIZE = 30;
     const batches = [];
     for (let i = 0; i < memories.length; i += BATCH_SIZE) {
@@ -142,17 +153,25 @@ async function handlePush(client, input, kg) {
         catch (error) {
             const batchOffset = i * BATCH_SIZE;
             totalFailed += batch.length;
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorDetails = error instanceof Error && 'context' in error
+                ? error.context
+                : undefined;
             batch.forEach((memory, idx) => {
                 allFailures.push({
                     index: batchOffset + idx,
                     content: memory.content.substring(0, 100),
                     errorCode: 'BATCH_FAILURE',
-                    errorMessage: error instanceof Error ? error.message : String(error),
+                    errorMessage,
                 });
             });
             logger.error(`Cloud sync batch ${batchNum}/${batches.length} failed`, {
                 batchSize: batch.length,
-                error: String(error),
+                batchOffset,
+                memoryIndices: `${batchOffset}-${batchOffset + batch.length - 1}`,
+                error: errorMessage,
+                errorDetails,
+                sampleContent: batch[0]?.content.substring(0, 200),
             });
         }
     }

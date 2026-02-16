@@ -480,6 +480,55 @@ Requires MEMESH_API_KEY to be configured. Without it, all actions return a setup
     },
   };
 
+  const agentRegisterTool: MCPToolDefinition = {
+    name: 'memesh-agent-register',
+    description: `🤖 Register this agent with MeMesh Cloud for agent-specific capabilities.
+
+**What Registration Provides:**
+• Agent ID for tracking and analytics
+• Access to agent-specific features
+• Message queue for inter-agent communication
+• Heartbeat monitoring and status tracking
+
+**Agent Types:**
+• "claude-code" - Claude Code CLI integration
+• "assistant" - General-purpose AI assistant
+• "analyzer" - Code analysis and review agent
+• "developer" - Development automation agent
+
+Requires MEMESH_API_KEY to be configured.`,
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        agentType: {
+          type: 'string',
+          description: 'Type of agent (e.g., "claude-code", "assistant", "analyzer")',
+        },
+        agentName: {
+          type: 'string',
+          description: 'Optional human-readable name for the agent',
+        },
+        agentVersion: {
+          type: 'string',
+          description: 'Optional version string (e.g., "1.0.0")',
+        },
+        capabilities: {
+          type: 'object',
+          description: 'Optional capabilities object describing what the agent can do',
+        },
+      },
+      required: ['agentType'],
+    },
+    outputSchema: OutputSchemas.agentRegister,
+    annotations: {
+      title: 'Agent Registration',
+      readOnlyHint: false,      // Registers agent state
+      destructiveHint: false,
+      idempotentHint: true,     // Re-registering with same info returns same agent
+      openWorldHint: false,
+    },
+  };
+
   // ========================================
   // Task Board Tools (Local Task Management)
   // ========================================
@@ -533,6 +582,7 @@ Requires MEMESH_API_KEY to be configured. Without it, all actions return a setup
 
     // Cloud Sync
     cloudSyncTool,
+    agentRegisterTool,
 
     // Hook Integration
     hookToolUseTool,

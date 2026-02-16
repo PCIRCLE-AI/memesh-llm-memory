@@ -412,6 +412,54 @@ Requires MEMESH_API_KEY to be configured. Without it, all actions return a setup
             openWorldHint: true,
         },
     };
+    const agentRegisterTool = {
+        name: 'memesh-agent-register',
+        description: `🤖 Register this agent with MeMesh Cloud for agent-specific capabilities.
+
+**What Registration Provides:**
+• Agent ID for tracking and analytics
+• Access to agent-specific features
+• Message queue for inter-agent communication
+• Heartbeat monitoring and status tracking
+
+**Agent Types:**
+• "claude-code" - Claude Code CLI integration
+• "assistant" - General-purpose AI assistant
+• "analyzer" - Code analysis and review agent
+• "developer" - Development automation agent
+
+Requires MEMESH_API_KEY to be configured.`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                agentType: {
+                    type: 'string',
+                    description: 'Type of agent (e.g., "claude-code", "assistant", "analyzer")',
+                },
+                agentName: {
+                    type: 'string',
+                    description: 'Optional human-readable name for the agent',
+                },
+                agentVersion: {
+                    type: 'string',
+                    description: 'Optional version string (e.g., "1.0.0")',
+                },
+                capabilities: {
+                    type: 'object',
+                    description: 'Optional capabilities object describing what the agent can do',
+                },
+            },
+            required: ['agentType'],
+        },
+        outputSchema: OutputSchemas.agentRegister,
+        annotations: {
+            title: 'Agent Registration',
+            readOnlyHint: false,
+            destructiveHint: false,
+            idempotentHint: true,
+            openWorldHint: false,
+        },
+    };
     const generateTestsTool = {
         name: 'memesh-generate-tests',
         aliases: ['generate-tests'],
@@ -445,6 +493,7 @@ Requires MEMESH_API_KEY to be configured. Without it, all actions return a setup
         buddyRecordMistakeTool,
         createEntitiesTool,
         cloudSyncTool,
+        agentRegisterTool,
         hookToolUseTool,
         generateTestsTool,
     ];

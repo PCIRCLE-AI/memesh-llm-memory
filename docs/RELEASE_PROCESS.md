@@ -4,14 +4,16 @@ This document describes the complete release process for MeMesh, including versi
 
 ## Overview
 
-MeMesh uses **fully automated release and publishing** triggered by version changes. When `package.json` version is updated and pushed to main, GitHub Actions automatically:
+MeMesh uses **semi-automated release** workflow triggered by version changes. When `package.json` version is updated and pushed to main, GitHub Actions automatically:
 
 1. Detects the version change
 2. Creates a git tag
 3. Creates a GitHub Release with changelog
-4. Publishes to npm
+4. **Manual step**: Publish to npm (requires manual `npm publish`)
 
-This automation prevents version/tag discrepancies and ensures every version bump gets a proper release.
+**Why Manual npm Publish?**
+
+The auto-release workflow uses `GITHUB_TOKEN` to create releases. Due to GitHub's anti-loop protection, workflows triggered by `GITHUB_TOKEN` cannot trigger other workflows. This prevents the `publish-npm` workflow from auto-triggering. Manual publishing ensures full control over the npm publication process.
 
 ## Release Workflow
 
@@ -22,7 +24,7 @@ graph LR
     C --> D{Version Changed?}
     D -->|Yes| E[Auto: Create Git Tag]
     E --> F[Auto: Create GitHub Release]
-    F --> G[Auto: Publish to npm]
+    F --> G[Manual: npm publish]
     D -->|No| H[No Action]
     G --> I[Verify Publication]
 ```
@@ -139,16 +141,29 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 git push origin main
 ```
 
-**✨ That's it!** The automated workflow will now:
+**⏳ Wait for Auto-Release** - The automated workflow will now:
 1. Detect the version change in `package.json`
 2. Extract changelog for the new version
 3. Create a git tag `vX.Y.Z`
 4. Create a GitHub Release with changelog
-5. Trigger npm publishing workflow
 
 You can monitor the progress in GitHub Actions.
 
-### 6. Monitor Automated Release Creation
+### 6. Manual npm Publish
+
+After the auto-release workflow completes (usually 1-2 minutes), manually publish to npm:
+
+```bash
+# Publish to npm
+npm publish --access public
+
+# Verify publication
+npm view @pcircle/memesh version
+```
+
+**Why Manual?** The auto-release workflow uses `GITHUB_TOKEN`, which cannot trigger the npm publish workflow due to GitHub's anti-loop protection. Manual publishing ensures controlled npm publication.
+
+### 7. Monitor Automated Release Creation
 
 #### Using GitHub CLI
 
@@ -167,13 +182,9 @@ gh run list --workflow=auto-release.yml --limit 3
 3. Verify tag creation and release creation steps succeed
 4. Then check "Publish to npm" workflow
 
-### 7. Automated Release and Publishing
+### 8. Automated Release Creation
 
-The automation happens in two stages:
-
-#### Stage 1: Auto Release (.github/workflows/auto-release.yml)
-
-Triggered when `package.json` is pushed to main:
+The auto-release workflow (.github/workflows/auto-release.yml) is triggered when `package.json` is pushed to main:
 
 1. **Check Version Change**
    - Compares current vs. previous package.json version
@@ -189,28 +200,9 @@ Triggered when `package.json` is pushed to main:
 
 3. **Expected Duration**: ~1-2 minutes
 
-#### Stage 2: NPM Publishing (.github/workflows/publish-npm.yml)
+**Note**: The publish-npm workflow exists but is NOT automatically triggered due to GitHub's token limitations. npm publication must be done manually (see step 6).
 
-Triggered when GitHub Release is published:
-
-1. **Build and Test**:
-   ```yaml
-   ✓ Checkout code
-   ✓ Setup Node.js 20
-   ✓ Install dependencies (npm ci)
-   ✓ Build project (npm run build)
-   ✓ Run tests (npm test)
-   ✓ Run installation tests
-   ✓ Verify package contents
-   ✓ Publish to npm (with provenance)
-   ✓ Log success
-   ```
-
-2. **Expected Duration**: ~2-3 minutes
-
-**Total Time**: ~3-5 minutes from push to npm publication
-
-### 8. Monitor Workflows
+### 9. Monitor Workflows
 
 #### Using GitHub CLI
 
@@ -218,22 +210,17 @@ Triggered when GitHub Release is published:
 # Watch auto-release workflow
 gh run watch --workflow=auto-release.yml
 
-# Watch npm publish workflow (after release is created)
-gh run watch --workflow=publish-npm.yml
-
-# Or list all recent workflow runs
-gh run list --limit 5
+# Or list recent workflow runs
+gh run list --workflow=auto-release.yml --limit 3
 ```
 
 #### Using GitHub Web Interface
 
 1. Go to https://github.com/PCIRCLE-AI/claude-code-buddy/actions
-2. Check both workflows:
-   - "Auto Release" - Creates tag and release
-   - "Publish to npm" - Publishes to npm
-3. Verify all steps complete successfully
+2. Check "Auto Release" workflow
+3. Verify all steps complete successfully (tag and release creation)
 
-### 9. Verify Publication
+### 10. Verify Publication
 
 #### Check npm Registry
 
@@ -286,22 +273,18 @@ memesh --help
    gh release create vX.Y.Z --title "vX.Y.Z" --notes-file CHANGELOG.md
    ```
 
-### NPM Publish Workflow Fails
+### Manual npm Publish Fails
 
-1. **Check workflow logs**:
+1. **Common issues**:
+   - **Version already published (403)**: Version already exists on npm
+   - **Authentication fails**: Not logged in or token expired
+   - **Permission denied**: Account doesn't have publish rights for @pcircle scope
+
+2. **Solutions**:
+
+   **Already published**:
    ```bash
-   gh run view --workflow=publish-npm.yml --log-failed
-   ```
-
-2. **Common issues**:
-   - **Build fails**: Check TypeScript compilation errors
-   - **Tests fail**: Ensure all tests pass locally first
-   - **Publish fails (403)**: Version already published
-   - **Publish fails (auth)**: Check NPM_TOKEN secret
-
-3. **Fix and retry**:
-   ```bash
-   # If version already published, bump again
+   # Bump to next version
    npm version patch --no-git-tag-version
 
    # Update CHANGELOG, commit, push
@@ -309,8 +292,21 @@ memesh --help
    git commit -m "chore(release): bump version to X.Y.Z+1"
    git push origin main
 
-   # Create new release
-   gh release create vX.Y.Z+1 --title "..." --notes "..."
+   # Wait for auto-release to create new release
+   # Then publish manually
+   npm publish --access public
+   ```
+
+   **Authentication issues**:
+   ```bash
+   # Check current login
+   npm whoami
+
+   # Login if needed
+   npm login
+
+   # Then retry publish
+   npm publish --access public
    ```
 
 ### Version Already Published
@@ -356,27 +352,26 @@ on:
 
 **Permissions**: `contents: write` (to create tags and releases)
 
-#### 2. NPM Publish Workflow
+#### 2. NPM Publish Workflow (Not Auto-Triggered)
 
 **Location**: `.github/workflows/publish-npm.yml`
 
-**Trigger**: When GitHub Release is published
+**Intended Trigger**: When GitHub Release is published
 ```yaml
 on:
   release:
     types: [published]
 ```
 
-**Key Features**:
+**Status**: ⚠️ **Not automatically triggered** due to GitHub's anti-loop protection. Releases created by `GITHUB_TOKEN` don't trigger other workflows.
+
+**Workaround**: Manual `npm publish` after auto-release completes (see step 6).
+
+**If This Workflow Runs** (e.g., manual release creation):
 - **Provenance**: Publishes with `--provenance` for supply chain security
 - **Public Access**: Uses `--access public` for scoped package
 - **Test Integration**: Runs full test suite including installation tests
 - **Package Verification**: Checks package contents before publishing
-
-**Environment Variables**:
-- `NODE_AUTH_TOKEN`: From `secrets.NPM_TOKEN`
-- `NODE_VERSION`: 20
-- `REGISTRY_URL`: https://registry.npmjs.org
 
 ## Best Practices
 
@@ -455,13 +450,15 @@ Use this checklist for every release:
 - [ ] ✨ Auto Release workflow detects version change
 - [ ] ✨ Git tag created automatically
 - [ ] ✨ GitHub Release created with changelog
-- [ ] ✨ NPM Publish workflow triggered
-- [ ] ✨ Package built and tested
-- [ ] ✨ Package published to npm
 
-### Verification Steps (You Check)
-- [ ] Both workflows completed successfully
-- [ ] Version verified on npm (`npm view @pcircle/memesh version`)
+### Manual Steps (You Do After Auto-Release)
+- [ ] Wait for auto-release workflow to complete (~1-2 minutes)
+- [ ] Run `npm publish --access public`
+- [ ] Verify publication with `npm view @pcircle/memesh version`
+
+### Verification Steps (Final Check)
+- [ ] Auto-release workflow completed successfully
+- [ ] Version verified on npm registry
 - [ ] Installation tested (`npm install -g @pcircle/memesh@latest`)
 - [ ] Documentation updated (if needed)
 - [ ] Announcement posted (if major release)

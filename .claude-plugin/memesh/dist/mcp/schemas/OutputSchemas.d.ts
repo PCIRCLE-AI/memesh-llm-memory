@@ -296,6 +296,57 @@ export declare const OutputSchemas: {
         };
         required: string[];
     };
+    agentRegister: {
+        type: "object";
+        properties: {
+            success: {
+                type: string;
+            };
+            message: {
+                type: string;
+            };
+            agent: {
+                type: string;
+                properties: {
+                    id: {
+                        type: string;
+                    };
+                    type: {
+                        type: string;
+                    };
+                    name: {
+                        type: string;
+                    };
+                    version: {
+                        type: string;
+                    };
+                    status: {
+                        type: string;
+                    };
+                    capabilities: {
+                        type: string;
+                    };
+                    createdAt: {
+                        type: string;
+                    };
+                    lastHeartbeat: {
+                        type: string;
+                    };
+                    pendingMessages: {
+                        type: string;
+                    };
+                };
+                required: string[];
+            };
+            error: {
+                type: string;
+            };
+            hint: {
+                type: string;
+            };
+        };
+        required: string[];
+    };
 };
 export type BuddyDoOutput = {
     routing: {

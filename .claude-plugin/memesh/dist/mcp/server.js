@@ -69,9 +69,11 @@ class ClaudeCodeBuddyMCPServer {
         });
         this.components.toolInterface.attachToolDispatcher(this.toolRouter);
         this.sessionBootstrapper = new SessionBootstrapper(this.components.projectMemoryManager, undefined, this.components.sessionMemoryPipeline);
-        void this.components.sessionMemoryPipeline.start().catch(err => {
-            logger.warn('SessionMemoryPipeline failed to start:', err);
-        });
+        if (this.components.sessionMemoryPipeline) {
+            void this.components.sessionMemoryPipeline.start().catch(err => {
+                logger.warn('SessionMemoryPipeline failed to start:', err);
+            });
+        }
         this.setupHandlers();
         setupResourceHandlers(this.server);
         this.setupSignalHandlers();

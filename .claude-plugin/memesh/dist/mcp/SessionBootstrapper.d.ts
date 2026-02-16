@@ -6,7 +6,7 @@ export declare class SessionBootstrapper {
     private memoryLimit;
     private sessionMemoryPipeline?;
     private hasInjected;
-    constructor(projectMemoryManager: ProjectMemoryManager, memoryLimit?: number, sessionMemoryPipeline?: SessionMemoryPipeline | undefined);
+    constructor(projectMemoryManager: ProjectMemoryManager | undefined, memoryLimit?: number, sessionMemoryPipeline?: SessionMemoryPipeline | undefined);
     maybePrepend(result: CallToolResult): Promise<CallToolResult>;
     private buildStartupMessage;
 }

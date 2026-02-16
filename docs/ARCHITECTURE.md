@@ -1,7 +1,7 @@
 # MeMesh Architecture
 
-**Version**: 2.8.10
-**Last Updated**: 2026-02-12
+**Version**: 2.8.11
+**Last Updated**: 2026-02-16
 **Status**: Active
 
 ---
@@ -330,6 +330,177 @@ npm install -g @pcircle/memesh
 **Binary**: `dist/mcp/server-bootstrap.js` (executable)
 
 **Claude Code Integration**: MCP configuration in `~/.claude/mcp_settings.json`
+
+---
+
+## Deployment Modes
+
+MeMesh supports three deployment modes to accommodate different environments:
+
+### 1. Standard Mode (Full Functionality)
+
+**When**: better-sqlite3 is available
+
+**Features**:
+- ✅ Full local Knowledge Graph with SQLite
+- ✅ All memory tools (buddy-do, buddy-remember, recall-memory, create-entities)
+- ✅ Vector embeddings and semantic search
+- ✅ FTS5 full-text search
+- ✅ Optional cloud sync (when MEMESH_API_KEY is set)
+
+**Architecture**:
+```
+Claude Code ─stdio─► MCP Server
+                          │
+                   ┌──────┴──────┐
+                   ▼             ▼
+            KnowledgeGraph  CloudSync
+            (SQLite+Vec)    (Optional)
+```
+
+**Use Cases**:
+- Claude Code CLI (recommended)
+- Claude Code VS Code Extension
+- Cursor (via MCP)
+- Local development
+
+---
+
+### 2. Cloud-Only Mode (Partial Functionality)
+
+**When**: better-sqlite3 unavailable + MEMESH_API_KEY is configured
+
+**Features**:
+- ✅ MCP server starts successfully
+- ✅ Basic commands (buddy-help, list-skills)
+- ✅ Cloud sync tools (memesh-cloud-sync)
+- ❌ Local memory tools disabled (buddy-do, buddy-remember, recall-memory, create-entities, memesh-hook-tool-use)
+
+**Error Messages**:
+```
+❌ Tool 'buddy-remember' is not available in cloud-only mode.
+
+This MCP server is running without local SQLite storage (better-sqlite3 unavailable).
+
+To use local memory tools:
+1. Install better-sqlite3: npm install better-sqlite3
+2. Restart the MCP server
+
+OR use cloud sync tools instead:
+- memesh-cloud-sync: Sync with cloud storage (requires MEMESH_API_KEY)
+```
+
+**Architecture**:
+```
+Claude Code ─stdio─► MCP Server (Cloud-Only)
+                          │
+                          ▼
+                    CloudSync Only
+                    (API calls)
+```
+
+**Use Cases**:
+- Claude Desktop Cowork (sandbox environment)
+- Environments where native modules cannot compile
+- Read-only filesystems
+- Cloud-first workflows (future)
+
+**Limitations**:
+- No local Knowledge Graph
+- No vector embeddings
+- No FTS5 search
+- Memory tools return friendly errors
+
+**Why Cloud-Only Mode Exists**:
+
+Claude Desktop Cowork runs plugins in a restricted sandbox:
+1. **Read-only filesystem** - Cannot write to plugin directories
+2. **Blocked node-gyp compilation** - HTTP 403 when downloading Node.js headers
+3. **No prebuilt binaries** - better-sqlite3, onnxruntime-node, sqlite-vec don't ship ARM64 Linux binaries
+4. **Ephemeral storage** - `~/.memesh/` directory is session-scoped
+
+Cloud-only mode allows the MCP server to start successfully and provide cloud sync functionality while gracefully degrading memory-dependent features.
+
+---
+
+### 3. Error Mode (Cannot Start)
+
+**When**: Both better-sqlite3 unavailable AND no MEMESH_API_KEY
+
+**Behavior**:
+```
+ConfigurationError: Cannot start MCP server without local SQLite or cloud configuration.
+
+Please choose one of the following:
+1. Install better-sqlite3: npm install better-sqlite3
+2. Configure cloud access: export MEMESH_API_KEY="your-key"
+3. Use global installation: npm install -g @pcircle/memesh
+
+For detailed troubleshooting, see: docs/TROUBLESHOOTING.md
+```
+
+**Use Cases**: Configuration error, should not occur in normal usage
+
+---
+
+### Mode Detection Logic
+
+**Implementation** (`src/mcp/ServerInitializer.ts`):
+
+```typescript
+const sqliteAvailability = await checkBetterSqlite3Availability();
+const cloudEnabled = isCloudEnabled();
+
+if (sqliteAvailability.available) {
+  // Standard mode: Use local SQLite
+  knowledgeGraph = KnowledgeGraph.createSync();
+  projectMemoryManager = new ProjectMemoryManager(knowledgeGraph);
+  cloudOnlyMode = false;
+} else if (cloudEnabled) {
+  // Cloud-only mode: Degrade gracefully
+  logger.warn('[ServerInitializer] Running in cloud-only mode');
+  knowledgeGraph = undefined;
+  projectMemoryManager = undefined;
+  cloudOnlyMode = true;
+} else {
+  // Error mode: Cannot start
+  throw new ConfigurationError('Cannot start MCP server...');
+}
+```
+
+**Availability Check**:
+```typescript
+async function checkBetterSqlite3Availability(): Promise<AvailabilityResult> {
+  try {
+    await import('better-sqlite3');
+    return { available: true };
+  } catch (error) {
+    return {
+      available: false,
+      reason: 'better-sqlite3 module not available',
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+```
+
+---
+
+### Future: Cloud-First Memory Architecture
+
+**Goal**: Full Claude Desktop Cowork support through cloud-first architecture
+
+**Planned Implementation**:
+1. Cloud API endpoints for KG operations (create, recall, search)
+2. Memory tools proxy to cloud in cloud-only mode
+3. Shared KG accessible from any client
+4. No local persistence needed (cloud as source of truth)
+
+**Timeline**: Long-term (no ETA)
+
+**Related Issues**: #73, #76, #77
+
+See [docs/COWORK_SUPPORT.md](./COWORK_SUPPORT.md) for detailed Cowork support documentation.
 
 ---
 

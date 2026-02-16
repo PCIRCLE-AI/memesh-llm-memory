@@ -23,7 +23,9 @@ export declare class ToolHandlers {
     private unifiedMemoryStore;
     private mistakePatternEngine;
     private userPreferenceEngine;
-    constructor(agentRegistry: AgentRegistry, skillManager: SkillManager, uninstallManager: UninstallManager, checkpointDetector: CheckpointDetector, hookIntegration: HookIntegration, projectMemoryManager: ProjectMemoryManager, knowledgeGraph: KnowledgeGraph, ui: HumanInLoopUI, samplingClient: SamplingClient, unifiedMemoryStore: UnifiedMemoryStore);
+    constructor(agentRegistry: AgentRegistry, skillManager: SkillManager, uninstallManager: UninstallManager, checkpointDetector: CheckpointDetector, hookIntegration: HookIntegration, projectMemoryManager: ProjectMemoryManager | undefined, knowledgeGraph: KnowledgeGraph | undefined, ui: HumanInLoopUI, samplingClient: SamplingClient, unifiedMemoryStore: UnifiedMemoryStore | undefined);
+    private isCloudOnlyMode;
+    private cloudOnlyModeError;
     handleListSkills(args: unknown): Promise<CallToolResult>;
     handleUninstall(args: unknown): Promise<CallToolResult>;
     handleHookToolUse(args: unknown): Promise<CallToolResult>;

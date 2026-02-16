@@ -13,18 +13,21 @@ export declare class SimpleConfig {
     private static parseBoolean;
 }
 import Database from 'better-sqlite3';
+import type { IDatabaseAdapter } from '../db/IDatabaseAdapter.js';
 import { ConnectionPool, type PoolStats } from '../db/ConnectionPool.js';
 export declare class SimpleDatabaseFactory {
     private static instances;
     private static pools;
+    private static pendingPools;
     private static createDatabase;
     private static normalizeDbPath;
     private static ensureDirectoryExists;
     static getInstance(path?: string): Database.Database;
     static createTestDatabase(): Database.Database;
-    static getPool(path?: string): ConnectionPool;
-    static getPooledConnection(path?: string): Promise<Database.Database>;
-    static releasePooledConnection(db: Database.Database, path?: string): void;
+    static getPool(path?: string): Promise<ConnectionPool>;
+    private static createPoolInternal;
+    static getPooledConnection(path?: string): Promise<IDatabaseAdapter>;
+    static releasePooledConnection(db: IDatabaseAdapter, path?: string): void;
     static getPoolStats(path?: string): PoolStats | null;
     static closeAll(): Promise<void>;
     static close(path?: string): Promise<void>;

@@ -32,6 +32,9 @@ export class SessionBootstrapper {
         };
     }
     async buildStartupMessage() {
+        if (!this.projectMemoryManager) {
+            return null;
+        }
         let text = '';
         try {
             const memories = await this.projectMemoryManager.recallRecentWork({

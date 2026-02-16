@@ -1,5 +1,5 @@
-import Database from 'better-sqlite3';
 import { logger } from '../utils/logger.js';
+import { BetterSqlite3Adapter, checkBetterSqlite3Availability } from './adapters/BetterSqlite3Adapter.js';
 const MAX_SAFE_CONNECTIONS = 100;
 const MAX_SAFE_TIMEOUT_MS = 10 * 60 * 1000;
 const MIN_CONNECTION_TIMEOUT_MS = 1000;
@@ -21,9 +21,29 @@ export class ConnectionPool {
     };
     healthCheckTimer = null;
     isShuttingDown = false;
+    isInitialized = false;
     healthCheckErrorCount = 0;
     MAX_CONSECUTIVE_HEALTH_CHECK_ERRORS = 5;
+    static async create(dbPath, options = {}, verboseLogger) {
+        const availability = await checkBetterSqlite3Availability();
+        if (!availability.available) {
+            const errorMsg = `Cannot create ConnectionPool: better-sqlite3 is unavailable.\n` +
+                `Error: ${availability.error}\n` +
+                `Suggestion: ${availability.fallbackSuggestion || 'Use Cloud-only mode with MEMESH_API_KEY'}`;
+            logger.error('[ConnectionPool] Static factory failed', {
+                error: availability.error,
+                suggestion: availability.fallbackSuggestion,
+            });
+            throw new Error(errorMsg);
+        }
+        const pool = new ConnectionPool(dbPath, options, verboseLogger);
+        await pool.initialize();
+        return pool;
+    }
     constructor(dbPath, options = {}, verboseLogger) {
+        if (!dbPath || dbPath.trim().length === 0) {
+            throw new Error('dbPath must be a non-empty string');
+        }
         this.dbPath = dbPath;
         this.verboseLogger = verboseLogger;
         this.options = {
@@ -91,19 +111,30 @@ export class ConnectionPool {
             });
             this.options.healthCheckInterval = MAX_HEALTH_CHECK_INTERVAL_MS;
         }
-        logger.info('Initializing connection pool', {
+        logger.info('ConnectionPool constructor called', {
             dbPath: this.dbPath,
             maxConnections: this.options.maxConnections,
             connectionTimeout: this.options.connectionTimeout,
             idleTimeout: this.options.idleTimeout,
         });
-        this.initializePool();
-        this.startHealthCheck();
     }
-    initializePool() {
+    async initialize() {
+        if (this.isInitialized) {
+            throw new Error('ConnectionPool already initialized');
+        }
+        logger.info('Initializing connection pool', {
+            dbPath: this.dbPath,
+            maxConnections: this.options.maxConnections,
+        });
+        await this.initializePool();
+        this.startHealthCheck();
+        this.isInitialized = true;
+        logger.info(`Connection pool initialized with ${this.pool.length} connections`);
+    }
+    async initializePool() {
         for (let i = 0; i < this.options.maxConnections; i++) {
             try {
-                const db = this.createConnection();
+                const db = await this.createConnection();
                 const metadata = {
                     db,
                     lastAcquired: 0,
@@ -118,12 +149,12 @@ export class ConnectionPool {
                 throw new Error(`Pool initialization failed: ${error}`);
             }
         }
-        logger.info(`Connection pool initialized with ${this.pool.length} connections`);
     }
-    createConnection() {
-        const db = new Database(this.dbPath, {
+    async createConnection() {
+        const adapter = await BetterSqlite3Adapter.create(this.dbPath, {
             verbose: this.verboseLogger ? ((msg) => this.verboseLogger.debug('SQLite', { message: msg })) : undefined,
         });
+        const db = adapter.db;
         try {
             db.pragma('busy_timeout = 5000');
         }
@@ -153,8 +184,19 @@ export class ConnectionPool {
                 logger.debug('[ConnectionPool] Could not set mmap_size:', error);
             }
         }
-        db.pragma('foreign_keys = ON');
-        return db;
+        try {
+            db.pragma('foreign_keys = ON');
+            const fkEnabled = db.pragma('foreign_keys', { simple: true });
+            if (fkEnabled !== 1) {
+                throw new Error('Failed to enable foreign_keys pragma - database integrity cannot be guaranteed');
+            }
+        }
+        catch (error) {
+            logger.error('[ConnectionPool] CRITICAL: Failed to enable foreign key constraints', { error });
+            throw new Error(`Cannot create connection: foreign key constraints failed to enable. ` +
+                `This is critical for database integrity. Error: ${error}`);
+        }
+        return adapter;
     }
     async createConnectionWithRetry(context) {
         const MAX_RETRIES = 3;
@@ -162,7 +204,7 @@ export class ConnectionPool {
         let lastError;
         for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
             try {
-                return this.createConnection();
+                return await this.createConnection();
             }
             catch (error) {
                 lastError = error instanceof Error ? error : new Error(String(error));
@@ -187,7 +229,7 @@ export class ConnectionPool {
     isConnectionValid(db) {
         try {
             db.prepare('SELECT 1').get();
-            return true;
+            return db.open;
         }
         catch {
             return false;
@@ -205,7 +247,8 @@ export class ConnectionPool {
             try {
                 metadata.db.close();
             }
-            catch {
+            catch (error) {
+                logger.debug('[ConnectionPool] Ignoring close error for invalid connection', { error });
             }
             try {
                 const newDb = await this.createConnectionWithRetry('acquire fallback');
@@ -229,6 +272,9 @@ export class ConnectionPool {
         return undefined;
     }
     async acquire() {
+        if (!this.isInitialized) {
+            throw new Error('ConnectionPool not initialized. Call initialize() or use ConnectionPool.create()');
+        }
         let outerTimeoutId = null;
         try {
             const result = await Promise.race([
@@ -361,6 +407,7 @@ export class ConnectionPool {
                 }
             });
         }, this.options.healthCheckInterval);
+        this.healthCheckTimer.unref();
     }
     async performHealthCheck() {
         if (this.isShuttingDown) {
@@ -391,7 +438,7 @@ export class ConnectionPool {
                 metadata.db.close();
             }
             catch (error) {
-                logger.error('Error closing stale connection:', error);
+                logger.error('[ConnectionPool] Error closing stale connection during health check', { error });
                 if (poolIndex !== -1) {
                     this.pool.splice(poolIndex, 1);
                     removedFromPool = true;
@@ -491,7 +538,7 @@ export class ConnectionPool {
                 metadata.db.close();
             }
             catch (error) {
-                logger.error('Error closing connection during shutdown:', error);
+                logger.error('[ConnectionPool] Error closing connection during shutdown', { error });
             }
         });
         await Promise.all(closePromises);

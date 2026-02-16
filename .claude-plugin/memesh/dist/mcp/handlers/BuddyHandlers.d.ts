@@ -6,7 +6,9 @@ export declare class BuddyHandlers {
     private formatter;
     private projectMemoryManager;
     private autoTracker?;
-    constructor(formatter: ResponseFormatter, projectMemoryManager: ProjectMemoryManager, autoTracker?: ProjectAutoTracker);
+    constructor(formatter: ResponseFormatter, projectMemoryManager: ProjectMemoryManager | undefined, autoTracker?: ProjectAutoTracker);
+    private isCloudOnlyMode;
+    private cloudOnlyModeError;
     handleBuddyDo(args: unknown): Promise<CallToolResult>;
     handleBuddyRemember(args: unknown): Promise<CallToolResult>;
     handleBuddyHelp(args: unknown): Promise<CallToolResult>;

@@ -2,6 +2,9 @@
 
 Complete reference for all MeMesh commands and tools.
 
+**Version**: 2.8.11
+**Last Updated**: 2026-02-16
+
 ## Table of Contents
 
 - [Buddy Commands](#buddy-commands) (User-Friendly Layer)
@@ -322,6 +325,70 @@ Synchronize local knowledge graph memories with MeMesh Cloud.
 ```
 
 **Note:** Requires `MEMESH_API_KEY` environment variable. Use `memesh login` to authenticate.
+
+---
+
+## Cloud-Only Mode Limitations
+
+In **cloud-only mode** (when better-sqlite3 is unavailable but MEMESH_API_KEY is configured), certain tools are disabled because they require local SQLite storage.
+
+### ❌ Disabled Tools in Cloud-Only Mode
+
+| Tool | Status | Reason |
+|------|--------|--------|
+| `buddy-do` | ❌ Unavailable | Requires local Knowledge Graph for task context |
+| `buddy-remember` | ❌ Unavailable | Requires local memory search |
+| `recall-memory` | ❌ Unavailable | Requires local SQLite database |
+| `add-observations` | ❌ Unavailable | Requires local entity storage |
+| `create-relations` | ❌ Unavailable | Requires local graph relationships |
+| `memesh-create-entities` | ❌ Unavailable | Requires local Knowledge Graph |
+| `memesh-hook-tool-use` | ❌ Unavailable | Requires local memory tracking |
+| `memesh-record-mistake` | ❌ Unavailable | Requires local mistake storage |
+
+### ✅ Available Tools in Cloud-Only Mode
+
+| Tool | Status | Notes |
+|------|--------|-------|
+| `buddy-help` | ✅ Works | Displays command help |
+| `health-check` | ✅ Works | Reports cloud-only mode status |
+| `memesh-cloud-sync` | ✅ Works | Syncs with cloud when MEMESH_API_KEY is set |
+| `memesh-generate-tests` | ✅ Works | AI-based test generation (stateless) |
+
+### Error Message Example
+
+When calling a disabled tool in cloud-only mode:
+
+```
+❌ Tool 'buddy-remember' is not available in cloud-only mode.
+
+This MCP server is running without local SQLite storage (better-sqlite3 unavailable).
+
+To use local memory tools:
+1. Install better-sqlite3: npm install better-sqlite3
+2. Restart the MCP server
+
+OR use cloud sync tools instead:
+- memesh-cloud-sync: Sync with cloud storage (requires MEMESH_API_KEY)
+```
+
+### Why Cloud-Only Mode Exists
+
+Cloud-only mode enables MeMesh to run in restricted environments (like Claude Desktop Cowork) where:
+- Native modules cannot compile (better-sqlite3, onnxruntime-node, sqlite-vec)
+- Filesystem is read-only
+- Node.js headers cannot be downloaded
+
+See [docs/COWORK_SUPPORT.md](./COWORK_SUPPORT.md) for complete details.
+
+### Future: Cloud-First Memory
+
+**Planned**: Full memory tool support in cloud-only mode through cloud-first memory architecture
+
+**Timeline**: Long-term (no ETA yet)
+
+**How**: Memory tools will proxy to cloud KG API instead of local SQLite
+
+**Related Issues**: #73, #76, #77
 
 ---
 

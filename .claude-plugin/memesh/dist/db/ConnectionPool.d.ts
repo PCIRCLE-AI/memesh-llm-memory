@@ -1,5 +1,5 @@
-import Database from 'better-sqlite3';
 import type { ILogger } from '../utils/ILogger.js';
+import type { IDatabaseAdapter } from './IDatabaseAdapter.js';
 export interface ConnectionPoolOptions {
     maxConnections: number;
     connectionTimeout: number;
@@ -26,17 +26,20 @@ export declare class ConnectionPool {
     private stats;
     private healthCheckTimer;
     private isShuttingDown;
+    private isInitialized;
     private healthCheckErrorCount;
     private readonly MAX_CONSECUTIVE_HEALTH_CHECK_ERRORS;
+    static create(dbPath: string, options?: Partial<ConnectionPoolOptions>, verboseLogger?: ILogger): Promise<ConnectionPool>;
     constructor(dbPath: string, options?: Partial<ConnectionPoolOptions>, verboseLogger?: ILogger);
+    initialize(): Promise<void>;
     private initializePool;
     private createConnection;
     private createConnectionWithRetry;
     private isConnectionValid;
     private getValidConnection;
-    acquire(): Promise<Database.Database>;
+    acquire(): Promise<IDatabaseAdapter>;
     private _acquireInternal;
-    release(db: Database.Database): void;
+    release(db: IDatabaseAdapter): void;
     getStats(): PoolStats;
     private startHealthCheck;
     private performHealthCheck;

@@ -13,7 +13,30 @@ export class BuddyHandlers {
         this.projectMemoryManager = projectMemoryManager;
         this.autoTracker = autoTracker;
     }
+    isCloudOnlyMode() {
+        return this.projectMemoryManager === undefined;
+    }
+    cloudOnlyModeError(toolName) {
+        return {
+            content: [
+                {
+                    type: 'text',
+                    text: `❌ Tool '${toolName}' is not available in cloud-only mode.\n\n` +
+                        `This MCP server is running without local SQLite storage (better-sqlite3 unavailable).\n\n` +
+                        `To use local memory tools:\n` +
+                        `1. Install better-sqlite3: npm install better-sqlite3\n` +
+                        `2. Restart the MCP server\n\n` +
+                        `OR use cloud sync tools instead:\n` +
+                        `- memesh-cloud-sync: Sync with cloud storage (requires MEMESH_API_KEY)`,
+                },
+            ],
+            isError: true,
+        };
+    }
     async handleBuddyDo(args) {
+        if (this.isCloudOnlyMode()) {
+            return this.cloudOnlyModeError('buddy-do');
+        }
         let validatedInput;
         try {
             validatedInput = BuddyDoInputSchema.parse(args);
@@ -59,6 +82,9 @@ export class BuddyHandlers {
         }
     }
     async handleBuddyRemember(args) {
+        if (this.isCloudOnlyMode()) {
+            return this.cloudOnlyModeError('buddy-remember');
+        }
         let validatedInput;
         try {
             validatedInput = BuddyRememberInputSchema.parse(args);

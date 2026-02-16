@@ -73,6 +73,57 @@ npm install && npm run build
 
 ---
 
+## 相容性
+
+### 支援的平台
+
+| 平台 | 狀態 | 備註 |
+|------|------|------|
+| **macOS** | ✅ 完整測試 | 主要開發平台 |
+| **Linux** | ✅ 完整測試 | 支援所有發行版 |
+| **Windows** | ✅ 相容 | 建議使用 WSL2 以獲得最佳體驗 |
+
+### 系統需求
+
+- **Claude Code**: 建議使用最新版本 ([安裝指南](https://docs.anthropic.com/en/docs/claude-code))
+- **Node.js**: >= 20.0.0 ([下載](https://nodejs.org/))
+- **npm**: >= 9.0.0 (隨 Node.js 安裝)
+
+### Claude Code 整合
+
+MeMesh 可無縫整合：
+- ✅ **Claude Code CLI**（終端機）- **完整功能**
+- ✅ **Claude Code VS Code 擴充套件** - **完整功能**
+- ✅ **Cursor**（透過 MCP）- **完整功能**
+- ⚠️  **Claude Desktop (Cowork)** - **部分支援**（見下方說明）
+- ✅ **其他相容 MCP 的編輯器**
+
+#### Claude Desktop Cowork 相容性
+
+**目前狀態**：僅雲端模式，功能受限
+
+| 功能 | 狀態 | 備註 |
+|------|------|------|
+| MCP 伺服器 | ✅ 正常 | 成功以僅雲端模式啟動 |
+| 基本指令 | ✅ 正常 | buddy-help, list-skills 等 |
+| 記憶工具 | ❌ 停用 | recall-memory, create-entities, buddy-do, buddy-remember |
+| 雲端同步 | ✅ 正常 | 需設定 MEMESH_API_KEY |
+| 本地知識圖譜 | ❌ 無法使用 | better-sqlite3 無法在 Cowork 沙盒編譯 |
+
+**限制原因**：Cowork 沙盒具有唯讀檔案系統，並阻止原生模組編譯（better-sqlite3、onnxruntime-node、sqlite-vec）。
+
+**未來計畫**：透過雲端優先記憶架構實現完整支援。詳見 [docs/COWORK_SUPPORT.md](docs/COWORK_SUPPORT.md)。
+
+**建議**：在雲端優先記憶實作完成前，使用 **CLI 版本**以獲得完整功能。
+
+### 已知限制
+
+- Windows 原生終端機可能有顯示問題（建議使用 WSL2）
+- 大型知識圖譜建議至少 4GB RAM
+- 向量搜尋需要約 100MB 磁碟空間存放嵌入模型
+
+---
+
 ## 使用方式
 
 MeMesh 在 Claude Code 中提供 3 個核心指令：

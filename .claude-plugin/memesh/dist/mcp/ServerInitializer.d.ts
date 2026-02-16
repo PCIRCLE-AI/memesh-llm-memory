@@ -23,11 +23,12 @@ export interface ServerComponents {
     checkpointDetector: CheckpointDetector;
     hookIntegration: HookIntegration;
     toolInterface: MCPToolInterface;
-    knowledgeGraph: KnowledgeGraph;
-    projectMemoryManager: ProjectMemoryManager;
+    knowledgeGraph: KnowledgeGraph | undefined;
+    projectMemoryManager: ProjectMemoryManager | undefined;
     projectAutoTracker: ProjectAutoTracker;
-    unifiedMemoryStore: UnifiedMemoryStore;
-    sessionMemoryPipeline: SessionMemoryPipeline;
+    unifiedMemoryStore: UnifiedMemoryStore | undefined;
+    sessionMemoryPipeline: SessionMemoryPipeline | undefined;
+    cloudOnlyMode: boolean;
     rateLimiter: RateLimiter;
     samplingClient: SamplingClient;
     toolHandlers: ToolHandlers;

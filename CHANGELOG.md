@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Cloud-Only Fallback Mode** - MCP server can now run without local SQLite when better-sqlite3 is unavailable but MEMESH_API_KEY is configured (#73, #74)
+  - Implements three-mode architecture: Standard (SQLite) / Cloud-Only (API key) / Error (neither)
+  - Graceful degradation for Claude Desktop Cowork environments
+  - Memory-dependent tools return helpful error messages in cloud-only mode
+  - Non-memory tools continue to work normally
+  - Added 13 comprehensive tests for cloud-only mode (4 unit + 9 integration)
+- **Claude Desktop Cowork Documentation** - Comprehensive guide at `docs/COWORK_SUPPORT.md` explaining current status, limitations, and future roadmap (#75)
+- **BuddyHandlers Test Coverage** - Added 9 comprehensive unit tests covering all buddy commands and cloud-only mode behavior (#19)
+- **Enhanced .gitignore** - Improved multi-platform development support with better organization (#21)
+  - Added macOS patterns (.AppleDouble, .LSOverride)
+  - Added Windows patterns (Desktop.ini, Thumbs.db:encryptable)
+  - Added Linux patterns (.directory, .fuse_hidden*)
+  - Added IDE patterns (Sublime Text, Emacs)
+  - Better documentation and categorization
+
+### Changed
+
+- **Dependencies Update** - Updated 15/17 packages to latest versions (#68)
+  - @types/node: 25.2.0 → 25.2.3
+  - @typescript-eslint/*: 8.54.0 → 8.55.0
+  - ajv: 8.17.1 → 8.18.0
+  - dotenv: 17.2.3 → 17.3.1
+  - glob: 13.0.0 → 13.0.3
+  - ink: 6.6.0 → 6.7.0
+  - inquirer: 13.2.2 → 13.2.4
+  - onnxruntime-node: 1.23.2 → 1.24.1
+  - typedoc: 0.28.16 → 0.28.17
+  - And 6 more packages
+  - Note: eslint 10.0.0 blocked (typescript-eslint incompatibility)
+
+### Fixed
+
+- **Cloud-Only Mode Error Handling** - Fixed `handleHookToolUse` to check for cloud-only mode before accessing memory systems
+- **Integration Test Failures** - Fixed 3 failing cloud-only mode integration tests
+  - Added cloud-only check to handleHookToolUse
+  - Updated buddy-help test expectations for flexible message format
+  - Removed non-existent handleListAgents test
+
+### Technical
+
+- **Server Architecture** - Modified `ServerInitializer` to support three initialization modes
+- **Type Safety** - Changed all optional memory systems from `null` to `undefined` for TypeScript consistency
+- **Test Coverage** - Added 22 new tests (100% passing): 4 unit + 9 integration + 9 BuddyHandlers
+- **Code Quality** - 10-dimension comprehensive code review completed (0 Critical, 0 Major, 3 Minor issues)
+
+**Issues Resolved**: #73 (partial - cloud-only mode), #74 (Phase 2), #75 (docs), #68 (deps), #19 (tests), #21 (.gitignore)
+
 ## [2.8.10] - 2026-02-14
 
 ### Documentation

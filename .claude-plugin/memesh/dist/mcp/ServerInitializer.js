@@ -16,6 +16,9 @@ import { ToolHandlers, BuddyHandlers } from './handlers/index.js';
 import { SamplingClient } from './SamplingClient.js';
 import { logger } from '../utils/logger.js';
 import { logError } from '../utils/errorHandler.js';
+import { checkBetterSqlite3Availability } from '../db/adapters/BetterSqlite3Adapter.js';
+import { isCloudEnabled } from '../cloud/MeMeshCloudClient.js';
+import { ConfigurationError } from '../errors/index.js';
 export class ServerInitializer {
     static async initialize() {
         let knowledgeGraph;
@@ -27,28 +30,69 @@ export class ServerInitializer {
             const uninstallManager = new UninstallManager(skillManager);
             const checkpointDetector = new CheckpointDetector();
             const toolInterface = new MCPToolInterface();
-            knowledgeGraph = KnowledgeGraph.createSync();
-            const projectMemoryManager = new ProjectMemoryManager(knowledgeGraph);
-            const unifiedMemoryStore = new UnifiedMemoryStore(knowledgeGraph);
-            const sessionMemoryPipeline = new SessionMemoryPipeline(knowledgeGraph);
-            toolInterface.attachMemoryProvider({
-                createEntities: async ({ entities }) => {
-                    for (const entity of entities) {
-                        knowledgeGraph.createEntity({
-                            name: entity.name,
-                            entityType: entity.entityType,
-                            observations: entity.observations,
-                            metadata: entity.metadata,
-                        });
-                    }
-                },
-                searchNodes: async (query) => {
-                    return knowledgeGraph.searchEntities({
-                        namePattern: query,
-                        limit: 10,
-                    });
-                },
+            const sqliteAvailability = await checkBetterSqlite3Availability();
+            const cloudEnabled = isCloudEnabled();
+            const cloudOnlyMode = !sqliteAvailability.available && cloudEnabled;
+            logger.info('[ServerInitializer] Initialization mode determined', {
+                sqliteAvailable: sqliteAvailability.available,
+                cloudEnabled,
+                cloudOnlyMode,
             });
+            let projectMemoryManager;
+            let unifiedMemoryStore;
+            let sessionMemoryPipeline;
+            if (sqliteAvailability.available) {
+                logger.info('[ServerInitializer] Initializing with local SQLite storage');
+                knowledgeGraph = KnowledgeGraph.createSync();
+                projectMemoryManager = new ProjectMemoryManager(knowledgeGraph);
+                unifiedMemoryStore = new UnifiedMemoryStore(knowledgeGraph);
+                sessionMemoryPipeline = new SessionMemoryPipeline(knowledgeGraph);
+                toolInterface.attachMemoryProvider({
+                    createEntities: async ({ entities }) => {
+                        for (const entity of entities) {
+                            knowledgeGraph.createEntity({
+                                name: entity.name,
+                                entityType: entity.entityType,
+                                observations: entity.observations,
+                                metadata: entity.metadata,
+                            });
+                        }
+                    },
+                    searchNodes: async (query) => {
+                        return knowledgeGraph.searchEntities({
+                            namePattern: query,
+                            limit: 10,
+                        });
+                    },
+                });
+            }
+            else if (cloudOnlyMode) {
+                logger.warn('[ServerInitializer] Running in cloud-only mode (local SQLite unavailable)');
+                logger.warn(`[ServerInitializer] Reason: ${sqliteAvailability.error}`);
+                logger.info(`[ServerInitializer] Suggestion: ${sqliteAvailability.fallbackSuggestion}`);
+                logger.info('[ServerInitializer] Local memory tools will be disabled. Use cloud sync tools instead.');
+                knowledgeGraph = undefined;
+            }
+            else {
+                const errorMsg = `Cannot start MCP server: better-sqlite3 is unavailable and no cloud API key is configured.\n\n` +
+                    `SQLite Error: ${sqliteAvailability.error}\n` +
+                    `Suggestion: ${sqliteAvailability.fallbackSuggestion || 'Install better-sqlite3'}\n\n` +
+                    `OR configure cloud-only mode:\n` +
+                    `  Set MEMESH_API_KEY to use cloud storage instead of local SQLite.\n` +
+                    `  Get your API key at: https://memesh.ai`;
+                logger.error('[ServerInitializer] Cannot start - no storage available', {
+                    sqliteError: sqliteAvailability.error,
+                    cloudEnabled: false,
+                });
+                throw new ConfigurationError(errorMsg, {
+                    component: 'ServerInitializer',
+                    method: 'initialize',
+                    sqliteAvailable: false,
+                    cloudEnabled: false,
+                    sqliteError: sqliteAvailability.error,
+                    suggestion: sqliteAvailability.fallbackSuggestion,
+                });
+            }
             const projectAutoTracker = new ProjectAutoTracker(toolInterface);
             const hookIntegration = new HookIntegration(checkpointDetector, projectAutoTracker);
             const rateLimiter = new RateLimiter({
@@ -73,6 +117,7 @@ export class ServerInitializer {
                 projectAutoTracker,
                 unifiedMemoryStore,
                 sessionMemoryPipeline,
+                cloudOnlyMode,
                 rateLimiter,
                 samplingClient,
                 toolHandlers,

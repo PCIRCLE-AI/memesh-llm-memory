@@ -37,8 +37,28 @@ export class ToolHandlers {
         this.samplingClient = samplingClient;
         this.memoryRateLimiter = new RateLimiter({ requestsPerMinute: 10 });
         this.unifiedMemoryStore = unifiedMemoryStore;
-        this.mistakePatternEngine = new MistakePatternEngine(this.unifiedMemoryStore);
-        this.userPreferenceEngine = new UserPreferenceEngine(this.unifiedMemoryStore);
+        this.mistakePatternEngine = unifiedMemoryStore ? new MistakePatternEngine(unifiedMemoryStore) : undefined;
+        this.userPreferenceEngine = unifiedMemoryStore ? new UserPreferenceEngine(unifiedMemoryStore) : undefined;
+    }
+    isCloudOnlyMode() {
+        return this.knowledgeGraph === undefined || this.projectMemoryManager === undefined;
+    }
+    cloudOnlyModeError(toolName) {
+        return {
+            content: [
+                {
+                    type: 'text',
+                    text: `❌ Tool '${toolName}' is not available in cloud-only mode.\n\n` +
+                        `This MCP server is running without local SQLite storage (better-sqlite3 unavailable).\n\n` +
+                        `To use local memory tools:\n` +
+                        `1. Install better-sqlite3: npm install better-sqlite3\n` +
+                        `2. Restart the MCP server\n\n` +
+                        `OR use cloud sync tools instead:\n` +
+                        `- memesh-cloud-sync: Sync with cloud storage (requires MEMESH_API_KEY)`,
+                },
+            ],
+            isError: true,
+        };
     }
     async handleListSkills(args) {
         try {
@@ -202,6 +222,9 @@ export class ToolHandlers {
         }
     }
     async handleHookToolUse(args) {
+        if (this.isCloudOnlyMode()) {
+            return this.cloudOnlyModeError('hook-tool-use');
+        }
         try {
             let validatedInput;
             try {
@@ -257,6 +280,9 @@ export class ToolHandlers {
         }
     }
     async handleRecallMemory(args) {
+        if (this.isCloudOnlyMode()) {
+            return this.cloudOnlyModeError('recall-memory');
+        }
         if (!this.memoryRateLimiter.consume()) {
             throw new OperationError('Memory operation rate limit exceeded. Please try again later.', {
                 component: 'ToolHandlers',
@@ -335,6 +361,9 @@ export class ToolHandlers {
         }
     }
     async handleCreateEntities(args) {
+        if (this.isCloudOnlyMode()) {
+            return this.cloudOnlyModeError('create-entities');
+        }
         if (!this.memoryRateLimiter.consume()) {
             throw new OperationError('Memory operation rate limit exceeded. Please try again later.', {
                 component: 'ToolHandlers',
@@ -414,6 +443,9 @@ export class ToolHandlers {
         }
     }
     async handleBuddyRecordMistake(args) {
+        if (this.isCloudOnlyMode()) {
+            return this.cloudOnlyModeError('buddy-record-mistake');
+        }
         if (!this.memoryRateLimiter.consume()) {
             throw new OperationError('Memory operation rate limit exceeded. Please try again later.', {
                 component: 'ToolHandlers',
@@ -442,6 +474,9 @@ export class ToolHandlers {
         return handleBuddyRecordMistake(input, this.unifiedMemoryStore, this.mistakePatternEngine, this.userPreferenceEngine);
     }
     async handleAddObservations(args) {
+        if (this.isCloudOnlyMode()) {
+            return this.cloudOnlyModeError('add-observations');
+        }
         if (!this.memoryRateLimiter.consume()) {
             throw new OperationError('Memory operation rate limit exceeded. Please try again later.', {
                 component: 'ToolHandlers',
@@ -533,6 +568,9 @@ export class ToolHandlers {
         }
     }
     async handleCreateRelations(args) {
+        if (this.isCloudOnlyMode()) {
+            return this.cloudOnlyModeError('create-relations');
+        }
         if (!this.memoryRateLimiter.consume()) {
             throw new OperationError('Memory operation rate limit exceeded. Please try again later.', {
                 component: 'ToolHandlers',

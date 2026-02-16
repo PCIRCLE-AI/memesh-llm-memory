@@ -4,29 +4,46 @@ This document describes the complete release process for MeMesh, including versi
 
 ## Overview
 
-MeMesh uses **semi-automated release** workflow triggered by version changes. When `package.json` version is updated and pushed to main, GitHub Actions automatically:
+MeMesh uses a **branch-based release** workflow. All development happens on `develop` or feature branches — **never push directly to `main`**. When a release is ready, a PR from `develop → main` triggers the release pipeline.
 
-1. Detects the version change
-2. Creates a git tag
-3. Creates a GitHub Release with changelog
-4. **Manual step**: Publish to npm (requires manual `npm publish`)
+1. Develop on `develop` or `feature/*` branches
+2. Open PR to merge into `main`
+3. After merge, GitHub Actions detects the version change
+4. Auto: Creates git tag + GitHub Release
+5. **Manual step**: Publish to npm (requires manual `npm publish`)
 
 **Why Manual npm Publish?**
 
 The auto-release workflow uses `GITHUB_TOKEN` to create releases. Due to GitHub's anti-loop protection, workflows triggered by `GITHUB_TOKEN` cannot trigger other workflows. This prevents the `publish-npm` workflow from auto-triggering. Manual publishing ensures full control over the npm publication process.
 
+## Git Branch Strategy
+
+```
+main        ← production-ready, protected, merge via PR only
+develop     ← integration branch for ongoing work
+feature/*   ← short-lived feature/fix branches off develop
+```
+
+**Rules**:
+- **NEVER** push directly to `main` — always use a PR
+- `develop` is the default working branch
+- Feature branches merge into `develop` via PR or direct push
+- `develop` merges into `main` via PR for releases
+
 ## Release Workflow
 
 ```mermaid
 graph LR
-    A[Bump Version] --> B[Update CHANGELOG]
-    B --> C[Commit & Push to main]
-    C --> D{Version Changed?}
-    D -->|Yes| E[Auto: Create Git Tag]
-    E --> F[Auto: Create GitHub Release]
-    F --> G[Manual: npm publish]
-    D -->|No| H[No Action]
-    G --> I[Verify Publication]
+    A[Bump Version on develop] --> B[Update CHANGELOG]
+    B --> C[Commit to develop]
+    C --> D[Open PR: develop → main]
+    D --> E[Review & Merge PR]
+    E --> F{Version Changed?}
+    F -->|Yes| G[Auto: Create Git Tag]
+    G --> H[Auto: Create GitHub Release]
+    H --> I[Manual: npm publish]
+    F -->|No| J[No Action]
+    I --> K[Verify Publication]
 ```
 
 ## Step-by-Step Guide
@@ -123,9 +140,10 @@ Add a new entry following [Keep a Changelog](https://keepachangelog.com/) format
 - Fixed workflow comment step that was causing publish failures
 ```
 
-### 4. Commit Changes
+### 4. Commit Changes on `develop`
 
 ```bash
+git checkout develop
 git add package.json CHANGELOG.md
 git commit -m "chore(release): bump version to X.Y.Z
 
@@ -133,15 +151,32 @@ git commit -m "chore(release): bump version to X.Y.Z
 - Reference to issues/PRs if applicable
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
+git push origin develop
 ```
 
-### 5. Push to Main
+### 5. Open PR: `develop` → `main`
+
+**NEVER push directly to `main`.** Always use a Pull Request.
 
 ```bash
-git push origin main
+# Create PR using GitHub CLI
+gh pr create --base main --head develop \
+  --title "chore(release): v X.Y.Z" \
+  --body "## Release X.Y.Z
+
+- Summary of changes
+- See CHANGELOG.md for details"
 ```
 
-**⏳ Wait for Auto-Release** - The automated workflow will now:
+Or create the PR via the GitHub web interface.
+
+### 6. Review & Merge PR
+
+1. Verify CI checks pass on the PR
+2. Review the changes
+3. **Merge the PR** (squash or merge commit)
+
+**⏳ Wait for Auto-Release** — After merge, GitHub Actions will:
 1. Detect the version change in `package.json`
 2. Extract changelog for the new version
 3. Create a git tag `vX.Y.Z`
@@ -149,7 +184,7 @@ git push origin main
 
 You can monitor the progress in GitHub Actions.
 
-### 6. Manual npm Publish
+### 7. Manual npm Publish
 
 After the auto-release workflow completes (usually 1-2 minutes), manually publish to npm:
 
@@ -163,7 +198,7 @@ npm view @pcircle/memesh version
 
 **Why Manual?** The auto-release workflow uses `GITHUB_TOKEN`, which cannot trigger the npm publish workflow due to GitHub's anti-loop protection. Manual publishing ensures controlled npm publication.
 
-### 7. Monitor Automated Release Creation
+### 8. Monitor Automated Release Creation
 
 #### Using GitHub CLI
 
@@ -182,7 +217,7 @@ gh run list --workflow=auto-release.yml --limit 3
 3. Verify tag creation and release creation steps succeed
 4. Then check "Publish to npm" workflow
 
-### 8. Automated Release Creation
+### 9. Automated Release Creation
 
 The auto-release workflow (.github/workflows/auto-release.yml) is triggered when `package.json` is pushed to main:
 
@@ -202,7 +237,7 @@ The auto-release workflow (.github/workflows/auto-release.yml) is triggered when
 
 **Note**: The publish-npm workflow exists but is NOT automatically triggered due to GitHub's token limitations. npm publication must be done manually (see step 6).
 
-### 9. Monitor Workflows
+### 10. Monitor Workflows
 
 #### Using GitHub CLI
 
@@ -220,7 +255,7 @@ gh run list --workflow=auto-release.yml --limit 3
 2. Check "Auto Release" workflow
 3. Verify all steps complete successfully (tag and release creation)
 
-### 10. Verify Publication
+### 11. Verify Publication
 
 #### Check npm Registry
 
@@ -440,11 +475,13 @@ If a release has critical issues:
 Use this checklist for every release:
 
 ### Manual Steps (You Do)
-- [ ] Pull latest changes from main
+- [ ] Pull latest `develop` branch
 - [ ] All tests pass locally
 - [ ] Version bumped in package.json (using `npm version`)
 - [ ] CHANGELOG.md updated with changes
-- [ ] Changes committed and pushed to main
+- [ ] Changes committed and pushed to `develop`
+- [ ] PR opened: `develop` → `main`
+- [ ] PR reviewed and merged
 
 ### Automated Steps (GitHub Actions Does)
 - [ ] ✨ Auto Release workflow detects version change

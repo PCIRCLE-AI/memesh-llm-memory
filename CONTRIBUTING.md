@@ -96,14 +96,24 @@ npm run format
 npm run typecheck
 ```
 
+## Branch Strategy
+
+**NEVER push directly to `main`.** All changes go through Pull Requests.
+
+```
+main        ← production-ready, protected, merge via PR only
+develop     ← integration branch for ongoing work
+feature/*   ← short-lived feature/fix branches off develop
+```
+
 ## Pull Request Process
 
-1. **Create a feature branch** from `main`
+1. **Create a feature branch** from `develop` (not `main`)
 2. **Make your changes** following the coding standards
 3. **Write/update tests** for your changes
 4. **Run the full test suite** to ensure nothing is broken
 5. **Update documentation** if needed
-6. **Submit a PR** using the PR template
+6. **Submit a PR** to `develop` (or `main` for releases)
 
 ### PR Checklist
 
@@ -145,57 +155,32 @@ When adding new MCP tools:
 
 ### For Maintainers
 
-MeMesh uses an automated release process triggered by GitHub Releases:
+MeMesh uses a **branch-based release** workflow. All development happens on `develop` — **never push directly to `main`**.
 
-1. **Update Version**
+1. **Prepare on `develop`**
    ```bash
-   # Bump version (patch/minor/major)
+   git checkout develop
    npm version patch --no-git-tag-version
-   ```
-
-2. **Update CHANGELOG.md**
-   - Add entry for the new version
-   - Document all user-facing changes
-   - Follow [Keep a Changelog](https://keepachangelog.com/) format
-
-3. **Commit and Push**
-   ```bash
+   # Update CHANGELOG.md
    git add package.json CHANGELOG.md
    git commit -m "chore(release): bump version to X.Y.Z"
-   git push origin main
+   git push origin develop
    ```
 
-4. **Create GitHub Release**
+2. **Open PR: `develop` → `main`**
    ```bash
-   # Create release (triggers automated npm publish)
-   gh release create vX.Y.Z \
-     --title "vX.Y.Z - Release Title" \
-     --notes "Release notes..."
+   gh pr create --base main --head develop \
+     --title "chore(release): vX.Y.Z" \
+     --body "Release X.Y.Z - see CHANGELOG.md"
    ```
 
-5. **Automated Publishing**
-   - GitHub Actions workflow automatically:
-     - Builds the project
-     - Runs tests
-     - Publishes to npm registry
-     - Logs success
+3. **Review & Merge PR** — After merge, GitHub Actions auto-creates the git tag and GitHub Release.
 
-6. **Verify**
+4. **Manual npm Publish** — The auto-release workflow uses `GITHUB_TOKEN`, which cannot trigger the npm publish workflow. Publish manually:
    ```bash
-   # Check npm package
+   npm publish --access public
    npm view @pcircle/memesh version
-
-   # Verify workflow
-   gh run list --workflow=publish-npm.yml --limit 1
    ```
-
-### GitHub Actions Workflow
-
-The `.github/workflows/publish-npm.yml` workflow:
-- **Trigger**: On GitHub release publication
-- **Steps**: Checkout → Build → Test → Publish → Log
-- **Provenance**: Publishes with npm provenance
-- **Access**: Public package with NPM_TOKEN authentication
 
 See [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md) for detailed instructions.
 

@@ -173,5 +173,30 @@ export const OutputSchemas = {
         },
         required: ['success'],
     },
+    agentRegister: {
+        type: 'object',
+        properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+            agent: {
+                type: 'object',
+                properties: {
+                    id: { type: 'string' },
+                    type: { type: 'string' },
+                    name: { type: 'string' },
+                    version: { type: 'string' },
+                    status: { type: 'string' },
+                    capabilities: { type: 'object' },
+                    createdAt: { type: 'string' },
+                    lastHeartbeat: { type: 'string' },
+                    pendingMessages: { type: 'number' },
+                },
+                required: ['id', 'type', 'status'],
+            },
+            error: { type: 'string' },
+            hint: { type: 'string' },
+        },
+        required: ['success'],
+    },
 };
 //# sourceMappingURL=OutputSchemas.js.map

@@ -49,12 +49,20 @@ export class StdioProxyClient extends EventEmitter {
             throw new Error('Proxy client already started');
         }
         this.stopped = false;
+        this.setupStdinHandler();
         try {
             await this.connectToDaemon();
-            this.setupStdinHandler();
             this.startHeartbeat();
         }
         catch (error) {
+            if (this.stdinDataListener) {
+                this.config.stdin.removeListener('data', this.stdinDataListener);
+                this.stdinDataListener = null;
+            }
+            if (this.stdinEndListener) {
+                this.config.stdin.removeListener('end', this.stdinEndListener);
+                this.stdinEndListener = null;
+            }
             this.stopped = true;
             throw error;
         }

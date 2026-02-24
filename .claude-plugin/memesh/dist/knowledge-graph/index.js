@@ -12,6 +12,10 @@ const CONTROL_CHAR_PATTERN = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\x80-\x9F]/;
 export class KnowledgeGraph {
     db;
     queryCache;
+    vectorEnabled = false;
+    vectorExt = null;
+    vectorInitPromise = null;
+    pendingEmbeddings = new Set();
     constructor(_dbPath, db) {
         this.db = db;
         this.queryCache = new QueryCache({
@@ -151,6 +155,21 @@ export class KnowledgeGraph {
     `;
         this.db.exec(fts5Schema);
         this.runMigrations();
+        this.initVectorSearch();
+    }
+    initVectorSearch() {
+        this.vectorInitPromise = import('../embeddings/VectorExtension.js')
+            .then(({ VectorExtension }) => {
+            VectorExtension.loadExtension(this.db);
+            VectorExtension.createVectorTable(this.db, 384);
+            this.vectorExt = VectorExtension;
+            this.vectorEnabled = true;
+            logger.info('[KG] Vector search enabled (sqlite-vec loaded)');
+        })
+            .catch(() => {
+            this.vectorEnabled = false;
+            logger.debug('[KG] Vector search unavailable, using FTS5-only search');
+        });
     }
     runMigrations() {
         try {
@@ -364,6 +383,9 @@ export class KnowledgeGraph {
                 return entity.name;
             })();
             this.queryCache.invalidatePattern(/^entities:/);
+            if (this.vectorEnabled) {
+                this.generateEmbeddingAsync(entity.name, entity.observations);
+            }
             logger.info(`[KG] Created entity: ${entity.name} (type: ${entity.entityType})`);
             return result;
         }
@@ -596,6 +618,13 @@ export class KnowledgeGraph {
           VALUES('delete', ?, ?, ?)
         `).run(entity.id, existingFts.name, existingFts.observations);
             }
+            if (this.vectorEnabled && this.vectorExt) {
+                try {
+                    this.vectorExt.deleteEmbedding(this.db, name);
+                }
+                catch {
+                }
+            }
             const stmt = this.db.prepare('DELETE FROM entities WHERE name = ?');
             return stmt.run(name);
         })();
@@ -606,7 +635,97 @@ export class KnowledgeGraph {
         logger.info(`[KG] Deleted entity: ${name}`);
         return result.changes > 0;
     }
-    close() {
+    generateEmbeddingAsync(entityName, observations) {
+        if (!this.vectorExt)
+            return;
+        const text = [entityName, ...(observations || [])].join(' ');
+        const ext = this.vectorExt;
+        const task = (async () => {
+            try {
+                const { LazyEmbeddingService } = await import('../embeddings/EmbeddingService.js');
+                const service = await LazyEmbeddingService.get();
+                const embedding = await service.encode(text);
+                ext.insertEmbedding(this.db, entityName, embedding);
+                logger.debug(`[KG] Embedding generated for: ${entityName}`);
+            }
+            catch (error) {
+                logger.debug('[KG] Embedding generation skipped', {
+                    entity: entityName,
+                    reason: error instanceof Error ? error.message : String(error),
+                });
+            }
+        })();
+        this.pendingEmbeddings.add(task);
+        task.finally(() => this.pendingEmbeddings.delete(task));
+    }
+    async semanticSearch(query, options = {}) {
+        const { limit = 10, minSimilarity = 0.3 } = options;
+        if (this.vectorInitPromise) {
+            await this.vectorInitPromise;
+        }
+        if (!this.vectorEnabled || !this.vectorExt) {
+            return this.keywordSearchAsSemanticResults(query, limit);
+        }
+        try {
+            const { LazyEmbeddingService } = await import('../embeddings/EmbeddingService.js');
+            const service = await LazyEmbeddingService.get();
+            const queryEmbedding = await service.encode(query);
+            const knnResults = this.vectorExt.knnSearch(this.db, queryEmbedding, limit * 2);
+            const results = [];
+            for (const knn of knnResults) {
+                const similarity = 1 - knn.distance;
+                if (similarity < minSimilarity)
+                    continue;
+                const entity = this.getEntity(knn.entityName);
+                if (!entity)
+                    continue;
+                results.push({ entity, similarity });
+            }
+            return results.slice(0, limit);
+        }
+        catch (error) {
+            logger.warn('[KG] Semantic search failed, falling back to keyword', {
+                error: error instanceof Error ? error.message : String(error),
+            });
+            return this.keywordSearchAsSemanticResults(query, limit);
+        }
+    }
+    async hybridSearch(query, options = {}) {
+        const { limit = 10, minSimilarity = 0.3 } = options;
+        const keywordResults = this.keywordSearchAsSemanticResults(query, limit);
+        if (this.vectorInitPromise) {
+            await this.vectorInitPromise;
+        }
+        if (!this.vectorEnabled) {
+            return keywordResults;
+        }
+        const semanticResults = await this.semanticSearch(query, { limit, minSimilarity });
+        const merged = new Map();
+        for (const r of keywordResults) {
+            merged.set(r.entity.name, r);
+        }
+        for (const r of semanticResults) {
+            const existing = merged.get(r.entity.name);
+            if (!existing || r.similarity > existing.similarity) {
+                merged.set(r.entity.name, r);
+            }
+        }
+        return Array.from(merged.values())
+            .sort((a, b) => b.similarity - a.similarity)
+            .slice(0, limit);
+    }
+    keywordSearchAsSemanticResults(query, limit) {
+        const entities = this.searchEntities({ namePattern: query, limit });
+        return entities.map(entity => ({ entity, similarity: 1.0 }));
+    }
+    isVectorSearchEnabled() {
+        return this.vectorEnabled;
+    }
+    async close() {
+        if (this.pendingEmbeddings.size > 0) {
+            logger.debug(`[KG] Waiting for ${this.pendingEmbeddings.size} pending embedding tasks...`);
+            await Promise.allSettled([...this.pendingEmbeddings]);
+        }
         this.queryCache.destroy();
         this.db.close();
         logger.info('[KG] Database connection and cache closed');

@@ -181,7 +181,22 @@ async function bootstrapWithDaemon() {
         }
     }
     catch (error) {
-        process.stderr.write(`[Bootstrap] Daemon bootstrap failed, falling back to standalone: ${error}\n`);
+        const msg = error instanceof Error ? error.message : String(error);
+        const errCode = error?.code;
+        const isPermissionError = errCode === 'EACCES' || errCode === 'EPERM';
+        const isDiskError = errCode === 'ENOSPC' || errCode === 'EROFS';
+        const isSocketError = errCode === 'EADDRINUSE' || errCode === 'ECONNREFUSED' || errCode === 'ETIMEDOUT';
+        if (isPermissionError || isDiskError) {
+            process.stderr.write(`[Bootstrap] Daemon bootstrap failed (${errCode}): ${msg}\n` +
+                `[Bootstrap] This may indicate a system-level issue. Falling back to standalone mode.\n`);
+        }
+        else if (isSocketError) {
+            process.stderr.write(`[Bootstrap] Socket issue (${errCode}): ${msg}\n` +
+                `[Bootstrap] Daemon may be unresponsive or stale socket exists. Falling back to standalone mode.\n`);
+        }
+        else {
+            process.stderr.write(`[Bootstrap] Daemon bootstrap failed, falling back to standalone: ${msg}\n`);
+        }
         startMCPServer();
     }
 }
@@ -202,8 +217,27 @@ async function startAsDaemon(bootstrapper, version) {
     }
     logger.info('[Bootstrap] Starting as daemon', { version, pid: process.pid });
     process.env.MCP_SERVER_MODE = 'true';
-    const { ClaudeCodeBuddyMCPServer } = await import('./server.js');
-    const mcpServer = await ClaudeCodeBuddyMCPServer.create();
+    let mcpServer;
+    try {
+        const { ClaudeCodeBuddyMCPServer } = await import('./server.js');
+        mcpServer = await ClaudeCodeBuddyMCPServer.create();
+    }
+    catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        logger.error('[Daemon] MCP server initialization failed', { error: msg });
+        try {
+            await DaemonLockManager.releaseLock();
+        }
+        catch { }
+        try {
+            bootstrapper.getTransport().cleanup();
+        }
+        catch { }
+        stopStdinBufferingAndReplay();
+        logger.warn('[Daemon] Falling back to standalone mode');
+        startMCPServer();
+        return;
+    }
     const transport = bootstrapper.getTransport();
     const socketServer = new DaemonSocketServer({
         transport,
@@ -215,13 +249,35 @@ async function startAsDaemon(bootstrapper, version) {
     socketServer.on('client_disconnect', (clientId) => {
         logger.info('[Daemon] Client disconnected', { clientId });
     });
-    socketServer.setMcpHandler(async (request) => {
-        return mcpServer.handleRequest(request);
-    });
-    await socketServer.start();
+    try {
+        await socketServer.start();
+    }
+    catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        logger.error('[Daemon] Socket server failed to start', {
+            error: msg,
+            socketPath: transport.getPath(),
+        });
+        try {
+            await DaemonLockManager.releaseLock();
+        }
+        catch { }
+        try {
+            transport.cleanup();
+        }
+        catch { }
+        logger.warn('[Daemon] Socket server unavailable, falling back to standalone mode');
+        stopStdinBufferingAndReplay();
+        await mcpServer.start();
+        startMCPClientWatchdog();
+        return;
+    }
     logger.info('[Daemon] Socket server started', { path: transport.getPath() });
     stopStdinBufferingAndReplay();
     await mcpServer.start();
+    socketServer.setMcpHandler(async (request) => {
+        return mcpServer.handleRequest(request);
+    });
     const cleanupDaemon = async (reason) => {
         logger.info('[Daemon] Cleanup started', { reason });
         try {
@@ -301,7 +357,20 @@ async function startAsProxy(bootstrapper) {
         process.exit(0);
     });
     stopStdinBufferingAndReplay();
-    await proxyClient.start();
+    try {
+        await proxyClient.start();
+    }
+    catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        logger.error('[Proxy] Failed to connect to daemon', { error: msg });
+        try {
+            await proxyClient.stop();
+        }
+        catch { }
+        logger.warn('[Proxy] Falling back to standalone mode');
+        startMCPServer();
+        return;
+    }
     logger.info('[Proxy] Proxy started, forwarding stdio to daemon');
     setupSignalHandlers(async (signal) => {
         logger.info('[Proxy] Shutdown requested', { signal });
@@ -320,7 +389,18 @@ function startMCPServer() {
             await mcpServer.start();
         }
         catch (error) {
-            process.stderr.write(`Fatal error in MCP server bootstrap: ${error}\n`);
+            const msg = error instanceof Error ? error.message : String(error);
+            const errCode = error?.code;
+            process.stderr.write(`[MeMesh] Fatal startup error: ${msg}\n`);
+            if (errCode === 'EACCES' || errCode === 'EPERM') {
+                process.stderr.write('[MeMesh] Hint: Check file permissions for the MeMesh data directory.\n');
+            }
+            else if (msg.includes('better-sqlite3') || msg.includes('SQLite')) {
+                process.stderr.write('[MeMesh] Hint: Run "npm rebuild better-sqlite3" to rebuild native module.\n');
+            }
+            else if (msg.includes('ENOSPC')) {
+                process.stderr.write('[MeMesh] Hint: Disk is full. Free up space and try again.\n');
+            }
             process.exit(1);
         }
     }

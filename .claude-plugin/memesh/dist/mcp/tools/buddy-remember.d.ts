@@ -2,12 +2,7 @@ import { z } from 'zod';
 import type { ProjectMemoryManager } from '../../memory/ProjectMemoryManager.js';
 import type { ResponseFormatter } from '../../ui/ResponseFormatter.js';
 import type { KnowledgeGraph } from '../../knowledge-graph/index.js';
-import type { Entity } from '../../knowledge-graph/types.js';
 export type SearchMode = 'semantic' | 'keyword' | 'hybrid';
-export interface SemanticSearchResult {
-    entity: Entity;
-    similarity: number;
-}
 export declare const BuddyRememberInputSchema: z.ZodObject<{
     query: z.ZodString;
     mode: z.ZodDefault<z.ZodOptional<z.ZodEnum<{

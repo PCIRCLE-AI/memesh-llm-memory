@@ -507,9 +507,9 @@ export class UnifiedMemoryStore {
             });
         }
     }
-    close() {
+    async close() {
         try {
-            this.knowledgeGraph.close();
+            await this.knowledgeGraph.close();
             logger.info('[UnifiedMemoryStore] Database connection closed');
         }
         catch (error) {

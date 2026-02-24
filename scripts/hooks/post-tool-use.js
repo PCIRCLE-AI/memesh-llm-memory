@@ -522,6 +522,43 @@ function checkAndSaveKeyPoints(sessionState, sessionContext) {
 }
 
 // ============================================================================
+// Code Review Tracking
+// ============================================================================
+
+/**
+ * Check if this tool call is a code review invocation.
+ * Detects both Skill tool usage and Task tool dispatching code reviewers.
+ * @param {Object} toolData - Normalized tool data
+ * @returns {boolean}
+ */
+function isCodeReviewInvocation(toolData) {
+  // Skill tool with code review
+  if (toolData.toolName === 'Skill') {
+    const name = toolData.arguments?.name || toolData.arguments?.skill_name || '';
+    return /code.?review|comprehensive.?code.?review/i.test(name);
+  }
+
+  // Task tool dispatching code reviewer subagent
+  if (toolData.toolName === 'Task') {
+    const subagentType = toolData.arguments?.subagent_type || '';
+    return /code.?review/i.test(subagentType);
+  }
+
+  return false;
+}
+
+/**
+ * Mark code review as done in session state.
+ * This flag is checked by pre-tool-use.js before git commits.
+ */
+function markCodeReviewDone() {
+  const session = readJSONFile(CURRENT_SESSION_FILE, {});
+  session.codeReviewDone = true;
+  session.codeReviewTimestamp = new Date().toISOString();
+  writeJSONFile(CURRENT_SESSION_FILE, session);
+}
+
+// ============================================================================
 // Tool Data Normalization
 // ============================================================================
 
@@ -557,6 +594,11 @@ async function postToolUse() {
     // Parse and normalize tool data
     const rawData = JSON.parse(input);
     const toolData = normalizeToolData(rawData);
+
+    // Track code review invocations (for pre-commit enforcement)
+    if (isCodeReviewInvocation(toolData)) {
+      markCodeReviewDone();
+    }
 
     // Initialize pattern detector
     const detector = new PatternDetector();

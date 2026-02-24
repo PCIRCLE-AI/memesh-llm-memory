@@ -20,6 +20,14 @@ import { getDataPath, getDataDirectory } from '../utils/PathResolver.js';
 import { validateNonEmptyString } from '../utils/validation.js';
 
 /**
+ * Result from semantic/hybrid search
+ */
+export interface SemanticSearchResult {
+  entity: Entity;
+  similarity: number;
+}
+
+/**
  * Maximum allowed length for entity names.
  * Prevents excessively long names that could degrade search/index performance.
  */
@@ -42,6 +50,12 @@ const CONTROL_CHAR_PATTERN = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\x80-\x9F]/;
 export class KnowledgeGraph {
   private db: Database.Database;
   private queryCache: QueryCache<string, any>;
+  /** Whether sqlite-vec extension loaded successfully */
+  private vectorEnabled = false;
+  /** Cached VectorExtension module (loaded once during init) */
+  private vectorExt: typeof import('../embeddings/VectorExtension.js').VectorExtension | null = null;
+  /** Pending embedding generation tasks (fire-and-forget) */
+  private pendingEmbeddings: Promise<void> | null = null;
 
   /**
    * Private constructor - use KnowledgeGraph.create() instead
@@ -284,6 +298,29 @@ export class KnowledgeGraph {
 
     // Run schema migrations
     this.runMigrations();
+
+    // Load sqlite-vec for vector search asynchronously (optional - degrades to FTS5-only)
+    this.initVectorSearch();
+  }
+
+  /**
+   * Initialize vector search capability.
+   * Loads sqlite-vec extension and creates vector table.
+   * Fails silently - vector search is an optional enhancement over FTS5.
+   */
+  private initVectorSearch(): void {
+    import('../embeddings/VectorExtension.js')
+      .then(({ VectorExtension }) => {
+        VectorExtension.loadExtension(this.db);
+        VectorExtension.createVectorTable(this.db, 384);
+        this.vectorExt = VectorExtension;
+        this.vectorEnabled = true;
+        logger.info('[KG] Vector search enabled (sqlite-vec loaded)');
+      })
+      .catch(() => {
+        this.vectorEnabled = false;
+        logger.debug('[KG] Vector search unavailable, using FTS5-only search');
+      });
   }
 
   /**
@@ -654,6 +691,11 @@ export class KnowledgeGraph {
 
       // Invalidate cache for entity queries
       this.queryCache.invalidatePattern(/^entities:/);
+
+      // Generate embedding asynchronously (fire-and-forget, never blocks entity creation)
+      if (this.vectorEnabled) {
+        this.generateEmbeddingAsync(entity.name, entity.observations);
+      }
 
       logger.info(`[KG] Created entity: ${entity.name} (type: ${entity.entityType})`);
       return result;
@@ -1061,6 +1103,15 @@ export class KnowledgeGraph {
         `).run(entity.id, existingFts.name, existingFts.observations);
       }
 
+      // Delete embedding if vector search is enabled
+      if (this.vectorEnabled && this.vectorExt) {
+        try {
+          this.vectorExt.deleteEmbedding(this.db, name);
+        } catch {
+          // Vector extension may not be available
+        }
+      }
+
       // Delete the entity (cascade will handle observations, tags, and relations)
       const stmt = this.db.prepare('DELETE FROM entities WHERE name = ?');
       return stmt.run(name);
@@ -1074,6 +1125,127 @@ export class KnowledgeGraph {
 
     logger.info(`[KG] Deleted entity: ${name}`);
     return result.changes > 0;
+  }
+
+  /**
+   * Generate embedding for an entity asynchronously.
+   * Never throws - failures are logged and silently ignored.
+   */
+  private generateEmbeddingAsync(entityName: string, observations?: string[]): void {
+    if (!this.vectorExt) return;
+    const text = [entityName, ...(observations || [])].join(' ');
+    const ext = this.vectorExt;
+
+    this.pendingEmbeddings = (async () => {
+      try {
+        const { LazyEmbeddingService } = await import('../embeddings/EmbeddingService.js');
+        const service = await LazyEmbeddingService.get();
+        const embedding = await service.encode(text);
+        ext.insertEmbedding(this.db, entityName, embedding);
+        logger.debug(`[KG] Embedding generated for: ${entityName}`);
+      } catch (error) {
+        logger.debug('[KG] Embedding generation skipped', {
+          entity: entityName,
+          reason: error instanceof Error ? error.message : String(error),
+        });
+      }
+    })();
+  }
+
+  /**
+   * Semantic search using vector embeddings.
+   * Falls back to keyword search if embeddings are unavailable.
+   */
+  async semanticSearch(
+    query: string,
+    options: { limit?: number; minSimilarity?: number; entityTypes?: string[] } = {}
+  ): Promise<SemanticSearchResult[]> {
+    const { limit = 10, minSimilarity = 0.3 } = options;
+
+    if (!this.vectorEnabled) {
+      return this.keywordSearchAsSemanticResults(query, limit);
+    }
+
+    try {
+      const { LazyEmbeddingService } = await import('../embeddings/EmbeddingService.js');
+      const service = await LazyEmbeddingService.get();
+      const queryEmbedding = await service.encode(query);
+
+      const knnResults = this.vectorExt!.knnSearch(this.db, queryEmbedding, limit * 2);
+
+      const results: SemanticSearchResult[] = [];
+      for (const knn of knnResults) {
+        // cosine distance → similarity (distance 0 = identical, 2 = opposite)
+        const similarity = 1 - knn.distance;
+        if (similarity < minSimilarity) continue;
+
+        const entity = this.getEntity(knn.entityName);
+        if (!entity) continue;
+
+        results.push({ entity, similarity });
+      }
+
+      return results.slice(0, limit);
+    } catch (error) {
+      logger.warn('[KG] Semantic search failed, falling back to keyword', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return this.keywordSearchAsSemanticResults(query, limit);
+    }
+  }
+
+  /**
+   * Hybrid search combining FTS5 keyword results with semantic vector results.
+   * Merges and deduplicates results from both approaches.
+   */
+  async hybridSearch(
+    query: string,
+    options: { limit?: number; minSimilarity?: number } = {}
+  ): Promise<SemanticSearchResult[]> {
+    const { limit = 10, minSimilarity = 0.3 } = options;
+
+    // Always run keyword search
+    const keywordResults = this.keywordSearchAsSemanticResults(query, limit);
+
+    // If vector search unavailable, return keyword results only
+    if (!this.vectorEnabled) {
+      return keywordResults;
+    }
+
+    // Run semantic search
+    const semanticResults = await this.semanticSearch(query, { limit, minSimilarity });
+
+    // Merge: deduplicate by entity name, prefer higher similarity
+    const merged = new Map<string, SemanticSearchResult>();
+    for (const r of keywordResults) {
+      merged.set(r.entity.name, r);
+    }
+    for (const r of semanticResults) {
+      const existing = merged.get(r.entity.name);
+      if (!existing || r.similarity > existing.similarity) {
+        merged.set(r.entity.name, r);
+      }
+    }
+
+    // Sort by similarity descending, take top N
+    return Array.from(merged.values())
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, limit);
+  }
+
+  /**
+   * Convert keyword search results to SemanticSearchResult format.
+   */
+  private keywordSearchAsSemanticResults(query: string, limit: number): SemanticSearchResult[] {
+    const entities = this.searchEntities({ namePattern: query, limit });
+    return entities.map(entity => ({ entity, similarity: 1.0 }));
+  }
+
+  /**
+   * Check if vector search is enabled
+   */
+  isVectorSearchEnabled(): boolean {
+    return this.vectorEnabled;
   }
 
   /**

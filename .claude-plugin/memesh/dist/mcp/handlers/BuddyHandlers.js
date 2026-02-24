@@ -7,10 +7,12 @@ import { executeBuddyHelp, BuddyHelpInputSchema, } from '../tools/buddy-help.js'
 export class BuddyHandlers {
     formatter;
     projectMemoryManager;
+    knowledgeGraph;
     autoTracker;
-    constructor(formatter, projectMemoryManager, autoTracker) {
+    constructor(formatter, projectMemoryManager, autoTracker, knowledgeGraph) {
         this.formatter = formatter;
         this.projectMemoryManager = projectMemoryManager;
+        this.knowledgeGraph = knowledgeGraph;
         this.autoTracker = autoTracker;
     }
     isCloudOnlyMode() {
@@ -117,7 +119,7 @@ export class BuddyHandlers {
             throw error;
         }
         try {
-            return await executeBuddyRemember(validatedInput, this.projectMemoryManager, this.formatter);
+            return await executeBuddyRemember(validatedInput, this.projectMemoryManager, this.formatter, this.knowledgeGraph);
         }
         catch (error) {
             logError(error, {

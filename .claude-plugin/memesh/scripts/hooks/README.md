@@ -1,13 +1,16 @@
 # MeMesh Hooks for Claude Code
 
-**What are these?** Small scripts that run automatically when you use Claude Code. They help MeMesh remember what you did.
+**What are these?** Small scripts that run automatically when you use Claude Code. They help MeMesh remember what you did and enforce code quality.
 
 ## What They Do
 
 | When | What Happens |
 |------|--------------|
-| **You open Claude Code** | Shows what you did in your last session |
-| **You use tools** | Quietly tracks your work |
+| **You open Claude Code** | Reloads CLAUDE.md, shows last session recap |
+| **Before a tool runs** | Pre-commit: reminds to run code review |
+| **After a tool runs** | Quietly tracks your work, detects patterns |
+| **You make a git commit** | Saves commit context to knowledge graph |
+| **A subagent finishes** | Saves code review results, tracks completion |
 | **You close Claude Code** | Saves a summary for next time |
 
 ## Installation
@@ -22,16 +25,34 @@ chmod +x ~/.claude/hooks/*.js
 
 ---
 
-## Auto-Memory (The Main Feature)
+## Features
 
-### How It Works
+### Auto-Memory
 
 ```
-Open Claude Code     →     Work normally     →     Close Claude Code
-      ↓                         ↓                        ↓
-See last session         MeMesh watches           Saves summary
-   summary               (you won't notice)        for next time
+Open Claude Code  →  Work normally  →  Git commit  →  Close Claude Code
+      ↓                    ↓                ↓                 ↓
+Reload CLAUDE.md     MeMesh watches    Save commit      Save session
++ recall memory     (you won't notice)  to KG            summary
 ```
+
+### Pre-Commit Code Review Enforcement
+
+```
+git commit detected → Code review done? → Yes → Allow commit
+                                        → No  → Inject reminder to run
+                                                @comprehensive-code-review
+```
+
+The pre-commit hook tracks whether code review was invoked during the session
+(via Skill tool, Task tool, or code-reviewer subagent). If no review was done,
+it adds context reminding Claude to run the comprehensive code review first.
+
+### Subagent Tracking
+
+When code reviewer subagents finish, their findings are saved to the MeMesh
+knowledge graph for future reference. This builds a history of code review
+insights across sessions.
 
 ### What You'll See on Startup
 
@@ -57,6 +78,7 @@ See last session         MeMesh watches           Saves summary
 | 💡 | Things you learned |
 | ⚠️ | Problems you ran into |
 | 🎯 | Decisions you made |
+| 🔍 | Code review findings |
 
 ---
 
@@ -79,6 +101,12 @@ cp scripts/hooks/*.js ~/.claude/hooks/
 ls ~/.memesh/knowledge-graph.db
 ```
 
+### "Pre-commit review not triggering"
+
+The pre-commit hook only fires for `git commit` commands (not `--amend`).
+Make sure `pre-tool-use.js` is in `~/.claude/hooks/` and the hook is
+registered for the `PreToolUse` event in settings.
+
 ## Limitations
 
 | What | Details |
@@ -93,10 +121,33 @@ ls ~/.memesh/knowledge-graph.db
 
 ```
 ~/.claude/hooks/
-├── session-start.js    ← Runs when you open Claude Code
-├── post-tool-use.js    ← Runs after each tool (quietly)
-├── stop.js             ← Runs when you close Claude Code
-└── hook-utils.js       ← Shared helper code
+├── session-start.js    ← SessionStart: reload CLAUDE.md, recall memory
+├── pre-tool-use.js     ← PreToolUse: pre-commit code review enforcement
+├── post-tool-use.js    ← PostToolUse: track work patterns, detect anomalies
+├── post-commit.js      ← PostToolUse: save commit context to KG
+├── subagent-stop.js    ← SubagentStop: capture code review results
+├── stop.js             ← Stop: save session summary, archive, cleanup
+└── hook-utils.js       ← Shared helper code (SQLite, file I/O, etc.)
+```
+
+### Hook Event Flow
+
+```
+SessionStart ──→ PreToolUse ──→ [Tool Executes] ──→ PostToolUse
+                                                          ↓
+                                                   (git commit?)
+                                                          ↓
+                                                   PostCommit hook
+                                                   saves to KG
+
+Task(subagent) ──→ [Subagent works] ──→ SubagentStop
+                                              ↓
+                                        (code reviewer?)
+                                              ↓
+                                        Save to KG +
+                                        mark review done
+
+Session ends ──→ Stop ──→ Save summary ──→ Archive ──→ Cleanup
 ```
 
 ---
@@ -106,7 +157,8 @@ ls ~/.memesh/knowledge-graph.db
 ### Test hooks work
 
 ```bash
-node --check ~/.claude/hooks/session-start.js
+# Syntax check all hooks
+for f in ~/.claude/hooks/*.js; do node --check "$f" && echo "OK: $f"; done
 ```
 
 ### Change settings

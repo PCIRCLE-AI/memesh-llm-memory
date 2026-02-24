@@ -301,7 +301,9 @@ planning-docs/
 
 # Experimental code (cleaned up - do not recreate)
 experiments/
-skills/
+/skills/
+!scripts/skills/
+!.claude-plugin/memesh/scripts/skills/
 
 # Manual Test Scripts - DO NOT PUSH
 tests/manual/**

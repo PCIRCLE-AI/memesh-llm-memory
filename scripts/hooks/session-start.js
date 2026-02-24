@@ -299,11 +299,55 @@ function displayRecalledMemory(recalledData) {
 }
 
 // ============================================================================
+// CLAUDE.md Reload
+// ============================================================================
+
+/**
+ * Find and display project CLAUDE.md content on session start.
+ * This ensures instructions are fresh in context even after compaction.
+ * Searches: CWD/.claude/CLAUDE.md, CWD/CLAUDE.md
+ */
+function reloadClaudeMd() {
+  const cwd = process.cwd();
+  const candidates = [
+    path.join(cwd, '.claude', 'CLAUDE.md'),
+    path.join(cwd, 'CLAUDE.md'),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      if (fs.existsSync(candidate)) {
+        const content = fs.readFileSync(candidate, 'utf-8');
+        const lineCount = content.split('\n').length;
+        const relativePath = path.relative(cwd, candidate);
+
+        console.log('═'.repeat(60));
+        console.log('  📋 CLAUDE.md Reloaded');
+        console.log('═'.repeat(60));
+        console.log('');
+        console.log(`  Source: ${relativePath} (${lineCount} lines)`);
+        console.log('');
+        console.log(content);
+        console.log('');
+        console.log('═'.repeat(60));
+        console.log('');
+        return;
+      }
+    } catch {
+      // Skip unreadable files
+    }
+  }
+}
+
+// ============================================================================
 // Main Session Start Logic
 // ============================================================================
 
 function sessionStart() {
   console.log('\n🚀 Smart-Agents Session Started\n');
+
+  // Reload project CLAUDE.md into context
+  reloadClaudeMd();
 
   // Check MeMesh availability
   const ccbStatus = checkCCBAvailability();

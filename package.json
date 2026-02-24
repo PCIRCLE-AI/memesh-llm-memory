@@ -11,6 +11,7 @@
     "dist/",
     "scripts/postinstall-new.js",
     "scripts/postinstall-lib.js",
+    "scripts/skills/",
     "plugin.json",
     "mcp.json",
     "README.md",

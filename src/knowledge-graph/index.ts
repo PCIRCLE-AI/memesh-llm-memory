@@ -54,8 +54,10 @@ export class KnowledgeGraph {
   private vectorEnabled = false;
   /** Cached VectorExtension module (loaded once during init) */
   private vectorExt: typeof import('../embeddings/VectorExtension.js').VectorExtension | null = null;
-  /** Pending embedding generation tasks (fire-and-forget) */
-  private pendingEmbeddings: Promise<void> | null = null;
+  /** Promise tracking vector search initialization (resolved when init completes or fails) */
+  private vectorInitPromise: Promise<void> | null = null;
+  /** Pending embedding generation tasks — tracked for clean shutdown */
+  private pendingEmbeddings: Set<Promise<void>> = new Set();
 
   /**
    * Private constructor - use KnowledgeGraph.create() instead
@@ -307,9 +309,10 @@ export class KnowledgeGraph {
    * Initialize vector search capability.
    * Loads sqlite-vec extension and creates vector table.
    * Fails silently - vector search is an optional enhancement over FTS5.
+   * The returned promise is tracked so search methods can await initialization.
    */
   private initVectorSearch(): void {
-    import('../embeddings/VectorExtension.js')
+    this.vectorInitPromise = import('../embeddings/VectorExtension.js')
       .then(({ VectorExtension }) => {
         VectorExtension.loadExtension(this.db);
         VectorExtension.createVectorTable(this.db, 384);
@@ -1130,13 +1133,14 @@ export class KnowledgeGraph {
   /**
    * Generate embedding for an entity asynchronously.
    * Never throws - failures are logged and silently ignored.
+   * All pending tasks are tracked for clean shutdown via close().
    */
   private generateEmbeddingAsync(entityName: string, observations?: string[]): void {
     if (!this.vectorExt) return;
     const text = [entityName, ...(observations || [])].join(' ');
     const ext = this.vectorExt;
 
-    this.pendingEmbeddings = (async () => {
+    const task = (async () => {
       try {
         const { LazyEmbeddingService } = await import('../embeddings/EmbeddingService.js');
         const service = await LazyEmbeddingService.get();
@@ -1150,6 +1154,10 @@ export class KnowledgeGraph {
         });
       }
     })();
+
+    // Track the task and auto-remove when it settles
+    this.pendingEmbeddings.add(task);
+    task.finally(() => this.pendingEmbeddings.delete(task));
   }
 
   /**
@@ -1162,7 +1170,12 @@ export class KnowledgeGraph {
   ): Promise<SemanticSearchResult[]> {
     const { limit = 10, minSimilarity = 0.3 } = options;
 
-    if (!this.vectorEnabled) {
+    // Wait for vector init to complete before checking vectorEnabled
+    if (this.vectorInitPromise) {
+      await this.vectorInitPromise;
+    }
+
+    if (!this.vectorEnabled || !this.vectorExt) {
       return this.keywordSearchAsSemanticResults(query, limit);
     }
 
@@ -1171,7 +1184,7 @@ export class KnowledgeGraph {
       const service = await LazyEmbeddingService.get();
       const queryEmbedding = await service.encode(query);
 
-      const knnResults = this.vectorExt!.knnSearch(this.db, queryEmbedding, limit * 2);
+      const knnResults = this.vectorExt.knnSearch(this.db, queryEmbedding, limit * 2);
 
       const results: SemanticSearchResult[] = [];
       for (const knn of knnResults) {
@@ -1206,6 +1219,11 @@ export class KnowledgeGraph {
 
     // Always run keyword search
     const keywordResults = this.keywordSearchAsSemanticResults(query, limit);
+
+    // Wait for vector init to complete before checking vectorEnabled
+    if (this.vectorInitPromise) {
+      await this.vectorInitPromise;
+    }
 
     // If vector search unavailable, return keyword results only
     if (!this.vectorEnabled) {
@@ -1249,9 +1267,16 @@ export class KnowledgeGraph {
   }
 
   /**
-   * Close the database connection
+   * Close the database connection.
+   * Waits for pending embedding tasks to complete before closing.
    */
-  close() {
+  async close() {
+    // Wait for any pending embedding tasks to finish
+    if (this.pendingEmbeddings.size > 0) {
+      logger.debug(`[KG] Waiting for ${this.pendingEmbeddings.size} pending embedding tasks...`);
+      await Promise.allSettled([...this.pendingEmbeddings]);
+    }
+
     // Cleanup cache
     this.queryCache.destroy();
 

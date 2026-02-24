@@ -326,11 +326,17 @@ async function bootstrapWithDaemon() {
     // Classify error: unrecoverable errors should be reported clearly
     const isPermissionError = errCode === 'EACCES' || errCode === 'EPERM';
     const isDiskError = errCode === 'ENOSPC' || errCode === 'EROFS';
+    const isSocketError = errCode === 'EADDRINUSE' || errCode === 'ECONNREFUSED' || errCode === 'ETIMEDOUT';
 
     if (isPermissionError || isDiskError) {
       process.stderr.write(
         `[Bootstrap] Daemon bootstrap failed (${errCode}): ${msg}\n` +
         `[Bootstrap] This may indicate a system-level issue. Falling back to standalone mode.\n`
+      );
+    } else if (isSocketError) {
+      process.stderr.write(
+        `[Bootstrap] Socket issue (${errCode}): ${msg}\n` +
+        `[Bootstrap] Daemon may be unresponsive or stale socket exists. Falling back to standalone mode.\n`
       );
     } else {
       process.stderr.write(`[Bootstrap] Daemon bootstrap failed, falling back to standalone: ${msg}\n`);
@@ -384,8 +390,10 @@ async function startAsDaemon(bootstrapper: DaemonBootstrap, version: string) {
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     logger.error('[Daemon] MCP server initialization failed', { error: msg });
-    // Release lock since we can't serve as daemon
+    // Release lock and clean up transport since we can't serve as daemon
     try { await DaemonLockManager.releaseLock(); } catch { /* best effort */ }
+    try { bootstrapper.getTransport().cleanup(); } catch { /* best effort */ }
+    stopStdinBufferingAndReplay();
     // Fall back to standalone which has its own error handling
     logger.warn('[Daemon] Falling back to standalone mode');
     startMCPServer();
@@ -408,13 +416,9 @@ async function startAsDaemon(bootstrapper: DaemonBootstrap, version: string) {
     logger.info('[Daemon] Client disconnected', { clientId });
   });
 
-  // Register MCP handler to route proxy client requests to the MCP server
-  // This enables the daemon to process MCP requests from proxy clients
-  socketServer.setMcpHandler(async (request: unknown) => {
-    return mcpServer.handleRequest(request);
-  });
-
   // Start socket server with error handling
+  // NOTE: MCP handler is registered AFTER mcpServer.start() below to prevent
+  // proxy clients from sending requests to an unstarted MCP server.
   try {
     await socketServer.start();
   } catch (error) {
@@ -441,6 +445,12 @@ async function startAsDaemon(bootstrapper: DaemonBootstrap, version: string) {
 
   // Also start the MCP server for direct stdio communication (first client)
   await mcpServer.start();
+
+  // Register MCP handler AFTER server is started to prevent race condition
+  // where proxy clients send requests to an unstarted MCP server
+  socketServer.setMcpHandler(async (request: unknown) => {
+    return mcpServer.handleRequest(request);
+  });
 
   // Cleanup function for socket and lock
   const cleanupDaemon = async (reason: string): Promise<void> => {
@@ -558,6 +568,8 @@ async function startAsProxy(bootstrapper: DaemonBootstrap) {
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     logger.error('[Proxy] Failed to connect to daemon', { error: msg });
+    // Clean up partially-initialized proxy client
+    try { await proxyClient.stop(); } catch { /* best effort */ }
     // Daemon may have died between determineMode() and start()
     // Fall back to standalone mode
     logger.warn('[Proxy] Falling back to standalone mode');

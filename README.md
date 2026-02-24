@@ -108,21 +108,18 @@ MeMesh works seamlessly with:
 
 #### Claude Desktop Cowork Compatibility
 
-**Current Status**: Cloud-only mode with limited functionality
+**Current Status**: Limited functionality
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| MCP Server | ✅ Works | Starts successfully in cloud-only mode |
+| MCP Server | ✅ Works | Starts successfully |
 | Basic Commands | ✅ Works | buddy-help, list-skills, etc. |
 | Memory Tools | ❌ Disabled | recall-memory, create-entities, buddy-do, buddy-remember |
-| Cloud Sync | ✅ Works | When MEMESH_API_KEY is configured |
 | Local Knowledge Graph | ❌ Unavailable | better-sqlite3 cannot compile in Cowork sandbox |
 
 **Why Limited**: Cowork sandbox has read-only filesystem and blocks native module compilation (better-sqlite3, onnxruntime-node, sqlite-vec).
 
-**Future**: Full support planned through cloud-first memory architecture. See [docs/COWORK_SUPPORT.md](docs/COWORK_SUPPORT.md) for details.
-
-**Recommendation**: Use **CLI version** for full functionality until cloud-first memory is implemented.
+**Recommendation**: Use **CLI version** for full functionality.
 
 ### Known Limitations
 
@@ -201,6 +198,6 @@ AGPL-3.0 — See [LICENSE](LICENSE)
 
 Something not working? [Open an issue](https://github.com/PCIRCLE-AI/claude-code-buddy/issues/new) — we respond fast.
 
-[Report Bug](https://github.com/PCIRCLE-AI/claude-code-buddy/issues/new?labels=bug&template=bug_report.md) • [Request Feature](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
+[Report Bug](https://github.com/PCIRCLE-AI/claude-code-buddy/issues/new?labels=bug&template=bug_report.yml) • [Request Feature](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
 
 </div>

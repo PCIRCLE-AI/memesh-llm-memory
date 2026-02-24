@@ -943,12 +943,12 @@ export class UnifiedMemoryStore {
    * ```typescript
    * const store = await UnifiedMemoryStore.create();
    * // ... use the store ...
-   * store.close(); // Cleanup when done
+   * await store.close(); // Cleanup when done
    * ```
    */
-  close(): void {
+  async close(): Promise<void> {
     try {
-      this.knowledgeGraph.close();
+      await this.knowledgeGraph.close();
       logger.info('[UnifiedMemoryStore] Database connection closed');
     } catch (error) {
       logger.error(`[UnifiedMemoryStore] Error closing database: ${error}`);

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { ProjectMemoryManager } from '../../memory/ProjectMemoryManager.js';
 import type { ResponseFormatter } from '../../ui/ResponseFormatter.js';
-import type { KnowledgeGraph } from '../../knowledge-graph/index.js';
+import type { KnowledgeGraph, SemanticSearchResult } from '../../knowledge-graph/index.js';
 import type { Entity } from '../../knowledge-graph/types.js';
 import { logger } from '../../utils/logger.js';
 
@@ -12,14 +12,6 @@ import { logger } from '../../utils/logger.js';
  * - hybrid: Combines semantic and keyword search (default)
  */
 export type SearchMode = 'semantic' | 'keyword' | 'hybrid';
-
-/**
- * Result from semantic/hybrid search
- */
-export interface SemanticSearchResult {
-  entity: Entity;
-  similarity: number;
-}
 
 export const BuddyRememberInputSchema = z.object({
   query: z.string().trim().min(1).describe('Search query (natural language supported for semantic search)'),

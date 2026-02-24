@@ -108,21 +108,18 @@ MeMesh 可無縫整合：
 
 #### Claude Desktop Cowork 相容性
 
-**目前狀態**：僅雲端模式，功能受限
+**目前狀態**：功能受限
 
 | 功能 | 狀態 | 備註 |
 |------|------|------|
-| MCP 伺服器 | ✅ 正常 | 成功以僅雲端模式啟動 |
+| MCP 伺服器 | ✅ 正常 | 成功啟動 |
 | 基本指令 | ✅ 正常 | buddy-help, list-skills 等 |
 | 記憶工具 | ❌ 停用 | recall-memory, create-entities, buddy-do, buddy-remember |
-| 雲端同步 | ✅ 正常 | 需設定 MEMESH_API_KEY |
 | 本地知識圖譜 | ❌ 無法使用 | better-sqlite3 無法在 Cowork 沙盒編譯 |
 
 **限制原因**：Cowork 沙盒具有唯讀檔案系統，並阻止原生模組編譯（better-sqlite3、onnxruntime-node、sqlite-vec）。
 
-**未來計畫**：透過雲端優先記憶架構實現完整支援。詳見 [docs/COWORK_SUPPORT.md](docs/COWORK_SUPPORT.md)。
-
-**建議**：在雲端優先記憶實作完成前，使用 **CLI 版本**以獲得完整功能。
+**建議**：使用 **CLI 版本**以獲得完整功能。
 
 ### 已知限制
 
@@ -201,6 +198,6 @@ AGPL-3.0 — 詳見 [LICENSE](LICENSE)
 
 遇到問題？[回報 Issue](https://github.com/PCIRCLE-AI/claude-code-buddy/issues/new) — 我們會快速回應。
 
-[回報 Bug](https://github.com/PCIRCLE-AI/claude-code-buddy/issues/new?labels=bug&template=bug_report.md) • [功能請求](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
+[回報 Bug](https://github.com/PCIRCLE-AI/claude-code-buddy/issues/new?labels=bug&template=bug_report.yml) • [功能請求](https://github.com/PCIRCLE-AI/claude-code-buddy/discussions)
 
 </div>

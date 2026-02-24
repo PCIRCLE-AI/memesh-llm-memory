@@ -1,11 +1,12 @@
 import { z } from 'zod';
 import type { ResponseFormatter } from '../../ui/ResponseFormatter.js';
 import type { ProjectAutoTracker } from '../../memory/ProjectAutoTracker.js';
+import type { KnowledgeGraph } from '../../knowledge-graph/index.js';
 export declare const BuddyDoInputSchema: z.ZodObject<{
     task: z.ZodString;
 }, z.core.$strip>;
 export type ValidatedBuddyDoInput = z.infer<typeof BuddyDoInputSchema>;
-export declare function executeBuddyDo(input: ValidatedBuddyDoInput, formatter: ResponseFormatter, autoTracker?: ProjectAutoTracker): Promise<{
+export declare function executeBuddyDo(input: ValidatedBuddyDoInput, formatter: ResponseFormatter, autoTracker?: ProjectAutoTracker, knowledgeGraph?: KnowledgeGraph): Promise<{
     content: Array<{
         type: 'text';
         text: string;

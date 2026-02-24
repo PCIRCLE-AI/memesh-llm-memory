@@ -1,23 +1,24 @@
 # MeMesh Hooks for Claude Code
 
-**What are these?** Small scripts that run automatically when you use Claude Code. They help MeMesh remember what you did and enforce code quality.
+**What are these?** Scripts that run automatically when you use Claude Code. They provide memory management, smart routing, code quality enforcement, and planning assistance.
 
 ## What They Do
 
 | When | What Happens |
 |------|--------------|
-| **You open Claude Code** | Reloads CLAUDE.md, shows last session recap |
-| **Before a tool runs** | Pre-commit: reminds to run code review |
-| **After a tool runs** | Quietly tracks your work, detects patterns |
-| **You make a git commit** | Saves commit context to knowledge graph |
+| **You open Claude Code** | Reloads CLAUDE.md, shows last session recap (cache-first) |
+| **Before a tool runs** | Smart routing, planning template injection, dry-run gate, code review reminder |
+| **After a tool runs** | Tracks work patterns, file modifications, test executions |
+| **You make a git commit** | Saves commit context to knowledge graph (batched) |
 | **A subagent finishes** | Saves code review results, tracks completion |
-| **You close Claude Code** | Saves a summary for next time |
+| **You close Claude Code** | Saves session summary + cache for fast next startup |
 
 ## Installation
 
 ```bash
 # Copy hooks to Claude Code
 cp scripts/hooks/*.js ~/.claude/hooks/
+cp -r scripts/hooks/templates/ ~/.claude/hooks/templates/
 chmod +x ~/.claude/hooks/*.js
 ```
 
@@ -27,46 +28,69 @@ chmod +x ~/.claude/hooks/*.js
 
 ## Features
 
-### Auto-Memory
+### Smart Router (PreToolUse)
+
+Routes subagent tasks to optimal models and controls background execution.
+
+```
+Task(Explore) → model: haiku (fast search)
+Task(Plan)    → inject SDD+BDD planning template
+Task(heavy)   → check for untested code, warn if found
+```
+
+Configuration: `~/.memesh/routing-config.json`
+
+```json
+{
+  "modelRouting": {
+    "rules": [
+      { "subagentType": "Explore", "model": "haiku", "reason": "Fast search" }
+    ]
+  },
+  "backgroundRules": [
+    { "subagentType": "Explore", "forceBackground": false }
+  ],
+  "planningEnforcement": { "enabled": true },
+  "dryRunGate": { "enabled": true },
+  "auditLog": true
+}
+```
+
+Audit log: `~/.memesh/routing-audit.log`
+
+### Planning Enforcement
+
+When a Plan subagent is dispatched, the hook injects a template requiring:
+- System Design Description (SDD)
+- Behavior-Driven Design (BDD) with Gherkin scenarios
+- Edge case handling table
+- Dry-run test plan
+- Risk assessment
+
+The plan is always presented to the user for approval before implementation.
+
+### Dry-Run Gate
+
+Tracks which files were modified (Write/Edit) and which were tested
+(vitest/jest/tsc/node --check). Before heavy Task dispatches, warns if
+modified files haven't been tested yet.
+
+**Advisory only** — never blocks, just informs.
+
+### Pre-Commit Code Review
+
+```
+git commit detected → Code review done? → Yes → Allow
+                                        → No  → Inject reminder
+```
+
+### Auto-Memory (Batched)
 
 ```
 Open Claude Code  →  Work normally  →  Git commit  →  Close Claude Code
       ↓                    ↓                ↓                 ↓
-Reload CLAUDE.md     MeMesh watches    Save commit      Save session
-+ recall memory     (you won't notice)  to KG            summary
-```
-
-### Pre-Commit Code Review Enforcement
-
-```
-git commit detected → Code review done? → Yes → Allow commit
-                                        → No  → Inject reminder to run
-                                                @comprehensive-code-review
-```
-
-The pre-commit hook tracks whether code review was invoked during the session
-(via Skill tool, Task tool, or code-reviewer subagent). If no review was done,
-it adds context reminding Claude to run the comprehensive code review first.
-
-### Subagent Tracking
-
-When code reviewer subagents finish, their findings are saved to the MeMesh
-knowledge graph for future reference. This builds a history of code review
-insights across sessions.
-
-### What You'll See on Startup
-
-```
-🧠 MeMesh Memory Recall
-
-  🕐 Last session: 2 hours ago
-  ⏱️  Duration: 45 minutes
-  🛠️  Tools used: 127
-
-  📋 Key Points:
-    📁 5 files changed in src/auth/
-    ✅ 3 commits made
-    💡 Added JWT refresh tokens
+Cache-first recall   Track patterns   Batch save to KG   Cache + archive
+(0 SQLite spawns)   (async writes)   (2 spawns vs 8)
 ```
 
 ### What Gets Tracked
@@ -87,25 +111,25 @@ insights across sessions.
 ### "Hooks not working"
 
 ```bash
-# Check if hooks exist
 ls ~/.claude/hooks/
-
-# Re-copy them
 cp scripts/hooks/*.js ~/.claude/hooks/
 ```
 
 ### "No memory showing"
 
 ```bash
-# Check if database exists (primary path, falls back to ~/.claude-code-buddy/)
 ls ~/.memesh/knowledge-graph.db
 ```
 
-### "Pre-commit review not triggering"
+### "Routing not applying"
 
-The pre-commit hook only fires for `git commit` commands (not `--amend`).
-Make sure `pre-tool-use.js` is in `~/.claude/hooks/` and the hook is
-registered for the `PreToolUse` event in settings.
+```bash
+# Check config
+cat ~/.memesh/routing-config.json
+
+# Check audit log
+tail -20 ~/.memesh/routing-audit.log
+```
 
 ## Limitations
 
@@ -114,62 +138,90 @@ registered for the `PreToolUse` event in settings.
 | **Claude Code only** | Doesn't work in Cursor |
 | **30-day memory** | Old session memories auto-deleted |
 | **Local only** | No sync between computers |
+| **Advisory gates** | Dry-run and review are reminders, not blockers |
 
 ---
 
-## Files Explained
+## Files
 
 ```
-~/.claude/hooks/
-├── session-start.js    ← SessionStart: reload CLAUDE.md, recall memory
-├── pre-tool-use.js     ← PreToolUse: pre-commit code review enforcement
-├── post-tool-use.js    ← PostToolUse: track work patterns, detect anomalies
-├── post-commit.js      ← PostToolUse: save commit context to KG
+scripts/hooks/
+├── session-start.js    ← SessionStart: reload CLAUDE.md, cache-first recall
+├── pre-tool-use.js     ← PreToolUse: handler registry (4 handlers)
+│   ├── codeReviewHandler  — git commit review enforcement
+│   ├── routingHandler     — model/background selection
+│   ├── planningHandler    — SDD+BDD template injection
+│   └── dryRunGateHandler  — untested code warning
+├── post-tool-use.js    ← PostToolUse: patterns, file/test tracking, async writes
+├── post-commit.js      ← PostToolUse: batch save commit to KG
 ├── subagent-stop.js    ← SubagentStop: capture code review results
-├── stop.js             ← Stop: save session summary, archive, cleanup
-└── hook-utils.js       ← Shared helper code (SQLite, file I/O, etc.)
+├── stop.js             ← Stop: batch save, cache, archive, cleanup
+├── hook-utils.js       ← Shared: sqliteBatch, async I/O, constants
+├── templates/
+│   └── planning-template.md  ← SDD+BDD+edge case template
+└── __tests__/
+    ├── hook-test-harness.js  ← Test runner (no Claude Code needed)
+    └── hooks.test.js         ← 15 test cases
 ```
 
-### Hook Event Flow
+### Handler Flow (PreToolUse)
 
 ```
-SessionStart ──→ PreToolUse ──→ [Tool Executes] ──→ PostToolUse
-                                                          ↓
-                                                   (git commit?)
-                                                          ↓
-                                                   PostCommit hook
-                                                   saves to KG
-
-Task(subagent) ──→ [Subagent works] ──→ SubagentStop
-                                              ↓
-                                        (code reviewer?)
-                                              ↓
-                                        Save to KG +
-                                        mark review done
-
-Session ends ──→ Stop ──→ Save summary ──→ Archive ──→ Cleanup
+PreToolUse event
+  ↓
+┌──────────────────────┐
+│   Handler Registry    │
+│   ├─ codeReview      │ → additionalContext (review reminder)
+│   ├─ routing         │ → updatedInput (model, background)
+│   ├─ planning        │ → updatedInput.prompt (template)
+│   └─ dryRunGate      │ → additionalContext (untested warning)
+└──────────────────────┘
+  ↓
+┌──────────────────────┐
+│   Response Merger     │
+│   • updatedInput: deep-merge
+│   • additionalContext: concatenate
+│   • permissionDecision: most-restrictive
+└──────────────────────┘
+  ↓
+Single JSON → Claude Code
 ```
 
 ---
 
-## For Developers
-
-### Test hooks work
+## Testing
 
 ```bash
+# Run all 15 tests
+node scripts/hooks/__tests__/hooks.test.js
+
+# Test individual hook with mock input
+node scripts/hooks/__tests__/hook-test-harness.js pre-tool-use.js \
+  '{"tool_name":"Task","tool_input":{"subagent_type":"Plan","prompt":"test"}}'
+
 # Syntax check all hooks
-for f in ~/.claude/hooks/*.js; do node --check "$f" && echo "OK: $f"; done
+for f in scripts/hooks/*.js; do node --check "$f" && echo "OK: $f"; done
 ```
 
-### Change settings
+## Configuration
 
-Edit `hook-utils.js`:
+### Routing Config (`~/.memesh/routing-config.json`)
+
+| Field | Description |
+|-------|-------------|
+| `modelRouting.rules` | Subagent → model mapping |
+| `backgroundRules` | Subagent → force background |
+| `planningEnforcement.enabled` | Inject SDD+BDD template |
+| `dryRunGate.enabled` | Warn on untested code |
+| `auditLog` | Log routing decisions |
+
+### Thresholds (`hook-utils.js`)
 
 ```javascript
 THRESHOLDS = {
-  TOKEN_SAVE: 250_000,      // When to auto-save (tokens)
-  RETENTION_DAYS: 30,       // How long to keep session memories
-  MAX_ARCHIVED_SESSIONS: 30 // How many old sessions to keep
+  TOKEN_SAVE: 250_000,
+  RETENTION_DAYS: 30,
+  MAX_ARCHIVED_SESSIONS: 30
 }
 ```
 

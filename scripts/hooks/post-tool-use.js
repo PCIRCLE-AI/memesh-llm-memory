@@ -21,7 +21,8 @@ import {
   THRESHOLDS,
   readJSONFile,
   writeJSONFile,
-  sqliteQuery,
+  writeJSONFileAsync,
+  sqliteBatchEntity,
   readStdin,
   logError,
   logMemorySave,
@@ -278,7 +279,8 @@ function updateRecommendations(patterns, anomalies) {
 
   recommendations.lastUpdated = new Date().toISOString();
 
-  writeJSONFile(RECOMMENDATIONS_FILE, recommendations);
+  // Async write — non-blocking, caller awaits via pendingWrites
+  return writeJSONFileAsync(RECOMMENDATIONS_FILE, recommendations);
 }
 
 // ============================================================================
@@ -308,6 +310,10 @@ function updateCurrentSession(toolData, patterns, anomalies) {
     tokenUsage: toolData.tokensUsed,
   });
 
+  // Track file modifications and test executions (for dry-run gate)
+  trackFileModifications(toolData, currentSession);
+  trackTestExecutions(toolData, currentSession);
+
   // Update pattern counts
   patterns.forEach(pattern => {
     const existing = currentSession.patterns.find(p => p.type === pattern.type);
@@ -322,7 +328,8 @@ function updateCurrentSession(toolData, patterns, anomalies) {
     }
   });
 
-  writeJSONFile(CURRENT_SESSION_FILE, currentSession);
+  // Async write — session file is read on next call, eventual consistency is fine
+  writeJSONFileAsync(CURRENT_SESSION_FILE, currentSession);
 
   return currentSession;
 }
@@ -347,7 +354,7 @@ function updateSessionContext(toolData) {
 
   sessionContext.lastSessionDate = new Date().toISOString();
 
-  writeJSONFile(SESSION_CONTEXT_FILE, sessionContext);
+  writeJSONFileAsync(SESSION_CONTEXT_FILE, sessionContext);
 
   return sessionContext;
 }
@@ -427,7 +434,8 @@ function extractKeyPoints(sessionState) {
 }
 
 /**
- * Save conversation key points to MeMesh knowledge graph
+ * Save conversation key points to MeMesh knowledge graph.
+ * Uses sqliteBatchEntity for performance (2 spawns instead of N).
  * @param {Object} sessionState - Current session state
  * @param {Object} sessionContext - Session context
  * @returns {boolean} True if saved successfully
@@ -444,7 +452,6 @@ function saveConversationKeyPoints(sessionState, sessionContext) {
       return false;
     }
 
-    const now = new Date().toISOString();
     const entityName = `session_keypoints_${Date.now()}`;
 
     const metadata = JSON.stringify({
@@ -453,33 +460,17 @@ function saveConversationKeyPoints(sessionState, sessionContext) {
       saveReason: 'token_threshold',
     });
 
-    // Create entity using parameterized query
-    const insertEntity = 'INSERT INTO entities (name, type, created_at, metadata) VALUES (?, ?, ?, ?)';
-    sqliteQuery(MEMESH_DB_PATH, insertEntity, [entityName, 'session_keypoint', now, metadata]);
+    const tags = ['auto_saved', 'token_trigger', getDateString()];
 
-    // Get the entity ID using parameterized query
-    const entityIdResult = sqliteQuery(
+    const entityId = sqliteBatchEntity(
       MEMESH_DB_PATH,
-      'SELECT id FROM entities WHERE name = ?',
-      [entityName]
+      { name: entityName, type: 'session_keypoint', metadata },
+      keyPoints,
+      tags
     );
 
-    const entityId = parseInt(entityIdResult, 10);
-    if (isNaN(entityId)) {
+    if (entityId === null) {
       return false;
-    }
-
-    // Add observations for each key point
-    for (const point of keyPoints) {
-      const insertObs = 'INSERT INTO observations (entity_id, content, created_at) VALUES (?, ?, ?)';
-      sqliteQuery(MEMESH_DB_PATH, insertObs, [entityId, point, now]);
-    }
-
-    // Add tags for easier retrieval
-    const tags = ['auto_saved', 'token_trigger', getDateString()];
-    for (const tag of tags) {
-      const insertTag = 'INSERT INTO tags (entity_id, tag) VALUES (?, ?)';
-      sqliteQuery(MEMESH_DB_PATH, insertTag, [entityId, tag]);
     }
 
     logMemorySave(`🧠 MeMesh: Saved ${keyPoints.length} key points (tokens: ${sessionContext.tokenQuota?.used})`);
@@ -518,6 +509,87 @@ function checkAndSaveKeyPoints(sessionState, sessionContext) {
   } catch (error) {
     logError('checkAndSaveKeyPoints', error);
     return false;
+  }
+}
+
+// ============================================================================
+// File Modification & Test Tracking (for dry-run gate in pre-tool-use.js)
+// ============================================================================
+
+/**
+ * Track file modifications from Write/Edit tool calls.
+ * Stores modified file paths in session state.
+ * @param {Object} toolData - Normalized tool data
+ * @param {Object} currentSession - Current session state (mutated in place)
+ */
+function trackFileModifications(toolData, currentSession) {
+  if (!['Edit', 'Write'].includes(toolData.toolName)) return;
+
+  const filePath = toolData.arguments?.file_path;
+  if (!filePath) return;
+
+  if (!currentSession.modifiedFiles) {
+    currentSession.modifiedFiles = [];
+  }
+
+  if (!currentSession.modifiedFiles.includes(filePath)) {
+    currentSession.modifiedFiles.push(filePath);
+  }
+}
+
+/** Patterns that indicate test execution in a Bash command */
+const TEST_PATTERNS = [
+  /vitest\s+(run|watch)?/,
+  /jest\b/,
+  /npm\s+test/,
+  /npm\s+run\s+test/,
+  /npx\s+vitest/,
+  /npx\s+jest/,
+  /tsc\s+--noEmit/,
+  /node\s+--check\s/,
+  /bun\s+test/,
+  /pytest\b/,
+];
+
+/**
+ * Track test executions from Bash tool calls.
+ * Marks tested files/directories in session state.
+ * @param {Object} toolData - Normalized tool data
+ * @param {Object} currentSession - Current session state (mutated in place)
+ */
+function trackTestExecutions(toolData, currentSession) {
+  if (toolData.toolName !== 'Bash') return;
+  if (!toolData.success) return;
+
+  const cmd = toolData.arguments?.command || '';
+  const isTest = TEST_PATTERNS.some(pattern => pattern.test(cmd));
+  if (!isTest) return;
+
+  if (!currentSession.testedFiles) {
+    currentSession.testedFiles = [];
+  }
+
+  currentSession.lastTestRun = new Date().toISOString();
+
+  // Extract test target path if provided
+  // e.g., "vitest run src/auth" → mark all modified files under src/auth/ as tested
+  const pathMatch = cmd.match(/(?:vitest|jest|node\s+--check)\s+(?:run\s+)?(\S+)/);
+  const testTarget = pathMatch ? pathMatch[1] : null;
+
+  if (testTarget && currentSession.modifiedFiles) {
+    // Mark files under the test target directory as tested
+    for (const modFile of currentSession.modifiedFiles) {
+      if (modFile.includes(testTarget) && !currentSession.testedFiles.includes(modFile)) {
+        currentSession.testedFiles.push(modFile);
+      }
+    }
+  } else if (!testTarget && currentSession.modifiedFiles) {
+    // Full test run (no specific target) — mark all modified files as tested
+    for (const modFile of currentSession.modifiedFiles) {
+      if (!currentSession.testedFiles.includes(modFile)) {
+        currentSession.testedFiles.push(modFile);
+      }
+    }
   }
 }
 
@@ -618,22 +690,28 @@ async function postToolUse() {
     // Detect patterns
     const patterns = detector.detectPatterns(toolData);
 
-    // Update session context (for quota tracking)
+    // Update session context (for quota tracking) — returns sync data, writes async
     const sessionContext = updateSessionContext(toolData);
 
     // Detect anomalies
     const anomalies = detectAnomalies(toolData, sessionContext);
 
+    // Fire async writes in parallel
+    const pendingWrites = [];
+
     // Update recommendations incrementally
     if (patterns.length > 0 || anomalies.length > 0) {
-      updateRecommendations(patterns, anomalies);
+      pendingWrites.push(updateRecommendations(patterns, anomalies));
     }
 
-    // Update current session
+    // Update current session (async write)
     const updatedSession = updateCurrentSession(toolData, patterns, anomalies);
 
     // Check token threshold and save key points if needed
     checkAndSaveKeyPoints(updatedSession, sessionContext);
+
+    // Wait for all async writes to complete before exit
+    await Promise.all(pendingWrites);
 
     // Silent exit
     process.exit(0);

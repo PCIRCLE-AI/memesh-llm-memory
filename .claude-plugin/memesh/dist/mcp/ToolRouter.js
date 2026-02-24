@@ -1,6 +1,7 @@
 import { ValidationError, NotFoundError, OperationError } from '../errors/index.js';
 import { handleCloudSync, CloudSyncInputSchema } from './tools/memesh-cloud-sync.js';
 import { handleAgentRegister, AgentRegisterInputSchema } from './tools/memesh-agent-register.js';
+import { handleMemeshMetrics, MemeshMetricsInputSchema } from './tools/memesh-metrics.js';
 import { logger } from '../utils/logger.js';
 const TOOL_NAME_REGEX = /^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$/;
 const TOOL_NAME_MAX_LENGTH = 64;
@@ -179,6 +180,13 @@ export class ToolRouter {
                 throw new ValidationError(`Invalid input for ${resolvedToolName}: ${validationResult.error.message}`, { component: 'ToolRouter', method: 'dispatch', toolName: resolvedToolName, zodError: validationResult.error });
             }
             return handleAgentRegister(validationResult.data);
+        }
+        if (resolvedToolName === 'memesh-metrics') {
+            const validationResult = MemeshMetricsInputSchema.safeParse(args);
+            if (!validationResult.success) {
+                throw new ValidationError(`Invalid input for ${resolvedToolName}: ${validationResult.error.message}`, { component: 'ToolRouter', method: 'dispatch', toolName: resolvedToolName, zodError: validationResult.error });
+            }
+            return handleMemeshMetrics(validationResult.data);
         }
         const safeName = sanitizeToolNameForError(resolvedToolName);
         throw new NotFoundError(`Unknown tool: ${safeName}`, 'tool', safeName);

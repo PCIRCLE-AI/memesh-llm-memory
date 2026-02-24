@@ -75,24 +75,35 @@ export function getAllToolDefinitions(): MCPToolDefinition[] {
 
   const buddyDoTool: MCPToolDefinition = {
     name: 'buddy-do',
-    description: 'Execute development tasks with context-aware analysis and memory integration',
+    description: `Smart task analysis with memory-enriched proposals.
+
+Analyzes the task description, detects the task type (bug-fix, feature, refactor, test, etc.),
+queries the knowledge graph for related context, and returns an enriched proposal for user review.
+
+Follows "propose, don't execute" pattern — the enhanced prompt is returned for confirmation,
+not auto-executed. User reviews the proposal and confirms or modifies before proceeding.
+
+Examples:
+- buddy-do "fix the auth bug" → detects bug-fix, recalls JWT context, suggests debugging approach
+- buddy-do "add user dashboard" → detects feature, recalls related UI work, suggests planning approach
+- buddy-do "refactor payment service" → detects refactor, recalls payment patterns, suggests review-first approach`,
     inputSchema: {
       type: 'object' as const,
       properties: {
         task: {
           type: 'string',
-          description: 'Task description to execute (e.g., "setup authentication", "fix login bug")',
+          description: 'Task description to analyze and enrich (e.g., "setup authentication", "fix login bug")',
         },
       },
       required: ['task'],
     },
     outputSchema: OutputSchemas.buddyDo,
     annotations: {
-      title: 'Smart Task Router',
-      readOnlyHint: false,      // May generate modification suggestions
-      destructiveHint: false,   // Does not directly execute destructive operations
-      idempotentHint: false,    // Results may vary based on context
-      openWorldHint: true,      // Can handle open-ended tasks
+      title: 'Smart Task Analyzer',
+      readOnlyHint: true,       // Returns proposal only, does not execute
+      destructiveHint: false,
+      idempotentHint: false,    // Results may vary based on KG context
+      openWorldHint: true,
     },
   };
 
@@ -569,6 +580,44 @@ Requires MEMESH_API_KEY to be configured.`,
   };
 
   // ========================================
+  // Observability Tools
+  // ========================================
+
+  const memeshMetricsTool: MCPToolDefinition = {
+    name: 'memesh-metrics',
+    description: `View MeMesh session metrics, routing configuration, and memory status.
+
+Returns structured data about:
+- Current session: modified files, tested files, code review status
+- Routing: active model rules, planning enforcement, dry-run gate, recent audit log
+- Memory: knowledge graph size and status
+
+Use section parameter to focus on specific areas:
+- "all" (default): Everything
+- "session": Current session state only
+- "routing": Routing config and audit log only
+- "memory": Knowledge graph status only`,
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        section: {
+          type: 'string',
+          enum: ['all', 'session', 'routing', 'memory'],
+          description: 'Which metrics section to return (default: "all")',
+        },
+      },
+    },
+    outputSchema: OutputSchemas.memeshMetrics,
+    annotations: {
+      title: 'Session Metrics',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+  };
+
+  // ========================================
   // Return all tools in priority order
   // ========================================
 
@@ -593,5 +642,8 @@ Requires MEMESH_API_KEY to be configured.`,
 
     // Test Generation Tools
     generateTestsTool,
+
+    // Observability
+    memeshMetricsTool,
   ];
 }

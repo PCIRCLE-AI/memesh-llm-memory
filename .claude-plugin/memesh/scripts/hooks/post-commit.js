@@ -13,7 +13,7 @@
 import {
   MEMESH_DB_PATH,
   readStdin,
-  sqliteQuery,
+  sqliteBatchEntity,
   getDateString,
   logError,
   logMemorySave,
@@ -83,7 +83,8 @@ function getLatestCommitInfo() {
 // ============================================================================
 
 /**
- * Save commit context to MeMesh knowledge graph
+ * Save commit context to MeMesh knowledge graph.
+ * Uses sqliteBatchEntity for performance (2 spawns instead of 8+).
  * @param {Object} commitInfo - Commit details
  * @returns {boolean} True if saved
  */
@@ -95,7 +96,6 @@ function saveCommitToKG(commitInfo) {
 
     const { hash, subject, body, filesChanged, diffStat } = commitInfo;
     const shortHash = hash.substring(0, 7);
-    const now = new Date().toISOString();
     const entityName = `Commit ${shortHash}: ${subject}`;
 
     // Build observations
@@ -129,7 +129,6 @@ function saveCommitToKG(commitInfo) {
     }
 
     if (diffStat) {
-      // Extract just the summary line (e.g., "5 files changed, 120 insertions(+), 30 deletions(-)")
       const statLines = diffStat.split('\n');
       const summaryLine = statLines[statLines.length - 1]?.trim();
       if (summaryLine) {
@@ -137,43 +136,24 @@ function saveCommitToKG(commitInfo) {
       }
     }
 
-    // Create entity
-    const insertEntity = 'INSERT INTO entities (name, type, created_at, metadata) VALUES (?, ?, ?, ?)';
+    // Batch: entity + observations + tags in 2 process spawns (was 8+)
     const metadata = JSON.stringify({
       hash: shortHash,
       fullHash: hash,
       filesCount: filesChanged.length,
       source: 'post-commit-hook',
     });
-    sqliteQuery(MEMESH_DB_PATH, insertEntity, [entityName, 'commit', now, metadata]);
 
-    // Get entity ID
-    const entityIdResult = sqliteQuery(
-      MEMESH_DB_PATH,
-      'SELECT id FROM entities WHERE name = ?',
-      [entityName]
-    );
-    const entityId = parseInt(entityIdResult, 10);
-    if (isNaN(entityId)) return false;
-
-    // Add observations
-    for (const obs of observations) {
-      sqliteQuery(
-        MEMESH_DB_PATH,
-        'INSERT INTO observations (entity_id, content, created_at) VALUES (?, ?, ?)',
-        [entityId, obs, now]
-      );
-    }
-
-    // Add tags
     const tags = ['commit', 'auto-tracked', `date:${getDateString()}`, 'scope:project'];
-    for (const tag of tags) {
-      sqliteQuery(
-        MEMESH_DB_PATH,
-        'INSERT INTO tags (entity_id, tag) VALUES (?, ?)',
-        [entityId, tag]
-      );
-    }
+
+    const entityId = sqliteBatchEntity(
+      MEMESH_DB_PATH,
+      { name: entityName, type: 'commit', metadata },
+      observations,
+      tags
+    );
+
+    if (entityId === null) return false;
 
     logMemorySave(`Commit saved: ${shortHash} - ${subject} (${filesChanged.length} files)`);
     return true;

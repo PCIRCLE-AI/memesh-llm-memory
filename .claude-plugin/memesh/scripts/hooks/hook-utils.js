@@ -349,5 +349,158 @@ export function readStdin(timeout = 3000) {
   });
 }
 
+// ============================================================================
+// Batch SQLite Operations
+// ============================================================================
+
+/**
+ * Execute multiple SQLite statements in a single process spawn.
+ * Wraps all statements in BEGIN/COMMIT for atomicity.
+ *
+ * Performance: 1 process spawn instead of N, saving ~100ms per avoided spawn.
+ *
+ * @param {string} dbPath - Path to SQLite database
+ * @param {Array<{query: string, params?: Array}>} statements - SQL statements
+ * @param {Object} options - Options
+ * @param {number} options.timeout - Timeout in ms (default: 10000)
+ * @param {number} options.chunkSize - Max statements per batch (default: 50)
+ * @returns {string} Combined output (empty string on error)
+ */
+export function sqliteBatch(dbPath, statements, options = {}) {
+  const { timeout = 10000, chunkSize = 50 } = options;
+
+  if (!statements || statements.length === 0) return '';
+
+  try {
+    const chunks = [];
+    for (let i = 0; i < statements.length; i += chunkSize) {
+      chunks.push(statements.slice(i, i + chunkSize));
+    }
+
+    let output = '';
+    for (const chunk of chunks) {
+      const batchSQL = ['BEGIN TRANSACTION;'];
+
+      for (const stmt of chunk) {
+        let finalQuery = stmt.query;
+        if (stmt.params && stmt.params.length > 0) {
+          let paramIndex = 0;
+          finalQuery = stmt.query.replace(/\?/g, () => {
+            if (paramIndex < stmt.params.length) {
+              return escapeSQL(stmt.params[paramIndex++]);
+            }
+            return '?';
+          });
+        }
+        if (!finalQuery.trim().endsWith(';')) {
+          finalQuery += ';';
+        }
+        batchSQL.push(finalQuery);
+      }
+
+      batchSQL.push('COMMIT;');
+
+      const result = execFileSync('sqlite3', [dbPath, batchSQL.join('\n')], {
+        encoding: 'utf-8',
+        timeout,
+      });
+      if (result.trim()) {
+        output += result.trim() + '\n';
+      }
+    }
+
+    return output.trim();
+  } catch (error) {
+    logError('sqliteBatch', error);
+    return '';
+  }
+}
+
+/**
+ * Insert entity + observations + tags in a single batch.
+ * Common pattern used by post-commit and stop hooks.
+ *
+ * Uses a two-step approach: first INSERT entity and get ID,
+ * then batch all observations and tags.
+ *
+ * @param {string} dbPath - Path to SQLite database
+ * @param {Object} entity - Entity to insert
+ * @param {string} entity.name - Entity name
+ * @param {string} entity.type - Entity type
+ * @param {string} entity.metadata - JSON metadata string
+ * @param {Array<string>} observations - Observation content strings
+ * @param {Array<string>} tags - Tag strings
+ * @returns {number|null} Entity ID, or null on failure
+ */
+export function sqliteBatchEntity(dbPath, entity, observations = [], tags = []) {
+  try {
+    const now = new Date().toISOString();
+
+    // Step 1: Insert entity (need the ID for subsequent inserts)
+    sqliteQuery(
+      dbPath,
+      'INSERT INTO entities (name, type, created_at, metadata) VALUES (?, ?, ?, ?)',
+      [entity.name, entity.type, now, entity.metadata || '{}']
+    );
+
+    const entityIdResult = sqliteQuery(
+      dbPath,
+      'SELECT id FROM entities WHERE name = ?',
+      [entity.name]
+    );
+    const entityId = parseInt(entityIdResult, 10);
+    if (isNaN(entityId)) return null;
+
+    // Step 2: Batch all observations and tags in one spawn
+    const statements = [];
+
+    for (const obs of observations) {
+      statements.push({
+        query: 'INSERT INTO observations (entity_id, content, created_at) VALUES (?, ?, ?)',
+        params: [entityId, obs, now],
+      });
+    }
+
+    for (const tag of tags) {
+      statements.push({
+        query: 'INSERT INTO tags (entity_id, tag) VALUES (?, ?)',
+        params: [entityId, tag],
+      });
+    }
+
+    if (statements.length > 0) {
+      sqliteBatch(dbPath, statements);
+    }
+
+    return entityId;
+  } catch (error) {
+    logError('sqliteBatchEntity', error);
+    return null;
+  }
+}
+
+// ============================================================================
+// Async File I/O
+// ============================================================================
+
+/**
+ * Write JSON file asynchronously (non-blocking).
+ * Returns a promise so callers can await if needed.
+ * @param {string} filePath - Path to JSON file
+ * @param {*} data - Data to write
+ * @returns {Promise<boolean>} True if successful
+ */
+export function writeJSONFileAsync(filePath, data) {
+  return new Promise((resolve) => {
+    const content = JSON.stringify(data, null, 2);
+    fs.writeFile(filePath, content, 'utf-8', (err) => {
+      if (err) {
+        logError(`Async write error ${path.basename(filePath)}`, err);
+      }
+      resolve(!err);
+    });
+  });
+}
+
 // Ensure state directory exists on module load
 ensureDir(STATE_DIR);

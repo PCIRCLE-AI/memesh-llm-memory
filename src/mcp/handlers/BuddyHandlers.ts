@@ -138,7 +138,7 @@ export class BuddyHandlers {
     }
 
     try {
-      return await executeBuddyDo(validatedInput, this.formatter, this.autoTracker);
+      return await executeBuddyDo(validatedInput, this.formatter, this.autoTracker, this.knowledgeGraph);
     } catch (error) {
       logError(error, {
         component: 'BuddyHandlers',

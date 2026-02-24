@@ -198,5 +198,35 @@ export const OutputSchemas = {
         },
         required: ['success'],
     },
+    memeshMetrics: {
+        type: 'object',
+        properties: {
+            session: {
+                type: 'object',
+                properties: {
+                    current: { type: 'object' },
+                    lastSessionCached: { type: 'boolean' },
+                },
+            },
+            routing: {
+                type: 'object',
+                properties: {
+                    configLoaded: { type: 'boolean' },
+                    modelRules: { type: 'number' },
+                    backgroundRules: { type: 'number' },
+                    planningEnforcement: { type: 'boolean' },
+                    dryRunGate: { type: 'boolean' },
+                    recentAuditEntries: { type: 'array', items: { type: 'string' } },
+                },
+            },
+            memory: {
+                type: 'object',
+                properties: {
+                    knowledgeGraphExists: { type: 'boolean' },
+                    dbSizeKB: { type: 'number' },
+                },
+            },
+        },
+    },
 };
 //# sourceMappingURL=OutputSchemas.js.map

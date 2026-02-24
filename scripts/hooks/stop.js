@@ -22,6 +22,8 @@ import {
   readJSONFile,
   writeJSONFile,
   sqliteQuery,
+  sqliteBatch,
+  sqliteBatchEntity,
   calculateDuration,
   getDateString,
   ensureDir,
@@ -38,6 +40,7 @@ const CURRENT_SESSION_FILE = path.join(STATE_DIR, 'current-session.json');
 const RECOMMENDATIONS_FILE = path.join(STATE_DIR, 'recommendations.json');
 const SESSION_CONTEXT_FILE = path.join(STATE_DIR, 'session-context.json');
 const SESSIONS_ARCHIVE_DIR = path.join(STATE_DIR, 'sessions');
+const LAST_SESSION_CACHE_FILE = path.join(STATE_DIR, 'last-session-summary.json');
 
 // Ensure archive directory exists
 if (!fs.existsSync(SESSIONS_ARCHIVE_DIR)) {
@@ -392,7 +395,8 @@ function extractSessionKeyPoints(sessionState, patterns) {
 }
 
 /**
- * Save session key points to MeMesh on session end
+ * Save session key points to MeMesh on session end.
+ * Uses sqliteBatchEntity for performance (2 spawns instead of N).
  * @param {Object} sessionState - Current session state
  * @param {Array} patterns - Analyzed patterns
  * @returns {boolean} True if saved successfully
@@ -409,10 +413,7 @@ function saveSessionKeyPointsOnEnd(sessionState, patterns) {
       return false;
     }
 
-    const now = new Date().toISOString();
     const entityName = `session_end_${Date.now()}`;
-
-    // Calculate session duration
     const startTime = new Date(sessionState.startTime);
     const duration = Math.round((Date.now() - startTime.getTime()) / 1000 / 60);
 
@@ -423,34 +424,19 @@ function saveSessionKeyPointsOnEnd(sessionState, patterns) {
       patternCount: patterns.length,
     });
 
-    // Create entity using parameterized query
-    const insertEntity = 'INSERT INTO entities (name, type, created_at, metadata) VALUES (?, ?, ?, ?)';
-    sqliteQuery(MEMESH_DB_PATH, insertEntity, [entityName, 'session_keypoint', now, metadata]);
-
-    // Get the entity ID using parameterized query
-    const entityIdResult = sqliteQuery(
-      MEMESH_DB_PATH,
-      'SELECT id FROM entities WHERE name = ?',
-      [entityName]
-    );
-
-    const entityId = parseInt(entityIdResult, 10);
-    if (isNaN(entityId)) {
-      return false;
-    }
-
-    // Add observations for each key point
-    for (const point of keyPoints) {
-      const insertObs = 'INSERT INTO observations (entity_id, content, created_at) VALUES (?, ?, ?)';
-      sqliteQuery(MEMESH_DB_PATH, insertObs, [entityId, point, now]);
-    }
-
-    // Add tags for easier retrieval
     const today = getDateString();
     const tags = ['session_end', 'auto_saved', today];
-    for (const tag of tags) {
-      const insertTag = 'INSERT INTO tags (entity_id, tag) VALUES (?, ?)';
-      sqliteQuery(MEMESH_DB_PATH, insertTag, [entityId, tag]);
+
+    // Batch: entity + observations + tags in 2 process spawns (was ~10)
+    const entityId = sqliteBatchEntity(
+      MEMESH_DB_PATH,
+      { name: entityName, type: 'session_keypoint', metadata },
+      keyPoints,
+      tags
+    );
+
+    if (entityId === null) {
+      return false;
     }
 
     console.log(`🧠 MeMesh: Saved ${keyPoints.length} key points to memory`);
@@ -462,7 +448,8 @@ function saveSessionKeyPointsOnEnd(sessionState, patterns) {
 }
 
 /**
- * Clean up old key points (older than retention period)
+ * Clean up old key points (older than retention period).
+ * Uses batch delete for performance.
  */
 function cleanupOldKeyPoints() {
   try {
@@ -474,7 +461,7 @@ function cleanupOldKeyPoints() {
     cutoffDate.setDate(cutoffDate.getDate() - THRESHOLDS.RETENTION_DAYS);
     const cutoffISO = cutoffDate.toISOString();
 
-    // Count old entries using parameterized query
+    // Count old entries
     const countResult = sqliteQuery(
       MEMESH_DB_PATH,
       'SELECT COUNT(*) FROM entities WHERE type = ? AND created_at < ?',
@@ -484,31 +471,53 @@ function cleanupOldKeyPoints() {
     const oldCount = parseInt(countResult, 10) || 0;
 
     if (oldCount > 0) {
-      // Get IDs of old entities
-      const oldIdsResult = sqliteQuery(
-        MEMESH_DB_PATH,
-        'SELECT id FROM entities WHERE type = ? AND created_at < ?',
-        ['session_keypoint', cutoffISO]
-      );
-
-      const oldIds = oldIdsResult.split('\n').filter(Boolean);
-
-      // Delete tags for old entities
-      for (const id of oldIds) {
-        sqliteQuery(MEMESH_DB_PATH, 'DELETE FROM tags WHERE entity_id = ?', [id]);
-      }
-
-      // Delete old entities (observations cascade automatically due to FK)
-      sqliteQuery(
-        MEMESH_DB_PATH,
-        'DELETE FROM entities WHERE type = ? AND created_at < ?',
-        ['session_keypoint', cutoffISO]
-      );
+      // Batch delete: tags + entities in 2 statements (was N+2 spawns)
+      sqliteBatch(MEMESH_DB_PATH, [
+        {
+          query: `DELETE FROM tags WHERE entity_id IN (
+            SELECT id FROM entities WHERE type = ? AND created_at < ?
+          )`,
+          params: ['session_keypoint', cutoffISO],
+        },
+        {
+          query: 'DELETE FROM entities WHERE type = ? AND created_at < ?',
+          params: ['session_keypoint', cutoffISO],
+        },
+      ]);
 
       console.log(`🧠 MeMesh: Cleaned up ${oldCount} expired memories (>${THRESHOLDS.RETENTION_DAYS} days)`);
     }
   } catch (error) {
     console.error(`🧠 MeMesh: Cleanup failed: ${error.message}`);
+  }
+}
+
+// ============================================================================
+// Session Cache (for fast startup)
+// ============================================================================
+
+/**
+ * Write session summary cache for fast recall on next startup.
+ * Session-start.js reads this instead of querying SQLite.
+ * @param {Object} sessionState - Current session state
+ * @param {Array} patterns - Analyzed patterns
+ */
+function writeSessionCache(sessionState, patterns) {
+  try {
+    const keyPoints = extractSessionKeyPoints(sessionState, patterns);
+    const startTime = new Date(sessionState.startTime);
+    const duration = Math.round((Date.now() - startTime.getTime()) / 1000 / 60);
+
+    const cache = {
+      savedAt: new Date().toISOString(),
+      duration: `${duration}m`,
+      toolCount: sessionState.toolCalls?.length || 0,
+      keyPoints,
+    };
+
+    writeJSONFile(LAST_SESSION_CACHE_FILE, cache);
+  } catch (error) {
+    logError('writeSessionCache', error);
   }
 }
 
@@ -634,6 +643,9 @@ function stopHook() {
 
   // Save session key points to MeMesh
   saveSessionKeyPointsOnEnd(sessionState, patterns);
+
+  // Write session cache for fast startup next time (1A.2)
+  writeSessionCache(sessionState, patterns);
 
   // Clean up old key points (>30 days)
   cleanupOldKeyPoints();

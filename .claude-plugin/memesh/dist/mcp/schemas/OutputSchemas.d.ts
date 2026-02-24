@@ -347,6 +347,59 @@ export declare const OutputSchemas: {
         };
         required: string[];
     };
+    memeshMetrics: {
+        type: "object";
+        properties: {
+            session: {
+                type: string;
+                properties: {
+                    current: {
+                        type: string;
+                    };
+                    lastSessionCached: {
+                        type: string;
+                    };
+                };
+            };
+            routing: {
+                type: string;
+                properties: {
+                    configLoaded: {
+                        type: string;
+                    };
+                    modelRules: {
+                        type: string;
+                    };
+                    backgroundRules: {
+                        type: string;
+                    };
+                    planningEnforcement: {
+                        type: string;
+                    };
+                    dryRunGate: {
+                        type: string;
+                    };
+                    recentAuditEntries: {
+                        type: string;
+                        items: {
+                            type: string;
+                        };
+                    };
+                };
+            };
+            memory: {
+                type: string;
+                properties: {
+                    knowledgeGraphExists: {
+                        type: string;
+                    };
+                    dbSizeKB: {
+                        type: string;
+                    };
+                };
+            };
+        };
+    };
 };
 export type BuddyDoOutput = {
     routing: {

@@ -37,6 +37,10 @@ const MCP_SETTINGS_FILE = path.join(HOME_DIR, '.claude', 'mcp_settings.json');
 const RECOMMENDATIONS_FILE = path.join(STATE_DIR, 'recommendations.json');
 const SESSION_CONTEXT_FILE = path.join(STATE_DIR, 'session-context.json');
 const CURRENT_SESSION_FILE = path.join(STATE_DIR, 'current-session.json');
+const LAST_SESSION_CACHE_FILE = path.join(STATE_DIR, 'last-session-summary.json');
+
+/** Maximum cache age: 7 days */
+const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 // ============================================================================
 // MeMesh Status Check
@@ -159,22 +163,59 @@ function displayCCBStatus(ccbStatus) {
 // ============================================================================
 
 /**
- * Recall recent session key points from MeMesh
- * Uses parameterized queries to prevent SQL injection
+ * Try to read session summary from cache file (fast path).
+ * Cache is written by stop.js on session end.
  * @returns {{ entityName: string, createdAt: string, metadata: object, keyPoints: string[] } | null}
  */
-function recallRecentKeyPoints() {
+function recallFromCache() {
+  try {
+    if (!fs.existsSync(LAST_SESSION_CACHE_FILE)) {
+      return null;
+    }
+
+    const cache = readJSONFile(LAST_SESSION_CACHE_FILE, null);
+    if (!cache || !cache.savedAt || !cache.keyPoints) {
+      return null;
+    }
+
+    // Check staleness
+    const cacheAge = Date.now() - new Date(cache.savedAt).getTime();
+    if (cacheAge > CACHE_MAX_AGE_MS) {
+      // Stale cache — delete it
+      try { fs.unlinkSync(LAST_SESSION_CACHE_FILE); } catch { /* ignore */ }
+      return null;
+    }
+
+    return {
+      entityName: 'session_cache',
+      createdAt: cache.savedAt,
+      metadata: {
+        duration: cache.duration,
+        toolCount: cache.toolCount,
+      },
+      keyPoints: cache.keyPoints,
+    };
+  } catch (error) {
+    logError('recallFromCache', error);
+    return null;
+  }
+}
+
+/**
+ * Recall recent session key points from MeMesh (slow path — SQLite query).
+ * Used as fallback when cache is not available.
+ * @returns {{ entityName: string, createdAt: string, metadata: object, keyPoints: string[] } | null}
+ */
+function recallFromSQLite() {
   try {
     if (!fs.existsSync(MEMESH_DB_PATH)) {
       return null;
     }
 
-    // Calculate cutoff date for recall
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - THRESHOLDS.RECALL_DAYS);
     const cutoffISO = cutoffDate.toISOString();
 
-    // Query for most recent session_keypoint entity using parameterized query
     const query = `
       SELECT id, name, metadata, created_at
       FROM entities
@@ -193,7 +234,6 @@ function recallRecentKeyPoints() {
       return null;
     }
 
-    // Parse result (format: id|name|metadata|created_at)
     const parts = entityResult.split('|');
     if (parts.length < 4) {
       return null;
@@ -201,13 +241,11 @@ function recallRecentKeyPoints() {
 
     const [entityId, entityName, metadata, createdAt] = parts;
 
-    // Query observations using parameterized query
     const obsQuery = 'SELECT content FROM observations WHERE entity_id = ? ORDER BY created_at ASC';
     const obsResult = sqliteQuery(MEMESH_DB_PATH, obsQuery, [entityId]);
 
     const keyPoints = obsResult ? obsResult.split('\n').filter(Boolean) : [];
 
-    // Parse metadata
     let parsedMetadata = {};
     try {
       parsedMetadata = JSON.parse(metadata || '{}');
@@ -222,9 +260,24 @@ function recallRecentKeyPoints() {
       keyPoints,
     };
   } catch (error) {
-    logError('recallRecentKeyPoints', error);
+    logError('recallFromSQLite', error);
     return null;
   }
+}
+
+/**
+ * Recall recent session key points — cache-first, SQLite fallback.
+ * @returns {{ entityName: string, createdAt: string, metadata: object, keyPoints: string[] } | null}
+ */
+function recallRecentKeyPoints() {
+  // Fast path: read from cache file (no sqlite3 spawn)
+  const cached = recallFromCache();
+  if (cached) {
+    return cached;
+  }
+
+  // Slow path: query SQLite
+  return recallFromSQLite();
 }
 
 /**

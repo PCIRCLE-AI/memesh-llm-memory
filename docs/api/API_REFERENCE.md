@@ -2110,7 +2110,7 @@ interface ErrorResponse {
   code: "OPERATION_FAILED",
   details: {
     reason: "Connection timeout",
-    path: "~/.memesh/knowledge.db"
+    path: "~/.memesh/database.db"
   }
 }
 
@@ -2468,7 +2468,7 @@ await createRelations({
 - Peak usage during memesh-generate-tests: ~200-300MB
 
 **Storage**:
-- Database file: `~/.memesh/knowledge.db`
+- Database file: `~/.memesh/database.db`
 - Grows with entities and relations
 - Typical project: 1-50MB
 - Use SQLite VACUUM to optimize

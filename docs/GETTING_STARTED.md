@@ -87,14 +87,14 @@ buddy-help
 
 **Expected output:**
 ```
-MeMesh v2.6 - Persistent Memory for Claude Code
+MeMesh v2.9.0 - Persistent Memory for Claude Code
 
 Available Commands:
   buddy-do <task>        - Execute any development task
   buddy-remember <query> - Recall project decisions and patterns
-  buddy-help            - Show this help
+  buddy-help             - Show this help
 
-  memesh-generate-tests <file> - Auto-generate comprehensive tests
+  memesh-generate-tests  - Auto-generate comprehensive tests
 
   ... (8 tools total)
 
@@ -232,7 +232,7 @@ buddy-do "review src/auth.ts for security"
 
 **Generate tests:**
 ```bash
-memesh-generate-tests "src/utils/validation.ts"
+memesh-generate-tests --code "function add(a, b) { return a + b; }"
 ```
 
 **Refactor code:**
@@ -314,7 +314,7 @@ Now that MeMesh is running, explore more:
 ### Advanced Topics
 - Knowledge graph queries and entity management
 - Memory best practices and organization
-- Cloud sync for cross-device memory
+- Error tracking and mistake prevention
 
 ---
 
@@ -327,7 +327,7 @@ buddy-do "<task>"             # Execute any development task
 buddy-remember "<query>"      # Query project memory
 
 # Testing
-memesh-generate-tests "<file>"       # Auto-generate tests for a file
+memesh-generate-tests          # Auto-generate tests (provide specification or code)
 
 # Status
 "Show MeMesh status"          # Connection and capability status

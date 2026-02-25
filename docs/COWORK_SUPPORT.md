@@ -7,12 +7,11 @@ MeMesh plugin can run in **Claude Desktop Cowork** environments, but with limite
 ### ✅ What Works
 
 - **MCP Server Startup**: Server initializes successfully in cloud-only mode
-- **Basic Commands**: Non-memory tools (buddy-help, list-skills, etc.) work normally
-- **Cloud Sync**: When `MEMESH_API_KEY` is configured, cloud sync functionality is available
+- **Basic Commands**: Non-memory tools (buddy-help, memesh-generate-tests) work normally
 
 ### ⚠️ Current Limitations
 
-- **Memory Tools Disabled**: Local memory operations (recall-memory, create-entities, buddy-do, buddy-remember) are currently disabled
+- **Memory Tools Disabled**: Local memory operations (buddy-do, buddy-remember, memesh-create-entities, memesh-record-mistake, memesh-hook-tool-use, memesh-metrics) are currently disabled
 - **No Local Knowledge Graph**: better-sqlite3 cannot compile in Cowork sandbox (read-only filesystem + blocked node-gyp)
 - **No Embeddings/Vector Search**: onnxruntime-node and sqlite-vec also unavailable (native modules)
 
@@ -24,9 +23,8 @@ MeMesh plugin can run in **Claude Desktop Cowork** environments, but with limite
 ├─────────────────────────────────────────────────────┤
 │ ✅ Local SQLite (better-sqlite3)                    │
 │ ✅ Full Knowledge Graph                             │
-│ ✅ All memory tools                                 │
+│ ✅ All 8 MCP tools                                  │
 │ ✅ Embeddings & vector search                       │
-│ ✅ Optional cloud sync                              │
 └─────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────┐
@@ -34,8 +32,7 @@ MeMesh plugin can run in **Claude Desktop Cowork** environments, but with limite
 ├─────────────────────────────────────────────────────┤
 │ ⚠️  Cloud-only mode (no local SQLite)               │
 │ ❌ Memory tools disabled                            │
-│ ✅ Basic commands work                              │
-│ ✅ Cloud sync available (if MEMESH_API_KEY set)     │
+│ ✅ Basic commands work (buddy-help, generate-tests) │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -117,8 +114,7 @@ To use local memory tools:
 1. Install better-sqlite3: npm install better-sqlite3
 2. Restart the MCP server
 
-OR use cloud sync tools instead:
-- memesh-cloud-sync: Sync with cloud storage (requires MEMESH_API_KEY)
+Local SQLite storage is required for memory features.
 ```
 
 ### When Basic Commands are Called
@@ -209,5 +205,5 @@ When reporting Cowork-specific issues, select **"Claude Desktop (Cowork)"** in t
 
 ---
 
-**Last Updated**: 2026-02-16
+**Last Updated**: 2026-02-25
 **Status**: Partial support (cloud-only mode functional, memory tools disabled)

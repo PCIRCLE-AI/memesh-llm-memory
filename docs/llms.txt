@@ -14,7 +14,7 @@ MeMesh is a Claude Code plugin that provides persistent memory via MCP (Model Co
 **License**: MIT
 **Language**: TypeScript
 **Platform**: Node.js 20+
-**Latest Version**: 2.8.9 (2026-02-12)
+**Latest Version**: 2.9.0 (2026-02-25)
 
 ## Quick Start
 
@@ -83,17 +83,17 @@ New CLI tools for managing MCP server processes:
 
 ## Available Commands
 
-### Buddy Commands (Direct Invocation)
+### Buddy Commands (MCP Tools)
 - `buddy-do "task description"` - Execute task with memory context
 - `buddy-remember "query"` - Search project memory
 - `buddy-help` - Show available commands
-- `memesh-create-entities` - Add entities to knowledge graph
-- `create-relations` - Add relations to knowledge graph
-- `add-observations` - Add observations to memory
-- `health-check` - Check system health
 
-### Other Commands
+### MeMesh Tools
+- `memesh-create-entities` - Add entities to knowledge graph
+- `memesh-record-mistake` - Record errors for learning
+- `memesh-hook-tool-use` - Hook for workflow automation (internal)
 - `memesh-generate-tests` - Generate test cases
+- `memesh-metrics` - View session metrics
 
 ## Technical Architecture
 
@@ -133,7 +133,7 @@ Search project memory with semantic queries.
 ```typescript
 {
   "query": string,        // Search query
-  "limit"?: number       // Max results (default: 5)
+  "limit"?: number       // Max results (default: 10, max: 50)
 }
 ```
 
@@ -141,8 +141,7 @@ Search project memory with semantic queries.
 Execute task with automatic capability routing.
 ```typescript
 {
-  "taskDescription": string,  // Task to execute
-  "context"?: object         // Additional context
+  "task": string          // Task description to process
 }
 ```
 
@@ -160,17 +159,16 @@ Add entities to knowledge graph.
 }
 ```
 
-#### create-relations
-Add relations between entities.
+#### memesh-record-mistake
+Record errors and mistakes for learning.
 ```typescript
 {
-  "relations": [
-    {
-      "from": string,        // Source entity
-      "to": string,          // Target entity
-      "relationType": string  // Relation type
-    }
-  ]
+  "action": string,          // What action the AI took
+  "errorType": string,       // Error classification (e.g., "assumption-error")
+  "userCorrection": string,  // User's correction
+  "correctMethod": string,   // What should have been done
+  "impact": string,          // Impact of the mistake
+  "preventionMethod": string // How to prevent in future
 }
 ```
 
@@ -208,7 +206,7 @@ npm run processes:kill     # Kill all CCB processes
 ### MCP Server Not Connecting
 1. Check configuration: `npm run processes:config`
 2. Verify stdio mode: `npm run verify:mcp`
-3. Check logs in `~/.claude-code-buddy/logs/`
+3. Check MCP logs in `~/.cache/claude/mcp-logs/`
 4. Ensure no orphaned processes: `npm run processes:orphaned`
 
 ### Installation Issues
@@ -225,20 +223,21 @@ Process management guide: `docs/MCP_PROCESS_MANAGEMENT.md`
 
 ## Recent Updates
 
-### v2.8.8 (2026-02-12)
-- Documentation cleanup and accuracy fixes
-- Security alert resolutions
-- Release script macOS compatibility fix
+### v2.9.0 (2026-02-25)
+- MCP Spec 2025-11-25 compliance (outputSchema + annotations for all tools)
+- New tools: memesh-metrics, memesh-generate-tests
+- Cloud sync tools temporarily disabled (service not yet operational)
+- License changed to MIT
+- Comprehensive documentation updates
+- 11 language README translations
 
-### v2.8.4 (2026-02-10)
-- Plugin packaging fixes (version sync across 4 locations)
-- Marketplace registration fix
-- Automated pre-deployment checks
+### v2.8.11 (2026-02-16)
+- Package renamed from @pcircle/claude-code-buddy-mcp to @pcircle/memesh
 
 ### Previous Versions
-- v2.6.4: Rebrand to MeMesh, NPM as @pcircle/memesh
+- v2.8.x: Tool naming unification (memesh-* prefix), vector semantic search
+- v2.6.x: Rebrand to MeMesh, interactive tutorial, setup wizard
 - v2.5.0: Process management CLI tools
-- v2.4.0: Enhanced test parsing and memory deduplication
 
 ## Contributing
 

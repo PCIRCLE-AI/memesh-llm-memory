@@ -64,7 +64,6 @@ describe('Cloud-Only Mode - Integration Tests', () => {
       });
       expect(result.content[0].text).toContain('better-sqlite3 unavailable');
       expect(result.content[0].text).toContain('Install better-sqlite3');
-      expect(result.content[0].text).toContain('memesh-cloud-sync');
     });
 
     it('should return cloud-only error for create-entities tool', async () => {
@@ -140,10 +139,9 @@ describe('Cloud-Only Mode - Integration Tests', () => {
       // Should provide solutions
       expect(errorText).toMatch(/Install better-sqlite3/i);
       expect(errorText).toMatch(/Restart.*MCP server/i);
-      expect(errorText).toMatch(/memesh-cloud-sync/i);
 
-      // Should mention cloud alternative
-      expect(errorText).toMatch(/MEMESH_API_KEY/i);
+      // Should mention local storage requirement
+      expect(errorText).toMatch(/Local SQLite storage is required/i);
     });
 
     it('should use consistent error format across all memory tools', async () => {

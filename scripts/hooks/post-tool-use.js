@@ -27,6 +27,9 @@ import {
   logError,
   logMemorySave,
   getDateString,
+  isPlanFile,
+  parsePlanSteps,
+  derivePlanName,
 } from './hook-utils.js';
 import fs from 'fs';
 import path from 'path';
@@ -662,6 +665,57 @@ function normalizeToolData(raw) {
 }
 
 // ============================================================================
+// Plan File Detection (Beta)
+// ============================================================================
+
+/**
+ * Detect plan file creation and save to KG.
+ * Triggered when Write tool targets a plan file path.
+ * @param {Object} toolData - Normalized tool data
+ */
+function detectPlanFile(toolData) {
+  if (toolData.toolName !== 'Write') return;
+
+  const filePath = toolData.arguments?.file_path;
+  if (!isPlanFile(filePath)) return;
+
+  try {
+    // Read the file content
+    if (!fs.existsSync(filePath)) return;
+    const content = fs.readFileSync(filePath, 'utf-8');
+
+    const steps = parsePlanSteps(content);
+    if (steps.length === 0) return;
+
+    if (!fs.existsSync(MEMESH_DB_PATH)) return;
+
+    const planName = derivePlanName(filePath);
+    const entityName = `Plan: ${planName}`;
+
+    const observations = steps.map(s => `Step ${s.number}: ${s.description}`);
+
+    const metadata = JSON.stringify({
+      sourceFile: filePath,
+      totalSteps: steps.length,
+      completed: steps.filter(s => s.completed).length,
+      status: 'active',
+      stepsDetail: steps,
+    });
+
+    const tags = ['plan', 'active', `plan:${planName}`, 'scope:project'];
+
+    sqliteBatchEntity(MEMESH_DB_PATH,
+      { name: entityName, type: 'workflow_checkpoint', metadata },
+      observations, tags
+    );
+
+    logMemorySave(`Plan detected: ${planName} (${steps.length} steps)`);
+  } catch (error) {
+    logError('detectPlanFile', error);
+  }
+}
+
+// ============================================================================
 // Main PostToolUse Logic
 // ============================================================================
 
@@ -682,6 +736,9 @@ async function postToolUse() {
     if (isCodeReviewInvocation(toolData)) {
       markCodeReviewDone();
     }
+
+    // Detect plan file creation (beta)
+    detectPlanFile(toolData);
 
     // Initialize pattern detector
     const detector = new PatternDetector();

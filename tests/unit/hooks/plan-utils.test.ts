@@ -139,6 +139,52 @@ Some paragraph text here.
     expect(steps).toHaveLength(2);
     expect(steps[0].description).toBe('Set up database');
   });
+
+  it('should skip steps inside code fences', () => {
+    const content = `# Implementation Plan
+## Tasks
+- [ ] Task 1: Set up database
+- [ ] Task 2: Create API
+
+### Task 1: Set up database
+
+**Step 1: Write the failing test**
+
+\`\`\`markdown
+- [ ] Set up auth middleware
+- [ ] Add JWT validation
+- [ ] Write tests
+\`\`\`
+
+**Step 2: Implement**
+
+\`\`\`javascript
+// example code
+const steps = parsePlanSteps(content);
+\`\`\`
+
+### Task 2: Create API
+`;
+    const steps = parsePlanSteps(content);
+    // Should only find 2 checkbox steps + 2 heading steps = 4
+    // NOT the 3 example checkboxes inside the code fence
+    expect(steps).toHaveLength(4);
+    expect(steps[0].description).toBe('Set up database');
+    expect(steps[1].description).toBe('Create API');
+  });
+
+  it('should handle nested code fences and indented fences', () => {
+    const content = `- [ ] Real step one
+\`\`\`
+- [ ] Fake step inside fence
+\`\`\`
+- [ ] Real step two
+`;
+    const steps = parsePlanSteps(content);
+    expect(steps).toHaveLength(2);
+    expect(steps[0].description).toBe('Real step one');
+    expect(steps[1].description).toBe('Real step two');
+  });
 });
 
 describe('matchCommitToStep', () => {

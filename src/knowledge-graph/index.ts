@@ -320,9 +320,11 @@ export class KnowledgeGraph {
         this.vectorEnabled = true;
         logger.info('[KG] Vector search enabled (sqlite-vec loaded)');
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         this.vectorEnabled = false;
-        logger.debug('[KG] Vector search unavailable, using FTS5-only search');
+        logger.debug('[KG] Vector search unavailable, using FTS5-only search', {
+          error: error instanceof Error ? error.message : String(error),
+        });
       });
   }
 
@@ -952,8 +954,35 @@ export class KnowledgeGraph {
     // Validate entity name before any database operations
     this.validateEntityName(name);
 
-    const results = this.searchEntities({ namePattern: name, limit: 1 });
-    return results.length > 0 ? results[0] : null;
+    // Use exact match lookup instead of fuzzy search to prevent
+    // incorrect matches (e.g., "auth" matching "authentication")
+    const row = this.db.prepare(`
+      SELECT e.*,
+        (SELECT json_group_array(content) FROM observations o WHERE o.entity_id = e.id) as observations_json,
+        (SELECT json_group_array(tag) FROM tags t WHERE t.entity_id = e.id) as tags_json
+      FROM entities e
+      WHERE e.name = ?
+    `).get(name) as {
+      id: number;
+      name: string;
+      type: string;
+      observations_json: string | null;
+      tags_json: string | null;
+      metadata: string | null;
+      created_at: string;
+    } | undefined;
+
+    if (!row) return null;
+
+    return {
+      id: row.id,
+      name: row.name,
+      entityType: row.type as EntityType,
+      observations: safeJsonParse<string[]>(row.observations_json, []).filter(value => value),
+      tags: safeJsonParse<string[]>(row.tags_json, []).filter(value => value),
+      metadata: row.metadata ? safeJsonParse<Record<string, unknown>>(row.metadata, {}) : {},
+      createdAt: new Date(row.created_at)
+    };
   }
 
   /**
@@ -1110,8 +1139,11 @@ export class KnowledgeGraph {
       if (this.vectorEnabled && this.vectorExt) {
         try {
           this.vectorExt.deleteEmbedding(this.db, name);
-        } catch {
-          // Vector extension may not be available
+        } catch (error: unknown) {
+          logger.warn('[KG] Failed to delete embedding during entity removal', {
+            entity: name,
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
       }
 
@@ -1256,7 +1288,9 @@ export class KnowledgeGraph {
    */
   private keywordSearchAsSemanticResults(query: string, limit: number): SemanticSearchResult[] {
     const entities = this.searchEntities({ namePattern: query, limit });
-    return entities.map(entity => ({ entity, similarity: 1.0 }));
+    // Use 0.5 similarity for keyword matches to distinguish from real semantic matches
+    // This prevents keyword fallback results from always beating semantic results in hybridSearch
+    return entities.map(entity => ({ entity, similarity: 0.5 }));
   }
 
   /**

@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { logger } from '../../utils/logger.js';
+import { getDataPath } from '../../utils/PathResolver.js';
 export const MemeshMetricsInputSchema = z.object({
     section: z
         .enum(['all', 'session', 'routing', 'memory'])
@@ -9,7 +11,7 @@ export const MemeshMetricsInputSchema = z.object({
         .default('all')
         .describe('Which metrics section to return'),
 });
-const HOME_DIR = process.env.HOME || process.env.USERPROFILE || '/tmp';
+const HOME_DIR = process.env.HOME || process.env.USERPROFILE || os.homedir();
 const HOOK_STATE_DIR = path.join(HOME_DIR, '.claude', 'state');
 const CURRENT_SESSION_FILE = path.join(HOOK_STATE_DIR, 'current-session.json');
 const LAST_SESSION_CACHE = path.join(HOOK_STATE_DIR, 'last-session-summary.json');
@@ -22,19 +24,37 @@ function readJSONSafe(filePath) {
             return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
         }
     }
-    catch {
+    catch (error) {
+        logger.warn(`[Metrics] Failed to read ${path.basename(filePath)}`, {
+            error: error instanceof Error ? error.message : String(error),
+        });
     }
     return null;
 }
+const MAX_AUDIT_LOG_BYTES = 256 * 1024;
 function getRecentAuditEntries(maxLines) {
     try {
         if (!fs.existsSync(ROUTING_AUDIT_LOG))
             return [];
-        const content = fs.readFileSync(ROUTING_AUDIT_LOG, 'utf-8');
+        const stat = fs.statSync(ROUTING_AUDIT_LOG);
+        let content;
+        if (stat.size > MAX_AUDIT_LOG_BYTES) {
+            const fd = fs.openSync(ROUTING_AUDIT_LOG, 'r');
+            const buffer = Buffer.alloc(MAX_AUDIT_LOG_BYTES);
+            fs.readSync(fd, buffer, 0, MAX_AUDIT_LOG_BYTES, stat.size - MAX_AUDIT_LOG_BYTES);
+            fs.closeSync(fd);
+            content = buffer.toString('utf-8');
+        }
+        else {
+            content = fs.readFileSync(ROUTING_AUDIT_LOG, 'utf-8');
+        }
         const lines = content.trim().split('\n').filter(Boolean);
         return lines.slice(-maxLines);
     }
-    catch {
+    catch (error) {
+        logger.warn('[Metrics] Failed to read audit log', {
+            error: error instanceof Error ? error.message : String(error),
+        });
         return [];
     }
 }
@@ -80,7 +100,7 @@ export async function handleMemeshMetrics(input) {
             };
         }
         if (section === 'all' || section === 'memory') {
-            const dbPath = path.join(MEMESH_DIR, 'knowledge-graph.db');
+            const dbPath = getDataPath('knowledge-graph.db');
             const dbExists = fs.existsSync(dbPath);
             let dbSizeKB = 0;
             if (dbExists) {

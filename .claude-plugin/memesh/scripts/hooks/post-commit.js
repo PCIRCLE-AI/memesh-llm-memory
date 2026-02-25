@@ -195,7 +195,7 @@ async function postCommit() {
     process.exit(0);
   } catch (error) {
     logError('PostCommit', error);
-    process.exit(1);
+    process.exit(0); // Never block Claude Code on hook errors
   }
 }
 

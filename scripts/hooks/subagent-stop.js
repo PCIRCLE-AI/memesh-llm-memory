@@ -17,7 +17,7 @@ import {
   MEMESH_DB_PATH,
   readJSONFile,
   writeJSONFile,
-  sqliteQuery,
+  sqliteBatchEntity,
   getDateString,
   readStdin,
   logError,
@@ -91,37 +91,13 @@ function saveSubagentToKG(agentType, lastMessage) {
       ? lastMessage.substring(0, 1000) + '...'
       : lastMessage;
 
-    const entityName = `Code Review: ${getDateString()} ${agentType}`;
+    const entityName = `Code Review: ${getDateString()} ${Date.now()} ${agentType}`;
     const metadata = JSON.stringify({
       agentType,
       messageLength: lastMessage.length,
       source: 'subagent-stop-hook',
     });
 
-    // Create entity
-    sqliteQuery(
-      MEMESH_DB_PATH,
-      'INSERT INTO entities (name, type, created_at, metadata) VALUES (?, ?, ?, ?)',
-      [entityName, 'code_review', now, metadata]
-    );
-
-    // Get entity ID
-    const entityIdResult = sqliteQuery(
-      MEMESH_DB_PATH,
-      'SELECT id FROM entities WHERE name = ?',
-      [entityName]
-    );
-    const entityId = parseInt(entityIdResult, 10);
-    if (isNaN(entityId)) return false;
-
-    // Add observation with the review findings
-    sqliteQuery(
-      MEMESH_DB_PATH,
-      'INSERT INTO observations (entity_id, content, created_at) VALUES (?, ?, ?)',
-      [entityId, `[${agentType}] ${shortMessage}`, now]
-    );
-
-    // Add tags
     const tags = [
       'code-review',
       `agent:${agentType}`,
@@ -129,13 +105,15 @@ function saveSubagentToKG(agentType, lastMessage) {
       'auto-tracked',
       'scope:project',
     ];
-    for (const tag of tags) {
-      sqliteQuery(
-        MEMESH_DB_PATH,
-        'INSERT INTO tags (entity_id, tag) VALUES (?, ?)',
-        [entityId, tag]
-      );
-    }
+
+    const entityId = sqliteBatchEntity(
+      MEMESH_DB_PATH,
+      { name: entityName, type: 'code_review', metadata },
+      [`[${agentType}] ${shortMessage}`],
+      tags
+    );
+
+    if (entityId === null) return false;
 
     logMemorySave(`Code review saved: ${agentType} (${lastMessage.length} chars)`);
     return true;

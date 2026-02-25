@@ -284,11 +284,8 @@ npm run setup
   "mcpServers": {
     "memesh": {
       "type": "stdio",
-      "command": "node",
-      "args": ["/usr/local/lib/node_modules/@pcircle/memesh/dist/mcp/server-bootstrap.js"],
-      "env": {
-        "NODE_ENV": "production"
-      }
+      "command": "npx",
+      "args": ["-y", "@pcircle/memesh"]
     }
   }
 }

@@ -10,7 +10,9 @@ Mémoire, analyse intelligente des tâches et automatisation — dans un seul pl
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-compatible-purple.svg)](https://modelcontextprotocol.io)
 
-[Installation](#installation) • [Utilisation](#utilisation) • [Dépannage](#dépannage) • [English](README.md)
+[Installation](#installation) • [Utilisation](#utilisation) • [Dépannage](#dépannage)
+
+[English](README.md) • [繁體中文](README.zh-TW.md) • [简体中文](README.zh-CN.md) • [日本語](README.ja.md) • [한국어](README.ko.md) • **Français** • [Deutsch](README.de.md) • [Español](README.es.md) • [Tiếng Việt](README.vi.md) • [ภาษาไทย](README.th.md) • [Bahasa Indonesia](README.id.md)
 
 </div>
 

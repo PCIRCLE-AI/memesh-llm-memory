@@ -221,5 +221,5 @@ Future accessibility improvements:
 
 ---
 
-**Last Updated**: 2026-02-08
-**MeMesh Version**: 2.8.x+
+**Last Updated**: 2026-02-25
+**MeMesh Version**: 2.9.0

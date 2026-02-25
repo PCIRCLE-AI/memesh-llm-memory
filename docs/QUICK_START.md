@@ -279,7 +279,6 @@ The tutorial covers:
 5. 🚀 Advanced features
 
 **Completion time**: ~5 minutes
-**Completion time**: ~5 minutes
 
 ---
 

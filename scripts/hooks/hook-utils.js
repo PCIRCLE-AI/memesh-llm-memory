@@ -537,11 +537,11 @@ ensureDir(STATE_DIR);
 // Plan-Aware Memory Hooks (Beta)
 // ============================================================================
 
-/** File path patterns that indicate a plan file */
+/** File path patterns that indicate a plan file (requires docs/ context) */
 const PLAN_PATTERNS = [
   /docs\/plans\/.*\.md$/,
-  /.*-design\.md$/,
-  /.*-plan\.md$/,
+  /docs\/.*-design\.md$/,
+  /docs\/.*-plan\.md$/,
 ];
 
 /**
@@ -722,14 +722,16 @@ export function matchCommitToStep(commitInfo, planSteps) {
  */
 export function renderTimeline(plan, highlightStep = null) {
   const { stepsDetail, totalSteps, completed } = plan.metadata;
+  if (!stepsDetail || stepsDetail.length === 0 || !totalSteps) return '';
+
   const pct = Math.round((completed / totalSteps) * 100);
   const planName = plan.name.replace('Plan: ', '');
+  const nextStep = stepsDetail.find(st => !st.completed);
 
-  // Node symbols: ● completed, ◉ current/highlighted, ○ pending
+  // Node symbols: ◉ highlighted (just-matched), ● completed, ◉ next, ○ pending
   const nodes = stepsDetail.map(s => {
-    if (s.completed) return '\u25cf';
     if (s.number === highlightStep) return '\u25c9';
-    const nextStep = stepsDetail.find(st => !st.completed);
+    if (s.completed) return '\u25cf';
     if (nextStep && s.number === nextStep.number) return '\u25c9';
     return '\u25cb';
   }).join(' \u2500\u2500\u2500\u2500 ');
@@ -756,9 +758,8 @@ export function renderTimeline(plan, highlightStep = null) {
     lines.push(`  \u2705 Step ${highlightStep} matched${marker} \u2190 ${commitRef}`);
   }
 
-  const next = stepsDetail.find(s => !s.completed);
-  if (next && completed < totalSteps) {
-    lines.push(`  \u25b6 Next: Step ${next.number} - ${next.description}`);
+  if (nextStep && completed < totalSteps) {
+    lines.push(`  \u25b6 Next: Step ${nextStep.number} - ${nextStep.description}`);
   }
 
   if (completed === totalSteps) {
@@ -775,6 +776,8 @@ export function renderTimeline(plan, highlightStep = null) {
  */
 export function renderTimelineCompact(plan) {
   const { stepsDetail, totalSteps, completed } = plan.metadata;
+  if (!stepsDetail || stepsDetail.length === 0 || !totalSteps) return '';
+
   const pct = Math.round((completed / totalSteps) * 100);
   const planName = plan.name.replace('Plan: ', '');
 

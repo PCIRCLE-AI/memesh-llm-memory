@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🧠 MeMesh
+# 🧠 MeMesh Plugin
 
 ### Searchable Project Memory for Claude Code
 
@@ -16,9 +16,11 @@ Remember decisions, patterns, and context — across every session.
 
 ---
 
-## What Is MeMesh?
+## What Is MeMesh Plugin?
 
-MeMesh is a Claude Code plugin that gives your projects a **searchable memory**.
+MeMesh Plugin (formerly "Claude Code Buddy") is a Claude Code plugin that gives your projects a **searchable memory**.
+
+> **Note**: This project was originally called "Claude Code Buddy" and has been renamed to avoid potential trademark issues.
 
 As you work, MeMesh automatically saves important decisions, architecture context, and lessons learned. Next time you start a session, you can ask "what did we decide about auth?" and get an instant answer.
 

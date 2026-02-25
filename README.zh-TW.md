@@ -2,9 +2,9 @@
 
 # 🧠 MeMesh Plugin
 
-### Claude Code 的可搜尋專案記憶
+### Claude Code 的生產力插件
 
-記住決策、模式和脈絡 — 跨越每個 session。
+記憶、智慧任務分析、工作流自動化 — 一個插件搞定。
 
 [![npm version](https://img.shields.io/npm/v/@pcircle/memesh)](https://www.npmjs.com/package/@pcircle/memesh)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -28,17 +28,27 @@
 
 ## 它能做什麼？
 
-MeMesh Plugin 幫你的專案建立**可搜尋的記憶**。
+MeMesh Plugin 讓 Claude Code 更聰明、更有生產力。不只是記憶 — 它是一整套工具：
 
-當你工作時，MeMesh 會自動儲存重要的決策、架構脈絡和經驗教訓。下次開新 session，你可以問「我們之前怎麼決定 auth 的？」就能馬上得到答案。
+**可搜尋的專案記憶** — 工作時自動儲存決策、模式和經驗教訓。用語意搜尋，不只是關鍵字。問「我們之前怎麼決定 auth 的？」就能馬上得到答案。
+
+**智慧任務分析** — 當你說 `buddy-do "加上使用者認證"`，MeMesh 會分析任務、從過去的工作中拉出相關脈絡，在執行前給你一個完整的計畫。
+
+**工作流自動化** — MeMesh 在背後自動幫你：
+- 開始新 session 時顯示上次工作摘要
+- 追蹤你改了哪些檔案、測試了哪些
+- 在 commit 前提醒你做 code review
+- 把任務分配到最合適的模型（搜尋用快的、規劃用強的）
+
+**從錯誤中學習** — 記錄錯誤和修復方式，避免重蹈覆轍。MeMesh 會建立一個什麼有效、什麼不行的知識庫。
 
 **跟 Claude 內建記憶有什麼不同？**
 
-Claude Code 已經有 auto memory 和 CLAUDE.md — 很適合存一般偏好和指令。MeMesh 在此基礎上增加了專門的**專案記憶**，你可以主動搜尋和查詢，而且能用語意搜尋（不只是完全符合的關鍵字）。
+Claude Code 已經有 auto memory 和 CLAUDE.md — 很適合存一般偏好和指令。MeMesh 在此基礎上增加了專案級的**專用工具**：可用語意搜尋的記憶、能拉取過去脈絡的任務分析、以及讓每個 session 都更有效率的自動化工作流。
 
 簡單來說：
 - **CLAUDE.md** = 你寫給 Claude 的使用手冊
-- **MeMesh** = 專案學到的所有東西的可搜尋筆記本
+- **MeMesh** = 可搜尋的筆記本 + 隨專案成長而學習的智慧助手
 
 ---
 

@@ -10,7 +10,9 @@ Speicher, intelligente Aufgabenanalyse und Workflow-Automatisierung — in einem
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-compatible-purple.svg)](https://modelcontextprotocol.io)
 
-[Installation](#installation) • [Verwendung](#verwendung) • [Fehlerbehebung](#fehlerbehebung) • [English](README.md)
+[Installation](#installation) • [Verwendung](#verwendung) • [Fehlerbehebung](#fehlerbehebung)
+
+[English](README.md) • [繁體中文](README.zh-TW.md) • [简体中文](README.zh-CN.md) • [日本語](README.ja.md) • [한국어](README.ko.md) • [Français](README.fr.md) • **Deutsch** • [Español](README.es.md) • [Tiếng Việt](README.vi.md) • [ภาษาไทย](README.th.md) • [Bahasa Indonesia](README.id.md)
 
 </div>
 

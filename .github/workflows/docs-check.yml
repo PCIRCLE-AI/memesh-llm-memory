@@ -51,8 +51,11 @@ jobs:
 
           # Check each markdown file for internal links
           for file in $MD_FILES; do
-            # Extract internal links (not starting with http)
-            LINKS=$(grep -oP '\[.*?\]\(\K[^http][^\)]+(?=\))' "$file" 2>/dev/null || true)
+            # Strip code fences before extracting links (avoid false positives from examples)
+            CONTENT=$(awk 'BEGIN{s=0} /^```/{s=1-s;next} s==0{print}' "$file")
+
+            # Extract internal links (not starting with http) from non-fenced content
+            LINKS=$(echo "$CONTENT" | grep -oP '\[.*?\]\(\K[^http][^\)]+(?=\))' 2>/dev/null || true)
 
             for link in $LINKS; do
               # Remove anchor from link

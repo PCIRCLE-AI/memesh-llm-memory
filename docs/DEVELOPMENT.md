@@ -590,7 +590,7 @@ npm run verify:mcp
 ## Additional Resources
 
 - **[Architecture Documentation](ARCHITECTURE.md)** - System design and components
-- **[API Reference](../api-docs/index.html)** - Generated API docs
+- **API Reference** - Run `npm run build` to generate API docs locally
 - **[User Guide](USER_GUIDE.md)** - End-user documentation
 - **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Common issues and solutions
 - **[MCP Specification](https://modelcontextprotocol.io)** - MCP protocol details

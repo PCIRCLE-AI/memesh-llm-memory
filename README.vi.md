@@ -2,9 +2,9 @@
 
 # 🧠 MeMesh Plugin
 
-### Bộ nhớ dự án có thể tìm kiếm cho Claude Code
+### Plugin năng suất cho Claude Code
 
-Ghi nhớ các quyết định, mẫu thiết kế và ngữ cảnh — xuyên suốt mọi phiên làm việc.
+Bộ nhớ, phân tích tác vụ thông minh và tự động hóa quy trình — tất cả trong một plugin.
 
 [![npm version](https://img.shields.io/npm/v/@pcircle/memesh)](https://www.npmjs.com/package/@pcircle/memesh)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -26,17 +26,27 @@ Dự án này bắt đầu vì tôi muốn giúp nhiều người hơn — đặ
 
 ## Nó làm được gì?
 
-MeMesh Plugin cung cấp cho dự án của bạn một **bộ nhớ có thể tìm kiếm**.
+MeMesh Plugin giúp Claude Code thông minh hơn và năng suất hơn. Không chỉ là bộ nhớ — mà là bộ công cụ hoàn chỉnh:
 
-Khi bạn làm việc với Claude Code, MeMesh tự động lưu các quyết định quan trọng, ngữ cảnh kiến trúc và bài học kinh nghiệm. Lần sau khi bạn bắt đầu phiên mới, bạn có thể hỏi "chúng ta đã quyết định gì về auth?" và nhận câu trả lời ngay lập tức.
+**Bộ nhớ dự án có thể tìm kiếm** — Tự động lưu các quyết định, mẫu thiết kế và bài học. Tìm kiếm theo ý nghĩa, không chỉ từ khóa. Hỏi "chúng ta đã quyết định gì về auth?" và nhận câu trả lời ngay.
+
+**Phân tích tác vụ thông minh** — Khi bạn gõ `buddy-do "thêm auth"`, MeMesh phân tích tác vụ, lấy ngữ cảnh liên quan từ công việc trước đó, và đưa ra kế hoạch đầy đủ trước khi thực hiện.
+
+**Tự động hóa quy trình** — MeMesh tự động làm việc nền:
+- Hiển thị tóm tắt phiên trước khi bắt đầu
+- Theo dõi các file đã sửa và kiểm thử
+- Nhắc review code trước khi commit
+- Định tuyến tác vụ đến model tối ưu
+
+**Học từ lỗi** — Ghi lại lỗi và cách sửa để xây dựng cơ sở tri thức và tránh lặp lại sai lầm.
 
 **Khác gì so với bộ nhớ tích hợp của Claude?**
 
-Claude Code đã có auto memory và CLAUDE.md — rất tốt cho các tùy chọn và hướng dẫn chung. MeMesh bổ sung thêm **bộ nhớ dự án** chuyên dụng mà bạn có thể chủ động tìm kiếm và truy vấn, với khả năng tìm kiếm theo ý nghĩa (không chỉ từ khóa chính xác).
+Claude Code đã có auto memory và CLAUDE.md — tốt cho cài đặt chung. MeMesh bổ sung **công cụ chuyên dụng cho dự án**: bộ nhớ tìm kiếm theo ý nghĩa, phân tích tác vụ với ngữ cảnh trước đó, và quy trình tự động giúp mỗi phiên làm việc hiệu quả hơn.
 
 Hãy nghĩ như thế này:
 - **CLAUDE.md** = sách hướng dẫn sử dụng cho Claude
-- **MeMesh** = sổ tay tìm kiếm được về mọi thứ dự án đã học
+- **MeMesh** = sổ tay tìm kiếm được + trợ lý thông minh phát triển cùng dự án
 
 ---
 

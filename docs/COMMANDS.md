@@ -63,7 +63,7 @@ Recall project memory - past decisions, architecture choices, bug fixes, and pat
 
 **Parameters:**
 - `query` (required): What to search for
-- `limit` (optional): Max number of results (1-50, default: 5)
+- `limit` (optional): Max number of results (1-50, default: 10)
 
 **Examples:**
 ```bash
@@ -145,7 +145,7 @@ MCP tool version of `buddy remember` command.
 ```json
 {
   "query": "string (required) - Search query",
-  "limit": "number (optional) - Max results (1-50, default: 5)"
+  "limit": "number (optional) - Max results (1-50, default: 10)"
 }
 ```
 
@@ -221,23 +221,34 @@ Internal hook event ingestion for workflow automation and memory tracking (auto-
 
 Record errors and mistakes for learning and prevention.
 
+**Aliases:** `record-mistake` (deprecated, will be removed in v3.0.0)
+
 **Input Schema:**
 ```json
 {
-  "mistake": "string (required) - Description of what went wrong",
-  "context": "string (required) - Situation where error occurred",
-  "correctApproach": "string (required) - The right way to handle it",
-  "tags": "array (optional) - Categorization tags"
+  "action": "string (required) - What action the AI took",
+  "errorType": "string (required) - Error classification (see values below)",
+  "userCorrection": "string (required) - User's correction/feedback",
+  "correctMethod": "string (required) - What should have been done instead",
+  "impact": "string (required) - Impact of the mistake",
+  "preventionMethod": "string (required) - How to prevent in future",
+  "relatedRule": "string (optional) - Related rule/guideline",
+  "context": "object (optional) - Additional context"
 }
 ```
+
+**Error Types:**
+`procedure-violation`, `workflow-skip`, `assumption-error`, `validation-skip`, `responsibility-lack`, `firefighting`, `dependency-miss`, `integration-error`, `deployment-error`
 
 **Example:**
 ```json
 {
-  "mistake": "Used synchronous file read in async function",
-  "context": "Loading configuration at startup",
-  "correctApproach": "Use fs.promises.readFile() instead",
-  "tags": ["nodejs", "async", "filesystem"]
+  "action": "Used synchronous file read in async handler",
+  "errorType": "assumption-error",
+  "userCorrection": "This blocks the event loop",
+  "correctMethod": "Use fs.promises.readFile() instead of fs.readFileSync()",
+  "impact": "Server becomes unresponsive under load",
+  "preventionMethod": "Always use async I/O in request handlers"
 }
 ```
 
@@ -277,54 +288,16 @@ Create knowledge entities with explicit relationships for fine-grained control o
 
 ---
 
-### `memesh-cloud-sync`
+### `memesh-metrics`
 
-Synchronize local knowledge graph memories with MeMesh Cloud.
+View session metrics and tool usage statistics.
 
 **Input Schema:**
 ```json
 {
-  "action": "string (required) - Sync action: status | push | pull",
-  "query": "string (optional) - Filter which memories to sync",
-  "space": "string (optional) - Cloud memory space (default: 'default')",
-  "limit": "number (optional) - Max memories per batch (1-500, default: 100)",
-  "dryRun": "boolean (optional) - Preview without executing (default: false)"
+  "period": "string (optional) - Time period: 'session' | 'day' | 'week' (default: 'session')"
 }
 ```
-
-**Actions:**
-- `status` - Compare local vs cloud memory counts
-- `push` - Push local KG entities to cloud
-- `pull` - Pull cloud memories to local
-
-**Examples:**
-
-**Check sync status:**
-```json
-{
-  "action": "status"
-}
-```
-
-**Push local memories to cloud:**
-```json
-{
-  "action": "push",
-  "space": "work",
-  "dryRun": true
-}
-```
-
-**Pull cloud memories:**
-```json
-{
-  "action": "pull",
-  "query": "authentication",
-  "limit": 50
-}
-```
-
-**Note:** Requires `MEMESH_API_KEY` environment variable. Use `memesh login` to authenticate.
 
 ---
 
@@ -338,20 +311,16 @@ In **cloud-only mode** (when better-sqlite3 is unavailable but MEMESH_API_KEY is
 |------|--------|--------|
 | `buddy-do` | ❌ Unavailable | Requires local Knowledge Graph for task context |
 | `buddy-remember` | ❌ Unavailable | Requires local memory search |
-| `recall-memory` | ❌ Unavailable | Requires local SQLite database |
-| `add-observations` | ❌ Unavailable | Requires local entity storage |
-| `create-relations` | ❌ Unavailable | Requires local graph relationships |
 | `memesh-create-entities` | ❌ Unavailable | Requires local Knowledge Graph |
 | `memesh-hook-tool-use` | ❌ Unavailable | Requires local memory tracking |
 | `memesh-record-mistake` | ❌ Unavailable | Requires local mistake storage |
+| `memesh-metrics` | ❌ Unavailable | Requires local metrics storage |
 
 ### ✅ Available Tools in Cloud-Only Mode
 
 | Tool | Status | Notes |
 |------|--------|-------|
 | `buddy-help` | ✅ Works | Displays command help |
-| `health-check` | ✅ Works | Reports cloud-only mode status |
-| `memesh-cloud-sync` | ✅ Works | Syncs with cloud when MEMESH_API_KEY is set |
 | `memesh-generate-tests` | ✅ Works | AI-based test generation (stateless) |
 
 ### Error Message Example
@@ -367,8 +336,7 @@ To use local memory tools:
 1. Install better-sqlite3: npm install better-sqlite3
 2. Restart the MCP server
 
-OR use cloud sync tools instead:
-- memesh-cloud-sync: Sync with cloud storage (requires MEMESH_API_KEY)
+Local SQLite storage is required for memory features.
 ```
 
 ### Why Cloud-Only Mode Exists

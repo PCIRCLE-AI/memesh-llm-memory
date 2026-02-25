@@ -343,19 +343,17 @@ MeMesh supports three deployment modes to accommodate different environments:
 
 **Features**:
 - ✅ Full local Knowledge Graph with SQLite
-- ✅ All memory tools (buddy-do, buddy-remember, recall-memory, create-entities)
+- ✅ All memory tools (buddy-do, buddy-remember, memesh-create-entities)
 - ✅ Vector embeddings and semantic search
 - ✅ FTS5 full-text search
-- ✅ Optional cloud sync (when MEMESH_API_KEY is set)
 
 **Architecture**:
 ```
 Claude Code ─stdio─► MCP Server
                           │
-                   ┌──────┴──────┐
-                   ▼             ▼
-            KnowledgeGraph  CloudSync
-            (SQLite+Vec)    (Optional)
+                          ▼
+                   KnowledgeGraph
+                   (SQLite+Vec)
 ```
 
 **Use Cases**:
@@ -372,9 +370,8 @@ Claude Code ─stdio─► MCP Server
 
 **Features**:
 - ✅ MCP server starts successfully
-- ✅ Basic commands (buddy-help, list-skills)
-- ✅ Cloud sync tools (memesh-cloud-sync)
-- ❌ Local memory tools disabled (buddy-do, buddy-remember, recall-memory, create-entities, memesh-hook-tool-use)
+- ✅ Basic commands (buddy-help, memesh-generate-tests)
+- ❌ Local memory tools disabled (buddy-do, buddy-remember, memesh-create-entities, memesh-hook-tool-use, memesh-record-mistake, memesh-metrics)
 
 **Error Messages**:
 ```
@@ -386,8 +383,7 @@ To use local memory tools:
 1. Install better-sqlite3: npm install better-sqlite3
 2. Restart the MCP server
 
-OR use cloud sync tools instead:
-- memesh-cloud-sync: Sync with cloud storage (requires MEMESH_API_KEY)
+Local SQLite storage is required for memory features.
 ```
 
 **Architecture**:
@@ -395,8 +391,8 @@ OR use cloud sync tools instead:
 Claude Code ─stdio─► MCP Server (Cloud-Only)
                           │
                           ▼
-                    CloudSync Only
-                    (API calls)
+                    Basic Tools Only
+                    (no local storage)
 ```
 
 **Use Cases**:

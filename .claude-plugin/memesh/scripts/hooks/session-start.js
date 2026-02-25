@@ -24,6 +24,8 @@ import {
   sqliteQueryJSON,
   getTimeAgo,
   logError,
+  queryActivePlans,
+  renderTimelineCompact,
 } from './hook-utils.js';
 import fs from 'fs';
 import path from 'path';
@@ -247,7 +249,7 @@ function recallFromSQLite() {
       [entityId]
     );
 
-    const keyPoints = obsRows.map(r => r.content).filter(Boolean);
+    const keyPoints = (obsRows || []).map(r => r.content).filter(Boolean);
 
     let parsedMetadata = {};
     try {
@@ -399,6 +401,49 @@ function reloadClaudeMd() {
 // Main Session Start Logic
 // ============================================================================
 
+// ============================================================================
+// Active Plans Display (Beta)
+// ============================================================================
+
+/**
+ * Display active plans with compact timeline.
+ * Also warns about stale plans (no progress for 7+ days).
+ */
+function displayActivePlans() {
+  try {
+    if (!fs.existsSync(MEMESH_DB_PATH)) return;
+
+    const activePlans = queryActivePlans(MEMESH_DB_PATH);
+    if (activePlans.length === 0) return;
+
+    console.log('═'.repeat(60));
+    console.log('  📋 Active Plans');
+    console.log('═'.repeat(60));
+    console.log('');
+
+    for (const plan of activePlans) {
+      console.log(renderTimelineCompact(plan));
+
+      // Stale plan warning (7+ days since last progress)
+      const lastStep = plan.metadata.stepsDetail
+        ?.filter(s => s.completed && s.date)
+        .sort((a, b) => b.date.localeCompare(a.date))[0];
+      if (lastStep && lastStep.date) {
+        const daysSince = Math.floor((Date.now() - new Date(lastStep.date).getTime()) / (1000 * 60 * 60 * 24));
+        if (daysSince >= 7) {
+          console.log(`  ⚠️  No progress for ${daysSince} days`);
+        }
+      }
+      console.log('');
+    }
+
+    console.log('═'.repeat(60));
+    console.log('');
+  } catch (error) {
+    logError('displayActivePlans', error);
+  }
+}
+
 function sessionStart() {
   console.log('\n🚀 Smart-Agents Session Started\n');
 
@@ -412,6 +457,9 @@ function sessionStart() {
   // Auto-recall last session's key points from MeMesh
   const recalledMemory = recallRecentKeyPoints();
   displayRecalledMemory(recalledMemory);
+
+  // Display active plans (beta)
+  displayActivePlans();
 
   // Read recommendations from last session
   const recommendations = readJSONFile(RECOMMENDATIONS_FILE, {

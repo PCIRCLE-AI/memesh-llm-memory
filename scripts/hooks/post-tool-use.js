@@ -27,6 +27,12 @@ import {
   logError,
   logMemorySave,
   getDateString,
+  isPlanFile,
+  parsePlanSteps,
+  derivePlanName,
+  sqliteQueryJSON,
+  updateEntityMetadata,
+  addObservation,
 } from './hook-utils.js';
 import fs from 'fs';
 import path from 'path';
@@ -662,6 +668,68 @@ function normalizeToolData(raw) {
 }
 
 // ============================================================================
+// Plan File Detection (Beta)
+// ============================================================================
+
+/**
+ * Detect plan file creation and save to KG.
+ * Triggered when Write tool targets a plan file path.
+ * @param {Object} toolData - Normalized tool data
+ */
+function detectPlanFile(toolData) {
+  if (toolData.toolName !== 'Write') return;
+
+  const filePath = toolData.arguments?.file_path;
+  if (!isPlanFile(filePath)) return;
+
+  try {
+    // Read the file content
+    if (!fs.existsSync(filePath)) return;
+    const content = fs.readFileSync(filePath, 'utf-8');
+
+    const steps = parsePlanSteps(content);
+    if (steps.length === 0) return;
+
+    if (!fs.existsSync(MEMESH_DB_PATH)) return;
+
+    const planName = derivePlanName(filePath);
+    const entityName = `Plan: ${planName}`;
+
+    const newMetadata = {
+      sourceFile: filePath,
+      totalSteps: steps.length,
+      completed: steps.filter(s => s.completed).length,
+      status: 'active',
+      stepsDetail: steps,
+    };
+
+    // Check if plan entity already exists (re-save scenario)
+    const existing = sqliteQueryJSON(MEMESH_DB_PATH,
+      'SELECT id FROM entities WHERE name = ?', [entityName]);
+
+    if (existing && existing.length > 0) {
+      // Upsert: update metadata and add observation for the re-save
+      updateEntityMetadata(MEMESH_DB_PATH, entityName, newMetadata);
+      addObservation(MEMESH_DB_PATH, entityName,
+        `Plan re-saved: ${steps.length} steps (${steps.filter(s => s.completed).length} completed)`);
+      logMemorySave(`Plan updated: ${planName} (${steps.length} steps)`);
+    } else {
+      // First save: create entity with observations and tags
+      const observations = steps.map(s => `Step ${s.number}: ${s.description}`);
+      const tags = ['plan', 'active', `plan:${planName}`, 'scope:project'];
+
+      sqliteBatchEntity(MEMESH_DB_PATH,
+        { name: entityName, type: 'workflow_checkpoint', metadata: JSON.stringify(newMetadata) },
+        observations, tags
+      );
+      logMemorySave(`Plan detected: ${planName} (${steps.length} steps)`);
+    }
+  } catch (error) {
+    logError('detectPlanFile', error);
+  }
+}
+
+// ============================================================================
 // Main PostToolUse Logic
 // ============================================================================
 
@@ -682,6 +750,9 @@ async function postToolUse() {
     if (isCodeReviewInvocation(toolData)) {
       markCodeReviewDone();
     }
+
+    // Detect plan file creation (beta)
+    detectPlanFile(toolData);
 
     // Initialize pattern detector
     const detector = new PatternDetector();

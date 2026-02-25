@@ -2,9 +2,9 @@
 
 # 🧠 MeMesh Plugin
 
-### Memori Proyek yang Bisa Dicari untuk Claude Code
+### Plugin produktivitas untuk Claude Code
 
-Ingat keputusan, pola, dan konteks — di setiap sesi.
+Memori, analisis tugas cerdas, dan otomasi alur kerja — semua dalam satu plugin.
 
 [![npm version](https://img.shields.io/npm/v/@pcircle/memesh)](https://www.npmjs.com/package/@pcircle/memesh)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -26,17 +26,27 @@ Proyek ini dimulai karena saya ingin membantu lebih banyak orang — terutama ya
 
 ## Apa yang Bisa Dilakukan?
 
-MeMesh Plugin memberikan proyek Anda **memori yang bisa dicari**.
+MeMesh Plugin membuat Claude Code lebih cerdas dan produktif. Bukan hanya memori — ini adalah toolkit lengkap:
 
-Saat Anda bekerja dengan Claude Code, MeMesh secara otomatis menyimpan keputusan penting, konteks arsitektur, dan pelajaran yang dipelajari. Saat Anda memulai sesi berikutnya, Anda bisa bertanya "apa yang kita putuskan tentang auth?" dan langsung mendapat jawaban.
+**Memori proyek yang bisa dicari** — Otomatis menyimpan keputusan, pola, dan pelajaran. Cari berdasarkan makna, bukan hanya kata kunci. Tanya "apa yang kita putuskan tentang auth?" dan langsung dapat jawaban.
+
+**Analisis tugas cerdas** — Saat Anda ketik `buddy-do "tambahkan auth"`, MeMesh menganalisis tugas, mengambil konteks relevan dari pekerjaan sebelumnya, dan memberikan rencana lengkap sebelum eksekusi.
+
+**Otomasi alur kerja** — MeMesh bekerja otomatis di latar belakang:
+- Menampilkan ringkasan sesi terakhir saat memulai
+- Melacak file yang diubah dan diuji
+- Mengingatkan code review sebelum commit
+- Merutekan tugas ke model yang optimal
+
+**Belajar dari kesalahan** — Catat error dan perbaikannya untuk membangun basis pengetahuan dan menghindari kesalahan berulang.
 
 **Apa bedanya dengan memori bawaan Claude?**
 
-Claude Code sudah punya auto memory dan CLAUDE.md — bagus untuk preferensi dan instruksi umum. MeMesh menambahkan **memori proyek** khusus yang bisa Anda cari dan query secara aktif, dengan dukungan pencarian berdasarkan makna (tidak hanya kata kunci persis).
+Claude Code sudah punya auto memory dan CLAUDE.md — bagus untuk pengaturan umum. MeMesh menambahkan **alat khusus proyek**: memori yang bisa dicari berdasarkan makna, analisis tugas dengan konteks sebelumnya, dan alur kerja otomatis yang membuat setiap sesi lebih produktif.
 
 Bayangkan seperti ini:
 - **CLAUDE.md** = buku panduan Anda untuk Claude
-- **MeMesh** = buku catatan yang bisa dicari dari semua yang dipelajari proyek Anda
+- **MeMesh** = buku catatan yang bisa dicari + asisten cerdas yang berkembang bersama proyek
 
 ---
 

@@ -524,4 +524,4 @@ See [docs/COWORK_SUPPORT.md](./COWORK_SUPPORT.md) for detailed Cowork support do
 ---
 
 **Maintained by**: PCIRCLE-AI
-**License**: AGPL-3.0
+**License**: MIT

@@ -589,3 +589,102 @@ export function derivePlanName(filePath) {
   name = name.replace(/^\d{4}-\d{2}-\d{2}-/, '');
   return name;
 }
+
+/**
+ * Parse plan steps from markdown content.
+ * Supports checkbox format (- [ ] ...) and heading format (## Step N: ...).
+ * @param {string} content - Markdown file content
+ * @returns {Array<{number: number, description: string, completed: boolean}>}
+ */
+export function parsePlanSteps(content) {
+  if (!content) return [];
+
+  const steps = [];
+  const lines = content.split('\n');
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Format A: Checkbox "- [ ] Step N: description" or "- [ ] description"
+    const checkboxMatch = trimmed.match(/^-\s+\[([ xX])\]\s+(?:(?:Step|Task)\s+\d+\s*[:.]\s*)?(.+)/);
+    if (checkboxMatch) {
+      steps.push({
+        number: steps.length + 1,
+        description: checkboxMatch[2].trim(),
+        completed: checkboxMatch[1].toLowerCase() === 'x',
+      });
+      continue;
+    }
+
+    // Format B: Heading "## Step N: description" or "### Task N: description"
+    const headingStepMatch = trimmed.match(/^#{2,4}\s+(?:Step|Task)\s+(\d+)\s*[:.]\s*(.+)/);
+    if (headingStepMatch) {
+      steps.push({
+        number: parseInt(headingStepMatch[1], 10),
+        description: headingStepMatch[2].trim(),
+        completed: false,
+      });
+      continue;
+    }
+
+    // Format C: Numbered heading "### 1. description"
+    const numberedMatch = trimmed.match(/^#{2,4}\s+(\d+)\.\s+(.+)/);
+    if (numberedMatch) {
+      steps.push({
+        number: parseInt(numberedMatch[1], 10),
+        description: numberedMatch[2].trim(),
+        completed: false,
+      });
+      continue;
+    }
+  }
+
+  return steps;
+}
+
+/**
+ * Match a commit to the best matching uncompleted plan step.
+ * Uses keyword overlap + file path hints. Threshold: 0.3.
+ * @param {{ subject: string, filesChanged: string[] }} commitInfo
+ * @param {Array<{ number: number, description: string, completed: boolean }>} planSteps
+ * @returns {{ step: object, confidence: number } | null}
+ */
+export function matchCommitToStep(commitInfo, planSteps) {
+  if (!planSteps || planSteps.length === 0) return null;
+  if (!commitInfo || !commitInfo.subject) return null;
+
+  const commitWords = tokenize(commitInfo.subject);
+  if (commitWords.length === 0) return null;
+
+  let bestMatch = null;
+  let bestScore = 0;
+
+  for (const step of planSteps) {
+    if (step.completed) continue;
+
+    const stepWords = tokenize(step.description);
+    if (stepWords.length === 0) continue;
+
+    // Keyword overlap score (0~1)
+    const overlap = commitWords.filter(w => stepWords.includes(w));
+    let score = overlap.length / stepWords.length;
+
+    // File path bonus (+0.3)
+    const moduleHints = extractModuleHints(step.description);
+    const filesChanged = commitInfo.filesChanged || [];
+    const fileMatch = filesChanged.some(f =>
+      moduleHints.some(hint => f.toLowerCase().includes(hint))
+    );
+    if (fileMatch) score += 0.3;
+
+    if (score > bestScore && score > 0.3) {
+      bestScore = score;
+      bestMatch = step;
+    }
+  }
+
+  if (!bestMatch) return null;
+
+  // Return step + confidence (capped at 1.0)
+  return { step: bestMatch, confidence: Math.min(bestScore, 1.0) };
+}

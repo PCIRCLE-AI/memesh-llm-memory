@@ -10,7 +10,9 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-compatible-purple.svg)](https://modelcontextprotocol.io)
 
-[설치](#설치) • [사용법](#사용법) • [문제 해결](#문제-해결) • [English](README.md)
+[설치](#설치) • [사용법](#사용법) • [문제 해결](#문제-해결)
+
+[English](README.md) • [繁體中文](README.zh-TW.md) • [简体中文](README.zh-CN.md) • [日本語](README.ja.md) • **한국어** • [Français](README.fr.md) • [Deutsch](README.de.md) • [Español](README.es.md) • [Tiếng Việt](README.vi.md) • [ภาษาไทย](README.th.md) • [Bahasa Indonesia](README.id.md)
 
 </div>
 

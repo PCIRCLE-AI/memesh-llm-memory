@@ -26,6 +26,7 @@ import {
 } from './hook-utils.js';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 // ============================================================================
 // Constants
@@ -35,7 +36,7 @@ const CURRENT_SESSION_FILE = path.join(STATE_DIR, 'current-session.json');
 const ROUTING_CONFIG_FILE = path.join(HOME_DIR, '.memesh', 'routing-config.json');
 const ROUTING_AUDIT_LOG = path.join(HOME_DIR, '.memesh', 'routing-audit.log');
 const PLANNING_TEMPLATE_FILE = path.join(
-  path.dirname(new URL(import.meta.url).pathname),
+  path.dirname(fileURLToPath(import.meta.url)),
   'templates',
   'planning-template.md'
 );

@@ -310,6 +310,12 @@ function updateCurrentSession(toolData, patterns, anomalies) {
     tokenUsage: toolData.tokensUsed,
   });
 
+  // Cap toolCalls to prevent unbounded growth in long sessions
+  const MAX_TOOL_CALLS = 1000;
+  if (currentSession.toolCalls.length > MAX_TOOL_CALLS) {
+    currentSession.toolCalls = currentSession.toolCalls.slice(-MAX_TOOL_CALLS);
+  }
+
   // Track file modifications and test executions (for dry-run gate)
   trackFileModifications(toolData, currentSession);
   trackTestExecutions(toolData, currentSession);

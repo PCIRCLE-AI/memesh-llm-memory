@@ -1,8 +1,10 @@
 import { z } from 'zod';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { logger } from '../../utils/logger.js';
+import { getDataPath } from '../../utils/PathResolver.js';
 
 export const MemeshMetricsInputSchema = z.object({
   section: z
@@ -14,7 +16,7 @@ export const MemeshMetricsInputSchema = z.object({
 
 export type ValidatedMemeshMetricsInput = z.infer<typeof MemeshMetricsInputSchema>;
 
-const HOME_DIR = process.env.HOME || process.env.USERPROFILE || '/tmp';
+const HOME_DIR = process.env.HOME || process.env.USERPROFILE || os.homedir();
 
 // Session data is written by hooks to ~/.claude/state/
 const HOOK_STATE_DIR = path.join(HOME_DIR, '.claude', 'state');
@@ -31,19 +33,41 @@ function readJSONSafe(filePath: string): Record<string, unknown> | null {
     if (fs.existsSync(filePath)) {
       return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
     }
-  } catch {
-    // Non-critical
+  } catch (error: unknown) {
+    logger.warn(`[Metrics] Failed to read ${path.basename(filePath)}`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
   return null;
 }
 
+/** Max bytes to read from audit log to avoid blocking the event loop */
+const MAX_AUDIT_LOG_BYTES = 256 * 1024; // 256 KB
+
 function getRecentAuditEntries(maxLines: number): string[] {
   try {
     if (!fs.existsSync(ROUTING_AUDIT_LOG)) return [];
-    const content = fs.readFileSync(ROUTING_AUDIT_LOG, 'utf-8');
+
+    const stat = fs.statSync(ROUTING_AUDIT_LOG);
+    let content: string;
+
+    if (stat.size > MAX_AUDIT_LOG_BYTES) {
+      // Read only the tail of the file to avoid loading megabytes into memory
+      const fd = fs.openSync(ROUTING_AUDIT_LOG, 'r');
+      const buffer = Buffer.alloc(MAX_AUDIT_LOG_BYTES);
+      fs.readSync(fd, buffer, 0, MAX_AUDIT_LOG_BYTES, stat.size - MAX_AUDIT_LOG_BYTES);
+      fs.closeSync(fd);
+      content = buffer.toString('utf-8');
+    } else {
+      content = fs.readFileSync(ROUTING_AUDIT_LOG, 'utf-8');
+    }
+
     const lines = content.trim().split('\n').filter(Boolean);
     return lines.slice(-maxLines);
-  } catch {
+  } catch (error: unknown) {
+    logger.warn('[Metrics] Failed to read audit log', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return [];
   }
 }
@@ -106,7 +130,7 @@ export async function handleMemeshMetrics(
 
     // Memory metrics
     if (section === 'all' || section === 'memory') {
-      const dbPath = path.join(MEMESH_DIR, 'knowledge-graph.db');
+      const dbPath = getDataPath('knowledge-graph.db');
       const dbExists = fs.existsSync(dbPath);
 
       let dbSizeKB = 0;

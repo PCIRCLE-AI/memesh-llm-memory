@@ -201,7 +201,7 @@ export function escapeSQL(value) {
  * @param {Object} options - Query options
  * @param {number} options.timeout - Timeout in ms (default: 5000)
  * @param {boolean} options.json - Use JSON output mode (default: false)
- * @returns {string} Query result as string
+ * @returns {string|null} Query result as string, or null on error
  *
  * @example
  * // Basic query
@@ -236,7 +236,7 @@ export function sqliteQuery(dbPath, query, params = [], options = {}) {
     return result.trim();
   } catch (error) {
     logError('sqliteQuery', error);
-    return '';
+    return null;
   }
 }
 
@@ -323,6 +323,11 @@ export function getDateString(date = new Date()) {
  */
 export function readStdin(timeout = 3000) {
   return new Promise((resolve, reject) => {
+    // Fast path: stdin already closed/ended — avoids 3s timeout hang
+    if (process.stdin.readableEnded || process.stdin.destroyed) {
+      return resolve('');
+    }
+
     let data = '';
 
     const cleanup = () => {
@@ -373,7 +378,7 @@ export function readStdin(timeout = 3000) {
  * @param {Object} options - Options
  * @param {number} options.timeout - Timeout in ms (default: 10000)
  * @param {number} options.chunkSize - Max statements per batch (default: 50)
- * @returns {string} Combined output (empty string on error)
+ * @returns {string|null} Combined output, or null on error
  */
 export function sqliteBatch(dbPath, statements, options = {}) {
   const { timeout = 10000, chunkSize = 50 } = options;
@@ -423,7 +428,7 @@ export function sqliteBatch(dbPath, statements, options = {}) {
     return output.trim();
   } catch (error) {
     logError('sqliteBatch', error);
-    return '';
+    return null;
   }
 }
 
@@ -452,17 +457,19 @@ export function sqliteBatchEntity(dbPath, entity, observations = [], tags = []) 
     const now = new Date().toISOString();
 
     // Step 1: Insert entity (need the ID for subsequent inserts)
-    sqliteQuery(
+    const insertResult = sqliteQuery(
       dbPath,
       'INSERT INTO entities (name, type, created_at, metadata) VALUES (?, ?, ?, ?)',
       [entity.name, entity.type, now, entity.metadata || '{}']
     );
+    if (insertResult === null) return null;
 
     const entityIdResult = sqliteQuery(
       dbPath,
       'SELECT id FROM entities WHERE name = ?',
       [entity.name]
     );
+    if (entityIdResult === null) return null;
     const entityId = parseInt(entityIdResult, 10);
     if (isNaN(entityId)) return null;
 
@@ -484,7 +491,13 @@ export function sqliteBatchEntity(dbPath, entity, observations = [], tags = []) 
     }
 
     if (statements.length > 0) {
-      sqliteBatch(dbPath, statements);
+      const batchResult = sqliteBatch(dbPath, statements);
+      if (batchResult === null) {
+        // Clean up orphaned entity — batch failed so observations/tags rolled back
+        logError('sqliteBatchEntity', new Error(`Batch failed for entity ${entity.name}, cleaning up orphan`));
+        sqliteQuery(dbPath, 'DELETE FROM entities WHERE id = ?', [entityId]);
+        return null;
+      }
     }
 
     return entityId;

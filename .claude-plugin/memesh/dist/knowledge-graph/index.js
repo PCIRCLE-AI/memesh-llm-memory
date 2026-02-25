@@ -166,9 +166,11 @@ export class KnowledgeGraph {
             this.vectorEnabled = true;
             logger.info('[KG] Vector search enabled (sqlite-vec loaded)');
         })
-            .catch(() => {
+            .catch((error) => {
             this.vectorEnabled = false;
-            logger.debug('[KG] Vector search unavailable, using FTS5-only search');
+            logger.debug('[KG] Vector search unavailable, using FTS5-only search', {
+                error: error instanceof Error ? error.message : String(error),
+            });
         });
     }
     runMigrations() {
@@ -532,8 +534,24 @@ export class KnowledgeGraph {
     }
     getEntity(name) {
         this.validateEntityName(name);
-        const results = this.searchEntities({ namePattern: name, limit: 1 });
-        return results.length > 0 ? results[0] : null;
+        const row = this.db.prepare(`
+      SELECT e.*,
+        (SELECT json_group_array(content) FROM observations o WHERE o.entity_id = e.id) as observations_json,
+        (SELECT json_group_array(tag) FROM tags t WHERE t.entity_id = e.id) as tags_json
+      FROM entities e
+      WHERE e.name = ?
+    `).get(name);
+        if (!row)
+            return null;
+        return {
+            id: row.id,
+            name: row.name,
+            entityType: row.type,
+            observations: safeJsonParse(row.observations_json, []).filter(value => value),
+            tags: safeJsonParse(row.tags_json, []).filter(value => value),
+            metadata: row.metadata ? safeJsonParse(row.metadata, {}) : {},
+            createdAt: new Date(row.created_at)
+        };
     }
     traceRelations(entityName, depth = 2) {
         this.validateEntityName(entityName);
@@ -622,7 +640,11 @@ export class KnowledgeGraph {
                 try {
                     this.vectorExt.deleteEmbedding(this.db, name);
                 }
-                catch {
+                catch (error) {
+                    logger.warn('[KG] Failed to delete embedding during entity removal', {
+                        entity: name,
+                        error: error instanceof Error ? error.message : String(error),
+                    });
                 }
             }
             const stmt = this.db.prepare('DELETE FROM entities WHERE name = ?');
@@ -716,7 +738,7 @@ export class KnowledgeGraph {
     }
     keywordSearchAsSemanticResults(query, limit) {
         const entities = this.searchEntities({ namePattern: query, limit });
-        return entities.map(entity => ({ entity, similarity: 1.0 }));
+        return entities.map(entity => ({ entity, similarity: 0.5 }));
     }
     isVectorSearchEnabled() {
         return this.vectorEnabled;

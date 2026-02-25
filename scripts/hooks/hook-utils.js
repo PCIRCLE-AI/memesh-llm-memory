@@ -532,3 +532,60 @@ export function writeJSONFileAsync(filePath, data) {
 
 // Ensure state directory exists on module load
 ensureDir(STATE_DIR);
+
+// ============================================================================
+// Plan-Aware Memory Hooks (Beta)
+// ============================================================================
+
+/** Common English stop words to filter from tokenization */
+const STOP_WORDS = new Set([
+  'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+  'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+  'should', 'may', 'might', 'shall', 'can', 'need', 'dare', 'ought',
+  'used', 'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by', 'from',
+  'as', 'into', 'through', 'during', 'before', 'after', 'above', 'below',
+  'between', 'out', 'off', 'over', 'under', 'again', 'further', 'then',
+  'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'both',
+  'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor',
+  'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 'just',
+  'because', 'but', 'and', 'or', 'if', 'while', 'that', 'this', 'these',
+  'those', 'it', 'its', 'up', 'set',
+]);
+
+/**
+ * Tokenize text into lowercase meaningful words.
+ * Removes punctuation, stop words, and words shorter than 3 characters.
+ * @param {string} text - Input text
+ * @returns {string[]} Array of meaningful words
+ */
+export function tokenize(text) {
+  if (!text) return [];
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !STOP_WORDS.has(w));
+}
+
+/**
+ * Extract module/file hints from a step description.
+ * Returns words that could match file paths or module names.
+ * @param {string} description - Step description text
+ * @returns {string[]} Module hint words
+ */
+export function extractModuleHints(description) {
+  return tokenize(description);
+}
+
+/**
+ * Derive a human-readable plan name from a file path.
+ * Strips date prefixes (YYYY-MM-DD-) and .md extension.
+ * @param {string} filePath - File path
+ * @returns {string} Plan name
+ */
+export function derivePlanName(filePath) {
+  let name = path.basename(filePath, '.md');
+  // Remove date prefix (YYYY-MM-DD-)
+  name = name.replace(/^\d{4}-\d{2}-\d{2}-/, '');
+  return name;
+}

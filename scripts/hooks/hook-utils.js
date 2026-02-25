@@ -537,6 +537,23 @@ ensureDir(STATE_DIR);
 // Plan-Aware Memory Hooks (Beta)
 // ============================================================================
 
+/** File path patterns that indicate a plan file */
+const PLAN_PATTERNS = [
+  /docs\/plans\/.*\.md$/,
+  /.*-design\.md$/,
+  /.*-plan\.md$/,
+];
+
+/**
+ * Check if a file path matches plan file patterns.
+ * @param {string} filePath - File path to check
+ * @returns {boolean}
+ */
+export function isPlanFile(filePath) {
+  if (!filePath) return false;
+  return PLAN_PATTERNS.some(p => p.test(filePath));
+}
+
 /** Common English stop words to filter from tokenization */
 const STOP_WORDS = new Set([
   'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',

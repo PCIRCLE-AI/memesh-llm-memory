@@ -7,6 +7,7 @@ import {
   matchCommitToStep,
   renderTimeline,
   renderTimelineCompact,
+  isPlanFile,
 } from '../../../scripts/hooks/hook-utils.js';
 
 describe('tokenize', () => {
@@ -288,5 +289,33 @@ describe('renderTimelineCompact', () => {
   it('should show complete in compact view when done', () => {
     const output = renderTimelineCompact(makePlan(3, 3));
     expect(output).toContain('Complete');
+  });
+});
+
+describe('isPlanFile', () => {
+  it('should match docs/plans/*.md', () => {
+    expect(isPlanFile('docs/plans/2026-02-25-auth-design.md')).toBe(true);
+    expect(isPlanFile('docs/plans/my-plan.md')).toBe(true);
+  });
+
+  it('should match *-design.md', () => {
+    expect(isPlanFile('docs/auth-system-design.md')).toBe(true);
+    expect(isPlanFile('/full/path/to/feature-design.md')).toBe(true);
+  });
+
+  it('should match *-plan.md', () => {
+    expect(isPlanFile('my-feature-plan.md')).toBe(true);
+  });
+
+  it('should NOT match regular files', () => {
+    expect(isPlanFile('src/index.ts')).toBe(false);
+    expect(isPlanFile('README.md')).toBe(false);
+    expect(isPlanFile('docs/ARCHITECTURE.md')).toBe(false);
+  });
+
+  it('should handle undefined/null gracefully', () => {
+    expect(isPlanFile(undefined)).toBe(false);
+    expect(isPlanFile(null)).toBe(false);
+    expect(isPlanFile('')).toBe(false);
   });
 });

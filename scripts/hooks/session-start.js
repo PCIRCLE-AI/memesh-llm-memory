@@ -21,7 +21,6 @@ import {
   THRESHOLDS,
   readJSONFile,
   writeJSONFile,
-  sqliteQuery,
   sqliteQueryJSON,
   getTimeAgo,
   logError,

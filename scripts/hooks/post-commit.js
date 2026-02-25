@@ -7,7 +7,7 @@
  * saves the commit details (message, files changed, diff summary)
  * to the MeMesh knowledge graph for future recall.
  *
- * This runs silently — no console output to avoid interrupting workflow.
+ * Commit saving runs silently. Plan progress prints a timeline to stderr.
  */
 
 import {
@@ -178,8 +178,9 @@ function saveCommitToKG(commitInfo) {
  * Match commit to active plan steps and update progress.
  * Prints Style B timeline to stderr (visible to user).
  * @param {Object} commitInfo - Commit details from git
+ * @param {boolean} commitEntitySaved - Whether commit entity was saved to KG
  */
-function updatePlanProgress(commitInfo) {
+function updatePlanProgress(commitInfo, commitEntitySaved = false) {
   try {
     const activePlans = queryActivePlans(MEMESH_DB_PATH);
     if (activePlans.length === 0) return;
@@ -207,14 +208,15 @@ function updatePlanProgress(commitInfo) {
           ? { ...s, completed: true, commitHash: shortHash, date: getDateString(), confidence }
           : s
       );
-      const newCompleted = updatedSteps.filter(s => s.completed).length;
+      const rawCompleted = updatedSteps.filter(s => s.completed).length;
+      const newCompleted = Math.min(rawCompleted, plan.metadata.totalSteps);
 
       // Update entity metadata
       updateEntityMetadata(MEMESH_DB_PATH, plan.name, {
         ...plan.metadata,
         completed: newCompleted,
         stepsDetail: updatedSteps,
-        status: newCompleted === plan.metadata.totalSteps ? 'completed' : 'active',
+        status: newCompleted >= plan.metadata.totalSteps ? 'completed' : 'active',
       });
 
       // Add completion observation
@@ -222,8 +224,10 @@ function updatePlanProgress(commitInfo) {
         `\u2705 Step ${matched.number} completed by ${shortHash} (${getDateString()})`
       );
 
-      // Create relation: commit → plan
-      createRelation(MEMESH_DB_PATH, commitEntityName, plan.name, 'depends_on');
+      // Create relation: commit → plan (only if commit entity exists in KG)
+      if (commitEntitySaved) {
+        createRelation(MEMESH_DB_PATH, commitEntityName, plan.name, 'depends_on');
+      }
 
       // If all steps completed, swap tag and create lesson_learned
       if (newCompleted === plan.metadata.totalSteps) {
@@ -289,8 +293,8 @@ async function postCommit() {
     // Extract commit info and save
     const commitInfo = getLatestCommitInfo();
     if (commitInfo) {
-      saveCommitToKG(commitInfo);
-      updatePlanProgress(commitInfo);
+      const saved = saveCommitToKG(commitInfo);
+      updatePlanProgress(commitInfo, saved);
     }
 
     process.exit(0);

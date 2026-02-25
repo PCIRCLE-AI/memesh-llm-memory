@@ -30,6 +30,9 @@ import {
   isPlanFile,
   parsePlanSteps,
   derivePlanName,
+  sqliteQueryJSON,
+  updateEntityMetadata,
+  addObservation,
 } from './hook-utils.js';
 import fs from 'fs';
 import path from 'path';
@@ -692,24 +695,35 @@ function detectPlanFile(toolData) {
     const planName = derivePlanName(filePath);
     const entityName = `Plan: ${planName}`;
 
-    const observations = steps.map(s => `Step ${s.number}: ${s.description}`);
-
-    const metadata = JSON.stringify({
+    const newMetadata = {
       sourceFile: filePath,
       totalSteps: steps.length,
       completed: steps.filter(s => s.completed).length,
       status: 'active',
       stepsDetail: steps,
-    });
+    };
 
-    const tags = ['plan', 'active', `plan:${planName}`, 'scope:project'];
+    // Check if plan entity already exists (re-save scenario)
+    const existing = sqliteQueryJSON(MEMESH_DB_PATH,
+      'SELECT id FROM entities WHERE name = ?', [entityName]);
 
-    sqliteBatchEntity(MEMESH_DB_PATH,
-      { name: entityName, type: 'workflow_checkpoint', metadata },
-      observations, tags
-    );
+    if (existing && existing.length > 0) {
+      // Upsert: update metadata and add observation for the re-save
+      updateEntityMetadata(MEMESH_DB_PATH, entityName, newMetadata);
+      addObservation(MEMESH_DB_PATH, entityName,
+        `Plan re-saved: ${steps.length} steps (${steps.filter(s => s.completed).length} completed)`);
+      logMemorySave(`Plan updated: ${planName} (${steps.length} steps)`);
+    } else {
+      // First save: create entity with observations and tags
+      const observations = steps.map(s => `Step ${s.number}: ${s.description}`);
+      const tags = ['plan', 'active', `plan:${planName}`, 'scope:project'];
 
-    logMemorySave(`Plan detected: ${planName} (${steps.length} steps)`);
+      sqliteBatchEntity(MEMESH_DB_PATH,
+        { name: entityName, type: 'workflow_checkpoint', metadata: JSON.stringify(newMetadata) },
+        observations, tags
+      );
+      logMemorySave(`Plan detected: ${planName} (${steps.length} steps)`);
+    }
   } catch (error) {
     logError('detectPlanFile', error);
   }

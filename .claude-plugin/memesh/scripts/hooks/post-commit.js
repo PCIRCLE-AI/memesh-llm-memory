@@ -7,7 +7,7 @@
  * saves the commit details (message, files changed, diff summary)
  * to the MeMesh knowledge graph for future recall.
  *
- * This runs silently — no console output to avoid interrupting workflow.
+ * Commit saving runs silently. Plan progress prints a timeline to stderr.
  */
 
 import {
@@ -17,6 +17,13 @@ import {
   getDateString,
   logError,
   logMemorySave,
+  queryActivePlans,
+  matchCommitToStep,
+  addObservation,
+  updateEntityMetadata,
+  updateEntityTag,
+  createRelation,
+  renderTimeline,
 } from './hook-utils.js';
 import fs from 'fs';
 import { execFileSync } from 'child_process';
@@ -164,6 +171,103 @@ function saveCommitToKG(commitInfo) {
 }
 
 // ============================================================================
+// Plan Progress Tracking (Beta)
+// ============================================================================
+
+/**
+ * Match commit to active plan steps and update progress.
+ * Prints Style B timeline to stderr (visible to user).
+ * @param {Object} commitInfo - Commit details from git
+ * @param {boolean} commitEntitySaved - Whether commit entity was saved to KG
+ */
+function updatePlanProgress(commitInfo, commitEntitySaved = false) {
+  try {
+    const activePlans = queryActivePlans(MEMESH_DB_PATH);
+    if (activePlans.length === 0) return;
+
+    const { hash, subject, filesChanged } = commitInfo;
+    const shortHash = hash.substring(0, 7);
+    const commitEntityName = `Commit ${shortHash}: ${subject}`;
+
+    for (const plan of activePlans) {
+      const stepsDetail = plan.metadata?.stepsDetail;
+      if (!stepsDetail || stepsDetail.length === 0) continue;
+
+      const matchResult = matchCommitToStep(
+        { subject, filesChanged },
+        stepsDetail
+      );
+
+      if (!matchResult) continue;
+
+      const { step: matched, confidence } = matchResult;
+
+      // Update step as completed
+      const updatedSteps = stepsDetail.map(s =>
+        s.number === matched.number
+          ? { ...s, completed: true, commitHash: shortHash, date: getDateString(), confidence }
+          : s
+      );
+      const rawCompleted = updatedSteps.filter(s => s.completed).length;
+      const newCompleted = Math.min(rawCompleted, plan.metadata.totalSteps);
+
+      // Update entity metadata
+      updateEntityMetadata(MEMESH_DB_PATH, plan.name, {
+        ...plan.metadata,
+        completed: newCompleted,
+        stepsDetail: updatedSteps,
+        status: newCompleted >= plan.metadata.totalSteps ? 'completed' : 'active',
+      });
+
+      // Add completion observation
+      addObservation(MEMESH_DB_PATH, plan.name,
+        `\u2705 Step ${matched.number} completed by ${shortHash} (${getDateString()})`
+      );
+
+      // Create relation: commit → plan (only if commit entity exists in KG)
+      if (commitEntitySaved) {
+        createRelation(MEMESH_DB_PATH, commitEntityName, plan.name, 'depends_on');
+      }
+
+      // If all steps completed, swap tag and create lesson_learned
+      if (newCompleted === plan.metadata.totalSteps) {
+        updateEntityTag(MEMESH_DB_PATH, plan.name, 'active', 'completed');
+        addObservation(MEMESH_DB_PATH, plan.name,
+          `\ud83c\udf89 Plan completed on ${getDateString()}`
+        );
+
+        // Auto-create lesson_learned entity for the completed plan
+        const planName = plan.name.replace('Plan: ', '');
+        const completedSteps = updatedSteps.filter(s => s.completed);
+        const lessonObs = [
+          `Plan "${planName}" completed (${plan.metadata.totalSteps} steps)`,
+          `Steps: ${completedSteps.map(s => s.description).join(', ')}`,
+          `Commits: ${completedSteps.filter(s => s.commitHash).map(s => s.commitHash).join(', ')}`,
+        ];
+        sqliteBatchEntity(MEMESH_DB_PATH,
+          { name: `Lesson: ${planName} completed`, type: 'lesson_learned', metadata: '{}' },
+          lessonObs,
+          ['lesson', 'plan-completion', `plan:${planName}`, 'scope:project']
+        );
+      }
+
+      // Print timeline to stderr (visible to user — stdout goes to transcript)
+      const timelinePlan = {
+        ...plan,
+        metadata: { ...plan.metadata, completed: newCompleted, stepsDetail: updatedSteps },
+        _lastCommit: shortHash,
+        _matchConfidence: confidence,
+      };
+      console.error('\n' + renderTimeline(timelinePlan, matched.number) + '\n');
+
+      logMemorySave(`Plan progress: ${plan.name} ${newCompleted}/${plan.metadata.totalSteps}`);
+    }
+  } catch (error) {
+    logError('updatePlanProgress', error);
+  }
+}
+
+// ============================================================================
 // Main
 // ============================================================================
 
@@ -189,7 +293,8 @@ async function postCommit() {
     // Extract commit info and save
     const commitInfo = getLatestCommitInfo();
     if (commitInfo) {
-      saveCommitToKG(commitInfo);
+      const saved = saveCommitToKG(commitInfo);
+      updatePlanProgress(commitInfo, saved);
     }
 
     process.exit(0);

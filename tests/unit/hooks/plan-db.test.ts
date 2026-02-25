@@ -10,6 +10,7 @@ import {
   updateEntityTag,
   createRelation,
   sqliteBatchEntity,
+  sqliteQueryJSON,
 } from '../../../scripts/hooks/hook-utils.js';
 
 describe('Plan DB Functions', () => {
@@ -150,6 +151,53 @@ describe('Plan DB Functions', () => {
       createRelation(dbPath, 'E1', 'E2', 'depends_on');
       const result = createRelation(dbPath, 'E1', 'E2', 'depends_on');
       expect(result).toBe(true); // INSERT OR IGNORE
+    });
+  });
+
+  describe('sqliteBatchEntity duplicate handling', () => {
+    it('should return null when entity with same name already exists', () => {
+      const first = sqliteBatchEntity(dbPath,
+        { name: 'Plan: dup-test', type: 'workflow_checkpoint', metadata: '{"v":1}' },
+        ['obs1'], ['plan']
+      );
+      expect(first).not.toBeNull();
+
+      // Second insert with same name should fail (UNIQUE constraint)
+      const second = sqliteBatchEntity(dbPath,
+        { name: 'Plan: dup-test', type: 'workflow_checkpoint', metadata: '{"v":2}' },
+        ['obs2'], ['plan']
+      );
+      expect(second).toBeNull();
+
+      // Metadata should still be the original value
+      const rows = JSON.parse(execFileSync('sqlite3', ['-json', dbPath,
+        "SELECT metadata FROM entities WHERE name = 'Plan: dup-test'"],
+        { encoding: 'utf-8' }));
+      expect(JSON.parse(rows[0].metadata).v).toBe(1);
+    });
+  });
+
+  describe('sqliteQueryJSON', () => {
+    it('should return empty array for query with no matching rows', () => {
+      const result = sqliteQueryJSON(dbPath,
+        'SELECT * FROM entities WHERE name = ?', ['nonexistent']);
+      expect(result).toEqual([]);
+    });
+
+    it('should return null for invalid database path', () => {
+      const result = sqliteQueryJSON('/nonexistent/path.db',
+        'SELECT * FROM entities');
+      expect(result).toBeNull();
+    });
+
+    it('should return parsed rows for valid query', () => {
+      sqliteBatchEntity(dbPath,
+        { name: 'Test Entity', type: 'test' }, [], []);
+
+      const result = sqliteQueryJSON(dbPath,
+        'SELECT name, type FROM entities WHERE name = ?', ['Test Entity']);
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('Test Entity');
     });
   });
 });

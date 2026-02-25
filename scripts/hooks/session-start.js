@@ -249,7 +249,7 @@ function recallFromSQLite() {
       [entityId]
     );
 
-    const keyPoints = obsRows.map(r => r.content).filter(Boolean);
+    const keyPoints = (obsRows || []).map(r => r.content).filter(Boolean);
 
     let parsedMetadata = {};
     try {

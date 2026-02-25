@@ -6,9 +6,9 @@ We actively maintain and provide security updates for the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
+| 2.9.x   | :white_check_mark: |
 | 2.8.x   | :white_check_mark: |
-| 2.7.x   | :white_check_mark: |
-| < 2.7   | :x:                |
+| < 2.8   | :x:                |
 
 We recommend always using the latest version of MeMesh for the best security and features.
 
@@ -217,5 +217,5 @@ Out of scope:
 
 ---
 
-**Last Updated**: 2026-02-15
-**Version**: 2.0
+**Last Updated**: 2026-02-25
+**Version**: 2.1

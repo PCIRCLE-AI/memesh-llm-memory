@@ -46,17 +46,11 @@
 - [ ] Changes are backward compatible (or version bump planned)
 
 ### 🚨 Installation Flow Changes (REQUIRED if modified: package.json, plugin.json, mcp.json, scripts/)
-- [ ] **Read** `INSTALLATION_STANDARD.md` and followed all rules
-- [ ] **Executed** `./scripts/pre-deployment-check.sh` - all checks passed
-- [ ] **Tested** all 4 installation methods:
+- [ ] **Executed** `npm run test:install` - all installation tests passed
+- [ ] **Tested** installation methods:
   - [ ] npm global install (`npm install -g @pcircle/memesh`)
-  - [ ] Quick install script (`./scripts/quick-install.sh`)
-  - [ ] Plugin directory (`claude --plugin-dir`)
-  - [ ] GitHub marketplace (if applicable)
-- [ ] **Updated** all related documentation:
-  - [ ] `INSTALLATION_STANDARD.md` (if flow changed)
-  - [ ] `PLUGIN_DEPLOYMENT_CHECKLIST.md`
-  - [ ] `README.md`
+  - [ ] npx invocation (`npx -y @pcircle/memesh`)
+- [ ] **Updated** related documentation (README.md, docs/)
 - [ ] **Verified** backward compatibility (or marked as BREAKING CHANGE)
 - [ ] **CI/CD** checks all passed
 

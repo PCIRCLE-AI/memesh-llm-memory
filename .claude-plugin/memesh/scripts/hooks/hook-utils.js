@@ -247,12 +247,18 @@ export function sqliteQuery(dbPath, query, params = [], options = {}) {
  * @param {string} query - SQL query with ? placeholders
  * @param {Array} params - Parameter values to substitute
  * @param {Object} options - Query options
- * @returns {Array} Parsed JSON array or empty array on error
+ * @returns {Array|null} Parsed JSON array, empty array for no rows, or null on error
  */
 export function sqliteQueryJSON(dbPath, query, params = [], options = {}) {
   const result = sqliteQuery(dbPath, query, params, { ...options, json: true });
 
-  if (!result) {
+  // sqliteQuery returns null on error — propagate to caller
+  if (result === null) {
+    return null;
+  }
+
+  // Empty string means no matching rows
+  if (result === '') {
     return [];
   }
 
@@ -260,7 +266,7 @@ export function sqliteQueryJSON(dbPath, query, params = [], options = {}) {
     return JSON.parse(result);
   } catch (error) {
     logError('sqliteQueryJSON parse', error);
-    return [];
+    return null;
   }
 }
 
@@ -532,3 +538,362 @@ export function writeJSONFileAsync(filePath, data) {
 
 // Ensure state directory exists on module load
 ensureDir(STATE_DIR);
+
+// ============================================================================
+// Plan-Aware Memory Hooks (Beta)
+// ============================================================================
+
+/** File path patterns that indicate a plan file (requires docs/ context) */
+const PLAN_PATTERNS = [
+  /docs\/plans\/.*\.md$/,
+  /docs\/.*-design\.md$/,
+  /docs\/.*-plan\.md$/,
+];
+
+/**
+ * Check if a file path matches plan file patterns.
+ * @param {string} filePath - File path to check
+ * @returns {boolean}
+ */
+export function isPlanFile(filePath) {
+  if (!filePath) return false;
+  return PLAN_PATTERNS.some(p => p.test(filePath));
+}
+
+/** Common English stop words to filter from tokenization */
+const STOP_WORDS = new Set([
+  'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+  'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+  'should', 'may', 'might', 'shall', 'can', 'need', 'dare', 'ought',
+  'used', 'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by', 'from',
+  'as', 'into', 'through', 'during', 'before', 'after', 'above', 'below',
+  'between', 'out', 'off', 'over', 'under', 'again', 'further', 'then',
+  'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'both',
+  'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor',
+  'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 'just',
+  'because', 'but', 'and', 'or', 'if', 'while', 'that', 'this', 'these',
+  'those', 'it', 'its', 'up', 'set',
+]);
+
+/**
+ * Tokenize text into lowercase meaningful words.
+ * Removes punctuation, stop words, and words shorter than 3 characters.
+ * @param {string} text - Input text
+ * @returns {string[]} Array of meaningful words
+ */
+export function tokenize(text) {
+  if (!text) return [];
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !STOP_WORDS.has(w));
+}
+
+/**
+ * Extract module/file hints from a step description.
+ * Returns words that could match file paths or module names.
+ * @param {string} description - Step description text
+ * @returns {string[]} Module hint words
+ */
+export function extractModuleHints(description) {
+  return tokenize(description);
+}
+
+/**
+ * Derive a human-readable plan name from a file path.
+ * Strips date prefixes (YYYY-MM-DD-) and .md extension.
+ * @param {string} filePath - File path
+ * @returns {string} Plan name
+ */
+export function derivePlanName(filePath) {
+  let name = path.basename(filePath, '.md');
+  // Remove date prefix (YYYY-MM-DD-)
+  name = name.replace(/^\d{4}-\d{2}-\d{2}-/, '');
+  return name;
+}
+
+/**
+ * Parse plan steps from markdown content.
+ * Supports checkbox format (- [ ] ...) and heading format (## Step N: ...).
+ * @param {string} content - Markdown file content
+ * @returns {Array<{number: number, description: string, completed: boolean}>}
+ */
+export function parsePlanSteps(content) {
+  if (!content) return [];
+
+  const steps = [];
+  const lines = content.split('\n');
+  let inCodeFence = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Track code fence boundaries (``` with optional language tag)
+    if (/^`{3,}/.test(trimmed)) {
+      inCodeFence = !inCodeFence;
+      continue;
+    }
+    if (inCodeFence) continue;
+
+    // Format A: Checkbox "- [ ] Step N: description" or "- [ ] description"
+    const checkboxMatch = trimmed.match(/^-\s+\[([ xX])\]\s+(?:(?:Step|Task)\s+\d+\s*[:.]\s*)?(.+)/);
+    if (checkboxMatch) {
+      steps.push({
+        number: steps.length + 1,
+        description: checkboxMatch[2].trim(),
+        completed: checkboxMatch[1].toLowerCase() === 'x',
+      });
+      continue;
+    }
+
+    // Format B: Heading "## Step N: description" or "### Task N: description"
+    const headingStepMatch = trimmed.match(/^#{2,4}\s+(?:Step|Task)\s+(\d+)\s*[:.]\s*(.+)/);
+    if (headingStepMatch) {
+      steps.push({
+        number: parseInt(headingStepMatch[1], 10),
+        description: headingStepMatch[2].trim(),
+        completed: false,
+      });
+      continue;
+    }
+
+    // Format C: Numbered heading "### 1. description"
+    const numberedMatch = trimmed.match(/^#{2,4}\s+(\d+)\.\s+(.+)/);
+    if (numberedMatch) {
+      steps.push({
+        number: parseInt(numberedMatch[1], 10),
+        description: numberedMatch[2].trim(),
+        completed: false,
+      });
+      continue;
+    }
+  }
+
+  return steps;
+}
+
+/**
+ * Match a commit to the best matching uncompleted plan step.
+ * Uses keyword overlap + file path hints. Threshold: 0.3.
+ * @param {{ subject: string, filesChanged: string[] }} commitInfo
+ * @param {Array<{ number: number, description: string, completed: boolean }>} planSteps
+ * @returns {{ step: object, confidence: number } | null}
+ */
+export function matchCommitToStep(commitInfo, planSteps) {
+  if (!planSteps || planSteps.length === 0) return null;
+  if (!commitInfo || !commitInfo.subject) return null;
+
+  const commitWords = tokenize(commitInfo.subject);
+  if (commitWords.length === 0) return null;
+
+  let bestMatch = null;
+  let bestScore = 0;
+
+  for (const step of planSteps) {
+    if (step.completed) continue;
+
+    const stepWords = tokenize(step.description);
+    if (stepWords.length === 0) continue;
+
+    // Keyword overlap score (0~1)
+    const overlap = commitWords.filter(w => stepWords.includes(w));
+    let score = overlap.length / stepWords.length;
+
+    // File path bonus (+0.3)
+    const moduleHints = extractModuleHints(step.description);
+    const filesChanged = commitInfo.filesChanged || [];
+    const fileMatch = filesChanged.some(f =>
+      moduleHints.some(hint => f.toLowerCase().includes(hint))
+    );
+    if (fileMatch) score += 0.3;
+
+    if (score > bestScore && score > 0.3) {
+      bestScore = score;
+      bestMatch = step;
+    }
+  }
+
+  if (!bestMatch) return null;
+
+  // Return step + confidence (capped at 1.0)
+  return { step: bestMatch, confidence: Math.min(bestScore, 1.0) };
+}
+
+/**
+ * Render a full Style B timeline visualization.
+ * @param {Object} plan - Plan entity with metadata.stepsDetail
+ * @param {number} [highlightStep] - Step number to highlight (just matched)
+ * @returns {string} Multi-line timeline string
+ */
+export function renderTimeline(plan, highlightStep = null) {
+  const { stepsDetail, totalSteps, completed = 0 } = plan.metadata;
+  if (!stepsDetail || stepsDetail.length === 0 || !totalSteps) return '';
+
+  const pct = Math.round((completed / totalSteps) * 100);
+  const planName = plan.name.replace('Plan: ', '');
+  const nextStep = stepsDetail.find(st => !st.completed);
+
+  // Node symbols: ◉ highlighted (just-matched), ● completed, ◉ next, ○ pending
+  const nodes = stepsDetail.map(s => {
+    if (s.number === highlightStep) return '\u25c9';
+    if (s.completed) return '\u25cf';
+    if (nextStep && s.number === nextStep.number) return '\u25c9';
+    return '\u25cb';
+  }).join(' \u2500\u2500\u2500\u2500 ');
+
+  // Step numbers row
+  const numbers = stepsDetail.map(s =>
+    String(s.number).padEnd(6)
+  ).join('');
+
+  const separator = '\u2501'.repeat(40);
+
+  const lines = [
+    `  \ud83d\udccb ${planName}`,
+    `  ${separator}`,
+    `  ${nodes}`,
+    `  ${numbers}   ${pct}% done`,
+    `  ${separator}`,
+  ];
+
+  if (highlightStep) {
+    const commitRef = plan._lastCommit || '';
+    const confidence = plan._matchConfidence || 1.0;
+    const marker = confidence < 0.6 ? ' (?)' : '';
+    lines.push(`  \u2705 Step ${highlightStep} matched${marker} \u2190 ${commitRef}`);
+  }
+
+  if (nextStep && completed < totalSteps) {
+    lines.push(`  \u25b6 Next: Step ${nextStep.number} - ${nextStep.description}`);
+  }
+
+  if (completed === totalSteps) {
+    lines.push(`  \ud83c\udf89 Plan complete!`);
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Render a compact Style B timeline for session-start display.
+ * @param {Object} plan - Plan entity with metadata.stepsDetail
+ * @returns {string} 3-line compact timeline string
+ */
+export function renderTimelineCompact(plan) {
+  const { stepsDetail, totalSteps, completed = 0 } = plan.metadata;
+  if (!stepsDetail || stepsDetail.length === 0 || !totalSteps) return '';
+
+  const pct = Math.round((completed / totalSteps) * 100);
+  const planName = plan.name.replace('Plan: ', '');
+
+  const nodes = stepsDetail.map(s =>
+    s.completed ? '\u25cf' : '\u25cb'
+  ).join(' \u2500\u2500\u2500\u2500 ');
+
+  const next = stepsDetail.find(s => !s.completed);
+
+  return [
+    `  \ud83d\udccb ${planName}`,
+    `  ${nodes}    ${pct}%`,
+    next ? `  \u25b6 Next: ${next.description}` : `  \ud83c\udf89 Complete`,
+  ].join('\n');
+}
+
+// ============================================================================
+// Plan DB Operations
+// ============================================================================
+
+/**
+ * Query active plan entities from KG.
+ * @param {string} dbPath - Path to SQLite database
+ * @returns {Array<{name: string, metadata: object}>}
+ */
+export function queryActivePlans(dbPath) {
+  try {
+    if (!fs.existsSync(dbPath)) return [];
+
+    const rows = sqliteQueryJSON(dbPath,
+      `SELECT e.name, e.metadata FROM entities e
+       JOIN tags t ON t.entity_id = e.id
+       WHERE e.type = ? AND t.tag = ?`,
+      ['workflow_checkpoint', 'active']
+    );
+
+    if (!rows) return [];
+
+    return rows.map(row => ({
+      name: row.name,
+      metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata || '{}') : row.metadata,
+    }));
+  } catch (error) {
+    logError('queryActivePlans', error);
+    return [];
+  }
+}
+
+/**
+ * Add an observation to an existing entity.
+ * @param {string} dbPath - Path to SQLite database
+ * @param {string} entityName - Entity name
+ * @param {string} content - Observation content
+ * @returns {boolean}
+ */
+export function addObservation(dbPath, entityName, content) {
+  const result = sqliteQuery(dbPath,
+    `INSERT INTO observations (entity_id, content, created_at)
+     SELECT id, ?, ? FROM entities WHERE name = ?`,
+    [content, new Date().toISOString(), entityName]
+  );
+  return result !== null;
+}
+
+/**
+ * Update an entity's metadata JSON.
+ * @param {string} dbPath - Path to SQLite database
+ * @param {string} entityName - Entity name
+ * @param {object} metadata - New metadata object
+ * @returns {boolean}
+ */
+export function updateEntityMetadata(dbPath, entityName, metadata) {
+  const result = sqliteQuery(dbPath,
+    'UPDATE entities SET metadata = ? WHERE name = ?',
+    [JSON.stringify(metadata), entityName]
+  );
+  return result !== null;
+}
+
+/**
+ * Replace a tag on an entity.
+ * @param {string} dbPath - Path to SQLite database
+ * @param {string} entityName - Entity name
+ * @param {string} oldTag - Tag to replace
+ * @param {string} newTag - New tag value
+ * @returns {boolean}
+ */
+export function updateEntityTag(dbPath, entityName, oldTag, newTag) {
+  const result = sqliteQuery(dbPath,
+    `UPDATE tags SET tag = ? WHERE tag = ? AND entity_id = (SELECT id FROM entities WHERE name = ?)`,
+    [newTag, oldTag, entityName]
+  );
+  return result !== null;
+}
+
+/**
+ * Create a relation between two entities.
+ * @param {string} dbPath - Path to SQLite database
+ * @param {string} fromName - Source entity name
+ * @param {string} toName - Target entity name
+ * @param {string} relationType - Relation type (e.g. 'depends_on')
+ * @returns {boolean}
+ */
+export function createRelation(dbPath, fromName, toName, relationType) {
+  const result = sqliteQuery(dbPath,
+    `INSERT OR IGNORE INTO relations (from_entity_id, to_entity_id, relation_type, created_at)
+     SELECT f.id, t.id, ?, ?
+     FROM entities f, entities t
+     WHERE f.name = ? AND t.name = ?`,
+    [relationType, new Date().toISOString(), fromName, toName]
+  );
+  return result !== null;
+}

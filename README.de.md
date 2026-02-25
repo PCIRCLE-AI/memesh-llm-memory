@@ -2,9 +2,9 @@
 
 # 🧠 MeMesh Plugin
 
-### Durchsuchbarer Projektspeicher für Claude Code
+### Produktivitäts-Plugin für Claude Code
 
-Entscheidungen, Muster und Kontext merken — über jede Sitzung hinweg.
+Speicher, intelligente Aufgabenanalyse und Workflow-Automatisierung — in einem Plugin.
 
 [![npm version](https://img.shields.io/npm/v/@pcircle/memesh)](https://www.npmjs.com/package/@pcircle/memesh)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -26,17 +26,27 @@ Dieses Projekt entstand, weil ich mehr Menschen helfen wollte — besonders Prog
 
 ## Was kann es?
 
-MeMesh Plugin gibt euren Projekten ein **durchsuchbares Gedächtnis**.
+MeMesh Plugin macht Claude Code schlauer und produktiver. Es ist nicht nur ein Speicher — es ist ein komplettes Toolkit:
 
-Während ihr mit Claude Code arbeitet, speichert MeMesh automatisch wichtige Entscheidungen, Architekturkontext und gelernte Lektionen. Wenn ihr das nächste Mal eine Sitzung startet, könnt ihr fragen „Was hatten wir bei der Auth entschieden?" und bekommt sofort eine Antwort.
+**Durchsuchbarer Projektspeicher** — Entscheidungen, Muster und Lektionen werden automatisch gespeichert. Suche nach Bedeutung, nicht nur Schlüsselwörtern. Fragt „Warum haben wir PostgreSQL gewählt?" und bekommt sofort Antworten.
+
+**Intelligente Aufgabenanalyse** — Bei `buddy-do "Authentifizierung hinzufügen"` analysiert MeMesh die Aufgabe, zieht relevanten Kontext aus vergangener Arbeit und liefert einen angereicherten Plan vor der Ausführung.
+
+**Workflow-Automatisierung** — MeMesh arbeitet im Hintergrund automatisch:
+- Zeigt beim Sitzungsstart eine Zusammenfassung der letzten Arbeit
+- Verfolgt geänderte und getestete Dateien
+- Erinnert vor dem Commit an Code-Review
+- Routet Aufgaben zum optimalen Modell
+
+**Aus Fehlern lernen** — Fehler und Korrekturen aufzeichnen, um eine Wissensbasis aufzubauen und wiederholte Fehler zu vermeiden.
 
 **Wie unterscheidet sich das vom eingebauten Gedächtnis von Claude?**
 
-Claude Code hat bereits Auto Memory und CLAUDE.md — super für allgemeine Einstellungen und Anweisungen. MeMesh fügt einen dedizierten **Projektspeicher** hinzu, den ihr aktiv durchsuchen und abfragen könnt, mit Unterstützung für bedeutungsbasierte Suche (nicht nur exakte Schlüsselwörter).
+Claude Code hat bereits Auto Memory und CLAUDE.md — super für allgemeine Einstellungen. MeMesh fügt projektbezogene **dedizierte Tools** hinzu: bedeutungsbasiert durchsuchbarer Speicher, Aufgabenanalyse mit vergangenem Kontext und automatisierte Workflows, die jede Sitzung produktiver machen.
 
 So kann man es sich vorstellen:
 - **CLAUDE.md** = eure Bedienungsanleitung für Claude
-- **MeMesh** = ein durchsuchbares Notizbuch mit allem, was euer Projekt gelernt hat
+- **MeMesh** = durchsuchbares Notizbuch + intelligenter Assistent, der mit eurem Projekt wächst
 
 ---
 

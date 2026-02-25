@@ -53,8 +53,7 @@ export class ToolHandlers {
                         `To use local memory tools:\n` +
                         `1. Install better-sqlite3: npm install better-sqlite3\n` +
                         `2. Restart the MCP server\n\n` +
-                        `OR use cloud sync tools instead:\n` +
-                        `- memesh-cloud-sync: Sync with cloud storage (requires MEMESH_API_KEY)`,
+                        `Local SQLite storage is required for memory features.`,
                 },
             ],
             isError: true,

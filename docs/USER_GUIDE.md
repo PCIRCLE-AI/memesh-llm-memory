@@ -711,76 +711,6 @@ These tools provide lower-level access to MeMesh capabilities. For complete API 
 
 📖 **Full Documentation**: [API_REFERENCE.md - memesh-create-entities](./api/API_REFERENCE.md#memesh-create-entities)
 
-#### recall-memory
-
-**Purpose**: Low-level memory search with advanced filters
-
-**Parameters**:
-- `limit`: Maximum results (default: 10)
-- `query`: Optional search query
-
-**Quick Example**:
-```json
-{
-  "query": "authentication",
-  "limit": 5
-}
-```
-
-📖 **Full Documentation**: [API_REFERENCE.md - recall-memory](./api/API_REFERENCE.md#recall-memory)
-
-#### add-observations
-
-**Purpose**: Add new observations to existing entities
-
-**Quick Example**:
-```json
-{
-  "observations": [
-    {
-      "entityName": "PostgreSQL Database Choice 2026-02-03",
-      "contents": [
-        "Added read replicas for scalability",
-        "Performance improved by 40%"
-      ]
-    }
-  ]
-}
-```
-
-📖 **Full Documentation**: [API_REFERENCE.md - add-observations](./api/API_REFERENCE.md#add-observations)
-
-#### create-relations
-
-**Purpose**: Create typed relationships between entities
-
-**Quick Example**:
-```json
-{
-  "relations": [
-    {
-      "from": "User Service",
-      "to": "PostgreSQL Database Choice",
-      "relationType": "depends_on"
-    }
-  ]
-}
-```
-
-📖 **Full Documentation**: [API_REFERENCE.md - create-relations](./api/API_REFERENCE.md#create-relations)
-
-#### health-check
-
-**Purpose**: Monitor MeMesh system health
-
-**Returns**:
-- System status (healthy/degraded/unhealthy)
-- Component statuses (database, filesystem, memory)
-- Resource metrics
-- Recommendations
-
-📖 **Full Documentation**: [API_REFERENCE.md - health-check](./api/API_REFERENCE.md#health-check)
-
 #### memesh-generate-tests
 
 **Purpose**: Generate automated test cases using AI
@@ -795,38 +725,6 @@ These tools provide lower-level access to MeMesh capabilities. For complete API 
 
 📖 **Full Documentation**: [API_REFERENCE.md - memesh-generate-tests](./api/API_REFERENCE.md#memesh-generate-tests)
 
-#### memesh-cloud-sync
-
-**Purpose**: Synchronize local knowledge graph with MeMesh Cloud
-
-**Parameters**:
-- `action` (required): Sync action
-  - `status` - Compare local vs cloud memory counts
-  - `push` - Push local KG entities to cloud
-  - `pull` - Pull cloud memories to local
-- `query` (optional): Filter which memories to sync
-- `space` (optional): Cloud memory space (default: "default")
-- `limit` (optional): Max memories per batch (1-500, default: 100)
-- `dryRun` (optional): Preview without executing (default: false)
-
-**Quick Example**:
-```json
-{
-  "action": "push",
-  "space": "work",
-  "dryRun": true
-}
-```
-
-**When to Use**:
-- Backup memories to cloud
-- Sync across multiple machines
-- Share project knowledge with team
-
-**Note**: Requires `MEMESH_API_KEY` environment variable. Use `memesh login` to authenticate.
-
-📖 **Full Documentation**: [API_REFERENCE.md - memesh-cloud-sync](./api/API_REFERENCE.md#memesh-cloud-sync)
-
 ---
 
 ### Learning & Error Tracking
@@ -836,18 +734,24 @@ These tools provide lower-level access to MeMesh capabilities. For complete API 
 **Purpose**: Record errors and mistakes for learning and prevention
 
 **Parameters**:
-- `mistake`: Description of what went wrong
-- `context`: Situation where the error occurred
-- `correctApproach`: The right way to handle it
-- `tags`: Optional categorization tags
+- `action` (required): What action the AI took
+- `errorType` (required): Error classification (`procedure-violation`, `workflow-skip`, `assumption-error`, `validation-skip`, `responsibility-lack`, `firefighting`, `dependency-miss`, `integration-error`, `deployment-error`)
+- `userCorrection` (required): User's correction/feedback
+- `correctMethod` (required): What should have been done instead
+- `impact` (required): Impact of the mistake
+- `preventionMethod` (required): How to prevent in future
+- `relatedRule` (optional): Related rule/guideline
+- `context` (optional): Additional context object
 
 **Quick Example**:
 ```json
 {
-  "mistake": "Used synchronous file read in async function",
-  "context": "Loading configuration at startup",
-  "correctApproach": "Use fs.promises.readFile() instead of fs.readFileSync()",
-  "tags": ["nodejs", "async", "filesystem"]
+  "action": "Used synchronous file read in async handler",
+  "errorType": "assumption-error",
+  "userCorrection": "This blocks the event loop",
+  "correctMethod": "Use fs.promises.readFile() instead of fs.readFileSync()",
+  "impact": "Server becomes unresponsive under load",
+  "preventionMethod": "Always use async I/O in request handlers"
 }
 ```
 

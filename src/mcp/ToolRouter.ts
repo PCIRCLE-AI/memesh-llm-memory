@@ -17,8 +17,9 @@ import {
   BuddyHandlers,
 } from './handlers/index.js';
 import type { KnowledgeGraph } from '../knowledge-graph/index.js';
-import { handleCloudSync, CloudSyncInputSchema } from './tools/memesh-cloud-sync.js';
-import { handleAgentRegister, AgentRegisterInputSchema } from './tools/memesh-agent-register.js';
+// Cloud tools disabled until cloud service is fully operational
+// import { handleCloudSync, CloudSyncInputSchema } from './tools/memesh-cloud-sync.js';
+// import { handleAgentRegister, AgentRegisterInputSchema } from './tools/memesh-agent-register.js';
 import { handleMemeshMetrics, MemeshMetricsInputSchema } from './tools/memesh-metrics.js';
 import { logger } from '../utils/logger.js';
 
@@ -401,29 +402,9 @@ export class ToolRouter {
       return await this.toolHandlers.handleGenerateTests(args);
     }
 
-    // Cloud Sync tools (v2.8.0: already using memesh-* naming)
-    if (resolvedToolName === 'memesh-cloud-sync') {
-      const validationResult = CloudSyncInputSchema.safeParse(args);
-      if (!validationResult.success) {
-        throw new ValidationError(
-          `Invalid input for ${resolvedToolName}: ${validationResult.error.message}`,
-          { component: 'ToolRouter', method: 'dispatch', toolName: resolvedToolName, zodError: validationResult.error }
-        );
-      }
-      return handleCloudSync(validationResult.data, this.knowledgeGraph);
-    }
-
-    // Agent Registration tool
-    if (resolvedToolName === 'memesh-agent-register') {
-      const validationResult = AgentRegisterInputSchema.safeParse(args);
-      if (!validationResult.success) {
-        throw new ValidationError(
-          `Invalid input for ${resolvedToolName}: ${validationResult.error.message}`,
-          { component: 'ToolRouter', method: 'dispatch', toolName: resolvedToolName, zodError: validationResult.error }
-        );
-      }
-      return handleAgentRegister(validationResult.data);
-    }
+    // Cloud Sync tools — disabled until cloud service is fully operational
+    // if (resolvedToolName === 'memesh-cloud-sync') { ... }
+    // if (resolvedToolName === 'memesh-agent-register') { ... }
 
 
     // Observability tools

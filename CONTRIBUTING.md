@@ -149,7 +149,9 @@ When adding new MCP tools:
 
 ### Tool Naming Convention
 
-- Use `buddy-` prefix for user-facing tools
+- Use `buddy-` prefix for user-facing conversational tools (e.g., `buddy-do`, `buddy-remember`)
+- Use `memesh-` prefix for system/advanced tools (e.g., `memesh-create-entities`, `memesh-record-mistake`)
+- All new tools MUST include `outputSchema` and `annotations` (MCP Spec 2025-11-25 compliance)
 
 ## Release Process
 

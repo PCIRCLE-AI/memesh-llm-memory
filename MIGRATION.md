@@ -123,7 +123,7 @@ All CLI commands remain the same:
 
 ### Q: Will my existing data be lost?
 
-**A:** No. All local data stored in `~/.claude-code-buddy/` remains intact and will continue to work with the new package.
+**A:** No. The new package checks `~/.memesh/` first, then falls back to `~/.claude-code-buddy/` automatically. Your existing data remains intact and accessible without manual migration.
 
 ### Q: What happens if I don't migrate?
 

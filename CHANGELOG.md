@@ -9,52 +9,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Claude Code Hooks System** - 7 hooks for session lifecycle automation
+  - `pre-tool-use`: Smart routing (model selection per task type), planning enforcement (SDD+BDD template), dry-run gate (untested code warning), code review reminder
+  - `post-tool-use`: Pattern detection (EDIT_WITHOUT_READ, GIT_WORKFLOW, FRONTEND_WORK), anomaly detection, session state tracking
+  - `post-commit`: Saves commit metadata to knowledge graph
+  - `subagent-stop`: Captures code review findings to knowledge graph
+  - `session-start`: Cache-first memory recall with SQLite fallback, CLAUDE.md reload
+  - `stop`: Session archiving, key point extraction, pattern analysis
+  - `hook-utils`: Shared utilities (sqliteQuery, sqliteBatch, sqliteBatchEntity, readStdin)
+  - 15 automated tests via custom test harness
+- **`memesh-metrics` MCP Tool** - Exposes session, routing, and memory metrics
+  - Session: modified files, tested files, code review status
+  - Routing: active model rules, planning enforcement, audit log
+  - Memory: knowledge graph size and status
+- **Semantic Search** - KnowledgeGraph now supports vector similarity search via sqlite-vec
+  - `semanticSearch()`: Vector search with FTS5 keyword fallback
+  - `hybridSearch()`: Combines keyword and vector results, deduplicates by entity name
+  - Async embedding generation via `Xenova/all-MiniLM-L6-v2`
+  - Keyword fallback uses 0.5 similarity (not 1.0) for honest scoring
+- **Smart Task Analysis in `buddy-do`** - Detects task type (bug-fix, feature, refactor, test, performance, security), extracts metadata (goal, reason, expected outcome), queries related context from knowledge graph
+- **Bundled Skill: `comprehensive-code-review`** - Included in `scripts/skills/`
 - **Cloud-Only Fallback Mode** - MCP server can now run without local SQLite when better-sqlite3 is unavailable but MEMESH_API_KEY is configured (#73, #74)
-  - Implements three-mode architecture: Standard (SQLite) / Cloud-Only (API key) / Error (neither)
+  - Three-mode architecture: Standard (SQLite) / Cloud-Only (API key) / Error (neither)
   - Graceful degradation for Claude Desktop Cowork environments
-  - Memory-dependent tools return helpful error messages in cloud-only mode
-  - Non-memory tools continue to work normally
   - Added 13 comprehensive tests for cloud-only mode (4 unit + 9 integration)
-- **Claude Desktop Cowork Documentation** - Comprehensive guide at `docs/COWORK_SUPPORT.md` explaining current status, limitations, and future roadmap (#75)
-- **BuddyHandlers Test Coverage** - Added 9 comprehensive unit tests covering all buddy commands and cloud-only mode behavior (#19)
-- **Enhanced .gitignore** - Improved multi-platform development support with better organization (#21)
-  - Added macOS patterns (.AppleDouble, .LSOverride)
-  - Added Windows patterns (Desktop.ini, Thumbs.db:encryptable)
-  - Added Linux patterns (.directory, .fuse_hidden*)
-  - Added IDE patterns (Sublime Text, Emacs)
-  - Better documentation and categorization
+- **Claude Desktop Cowork Documentation** - Guide at `docs/COWORK_SUPPORT.md` (#75)
+- **BuddyHandlers Test Coverage** - 9 unit tests covering all buddy commands (#19)
+- **Enhanced .gitignore** - Multi-platform patterns for macOS, Windows, Linux, IDEs (#21)
 
 ### Changed
 
+- **Server Bootstrap** - Structured error handling with error classification (permission, disk, socket) and actionable recovery hints
+- **StdioProxyClient** - Buffer overflow handling, proper listener cleanup on connection failure
 - **Dependencies Update** - Updated 15/17 packages to latest versions (#68)
-  - @types/node: 25.2.0 → 25.2.3
-  - @typescript-eslint/*: 8.54.0 → 8.55.0
-  - ajv: 8.17.1 → 8.18.0
-  - dotenv: 17.2.3 → 17.3.1
-  - glob: 13.0.0 → 13.0.3
-  - ink: 6.6.0 → 6.7.0
-  - inquirer: 13.2.2 → 13.2.4
-  - onnxruntime-node: 1.23.2 → 1.24.1
-  - typedoc: 0.28.16 → 0.28.17
-  - And 6 more packages
+  - @types/node, @typescript-eslint/*, ajv, dotenv, glob, ink, inquirer, onnxruntime-node, typedoc, and more
   - Note: eslint 10.0.0 blocked (typescript-eslint incompatibility)
 
 ### Fixed
 
+- **`getEntity()` Exact Match** - Now uses direct SQL `WHERE name = ?` instead of FTS5 fuzzy search that could return wrong entity
+- **`post-commit` Hook Exit Code** - Changed from `exit(1)` to `exit(0)` to never block Claude Code on hook errors
+- **Entity Name Collision** - `subagent-stop` entity names now include timestamp to prevent UNIQUE constraint failures on multiple reviews per day
+- **`sqliteQuery` Error Handling** - Returns `null` on error instead of empty string, allowing callers to distinguish errors from empty results
+- **`sqliteBatch` Orphan Prevention** - Propagates errors; `sqliteBatchEntity` cleans up orphaned entities when batch fails
+- **Error Logging** - `initVectorSearch` and `deleteEntity` catch blocks now log error context instead of silently discarding
+- **Metrics Tool** - Uses PathResolver for DB path (supports custom data directories), `os.homedir()` fallback, bounded audit log read (256KB)
+- **`UnifiedMemoryStore.update()` Race Condition** - Returns `false` on concurrent delete instead of creating phantom data
+- **Session File Growth** - `post-tool-use` toolCalls array capped at 1000 entries
+- **Windows Compatibility** - `pre-tool-use` uses `fileURLToPath()` instead of `URL.pathname`
+- **`readStdin` Performance** - Fast-path for already-closed stdin avoids 3-second timeout
+- **Hybrid Search Scoring** - Keyword fallback uses `similarity: 0.5` instead of `1.0` for honest scoring in merge
 - **Cloud-Only Mode Error Handling** - Fixed `handleHookToolUse` to check for cloud-only mode before accessing memory systems
-- **Integration Test Failures** - Fixed 3 failing cloud-only mode integration tests
-  - Added cloud-only check to handleHookToolUse
-  - Updated buddy-help test expectations for flexible message format
-  - Removed non-existent handleListAgents test
 
 ### Technical
 
 - **Server Architecture** - Modified `ServerInitializer` to support three initialization modes
 - **Type Safety** - Changed all optional memory systems from `null` to `undefined` for TypeScript consistency
-- **Test Coverage** - Added 22 new tests (100% passing): 4 unit + 9 integration + 9 BuddyHandlers
-- **Code Quality** - 10-dimension comprehensive code review completed (0 Critical, 0 Major, 3 Minor issues)
+- **Test Coverage** - 1817 unit tests + 15 hook tests (100% passing)
+- **Code Quality** - Three rounds of comprehensive code review, all CRITICAL and MAJOR issues resolved
+- **Refactored `subagent-stop`** - Uses `sqliteBatchEntity` (3 spawns) instead of individual `sqliteQuery` calls (N+2 spawns)
 
-**Issues Resolved**: #73 (partial - cloud-only mode), #74 (Phase 2), #75 (docs), #68 (deps), #19 (tests), #21 (.gitignore)
+**Issues Resolved**: #73 (cloud-only mode), #74 (Phase 2), #75 (docs), #68 (deps), #19 (tests), #21 (.gitignore)
 
 ## [2.8.10] - 2026-02-14
 

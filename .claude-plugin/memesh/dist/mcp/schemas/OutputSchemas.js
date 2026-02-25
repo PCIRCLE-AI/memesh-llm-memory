@@ -2,41 +2,24 @@ export const OutputSchemas = {
     buddyDo: {
         type: 'object',
         properties: {
-            routing: {
-                type: 'object',
-                properties: {
-                    approved: { type: 'boolean' },
-                    message: { type: 'string' },
-                    capabilityFocus: {
-                        type: 'array',
-                        items: { type: 'string' },
-                    },
-                    complexity: {
-                        type: 'string',
-                        enum: ['simple', 'medium', 'complex'],
-                    },
-                    estimatedTokens: { type: 'number' },
-                    estimatedCost: { type: 'number' },
-                },
-                required: ['approved', 'message'],
+            message: {
+                type: 'string',
+                description: 'Formatted task proposal with analysis, approach, and related context',
             },
-            enhancedPrompt: {
-                type: 'object',
-                properties: {
-                    systemPrompt: { type: 'string' },
-                    userPrompt: { type: 'string' },
-                    suggestedModel: { type: 'string' },
-                },
+            confirmationRequired: {
+                type: 'boolean',
+                description: 'Whether user confirmation is needed before proceeding',
             },
             stats: {
                 type: 'object',
                 properties: {
                     durationMs: { type: 'number' },
-                    estimatedTokens: { type: 'number' },
+                    taskType: { type: 'string' },
+                    relatedContextCount: { type: 'number' },
                 },
             },
         },
-        required: ['routing'],
+        required: ['message', 'confirmationRequired'],
     },
     buddyRemember: {
         type: 'object',

@@ -2,47 +2,13 @@ export declare const OutputSchemas: {
     buddyDo: {
         type: "object";
         properties: {
-            routing: {
+            message: {
                 type: string;
-                properties: {
-                    approved: {
-                        type: string;
-                    };
-                    message: {
-                        type: string;
-                    };
-                    capabilityFocus: {
-                        type: string;
-                        items: {
-                            type: string;
-                        };
-                    };
-                    complexity: {
-                        type: string;
-                        enum: string[];
-                    };
-                    estimatedTokens: {
-                        type: string;
-                    };
-                    estimatedCost: {
-                        type: string;
-                    };
-                };
-                required: string[];
+                description: string;
             };
-            enhancedPrompt: {
+            confirmationRequired: {
                 type: string;
-                properties: {
-                    systemPrompt: {
-                        type: string;
-                    };
-                    userPrompt: {
-                        type: string;
-                    };
-                    suggestedModel: {
-                        type: string;
-                    };
-                };
+                description: string;
             };
             stats: {
                 type: string;
@@ -50,7 +16,10 @@ export declare const OutputSchemas: {
                     durationMs: {
                         type: string;
                     };
-                    estimatedTokens: {
+                    taskType: {
+                        type: string;
+                    };
+                    relatedContextCount: {
                         type: string;
                     };
                 };
@@ -402,22 +371,12 @@ export declare const OutputSchemas: {
     };
 };
 export type BuddyDoOutput = {
-    routing: {
-        approved: boolean;
-        message: string;
-        capabilityFocus?: string[];
-        complexity?: 'simple' | 'medium' | 'complex';
-        estimatedTokens?: number;
-        estimatedCost?: number;
-    };
-    enhancedPrompt?: {
-        systemPrompt?: string;
-        userPrompt?: string;
-        suggestedModel?: string;
-    };
+    message: string;
+    confirmationRequired: boolean;
     stats?: {
         durationMs?: number;
-        estimatedTokens?: number;
+        taskType?: string;
+        relatedContextCount?: number;
     };
 };
 export type BuddyRememberOutput = {

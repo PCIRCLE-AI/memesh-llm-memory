@@ -100,7 +100,7 @@ Examples:
     outputSchema: OutputSchemas.buddyDo,
     annotations: {
       title: 'Smart Task Analyzer',
-      readOnlyHint: true,       // Returns proposal only, does not execute
+      readOnlyHint: false,      // Records task start via autoTracker
       destructiveHint: false,
       idempotentHint: false,    // Results may vary based on KG context
       openWorldHint: true,

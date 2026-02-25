@@ -396,7 +396,7 @@ function extractSessionKeyPoints(sessionState, patterns) {
 
 /**
  * Save session key points to MeMesh on session end.
- * Uses sqliteBatchEntity for performance (2 spawns instead of N).
+ * Uses sqliteBatchEntity for performance (3 spawns instead of N).
  * @param {Object} sessionState - Current session state
  * @param {Array} patterns - Analyzed patterns
  * @returns {boolean} True if saved successfully
@@ -669,5 +669,5 @@ try {
   stopHook();
 } catch (error) {
   console.error('❌ Stop hook error:', error.message);
-  process.exit(1);
+  process.exit(0); // Never block Claude Code on hook errors
 }

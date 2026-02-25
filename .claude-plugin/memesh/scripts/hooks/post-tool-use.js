@@ -329,9 +329,10 @@ function updateCurrentSession(toolData, patterns, anomalies) {
   });
 
   // Async write — session file is read on next call, eventual consistency is fine
-  writeJSONFileAsync(CURRENT_SESSION_FILE, currentSession);
+  // Return promise so caller can track it in pendingWrites
+  const writePromise = writeJSONFileAsync(CURRENT_SESSION_FILE, currentSession);
 
-  return currentSession;
+  return { session: currentSession, writePromise };
 }
 
 /**
@@ -435,7 +436,7 @@ function extractKeyPoints(sessionState) {
 
 /**
  * Save conversation key points to MeMesh knowledge graph.
- * Uses sqliteBatchEntity for performance (2 spawns instead of N).
+ * Uses sqliteBatchEntity for performance (3 spawns instead of N).
  * @param {Object} sessionState - Current session state
  * @param {Object} sessionContext - Session context
  * @returns {boolean} True if saved successfully
@@ -705,7 +706,9 @@ async function postToolUse() {
     }
 
     // Update current session (async write)
-    const updatedSession = updateCurrentSession(toolData, patterns, anomalies);
+    const { session: updatedSession, writePromise: sessionWritePromise } =
+      updateCurrentSession(toolData, patterns, anomalies);
+    pendingWrites.push(sessionWritePromise);
 
     // Check token threshold and save key points if needed
     checkAndSaveKeyPoints(updatedSession, sessionContext);
@@ -717,7 +720,7 @@ async function postToolUse() {
     process.exit(0);
   } catch (error) {
     logError('PostToolUse', error);
-    process.exit(1);
+    process.exit(0); // Never block Claude Code on hook errors
   }
 }
 

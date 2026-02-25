@@ -55,7 +55,7 @@ Examples:
         outputSchema: OutputSchemas.buddyDo,
         annotations: {
             title: 'Smart Task Analyzer',
-            readOnlyHint: true,
+            readOnlyHint: false,
             destructiveHint: false,
             idempotentHint: false,
             openWorldHint: true,

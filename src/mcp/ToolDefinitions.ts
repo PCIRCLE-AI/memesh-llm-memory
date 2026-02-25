@@ -633,9 +633,9 @@ Use section parameter to focus on specific areas:
     // Knowledge Graph Tools
     createEntitiesTool,
 
-    // Cloud Sync
-    cloudSyncTool,
-    agentRegisterTool,
+    // Cloud Sync — disabled until cloud service is fully operational
+    // cloudSyncTool,
+    // agentRegisterTool,
 
     // Hook Integration
     hookToolUseTool,

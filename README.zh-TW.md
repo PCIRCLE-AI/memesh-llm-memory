@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🧠 MeMesh
+# 🧠 MeMesh Plugin
 
 ### Claude Code 的可搜尋專案記憶
 
@@ -16,9 +16,17 @@
 
 ---
 
-## MeMesh 是什麼？
+## 為什麼做這個專案
 
-MeMesh 是一個 Claude Code 插件，幫你的專案建立**可搜尋的記憶**。
+我很喜歡 Claude Code，它改變了我寫軟體的方式。
+
+這個專案的起點很簡單：我想幫助更多人 — 特別是剛接觸程式的新手 — 更好地用 Claude Code 來 vibe coding。我發現當專案越來越大，很難記住跨 session 做過的所有決策。所以我（跟 Claude Code 一起）做了一個插件，幫你記住。
+
+> **備註**：本專案原名「Claude Code Buddy」，為避免潛在商標問題已更名為 MeMesh Plugin。
+
+## 它能做什麼？
+
+MeMesh Plugin 幫你的專案建立**可搜尋的記憶**。
 
 當你工作時，MeMesh 會自動儲存重要的決策、架構脈絡和經驗教訓。下次開新 session，你可以問「我們之前怎麼決定 auth 的？」就能馬上得到答案。
 

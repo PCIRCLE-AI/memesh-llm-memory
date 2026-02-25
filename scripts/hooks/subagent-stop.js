@@ -84,8 +84,6 @@ function saveSubagentToKG(agentType, lastMessage) {
     if (!fs.existsSync(MEMESH_DB_PATH)) return false;
     if (!lastMessage || lastMessage.length < 50) return false;
 
-    const now = new Date().toISOString();
-
     // Truncate very long messages
     const shortMessage = lastMessage.length > 1000
       ? lastMessage.substring(0, 1000) + '...'

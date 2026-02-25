@@ -76,22 +76,30 @@ function installBundledSkills(claudeDir) {
     const targetDir = join(skillsDir, prefixedName);
     const targetFile = join(targetDir, 'SKILL.md');
 
-    if (!existsSync(sourceFile)) continue;
-
     try {
+      // Read source first — if it doesn't exist, skip (no TOCTOU with existsSync)
+      let content;
+      let sourceStat;
+      try {
+        content = readFileSync(sourceFile, 'utf-8');
+        sourceStat = statSync(sourceFile);
+      } catch {
+        continue; // source doesn't exist, skip
+      }
+
       // Skip if target exists and is newer than source
-      if (existsSync(targetFile)) {
-        const sourceStat = statSync(sourceFile);
+      try {
         const targetStat = statSync(targetFile);
         if (targetStat.mtimeMs >= sourceStat.mtimeMs) {
           result.skipped.push(skillName);
           continue;
         }
+      } catch {
+        // target doesn't exist yet, proceed to install
       }
 
-      // Install: create dir + copy SKILL.md
+      // Install: create dir + write SKILL.md
       mkdirSync(targetDir, { recursive: true });
-      const content = readFileSync(sourceFile, 'utf-8');
       writeFileSync(targetFile, content, 'utf-8');
       result.installed.push(skillName);
     } catch (error) {

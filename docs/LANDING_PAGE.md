@@ -14,22 +14,20 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                                                             │
 │              🧠 MeMesh                                      │
-│         Give Claude a Memory                                │
+│     Searchable Project Memory for Claude Code               │
 │                                                             │
-│   Claude forgets everything between sessions.               │
-│              MeMesh fixes that.                             │
+│   Remember decisions, patterns, and context —               │
+│              across every session.                          │
 │                                                             │
 │   [Install Now]  [Watch Demo ▶]  [GitHub →]                │
-│                                                             │
-│   ⭐ 63 Stars  •  📥 13.5K+ Clones  •  📦 1.7K+ Downloads  │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 **Copy**:
-- **Headline**: "Give Claude a Memory"
-- **Subheadline**: "Claude forgets everything between sessions. MeMesh fixes that."
-- **Value Prop**: "Your architecture decisions, coding patterns, and project context — remembered automatically."
+- **Headline**: "Searchable Project Memory for Claude Code"
+- **Subheadline**: "Remember decisions, patterns, and context — across every session."
+- **Value Prop**: "A searchable notebook for everything your project has learned."
 
 ---
 
@@ -38,20 +36,16 @@
 ### The Problem (Relatable Pain Point)
 
 ```markdown
-## Every New Session Starts from Zero
+## CLAUDE.md Works — But Has Limits
 
-You: "Remember our auth setup from yesterday?"
-Claude: "I don't have context from previous sessions..."
+Claude Code's built-in memory (auto memory, CLAUDE.md) is great for preferences and instructions.
+But when your project grows, you need to search through weeks of decisions:
 
-Sound familiar?
+- "What did we decide about auth last Tuesday?"
+- "Why did we switch from REST to GraphQL?"
+- "What was the fix for that database timeout?"
 
-You waste 10-15 minutes every session re-explaining:
-- Architecture decisions you made last week
-- API constraints you discovered debugging
-- Why you chose PostgreSQL over MongoDB
-- That specific Node version requirement
-
-**5 sessions = 1 hour wasted on context switching.**
+CLAUDE.md can't answer these questions — it's a manual file, not a searchable database.
 ```
 
 ### The Solution (MeMesh in Action)
@@ -263,7 +257,7 @@ buddy-do "explain this codebase"
 - 📥 **13,571 clones** (736 unique users)
 - 📦 **1,696 downloads** in last 30 days
 - 🔀 **14 forks** - Active contributors
-- 🔧 **Active maintenance** - Latest: v2.8.10
+- 🔧 **Active maintenance** - Latest: v2.9.0
 
 [View on GitHub →]  [Report Issues →]
 ```

@@ -26,45 +26,32 @@
 export const OutputSchemas = {
   /**
    * buddy-do output structure
+   *
+   * Returns a formatted text proposal with task analysis, type detection,
+   * related KG context, and recommended approach. The output is structured
+   * as formatted text content for user review before execution.
    */
   buddyDo: {
     type: 'object' as const,
     properties: {
-      routing: {
-        type: 'object',
-        properties: {
-          approved: { type: 'boolean' },
-          message: { type: 'string' },
-          capabilityFocus: {
-            type: 'array',
-            items: { type: 'string' },
-          },
-          complexity: {
-            type: 'string',
-            enum: ['simple', 'medium', 'complex'],
-          },
-          estimatedTokens: { type: 'number' },
-          estimatedCost: { type: 'number' },
-        },
-        required: ['approved', 'message'],
+      message: {
+        type: 'string',
+        description: 'Formatted task proposal with analysis, approach, and related context',
       },
-      enhancedPrompt: {
-        type: 'object',
-        properties: {
-          systemPrompt: { type: 'string' },
-          userPrompt: { type: 'string' },
-          suggestedModel: { type: 'string' },
-        },
+      confirmationRequired: {
+        type: 'boolean',
+        description: 'Whether user confirmation is needed before proceeding',
       },
       stats: {
         type: 'object',
         properties: {
           durationMs: { type: 'number' },
-          estimatedTokens: { type: 'number' },
+          taskType: { type: 'string' },
+          relatedContextCount: { type: 'number' },
         },
       },
     },
-    required: ['routing'],
+    required: ['message', 'confirmationRequired'],
   },
 
   /**
@@ -302,22 +289,12 @@ export const OutputSchemas = {
  */
 
 export type BuddyDoOutput = {
-  routing: {
-    approved: boolean;
-    message: string;
-    capabilityFocus?: string[];
-    complexity?: 'simple' | 'medium' | 'complex';
-    estimatedTokens?: number;
-    estimatedCost?: number;
-  };
-  enhancedPrompt?: {
-    systemPrompt?: string;
-    userPrompt?: string;
-    suggestedModel?: string;
-  };
+  message: string;
+  confirmationRequired: boolean;
   stats?: {
     durationMs?: number;
-    estimatedTokens?: number;
+    taskType?: string;
+    relatedContextCount?: number;
   };
 };
 

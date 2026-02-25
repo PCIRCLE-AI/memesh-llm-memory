@@ -10,11 +10,12 @@ export const MemeshMetricsInputSchema = z.object({
         .describe('Which metrics section to return'),
 });
 const HOME_DIR = process.env.HOME || process.env.USERPROFILE || '/tmp';
-const STATE_DIR = path.join(HOME_DIR, '.memesh');
-const CURRENT_SESSION_FILE = path.join(STATE_DIR, 'current-session.json');
-const ROUTING_CONFIG_FILE = path.join(STATE_DIR, 'routing-config.json');
-const ROUTING_AUDIT_LOG = path.join(STATE_DIR, 'routing-audit.log');
-const LAST_SESSION_CACHE = path.join(STATE_DIR, 'last-session-summary.json');
+const HOOK_STATE_DIR = path.join(HOME_DIR, '.claude', 'state');
+const CURRENT_SESSION_FILE = path.join(HOOK_STATE_DIR, 'current-session.json');
+const LAST_SESSION_CACHE = path.join(HOOK_STATE_DIR, 'last-session-summary.json');
+const MEMESH_DIR = path.join(HOME_DIR, '.memesh');
+const ROUTING_CONFIG_FILE = path.join(MEMESH_DIR, 'routing-config.json');
+const ROUTING_AUDIT_LOG = path.join(MEMESH_DIR, 'routing-audit.log');
 function readJSONSafe(filePath) {
     try {
         if (fs.existsSync(filePath)) {
@@ -79,7 +80,7 @@ export async function handleMemeshMetrics(input) {
             };
         }
         if (section === 'all' || section === 'memory') {
-            const dbPath = path.join(STATE_DIR, 'knowledge-graph.db');
+            const dbPath = path.join(MEMESH_DIR, 'knowledge-graph.db');
             const dbExists = fs.existsSync(dbPath);
             let dbSizeKB = 0;
             if (dbExists) {
@@ -93,7 +94,6 @@ export async function handleMemeshMetrics(input) {
             result.memory = {
                 knowledgeGraphExists: dbExists,
                 dbSizeKB,
-                stateDir: STATE_DIR,
             };
         }
         const lines = ['MeMesh Metrics', ''];

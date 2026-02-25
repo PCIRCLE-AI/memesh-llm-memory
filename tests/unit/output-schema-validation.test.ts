@@ -61,22 +61,12 @@ describe('Output Schema Validation', () => {
 
     it('should validate correct buddy-do output', () => {
       const validOutput: BuddyDoOutput = {
-        routing: {
-          approved: true,
-          message: 'Task routed for capabilities: general',
-          capabilityFocus: ['general'],
-          complexity: 'simple',
-          estimatedTokens: 1000,
-          estimatedCost: 0.001,
-        },
-        enhancedPrompt: {
-          systemPrompt: 'You are a helpful assistant',
-          userPrompt: 'Complete the task',
-          suggestedModel: 'claude-opus-4-5',
-        },
+        message: 'Task: fix the auth bug\n\nType: bug-fix\nApproach: Reproduce → Root cause analysis → Fix → Regression test → Verify',
+        confirmationRequired: true,
         stats: {
           durationMs: 150,
-          estimatedTokens: 1000,
+          taskType: 'bug-fix',
+          relatedContextCount: 3,
         },
       };
 
@@ -87,10 +77,8 @@ describe('Output Schema Validation', () => {
 
     it('should validate minimal buddy-do output', () => {
       const minimalOutput: BuddyDoOutput = {
-        routing: {
-          approved: false,
-          message: 'Task rejected',
-        },
+        message: 'Task: hello world',
+        confirmationRequired: true,
       };
 
       const result = validate(minimalOutput);
@@ -100,10 +88,8 @@ describe('Output Schema Validation', () => {
 
     it('should reject buddy-do output missing required fields', () => {
       const invalidOutput = {
-        routing: {
-          approved: true,
-          // Missing 'message' (required)
-        },
+        // Missing 'message' and 'confirmationRequired' (required)
+        stats: { durationMs: 100 },
       };
 
       const result = validate(invalidOutput);
@@ -114,10 +100,8 @@ describe('Output Schema Validation', () => {
 
     it('should reject buddy-do output with invalid types', () => {
       const invalidOutput = {
-        routing: {
-          approved: 'yes', // Should be boolean
-          message: 'Task approved',
-        },
+        message: 123, // Should be string
+        confirmationRequired: 'yes', // Should be boolean
       };
 
       const result = validate(invalidOutput);
@@ -125,18 +109,20 @@ describe('Output Schema Validation', () => {
       expect(validate.errors).toBeDefined();
     });
 
-    it('should reject buddy-do output with invalid enum values', () => {
-      const invalidOutput: Record<string, unknown> = {
-        routing: {
-          approved: true,
-          message: 'Task approved',
-          complexity: 'super-complex', // Invalid enum value
+    it('should validate buddy-do output with optional stats', () => {
+      const outputWithStats: BuddyDoOutput = {
+        message: 'Task analyzed with context',
+        confirmationRequired: true,
+        stats: {
+          durationMs: 42,
+          taskType: 'feature',
+          relatedContextCount: 5,
         },
       };
 
-      const result = validate(invalidOutput);
-      expect(result).toBe(false);
-      expect(validate.errors).toBeDefined();
+      const result = validate(outputWithStats);
+      expect(result).toBe(true);
+      expect(validate.errors).toBeNull();
     });
   });
 
@@ -347,22 +333,12 @@ describe('Output Schema Validation', () => {
           {
             type: 'text' as const,
             text: JSON.stringify({
-              routing: {
-                approved: true,
-                message: 'Task routed for capabilities: general',
-                capabilityFocus: ['general'],
-                complexity: 'simple',
-                estimatedTokens: 1000,
-                estimatedCost: 0.001,
-              },
-              enhancedPrompt: {
-                systemPrompt: 'You are a helpful assistant',
-                userPrompt: 'Complete the task',
-                suggestedModel: 'claude-opus-4-5',
-              },
+              message: 'Task: setup authentication\n\nType: feature\nApproach: Plan → Design → Implement → Test → Review',
+              confirmationRequired: true,
               stats: {
                 durationMs: 150,
-                estimatedTokens: 1000,
+                taskType: 'feature',
+                relatedContextCount: 2,
               },
             }),
           },

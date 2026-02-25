@@ -168,15 +168,24 @@ export function logMemorySave(message) {
 // ============================================================================
 
 /**
- * Escape a value for safe SQL string interpolation
+ * Escape a value for safe SQL string interpolation.
+ * Numbers are returned unquoted; strings are quoted with single-quote escaping.
  * @param {*} value - Value to escape
- * @returns {string} Escaped SQL string literal
+ * @returns {string} Escaped SQL literal
  */
 export function escapeSQL(value) {
   if (value === null || value === undefined) {
     return 'NULL';
   }
-  // Escape single quotes by doubling them
+  // Numbers don't need quoting in SQL
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value);
+  }
+  // Booleans as integers
+  if (typeof value === 'boolean') {
+    return value ? '1' : '0';
+  }
+  // Everything else: coerce to string and escape single quotes
   return `'${String(value).replace(/'/g, "''")}'`;
 }
 
@@ -400,9 +409,11 @@ export function sqliteBatch(dbPath, statements, options = {}) {
 
       batchSQL.push('COMMIT;');
 
-      const result = execFileSync('sqlite3', [dbPath, batchSQL.join('\n')], {
+      // Pipe SQL via stdin to avoid E2BIG on large batches
+      const result = execFileSync('sqlite3', [dbPath], {
         encoding: 'utf-8',
         timeout,
+        input: batchSQL.join('\n'),
       });
       if (result.trim()) {
         output += result.trim() + '\n';
@@ -417,15 +428,19 @@ export function sqliteBatch(dbPath, statements, options = {}) {
 }
 
 /**
- * Insert entity + observations + tags in a single batch.
+ * Insert entity + observations + tags in minimal spawns.
  * Common pattern used by post-commit and stop hooks.
  *
- * Uses a two-step approach: first INSERT entity and get ID,
- * then batch all observations and tags.
+ * Uses a three-step approach:
+ *   1. INSERT entity (1 spawn)
+ *   2. SELECT entity ID (1 spawn)
+ *   3. Batch INSERT all observations + tags (1 spawn)
+ *
+ * Total: 3 spawns (was N+2 before batching).
  *
  * @param {string} dbPath - Path to SQLite database
  * @param {Object} entity - Entity to insert
- * @param {string} entity.name - Entity name
+ * @param {string} entity.name - Entity name (must be unique)
  * @param {string} entity.type - Entity type
  * @param {string} entity.metadata - JSON metadata string
  * @param {Array<string>} observations - Observation content strings

@@ -14,19 +14,19 @@ import { runHook, assertHookResponse, assertSilent, runTests } from './hook-test
 
 const preToolUseTests = [
   {
-    name: 'Git commit without review triggers reminder',
+    name: 'Git commit without review triggers reminder or silent exit',
     fn: async () => {
       const result = await runHook('pre-tool-use.js', {
         tool_name: 'Bash',
         tool_input: { command: 'git commit -m "test commit"' },
       });
       // Should produce JSON output with review reminder
-      // (may exit silently if session state has codeReviewDone=true from prior test)
+      // OR exit silently if codeReviewDone=true from prior test
       if (result.parsed) {
         return assertHookResponse(result, 'PreToolUse');
       }
-      // Silent exit is also acceptable (review already done or no session file)
-      return true;
+      // Silent exit is acceptable (review already done or no session file)
+      return assertSilent(result);
     },
   },
   {
@@ -74,16 +74,23 @@ const preToolUseTests = [
 
 const smartRouterTests = [
   {
-    name: 'Task(Explore) gets model routing (haiku)',
+    name: 'Task(Explore) gets model routing or silent exit',
     fn: async () => {
       const result = await runHook('pre-tool-use.js', {
         tool_name: 'Task',
         tool_input: { subagent_type: 'Explore', prompt: 'find auth code' },
       });
-      if (!result.parsed) return true; // No config = no routing, acceptable
+      // Either: hook produces routing output with haiku, or exits silently (no config)
+      if (!result.parsed) {
+        return assertSilent(result); // No output = no config, valid
+      }
       const output = result.parsed?.hookSpecificOutput;
-      if (output?.updatedInput?.model === 'haiku') return true;
-      // If no routing applied (config not matching), still OK
+      if (!output) return false; // Parsed but no hookSpecificOutput = malformed
+      // If routing was applied, model should be haiku
+      if (output.updatedInput?.model) {
+        return output.updatedInput.model === 'haiku';
+      }
+      // Output present but no model routing = other handler fired, OK
       return true;
     },
   },
@@ -95,10 +102,11 @@ const smartRouterTests = [
         tool_input: { subagent_type: 'Explore', model: 'opus', prompt: 'deep analysis' },
       });
       // Should NOT override user's explicit model
-      if (result.parsed?.hookSpecificOutput?.updatedInput?.model === 'opus') {
-        // Model was echoed back — wrong, should not override
+      if (result.parsed?.hookSpecificOutput?.updatedInput?.model) {
+        // Any model override when user specified 'opus' is wrong
         return false;
       }
+      // No model override = correct behavior
       return true;
     },
   },
@@ -109,14 +117,21 @@ const smartRouterTests = [
         tool_name: 'Task',
         tool_input: { subagent_type: 'Plan', prompt: 'plan the auth refactor' },
       });
-      if (!result.parsed) return true; // Template file might not be found
-      const output = result.parsed?.hookSpecificOutput;
-      // Check that prompt was modified (template appended)
-      if (output?.updatedInput?.prompt) {
-        return output.updatedInput.prompt.includes('Required Plan Sections') ||
-               output.updatedInput.prompt.includes('plan the auth refactor');
+      if (!result.parsed) {
+        // No output = template file not found. Acceptable but log it.
+        return assertSilent(result);
       }
-      return true;
+      const output = result.parsed?.hookSpecificOutput;
+      if (!output) return false; // Parsed but no hookSpecificOutput = malformed
+      // Prompt should contain original + template content
+      if (output.updatedInput?.prompt) {
+        const prompt = output.updatedInput.prompt;
+        // Must contain original prompt AND some template content
+        return prompt.includes('plan the auth refactor') &&
+               (prompt.includes('Required Plan Sections') || prompt.includes('---'));
+      }
+      // No prompt modification = handler didn't fire, unexpected
+      return false;
     },
   },
   {
@@ -126,12 +141,17 @@ const smartRouterTests = [
         tool_name: 'EnterPlanMode',
         tool_input: {},
       });
-      if (!result.parsed) return true;
+      if (!result.parsed) {
+        // No output = template file not found. Acceptable.
+        return assertSilent(result);
+      }
       const output = result.parsed?.hookSpecificOutput;
-      if (output?.additionalContext) {
+      if (!output) return false; // Parsed but no hookSpecificOutput = malformed
+      if (output.additionalContext) {
         return output.additionalContext.includes('PLANNING MODE');
       }
-      return true;
+      // hookSpecificOutput without additionalContext = wrong handler response
+      return false;
     },
   },
   {

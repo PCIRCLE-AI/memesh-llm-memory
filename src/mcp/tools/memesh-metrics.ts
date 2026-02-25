@@ -15,11 +15,16 @@ export const MemeshMetricsInputSchema = z.object({
 export type ValidatedMemeshMetricsInput = z.infer<typeof MemeshMetricsInputSchema>;
 
 const HOME_DIR = process.env.HOME || process.env.USERPROFILE || '/tmp';
-const STATE_DIR = path.join(HOME_DIR, '.memesh');
-const CURRENT_SESSION_FILE = path.join(STATE_DIR, 'current-session.json');
-const ROUTING_CONFIG_FILE = path.join(STATE_DIR, 'routing-config.json');
-const ROUTING_AUDIT_LOG = path.join(STATE_DIR, 'routing-audit.log');
-const LAST_SESSION_CACHE = path.join(STATE_DIR, 'last-session-summary.json');
+
+// Session data is written by hooks to ~/.claude/state/
+const HOOK_STATE_DIR = path.join(HOME_DIR, '.claude', 'state');
+const CURRENT_SESSION_FILE = path.join(HOOK_STATE_DIR, 'current-session.json');
+const LAST_SESSION_CACHE = path.join(HOOK_STATE_DIR, 'last-session-summary.json');
+
+// Routing config and audit log are written by pre-tool-use.js to ~/.memesh/
+const MEMESH_DIR = path.join(HOME_DIR, '.memesh');
+const ROUTING_CONFIG_FILE = path.join(MEMESH_DIR, 'routing-config.json');
+const ROUTING_AUDIT_LOG = path.join(MEMESH_DIR, 'routing-audit.log');
 
 function readJSONSafe(filePath: string): Record<string, unknown> | null {
   try {
@@ -101,7 +106,7 @@ export async function handleMemeshMetrics(
 
     // Memory metrics
     if (section === 'all' || section === 'memory') {
-      const dbPath = path.join(STATE_DIR, 'knowledge-graph.db');
+      const dbPath = path.join(MEMESH_DIR, 'knowledge-graph.db');
       const dbExists = fs.existsSync(dbPath);
 
       let dbSizeKB = 0;
@@ -110,14 +115,13 @@ export async function handleMemeshMetrics(
           const stat = fs.statSync(dbPath);
           dbSizeKB = Math.round(stat.size / 1024);
         } catch {
-          // Non-critical
+          // Non-critical — stat failure doesn't affect other metrics
         }
       }
 
       result.memory = {
         knowledgeGraphExists: dbExists,
         dbSizeKB,
-        stateDir: STATE_DIR,
       };
     }
 

@@ -22,6 +22,7 @@ import {
   readJSONFile,
   writeJSONFile,
   sqliteQuery,
+  sqliteQueryJSON,
   getTimeAgo,
   logError,
 } from './hook-utils.js';
@@ -224,31 +225,34 @@ function recallFromSQLite() {
       LIMIT 1
     `.replace(/\n/g, ' ');
 
-    const entityResult = sqliteQuery(
+    // Use JSON mode to avoid pipe-split issues with | in metadata
+    const entityRows = sqliteQueryJSON(
       MEMESH_DB_PATH,
       query,
       ['session_keypoint', cutoffISO]
     );
 
-    if (!entityResult) {
+    if (!entityRows || entityRows.length === 0) {
       return null;
     }
 
-    const parts = entityResult.split('|');
-    if (parts.length < 4) {
-      return null;
-    }
+    const row = entityRows[0];
+    const entityId = row.id;
+    const entityName = row.name;
+    const createdAt = row.created_at;
 
-    const [entityId, entityName, metadata, createdAt] = parts;
+    // Observations also use JSON mode for safety
+    const obsRows = sqliteQueryJSON(
+      MEMESH_DB_PATH,
+      'SELECT content FROM observations WHERE entity_id = ? ORDER BY created_at ASC',
+      [entityId]
+    );
 
-    const obsQuery = 'SELECT content FROM observations WHERE entity_id = ? ORDER BY created_at ASC';
-    const obsResult = sqliteQuery(MEMESH_DB_PATH, obsQuery, [entityId]);
-
-    const keyPoints = obsResult ? obsResult.split('\n').filter(Boolean) : [];
+    const keyPoints = obsRows.map(r => r.content).filter(Boolean);
 
     let parsedMetadata = {};
     try {
-      parsedMetadata = JSON.parse(metadata || '{}');
+      parsedMetadata = JSON.parse(row.metadata || '{}');
     } catch {
       // Ignore parse errors
     }
@@ -489,5 +493,5 @@ try {
   sessionStart();
 } catch (error) {
   console.error('❌ SessionStart hook error:', error.message);
-  process.exit(1);
+  process.exit(0); // Never block Claude Code on hook errors
 }

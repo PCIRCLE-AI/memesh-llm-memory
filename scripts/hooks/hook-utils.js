@@ -247,12 +247,18 @@ export function sqliteQuery(dbPath, query, params = [], options = {}) {
  * @param {string} query - SQL query with ? placeholders
  * @param {Array} params - Parameter values to substitute
  * @param {Object} options - Query options
- * @returns {Array} Parsed JSON array or empty array on error
+ * @returns {Array|null} Parsed JSON array, empty array for no rows, or null on error
  */
 export function sqliteQueryJSON(dbPath, query, params = [], options = {}) {
   const result = sqliteQuery(dbPath, query, params, { ...options, json: true });
 
-  if (!result) {
+  // sqliteQuery returns null on error — propagate to caller
+  if (result === null) {
+    return null;
+  }
+
+  // Empty string means no matching rows
+  if (result === '') {
     return [];
   }
 
@@ -260,7 +266,7 @@ export function sqliteQueryJSON(dbPath, query, params = [], options = {}) {
     return JSON.parse(result);
   } catch (error) {
     logError('sqliteQueryJSON parse', error);
-    return [];
+    return null;
   }
 }
 
@@ -721,7 +727,7 @@ export function matchCommitToStep(commitInfo, planSteps) {
  * @returns {string} Multi-line timeline string
  */
 export function renderTimeline(plan, highlightStep = null) {
-  const { stepsDetail, totalSteps, completed } = plan.metadata;
+  const { stepsDetail, totalSteps, completed = 0 } = plan.metadata;
   if (!stepsDetail || stepsDetail.length === 0 || !totalSteps) return '';
 
   const pct = Math.round((completed / totalSteps) * 100);
@@ -775,7 +781,7 @@ export function renderTimeline(plan, highlightStep = null) {
  * @returns {string} 3-line compact timeline string
  */
 export function renderTimelineCompact(plan) {
-  const { stepsDetail, totalSteps, completed } = plan.metadata;
+  const { stepsDetail, totalSteps, completed = 0 } = plan.metadata;
   if (!stepsDetail || stepsDetail.length === 0 || !totalSteps) return '';
 
   const pct = Math.round((completed / totalSteps) * 100);
@@ -813,6 +819,8 @@ export function queryActivePlans(dbPath) {
        WHERE e.type = ? AND t.tag = ?`,
       ['workflow_checkpoint', 'active']
     );
+
+    if (!rows) return [];
 
     return rows.map(row => ({
       name: row.name,

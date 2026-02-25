@@ -316,6 +316,24 @@ describe('renderTimeline', () => {
     expect(renderTimeline(plan)).toBe('');
   });
 
+  it('should show 0% when completed is undefined (not NaN%)', () => {
+    const plan = {
+      name: 'Plan: no-completed',
+      metadata: {
+        totalSteps: 3,
+        // completed is intentionally missing
+        stepsDetail: [
+          { number: 1, description: 'Step 1', completed: false },
+          { number: 2, description: 'Step 2', completed: false },
+          { number: 3, description: 'Step 3', completed: false },
+        ],
+      },
+    };
+    const output = renderTimeline(plan);
+    expect(output).toContain('0%');
+    expect(output).not.toContain('NaN');
+  });
+
   it('should show ◉ for highlighted step even when completed', () => {
     // Simulates the real post-commit flow: step 2 was JUST completed
     const plan = makePlan(2, 4);
@@ -366,6 +384,23 @@ describe('renderTimelineCompact', () => {
   it('should return empty string for totalSteps = 0', () => {
     const plan = { name: 'Plan: empty', metadata: { totalSteps: 0, completed: 0, stepsDetail: [] } };
     expect(renderTimelineCompact(plan)).toBe('');
+  });
+
+  it('should show 0% when completed is undefined (not NaN%)', () => {
+    const plan = {
+      name: 'Plan: no-completed',
+      metadata: {
+        totalSteps: 2,
+        // completed is intentionally missing
+        stepsDetail: [
+          { number: 1, description: 'Step 1', completed: false },
+          { number: 2, description: 'Step 2', completed: false },
+        ],
+      },
+    };
+    const output = renderTimelineCompact(plan);
+    expect(output).toContain('0%');
+    expect(output).not.toContain('NaN');
   });
 });
 

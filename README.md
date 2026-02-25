@@ -16,20 +16,26 @@ Remember decisions, patterns, and context — across every session.
 
 ---
 
-## What Is MeMesh Plugin?
+## Why This Project Exists
 
-MeMesh Plugin (formerly "Claude Code Buddy") is a Claude Code plugin that gives your projects a **searchable memory**.
+We love Claude Code. It's changed how we build software.
 
-> **Note**: This project was originally called "Claude Code Buddy" and has been renamed to avoid potential trademark issues.
+This project started because we wanted to help more people — especially those new to coding — get the most out of Claude Code for vibe coding. One thing we noticed: when projects grow, it gets hard to keep track of all the decisions you've made across sessions. So we built a plugin that remembers for you.
 
-As you work, MeMesh automatically saves important decisions, architecture context, and lessons learned. Next time you start a session, you can ask "what did we decide about auth?" and get an instant answer.
+> **Note**: This project was originally called "Claude Code Buddy" and has been renamed to MeMesh Plugin to avoid potential trademark issues.
+
+## What Does It Do?
+
+MeMesh Plugin gives your projects a **searchable memory**.
+
+As you work with Claude Code, MeMesh automatically saves important decisions, architecture context, and lessons learned. Next time you start a session, you can ask "what did we decide about auth?" and get an instant answer.
 
 **How is this different from Claude's built-in memory?**
 
 Claude Code already has auto memory and CLAUDE.md — great for general preferences and instructions. MeMesh adds a dedicated **project memory** you can actively search and query, with support for finding things by meaning (not just exact keywords).
 
 Think of it this way:
-- **CLAUDE.md** = your personal instruction manual for Claude
+- **CLAUDE.md** = your instruction manual for Claude
 - **MeMesh** = a searchable notebook of everything your project has learned
 
 ---

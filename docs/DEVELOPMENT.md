@@ -363,21 +363,22 @@ See [docs/RELEASE_PROCESS.md](RELEASE_PROCESS.md) for the full release workflow.
 
 Quick checklist:
 ```bash
-# 1. Bump version
-npm version patch  # or minor, or major
+# 1. Bump version (on develop branch)
+npm version patch --no-git-tag-version  # or minor, or major
 
 # 2. Update CHANGELOG.md
 # Add entry for new version
 
 # 3. Commit and push
-git add .
+git add package.json CHANGELOG.md
 git commit -m "chore(release): bump version to X.Y.Z"
-git push
+git push origin develop
 
-# 4. Create GitHub release
-gh release create vX.Y.Z --title "vX.Y.Z" --notes "Release notes"
+# 4. Open PR: develop → main, review & merge
+gh pr create --base main --head develop --title "chore(release): vX.Y.Z"
 
-# 5. Verify npm publish (happens automatically via GitHub Actions)
+# 5. Manual npm publish (GitHub Actions cannot auto-trigger publish)
+npm publish --access public
 npm view @pcircle/memesh version
 ```
 

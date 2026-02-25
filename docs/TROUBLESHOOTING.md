@@ -77,8 +77,8 @@ memesh setup  # Run interactive setup to fix PATH
 ### 5. Memory not persisting
 **Symptoms**: Information or context from previous sessions is lost.
 **Quick Fix:**
-- Check permissions for `~/.claude-code-buddy/` directory.
-- Verify the knowledge graph database exists: `ls ~/.claude-code-buddy/knowledge-graph.db`
+- Check permissions for `~/.memesh/` directory (or `~/.claude-code-buddy/` if migrating from older version).
+- Verify the database exists: `ls ~/.memesh/database.db`
 - Run `memesh config validate` to ensure storage is correctly configured.
 
 ### 6. Multiple MCP server processes

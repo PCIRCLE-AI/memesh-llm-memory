@@ -201,10 +201,9 @@ buddy-do "explain this codebase"
 - **Patterns**: Code conventions, team practices (TTL: 180 days)
 
 **Privacy:**
-- All data stored in `~/.claude/memory/`
+- All data stored in `~/.memesh/`
 - No cloud sync by default
-- Optional encryption with `MEMESH_ENCRYPT=true`
-- GDPR-compliant data retention policies
+- Data retention policies (30/90 day configurable TTLs)
 
 </details>
 
@@ -237,8 +236,7 @@ buddy-do "explain this codebase"
 ✅ **100% Local Storage** - No cloud uploads
 ✅ **Open Source** - MIT, audited on GitHub
 ✅ **No Telemetry** - Zero tracking, zero analytics
-✅ **Encryption Ready** - Optional AES-256 encryption
-✅ **GDPR Compliant** - Auto-cleanup, data portability
+✅ **Data Portability** - Export and backup your memories
 
 [View Security Policy →](SECURITY.md)
 [Report Vulnerability →](https://github.com/PCIRCLE-AI/claude-code-buddy/security/advisories/new)
@@ -272,7 +270,7 @@ buddy-do "explain this codebase"
 ## Frequently Asked Questions
 
 **Q: Is my data sent to any server?**
-A: No. All memories are stored locally in `~/.claude/memory/` on your machine. No cloud sync unless you opt-in.
+A: No. All memories are stored locally in `~/.memesh/` on your machine. No cloud sync unless you opt-in.
 
 **Q: Does it work with other AI assistants?**
 A: Currently optimized for Claude Code. Cursor support via MCP coming soon. ChatGPT integration planned.
@@ -284,7 +282,7 @@ A: ~100MB for embeddings + ~1MB per 100 memories. Average user: 150-300MB total.
 A: Yes. `memesh export --format json` exports all memories with timestamps and metadata.
 
 **Q: What if I want to delete everything?**
-A: `memesh reset --confirm` deletes all memories. Or manually delete `~/.claude/memory/`.
+A: `memesh reset --confirm` deletes all memories. Or manually delete `~/.memesh/`.
 
 **Q: Does it slow down Claude?**
 A: No. Memory operations run in background with < 50ms query latency.

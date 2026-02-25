@@ -765,3 +765,99 @@ export function renderTimelineCompact(plan) {
     next ? `  \u25b6 Next: ${next.description}` : `  \ud83c\udf89 Complete`,
   ].join('\n');
 }
+
+// ============================================================================
+// Plan DB Operations
+// ============================================================================
+
+/**
+ * Query active plan entities from KG.
+ * @param {string} dbPath - Path to SQLite database
+ * @returns {Array<{name: string, metadata: object}>}
+ */
+export function queryActivePlans(dbPath) {
+  try {
+    if (!fs.existsSync(dbPath)) return [];
+
+    const rows = sqliteQueryJSON(dbPath,
+      `SELECT e.name, e.metadata FROM entities e
+       JOIN tags t ON t.entity_id = e.id
+       WHERE e.type = ? AND t.tag = ?`,
+      ['workflow_checkpoint', 'active']
+    );
+
+    return rows.map(row => ({
+      name: row.name,
+      metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata || '{}') : row.metadata,
+    }));
+  } catch (error) {
+    logError('queryActivePlans', error);
+    return [];
+  }
+}
+
+/**
+ * Add an observation to an existing entity.
+ * @param {string} dbPath - Path to SQLite database
+ * @param {string} entityName - Entity name
+ * @param {string} content - Observation content
+ * @returns {boolean}
+ */
+export function addObservation(dbPath, entityName, content) {
+  const result = sqliteQuery(dbPath,
+    `INSERT INTO observations (entity_id, content, created_at)
+     SELECT id, ?, ? FROM entities WHERE name = ?`,
+    [content, new Date().toISOString(), entityName]
+  );
+  return result !== null;
+}
+
+/**
+ * Update an entity's metadata JSON.
+ * @param {string} dbPath - Path to SQLite database
+ * @param {string} entityName - Entity name
+ * @param {object} metadata - New metadata object
+ * @returns {boolean}
+ */
+export function updateEntityMetadata(dbPath, entityName, metadata) {
+  const result = sqliteQuery(dbPath,
+    'UPDATE entities SET metadata = ? WHERE name = ?',
+    [JSON.stringify(metadata), entityName]
+  );
+  return result !== null;
+}
+
+/**
+ * Replace a tag on an entity.
+ * @param {string} dbPath - Path to SQLite database
+ * @param {string} entityName - Entity name
+ * @param {string} oldTag - Tag to replace
+ * @param {string} newTag - New tag value
+ * @returns {boolean}
+ */
+export function updateEntityTag(dbPath, entityName, oldTag, newTag) {
+  const result = sqliteQuery(dbPath,
+    `UPDATE tags SET tag = ? WHERE tag = ? AND entity_id = (SELECT id FROM entities WHERE name = ?)`,
+    [newTag, oldTag, entityName]
+  );
+  return result !== null;
+}
+
+/**
+ * Create a relation between two entities.
+ * @param {string} dbPath - Path to SQLite database
+ * @param {string} fromName - Source entity name
+ * @param {string} toName - Target entity name
+ * @param {string} relationType - Relation type (e.g. 'depends_on')
+ * @returns {boolean}
+ */
+export function createRelation(dbPath, fromName, toName, relationType) {
+  const result = sqliteQuery(dbPath,
+    `INSERT OR IGNORE INTO relations (from_entity_id, to_entity_id, relation_type, created_at)
+     SELECT f.id, t.id, ?, ?
+     FROM entities f, entities t
+     WHERE f.name = ? AND t.name = ?`,
+    [relationType, new Date().toISOString(), fromName, toName]
+  );
+  return result !== null;
+}

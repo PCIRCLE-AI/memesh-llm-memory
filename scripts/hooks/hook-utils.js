@@ -618,9 +618,17 @@ export function parsePlanSteps(content) {
 
   const steps = [];
   const lines = content.split('\n');
+  let inCodeFence = false;
 
   for (const line of lines) {
     const trimmed = line.trim();
+
+    // Track code fence boundaries (``` with optional language tag)
+    if (/^`{3,}/.test(trimmed)) {
+      inCodeFence = !inCodeFence;
+      continue;
+    }
+    if (inCodeFence) continue;
 
     // Format A: Checkbox "- [ ] Step N: description" or "- [ ] description"
     const checkboxMatch = trimmed.match(/^-\s+\[([ xX])\]\s+(?:(?:Step|Task)\s+\d+\s*[:.]\s*)?(.+)/);

@@ -338,7 +338,7 @@ function updateCurrentSession(toolData, patterns, anomalies) {
 /**
  * Update session context (quota tracking)
  * @param {Object} toolData - Tool execution data
- * @returns {Object} Updated session context
+ * @returns {{ sessionContext: Object, writePromise: Promise<boolean> }}
  */
 function updateSessionContext(toolData) {
   const sessionContext = readJSONFile(SESSION_CONTEXT_FILE, {
@@ -355,9 +355,9 @@ function updateSessionContext(toolData) {
 
   sessionContext.lastSessionDate = new Date().toISOString();
 
-  writeJSONFileAsync(SESSION_CONTEXT_FILE, sessionContext);
+  const writePromise = writeJSONFileAsync(SESSION_CONTEXT_FILE, sessionContext);
 
-  return sessionContext;
+  return { sessionContext, writePromise };
 }
 
 // ============================================================================
@@ -578,9 +578,13 @@ function trackTestExecutions(toolData, currentSession) {
   const testTarget = pathMatch ? pathMatch[1] : null;
 
   if (testTarget && currentSession.modifiedFiles) {
-    // Mark files under the test target directory as tested
+    // Mark files under the test target directory/path as tested
+    // Use path-prefix match: "src/auth" matches "src/auth/middleware.ts" but NOT "src/auth-utils/helper.ts"
     for (const modFile of currentSession.modifiedFiles) {
-      if (modFile.includes(testTarget) && !currentSession.testedFiles.includes(modFile)) {
+      const isMatch = modFile === testTarget ||
+        modFile.startsWith(testTarget + '/') ||
+        modFile.startsWith(testTarget + path.sep);
+      if (isMatch && !currentSession.testedFiles.includes(modFile)) {
         currentSession.testedFiles.push(modFile);
       }
     }
@@ -691,14 +695,14 @@ async function postToolUse() {
     // Detect patterns
     const patterns = detector.detectPatterns(toolData);
 
-    // Update session context (for quota tracking) — returns sync data, writes async
-    const sessionContext = updateSessionContext(toolData);
+    // Update session context (for quota tracking) — returns sync data + async write promise
+    const { sessionContext, writePromise: contextWritePromise } = updateSessionContext(toolData);
 
     // Detect anomalies
     const anomalies = detectAnomalies(toolData, sessionContext);
 
     // Fire async writes in parallel
-    const pendingWrites = [];
+    const pendingWrites = [contextWritePromise];
 
     // Update recommendations incrementally
     if (patterns.length > 0 || anomalies.length > 0) {

@@ -293,6 +293,160 @@ describe('Output Schema Validation', () => {
     });
   });
 
+  describe('generate-tests Output Validation', () => {
+    const schema = OutputSchemas.generateTests;
+    let validate: ReturnType<typeof ajv.compile>;
+
+    beforeAll(() => {
+      validate = ajv.compile(schema);
+    });
+
+    it('should validate correct generate-tests output', () => {
+      const validOutput = {
+        testCode: 'describe("auth", () => { it("should validate token", () => { expect(true).toBe(true); }); });',
+        message: 'Generated 3 test cases for auth module',
+      };
+
+      const result = validate(validOutput);
+      expect(result).toBe(true);
+      expect(validate.errors).toBeNull();
+    });
+
+    it('should reject generate-tests output missing required fields', () => {
+      const invalidOutput = {
+        message: 'Generated tests',
+        // Missing 'testCode' (required)
+      };
+
+      const result = validate(invalidOutput);
+      expect(result).toBe(false);
+      expect(validate.errors).toBeDefined();
+    });
+  });
+
+  describe('cloud-sync Output Validation', () => {
+    const schema = OutputSchemas.cloudSync;
+    let validate: ReturnType<typeof ajv.compile>;
+
+    beforeAll(() => {
+      validate = ajv.compile(schema);
+    });
+
+    it('should validate correct cloud-sync push output', () => {
+      const validOutput = {
+        success: true,
+        action: 'push',
+        message: 'Pushed 5 entities to cloud',
+        pushed: 5,
+        errors: 0,
+      };
+
+      const result = validate(validOutput);
+      expect(result).toBe(true);
+      expect(validate.errors).toBeNull();
+    });
+
+    it('should validate minimal cloud-sync output', () => {
+      const validOutput = {
+        success: false,
+      };
+
+      const result = validate(validOutput);
+      expect(result).toBe(true);
+      expect(validate.errors).toBeNull();
+    });
+
+    it('should reject cloud-sync output with invalid action enum', () => {
+      const invalidOutput = {
+        success: true,
+        action: 'delete', // Not in enum ['push', 'pull', 'status']
+      };
+
+      const result = validate(invalidOutput);
+      expect(result).toBe(false);
+      expect(validate.errors).toBeDefined();
+    });
+  });
+
+  describe('agent-register Output Validation', () => {
+    const schema = OutputSchemas.agentRegister;
+    let validate: ReturnType<typeof ajv.compile>;
+
+    beforeAll(() => {
+      validate = ajv.compile(schema);
+    });
+
+    it('should validate correct agent-register output', () => {
+      const validOutput = {
+        success: true,
+        message: 'Agent registered successfully',
+        agent: {
+          id: 'agent-001',
+          type: 'worker',
+          status: 'active',
+          name: 'Code Reviewer',
+          version: '1.0.0',
+        },
+      };
+
+      const result = validate(validOutput);
+      expect(result).toBe(true);
+      expect(validate.errors).toBeNull();
+    });
+
+    it('should validate minimal agent-register output', () => {
+      const validOutput = {
+        success: false,
+      };
+
+      const result = validate(validOutput);
+      expect(result).toBe(true);
+      expect(validate.errors).toBeNull();
+    });
+  });
+
+  describe('memesh-metrics Output Validation', () => {
+    const schema = OutputSchemas.memeshMetrics;
+    let validate: ReturnType<typeof ajv.compile>;
+
+    beforeAll(() => {
+      validate = ajv.compile(schema);
+    });
+
+    it('should validate correct memesh-metrics output', () => {
+      const validOutput = {
+        session: {
+          current: { startTime: '2026-02-25T10:00:00Z', modifiedFiles: 3 },
+          lastSessionCached: true,
+        },
+        routing: {
+          configLoaded: true,
+          modelRules: 2,
+          backgroundRules: 1,
+          planningEnforcement: true,
+          dryRunGate: false,
+          recentAuditEntries: ['[2026-02-25T10:30:00Z] Task(Explore) → model: haiku'],
+        },
+        memory: {
+          knowledgeGraphExists: true,
+          dbSizeKB: 512,
+        },
+      };
+
+      const result = validate(validOutput);
+      expect(result).toBe(true);
+      expect(validate.errors).toBeNull();
+    });
+
+    it('should validate empty memesh-metrics output', () => {
+      const validOutput = {};
+
+      const result = validate(validOutput);
+      expect(result).toBe(true);
+      expect(validate.errors).toBeNull();
+    });
+  });
+
   describe('Error Message Quality', () => {
     it('should provide detailed error messages for validation failures', () => {
       const schema = OutputSchemas.buddyDo;

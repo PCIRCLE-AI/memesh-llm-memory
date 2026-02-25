@@ -246,6 +246,7 @@ function routingHandler(toolName, toolInput, _session, config) {
   // Model routing
   const modelRules = config.modelRouting?.rules || [];
   for (const rule of modelRules) {
+    if (!rule.subagentType) continue;
     if (subagentType.toLowerCase() === rule.subagentType.toLowerCase()) {
       // Never override user's explicit model choice
       if (toolInput.model) {
@@ -262,6 +263,7 @@ function routingHandler(toolName, toolInput, _session, config) {
   // Background routing
   const bgRules = config.backgroundRules || [];
   for (const rule of bgRules) {
+    if (!rule.subagentType) continue;
     if (subagentType.toLowerCase() === rule.subagentType.toLowerCase()) {
       // Only force background if not explicitly set by user/Claude
       if (rule.forceBackground && toolInput.run_in_background === undefined) {

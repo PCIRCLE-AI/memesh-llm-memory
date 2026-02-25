@@ -41,8 +41,8 @@ describe('MCP Compliance Audit', () => {
       });
     }
 
-    // Tools without outputSchema (some tools may not have it yet)
-    expect(toolsWithoutOutputSchema.length).toBeLessThanOrEqual(7);
+    // All tools must have outputSchema (MCP Spec 2025-11-25 compliance)
+    expect(toolsWithoutOutputSchema.length).toBe(0);
   });
 
   it('should have all tools with annotations defined (MCP Spec 2025-11-25)', () => {

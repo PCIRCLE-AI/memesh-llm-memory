@@ -84,7 +84,7 @@ function getLatestCommitInfo() {
 
 /**
  * Save commit context to MeMesh knowledge graph.
- * Uses sqliteBatchEntity for performance (2 spawns instead of 8+).
+ * Uses sqliteBatchEntity for performance (3 spawns instead of 8+).
  * @param {Object} commitInfo - Commit details
  * @returns {boolean} True if saved
  */

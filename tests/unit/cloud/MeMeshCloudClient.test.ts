@@ -6,6 +6,22 @@ import {
   resetCloudClient,
 } from '../../../src/cloud/MeMeshCloudClient.js';
 
+// Mock fs to prevent credentials file from interfering with tests.
+// On dev machines with a real credentials file (~/.config/memesh/credentials.json),
+// the MeMeshCloudClient constructor falls back to reading it when apiKey is empty,
+// making tests environment-dependent. This mock ensures test isolation.
+vi.mock('fs', async () => {
+  const actual = await vi.importActual<typeof import('fs')>('fs');
+  return {
+    ...actual,
+    existsSync: vi.fn((p: string) => {
+      // Block credentials file reads; allow everything else
+      if (typeof p === 'string' && p.endsWith('memesh/credentials.json')) return false;
+      return actual.existsSync(p);
+    }),
+  };
+});
+
 describe('MeMeshCloudClient', () => {
   let client: MeMeshCloudClient;
 

@@ -583,14 +583,24 @@ npm test -- -u
 
 ## Pull Request Process
 
+### Branch Strategy
+
+**NEVER push directly to `main`.** All changes must go through Pull Requests.
+
+```
+main        ← production-ready, protected, merge via PR only
+develop     ← integration branch for ongoing work
+feature/*   ← short-lived feature/fix branches off develop
+```
+
 ### 1. Create Feature Branch
 
 ```bash
-# Update main
-git checkout main
-git pull upstream main
+# Update develop
+git checkout develop
+git pull upstream develop
 
-# Create feature branch
+# Create feature branch from develop
 git checkout -b feature/my-awesome-feature
 
 # Or bugfix branch
@@ -671,7 +681,7 @@ git push origin feature/my-awesome-feature
 **On GitHub**:
 1. Navigate to your fork
 2. Click "Pull Request"
-3. Select `main` as base branch
+3. Select `develop` as base branch (or `main` for releases only)
 4. Fill out PR template (see below)
 5. Submit PR
 
@@ -920,6 +930,6 @@ By contributing, you agree that your contributions will be licensed under the AG
 
 ---
 
-**Version**: 2.8.10
-**Last Updated**: 2026-02-12
+**Version**: 2.8.11
+**Last Updated**: 2026-02-25
 **Maintainer**: MeMesh Team

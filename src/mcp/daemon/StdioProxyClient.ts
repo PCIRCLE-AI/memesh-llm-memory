@@ -267,11 +267,26 @@ export class StdioProxyClient extends EventEmitter {
 
     this.stopped = false;
 
+    // IMPORTANT: Set up stdin handler BEFORE any async operations.
+    // stopStdinBufferingAndReplay() in server-bootstrap schedules a 'data' event
+    // on the next event loop tick. If we await connectToDaemon() first, the event
+    // loop runs and the buffered 'initialize' message is emitted with no listener,
+    // causing it to be lost. Claude Code then times out (30s) with no response.
+    this.setupStdinHandler();
+
     try {
       await this.connectToDaemon();
-      this.setupStdinHandler();
       this.startHeartbeat();
     } catch (error) {
+      // Clean up stdin handlers if connection fails
+      if (this.stdinDataListener) {
+        this.config.stdin.removeListener('data', this.stdinDataListener);
+        this.stdinDataListener = null;
+      }
+      if (this.stdinEndListener) {
+        this.config.stdin.removeListener('end', this.stdinEndListener);
+        this.stdinEndListener = null;
+      }
       this.stopped = true;
       throw error;
     }

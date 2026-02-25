@@ -18,6 +18,8 @@ import {
 } from './handlers/index.js';
 import type { KnowledgeGraph } from '../knowledge-graph/index.js';
 import { handleCloudSync, CloudSyncInputSchema } from './tools/memesh-cloud-sync.js';
+import { handleAgentRegister, AgentRegisterInputSchema } from './tools/memesh-agent-register.js';
+import { handleMemeshMetrics, MemeshMetricsInputSchema } from './tools/memesh-metrics.js';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -411,6 +413,30 @@ export class ToolRouter {
       return handleCloudSync(validationResult.data, this.knowledgeGraph);
     }
 
+    // Agent Registration tool
+    if (resolvedToolName === 'memesh-agent-register') {
+      const validationResult = AgentRegisterInputSchema.safeParse(args);
+      if (!validationResult.success) {
+        throw new ValidationError(
+          `Invalid input for ${resolvedToolName}: ${validationResult.error.message}`,
+          { component: 'ToolRouter', method: 'dispatch', toolName: resolvedToolName, zodError: validationResult.error }
+        );
+      }
+      return handleAgentRegister(validationResult.data);
+    }
+
+
+    // Observability tools
+    if (resolvedToolName === 'memesh-metrics') {
+      const validationResult = MemeshMetricsInputSchema.safeParse(args);
+      if (!validationResult.success) {
+        throw new ValidationError(
+          `Invalid input for ${resolvedToolName}: ${validationResult.error.message}`,
+          { component: 'ToolRouter', method: 'dispatch', toolName: resolvedToolName, zodError: validationResult.error }
+        );
+      }
+      return handleMemeshMetrics(validationResult.data);
+    }
 
     // Sanitize toolName in error message
     const safeName = sanitizeToolNameForError(resolvedToolName);

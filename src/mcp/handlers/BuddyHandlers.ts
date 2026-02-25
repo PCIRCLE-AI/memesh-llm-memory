@@ -18,6 +18,7 @@ import { logError } from '../../utils/errorHandler.js';
 import type { ResponseFormatter } from '../../ui/ResponseFormatter.js';
 import type { ProjectMemoryManager } from '../../memory/ProjectMemoryManager.js';
 import type { ProjectAutoTracker } from '../../memory/ProjectAutoTracker.js';
+import type { KnowledgeGraph } from '../../knowledge-graph/index.js';
 
 import {
   executeBuddyDo,
@@ -43,15 +44,18 @@ import {
 export class BuddyHandlers {
   private formatter: ResponseFormatter;
   private projectMemoryManager: ProjectMemoryManager | undefined;
+  private knowledgeGraph: KnowledgeGraph | undefined;
   private autoTracker?: ProjectAutoTracker;
 
   constructor(
     formatter: ResponseFormatter,
     projectMemoryManager: ProjectMemoryManager | undefined,
-    autoTracker?: ProjectAutoTracker
+    autoTracker?: ProjectAutoTracker,
+    knowledgeGraph?: KnowledgeGraph
   ) {
     this.formatter = formatter;
     this.projectMemoryManager = projectMemoryManager;
+    this.knowledgeGraph = knowledgeGraph;
     this.autoTracker = autoTracker;
   }
 
@@ -134,7 +138,7 @@ export class BuddyHandlers {
     }
 
     try {
-      return await executeBuddyDo(validatedInput, this.formatter, this.autoTracker);
+      return await executeBuddyDo(validatedInput, this.formatter, this.autoTracker, this.knowledgeGraph);
     } catch (error) {
       logError(error, {
         component: 'BuddyHandlers',
@@ -196,7 +200,7 @@ export class BuddyHandlers {
 
     try {
       // Safe to use non-null assertion - cloud-only mode check at method start ensures non-null
-      return await executeBuddyRemember(validatedInput, this.projectMemoryManager!, this.formatter);
+      return await executeBuddyRemember(validatedInput, this.projectMemoryManager!, this.formatter, this.knowledgeGraph);
     } catch (error) {
       logError(error, {
         component: 'BuddyHandlers',

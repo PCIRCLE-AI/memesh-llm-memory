@@ -20,12 +20,14 @@ describe('MCP Compliance Audit', () => {
   // Load tools once for all tests
   tools = getAllToolDefinitions();
 
-  it('should have exactly 8 tools defined', () => {
-    // v2.8.0: 3 buddy commands (preserved) + 5 memesh-* tools
+  it('should have exactly 10 tools defined', () => {
+    // v2.9: 3 buddy commands + 7 memesh-* tools
     // - Core: buddy-do, buddy-remember, buddy-help
     // - MeMesh: memesh-record-mistake, memesh-create-entities,
-    //           memesh-cloud-sync, memesh-hook-tool-use, memesh-generate-tests
-    expect(tools).toHaveLength(8);
+    //           memesh-cloud-sync, memesh-agent-register,
+    //           memesh-hook-tool-use, memesh-generate-tests,
+    //           memesh-metrics
+    expect(tools).toHaveLength(10);
   });
 
   it('should have all tools with outputSchema defined (MCP Spec 2025-11-25)', () => {
@@ -39,8 +41,8 @@ describe('MCP Compliance Audit', () => {
       });
     }
 
-    // Tools without outputSchema (some tools may not have it yet)
-    expect(toolsWithoutOutputSchema.length).toBeLessThanOrEqual(7);
+    // All tools must have outputSchema (MCP Spec 2025-11-25 compliance)
+    expect(toolsWithoutOutputSchema.length).toBe(0);
   });
 
   it('should have all tools with annotations defined (MCP Spec 2025-11-25)', () => {

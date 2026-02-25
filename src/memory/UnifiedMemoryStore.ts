@@ -851,11 +851,13 @@ export class UnifiedMemoryStore {
       // This is safe because we already have the existing data merged into updatedMemory.
       const deleted = this.knowledgeGraph.deleteEntity(id);
       if (!deleted) {
-        // Entity was deleted between get() and delete() - race condition
-        // Log warning but continue with store() as it will create a new entry
+        // Entity was concurrently deleted between get() and deleteEntity()
+        // Return false to honor the update contract — caller expects
+        // true (updated) or false (not found), not silent re-creation
         logger.warn(
-          `[UnifiedMemoryStore] Entity ${id} was deleted during update operation, will create new entry`
+          `[UnifiedMemoryStore] Entity ${id} was concurrently deleted during update, treating as not found`
         );
+        return false;
       }
 
       // Re-store with same ID (now creates a new entry since old was deleted)
@@ -943,12 +945,12 @@ export class UnifiedMemoryStore {
    * ```typescript
    * const store = await UnifiedMemoryStore.create();
    * // ... use the store ...
-   * store.close(); // Cleanup when done
+   * await store.close(); // Cleanup when done
    * ```
    */
-  close(): void {
+  async close(): Promise<void> {
     try {
-      this.knowledgeGraph.close();
+      await this.knowledgeGraph.close();
       logger.info('[UnifiedMemoryStore] Database connection closed');
     } catch (error) {
       logger.error(`[UnifiedMemoryStore] Error closing database: ${error}`);

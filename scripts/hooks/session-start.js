@@ -22,6 +22,7 @@ import {
   readJSONFile,
   writeJSONFile,
   sqliteQuery,
+  sqliteQueryJSON,
   getTimeAgo,
   logError,
 } from './hook-utils.js';
@@ -37,6 +38,10 @@ const MCP_SETTINGS_FILE = path.join(HOME_DIR, '.claude', 'mcp_settings.json');
 const RECOMMENDATIONS_FILE = path.join(STATE_DIR, 'recommendations.json');
 const SESSION_CONTEXT_FILE = path.join(STATE_DIR, 'session-context.json');
 const CURRENT_SESSION_FILE = path.join(STATE_DIR, 'current-session.json');
+const LAST_SESSION_CACHE_FILE = path.join(STATE_DIR, 'last-session-summary.json');
+
+/** Maximum cache age: 7 days */
+const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 // ============================================================================
 // MeMesh Status Check
@@ -159,22 +164,59 @@ function displayCCBStatus(ccbStatus) {
 // ============================================================================
 
 /**
- * Recall recent session key points from MeMesh
- * Uses parameterized queries to prevent SQL injection
+ * Try to read session summary from cache file (fast path).
+ * Cache is written by stop.js on session end.
  * @returns {{ entityName: string, createdAt: string, metadata: object, keyPoints: string[] } | null}
  */
-function recallRecentKeyPoints() {
+function recallFromCache() {
+  try {
+    if (!fs.existsSync(LAST_SESSION_CACHE_FILE)) {
+      return null;
+    }
+
+    const cache = readJSONFile(LAST_SESSION_CACHE_FILE, null);
+    if (!cache || !cache.savedAt || !cache.keyPoints) {
+      return null;
+    }
+
+    // Check staleness
+    const cacheAge = Date.now() - new Date(cache.savedAt).getTime();
+    if (cacheAge > CACHE_MAX_AGE_MS) {
+      // Stale cache — delete it
+      try { fs.unlinkSync(LAST_SESSION_CACHE_FILE); } catch { /* ignore */ }
+      return null;
+    }
+
+    return {
+      entityName: 'session_cache',
+      createdAt: cache.savedAt,
+      metadata: {
+        duration: cache.duration,
+        toolCount: cache.toolCount,
+      },
+      keyPoints: cache.keyPoints,
+    };
+  } catch (error) {
+    logError('recallFromCache', error);
+    return null;
+  }
+}
+
+/**
+ * Recall recent session key points from MeMesh (slow path — SQLite query).
+ * Used as fallback when cache is not available.
+ * @returns {{ entityName: string, createdAt: string, metadata: object, keyPoints: string[] } | null}
+ */
+function recallFromSQLite() {
   try {
     if (!fs.existsSync(MEMESH_DB_PATH)) {
       return null;
     }
 
-    // Calculate cutoff date for recall
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - THRESHOLDS.RECALL_DAYS);
     const cutoffISO = cutoffDate.toISOString();
 
-    // Query for most recent session_keypoint entity using parameterized query
     const query = `
       SELECT id, name, metadata, created_at
       FROM entities
@@ -183,34 +225,34 @@ function recallRecentKeyPoints() {
       LIMIT 1
     `.replace(/\n/g, ' ');
 
-    const entityResult = sqliteQuery(
+    // Use JSON mode to avoid pipe-split issues with | in metadata
+    const entityRows = sqliteQueryJSON(
       MEMESH_DB_PATH,
       query,
       ['session_keypoint', cutoffISO]
     );
 
-    if (!entityResult) {
+    if (!entityRows || entityRows.length === 0) {
       return null;
     }
 
-    // Parse result (format: id|name|metadata|created_at)
-    const parts = entityResult.split('|');
-    if (parts.length < 4) {
-      return null;
-    }
+    const row = entityRows[0];
+    const entityId = row.id;
+    const entityName = row.name;
+    const createdAt = row.created_at;
 
-    const [entityId, entityName, metadata, createdAt] = parts;
+    // Observations also use JSON mode for safety
+    const obsRows = sqliteQueryJSON(
+      MEMESH_DB_PATH,
+      'SELECT content FROM observations WHERE entity_id = ? ORDER BY created_at ASC',
+      [entityId]
+    );
 
-    // Query observations using parameterized query
-    const obsQuery = 'SELECT content FROM observations WHERE entity_id = ? ORDER BY created_at ASC';
-    const obsResult = sqliteQuery(MEMESH_DB_PATH, obsQuery, [entityId]);
+    const keyPoints = obsRows.map(r => r.content).filter(Boolean);
 
-    const keyPoints = obsResult ? obsResult.split('\n').filter(Boolean) : [];
-
-    // Parse metadata
     let parsedMetadata = {};
     try {
-      parsedMetadata = JSON.parse(metadata || '{}');
+      parsedMetadata = JSON.parse(row.metadata || '{}');
     } catch {
       // Ignore parse errors
     }
@@ -222,9 +264,24 @@ function recallRecentKeyPoints() {
       keyPoints,
     };
   } catch (error) {
-    logError('recallRecentKeyPoints', error);
+    logError('recallFromSQLite', error);
     return null;
   }
+}
+
+/**
+ * Recall recent session key points — cache-first, SQLite fallback.
+ * @returns {{ entityName: string, createdAt: string, metadata: object, keyPoints: string[] } | null}
+ */
+function recallRecentKeyPoints() {
+  // Fast path: read from cache file (no sqlite3 spawn)
+  const cached = recallFromCache();
+  if (cached) {
+    return cached;
+  }
+
+  // Slow path: query SQLite
+  return recallFromSQLite();
 }
 
 /**
@@ -299,11 +356,55 @@ function displayRecalledMemory(recalledData) {
 }
 
 // ============================================================================
+// CLAUDE.md Reload
+// ============================================================================
+
+/**
+ * Find and display project CLAUDE.md content on session start.
+ * This ensures instructions are fresh in context even after compaction.
+ * Searches: CWD/.claude/CLAUDE.md, CWD/CLAUDE.md
+ */
+function reloadClaudeMd() {
+  const cwd = process.cwd();
+  const candidates = [
+    path.join(cwd, '.claude', 'CLAUDE.md'),
+    path.join(cwd, 'CLAUDE.md'),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      if (fs.existsSync(candidate)) {
+        const content = fs.readFileSync(candidate, 'utf-8');
+        const lineCount = content.split('\n').length;
+        const relativePath = path.relative(cwd, candidate);
+
+        console.log('═'.repeat(60));
+        console.log('  📋 CLAUDE.md Reloaded');
+        console.log('═'.repeat(60));
+        console.log('');
+        console.log(`  Source: ${relativePath} (${lineCount} lines)`);
+        console.log('');
+        console.log(content);
+        console.log('');
+        console.log('═'.repeat(60));
+        console.log('');
+        return;
+      }
+    } catch {
+      // Skip unreadable files
+    }
+  }
+}
+
+// ============================================================================
 // Main Session Start Logic
 // ============================================================================
 
 function sessionStart() {
   console.log('\n🚀 Smart-Agents Session Started\n');
+
+  // Reload project CLAUDE.md into context
+  reloadClaudeMd();
 
   // Check MeMesh availability
   const ccbStatus = checkCCBAvailability();
@@ -392,5 +493,5 @@ try {
   sessionStart();
 } catch (error) {
   console.error('❌ SessionStart hook error:', error.message);
-  process.exit(1);
+  process.exit(0); // Never block Claude Code on hook errors
 }

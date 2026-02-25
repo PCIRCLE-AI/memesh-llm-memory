@@ -218,7 +218,8 @@ export class ServerInitializer {
       const buddyHandlers = new BuddyHandlers(
         formatter,
         projectMemoryManager,
-        projectAutoTracker
+        projectAutoTracker,
+        knowledgeGraph
       );
 
       // Return all initialized components

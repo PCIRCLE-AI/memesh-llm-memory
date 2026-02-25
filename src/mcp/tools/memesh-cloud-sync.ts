@@ -178,13 +178,31 @@ async function handlePush(
     };
   }
 
-  // Convert KG entities to Cloud memory format
-  const memories: CloudMemoryWriteRequest[] = entities.map(entity => ({
-    content: `[${entity.entityType}] ${entity.name}: ${entity.observations.join(' | ')}`,
-    space: input.space,
-    tags: [entity.entityType, ...(entity.tags || [])],
-    source: 'memesh-local',
-  }));
+  // Convert KG entities to Cloud memory format with validation
+  const MAX_CONTENT_LENGTH = 10000; // 10KB per memory
+  const MAX_OBSERVATION_LENGTH = 1000; // 1KB per observation
+
+  const memories: CloudMemoryWriteRequest[] = entities.map(entity => {
+    // Truncate long observations to prevent payload size issues
+    const truncatedObservations = entity.observations.map(obs =>
+      obs.length > MAX_OBSERVATION_LENGTH
+        ? obs.substring(0, MAX_OBSERVATION_LENGTH) + '... [truncated]'
+        : obs
+    );
+
+    // Build content and ensure it doesn't exceed max length
+    const fullContent = `[${entity.entityType}] ${entity.name}: ${truncatedObservations.join(' | ')}`;
+    const content = fullContent.length > MAX_CONTENT_LENGTH
+      ? fullContent.substring(0, MAX_CONTENT_LENGTH) + '... [truncated]'
+      : fullContent;
+
+    return {
+      content,
+      space: input.space,
+      tags: [entity.entityType, ...(entity.tags || [])].slice(0, 10), // API limit: max 10 tags
+      source: 'memesh-local',
+    };
+  });
 
   // Auto-batching to handle API limits and improve reliability
   const BATCH_SIZE = 30; // Safe batch size based on testing
@@ -231,18 +249,29 @@ async function handlePush(
       // If entire batch fails, mark all memories in this batch as failed
       const batchOffset = i * BATCH_SIZE;
       totalFailed += batch.length;
+
+      // Extract detailed error information
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorDetails = error instanceof Error && 'context' in error
+        ? (error as any).context
+        : undefined;
+
       batch.forEach((memory, idx) => {
         allFailures.push({
           index: batchOffset + idx,
           content: memory.content.substring(0, 100),
           errorCode: 'BATCH_FAILURE',
-          errorMessage: error instanceof Error ? error.message : String(error),
+          errorMessage,
         });
       });
 
       logger.error(`Cloud sync batch ${batchNum}/${batches.length} failed`, {
         batchSize: batch.length,
-        error: String(error),
+        batchOffset,
+        memoryIndices: `${batchOffset}-${batchOffset + batch.length - 1}`,
+        error: errorMessage,
+        errorDetails,
+        sampleContent: batch[0]?.content.substring(0, 200),
       });
     }
   }

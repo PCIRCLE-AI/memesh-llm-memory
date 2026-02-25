@@ -9,6 +9,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { homedir } from 'os';
+import { join } from 'path';
 import type { SessionMemoryEvent, ParsedSessionMemory, IngestionResult } from '../../../src/integrations/session-memory/types.js';
 import type { InjectionContext } from '../../../src/integrations/session-memory/SessionContextInjector.js';
 
@@ -147,9 +149,7 @@ describe('SessionMemoryPipeline', () => {
       expect(pipeline).toBeDefined();
       expect(pipeline.isRunning).toBe(false);
       // The watcher should receive the default projectsDir
-      const os = require('os');
-      const path = require('path');
-      const expectedDir = path.join(os.homedir(), '.claude', 'projects');
+      const expectedDir = join(homedir(), '.claude', 'projects');
       expect(captured.projectsDir).toBe(expectedDir);
     });
 

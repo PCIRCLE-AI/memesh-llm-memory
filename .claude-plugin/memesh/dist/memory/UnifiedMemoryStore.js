@@ -461,7 +461,8 @@ export class UnifiedMemoryStore {
             };
             const deleted = this.knowledgeGraph.deleteEntity(id);
             if (!deleted) {
-                logger.warn(`[UnifiedMemoryStore] Entity ${id} was deleted during update operation, will create new entry`);
+                logger.warn(`[UnifiedMemoryStore] Entity ${id} was concurrently deleted during update, treating as not found`);
+                return false;
             }
             await this.store(updatedMemory);
             logger.info(`[UnifiedMemoryStore] Updated memory: ${id}`);
@@ -507,9 +508,9 @@ export class UnifiedMemoryStore {
             });
         }
     }
-    close() {
+    async close() {
         try {
-            this.knowledgeGraph.close();
+            await this.knowledgeGraph.close();
             logger.info('[UnifiedMemoryStore] Database connection closed');
         }
         catch (error) {

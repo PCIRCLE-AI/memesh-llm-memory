@@ -1,13 +1,22 @@
 import type { Entity, Relation, SearchQuery, RelationTrace } from './types.js';
+export interface SemanticSearchResult {
+    entity: Entity;
+    similarity: number;
+}
 export declare class KnowledgeGraph {
     private db;
     private queryCache;
+    private vectorEnabled;
+    private vectorExt;
+    private vectorInitPromise;
+    private pendingEmbeddings;
     private constructor();
     private validateEntityName;
     private validateRelationType;
     static create(dbPath?: string): Promise<KnowledgeGraph>;
     static createSync(dbPath?: string): KnowledgeGraph;
     private initialize;
+    private initVectorSearch;
     private runMigrations;
     private escapeLikePattern;
     private searchFTS5;
@@ -23,7 +32,19 @@ export declare class KnowledgeGraph {
         entitiesByType: Record<string, number>;
     };
     deleteEntity(name: string): boolean;
-    close(): void;
+    private generateEmbeddingAsync;
+    semanticSearch(query: string, options?: {
+        limit?: number;
+        minSimilarity?: number;
+        entityTypes?: string[];
+    }): Promise<SemanticSearchResult[]>;
+    hybridSearch(query: string, options?: {
+        limit?: number;
+        minSimilarity?: number;
+    }): Promise<SemanticSearchResult[]>;
+    private keywordSearchAsSemanticResults;
+    isVectorSearchEnabled(): boolean;
+    close(): Promise<void>;
     transaction<T>(fn: () => T): T;
     getCacheStats(): import("../db/QueryCache.js").CacheStats;
     clearCache(): void;

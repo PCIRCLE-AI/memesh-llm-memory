@@ -30,20 +30,31 @@ export const CommonSchemas = {
 export function getAllToolDefinitions() {
     const buddyDoTool = {
         name: 'buddy-do',
-        description: 'Execute development tasks with context-aware analysis and memory integration',
+        description: `Smart task analysis with memory-enriched proposals.
+
+Analyzes the task description, detects the task type (bug-fix, feature, refactor, test, etc.),
+queries the knowledge graph for related context, and returns an enriched proposal for user review.
+
+Follows "propose, don't execute" pattern — the enhanced prompt is returned for confirmation,
+not auto-executed. User reviews the proposal and confirms or modifies before proceeding.
+
+Examples:
+- buddy-do "fix the auth bug" → detects bug-fix, recalls JWT context, suggests debugging approach
+- buddy-do "add user dashboard" → detects feature, recalls related UI work, suggests planning approach
+- buddy-do "refactor payment service" → detects refactor, recalls payment patterns, suggests review-first approach`,
         inputSchema: {
             type: 'object',
             properties: {
                 task: {
                     type: 'string',
-                    description: 'Task description to execute (e.g., "setup authentication", "fix login bug")',
+                    description: 'Task description to analyze and enrich (e.g., "setup authentication", "fix login bug")',
                 },
             },
             required: ['task'],
         },
         outputSchema: OutputSchemas.buddyDo,
         annotations: {
-            title: 'Smart Task Router',
+            title: 'Smart Task Analyzer',
             readOnlyHint: false,
             destructiveHint: false,
             idempotentHint: false,
@@ -412,6 +423,58 @@ Requires MEMESH_API_KEY to be configured. Without it, all actions return a setup
             openWorldHint: true,
         },
     };
+    const agentRegisterTool = {
+        name: 'memesh-agent-register',
+        description: `🤖 Register this agent with MeMesh Cloud for agent-specific capabilities.
+
+**What Registration Provides:**
+• Agent ID for tracking and analytics
+• Access to agent-specific features
+• Message queue for inter-agent communication
+• Heartbeat monitoring and status tracking
+
+**Agent Types (API enum):**
+• "claude" - Claude / Claude Code
+• "chatgpt" - ChatGPT
+• "gemini" - Google Gemini
+• "grok" - xAI Grok
+• "deepseek" - DeepSeek
+• "codex" - OpenAI Codex
+• "cursor" - Cursor IDE
+• "custom" - Other / custom agents
+
+Requires MEMESH_API_KEY to be configured.`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                agentType: {
+                    type: 'string',
+                    description: 'Type of agent. Valid: "claude", "chatgpt", "gemini", "grok", "deepseek", "codex", "cursor", "custom"',
+                },
+                agentName: {
+                    type: 'string',
+                    description: 'Optional agent name (no spaces — use hyphens, e.g., "my-agent")',
+                },
+                agentVersion: {
+                    type: 'string',
+                    description: 'Optional version string (e.g., "1.0.0")',
+                },
+                capabilities: {
+                    type: 'object',
+                    description: 'Optional capabilities object describing what the agent can do',
+                },
+            },
+            required: ['agentType'],
+        },
+        outputSchema: OutputSchemas.agentRegister,
+        annotations: {
+            title: 'Agent Registration',
+            readOnlyHint: false,
+            destructiveHint: false,
+            idempotentHint: true,
+            openWorldHint: false,
+        },
+    };
     const generateTestsTool = {
         name: 'memesh-generate-tests',
         aliases: ['generate-tests'],
@@ -438,6 +501,39 @@ Requires MEMESH_API_KEY to be configured. Without it, all actions return a setup
             openWorldHint: true,
         },
     };
+    const memeshMetricsTool = {
+        name: 'memesh-metrics',
+        description: `View MeMesh session metrics, routing configuration, and memory status.
+
+Returns structured data about:
+- Current session: modified files, tested files, code review status
+- Routing: active model rules, planning enforcement, dry-run gate, recent audit log
+- Memory: knowledge graph size and status
+
+Use section parameter to focus on specific areas:
+- "all" (default): Everything
+- "session": Current session state only
+- "routing": Routing config and audit log only
+- "memory": Knowledge graph status only`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                section: {
+                    type: 'string',
+                    enum: ['all', 'session', 'routing', 'memory'],
+                    description: 'Which metrics section to return (default: "all")',
+                },
+            },
+        },
+        outputSchema: OutputSchemas.memeshMetrics,
+        annotations: {
+            title: 'Session Metrics',
+            readOnlyHint: true,
+            destructiveHint: false,
+            idempotentHint: true,
+            openWorldHint: false,
+        },
+    };
     return [
         buddyDoTool,
         buddyRememberTool,
@@ -445,8 +541,10 @@ Requires MEMESH_API_KEY to be configured. Without it, all actions return a setup
         buddyRecordMistakeTool,
         createEntitiesTool,
         cloudSyncTool,
+        agentRegisterTool,
         hookToolUseTool,
         generateTestsTool,
+        memeshMetricsTool,
     ];
 }
 //# sourceMappingURL=ToolDefinitions.js.map

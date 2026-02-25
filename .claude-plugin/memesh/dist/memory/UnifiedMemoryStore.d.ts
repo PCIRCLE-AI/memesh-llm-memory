@@ -20,7 +20,7 @@ export declare class UnifiedMemoryStore {
     searchByTags(tags: string[], options?: SearchOptions): Promise<UnifiedMemory[]>;
     update(id: string, updates: Partial<UnifiedMemory>): Promise<boolean>;
     delete(id: string): Promise<boolean>;
-    close(): void;
+    close(): Promise<void>;
     private entityToMemory;
 }
 //# sourceMappingURL=UnifiedMemoryStore.d.ts.map

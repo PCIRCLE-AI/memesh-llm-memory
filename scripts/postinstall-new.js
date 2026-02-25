@@ -16,6 +16,7 @@
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { homedir } from 'os';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, statSync } from 'fs';
 import chalk from 'chalk';
 import boxen from 'boxen';
 
@@ -33,6 +34,73 @@ import {
   ensureMCPConfigured,
   detectAndFixLegacyInstall
 } from './postinstall-lib.js';
+
+// ============================================================================
+// Bundled Skills Installation
+// ============================================================================
+
+/**
+ * Install bundled skills to ~/.claude/skills/sa:<name>/
+ * Skills are shipped in scripts/skills/<name>/SKILL.md
+ * Only installs if skill doesn't exist or bundled version is newer.
+ *
+ * @param {string} claudeDir - Path to ~/.claude
+ * @returns {{ installed: string[], skipped: string[], errors: string[] }}
+ */
+function installBundledSkills(claudeDir) {
+  const result = { installed: [], skipped: [], errors: [] };
+  const bundledDir = join(__dirname, 'skills');
+  const skillsDir = join(claudeDir, 'skills');
+
+  if (!existsSync(bundledDir)) {
+    return result;
+  }
+
+  // Ensure skills directory exists
+  mkdirSync(skillsDir, { recursive: true });
+
+  // Read all bundled skills
+  let entries;
+  try {
+    entries = readdirSync(bundledDir, { withFileTypes: true });
+  } catch {
+    return result;
+  }
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+
+    const skillName = entry.name;
+    const prefixedName = `sa:${skillName}`;
+    const sourceFile = join(bundledDir, skillName, 'SKILL.md');
+    const targetDir = join(skillsDir, prefixedName);
+    const targetFile = join(targetDir, 'SKILL.md');
+
+    if (!existsSync(sourceFile)) continue;
+
+    try {
+      // Skip if target exists and is newer than source
+      if (existsSync(targetFile)) {
+        const sourceStat = statSync(sourceFile);
+        const targetStat = statSync(targetFile);
+        if (targetStat.mtimeMs >= sourceStat.mtimeMs) {
+          result.skipped.push(skillName);
+          continue;
+        }
+      }
+
+      // Install: create dir + copy SKILL.md
+      mkdirSync(targetDir, { recursive: true });
+      const content = readFileSync(sourceFile, 'utf-8');
+      writeFileSync(targetFile, content, 'utf-8');
+      result.installed.push(skillName);
+    } catch (error) {
+      result.errors.push(`${skillName}: ${error.message}`);
+    }
+  }
+
+  return result;
+}
 
 // ============================================================================
 // Main Installation Flow
@@ -118,6 +186,25 @@ async function main() {
       }
     } catch (error) {
       console.log(chalk.dim('  ℹ️  Legacy check skipped'));
+    }
+
+    // Step 7: Install Bundled Skills
+    try {
+      const skillResult = installBundledSkills(claudeDir);
+      results.skillsInstalled = skillResult.installed;
+      results.skillsSkipped = skillResult.skipped;
+
+      if (skillResult.installed.length > 0) {
+        console.log(chalk.green(`  ✅ Skills installed: ${skillResult.installed.join(', ')}`));
+      } else if (skillResult.skipped.length > 0) {
+        console.log(chalk.dim(`  ℹ️  Skills up to date (${skillResult.skipped.length} already installed)`));
+      }
+
+      if (skillResult.errors.length > 0) {
+        results.errors.push(`Skills: ${skillResult.errors.join('; ')}`);
+      }
+    } catch (error) {
+      console.log(chalk.dim('  ℹ️  Skills installation skipped'));
     }
 
   } catch (error) {

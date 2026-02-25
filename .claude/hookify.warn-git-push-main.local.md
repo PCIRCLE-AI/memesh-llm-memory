@@ -1,27 +1,30 @@
 ---
-name: warn-git-push-main
+name: block-git-push-main
 enabled: true
 event: bash
-pattern: git\s+push\s+(origin\s+)?(main|master)
-action: warn
+pattern: git\s+push\s+(-u\s+)?(origin\s+)?(main|master)\b
+action: block
 ---
 
-# ⚠️ PUSHING TO MAIN BRANCH
+# BLOCKED: Direct push to main/master
 
-You're about to push to the main branch.
+**Direct pushes to main/master are not allowed.** Use a Pull Request instead.
 
-## Before pushing, verify
+## Correct workflow
 
-- ✅ All tests passed?
-- ✅ Code review completed?
-- ✅ User approved the changes?
-- ✅ No breaking changes without migration plan?
+1. Push your changes to `develop` or a feature branch:
+   ```bash
+   git push origin develop
+   git push origin feature/your-feature
+   ```
 
-## If this is a release
+2. Open a PR to merge into `main`:
+   ```bash
+   gh pr create --base main --head develop
+   ```
 
-Consider if you should also push tags:
-```bash
-git push --tags
-```
+## Why?
 
-**Note:** If this push includes version tags, you'll be blocked by the `block-unauthorized-publish` rule.
+- All changes to `main` must go through code review via PR
+- This prevents accidental pushes of untested or unapproved code
+- See `docs/RELEASE_PROCESS.md` for the full release workflow

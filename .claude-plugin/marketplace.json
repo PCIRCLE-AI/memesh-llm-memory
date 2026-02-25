@@ -18,7 +18,7 @@
       },
       "homepage": "https://github.com/PCIRCLE-AI/claude-code-buddy",
       "repository": "https://github.com/PCIRCLE-AI/claude-code-buddy",
-      "license": "AGPL-3.0",
+      "license": "MIT",
       "source": {
         "source": "github",
         "repo": "PCIRCLE-AI/claude-code-buddy"

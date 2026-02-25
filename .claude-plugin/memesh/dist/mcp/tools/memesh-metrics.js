@@ -33,29 +33,40 @@ function readJSONSafe(filePath) {
 }
 const MAX_AUDIT_LOG_BYTES = 256 * 1024;
 function getRecentAuditEntries(maxLines) {
+    let fd;
     try {
-        if (!fs.existsSync(ROUTING_AUDIT_LOG))
-            return [];
-        const stat = fs.statSync(ROUTING_AUDIT_LOG);
+        fd = fs.openSync(ROUTING_AUDIT_LOG, 'r');
+        const stat = fs.fstatSync(fd);
         let content;
         if (stat.size > MAX_AUDIT_LOG_BYTES) {
-            const fd = fs.openSync(ROUTING_AUDIT_LOG, 'r');
             const buffer = Buffer.alloc(MAX_AUDIT_LOG_BYTES);
             fs.readSync(fd, buffer, 0, MAX_AUDIT_LOG_BYTES, stat.size - MAX_AUDIT_LOG_BYTES);
-            fs.closeSync(fd);
             content = buffer.toString('utf-8');
         }
         else {
-            content = fs.readFileSync(ROUTING_AUDIT_LOG, 'utf-8');
+            const buffer = Buffer.alloc(stat.size);
+            fs.readSync(fd, buffer, 0, stat.size, 0);
+            content = buffer.toString('utf-8');
         }
         const lines = content.trim().split('\n').filter(Boolean);
         return lines.slice(-maxLines);
     }
     catch (error) {
+        if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+            return [];
+        }
         logger.warn('[Metrics] Failed to read audit log', {
             error: error instanceof Error ? error.message : String(error),
         });
         return [];
+    }
+    finally {
+        if (fd !== undefined) {
+            try {
+                fs.closeSync(fd);
+            }
+            catch { }
+        }
     }
 }
 export async function handleMemeshMetrics(input) {

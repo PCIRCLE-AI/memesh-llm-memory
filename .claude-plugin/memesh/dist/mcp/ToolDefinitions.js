@@ -540,8 +540,6 @@ Use section parameter to focus on specific areas:
         buddyHelpTool,
         buddyRecordMistakeTool,
         createEntitiesTool,
-        cloudSyncTool,
-        agentRegisterTool,
         hookToolUseTool,
         generateTestsTool,
         memeshMetricsTool,

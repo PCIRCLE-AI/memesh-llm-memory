@@ -7,10 +7,12 @@
 記住決策、模式和脈絡 — 跨越每個 session。
 
 [![npm version](https://img.shields.io/npm/v/@pcircle/memesh)](https://www.npmjs.com/package/@pcircle/memesh)
-[![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-compatible-purple.svg)](https://modelcontextprotocol.io)
 
 [安裝](#安裝) • [使用方式](#使用方式) • [疑難排解](#疑難排解) • [English](README.md)
+
+[简体中文](README.zh-CN.md) • [日本語](README.ja.md) • [한국어](README.ko.md) • [Français](README.fr.md) • [Deutsch](README.de.md) • [Español](README.es.md) • [Tiếng Việt](README.vi.md) • [ภาษาไทย](README.th.md) • [Bahasa Indonesia](README.id.md)
 
 </div>
 
@@ -146,7 +148,7 @@ memesh setup
 
 ## 授權
 
-AGPL-3.0 — 詳見 [LICENSE](LICENSE)
+MIT — 詳見 [LICENSE](LICENSE)
 
 ---
 

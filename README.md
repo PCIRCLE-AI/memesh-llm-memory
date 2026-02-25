@@ -2,71 +2,53 @@
 
 # 🧠 MeMesh
 
-### Persistent Memory for Claude Code
+### Searchable Project Memory for Claude Code
 
-Claude forgets everything between sessions. MeMesh fixes that.
+Remember decisions, patterns, and context — across every session.
 
 [![npm version](https://img.shields.io/npm/v/@pcircle/memesh)](https://www.npmjs.com/package/@pcircle/memesh)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
-[![MCP](https://img.shields.io/badge/MCP-1.25.3-purple.svg)](https://modelcontextprotocol.io)
+[![MCP](https://img.shields.io/badge/MCP-compatible-purple.svg)](https://modelcontextprotocol.io)
 
-[Quick Install](#install) • [Usage](#usage) • [Troubleshooting](#troubleshooting) • [繁體中文](README.zh-TW.md)
+[Install](#install) • [Usage](#usage) • [Troubleshooting](#troubleshooting) • [繁體中文](README.zh-TW.md)
 
 </div>
 
-> **📦 Package Renamed**: `@pcircle/claude-code-buddy-mcp` is now `@pcircle/memesh`
->
-> If you previously installed the old package, please migrate:
-> ```bash
-> npm uninstall -g @pcircle/claude-code-buddy-mcp && npm install -g @pcircle/memesh
-> ```
-> See [MIGRATION.md](MIGRATION.md) for details.
-
 ---
 
-## The Problem
+## What Is MeMesh?
 
-Every new Claude Code session starts from zero:
+MeMesh is a Claude Code plugin that gives your projects a **searchable memory**.
 
-```
-You: "Remember our auth setup from yesterday?"
-Claude: "I don't have context from previous sessions..."
-```
+As you work, MeMesh automatically saves important decisions, architecture context, and lessons learned. Next time you start a session, you can ask "what did we decide about auth?" and get an instant answer.
 
-You end up re-explaining the same decisions, architecture, and constraints — over and over.
+**How is this different from Claude's built-in memory?**
 
-## How MeMesh Helps
+Claude Code already has auto memory and CLAUDE.md — great for general preferences and instructions. MeMesh adds a dedicated **project memory** you can actively search and query, with support for finding things by meaning (not just exact keywords).
 
-MeMesh gives Claude a persistent memory that survives across sessions:
-
-```bash
-# Monday: You make a decision
-buddy-remember "auth"
-# → JWT auth: access tokens 15min, refresh tokens 7 days
-# → Decided on Jan 15, stored permanently
-```
-
-Your project decisions, architecture context, and debugging history — all remembered automatically.
+Think of it this way:
+- **CLAUDE.md** = your personal instruction manual for Claude
+- **MeMesh** = a searchable notebook of everything your project has learned
 
 ---
 
 ## Install
 
-**Prerequisites**: [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) and Node.js >= 20
+**You need**: [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and Node.js 20+
 
 ```bash
 npm install -g @pcircle/memesh
 ```
 
-Restart Claude Code. That's it.
+Restart Claude Code. Done.
 
-**Verify it works** — in a new Claude Code session, type:
+**Check it works** — type this in Claude Code:
 
 ```
 buddy-help
 ```
 
-If you see a list of available commands, MeMesh is running.
+You should see a list of commands.
 
 <details>
 <summary>Install from source (for contributors)</summary>
@@ -81,63 +63,15 @@ npm install && npm run build
 
 ---
 
-## Compatibility
-
-### Supported Platforms
-
-| Platform | Status | Notes |
-|----------|--------|-------|
-| **macOS** | ✅ Fully tested | Primary development platform |
-| **Linux** | ✅ Fully tested | All distributions supported |
-| **Windows** | ✅ Compatible | WSL2 recommended for best experience |
-
-### Requirements
-
-- **Claude Code**: Latest version recommended ([install guide](https://docs.anthropic.com/en/docs/claude-code))
-- **Node.js**: >= 20.0.0 ([download](https://nodejs.org/))
-- **npm**: >= 9.0.0 (included with Node.js)
-
-### Claude Code Integration
-
-MeMesh works seamlessly with:
-- ✅ **Claude Code CLI** (terminal) - **Full functionality**
-- ✅ **Claude Code VS Code Extension** - **Full functionality**
-- ✅ **Cursor** (via MCP) - **Full functionality**
-- ⚠️  **Claude Desktop (Cowork)** - **Partial support** (see below)
-- ✅ **Other MCP-compatible editors**
-
-#### Claude Desktop Cowork Compatibility
-
-**Current Status**: Limited functionality
-
-| Feature | Status | Notes |
-|---------|--------|-------|
-| MCP Server | ✅ Works | Starts successfully |
-| Basic Commands | ✅ Works | buddy-help, list-skills, etc. |
-| Memory Tools | ❌ Disabled | recall-memory, create-entities, buddy-do, buddy-remember |
-| Local Knowledge Graph | ❌ Unavailable | better-sqlite3 cannot compile in Cowork sandbox |
-
-**Why Limited**: Cowork sandbox has read-only filesystem and blocks native module compilation (better-sqlite3, onnxruntime-node, sqlite-vec).
-
-**Recommendation**: Use **CLI version** for full functionality.
-
-### Known Limitations
-
-- Windows native terminal may have display issues (use WSL2)
-- Minimum 4GB RAM recommended for large knowledge graphs
-- Vector search requires ~100MB disk space for embedding models
-
----
-
 ## Usage
 
-MeMesh provides 3 core commands inside Claude Code:
+MeMesh adds 3 commands to Claude Code:
 
 | Command | What it does |
 |---------|-------------|
-| `buddy-do "task"` | Execute a task and save what was learned |
-| `buddy-remember "topic"` | Recall past decisions and context |
-| `buddy-help` | Show all available commands |
+| `buddy-do "task"` | Run a task with memory context |
+| `buddy-remember "topic"` | Search for past decisions and context |
+| `buddy-help` | Show available commands |
 
 **Examples:**
 
@@ -148,45 +82,59 @@ buddy-remember "API design decisions"
 buddy-remember "why we chose PostgreSQL"
 ```
 
-Memories are stored locally on your machine and persist across sessions (90 days for decisions, 30 days for session context).
+Everything is stored locally on your machine. Decisions are kept for 90 days, session notes for 30 days.
+
+---
+
+## Where It Runs
+
+| Platform | Status |
+|----------|--------|
+| **macOS** | ✅ Works |
+| **Linux** | ✅ Works |
+| **Windows** | ✅ Works (WSL2 recommended) |
+
+**Works with:**
+- Claude Code CLI (terminal)
+- Claude Code VS Code Extension
+- Cursor (via MCP)
+- Other MCP-compatible editors
+
+**Claude Desktop (Cowork)**: Basic commands work, but memory features need the CLI version. See [Cowork details](docs/COWORK_SUPPORT.md).
 
 ---
 
 ## Troubleshooting
 
-**MeMesh not loading?**
+**MeMesh not showing up?**
 
 ```bash
-# Check installation
+# Check it's installed
 npm list -g @pcircle/memesh
 
-# Check Node.js version (needs >= 20)
+# Check Node.js version (needs 20+)
 node --version
 
-# Repair installation
+# Re-run setup
 memesh setup
 ```
 
 Then restart Claude Code completely.
 
-See the full [Troubleshooting Guide](docs/TROUBLESHOOTING.md) for more.
+More help: [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
 
 ---
 
-## Documentation
+## Learn More
 
-- **[Getting Started](docs/GETTING_STARTED.md)** — First-time setup walkthrough
-- **[User Guide](docs/USER_GUIDE.md)** — Complete usage guide with real-world examples
-- **[Development Guide](docs/DEVELOPMENT.md)** — Contributor guide for local development
-- **[API Reference](https://pcircle-ai.github.io/claude-code-buddy/)** — Auto-generated API documentation
-- **[Commands Reference](docs/COMMANDS.md)** — All commands and tools
-- **[Architecture](docs/ARCHITECTURE.md)** — How MeMesh works internally
+- **[Getting Started](docs/GETTING_STARTED.md)** — Step-by-step setup
+- **[User Guide](docs/USER_GUIDE.md)** — Full usage guide with examples
+- **[Commands](docs/COMMANDS.md)** — All available commands
+- **[Architecture](docs/ARCHITECTURE.md)** — How it works under the hood
+- **[Contributing](CONTRIBUTING.md)** — Want to help? Start here
+- **[Development Guide](docs/DEVELOPMENT.md)** — For contributors
 
 ---
-
-## Contributing
-
-Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

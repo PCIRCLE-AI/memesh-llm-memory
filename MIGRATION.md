@@ -88,7 +88,7 @@ All features remain identical:
 | Old | New |
 |-----|-----|
 | `@pcircle/claude-code-buddy-mcp` | `@pcircle/memesh` |
-| Last version: 2.6.3 | Current version: 2.8.11+ |
+| Last version: 2.6.3 | Current version: 2.9.0 |
 | npm: [deprecated] | npm: [active] |
 
 ### 🔧 CLI Commands

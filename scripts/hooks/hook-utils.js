@@ -688,3 +688,80 @@ export function matchCommitToStep(commitInfo, planSteps) {
   // Return step + confidence (capped at 1.0)
   return { step: bestMatch, confidence: Math.min(bestScore, 1.0) };
 }
+
+/**
+ * Render a full Style B timeline visualization.
+ * @param {Object} plan - Plan entity with metadata.stepsDetail
+ * @param {number} [highlightStep] - Step number to highlight (just matched)
+ * @returns {string} Multi-line timeline string
+ */
+export function renderTimeline(plan, highlightStep = null) {
+  const { stepsDetail, totalSteps, completed } = plan.metadata;
+  const pct = Math.round((completed / totalSteps) * 100);
+  const planName = plan.name.replace('Plan: ', '');
+
+  // Node symbols: ● completed, ◉ current/highlighted, ○ pending
+  const nodes = stepsDetail.map(s => {
+    if (s.completed) return '\u25cf';
+    if (s.number === highlightStep) return '\u25c9';
+    const nextStep = stepsDetail.find(st => !st.completed);
+    if (nextStep && s.number === nextStep.number) return '\u25c9';
+    return '\u25cb';
+  }).join(' \u2500\u2500\u2500\u2500 ');
+
+  // Step numbers row
+  const numbers = stepsDetail.map(s =>
+    String(s.number).padEnd(6)
+  ).join('');
+
+  const separator = '\u2501'.repeat(40);
+
+  const lines = [
+    `  \ud83d\udccb ${planName}`,
+    `  ${separator}`,
+    `  ${nodes}`,
+    `  ${numbers}   ${pct}% done`,
+    `  ${separator}`,
+  ];
+
+  if (highlightStep) {
+    const commitRef = plan._lastCommit || '';
+    const confidence = plan._matchConfidence || 1.0;
+    const marker = confidence < 0.6 ? ' (?)' : '';
+    lines.push(`  \u2705 Step ${highlightStep} matched${marker} \u2190 ${commitRef}`);
+  }
+
+  const next = stepsDetail.find(s => !s.completed);
+  if (next && completed < totalSteps) {
+    lines.push(`  \u25b6 Next: Step ${next.number} - ${next.description}`);
+  }
+
+  if (completed === totalSteps) {
+    lines.push(`  \ud83c\udf89 Plan complete!`);
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Render a compact Style B timeline for session-start display.
+ * @param {Object} plan - Plan entity with metadata.stepsDetail
+ * @returns {string} 3-line compact timeline string
+ */
+export function renderTimelineCompact(plan) {
+  const { stepsDetail, totalSteps, completed } = plan.metadata;
+  const pct = Math.round((completed / totalSteps) * 100);
+  const planName = plan.name.replace('Plan: ', '');
+
+  const nodes = stepsDetail.map(s =>
+    s.completed ? '\u25cf' : '\u25cb'
+  ).join(' \u2500\u2500\u2500\u2500 ');
+
+  const next = stepsDetail.find(s => !s.completed);
+
+  return [
+    `  \ud83d\udccb ${planName}`,
+    `  ${nodes}    ${pct}%`,
+    next ? `  \u25b6 Next: ${next.description}` : `  \ud83c\udf89 Complete`,
+  ].join('\n');
+}

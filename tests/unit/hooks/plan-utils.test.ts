@@ -5,6 +5,8 @@ import {
   derivePlanName,
   parsePlanSteps,
   matchCommitToStep,
+  renderTimeline,
+  renderTimelineCompact,
 } from '../../../scripts/hooks/hook-utils.js';
 
 describe('tokenize', () => {
@@ -201,5 +203,90 @@ describe('matchCommitToStep', () => {
   it('should return null for empty steps array', () => {
     const commitInfo = { subject: 'feat: something', filesChanged: [] };
     expect(matchCommitToStep(commitInfo, [])).toBeNull();
+  });
+});
+
+describe('renderTimeline', () => {
+  const makePlan = (completed, total) => ({
+    name: 'Plan: auth-system',
+    metadata: {
+      totalSteps: total,
+      completed,
+      stepsDetail: Array.from({ length: total }, (_, i) => ({
+        number: i + 1,
+        description: `Step ${i + 1} description`,
+        completed: i < completed,
+        commitHash: i < completed ? `abc${i}` : undefined,
+      })),
+    },
+    _lastCommit: 'def456',
+  });
+
+  it('should render timeline with correct node symbols', () => {
+    const output = renderTimeline(makePlan(2, 4));
+    expect(output).toContain('\u25cf'); // ● completed nodes
+    expect(output).toContain('\u25cb'); // ○ pending nodes
+    expect(output).toContain('50%');
+  });
+
+  it('should highlight a specific step', () => {
+    const output = renderTimeline(makePlan(2, 4), 2);
+    expect(output).toContain('def456'); // last commit reference
+  });
+
+  it('should show next step', () => {
+    const output = renderTimeline(makePlan(2, 4));
+    expect(output).toContain('Next');
+    expect(output).toContain('Step 3 description');
+  });
+
+  it('should show completion message when all done', () => {
+    const output = renderTimeline(makePlan(4, 4));
+    expect(output).toContain('complete');
+  });
+
+  it('should show (?) marker for low confidence match', () => {
+    const plan = makePlan(2, 4);
+    plan._matchConfidence = 0.4;
+    const output = renderTimeline(plan, 2);
+    expect(output).toContain('(?)');
+  });
+
+  it('should not show (?) for high confidence match', () => {
+    const plan = makePlan(2, 4);
+    plan._matchConfidence = 0.8;
+    const output = renderTimeline(plan, 2);
+    expect(output).not.toContain('(?)');
+  });
+});
+
+describe('renderTimelineCompact', () => {
+  const makePlan = (completed, total) => ({
+    name: 'Plan: auth-system',
+    metadata: {
+      totalSteps: total,
+      completed,
+      stepsDetail: Array.from({ length: total }, (_, i) => ({
+        number: i + 1,
+        description: `Step ${i + 1} desc`,
+        completed: i < completed,
+      })),
+    },
+  });
+
+  it('should render compact timeline with percentage', () => {
+    const output = renderTimelineCompact(makePlan(2, 4));
+    expect(output).toContain('50%');
+    expect(output).toContain('auth-system');
+  });
+
+  it('should show next step in compact view', () => {
+    const output = renderTimelineCompact(makePlan(1, 3));
+    expect(output).toContain('Step 2 desc');
+  });
+
+  it('should show complete in compact view when done', () => {
+    const output = renderTimelineCompact(makePlan(3, 3));
+    expect(output).toContain('Complete');
   });
 });

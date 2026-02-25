@@ -263,7 +263,7 @@ buddy-do "explain this codebase"
 - 📥 **13,571 clones** (736 unique users)
 - 📦 **1,696 downloads** in last 30 days
 - 🔀 **14 forks** - Active contributors
-- 🔧 **Active maintenance** - Latest: v2.8.10
+- 🔧 **Active maintenance** - Latest: v2.9.0
 
 [View on GitHub →]  [Report Issues →]
 ```

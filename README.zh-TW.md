@@ -2,57 +2,39 @@
 
 # 🧠 MeMesh
 
-### Claude Code 的持久記憶
+### Claude Code 的可搜尋專案記憶
 
-Claude 每次開新 session 都會忘記一切。MeMesh 解決這個問題。
+記住決策、模式和脈絡 — 跨越每個 session。
 
 [![npm version](https://img.shields.io/npm/v/@pcircle/memesh)](https://www.npmjs.com/package/@pcircle/memesh)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
-[![MCP](https://img.shields.io/badge/MCP-1.25.3-purple.svg)](https://modelcontextprotocol.io)
+[![MCP](https://img.shields.io/badge/MCP-compatible-purple.svg)](https://modelcontextprotocol.io)
 
 [安裝](#安裝) • [使用方式](#使用方式) • [疑難排解](#疑難排解) • [English](README.md)
 
 </div>
 
-> **📦 套件更名通知**：`@pcircle/claude-code-buddy-mcp` 已更名為 `@pcircle/memesh`
->
-> 如果你之前安裝過舊套件，請執行遷移：
-> ```bash
-> npm uninstall -g @pcircle/claude-code-buddy-mcp && npm install -g @pcircle/memesh
-> ```
-> 詳見 [MIGRATION.md](MIGRATION.md)。
-
 ---
 
-## 問題
+## MeMesh 是什麼？
 
-每次開新的 Claude Code session 都從零開始：
+MeMesh 是一個 Claude Code 插件，幫你的專案建立**可搜尋的記憶**。
 
-```
-你：「還記得我們昨天的 auth 設定嗎？」
-Claude：「我沒有之前 session 的 context...」
-```
+當你工作時，MeMesh 會自動儲存重要的決策、架構脈絡和經驗教訓。下次開新 session，你可以問「我們之前怎麼決定 auth 的？」就能馬上得到答案。
 
-你不斷重複解釋同樣的決策、架構和限制。
+**跟 Claude 內建記憶有什麼不同？**
 
-## MeMesh 如何幫助
+Claude Code 已經有 auto memory 和 CLAUDE.md — 很適合存一般偏好和指令。MeMesh 在此基礎上增加了專門的**專案記憶**，你可以主動搜尋和查詢，而且能用語意搜尋（不只是完全符合的關鍵字）。
 
-MeMesh 讓 Claude 擁有跨 session 的持久記憶：
-
-```bash
-# 週一：你做了一個決策
-buddy-remember "auth"
-# → JWT 認證：access token 15分鐘，refresh token 7天
-# → 1月15日決定，永久儲存
-```
-
-專案決策、架構脈絡、除錯紀錄 — 全部自動記住。
+簡單來說：
+- **CLAUDE.md** = 你寫給 Claude 的使用手冊
+- **MeMesh** = 專案學到的所有東西的可搜尋筆記本
 
 ---
 
 ## 安裝
 
-**前置需求**：[Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) 和 Node.js >= 20
+**你需要**：[Claude Code](https://docs.anthropic.com/en/docs/claude-code) 和 Node.js 20+
 
 ```bash
 npm install -g @pcircle/memesh
@@ -60,13 +42,13 @@ npm install -g @pcircle/memesh
 
 重啟 Claude Code，完成。
 
-**驗證安裝** — 在新的 Claude Code session 中輸入：
+**確認安裝成功** — 在 Claude Code 中輸入：
 
 ```
 buddy-help
 ```
 
-看到指令列表就代表 MeMesh 正在運作。
+看到指令列表就代表安裝成功。
 
 <details>
 <summary>從原始碼安裝（給貢獻者）</summary>
@@ -81,63 +63,15 @@ npm install && npm run build
 
 ---
 
-## 相容性
-
-### 支援的平台
-
-| 平台 | 狀態 | 備註 |
-|------|------|------|
-| **macOS** | ✅ 完整測試 | 主要開發平台 |
-| **Linux** | ✅ 完整測試 | 支援所有發行版 |
-| **Windows** | ✅ 相容 | 建議使用 WSL2 以獲得最佳體驗 |
-
-### 系統需求
-
-- **Claude Code**: 建議使用最新版本 ([安裝指南](https://docs.anthropic.com/en/docs/claude-code))
-- **Node.js**: >= 20.0.0 ([下載](https://nodejs.org/))
-- **npm**: >= 9.0.0 (隨 Node.js 安裝)
-
-### Claude Code 整合
-
-MeMesh 可無縫整合：
-- ✅ **Claude Code CLI**（終端機）- **完整功能**
-- ✅ **Claude Code VS Code 擴充套件** - **完整功能**
-- ✅ **Cursor**（透過 MCP）- **完整功能**
-- ⚠️  **Claude Desktop (Cowork)** - **部分支援**（見下方說明）
-- ✅ **其他相容 MCP 的編輯器**
-
-#### Claude Desktop Cowork 相容性
-
-**目前狀態**：功能受限
-
-| 功能 | 狀態 | 備註 |
-|------|------|------|
-| MCP 伺服器 | ✅ 正常 | 成功啟動 |
-| 基本指令 | ✅ 正常 | buddy-help, list-skills 等 |
-| 記憶工具 | ❌ 停用 | recall-memory, create-entities, buddy-do, buddy-remember |
-| 本地知識圖譜 | ❌ 無法使用 | better-sqlite3 無法在 Cowork 沙盒編譯 |
-
-**限制原因**：Cowork 沙盒具有唯讀檔案系統，並阻止原生模組編譯（better-sqlite3、onnxruntime-node、sqlite-vec）。
-
-**建議**：使用 **CLI 版本**以獲得完整功能。
-
-### 已知限制
-
-- Windows 原生終端機可能有顯示問題（建議使用 WSL2）
-- 大型知識圖譜建議至少 4GB RAM
-- 向量搜尋需要約 100MB 磁碟空間存放嵌入模型
-
----
-
 ## 使用方式
 
-MeMesh 在 Claude Code 中提供 3 個核心指令：
+MeMesh 在 Claude Code 中增加 3 個指令：
 
 | 指令 | 功能 |
 |------|------|
-| `buddy-do "任務"` | 執行任務並記住學到的內容 |
-| `buddy-remember "主題"` | 回想過去的決策和脈絡 |
-| `buddy-help` | 顯示所有可用指令 |
+| `buddy-do "任務"` | 帶著記憶脈絡執行任務 |
+| `buddy-remember "主題"` | 搜尋過去的決策和脈絡 |
+| `buddy-help` | 顯示可用指令 |
 
 **範例：**
 
@@ -148,45 +82,59 @@ buddy-remember "API 設計決策"
 buddy-remember "為什麼選 PostgreSQL"
 ```
 
-記憶儲存在你的本機，跨 session 持續保存（決策 90 天，session 脈絡 30 天）。
+所有資料都存在你的電腦上。決策保留 90 天，session 筆記保留 30 天。
+
+---
+
+## 支援環境
+
+| 平台 | 狀態 |
+|------|------|
+| **macOS** | ✅ 正常 |
+| **Linux** | ✅ 正常 |
+| **Windows** | ✅ 正常（建議 WSL2）|
+
+**可搭配使用：**
+- Claude Code CLI（終端機）
+- Claude Code VS Code 擴充套件
+- Cursor（透過 MCP）
+- 其他相容 MCP 的編輯器
+
+**Claude Desktop (Cowork)**：基本指令可用，記憶功能需使用 CLI 版本。詳見 [Cowork 說明](docs/COWORK_SUPPORT.md)。
 
 ---
 
 ## 疑難排解
 
-**MeMesh 沒有載入？**
+**MeMesh 沒出現？**
 
 ```bash
-# 檢查安裝
+# 確認已安裝
 npm list -g @pcircle/memesh
 
-# 檢查 Node.js 版本（需要 >= 20）
+# 確認 Node.js 版本（需要 20+）
 node --version
 
-# 修復安裝
+# 重新設定
 memesh setup
 ```
 
 然後完全重啟 Claude Code。
 
-完整指南請參閱 [疑難排解文件](docs/TROUBLESHOOTING.md)。
+更多說明：[疑難排解指南](docs/TROUBLESHOOTING.md)
 
 ---
 
-## 文件
+## 了解更多
 
-> 詳細文件目前僅提供英文版
-
-- **[快速開始](docs/GETTING_STARTED.md)** — 首次安裝指引
-- **[使用指南](docs/USER_GUIDE.md)** — 完整使用教學
-- **[指令參考](docs/COMMANDS.md)** — 所有指令與工具
-- **[架構說明](docs/ARCHITECTURE.md)** — MeMesh 內部運作方式
+- **[快速開始](docs/GETTING_STARTED.md)** — 一步步安裝教學
+- **[使用指南](docs/USER_GUIDE.md)** — 完整使用範例
+- **[指令參考](docs/COMMANDS.md)** — 所有可用指令
+- **[架構說明](docs/ARCHITECTURE.md)** — 內部運作原理
+- **[貢獻指南](CONTRIBUTING.md)** — 想幫忙？從這裡開始
+- **[開發指南](docs/DEVELOPMENT.md)** — 給貢獻者
 
 ---
-
-## 貢獻
-
-歡迎貢獻！請參閱 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 授權
 

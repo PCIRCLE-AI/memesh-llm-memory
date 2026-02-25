@@ -227,4 +227,4 @@ THRESHOLDS = {
 
 ---
 
-Part of MeMesh project. License: AGPL-3.0.
+Part of MeMesh project. License: MIT.

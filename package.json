@@ -59,7 +59,7 @@
     "persistent-memory"
   ],
   "author": "PCIRCLE-AI",
-  "license": "AGPL-3.0",
+  "license": "MIT",
   "homepage": "https://github.com/PCIRCLE-AI/claude-code-buddy",
   "repository": {
     "type": "git",

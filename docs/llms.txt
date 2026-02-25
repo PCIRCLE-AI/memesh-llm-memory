@@ -11,7 +11,7 @@ MeMesh is a Claude Code plugin that provides persistent memory via MCP (Model Co
 - **Auto-Tracking**: Automatic session summaries and context capture
 - **Local-First**: All data stored locally in SQLite for privacy
 
-**License**: AGPL-3.0
+**License**: MIT
 **Language**: TypeScript
 **Platform**: Node.js 20+
 **Latest Version**: 2.8.9 (2026-02-12)
@@ -103,7 +103,7 @@ New CLI tools for managing MCP server processes:
 - **Database**: better-sqlite3
 - **Protocol**: Model Context Protocol (MCP)
 - **Testing**: Vitest
-- **License**: AGPL-3.0
+- **License**: MIT
 
 ### Directory Structure
 ```
@@ -253,7 +253,7 @@ Contributions welcome! See `docs/CONTRIBUTING.md` for guidelines.
 
 ## License
 
-AGPL-3.0 - See LICENSE file for details.
+MIT - See LICENSE file for details.
 
 ## Contact
 

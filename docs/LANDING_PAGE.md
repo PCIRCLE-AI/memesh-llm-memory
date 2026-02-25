@@ -235,7 +235,7 @@ buddy-do "explain this codebase"
 ## Your Data, Your Machine
 
 ✅ **100% Local Storage** - No cloud uploads
-✅ **Open Source** - AGPL-3.0, audited on GitHub
+✅ **Open Source** - MIT, audited on GitHub
 ✅ **No Telemetry** - Zero tracking, zero analytics
 ✅ **Encryption Ready** - Optional AES-256 encryption
 ✅ **GDPR Compliant** - Auto-cleanup, data portability

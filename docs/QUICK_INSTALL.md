@@ -334,4 +334,4 @@ buddy-do "explain the difference between JWT and sessions"
 
 **Need help?** Open an issue or start a discussion on GitHub!
 
-**Want to contribute?** See [CONTRIBUTING.md](CONTRIBUTING.md)
+**Want to contribute?** See [CONTRIBUTING.md](../CONTRIBUTING.md)

@@ -305,6 +305,27 @@ describe('renderTimeline', () => {
     const output = renderTimeline(plan, 2);
     expect(output).not.toContain('(?)');
   });
+
+  it('should return empty string for missing stepsDetail', () => {
+    const plan = { name: 'Plan: broken', metadata: {} };
+    expect(renderTimeline(plan)).toBe('');
+  });
+
+  it('should return empty string for totalSteps = 0', () => {
+    const plan = { name: 'Plan: empty', metadata: { totalSteps: 0, completed: 0, stepsDetail: [] } };
+    expect(renderTimeline(plan)).toBe('');
+  });
+
+  it('should show ◉ for highlighted step even when completed', () => {
+    // Simulates the real post-commit flow: step 2 was JUST completed
+    const plan = makePlan(2, 4);
+    const output = renderTimeline(plan, 2);
+    // The highlighted step should show ◉, not ● like other completed steps
+    const nodeSection = output.split('\n').find(l => l.includes('\u25cf') || l.includes('\u25c9'));
+    // Count ◉ symbols — should be 2 (highlighted step 2 + next step 3)
+    const highlightCount = (nodeSection.match(/\u25c9/g) || []).length;
+    expect(highlightCount).toBe(2);
+  });
 });
 
 describe('renderTimelineCompact', () => {
@@ -336,6 +357,16 @@ describe('renderTimelineCompact', () => {
     const output = renderTimelineCompact(makePlan(3, 3));
     expect(output).toContain('Complete');
   });
+
+  it('should return empty string for missing stepsDetail', () => {
+    const plan = { name: 'Plan: broken', metadata: {} };
+    expect(renderTimelineCompact(plan)).toBe('');
+  });
+
+  it('should return empty string for totalSteps = 0', () => {
+    const plan = { name: 'Plan: empty', metadata: { totalSteps: 0, completed: 0, stepsDetail: [] } };
+    expect(renderTimelineCompact(plan)).toBe('');
+  });
 });
 
 describe('isPlanFile', () => {
@@ -344,13 +375,19 @@ describe('isPlanFile', () => {
     expect(isPlanFile('docs/plans/my-plan.md')).toBe(true);
   });
 
-  it('should match *-design.md', () => {
+  it('should match *-design.md under docs/', () => {
     expect(isPlanFile('docs/auth-system-design.md')).toBe(true);
-    expect(isPlanFile('/full/path/to/feature-design.md')).toBe(true);
+    expect(isPlanFile('/full/path/to/docs/feature-design.md')).toBe(true);
   });
 
-  it('should match *-plan.md', () => {
-    expect(isPlanFile('my-feature-plan.md')).toBe(true);
+  it('should match *-plan.md under docs/', () => {
+    expect(isPlanFile('docs/my-feature-plan.md')).toBe(true);
+  });
+
+  it('should NOT match -design.md or -plan.md outside docs/', () => {
+    expect(isPlanFile('src/css-design.md')).toBe(false);
+    expect(isPlanFile('my-feature-plan.md')).toBe(false);
+    expect(isPlanFile('/full/path/to/feature-design.md')).toBe(false);
   });
 
   it('should NOT match regular files', () => {

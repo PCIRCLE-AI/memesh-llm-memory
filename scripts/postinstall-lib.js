@@ -202,28 +202,24 @@ export async function ensurePluginEnabled(claudeDir = join(homedir(), '.claude')
  * Ensure MCP is configured in mcp_settings.json
  */
 export async function ensureMCPConfigured(installPath, mode, claudeDir = join(homedir(), '.claude')) {
+    // CRITICAL FIX: Skip MCP configuration for local development
+    // Prevents writing local development paths that cause users to run outdated code
+    if (mode !== 'global') {
+        console.log('⚠️  Skipping MCP configuration (local development mode)');
+        return;
+    }
     const mcpSettingsFile = join(claudeDir, 'mcp_settings.json');
     // Read existing config or create new
     let config = readJSONFile(mcpSettingsFile) || { mcpServers: {} };
     if (!config.mcpServers) {
         config.mcpServers = {};
     }
-    // Configure memesh entry based on mode
-    if (mode === 'global') {
-        config.mcpServers.memesh = {
-            command: 'npx',
-            args: ['-y', '@pcircle/memesh'],
-            env: { NODE_ENV: 'production' }
-        };
-    }
-    else {
-        const serverPath = join(installPath, 'dist', 'mcp', 'server-bootstrap.js');
-        config.mcpServers.memesh = {
-            command: 'node',
-            args: [serverPath],
-            env: { NODE_ENV: 'production' }
-        };
-    }
+    // Configure memesh entry for npm installation only
+    config.mcpServers.memesh = {
+        command: 'npx',
+        args: ['-y', '@pcircle/memesh'],
+        env: { NODE_ENV: 'production' }
+    };
     // Remove legacy claude-code-buddy entry if exists
     if (config.mcpServers['claude-code-buddy']) {
         delete config.mcpServers['claude-code-buddy'];

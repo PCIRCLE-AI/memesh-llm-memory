@@ -27,17 +27,20 @@ try {
   const claudeDir = join(homedir(), '.claude');
   mcpConfigPath = join(claudeDir, 'mcp_settings.json');
 
-  // Determine the server path based on installation context
-  // For npm global install, use npx; for local dev, use absolute path
+  // Determine installation mode
+  // IMPORTANT: Only configure MCP for npm installations, NOT for local development
   const isGlobalInstall = projectRoot.includes('node_modules');
-  let serverPath;
 
-  if (isGlobalInstall) {
-    // For global npm install, we'll configure to use npx
-    serverPath = null; // Will use npx in config
+  if (!isGlobalInstall) {
+    // Skip MCP configuration in development environment
+    // Reason: Prevents writing local development paths to user's mcp_settings.json
+    // which would cause users to run outdated code even after npm updates
+    console.log('⚠️  Skipping MCP configuration (local development mode)');
+    console.log('   To test locally, manually configure mcp_settings.json');
+    mcpConfigured = false;
   } else {
-    // For local development, use absolute path to server
-    serverPath = join(projectRoot, 'dist', 'mcp', 'server-bootstrap.js');
+    // This is an npm installation - proceed with MCP configuration
+    mcpConfigured = true;
   }
 
   // Create ~/.claude directory (recursive: true handles existing directory safely, avoids TOCTOU race condition)
@@ -60,9 +63,8 @@ try {
     }
   }
 
-  // Configure memesh entry
-  if (isGlobalInstall) {
-    // For npm global install, use npx to run the package
+  // Configure memesh entry (only for npm installations)
+  if (mcpConfigured) {
     mcpConfig.mcpServers.memesh = {
       command: 'npx',
       args: ['-y', '@pcircle/memesh'],
@@ -70,25 +72,18 @@ try {
         NODE_ENV: 'production'
       }
     };
-  } else {
-    // For local development, use node with absolute path
-    mcpConfig.mcpServers.memesh = {
-      command: 'node',
-      args: [serverPath],
-      env: {
-        NODE_ENV: 'production'
-      }
-    };
   }
 
-  // Remove legacy entry if exists
-  if (mcpConfig.mcpServers['claude-code-buddy']) {
-    delete mcpConfig.mcpServers['claude-code-buddy'];
-  }
+  // Write config only if we configured MCP
+  if (mcpConfigured) {
+    // Remove legacy entry if exists
+    if (mcpConfig.mcpServers['claude-code-buddy']) {
+      delete mcpConfig.mcpServers['claude-code-buddy'];
+    }
 
-  // Write config (directory already ensured above with mkdirSync recursive)
-  writeFileSync(mcpConfigPath, JSON.stringify(mcpConfig, null, 2) + '\n', 'utf-8');
-  mcpConfigured = true;
+    // Write config (directory already ensured above with mkdirSync recursive)
+    writeFileSync(mcpConfigPath, JSON.stringify(mcpConfig, null, 2) + '\n', 'utf-8');
+  }
 } catch (error) {
   // Non-fatal: user can configure manually
   console.warn(chalk.yellow(`⚠️  Could not auto-configure MCP settings: ${error.message}`));

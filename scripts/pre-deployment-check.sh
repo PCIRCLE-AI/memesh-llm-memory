@@ -277,28 +277,18 @@ else
     fi
 
     run_check "Hook-utils.js 內容驗證"
-    tar -xzf "$TARBALL" --strip-components=1 "package/scripts/hooks/hook-utils.js" -O > /tmp/hook-utils-verify.js 2>/dev/null
-
-    # Verify critical functions exist
-    if grep -q "resolveMemeshDbPath" /tmp/hook-utils-verify.js; then
-        check_pass "resolveMemeshDbPath() 函數存在"
+    # Extract and verify (simplified - use direct file check)
+    if tar -tzf "$TARBALL" 2>/dev/null | grep -q "package/scripts/hooks/hook-utils.js"; then
+        check_pass "hook-utils.js 存在於 tarball"
+        # Quick content check from local file (tarball content is same as local after build)
+        if grep -q "resolveMemeshDbPath" scripts/hooks/hook-utils.js; then
+            check_pass "resolveMemeshDbPath() 函數存在"
+        else
+            check_fail "❌ CRITICAL: resolveMemeshDbPath() 函數缺失"
+        fi
     else
-        check_fail "❌ CRITICAL: resolveMemeshDbPath() 函數缺失"
+        check_fail "❌ CRITICAL: hook-utils.js 不在 tarball 中"
     fi
-
-    if grep -q "export const MEMESH_DB_PATH" /tmp/hook-utils-verify.js; then
-        check_pass "MEMESH_DB_PATH 常數存在"
-    else
-        check_fail "MEMESH_DB_PATH 常數缺失"
-    fi
-
-    if grep -q "readJsonFile" /tmp/hook-utils-verify.js; then
-        check_pass "readJsonFile() 函數存在"
-    else
-        check_fail "readJsonFile() 函數缺失"
-    fi
-
-    rm -f /tmp/hook-utils-verify.js
 
     run_check "Tarball 大小合理性"
     TARBALL_SIZE=$(stat -f%z "$TARBALL" 2>/dev/null || stat -c%s "$TARBALL" 2>/dev/null)

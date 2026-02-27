@@ -203,31 +203,35 @@ export async function ensurePluginEnabled(claudeDir = join(homedir(), '.claude')
  */
 export async function ensureMCPConfigured(installPath, mode, claudeDir = join(homedir(), '.claude')) {
     const mcpSettingsFile = join(claudeDir, 'mcp_settings.json');
+
     // Read existing config or create new
     let config = readJSONFile(mcpSettingsFile) || { mcpServers: {} };
     if (!config.mcpServers) {
         config.mcpServers = {};
     }
+
     // Configure memesh entry based on mode
     if (mode === 'global') {
+        // Global install: use npx (always uses latest published version)
         config.mcpServers.memesh = {
             command: 'npx',
             args: ['-y', '@pcircle/memesh'],
             env: { NODE_ENV: 'production' }
         };
-    }
-    else {
+    } else {
+        // Local dev: use node + absolute path (for testing)
         const serverPath = join(installPath, 'dist', 'mcp', 'server-bootstrap.js');
         config.mcpServers.memesh = {
             command: 'node',
-            args: [serverPath],
-            env: { NODE_ENV: 'production' }
+            args: [serverPath]
         };
     }
+
     // Remove legacy claude-code-buddy entry if exists
     if (config.mcpServers['claude-code-buddy']) {
         delete config.mcpServers['claude-code-buddy'];
     }
+
     // Write back
     writeJSONFile(mcpSettingsFile, config);
 }

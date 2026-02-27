@@ -173,13 +173,21 @@ async function main() {
     }
 
     // Step 5: MCP Configuration
-    try {
-      await ensureMCPConfigured(installPath, mode, claudeDir);
-      results.mcpConfigured = true;
-      console.log(chalk.green('  ✅ MCP configured'));
-    } catch (error) {
-      results.errors.push(`MCP: ${error.message}`);
-      console.log(chalk.yellow(`  ⚠️  MCP configuration failed (non-fatal)`));
+    // IMPORTANT: Skip MCP config for local dev to prevent path pollution
+    // (see v2.9.0 Issue 2: Local Development Path Pollution)
+    if (mode === 'local') {
+      console.log(chalk.yellow('  ⚠️  Skipping MCP configuration (local development mode)'));
+      console.log(chalk.gray('     This prevents writing local dev paths to ~/.claude/mcp_settings.json'));
+      results.mcpConfigured = false;
+    } else {
+      try {
+        await ensureMCPConfigured(installPath, mode, claudeDir);
+        results.mcpConfigured = true;
+        console.log(chalk.green('  ✅ MCP configured'));
+      } catch (error) {
+        results.errors.push(`MCP: ${error.message}`);
+        console.log(chalk.yellow(`  ⚠️  MCP configuration failed (non-fatal)`));
+      }
     }
 
     // Step 6: Legacy Installation Fix

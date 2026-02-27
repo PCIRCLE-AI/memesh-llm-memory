@@ -42,7 +42,11 @@ if (!pkg.version) process.exit(1);
 if (pkg.main !== 'dist/index.js') process.exit(1);
 if (!pkg.bin || !pkg.bin.memesh) process.exit(1);
 if (!pkg.files || !pkg.files.includes('mcp.json')) process.exit(1);
-" && check_pass "package.json 配置正確" || check_fail "package.json 配置錯誤"
+if (!pkg.files || !pkg.files.includes('scripts/hooks/')) {
+  console.error('CRITICAL: package.json files array missing scripts/hooks/ - hooks will not be published!');
+  process.exit(1);
+}
+" && check_pass "package.json 配置正確（包含 hooks）" || check_fail "package.json 配置錯誤"
 
 run_check "檢查 plugin.json 格式"
 node -e "
@@ -162,6 +166,21 @@ TARBALL=$(ls -t pcircle-memesh-*.tgz | head -1)
 if [ -f "$TARBALL" ]; then
     tar -tzf "$TARBALL" | grep -q "package/mcp.json" && check_pass "tarball 包含 mcp.json" || check_fail "tarball 缺少 mcp.json"
     tar -tzf "$TARBALL" | grep -q "package/plugin.json" && check_pass "tarball 包含 plugin.json" || check_fail "tarball 缺少 plugin.json"
+
+    # CRITICAL: Verify hooks are included (防止 v2.9.0 hooks 遺漏問題重演)
+    tar -tzf "$TARBALL" | grep -q "package/scripts/hooks/" && check_pass "tarball 包含 scripts/hooks/" || check_fail "❌ CRITICAL: tarball 缺少 scripts/hooks/（會導致所有用戶安裝後無法使用 hooks）"
+    tar -tzf "$TARBALL" | grep -q "package/scripts/hooks/hook-utils.js" && check_pass "tarball 包含 hook-utils.js" || check_fail "❌ CRITICAL: tarball 缺少 hook-utils.js"
+
+    # Verify hook-utils.js content
+    run_check "驗證 hook-utils.js 內容"
+    tar -xzf "$TARBALL" --strip-components=1 "package/scripts/hooks/hook-utils.js" -O > /tmp/hook-utils-check.js 2>/dev/null
+    if grep -q "resolveMemeshDbPath" /tmp/hook-utils-check.js; then
+        check_pass "hook-utils.js 包含 resolveMemeshDbPath() 函數"
+    else
+        check_fail "❌ CRITICAL: hook-utils.js 缺少 resolveMemeshDbPath() - DB path 會錯誤"
+    fi
+    rm -f /tmp/hook-utils-check.js
+
     rm "$TARBALL"  # 清理
 else
     check_fail "找不到 tarball"

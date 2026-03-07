@@ -304,6 +304,21 @@ export class LazyEmbeddingService {
   }
 
   /**
+   * Preload the embedding model in the background
+   *
+   * Triggers model loading so the first semantic search doesn't
+   * pay the 10-20s cold start penalty. Failures are silently
+   * ignored since preloading is an optimization, not a requirement.
+   */
+  static async preload(): Promise<void> {
+    try {
+      await LazyEmbeddingService.get();
+    } catch {
+      // Non-critical — preload failure just means cold start on first search
+    }
+  }
+
+  /**
    * Dispose the singleton instance
    *
    * Releases resources and resets the singleton.

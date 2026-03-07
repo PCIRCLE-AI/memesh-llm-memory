@@ -453,6 +453,14 @@ async function startAsDaemon(bootstrapper: DaemonBootstrap, version: string) {
 
   // Start watchdog for manual startup detection
   startMCPClientWatchdog();
+
+  // Background preload ONNX embedding model — don't await, don't block startup
+  // Daemon has longer lifetime, so preloading here eliminates 10-20s cold start on first semantic search
+  import('../embeddings/EmbeddingService.js').then(({ LazyEmbeddingService }) => {
+    LazyEmbeddingService.preload().catch(() => {
+      // Non-critical, first search will load model on demand
+    });
+  });
 }
 
 /**

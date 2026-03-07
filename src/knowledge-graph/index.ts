@@ -10,22 +10,16 @@ import { promises as fsPromises, existsSync, mkdirSync } from 'fs';
 import { NotFoundError, ValidationError } from '../errors/index.js';
 import { SimpleDatabaseFactory } from '../config/simple-config.js';
 import type { Entity, Relation, SearchQuery, RelationTrace, EntityType, RelationType } from './types.js';
-/** Valid SQL parameter types for better-sqlite3 */
-type SQLParam = string | number | null | Buffer;
-type SQLParams = SQLParam[];
 import { logger } from '../utils/logger.js';
 import { QueryCache } from '../db/QueryCache.js';
 import { safeJsonParse, safeJsonStringify } from '../utils/json.js';
 import { getDataPath, getDataDirectory } from '../utils/PathResolver.js';
 import { validateNonEmptyString } from '../utils/validation.js';
+import { KGSearchEngine } from './KGSearchEngine.js';
+import type { SemanticSearchResult } from './KGSearchEngine.js';
 
-/**
- * Result from semantic/hybrid search
- */
-export interface SemanticSearchResult {
-  entity: Entity;
-  similarity: number;
-}
+// Re-export for backward compatibility
+export type { SemanticSearchResult } from './KGSearchEngine.js';
 
 /**
  * Maximum allowed length for entity names.
@@ -58,6 +52,8 @@ export class KnowledgeGraph {
   private vectorInitPromise: Promise<void> | null = null;
   /** Pending embedding generation tasks — tracked for clean shutdown */
   private pendingEmbeddings: Set<Promise<void>> = new Set();
+  /** Dedicated search engine (FTS5, semantic, hybrid) */
+  private searchEngine: KGSearchEngine;
 
   /**
    * Private constructor - use KnowledgeGraph.create() instead
@@ -70,6 +66,16 @@ export class KnowledgeGraph {
       maxSize: 1000,
       defaultTTL: 5 * 60 * 1000,
       debug: false,
+    });
+
+    // Initialize search engine with context callbacks (avoids circular dependency)
+    this.searchEngine = new KGSearchEngine({
+      db: this.db,
+      getVectorAdapter: () => this.vectorAdapter,
+      isVectorEnabled: () => this.vectorEnabled,
+      getVectorInitPromise: () => this.vectorInitPromise,
+      getEntity: (name: string) => this.getEntity(name),
+      queryCache: this.queryCache,
     });
   }
 
@@ -442,137 +448,25 @@ export class KnowledgeGraph {
   }
 
   /**
-   * Escape special characters in LIKE patterns to prevent SQL injection
-   *
-   * ✅ CRITICAL-9: SQL injection protection - proper LIKE pattern escaping
-   *
-   * Escapes: !, %, _, [, ]
-   * These characters have special meaning in SQL LIKE patterns
-   * Uses '!' as the ESCAPE character (safer than '\' - no conflict with paths/strings)
-   *
-   * Security guarantees:
-   * 1. Input type validation (rejects non-strings)
-   * 2. Escape character (!) escaped first (critical ordering)
-   * 3. All LIKE wildcards properly escaped
-   * 4. Used with parameterized queries only
+   * Escape special characters in LIKE patterns to prevent SQL injection.
+   * Delegates to KGSearchEngine.
    */
   private escapeLikePattern(pattern: string): string {
-    // Validate input type to prevent type coercion attacks
-    if (typeof pattern !== 'string') {
-      throw new Error(`Pattern must be a string, got ${typeof pattern}`);
-    }
-
-    return pattern
-      .replace(/!/g, '!!')     // Exclamation first (our escape character)
-      .replace(/%/g, '!%')     // Percent (matches any sequence)
-      .replace(/_/g, '!_')     // Underscore (matches single character)
-      .replace(/\[/g, '![')    // Left bracket (character class start)
-      .replace(/\]/g, '!]');   // Right bracket (character class end)
+    return this.searchEngine.escapeLikePattern(pattern);
   }
 
   /**
-   * Search using FTS5 full-text search
-   * Returns entity IDs matching the query, ranked by BM25
-   *
-   * ✅ MAJOR-5 FIX: BM25 weighted ranking - name matches rank higher than observations
-   * bm25(entities_fts, 10.0, 5.0) gives name column 2x the weight of observations
+   * Search using FTS5 full-text search. Delegates to KGSearchEngine.
    */
   private searchFTS5(query: string, limit: number): number[] {
-    if (!query || query.trim() === '') {
-      return [];
-    }
-
-    const ftsQuery = this.prepareFTS5Query(query);
-    if (!ftsQuery) {
-      return [];
-    }
-
-    try {
-      // MAJOR-5 FIX: Use weighted BM25 ranking
-      // First param (10.0) = name column weight
-      // Second param (5.0) = observations column weight
-      // This prioritizes name matches over observation content matches
-      const results = this.db.prepare(`
-        SELECT rowid, bm25(entities_fts, 10.0, 5.0) as rank
-        FROM entities_fts
-        WHERE entities_fts MATCH ?
-        ORDER BY rank
-        LIMIT ?
-      `).all(ftsQuery, limit) as Array<{ rowid: number; rank: number }>;
-
-      return results.map(r => r.rowid);
-    } catch (error) {
-      logger.warn('[KG] FTS5 search failed, will use LIKE fallback:', {
-        query,
-        ftsQuery,
-        error: error instanceof Error ? error.message : String(error)
-      });
-      return [];
-    }
+    return this.searchEngine.searchFTS5(query, limit);
   }
 
   /**
-   * Prepare query string for FTS5 MATCH
-   * Converts user query to FTS5 query syntax
-   *
-   * ✅ CRITICAL-2 FIX: Escapes FTS5 operators to prevent query injection
-   * ✅ MAJOR-2 FIX: Validates query length and token count to prevent DoS
+   * Prepare query string for FTS5 MATCH. Delegates to KGSearchEngine.
    */
   private prepareFTS5Query(query: string): string {
-    // MAJOR-2 FIX: Limit query length to prevent DoS
-    const MAX_QUERY_LENGTH = 10000; // Characters
-    const MAX_TOKENS = 100; // Maximum number of search tokens
-
-    let normalized = query.trim().replace(/\s+/g, ' ');
-    if (!normalized) {
-      return '';
-    }
-
-    // Truncate if too long
-    if (normalized.length > MAX_QUERY_LENGTH) {
-      logger.warn(`[KG] FTS5 query too long (${normalized.length} chars), truncating to ${MAX_QUERY_LENGTH}`);
-      normalized = normalized.substring(0, MAX_QUERY_LENGTH);
-    }
-
-    let tokens = normalized.split(' ').filter(t => t.length > 0);
-    if (tokens.length === 0) {
-      return '';
-    }
-
-    // Limit token count
-    if (tokens.length > MAX_TOKENS) {
-      logger.warn(`[KG] FTS5 query has too many tokens (${tokens.length}), using first ${MAX_TOKENS}`);
-      tokens = tokens.slice(0, MAX_TOKENS);
-    }
-
-    // Build FTS5 query with prefix matching
-    // CRITICAL-2 FIX: Filter out FTS5 operators to prevent query injection
-    const ftsTokens = tokens
-      .filter(token => {
-        // Remove FTS5 operators (case-insensitive check)
-        const upper = token.toUpperCase();
-        return upper !== 'AND' && upper !== 'OR' && upper !== 'NOT' && upper !== 'NEAR';
-      })
-      .map(token => {
-        const escaped = token
-          .replace(/"/g, '""')
-          .replace(/\*/g, '')
-          .replace(/\^/g, '')
-          .replace(/:/g, '')
-          .replace(/[(){}[\]]/g, '');
-        // Skip empty tokens after escaping
-        if (!escaped) {
-          return null;
-        }
-        return `"${escaped}"*`;
-      })
-      .filter((t): t is string => t !== null);
-
-    if (ftsTokens.length === 0) {
-      return '';
-    }
-
-    return ftsTokens.join(' OR ');
+    return this.searchEngine.prepareFTS5Query(query);
   }
 
   /**
@@ -785,166 +679,11 @@ export class KnowledgeGraph {
   }
 
   /**
-   * Search entities
-   *
-   * ✅ FIX LOW-2: Added limit/offset validation
-   * ✅ CRITICAL-9: SQL injection safe - all user inputs use parameterized queries
-   *
-   * Security: This method is SQL-injection-safe because:
-   * 1. All user inputs (entityType, tag, namePattern, limit, offset) use ? placeholders
-   * 2. LIKE patterns are properly escaped with escapeLikePattern()
-   * 3. All values are passed through params array to stmt.all(...params)
-   * 4. No string concatenation of user input into SQL
+   * Search entities by type, tag, and/or name pattern.
+   * Delegates to KGSearchEngine.
    */
   searchEntities(query: SearchQuery): Entity[] {
-    // ✅ FIX LOW-2: Validate limit and offset parameters
-    const MAX_LIMIT = 1000;
-
-    // ✅ MAJOR-1: Early return for limit === 0 (caller explicitly wants no results)
-    if (query.limit === 0) {
-      return [];
-    }
-
-    // ✅ MAJOR-2: Use local variable to avoid mutating caller's query object
-    let effectiveLimit: number | undefined = query.limit;
-
-    if (query.limit !== undefined) {
-      if (query.limit < 0) {
-        throw new ValidationError('Limit must be non-negative', {
-          component: 'KnowledgeGraph',
-          method: 'searchEntities',
-          providedLimit: query.limit,
-        });
-      }
-      if (query.limit > MAX_LIMIT) {
-        logger.warn(`Limit ${query.limit} exceeds maximum, capping to ${MAX_LIMIT}`);
-        effectiveLimit = MAX_LIMIT;
-      }
-    }
-
-    if (query.offset !== undefined && query.offset < 0) {
-      throw new ValidationError('Offset must be non-negative', {
-        component: 'KnowledgeGraph',
-        method: 'searchEntities',
-        providedOffset: query.offset,
-      });
-    }
-
-    // Validate namePattern: reject control characters but allow wildcards and longer patterns
-    // Empty string is treated as "match all" (LIKE '%<empty>%' matches everything)
-    if (query.namePattern !== undefined && query.namePattern !== '') {
-      validateNonEmptyString(query.namePattern, 'Name pattern');
-      if (CONTROL_CHAR_PATTERN.test(query.namePattern)) {
-        throw new ValidationError(
-          'Name pattern must not contain control characters',
-          {
-            component: 'KnowledgeGraph',
-            method: 'searchEntities',
-            namePattern: query.namePattern.slice(0, 100),
-          }
-        );
-      }
-    }
-
-    // Generate cache key from query parameters
-    // ✅ MAJOR-2: Use effectiveLimit in cache key to ensure correct cache behavior
-    const cacheKeyQuery = { ...query, limit: effectiveLimit };
-    const cacheKey = `entities:${JSON.stringify(cacheKeyQuery)}`;
-
-    // Check cache first
-    const cached = this.queryCache.get(cacheKey);
-    if (cached) {
-      return cached;
-    }
-
-    // Cache miss - execute query
-    let sql = `
-      SELECT e.*,
-        (SELECT json_group_array(content) FROM observations o WHERE o.entity_id = e.id) as observations_json,
-        (SELECT json_group_array(tag) FROM tags t WHERE t.entity_id = e.id) as tags_json
-      FROM entities e
-      WHERE 1=1
-    `;
-
-    const params: SQLParams = [];
-
-    if (query.entityType) {
-      sql += ' AND e.type = ?';
-      params.push(query.entityType);
-    }
-
-    if (query.tag) {
-      sql += ' AND e.id IN (SELECT entity_id FROM tags WHERE tag = ?)';
-      params.push(query.tag);
-    }
-
-    if (query.namePattern) {
-      // Try FTS5 search first for better tokenized matching
-      const ftsResults = this.searchFTS5(query.namePattern, effectiveLimit || 100);
-
-      if (ftsResults.length > 0) {
-        // Use FTS5 results - filter by IDs
-        sql += ' AND e.id IN (' + ftsResults.map(() => '?').join(',') + ')';
-        params.push(...ftsResults);
-      } else {
-        // Fallback to LIKE for edge cases
-        sql += " AND (e.name LIKE ? ESCAPE '!' OR e.id IN (SELECT entity_id FROM observations WHERE content LIKE ? ESCAPE '!'))";
-        const escapedPattern = `%${this.escapeLikePattern(query.namePattern)}%`;
-        params.push(escapedPattern);
-        params.push(escapedPattern);
-      }
-    }
-
-    sql += ' ORDER BY e.created_at DESC';
-
-    // ✅ MAJOR-1 & MAJOR-2: Use effectiveLimit and check !== undefined (not falsy)
-    // to correctly handle limit=0 (already returned early) and avoid mutation
-    if (effectiveLimit !== undefined) {
-      sql += ' LIMIT ?';
-      params.push(effectiveLimit);
-    }
-
-    if (query.offset !== undefined) {
-      sql += ' OFFSET ?';
-      params.push(query.offset);
-    }
-
-    const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as unknown[];
-
-    // Optimized: Pre-allocate array and use for loop
-    const entities: Entity[] = new Array(rows.length);
-    for (let i = 0; i < rows.length; i++) {
-      const r = rows[i] as {
-        id: number;
-        name: string;
-        type: string;
-        observations_json: string | null;
-        tags_json: string | null;
-        metadata: string | null;
-        created_at: string;
-      };
-
-      const observations = safeJsonParse<string[]>(r.observations_json, [])
-        .filter(value => value);
-      const tags = safeJsonParse<string[]>(r.tags_json, [])
-        .filter(value => value);
-
-      entities[i] = {
-        id: r.id,
-        name: r.name,
-        entityType: r.type as EntityType,
-        observations,
-        tags,
-        metadata: r.metadata ? safeJsonParse<Record<string, unknown>>(r.metadata, {}) : {},
-        createdAt: new Date(r.created_at)
-      };
-    }
-
-    // Cache the results
-    this.queryCache.set(cacheKey, entities);
-
-    return entities;
+    return this.searchEngine.searchEntities(query);
   }
 
   /**
@@ -1194,104 +933,24 @@ export class KnowledgeGraph {
   }
 
   /**
-   * Semantic search using vector embeddings.
-   * Falls back to keyword search if embeddings are unavailable.
+   * Semantic search using vector embeddings. Delegates to KGSearchEngine.
    */
   async semanticSearch(
     query: string,
     options: { limit?: number; minSimilarity?: number; entityTypes?: string[] } = {}
   ): Promise<SemanticSearchResult[]> {
-    const { limit = 10, minSimilarity = 0.3 } = options;
-
-    // Wait for vector init to complete before checking vectorEnabled
-    if (this.vectorInitPromise) {
-      await this.vectorInitPromise;
-    }
-
-    if (!this.vectorEnabled || !this.vectorAdapter) {
-      return this.keywordSearchAsSemanticResults(query, limit);
-    }
-
-    try {
-      const { LazyEmbeddingService } = await import('../embeddings/EmbeddingService.js');
-      const service = await LazyEmbeddingService.get();
-      const queryEmbedding = await service.encode(query);
-
-      const knnResults = this.vectorAdapter.knnSearch(this.db, queryEmbedding, limit * 2);
-
-      const results: SemanticSearchResult[] = [];
-      for (const knn of knnResults) {
-        // cosine distance → similarity (distance 0 = identical, 2 = opposite)
-        const similarity = 1 - knn.distance;
-        if (similarity < minSimilarity) continue;
-
-        const entity = this.getEntity(knn.entityName);
-        if (!entity) continue;
-
-        results.push({ entity, similarity });
-      }
-
-      return results.slice(0, limit);
-    } catch (error) {
-      logger.warn('[KG] Semantic search failed, falling back to keyword', {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return this.keywordSearchAsSemanticResults(query, limit);
-    }
+    return this.searchEngine.semanticSearch(query, options);
   }
 
   /**
    * Hybrid search combining FTS5 keyword results with semantic vector results.
-   * Merges and deduplicates results from both approaches.
+   * Delegates to KGSearchEngine.
    */
   async hybridSearch(
     query: string,
     options: { limit?: number; minSimilarity?: number } = {}
   ): Promise<SemanticSearchResult[]> {
-    const { limit = 10, minSimilarity = 0.3 } = options;
-
-    // Always run keyword search
-    const keywordResults = this.keywordSearchAsSemanticResults(query, limit);
-
-    // Wait for vector init to complete before checking vectorEnabled
-    if (this.vectorInitPromise) {
-      await this.vectorInitPromise;
-    }
-
-    // If vector search unavailable, return keyword results only
-    if (!this.vectorEnabled) {
-      return keywordResults;
-    }
-
-    // Run semantic search
-    const semanticResults = await this.semanticSearch(query, { limit, minSimilarity });
-
-    // Merge: deduplicate by entity name, prefer higher similarity
-    const merged = new Map<string, SemanticSearchResult>();
-    for (const r of keywordResults) {
-      merged.set(r.entity.name, r);
-    }
-    for (const r of semanticResults) {
-      const existing = merged.get(r.entity.name);
-      if (!existing || r.similarity > existing.similarity) {
-        merged.set(r.entity.name, r);
-      }
-    }
-
-    // Sort by similarity descending, take top N
-    return Array.from(merged.values())
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, limit);
-  }
-
-  /**
-   * Convert keyword search results to SemanticSearchResult format.
-   */
-  private keywordSearchAsSemanticResults(query: string, limit: number): SemanticSearchResult[] {
-    const entities = this.searchEntities({ namePattern: query, limit });
-    // Use 0.5 similarity for keyword matches to distinguish from real semantic matches
-    // This prevents keyword fallback results from always beating semantic results in hybridSearch
-    return entities.map(entity => ({ entity, similarity: 0.5 }));
+    return this.searchEngine.hybridSearch(query, options);
   }
 
   /**

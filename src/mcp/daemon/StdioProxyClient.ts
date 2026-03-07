@@ -410,6 +410,17 @@ export class StdioProxyClient extends EventEmitter {
       });
     } catch (error) {
       this.connecting = false;
+
+      // Clean up socket and its event listeners if connection setup failed
+      // after socket was created (e.g., handshake or flush threw).
+      // Destroying the socket removes all listeners and closes the connection.
+      if (this.socket) {
+        this.socket.destroy();
+        this.socket = null;
+      }
+      this.receiveBuffer = '';
+      this.handshakeBuffer = '';
+
       throw error;
     }
   }

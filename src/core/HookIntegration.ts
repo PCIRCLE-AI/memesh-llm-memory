@@ -45,6 +45,7 @@
  */
 
 import { CheckpointDetector } from './CheckpointDetector.js';
+import { GitCommandParser } from './GitCommandParser.js';
 import { ProjectAutoTracker } from '../memory/ProjectAutoTracker.js';
 import { logger } from '../utils/logger.js';
 import { TestOutputParser, type TestResults } from './TestOutputParser.js';
@@ -791,97 +792,44 @@ export class HookIntegration {
     this.triggerCallbacks.push(callback);
   }
 
-  /** Patterns for detecting test files */
-  private static readonly TEST_FILE_PATTERNS = ['.test.', '.spec.', '/tests/'];
-
-  /** Patterns for detecting test commands */
-  private static readonly TEST_COMMAND_PATTERNS = ['npm test', 'npm run test', 'vitest', 'jest', 'mocha'];
-
   /**
    * Check if file path is a test file
-   *
-   * @param filePath - File path to check
-   * @returns True if file appears to be a test file
+   * Delegates to GitCommandParser.
    */
   private isTestFile(filePath: string): boolean {
-    return HookIntegration.TEST_FILE_PATTERNS.some(p => filePath.includes(p));
+    return GitCommandParser.isTestFile(filePath);
   }
 
   /**
    * Check if command is a test command
-   *
-   * @param command - Bash command to check
-   * @returns True if command appears to be running tests
+   * Delegates to GitCommandParser.
    */
   private isTestCommand(command: string): boolean {
-    return HookIntegration.TEST_COMMAND_PATTERNS.some(p => command.includes(p));
+    return GitCommandParser.isTestCommand(command);
   }
 
   /**
    * Check if command is git add
-   *
-   * @param command - Bash command to check
-   * @returns True if command is git add
+   * Delegates to GitCommandParser.
    */
   private isGitAddCommand(command: string): boolean {
-    return command.trim().startsWith('git add');
+    return GitCommandParser.isGitAdd(command);
   }
 
   /**
    * Check if command is git commit
-   *
-   * Determines if a bash command is a git commit command.
-   * Used to detect committed checkpoint from Bash tool execution.
-   *
-   * @param command - Bash command to check
-   * @returns True if command is git commit
+   * Delegates to GitCommandParser.
    */
   private isGitCommitCommand(command: string): boolean {
-    return this.findGitCommitSegment(command) !== null;
+    return GitCommandParser.isGitCommit(command);
   }
 
   /**
    * Extract commit message from a git commit command
-   *
-   * Supports repeated -m flags and returns a combined message.
-   * Returns null if no -m flag is present.
-   *
-   * @param command - Git commit command
-   * @returns Commit message string or null
+   * Delegates to GitCommandParser.
    */
   private extractGitCommitMessage(command: string): string | null {
-    const segment = this.findGitCommitSegment(command);
-    const source = segment ?? command;
-    const messages: string[] = [];
-    const regex = /-m\s+(?:"([^"]*)"|'([^']*)'|([^\s]+))/g;
-    let match: RegExpExecArray | null;
-
-    while ((match = regex.exec(source)) !== null) {
-      const message = match[1] ?? match[2] ?? match[3];
-      if (message) {
-        messages.push(message);
-      }
-    }
-
-    return messages.length > 0 ? messages.join('\n') : null;
-  }
-
-  /**
-   * Locate the git commit segment within a composite shell command
-   */
-  private findGitCommitSegment(command: string): string | null {
-    const segments = command
-      .split(/&&|;/)
-      .map(segment => segment.trim())
-      .filter(Boolean);
-
-    for (const segment of segments) {
-      if (/^git\s+commit(\s|$)/.test(segment)) {
-        return segment;
-      }
-    }
-
-    return null;
+    return GitCommandParser.extractCommitMessage(command);
   }
 
   /**

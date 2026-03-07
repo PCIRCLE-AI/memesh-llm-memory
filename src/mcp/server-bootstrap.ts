@@ -357,6 +357,31 @@ function setupSignalHandlers(shutdownFn: (signal: string) => Promise<void>): voi
   process.once('SIGINT', () => shutdownFn('SIGINT'));
 }
 
+// ============================================================================
+// Global Error Handlers
+// ============================================================================
+// Registered at module level to catch errors in ALL modes (daemon, proxy, standalone).
+// Uses process.stderr.write() instead of logger because:
+// - Logger might not be initialized yet
+// - MCP uses stdio transport, so stdout must not be polluted
+// - stderr is the safe channel for error output
+// ============================================================================
+
+process.on('unhandledRejection', (reason: unknown, _promise: Promise<unknown>) => {
+  const errorMessage = reason instanceof Error ? reason.message : String(reason);
+  const errorStack = reason instanceof Error ? reason.stack : undefined;
+  process.stderr.write(
+    `[MeMesh] Unhandled Promise Rejection: ${errorMessage}\n${errorStack || ''}\n`
+  );
+});
+
+process.on('uncaughtException', (error: Error) => {
+  process.stderr.write(
+    `[MeMesh] Uncaught Exception: ${error.message}\n${error.stack || ''}\n`
+  );
+  process.exit(1);
+});
+
 /**
  * Start as the daemon (first instance)
  */

@@ -25,11 +25,3 @@ export {
   withChildSpanAsync,
   extractTraceTimestamp,
 } from './TraceContext.js';
-
-export {
-  type TracedRequest,
-  type TracingMiddlewareOptions,
-  tracingMiddleware,
-  getRequestTraceContext,
-  spanMiddleware,
-} from './middleware.js';

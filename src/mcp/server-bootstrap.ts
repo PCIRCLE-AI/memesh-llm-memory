@@ -21,104 +21,15 @@
 // Type-only imports (no runtime cost, compliant with "zero static imports" rule)
 import type { DaemonBootstrap } from './daemon/DaemonBootstrap.js';
 
+// StdinBufferManager is a lightweight synchronous class with no transitive dependencies,
+// so importing it statically is safe and compliant with the "zero heavy imports" intent.
+import { StdinBufferManager } from './StdinBufferManager.js';
+
 // Module-level flag for MCP client connection tracking
 let mcpClientConnected = false;
 
-// ============================================================================
-// Stdin Buffer for Initialization Race Condition Fix
-// ============================================================================
-// Problem: Claude Code sends 'initialize' immediately after spawning the server.
-// During daemon/proxy bootstrap (lock checks, socket setup, etc.), stdin data
-// arrives BEFORE the MCP transport is connected, causing "Method not found" errors.
-//
-// Solution: Pause stdin immediately, buffer data during bootstrap, then replay
-// once the transport is connected.
-// ============================================================================
-
-/** Buffer to store stdin data during initialization */
-const stdinBuffer: Buffer[] = [];
-
-/** Flag to track if stdin buffering is active */
-let stdinBufferingActive = false;
-
-/**
- * Start buffering stdin data.
- * Call this IMMEDIATELY when MCP server mode starts, before any async operations.
- */
-function startStdinBuffering(): void {
-  if (stdinBufferingActive) return;
-  stdinBufferingActive = true;
-
-  // Check if stdin is readable before attempting to pause
-  if (!process.stdin.readable) {
-    stdinBufferingActive = false;
-    return;
-  }
-
-  try {
-    process.stdin.pause();
-  } catch (err) {
-    // stdin may already be in an unusable state
-    stdinBufferingActive = false;
-    return;
-  }
-
-  // Buffer any data that arrives
-  const bufferHandler = (chunk: Buffer) => {
-    stdinBuffer.push(chunk);
-  };
-
-  const errorHandler = (err: Error) => {
-    // On stdin error, stop buffering and attempt replay of what we have
-    process.stderr.write(`[Bootstrap] stdin error during buffering: ${err.message}\n`);
-    stopStdinBufferingAndReplay();
-  };
-
-  process.stdin.on('data', bufferHandler);
-  process.stdin.once('error', errorHandler);
-
-  // Store handler references for cleanup
-  (startStdinBuffering as any)._handler = bufferHandler;
-  (startStdinBuffering as any)._errorHandler = errorHandler;
-}
-
-/**
- * Stop buffering and replay buffered data.
- * Call this AFTER the MCP transport is connected.
- */
-function stopStdinBufferingAndReplay(): void {
-  if (!stdinBufferingActive) return;
-  stdinBufferingActive = false;
-
-  // Remove our buffer handler
-  const handler = (startStdinBuffering as any)._handler;
-  if (handler) {
-    process.stdin.removeListener('data', handler);
-  }
-
-  // Remove error handler
-  const errorHandler = (startStdinBuffering as any)._errorHandler;
-  if (errorHandler) {
-    process.stdin.removeListener('error', errorHandler);
-  }
-
-  // Replay buffered data by unshifting back to the stream
-  // The MCP transport will receive this data when it starts reading
-  if (stdinBuffer.length > 0) {
-    const combined = Buffer.concat(stdinBuffer);
-    stdinBuffer.length = 0; // Clear buffer
-
-    // Unshift the data back to stdin so the transport receives it
-    process.stdin.unshift(combined);
-  }
-
-  // Resume stdin for normal operation
-  try {
-    process.stdin.resume();
-  } catch {
-    // stdin may not be resumable (e.g., already destroyed)
-  }
-}
+// Singleton stdin buffer manager for use across all bootstrap paths
+const stdinManager = new StdinBufferManager();
 
 // ============================================================================
 // 🚨 STEP 0: Check if this is a CLI command
@@ -273,7 +184,7 @@ async function bootstrapWithDaemon() {
 
   // CRITICAL: Start buffering stdin IMMEDIATELY to prevent data loss during async bootstrap
   // Claude Code sends 'initialize' right after spawning - we must capture it before any async ops
-  startStdinBuffering();
+  stdinManager.start();
 
   try {
     const { DaemonBootstrap, isDaemonDisabled } = await import('./daemon/DaemonBootstrap.js');
@@ -418,7 +329,7 @@ async function startAsDaemon(bootstrapper: DaemonBootstrap, version: string) {
     // Release lock and clean up transport since we can't serve as daemon
     try { await DaemonLockManager.releaseLock(); } catch { /* best effort */ }
     try { bootstrapper.getTransport().cleanup(); } catch { /* best effort */ }
-    stopStdinBufferingAndReplay();
+    stdinManager.stopAndReplay();
     // Fall back to standalone which has its own error handling
     logger.warn('[Daemon] Falling back to standalone mode');
     startMCPServer();
@@ -457,7 +368,7 @@ async function startAsDaemon(bootstrapper: DaemonBootstrap, version: string) {
     try { transport.cleanup(); } catch { /* best effort */ }
     // Fall back to standalone (stdio-only, no daemon socket)
     logger.warn('[Daemon] Socket server unavailable, falling back to standalone mode');
-    stopStdinBufferingAndReplay();
+    stdinManager.stopAndReplay();
     await mcpServer.start();
     startMCPClientWatchdog();
     return;
@@ -466,7 +377,7 @@ async function startAsDaemon(bootstrapper: DaemonBootstrap, version: string) {
 
   // CRITICAL: Stop stdin buffering and replay data BEFORE starting MCP server
   // This ensures the 'initialize' message reaches the transport
-  stopStdinBufferingAndReplay();
+  stdinManager.stopAndReplay();
 
   // Also start the MCP server for direct stdio communication (first client)
   await mcpServer.start();
@@ -585,7 +496,7 @@ async function startAsProxy(bootstrapper: DaemonBootstrap) {
 
   // CRITICAL: Stop stdin buffering and replay data BEFORE starting proxy
   // This ensures the 'initialize' message reaches the proxy client
-  stopStdinBufferingAndReplay();
+  stdinManager.stopAndReplay();
 
   // Start proxying stdin/stdout to daemon with error handling
   try {
@@ -636,7 +547,7 @@ function startMCPServer() {
 
       // CRITICAL: Stop stdin buffering and replay data BEFORE starting MCP server
       // This ensures the 'initialize' message reaches the transport
-      stopStdinBufferingAndReplay();
+      stdinManager.stopAndReplay();
 
       await mcpServer.start();
 

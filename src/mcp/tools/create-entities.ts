@@ -85,34 +85,29 @@ export const createEntitiesTool = {
     args: CreateEntitiesArgs,
     knowledgeGraph: KnowledgeGraph
   ) {
-    const created: string[] = [];
-    const errors: Array<{ name: string; error: string }> = [];
-
-    for (const entity of args.entities) {
-      try {
-        // Tags are expected to be provided by Claude via MCP tool description guidance
-        // Only add basic scope tag if not present
-        const tags = entity.tags || [];
-        const hasScope = tags.some(tag => tag.startsWith('scope:'));
-        if (!hasScope) {
-          tags.push('scope:project');
-        }
-
-        await knowledgeGraph.createEntity({
-          name: entity.name,
-          entityType: entity.entityType as EntityType, // Cast from MCP string input
-          observations: entity.observations,
-          tags,
-          metadata: entity.metadata,
-        });
-        created.push(entity.name);
-      } catch (error) {
-        errors.push({
-          name: entity.name,
-          error: error instanceof Error ? error.message : String(error),
-        });
+    // Pre-process tags: add scope:project if no scope tag present
+    const preparedEntities = args.entities.map(entity => {
+      const tags = entity.tags || [];
+      const hasScope = tags.some(tag => tag.startsWith('scope:'));
+      if (!hasScope) {
+        tags.push('scope:project');
       }
-    }
+      return {
+        name: entity.name,
+        entityType: entity.entityType,
+        observations: entity.observations,
+        tags,
+        metadata: entity.metadata,
+      };
+    });
+
+    // Use batch method for single-transaction performance
+    const results = knowledgeGraph.createEntitiesBatch(preparedEntities);
+
+    const created = results.filter(r => r.success).map(r => r.name);
+    const errors = results
+      .filter(r => !r.success)
+      .map(r => ({ name: r.name, error: r.error! }));
 
     return {
       created,

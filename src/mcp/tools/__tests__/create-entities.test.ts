@@ -10,7 +10,18 @@ describe('createEntitiesTool', () => {
 
   beforeEach(() => {
     mockKnowledgeGraph = {
-      createEntity: vi.fn().mockResolvedValue(undefined),
+      createEntity: vi.fn().mockReturnValue(undefined),
+      // createEntitiesBatch delegates to createEntity per-entity, matching real behavior
+      createEntitiesBatch: vi.fn().mockImplementation((entities: any[]) => {
+        return entities.map((entity: any) => {
+          try {
+            mockKnowledgeGraph.createEntity(entity);
+            return { name: entity.name, success: true };
+          } catch (error: any) {
+            return { name: entity.name, success: false, error: error.message };
+          }
+        });
+      }),
     };
   });
 
@@ -130,7 +141,7 @@ describe('createEntitiesTool', () => {
 
   it('should handle errors when creating entities', async () => {
     const error = new Error('Database error');
-    mockKnowledgeGraph.createEntity.mockRejectedValueOnce(error);
+    mockKnowledgeGraph.createEntity.mockImplementationOnce(() => { throw error; });
 
     const result = await createEntitiesTool.handler(
       {
@@ -153,9 +164,9 @@ describe('createEntitiesTool', () => {
 
   it('should handle multiple entities with some failures', async () => {
     mockKnowledgeGraph.createEntity
-      .mockResolvedValueOnce(undefined)
-      .mockRejectedValueOnce(new Error('Creation failed'))
-      .mockResolvedValueOnce(undefined);
+      .mockReturnValueOnce(undefined)
+      .mockImplementationOnce(() => { throw new Error('Creation failed'); })
+      .mockReturnValueOnce(undefined);
 
     const result = await createEntitiesTool.handler(
       {

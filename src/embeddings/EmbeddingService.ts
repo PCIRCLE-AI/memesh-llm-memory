@@ -52,11 +52,17 @@ export class EmbeddingService {
   /** HuggingFace model identifier for @xenova/transformers */
   private static readonly MODEL_NAME = 'Xenova/all-MiniLM-L6-v2';
 
+  /** Maximum number of cached embeddings */
+  private static readonly MAX_CACHE_SIZE = 500;
+
   /** Feature extraction pipeline instance */
   private extractor: FeatureExtractionPipeline | null = null;
 
   /** Initialization state flag */
   private initialized = false;
+
+  /** LRU cache for text embeddings (text -> Float32Array) */
+  private cache = new Map<string, Float32Array>();
 
   /**
    * Initialize the embedding service (loads model)
@@ -120,13 +126,28 @@ export class EmbeddingService {
       throw new Error('EmbeddingService not initialized. Call initialize() first.');
     }
 
+    // Check cache first
+    const cached = this.cache.get(text);
+    if (cached) {
+      return new Float32Array(cached); // Return copy to prevent mutation
+    }
+
     const result = await this.extractor(text, {
       pooling: 'mean', // Average across all token embeddings
       normalize: true, // L2 normalize for cosine similarity
     });
 
     // Result is a Tensor - extract data as Float32Array
-    return new Float32Array(result.data as ArrayLike<number>);
+    const embedding = new Float32Array(result.data as ArrayLike<number>);
+
+    // Add to cache with LRU eviction
+    if (this.cache.size >= EmbeddingService.MAX_CACHE_SIZE) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey !== undefined) this.cache.delete(firstKey);
+    }
+    this.cache.set(text, new Float32Array(embedding)); // Store copy in cache
+
+    return embedding;
   }
 
   /**
@@ -218,6 +239,7 @@ export class EmbeddingService {
   async dispose(): Promise<void> {
     this.extractor = null;
     this.initialized = false;
+    this.cache.clear();
     logger.debug('EmbeddingService disposed');
   }
 }

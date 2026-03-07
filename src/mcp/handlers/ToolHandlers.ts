@@ -16,7 +16,6 @@ import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { ValidationError, OperationError } from '../../errors/index.js';
 import { RateLimiter } from '../../utils/RateLimiter.js';
-import { AgentRegistry } from '../../core/AgentRegistry.js';
 import { SkillManager } from '../../skills/index.js';
 import { UninstallManager } from '../../management/index.js';
 import { CheckpointDetector } from '../../core/CheckpointDetector.js';
@@ -74,7 +73,6 @@ export class ToolHandlers {
   private userPreferenceEngine: UserPreferenceEngine | undefined;
 
   constructor(
-    private agentRegistry: AgentRegistry,
     private skillManager: SkillManager,
     private uninstallManager: UninstallManager,
     private checkpointDetector: CheckpointDetector,

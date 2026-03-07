@@ -203,7 +203,6 @@ export class ServerInitializer {
 
       // Initialize handler modules (handle null values in cloud-only mode)
       const toolHandlers = new ToolHandlers(
-        agentRegistry,
         skillManager,
         uninstallManager,
         checkpointDetector,

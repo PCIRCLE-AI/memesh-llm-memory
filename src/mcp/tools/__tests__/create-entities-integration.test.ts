@@ -12,11 +12,20 @@ describe('create-entities Integration Tests', () => {
 
   beforeEach(() => {
     // Create partial KnowledgeGraph mock
-    // Only mocking createEntity method which is used by the tool
+    // Mocking createEntity and createEntitiesBatch which are used by the tool
+    const createEntityMock = vi.fn().mockReturnValue('entity-name');
     mockKnowledgeGraph = {
-      createEntity: vi.fn().mockReturnValue('entity-name'),
-      // Other methods (getEntity, searchEntities, createRelation, etc.) are not used
-      // in these integration tests and are intentionally not mocked
+      createEntity: createEntityMock,
+      createEntitiesBatch: vi.fn().mockImplementation((entities: any[]) => {
+        return entities.map((entity: any) => {
+          try {
+            createEntityMock(entity);
+            return { name: entity.name, success: true };
+          } catch (error: any) {
+            return { name: entity.name, success: false, error: error.message };
+          }
+        });
+      }),
     };
   });
 

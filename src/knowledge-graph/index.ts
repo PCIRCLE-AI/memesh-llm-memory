@@ -626,6 +626,63 @@ export class KnowledgeGraph {
   }
 
   /**
+   * Create multiple entities in a single SQLite transaction.
+   *
+   * Wraps all entity creations in one transaction for significantly better
+   * write performance (1 transaction instead of N). Individual entity failures
+   * are caught and reported without aborting the entire batch.
+   *
+   * @param entities - Array of entities to create
+   * @returns Array of results indicating success/failure per entity
+   */
+  createEntitiesBatch(
+    entities: Array<{
+      name: string;
+      entityType: string;
+      observations: string[];
+      tags?: string[];
+      metadata?: Record<string, unknown>;
+      contentHash?: string;
+    }>
+  ): Array<{ name: string; success: boolean; error?: string }> {
+    const results: Array<{ name: string; success: boolean; error?: string }> = [];
+
+    if (entities.length === 0) {
+      return results;
+    }
+
+    const transaction = this.db.transaction(() => {
+      for (const entity of entities) {
+        try {
+          this.createEntity({
+            name: entity.name,
+            entityType: entity.entityType as EntityType,
+            observations: entity.observations,
+            tags: entity.tags,
+            metadata: entity.metadata,
+            contentHash: entity.contentHash,
+          });
+          results.push({ name: entity.name, success: true });
+        } catch (error) {
+          results.push({
+            name: entity.name,
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+    });
+
+    transaction();
+
+    // Invalidate cache once after all entities are created (instead of per-entity)
+    this.queryCache.invalidatePattern(/^entities:/);
+    this.queryCache.invalidatePattern(/^stats:/);
+
+    return results;
+  }
+
+  /**
    * Create a relation between two entities
    */
   createRelation(relation: Relation): void {

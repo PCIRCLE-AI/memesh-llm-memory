@@ -153,12 +153,12 @@ export class EmbeddingService {
   /**
    * Batch encode multiple texts
    *
-   * Encodes multiple texts sequentially. For large batches,
-   * consider using Promise.all with smaller chunks for better
-   * memory management.
+   * Encodes texts in parallel chunks of 10 for improved throughput.
+   * Cached entries (via LRU cache in encode()) resolve nearly instantly,
+   * while uncached entries run concurrently within each chunk.
    *
    * @param texts - Array of texts to encode
-   * @returns Array of Float32Array embeddings
+   * @returns Array of Float32Array embeddings in the same order as input
    * @throws Error if service is not initialized
    *
    * @example
@@ -168,14 +168,16 @@ export class EmbeddingService {
    * ```
    */
   async encodeBatch(texts: string[]): Promise<Float32Array[]> {
-    const embeddings: Float32Array[] = [];
+    const chunkSize = 10;
+    const results: Float32Array[] = [];
 
-    for (const text of texts) {
-      const embedding = await this.encode(text);
-      embeddings.push(embedding);
+    for (let i = 0; i < texts.length; i += chunkSize) {
+      const chunk = texts.slice(i, i + chunkSize);
+      const chunkResults = await Promise.all(chunk.map(text => this.encode(text)));
+      results.push(...chunkResults);
     }
 
-    return embeddings;
+    return results;
   }
 
   /**

@@ -52,8 +52,8 @@ export class KnowledgeGraph {
   private queryCache: QueryCache<string, any>;
   /** Whether sqlite-vec extension loaded successfully */
   private vectorEnabled = false;
-  /** Cached VectorExtension module (loaded once during init) */
-  private vectorExt: typeof import('../embeddings/VectorExtension.js').VectorExtension | null = null;
+  /** Vector search adapter instance (loaded once during init) */
+  private vectorAdapter: import('../embeddings/VectorSearchAdapter.js').VectorSearchAdapter | null = null;
   /** Promise tracking vector search initialization (resolved when init completes or fails) */
   private vectorInitPromise: Promise<void> | null = null;
   /** Pending embedding generation tasks — tracked for clean shutdown */
@@ -312,11 +312,12 @@ export class KnowledgeGraph {
    * The returned promise is tracked so search methods can await initialization.
    */
   private initVectorSearch(): void {
-    this.vectorInitPromise = import('../embeddings/VectorExtension.js')
-      .then(({ VectorExtension }) => {
-        VectorExtension.loadExtension(this.db);
-        VectorExtension.createVectorTable(this.db, 384);
-        this.vectorExt = VectorExtension;
+    this.vectorInitPromise = import('../embeddings/SqliteVecAdapter.js')
+      .then(({ SqliteVecAdapter }) => {
+        const adapter = new SqliteVecAdapter();
+        adapter.loadExtension(this.db);
+        adapter.createVectorTable(this.db, 384);
+        this.vectorAdapter = adapter;
         this.vectorEnabled = true;
         logger.info('[KG] Vector search enabled (sqlite-vec loaded)');
       })
@@ -1136,9 +1137,9 @@ export class KnowledgeGraph {
       }
 
       // Delete embedding if vector search is enabled
-      if (this.vectorEnabled && this.vectorExt) {
+      if (this.vectorEnabled && this.vectorAdapter) {
         try {
-          this.vectorExt.deleteEmbedding(this.db, name);
+          this.vectorAdapter.deleteEmbedding(this.db, name);
         } catch (error: unknown) {
           logger.warn('[KG] Failed to delete embedding during entity removal', {
             entity: name,
@@ -1168,16 +1169,16 @@ export class KnowledgeGraph {
    * All pending tasks are tracked for clean shutdown via close().
    */
   private generateEmbeddingAsync(entityName: string, observations?: string[]): void {
-    if (!this.vectorExt) return;
+    if (!this.vectorAdapter) return;
     const text = [entityName, ...(observations || [])].join(' ');
-    const ext = this.vectorExt;
+    const adapter = this.vectorAdapter;
 
     const task = (async () => {
       try {
         const { LazyEmbeddingService } = await import('../embeddings/EmbeddingService.js');
         const service = await LazyEmbeddingService.get();
         const embedding = await service.encode(text);
-        ext.insertEmbedding(this.db, entityName, embedding);
+        adapter.insertEmbedding(this.db, entityName, embedding);
         logger.debug(`[KG] Embedding generated for: ${entityName}`);
       } catch (error) {
         logger.warn('[KG] Embedding generation failed', {
@@ -1207,7 +1208,7 @@ export class KnowledgeGraph {
       await this.vectorInitPromise;
     }
 
-    if (!this.vectorEnabled || !this.vectorExt) {
+    if (!this.vectorEnabled || !this.vectorAdapter) {
       return this.keywordSearchAsSemanticResults(query, limit);
     }
 
@@ -1216,7 +1217,7 @@ export class KnowledgeGraph {
       const service = await LazyEmbeddingService.get();
       const queryEmbedding = await service.encode(query);
 
-      const knnResults = this.vectorExt.knnSearch(this.db, queryEmbedding, limit * 2);
+      const knnResults = this.vectorAdapter.knnSearch(this.db, queryEmbedding, limit * 2);
 
       const results: SemanticSearchResult[] = [];
       for (const knn of knnResults) {

@@ -1180,7 +1180,7 @@ export class KnowledgeGraph {
         ext.insertEmbedding(this.db, entityName, embedding);
         logger.debug(`[KG] Embedding generated for: ${entityName}`);
       } catch (error) {
-        logger.debug('[KG] Embedding generation skipped', {
+        logger.warn('[KG] Embedding generation failed', {
           entity: entityName,
           reason: error instanceof Error ? error.message : String(error),
         });

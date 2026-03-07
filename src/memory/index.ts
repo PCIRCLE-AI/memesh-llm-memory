@@ -12,6 +12,9 @@
 // Core unified memory store
 export { UnifiedMemoryStore } from './UnifiedMemoryStore.js';
 
+// Memory search engine (search, filter, rank, dedup)
+export { MemorySearchEngine } from './MemorySearchEngine.js';
+
 // Mistake Pattern Engine for prevention rules
 export { MistakePatternEngine } from './MistakePatternEngine.js';
 

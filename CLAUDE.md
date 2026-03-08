@@ -75,7 +75,11 @@ src/
 │   ├── CheckpointDetector.ts    # Checkpoint detection
 │   └── MCPToolInterface.ts      # Tool interface base
 └── db/
-    └── DatabaseManager.ts        # SQLite connection + migrations
+    ├── ConnectionPool.ts         # SQLite connection pool
+    ├── IDatabaseAdapter.ts       # Database adapter interface
+    ├── QueryCache.ts             # Query result caching
+    └── adapters/
+        └── BetterSqlite3Adapter.ts  # better-sqlite3 implementation
 ```
 
 ### Key Design Decisions
@@ -134,12 +138,12 @@ src/
 
 ### 3. Architecture Doc Accuracy
 - [ ] `docs/ARCHITECTURE.md` module tree matches actual `src/` structure
-- [ ] No references to deleted modules (AutoTagger, SmartMemoryQuery, memesh-sync-remote, etc.)
+- [ ] No references to removed tools (memesh-sync-remote, memesh-cloud-sync, etc.)
 - [ ] Hook list matches `hooks/hooks.json`
 - [ ] Plugin config description matches `plugin.json`, `.mcp.json`
 
 ### 4. Naming Consistency
-- [ ] Product name is "MeMesh Plugin" (not just "MeMesh") across all READMEs and docs
+- [ ] Product name is "MeMesh Plugin" in titles, headers, and first mentions across all READMEs and docs (body text may use "MeMesh" as brand shorthand)
 - [ ] GitHub About description says "MeMesh Plugin"
 
 ### 5. Build & Test

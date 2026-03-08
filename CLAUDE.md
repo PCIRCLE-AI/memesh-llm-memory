@@ -1,4 +1,4 @@
-# MeMesh Project Instructions
+# MeMesh Plugin Project Instructions
 
 ## Documentation-Code Synchronization (MANDATORY)
 
@@ -100,7 +100,7 @@ src/
 ### Testing
 
 - Framework: vitest
-- All tests: `npm test` (1971+ tests across 121 files)
+- All tests: `npm test` (2202+ tests across 121+ files)
 - Single-thread mode to prevent worker leaks
 - Tests MUST pass before any commit
 
@@ -115,3 +115,44 @@ src/
 - sqlite-vec: pinned to exact `"0.1.3"` (not semver range)
 - Native dependencies: better-sqlite3, sqlite-vec, onnxruntime-node
 - Cloud-only mode when native deps unavailable
+
+---
+
+## Pre-Release Checklist (MANDATORY before npm publish)
+
+### 1. Version Sync
+- [ ] `package.json` version matches `plugin.json` version
+- [ ] All README files reference correct version
+- [ ] `docs/api/API_REFERENCE.md` header version is correct
+- [ ] `docs/ARCHITECTURE.md` header version is correct
+
+### 2. Tool List Accuracy
+- [ ] `docs/api/API_REFERENCE.md` lists exactly the 8 tools defined in `src/mcp/ToolDefinitions.ts`
+- [ ] `docs/COMMANDS.md` tool list matches ToolDefinitions.ts
+- [ ] No phantom tools documented (tools that don't exist in code)
+- [ ] No undocumented tools (tools in code but not in docs)
+
+### 3. Architecture Doc Accuracy
+- [ ] `docs/ARCHITECTURE.md` module tree matches actual `src/` structure
+- [ ] No references to deleted modules (AutoTagger, SmartMemoryQuery, memesh-sync-remote, etc.)
+- [ ] Hook list matches `hooks/hooks.json`
+- [ ] Plugin config description matches `plugin.json`, `.mcp.json`
+
+### 4. Naming Consistency
+- [ ] Product name is "MeMesh Plugin" (not just "MeMesh") across all READMEs and docs
+- [ ] GitHub About description says "MeMesh Plugin"
+
+### 5. Build & Test
+- [ ] `npm run build` succeeds
+- [ ] `npm test` passes (all tests)
+- [ ] `npm run typecheck` passes
+- [ ] No TODO/FIXME/STUB in src/ files
+
+### 6. Package Contents
+- [ ] `package.json` `files` array includes all necessary files
+- [ ] `npm pack --dry-run` output contains expected files
+- [ ] postinstall script works: `node scripts/postinstall-new.js`
+
+### 7. External Sync
+- [ ] Obsidian `Projects/MeMesh-Plugin/` notes updated to current version
+- [ ] MeMesh KG entities reflect current project status
